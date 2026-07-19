@@ -91,6 +91,7 @@ class _FakeAgent implements DayAgentInterface {
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    required DateTime dayDate,
     String? audioId,
   }) async => const CaptureId('cap');
 
@@ -269,9 +270,8 @@ Widget _wrap(
   return ProviderScope(
     overrides: [
       dayAgentProvider.overrideWithValue(agent),
-      // DayPage builds CapturesPanel which reads this provider; stub so
-      // the panel collapses to SizedBox.shrink and the day-agent service
-      // chain is never touched.
+      // DayPage's Activity projection reads capture state; keep this focused
+      // drafting test independent of the day-agent service chain.
       capturesForDateProvider.overrideWith((ref, _) async => const []),
       ...overrides,
     ],

@@ -3448,6 +3448,98 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsDayPlan => 'Plan del día';
 
   @override
+  String get dailyOsNextActivityEmpty =>
+      'Todavía no hay grabaciones ni registros.';
+
+  @override
+  String get dailyOsNextActivityLoadFailed =>
+      'Tu actividad guardada sigue en este dispositivo, pero ahora mismo no se pudo cargar.';
+
+  @override
+  String get dailyOsNextActivityMissingAudio =>
+      'Esta entrada se conserva, pero el archivo de audio no está disponible en este dispositivo. Restaura el archivo y vuelve a intentarlo.';
+
+  @override
+  String get dailyOsNextActivityRetryLoad => 'Volver a cargar';
+
+  @override
+  String get dailyOsNextActivityAddOrEditText => 'Añadir o editar texto';
+
+  @override
+  String get dailyOsNextActivityActionFailed =>
+      'La acción no terminó. Tu grabación sigue a salvo; inténtalo de nuevo.';
+
+  @override
+  String get dailyOsNextActivityTextDialogTitle => 'Texto de la grabación';
+
+  @override
+  String get dailyOsNextActivityTextHint =>
+      'Escribe lo que querías guardar con esta grabación.';
+
+  @override
+  String get dailyOsNextActivityTextSaveFailed =>
+      'La grabación está a salvo, pero no se pudo guardar el texto. Inténtalo de nuevo.';
+
+  @override
+  String get dailyOsNextActivityNeedsAttention => 'Requiere atención';
+
+  @override
+  String get dailyOsNextActivityOpenSetup =>
+      'Abrir configuración de transcripción';
+
+  @override
+  String get dailyOsNextActivityPlanAvailable =>
+      'Tu plan del día está disponible.';
+
+  @override
+  String get dailyOsNextActivityPlanCreated => 'Plan creado';
+
+  @override
+  String get dailyOsNextActivityReady => 'Listo para usar';
+
+  @override
+  String get dailyOsNextActivityRecover => 'Recuperar grabación';
+
+  @override
+  String get dailyOsNextActivityRecoveryDescription =>
+      'Esta grabación se interrumpió, pero el audio sigue guardado localmente.';
+
+  @override
+  String get dailyOsNextActivityRecoveryNeeded => 'Requiere recuperación';
+
+  @override
+  String get dailyOsNextActivityRetry => 'Reintentar transcripción';
+
+  @override
+  String get dailyOsNextActivitySaved => 'Guardado localmente';
+
+  @override
+  String get dailyOsNextActivityDaySummary => 'Resumen del día';
+
+  @override
+  String get dailyOsNextActivitySetupRequired =>
+      'Tu grabación está a salvo. Configura un modelo de transcripción de audio y vuelve a intentarlo.';
+
+  @override
+  String get dailyOsNextActivitySubmitted => 'Añadido al día';
+
+  @override
+  String get dailyOsNextActivityTranscribing => 'Transcribiendo';
+
+  @override
+  String get dailyOsNextActivityTranscriptPending =>
+      'Tu grabación está guardada. La transcripción sigue pendiente.';
+
+  @override
+  String get dailyOsNextActivityUseToPlan => 'Usar para crear el plan';
+
+  @override
+  String get dailyOsNextActivityUseToRefine => 'Usar para ajustar';
+
+  @override
+  String get dailyOsNextActivityWaitingForNetwork => 'Esperando conexión';
+
+  @override
   String get dailyOsNextAgendaCapacityComfortable => 'Cómodo';
 
   @override
@@ -3655,9 +3747,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureRecordingSavedStatus => 'Grabación guardada';
-
-  @override
-  String get dailyOsNextCapturesPanelTitle => 'Capturas';
 
   @override
   String get dailyOsNextCaptureTranscribing => 'Transcribiendo…';
@@ -3940,6 +4029,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Romper enlace';
+
+  @override
+  String get dailyOsNextPlanViewActivity => 'Actividad';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';

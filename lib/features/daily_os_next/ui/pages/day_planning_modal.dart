@@ -289,6 +289,7 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
       final captureId = await agent.submitCapture(
         transcript: transcript,
         capturedAt: _capturedAtForDay(widget.day),
+        dayDate: widget.day,
         audioId: state.audioId,
       );
       if (!mounted) return;

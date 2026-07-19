@@ -756,11 +756,10 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
     try {
       final captureId = await agent.submitCapture(
         transcript: transcript,
-        // `capturedAt` routes the capture to the day-agent for that
-        // day. When the route-level root mounts CapturePage for a
-        // non-today selected date, pass that date so the resulting
-        // plan lands on the chosen day instead of today.
+        // Keep the source timestamp and selected planning workspace explicit.
+        // Activity can later reuse the same source while another day is open.
         capturedAt: _capturedAtForSelectedDate(widget.forDate),
+        dayDate: widget.forDate ?? clock.now(),
         audioId: widget.state.audioId,
       );
       if (!mounted) return;

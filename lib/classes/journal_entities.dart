@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -71,6 +72,7 @@ abstract class AudioData with _$AudioData {
     @Default(false) bool autoTranscribeWasActive,
     String? language,
     List<AudioTranscript>? transcripts,
+    DayAudioContext? dayContext,
   }) = _AudioData;
 
   factory AudioData.fromJson(Map<String, dynamic> json) =>
@@ -86,6 +88,7 @@ abstract class AudioTranscript with _$AudioTranscript {
     required String detectedLanguage,
     required String transcript,
     Duration? processingTime,
+    String? processingJobId,
   }) = _AudioTranscript;
 
   factory AudioTranscript.fromJson(Map<String, dynamic> json) =>

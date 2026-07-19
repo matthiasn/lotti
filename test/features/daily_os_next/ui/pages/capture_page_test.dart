@@ -995,6 +995,7 @@ void main() {
       expect(agent.capturedAt?.year, 2026);
       expect(agent.capturedAt?.month, 5);
       expect(agent.capturedAt?.day, 27);
+      expect(agent.capturedDayDate, DateTime(2026, 5, 27));
     });
 
     testWidgets(

@@ -47,10 +47,12 @@ class MockDayAgent implements DayAgentInterface {
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    required DateTime dayDate,
     String? audioId,
   }) => _capture.submitCapture(
     transcript: transcript,
     capturedAt: capturedAt,
+    dayDate: dayDate,
     audioId: audioId,
   );
 

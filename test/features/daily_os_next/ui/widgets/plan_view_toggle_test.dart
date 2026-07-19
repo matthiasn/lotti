@@ -19,7 +19,7 @@ Finder _visibleLabel(String label) => find.text(label).last;
 
 void main() {
   group('PlanViewToggle', () {
-    testWidgets('renders both Agenda + Day labels', (tester) async {
+    testWidgets('renders Agenda, Day, and Activity labels', (tester) async {
       await tester.pumpWidget(
         _wrap(
           PlanViewToggle(
@@ -32,6 +32,10 @@ void main() {
       final messages = tester.element(find.byType(PlanViewToggle)).messages;
       expect(_visibleLabel(messages.dailyOsNextPlanViewAgenda), findsOneWidget);
       expect(_visibleLabel(messages.dailyOsNextPlanViewDay), findsOneWidget);
+      expect(
+        _visibleLabel(messages.dailyOsNextPlanViewActivity),
+        findsOneWidget,
+      );
     });
 
     testWidgets('width is selection-invariant (header placement relies '
@@ -149,6 +153,26 @@ void main() {
       await tester.pump();
 
       expect(received, PlanView.agenda);
+    });
+
+    testWidgets('tapping Activity fires onChanged(PlanView.activity)', (
+      tester,
+    ) async {
+      PlanView? received;
+      await tester.pumpWidget(
+        _wrap(
+          PlanViewToggle(
+            selected: PlanView.day,
+            onChanged: (value) => received = value,
+          ),
+        ),
+      );
+
+      final messages = tester.element(find.byType(PlanViewToggle)).messages;
+      await tester.tap(_visibleLabel(messages.dailyOsNextPlanViewActivity));
+      await tester.pump();
+
+      expect(received, PlanView.activity);
     });
 
     testWidgets(

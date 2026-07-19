@@ -5,11 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1054]
+### Added
+- **Daily planning recordings now have an offline Activity history.** The Day
+  screen shows saved recordings, pending transcription, recoverable interrupted
+  audio, submitted check-ins, and the generated plan in chronological order,
+  with playback, retry, recovery, planner day summaries, reviewed text fallback,
+  and a route back into planning.
+
 ### Fixed
 - **Task AI summaries are cleaner, more compact, and easier to operate.**
   Report and proposal text now match editor entries and card summaries, quiet
   metadata is easier to read, secondary controls have larger interaction
   targets, and the footer adapts cleanly to narrow layouts and larger text.
+- **Poor reception no longer makes a Daily OS voice check-in appear lost.**
+  Audio is persisted before inference, queued for durable background retry, and
+  made available to later planner invocations after transcription completes.
 - **Date pickers now start the week according to your device region.** Entry
   dates, entry ranges, due dates, and project target dates show Monday first in
   European regions and Sunday first in the US, including matching weekday

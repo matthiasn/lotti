@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -12,6 +13,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
 import 'package:lotti/features/daily_os_next/state/capture_state.dart';
 import 'package:lotti/features/daily_os_next/state/realtime_transcript_selection.dart';
@@ -38,6 +41,7 @@ class CaptureController extends Notifier<CaptureState> {
     RealtimeTranscriptionService? realtimeService,
     record.AudioRecorder Function()? realtimeRecorderFactory,
     Future<JournalAudio?> Function(AudioNote)? persistAudio,
+    DayProcessingOutboxRepository? processingOutbox,
     Directory Function()? docDir,
     DateTime Function()? now,
   }) : _transcriberOverride = transcriber,
@@ -45,6 +49,7 @@ class CaptureController extends Notifier<CaptureState> {
        _realtimeRecorderFactory =
            realtimeRecorderFactory ?? record.AudioRecorder.new,
        _persistAudioOverride = persistAudio,
+       _processingOutboxOverride = processingOutbox,
        _docDir = docDir ?? getDocumentsDirectory,
        _now = now ?? DateTime.now;
 
@@ -52,6 +57,7 @@ class CaptureController extends Notifier<CaptureState> {
   final RealtimeTranscriptionService? _realtimeServiceOverride;
   final record.AudioRecorder Function() _realtimeRecorderFactory;
   final Future<JournalAudio?> Function(AudioNote)? _persistAudioOverride;
+  final DayProcessingOutboxRepository? _processingOutboxOverride;
   final Directory Function() _docDir;
   final DateTime Function() _now;
 
@@ -65,6 +71,11 @@ class CaptureController extends Notifier<CaptureState> {
       ref.read(realtimeTranscriptionServiceProvider);
   late final Future<JournalAudio?> Function(AudioNote) _persistAudio =
       _persistAudioOverride ?? SpeechRepository.createAudioEntry;
+  DayProcessingOutboxRepository? get _processingOutbox =>
+      _processingOutboxOverride ??
+      (getIt.isRegistered<DayProcessingOutboxRepository>()
+          ? getIt<DayProcessingOutboxRepository>()
+          : null);
 
   /// Active realtime transcription config — captured at start time so
   /// the AudioTranscript persisted on the JournalAudio carries the
@@ -83,6 +94,9 @@ class CaptureController extends Notifier<CaptureState> {
   String? _realtimeAudioFile;
 
   DateTime? _recordingStartedAt;
+  String? _activeDayId;
+  DateTime? _activePlanDate;
+  AudioCaptureIntent? _activeIntent;
   bool _verifyRealtimeTranscript = true;
   bool _realtimeTerminalActionInProgress = false;
   int _lifecycleEpoch = 0;
@@ -153,6 +167,9 @@ class CaptureController extends Notifier<CaptureState> {
     final epoch = ++_lifecycleEpoch;
     final createdAt = _now();
     final planDate = forDate ?? createdAt;
+    _activeDayId = dayPlanId(planDate);
+    _activePlanDate = DateTime(planDate.year, planDate.month, planDate.day);
+    _activeIntent = intent;
     final docDir = _docDir();
     DurableRealtimeCapture capture;
     try {
@@ -161,7 +178,7 @@ class CaptureController extends Notifier<CaptureState> {
         createdAt: createdAt,
         origin: AudioCaptureOrigin.dailyOs,
         intent: intent,
-        dayId: dayPlanId(planDate),
+        dayId: _activeDayId,
         planDate: planDate,
       );
       if (!_isCurrentLifecycle(epoch)) {
@@ -542,6 +559,7 @@ class CaptureController extends Notifier<CaptureState> {
       audioFile: audioFilePath.split('/').last,
       audioDirectory: audioDir,
       duration: duration,
+      dayContext: _dayAudioContext(capture, startedAt ?? _now()),
     );
 
     JournalAudio? journalAudio;
@@ -588,23 +606,58 @@ class CaptureController extends Notifier<CaptureState> {
       return;
     }
 
+    final outbox = _processingOutbox;
+    DayProcessingClaim? processingClaim;
+    if (outbox != null) {
+      final context = note.dayContext!;
+      try {
+        processingClaim = await outbox.enqueueAndClaimTranscription(
+          dayId: context.dayId,
+          activityEntryId: context.activityEntryId,
+          recordingSessionId: context.recordingSessionId,
+          audioId: journalAudio.meta.id,
+          audioPath: audioFilePath,
+          capturedAt: context.capturedAt,
+        );
+        if (processingClaim == null) {
+          throw StateError('Day transcription job is not claimable');
+        }
+      } catch (error, stackTrace) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stackTrace,
+            library: 'daily_os_next',
+            context: ErrorDescription('while enqueueing day transcription'),
+          ),
+        );
+        await _finishRecorderCleanup(recorder);
+        state = CaptureState(
+          phase: CapturePhase.error,
+          transcript: result.transcript.trim(),
+          amplitudes: const <double>[],
+          audioId: journalAudio.meta.id,
+          error: CaptureError.recordingSavedPendingTranscription,
+        );
+        return;
+      }
+    }
+
     final realtimeTranscript = result.transcript.trim();
     final finalTranscript = await _resolveRealtimeFinalTranscript(
       result: result,
       realtimeTranscript: realtimeTranscript,
     );
     if (finalTranscript.isEmpty) {
-      try {
-        await recorder.dispose();
-      } catch (_) {}
-      _realtimeRecorder = null;
-      _realtimeCapture = null;
-      _realtimeOutputBasePath = null;
-      _realtimeAudioDirectory = null;
-      _realtimeAudioFile = null;
-      _recordingStartedAt = null;
-      _activeRealtimeConfig = null;
-      _verifyRealtimeTranscript = true;
+      if (processingClaim != null) {
+        await outbox!.markFailure(
+          jobId: processingClaim.job.id,
+          claimToken: processingClaim.token,
+          failureClass: DayProcessingFailureClass.timeout,
+          error: 'No transcript was produced',
+        );
+      }
+      await _finishRecorderCleanup(recorder);
       state = CaptureState(
         phase: CapturePhase.error,
         transcript: '',
@@ -616,15 +669,126 @@ class CaptureController extends Notifier<CaptureState> {
     }
     if (finalTranscript.isNotEmpty) {
       final config = _activeRealtimeConfig;
-      await _attachTranscriptToJournalAudio(
-        journalAudio: journalAudio,
-        transcript: finalTranscript,
-        library: config?.provider.name ?? 'realtime',
-        model: config?.model.providerModelId ?? 'unknown',
-        detectedLanguage: result.detectedLanguage ?? '-',
-      );
+      final attached = processingClaim == null
+          ? await () async {
+              await _attachTranscriptToJournalAudio(
+                journalAudio: journalAudio!,
+                transcript: finalTranscript,
+                library: config?.provider.name ?? 'realtime',
+                model: config?.model.providerModelId ?? 'unknown',
+                detectedLanguage: result.detectedLanguage ?? '-',
+              );
+              return true;
+            }()
+          : await _completeForegroundProcessing(
+              outbox: outbox!,
+              claim: processingClaim,
+              journalAudio: journalAudio,
+              transcript: finalTranscript,
+              library: config?.provider.name ?? 'realtime',
+              model: config?.model.providerModelId ?? 'unknown',
+              detectedLanguage: result.detectedLanguage ?? '-',
+            );
+      if (!attached) {
+        await _finishRecorderCleanup(recorder);
+        state = CaptureState(
+          phase: CapturePhase.error,
+          transcript: finalTranscript,
+          amplitudes: const <double>[],
+          audioId: journalAudio.meta.id,
+          error: CaptureError.recordingSavedPendingTranscription,
+        );
+        return;
+      }
     }
 
+    await _finishRecorderCleanup(recorder);
+
+    state = CaptureState(
+      phase: CapturePhase.captured,
+      transcript: finalTranscript,
+      amplitudes: const <double>[],
+      audioId: journalAudio.meta.id,
+    );
+  }
+
+  DayAudioContext _dayAudioContext(
+    DurableRealtimeCapture capture,
+    DateTime capturedAt,
+  ) {
+    final dayId = _activeDayId;
+    final planDate = _activePlanDate;
+    final intent = _activeIntent;
+    if (dayId == null || planDate == null || intent == null) {
+      throw StateError('Daily capture context is incomplete');
+    }
+    return DayAudioContext(
+      dayId: dayId,
+      planDate: planDate,
+      recordingSessionId: capture.recordingSessionId,
+      activityEntryId: capture.activityEntryId,
+      processingJobId: DayProcessingOutboxRepository.transcriptionJobId(
+        capture.recordingSessionId,
+      ),
+      capturedAt: capturedAt,
+      intent: intent.name,
+      originHostId: capture.originHostId,
+      continuationOperationId: capture.continuationOperationId,
+      baselineRevisionId: capture.baselineRevisionId,
+    );
+  }
+
+  Future<bool> _completeForegroundProcessing({
+    required DayProcessingOutboxRepository outbox,
+    required DayProcessingClaim claim,
+    required JournalAudio journalAudio,
+    required String transcript,
+    required String library,
+    required String model,
+    required String detectedLanguage,
+  }) async {
+    final job = claim.job;
+    try {
+      await outbox.markTranscriptReady(
+        jobId: job.id,
+        claimToken: claim.token,
+        transcript: transcript,
+      );
+      final attached = await _attachTranscriptToJournalAudio(
+        journalAudio: journalAudio,
+        transcript: transcript,
+        library: library,
+        model: model,
+        detectedLanguage: detectedLanguage,
+        processingJobId: job.id,
+      );
+      if (!attached) {
+        await outbox.markFailure(
+          jobId: job.id,
+          claimToken: claim.token,
+          failureClass: DayProcessingFailureClass.local,
+          error: 'Journal transcript commit was not accepted',
+          retryDelay: const Duration(seconds: 1),
+        );
+        return false;
+      }
+      await outbox.markSucceeded(jobId: job.id, claimToken: claim.token);
+      return true;
+    } catch (error) {
+      try {
+        await outbox.markFailure(
+          jobId: job.id,
+          claimToken: claim.token,
+          failureClass: DayProcessingFailureClass.local,
+          error: error.toString(),
+          retryDelay: const Duration(seconds: 1),
+        );
+      } catch (_) {}
+      return false;
+    }
+  }
+
+  Future<void> _finishRecorderCleanup(record.AudioRecorder recorder) async {
     try {
       await recorder.dispose();
     } catch (_) {}
@@ -636,24 +800,21 @@ class CaptureController extends Notifier<CaptureState> {
     _recordingStartedAt = null;
     _activeRealtimeConfig = null;
     _verifyRealtimeTranscript = true;
-
-    state = CaptureState(
-      phase: CapturePhase.captured,
-      transcript: finalTranscript,
-      amplitudes: const <double>[],
-      audioId: journalAudio.meta.id,
-    );
+    _activeDayId = null;
+    _activePlanDate = null;
+    _activeIntent = null;
   }
 
   /// Persists [transcript] as an [AudioTranscript] on [journalAudio]
   /// and mirrors the text into [JournalAudio.entryText] so the audio
   /// entry shows up with searchable content in the journal.
-  Future<void> _attachTranscriptToJournalAudio({
+  Future<bool> _attachTranscriptToJournalAudio({
     required JournalAudio journalAudio,
     required String transcript,
     required String library,
     required String model,
     required String detectedLanguage,
+    String? processingJobId,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
@@ -663,6 +824,7 @@ class CaptureController extends Notifier<CaptureState> {
         model: model,
         detectedLanguage: detectedLanguage,
         transcript: transcript,
+        processingJobId: processingJobId,
       );
       final existing = journalAudio.data.transcripts ?? <AudioTranscript>[];
       final updated = journalAudio.copyWith(
@@ -672,11 +834,9 @@ class CaptureController extends Notifier<CaptureState> {
         ),
         entryText: EntryText(plainText: transcript, markdown: transcript),
       );
-      await persistenceLogic.updateDbEntity(updated);
+      return await persistenceLogic.updateDbEntity(updated) == true;
     } catch (_) {
-      // Attaching the transcript is best-effort — the capture flow
-      // still proceeds with the in-memory transcript even if the
-      // journal mutation fails.
+      return false;
     }
   }
 
@@ -714,6 +874,9 @@ class CaptureController extends Notifier<CaptureState> {
     _realtimeAudioFile = null;
     _realtimeCapture = null;
     _recordingStartedAt = null;
+    _activeDayId = null;
+    _activePlanDate = null;
+    _activeIntent = null;
   }
 
   void _cleanupSync() {
@@ -750,6 +913,9 @@ class CaptureController extends Notifier<CaptureState> {
     _realtimeAudioDirectory = null;
     _realtimeAudioFile = null;
     _realtimeCapture = null;
+    _activeDayId = null;
+    _activePlanDate = null;
+    _activeIntent = null;
   }
 
   bool _isCurrentLifecycle(int epoch) =>

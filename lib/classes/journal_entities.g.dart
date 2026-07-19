@@ -82,6 +82,9 @@ _AudioData _$AudioDataFromJson(Map<String, dynamic> json) => _AudioData(
   transcripts: (json['transcripts'] as List<dynamic>?)
       ?.map((e) => AudioTranscript.fromJson(e as Map<String, dynamic>))
       .toList(),
+  dayContext: json['dayContext'] == null
+      ? null
+      : DayAudioContext.fromJson(json['dayContext'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$AudioDataToJson(_AudioData instance) =>
@@ -94,6 +97,7 @@ Map<String, dynamic> _$AudioDataToJson(_AudioData instance) =>
       'autoTranscribeWasActive': instance.autoTranscribeWasActive,
       'language': instance.language,
       'transcripts': instance.transcripts,
+      'dayContext': instance.dayContext,
     };
 
 _AudioTranscript _$AudioTranscriptFromJson(Map<String, dynamic> json) =>
@@ -106,6 +110,7 @@ _AudioTranscript _$AudioTranscriptFromJson(Map<String, dynamic> json) =>
       processingTime: json['processingTime'] == null
           ? null
           : Duration(microseconds: (json['processingTime'] as num).toInt()),
+      processingJobId: json['processingJobId'] as String?,
     );
 
 Map<String, dynamic> _$AudioTranscriptToJson(_AudioTranscript instance) =>
@@ -116,6 +121,7 @@ Map<String, dynamic> _$AudioTranscriptToJson(_AudioTranscript instance) =>
       'detectedLanguage': instance.detectedLanguage,
       'transcript': instance.transcript,
       'processingTime': instance.processingTime?.inMicroseconds,
+      'processingJobId': instance.processingJobId,
     };
 
 _SurveyData _$SurveyDataFromJson(Map<String, dynamic> json) => _SurveyData(

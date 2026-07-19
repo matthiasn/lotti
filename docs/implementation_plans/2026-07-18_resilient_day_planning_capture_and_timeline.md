@@ -1,6 +1,6 @@
 # Resilient Day Planning Capture, Processing Outbox, and Day Activity Timeline
 
-- **Status:** Accepted implementation plan
+- **Status:** Implemented P1 resilience slice
 - **Date:** 2026-07-18
 - **Labels:** Agents, Bug, Daily Operating System
 - **Related decisions:** ADR 0013, ADR 0016, ADR 0018, ADR 0020, ADR 0022,
@@ -18,9 +18,26 @@ additional plan-review rounds fail to reach 9.0 and no critical blocker remains.
 | 1 | 8.1 | 7.8 | 8.6 | 8.17 | Rejected; critical blockers |
 | 2 | 9.3 | 9.2 | 9.5 | 9.33 | Accepted; no critical blockers |
 
+The implementation was reviewed separately after the code and focused tests
+existed:
+
+| Implementation round | Architecture | Reliability | Product/UX | Average | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 7.8 | 8.1 | 7.8 | 7.90 | Rejected; lifecycle and UX gaps |
+| 2 | unavailable | 8.4 | 8.7 | — | Corrections required |
+| 3 | 8.8 | 9.1 | 9.1 | 9.00 | Accepted overall; no source-retention blocker |
+
+Before publication, the round-three cross-date workspace defect was corrected
+by separating `capturedAt` from the selected `dayDate` throughout capture
+submission, and the agent-context 20-entry metadata cap was removed. Remaining
+review notes — stable host-id enforcement, spool quotas, transport-level
+`Retry-After`, and a physical-device kill/reconnect journey — are operational
+hardening rather than reasons to retain or hide user audio.
+
 ## Implementation progress
 
-The shared capture foundation is implemented and under its final quality gate:
+The P1 source-retention, transcription-outbox, Activity, and runtime-discovery
+slice is implemented:
 
 - `DurableAudioSpool` publishes a checksummed, typed capture context before
   microphone access and accepts PCM locally before realtime forwarding;
@@ -32,9 +49,65 @@ The shared capture foundation is implemented and under its final quality gate:
   and obsolete starts; a failed durable admission never opens the microphone;
 - Daily OS local-only audio is persisted before transcription, and retained failures
   use warning/saved language rather than a destructive error presentation.
+- `AudioData.dayContext` carries versioned day/session/activity/job provenance;
+  `AudioTranscript.processingJobId` is the durable completion receipt;
+- a device-local, checksummed, per-job file outbox provides atomic publication,
+  partial-file recovery, quarantine, fenced leases, persisted provider output,
+  retry classification, full-jitter backoff, `Retry-After`, and manual retry;
+- the app-wide processing runtime repairs journal/outbox gaps, promotes valid
+  interrupted spools into `JournalAudio`, reuses any persisted final WAV target,
+  advances work after connectivity restoration or a periodic safety probe, and
+  contains/reschedules runtime failures without requiring a screen to stay open;
+- the three-way Agenda / Day / Activity surface coalesces journal audio,
+  recoverable spools, outbox state, typed and voice captures, and the generated
+  plan, oldest-to-newest, while preserving stale data during background refresh;
+- Activity provides playback, retry, interrupted-spool recovery, user-reviewed
+  text that inference cannot overwrite, and a manual route into Reconcile or
+  Refine; persisted captures can explicitly re-enqueue parsing after restart;
+- reviewed text fences pending transcription, recovery actions expose progress
+  and error feedback, missing local assets are represented explicitly, and
+  setup-required entries link to transcription settings;
+- later day-agent wakes receive a bounded `<day_entries>` section containing
+  every persisted recording's metadata and per-entry bounded
+  reviewed/correlated text,
+  while submitted capture memory and
+  `search_memory` are filtered to the active day workspace.
+- capture submission carries the selected day workspace independently of the
+  source recording timestamp, so a retained recording can be continued from a
+  past or future Activity view without being reclassified into its capture day.
 
-The processing outbox, day-context journal migration, Activity projection,
-manual retry controls, and runtime context integration remain the next slices.
+### Implemented data flow
+
+```mermaid
+flowchart LR
+  Mic[Microphone PCM] --> Spool[DurableAudioSpool]
+  Spool --> WAV[Session-owned WAV]
+  WAV --> Journal[JournalAudio + DayAudioContext]
+  Journal --> Outbox[File-backed processing job]
+  Outbox --> Worker[DayProcessingRuntime]
+  Worker --> Provider[Configured transcription provider]
+  Provider --> Receipt[AudioTranscript receipt]
+  Receipt --> Activity[Day Activity projection]
+  Journal --> Activity
+  Spool --> Activity
+  Receipt --> Context[day_entries prompt context]
+  Activity -->|Use to build plan| Reconcile[Existing Reconcile / Refine flow]
+```
+
+### Implementation boundary and deviations from the full target design
+
+| Area | Implemented P1 behavior | Deferred extension |
+| --- | --- | --- |
+| Processing persistence | Device-local checksummed files, one atomic file per immutable transcription job | Moving the same repository contract into JournalDb is optional; sync transport remains separate |
+| Durable jobs | Audio transcription with receipt-first journal attachment; `CaptureEntity` is the durable manual parse-continuation handle and Activity can re-enqueue its wake after restart | Moving parse, draft, and plan-mutation execution into the same leased claim/receipt contract |
+| Activity | Voice sources, interrupted spools, outbox states, typed/voice captures, reviewed manual text, planner-authored day summaries, and the current generated plan | Immutable plan-revision/conflict cards |
+| Recovery | Startup and manual promotion of valid Daily OS spools into JournalAudio + outbox | Cross-device takeover and a global recovered-recordings inbox |
+| Agent context | Every persisted recording descriptor for the selected day, including pending state and bounded reviewed/job-correlated text, plus day-scoped capture memory | Indexed metadata cursors and automatic suppression when the same audio is already represented in the compacted log |
+
+The file-backed outbox is intentionally not a sync outbox. Source audio and
+journal receipts continue to use existing sync behavior; processing ownership
+stays on the recording device. Successful jobs remain as a local ledger so
+Activity can explain what happened after restart.
 
 ## Executive decision
 

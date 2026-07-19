@@ -26,6 +26,7 @@ import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorde
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
@@ -84,6 +85,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as path;
 
 part 'get_it_helpers.dart';
 part 'get_it_maintenance.dart';
@@ -150,6 +152,13 @@ Future<void> registerSingletons() async {
 
   await vod.init();
   final documentsDirectory = getIt<Directory>();
+  getIt.registerSingleton<DayProcessingOutboxRepository>(
+    DayProcessingOutboxRepository(
+      rootDirectory: Directory(
+        path.join(documentsDirectory.path, '.day_processing_outbox'),
+      ),
+    ),
+  );
   final client = await createMatrixClient(
     documentsDirectory: documentsDirectory,
   );

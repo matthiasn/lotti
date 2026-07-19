@@ -9,15 +9,20 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' as record;
 import 'package:record/record.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 final _recordingStartedAt = DateTime(2026, 5, 26, 9);
 
@@ -48,6 +53,7 @@ ProviderContainer _aliveContainer({
   required Future<JournalAudio?> Function(AudioNote) persistAudio,
   AudioRecorder Function()? realtimeRecorderFactory,
   Directory Function()? docDir,
+  DayProcessingOutboxRepository? processingOutbox,
 }) {
   when(
     () => realtimeService.stopAndRetainForRecovery(
@@ -67,6 +73,7 @@ ProviderContainer _aliveContainer({
           realtimeService: realtimeService,
           realtimeRecorderFactory: realtimeRecorderFactory,
           persistAudio: persistAudio,
+          processingOutbox: processingOutbox,
           docDir: docDir ?? Directory.systemTemp.createTempSync,
           now: () => _recordingStartedAt,
         ),
@@ -84,6 +91,7 @@ class _StopRecorderFallback extends Fake {
 
 void main() {
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(fallbackAudioCaptureOrigin);
     registerFallbackValue(fallbackAudioCaptureIntent);
     registerFallbackValue(_StreamFallback());
@@ -111,6 +119,7 @@ void main() {
       transcriber = MockAudioTranscriptionService();
       durableCapture = MockDurableRealtimeCapture();
       when(() => durableCapture.recordingSessionId).thenReturn('test-session');
+      when(() => durableCapture.activityEntryId).thenReturn('activity-1');
       when(() => durableCapture.acceptedPcmBytes).thenReturn(0);
       fakeRecorder = _FakeRealtimeRecorder();
       realtimeAmpController = StreamController<double>.broadcast();
@@ -531,6 +540,60 @@ void main() {
       },
     );
 
+    test(
+      'persists day context and completes the durable processing job',
+      () async {
+        final outboxRoot = Directory.systemTemp.createTempSync(
+          'capture-processing-outbox-test-',
+        );
+        final outbox = DayProcessingOutboxRepository(
+          rootDirectory: outboxRoot,
+          now: () => _recordingStartedAt,
+          tokenFactory: () => 'foreground-claim',
+        );
+        final persistenceLogic = MockPersistenceLogic();
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<PersistenceLogic>(persistenceLogic);
+          },
+        );
+        addTearDown(() async {
+          await outbox.dispose();
+          if (outboxRoot.existsSync()) outboxRoot.deleteSync(recursive: true);
+          await tearDownTestGetIt();
+        });
+        when(
+          () => persistenceLogic.updateMetadata(any()),
+        ).thenAnswer((invocation) async {
+          return invocation.positionalArguments.single as Metadata;
+        });
+        when(
+          () => persistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+        final container = _aliveContainer(
+          transcriber: transcriber,
+          realtimeService: realtimeService,
+          persistAudio: persistAudio,
+          realtimeRecorderFactory: () => fakeRecorder,
+          processingOutbox: outbox,
+        );
+        addTearDown(container.dispose);
+
+        await container.read(captureControllerProvider.notifier).toggle();
+        await container.read(captureControllerProvider.notifier).toggle();
+
+        final context = persistedNotes.single.dayContext;
+        final job = (await outbox.getAll()).single;
+        expect(context!.dayId, 'dayplan-2026-05-26');
+        expect(context.recordingSessionId, 'test-session');
+        expect(context.activityEntryId, 'activity-1');
+        expect(context.processingJobId, 'transcribe_test-session');
+        expect(job.status, DayProcessingJobStatus.succeeded);
+        expect(job.resultTranscript, 'hello realtime');
+        expect(job.audioId, 'audio_001');
+      },
+    );
+
     test('retains a saved partial source without committing it', () async {
       when(
         () => realtimeService.stop(
@@ -772,6 +835,7 @@ void main() {
       transcriber = MockAudioTranscriptionService();
       durableCapture = MockDurableRealtimeCapture();
       when(() => durableCapture.recordingSessionId).thenReturn('test-session');
+      when(() => durableCapture.activityEntryId).thenReturn('activity-1');
       when(() => durableCapture.acceptedPcmBytes).thenReturn(0);
       fakeRecorder = _FakeRealtimeRecorder();
       realtimeAmpController = StreamController<double>.broadcast();
@@ -1217,6 +1281,7 @@ void main() {
         when(
           () => durableCapture.recordingSessionId,
         ).thenReturn('test-session');
+        when(() => durableCapture.activityEntryId).thenReturn('activity-1');
         when(() => durableCapture.acceptedPcmBytes).thenReturn(0);
         fakeRecorder = _FakeRealtimeRecorder();
         realtimeAmpController = StreamController<double>.broadcast();

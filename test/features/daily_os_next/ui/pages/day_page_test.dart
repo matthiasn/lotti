@@ -8,15 +8,19 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
+import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -121,6 +125,7 @@ Widget _wrap(
   Widget child, {
   List<Override> overrides = const [],
   List<TimeBlock> actualBlocks = const [],
+  List<DayActivityEntry> activityEntries = const [],
   Size size = const Size(1400, 1200),
   MediaQueryData? mediaQueryData,
   ThemeData? theme,
@@ -132,9 +137,8 @@ Widget _wrap(
   return makeTestableWidgetNoScroll(
     child,
     overrides: [
-      // CapturesPanel watches this; stub to empty so the panel collapses
-      // to SizedBox.shrink instead of touching the DB.
       capturesForDateProvider.overrideWith((ref, date) async => const []),
+      dayActivityProvider.overrideWith((ref, date) async => activityEntries),
       dailyOsActualTimeBlocksProvider.overrideWith(
         (ref, date) async => actualBlocks,
       ),
@@ -236,7 +240,7 @@ void main() {
     });
 
     testWidgets(
-      'empty mode (no plan) lands on the Day view with the check-in CTA '
+      'empty mode (no plan) lands on Activity with the check-in CTA '
       'instead of Refine/Commit, and hides the delete-plan menu entry',
       (tester) async {
         _setSurface(tester);
@@ -263,10 +267,11 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Lands on the Day projection so recorded time is visible.
-        expect(find.byType(DayTimeline), findsOneWidget);
+        // Failed or pending recordings are the primary no-plan recovery path.
+        expect(find.byType(DayActivityView), findsOneWidget);
+        expect(find.byType(DayTimeline), findsNothing);
         expect(find.byType(AgendaView), findsNothing);
-        expect(find.text('Recorded session'), findsOneWidget);
+        expect(find.text('Recorded session'), findsNothing);
 
         // Footer carries the single check-in CTA, not Refine/Commit.
         final messages = tester.element(find.byType(DayPage)).messages;
@@ -344,6 +349,59 @@ void main() {
           '/settings/daily-os',
           '/settings/daily-os',
         ]);
+      },
+    );
+
+    testWidgets(
+      'using a retained recording targets the selected day workspace',
+      (tester) async {
+        _setSurface(tester);
+        final agent = RecordingDayAgent();
+        final sourceCapturedAt = DateTime(2026, 7, 18, 8, 15);
+        final selectedDay = DateTime(2026, 5, 26);
+        final job = DayProcessingJob(
+          id: 'job-retained',
+          kind: DayProcessingJobKind.transcribeAudio,
+          status: DayProcessingJobStatus.succeeded,
+          dayId: 'dayplan-2026-05-26',
+          activityEntryId: 'activity-retained',
+          recordingSessionId: 'session-retained',
+          audioId: 'audio-retained',
+          audioPath: '/tmp/audio-retained.wav',
+          createdAt: sourceCapturedAt,
+          updatedAt: sourceCapturedAt,
+          nextAttemptAt: sourceCapturedAt,
+          attempts: 1,
+          generation: 1,
+          resultTranscript: 'Use this check-in for the selected day.',
+          completedAt: sourceCapturedAt,
+        );
+        final entry = DayActivityEntry(
+          id: 'activity-retained',
+          kind: DayActivityEntryKind.recording,
+          createdAt: sourceCapturedAt,
+          activityEntryId: 'activity-retained',
+          processingJob: job,
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(
+              draft: DraftPlan.emptyForDay(selectedDay),
+              hasPlan: false,
+            ),
+            activityEntries: [entry],
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextActivityUseToPlan));
+        await tester.pump();
+
+        expect(agent.capturedAt, sourceCapturedAt);
+        expect(agent.capturedDayDate, selectedDay);
       },
     );
 
@@ -950,7 +1008,7 @@ void main() {
       expect(find.text('2026-05-26'), findsOneWidget);
     });
 
-    testWidgets('header keeps the plan toggle inline when it fits', (
+    testWidgets('header stacks the three-view toggle when it needs room', (
       tester,
     ) async {
       _setSurfaceSize(tester, const Size(640, 844));
@@ -968,13 +1026,10 @@ void main() {
       );
       await tester.pump();
 
-      final dateTop = tester.getTopLeft(find.text(label)).dy;
       final dateBottom = tester.getBottomLeft(find.text(label)).dy;
       final toggleTop = tester.getTopLeft(find.byType(PlanViewToggle)).dy;
-      final toggleBottom = tester.getBottomLeft(find.byType(PlanViewToggle)).dy;
 
-      expect(toggleTop, lessThan(dateBottom));
-      expect(toggleBottom, greaterThan(dateTop));
+      expect(toggleTop, greaterThan(dateBottom));
       expect(tester.takeException(), isNull);
     });
 

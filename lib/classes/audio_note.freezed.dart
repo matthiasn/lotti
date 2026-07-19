@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AudioNote {
 
- DateTime get createdAt; String get audioFile; String get audioDirectory; Duration get duration;
+ DateTime get createdAt; String get audioFile; String get audioDirectory; Duration get duration; DayAudioContext? get dayContext;
 /// Create a copy of AudioNote
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $AudioNoteCopyWith<AudioNote> get copyWith => _$AudioNoteCopyWithImpl<AudioNote>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioNote&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.audioFile, audioFile) || other.audioFile == audioFile)&&(identical(other.audioDirectory, audioDirectory) || other.audioDirectory == audioDirectory)&&(identical(other.duration, duration) || other.duration == duration));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioNote&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.audioFile, audioFile) || other.audioFile == audioFile)&&(identical(other.audioDirectory, audioDirectory) || other.audioDirectory == audioDirectory)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.dayContext, dayContext) || other.dayContext == dayContext));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,createdAt,audioFile,audioDirectory,duration);
+int get hashCode => Object.hash(runtimeType,createdAt,audioFile,audioDirectory,duration,dayContext);
 
 @override
 String toString() {
-  return 'AudioNote(createdAt: $createdAt, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration)';
+  return 'AudioNote(createdAt: $createdAt, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, dayContext: $dayContext)';
 }
 
 
@@ -48,11 +48,11 @@ abstract mixin class $AudioNoteCopyWith<$Res>  {
   factory $AudioNoteCopyWith(AudioNote value, $Res Function(AudioNote) _then) = _$AudioNoteCopyWithImpl;
 @useResult
 $Res call({
- DateTime createdAt, String audioFile, String audioDirectory, Duration duration
+ DateTime createdAt, String audioFile, String audioDirectory, Duration duration, DayAudioContext? dayContext
 });
 
 
-
+$DayAudioContextCopyWith<$Res>? get dayContext;
 
 }
 /// @nodoc
@@ -65,16 +65,29 @@ class _$AudioNoteCopyWithImpl<$Res>
 
 /// Create a copy of AudioNote
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? createdAt = null,Object? audioFile = null,Object? audioDirectory = null,Object? duration = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? createdAt = null,Object? audioFile = null,Object? audioDirectory = null,Object? duration = null,Object? dayContext = freezed,}) {
   return _then(_self.copyWith(
 createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,audioFile: null == audioFile ? _self.audioFile : audioFile // ignore: cast_nullable_to_non_nullable
 as String,audioDirectory: null == audioDirectory ? _self.audioDirectory : audioDirectory // ignore: cast_nullable_to_non_nullable
 as String,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
-as Duration,
+as Duration,dayContext: freezed == dayContext ? _self.dayContext : dayContext // ignore: cast_nullable_to_non_nullable
+as DayAudioContext?,
   ));
 }
+/// Create a copy of AudioNote
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DayAudioContextCopyWith<$Res>? get dayContext {
+    if (_self.dayContext == null) {
+    return null;
+  }
 
+  return $DayAudioContextCopyWith<$Res>(_self.dayContext!, (value) {
+    return _then(_self.copyWith(dayContext: value));
+  });
+}
 }
 
 
@@ -156,10 +169,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime createdAt,  String audioFile,  String audioDirectory,  Duration duration)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime createdAt,  String audioFile,  String audioDirectory,  Duration duration,  DayAudioContext? dayContext)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AudioNote() when $default != null:
-return $default(_that.createdAt,_that.audioFile,_that.audioDirectory,_that.duration);case _:
+return $default(_that.createdAt,_that.audioFile,_that.audioDirectory,_that.duration,_that.dayContext);case _:
   return orElse();
 
 }
@@ -177,10 +190,10 @@ return $default(_that.createdAt,_that.audioFile,_that.audioDirectory,_that.durat
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime createdAt,  String audioFile,  String audioDirectory,  Duration duration)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime createdAt,  String audioFile,  String audioDirectory,  Duration duration,  DayAudioContext? dayContext)  $default,) {final _that = this;
 switch (_that) {
 case _AudioNote():
-return $default(_that.createdAt,_that.audioFile,_that.audioDirectory,_that.duration);case _:
+return $default(_that.createdAt,_that.audioFile,_that.audioDirectory,_that.duration,_that.dayContext);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +210,10 @@ return $default(_that.createdAt,_that.audioFile,_that.audioDirectory,_that.durat
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime createdAt,  String audioFile,  String audioDirectory,  Duration duration)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime createdAt,  String audioFile,  String audioDirectory,  Duration duration,  DayAudioContext? dayContext)?  $default,) {final _that = this;
 switch (_that) {
 case _AudioNote() when $default != null:
-return $default(_that.createdAt,_that.audioFile,_that.audioDirectory,_that.duration);case _:
+return $default(_that.createdAt,_that.audioFile,_that.audioDirectory,_that.duration,_that.dayContext);case _:
   return null;
 
 }
@@ -212,13 +225,14 @@ return $default(_that.createdAt,_that.audioFile,_that.audioDirectory,_that.durat
 @JsonSerializable()
 
 class _AudioNote implements AudioNote {
-  const _AudioNote({required this.createdAt, required this.audioFile, required this.audioDirectory, required this.duration});
+  const _AudioNote({required this.createdAt, required this.audioFile, required this.audioDirectory, required this.duration, this.dayContext});
   factory _AudioNote.fromJson(Map<String, dynamic> json) => _$AudioNoteFromJson(json);
 
 @override final  DateTime createdAt;
 @override final  String audioFile;
 @override final  String audioDirectory;
 @override final  Duration duration;
+@override final  DayAudioContext? dayContext;
 
 /// Create a copy of AudioNote
 /// with the given fields replaced by the non-null parameter values.
@@ -233,16 +247,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioNote&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.audioFile, audioFile) || other.audioFile == audioFile)&&(identical(other.audioDirectory, audioDirectory) || other.audioDirectory == audioDirectory)&&(identical(other.duration, duration) || other.duration == duration));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioNote&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.audioFile, audioFile) || other.audioFile == audioFile)&&(identical(other.audioDirectory, audioDirectory) || other.audioDirectory == audioDirectory)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.dayContext, dayContext) || other.dayContext == dayContext));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,createdAt,audioFile,audioDirectory,duration);
+int get hashCode => Object.hash(runtimeType,createdAt,audioFile,audioDirectory,duration,dayContext);
 
 @override
 String toString() {
-  return 'AudioNote(createdAt: $createdAt, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration)';
+  return 'AudioNote(createdAt: $createdAt, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, dayContext: $dayContext)';
 }
 
 
@@ -253,11 +267,11 @@ abstract mixin class _$AudioNoteCopyWith<$Res> implements $AudioNoteCopyWith<$Re
   factory _$AudioNoteCopyWith(_AudioNote value, $Res Function(_AudioNote) _then) = __$AudioNoteCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime createdAt, String audioFile, String audioDirectory, Duration duration
+ DateTime createdAt, String audioFile, String audioDirectory, Duration duration, DayAudioContext? dayContext
 });
 
 
-
+@override $DayAudioContextCopyWith<$Res>? get dayContext;
 
 }
 /// @nodoc
@@ -270,17 +284,30 @@ class __$AudioNoteCopyWithImpl<$Res>
 
 /// Create a copy of AudioNote
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? createdAt = null,Object? audioFile = null,Object? audioDirectory = null,Object? duration = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? createdAt = null,Object? audioFile = null,Object? audioDirectory = null,Object? duration = null,Object? dayContext = freezed,}) {
   return _then(_AudioNote(
 createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,audioFile: null == audioFile ? _self.audioFile : audioFile // ignore: cast_nullable_to_non_nullable
 as String,audioDirectory: null == audioDirectory ? _self.audioDirectory : audioDirectory // ignore: cast_nullable_to_non_nullable
 as String,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
-as Duration,
+as Duration,dayContext: freezed == dayContext ? _self.dayContext : dayContext // ignore: cast_nullable_to_non_nullable
+as DayAudioContext?,
   ));
 }
 
+/// Create a copy of AudioNote
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DayAudioContextCopyWith<$Res>? get dayContext {
+    if (_self.dayContext == null) {
+    return null;
+  }
 
+  return $DayAudioContextCopyWith<$Res>(_self.dayContext!, (value) {
+    return _then(_self.copyWith(dayContext: value));
+  });
+}
 }
 
 // dart format on

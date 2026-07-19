@@ -28,10 +28,12 @@ void main() {
       final first = await agent.submitCapture(
         transcript: 'hello world',
         capturedAt: DateTime(2026, 5, 25, 9),
+        dayDate: DateTime(2026, 5, 25),
       );
       final second = await agent.submitCapture(
         transcript: 'another one',
         capturedAt: DateTime(2026, 5, 25, 9, 1),
+        dayDate: DateTime(2026, 5, 25),
       );
       expect(first, isNot(equals(second)));
       expect(first.value, contains('mock_capture_'));

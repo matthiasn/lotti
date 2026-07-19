@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -190,6 +191,10 @@ DayAgentWorkflow dayAgentWorkflow(Ref ref) {
     knowledgeService: ref.watch(dayAgentKnowledgeServiceProvider),
     weekContextService: ref.watch(dayAgentWeekContextServiceProvider),
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
+    dayAudioEntryContextService: DayAudioEntryContextService(
+      journalDb: ref.watch(journalDbProvider),
+      assetRoot: getIt(),
+    ),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
     logSummarizer: AgentLogLlmSummarizer(

@@ -38,6 +38,7 @@ class SpeechRepository {
         audioFile: audioNote.audioFile,
         dateTo: audioNote.createdAt.add(audioNote.duration),
         dateFrom: audioNote.createdAt,
+        dayContext: audioNote.dayContext,
       );
 
       final dateFrom = audioData.dateFrom;

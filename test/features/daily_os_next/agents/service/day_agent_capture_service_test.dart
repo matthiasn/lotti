@@ -264,12 +264,13 @@ void main() {
           agentId: _agentId,
           transcript: '  buy milk and prep demo  ',
           capturedAt: DateTime(2026, 5, 25, 8, 45),
+          dayId: 'dayplan-2026-05-25',
         );
 
         expect(capture.id, startsWith('capture_'));
         expect(capture.transcript, 'buy milk and prep demo');
-        // The capture is stamped with its day workspace (ADR 0022), derived
-        // from capturedAt.
+        // The caller supplies the selected day workspace independently of the
+        // source recording timestamp (ADR 0022).
         expect(capture.dayId, 'dayplan-2026-05-25');
         expect(upsertedEntities.single, isA<CaptureEntity>());
         expect(notifications, containsAll([_agentId, capture.id]));
@@ -295,10 +296,95 @@ void main() {
         createService().submitCapture(
           agentId: _agentId,
           transcript: '   ',
+          dayId: 'dayplan-2026-05-25',
         ),
         throwsA(isA<DayAgentCaptureException>()),
       );
       expect(upsertedEntities, isEmpty);
+    });
+
+    test(
+      'retryCapture re-enqueues a persisted capture after restart',
+      () async {
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-retry',
+                  agentId: _agentId,
+                  transcript: 'Retained gym check-in',
+                  capturedAt: DateTime(2026, 5, 25, 8, 45),
+                  createdAt: _now,
+                  vectorClock: null,
+                  dayId: 'dayplan-2026-05-25',
+                )
+                as CaptureEntity;
+        agentEntities[capture.id] = capture;
+
+        final retried = await createService().retryCapture(capture.id);
+
+        expect(retried, isTrue);
+        verify(
+          () => orchestrator.enqueueManualWake(
+            agentId: _agentId,
+            reason: 'capture_submitted',
+            workspaceKey: 'day:dayplan-2026-05-25',
+            triggerTokens: {dayAgentCaptureSubmittedToken(capture.id)},
+            supersede: false,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('retryCapture preserves an already parsed capture', () async {
+      final capture =
+          AgentDomainEntity.capture(
+                id: 'capture-reviewed',
+                agentId: _agentId,
+                transcript: 'Already reviewed',
+                capturedAt: DateTime(2026, 5, 25, 8, 45),
+                createdAt: _now,
+                vectorClock: null,
+                dayId: 'dayplan-2026-05-25',
+              )
+              as CaptureEntity;
+      final parsed =
+          AgentDomainEntity.parsedItem(
+                id: 'parsed-reviewed',
+                agentId: _agentId,
+                captureId: capture.id,
+                kind: ParsedItemKind.newTask,
+                title: 'Reviewed item',
+                categoryId: 'work',
+                confidence: ParsedItemConfidence.high,
+                confidenceScore: 0.9,
+                createdAt: _now,
+                vectorClock: null,
+              )
+              as ParsedItemEntity;
+      agentEntities
+        ..[capture.id] = capture
+        ..[parsed.id] = parsed;
+      linksByFromAndType['${capture.id}:${AgentLinkTypes.captureToParsedItem}'] =
+          [
+            AgentLink.captureToParsedItem(
+              id: 'link-reviewed',
+              fromId: capture.id,
+              toId: parsed.id,
+              createdAt: _now,
+              updatedAt: _now,
+              vectorClock: null,
+            ),
+          ];
+
+      expect(await createService().retryCapture(capture.id), isTrue);
+      verifyNever(
+        () => orchestrator.enqueueManualWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+          workspaceKey: any(named: 'workspaceKey'),
+          supersede: any(named: 'supersede'),
+        ),
+      );
     });
 
     test(

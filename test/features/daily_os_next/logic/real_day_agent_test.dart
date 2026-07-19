@@ -1007,6 +1007,7 @@ void main() {
             agentId: any(named: 'agentId'),
             transcript: any(named: 'transcript'),
             capturedAt: any(named: 'capturedAt'),
+            dayId: any(named: 'dayId'),
             audioRef: any(named: 'audioRef'),
           ),
         ).thenAnswer((_) async => buildCapture('cap-1', agentId));
@@ -1014,6 +1015,7 @@ void main() {
         final captureId = await bench.adapter.submitCapture(
           transcript: 'hello world',
           capturedAt: _asOf,
+          dayDate: DateTime(2026, 5, 28),
           audioId: 'audio-1',
         );
 
@@ -1024,6 +1026,7 @@ void main() {
             agentId: agentId,
             transcript: 'hello world',
             capturedAt: _asOf,
+            dayId: 'dayplan-2026-05-28',
             audioRef: 'audio-1',
           ),
         ).called(1);

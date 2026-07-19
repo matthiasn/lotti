@@ -57,6 +57,14 @@ class DurableRealtimeCapture {
 
   String get recordingSessionId => spool.manifest.context.recordingSessionId;
   String get activityEntryId => spool.manifest.context.activityEntryId;
+  DateTime get createdAt => spool.manifest.context.createdAt;
+  String? get dayId => spool.manifest.context.dayId;
+  DateTime? get planDate => spool.manifest.context.planDate;
+  AudioCaptureIntent? get intent => spool.manifest.context.intent;
+  String? get originHostId => spool.manifest.context.originHostId;
+  String? get continuationOperationId =>
+      spool.manifest.context.continuationOperationId;
+  String? get baselineRevisionId => spool.manifest.context.baselineRevisionId;
   Directory get sessionDirectory => spool.sessionDirectory;
   int get acceptedPcmBytes => spool.manifest.acceptedPcmBytes;
 

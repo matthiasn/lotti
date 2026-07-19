@@ -234,7 +234,10 @@ preferred-name prompt when inference is ready but personalization is missing.
   both enforce the planner identity's category allow-list: the planner
   cannot close, re-date, or create tasks outside its configured categories.
 - `submit_capture` persists a `CaptureEntity` and enqueues a manual wake with a
-  `capture_submitted:<captureId>` trigger token.
+  `capture_submitted:<captureId>` trigger token. The caller supplies the
+  selected planning day independently of the recording timestamp, so reusing a
+  retained check-in from a past or future Day Activity view cannot enqueue work
+  into the wrong workspace.
 - The selected local plan date lives in `dailyOsNextSelectedDateProvider`
   (`state/selected_date_provider.dart`); `DailyOsNextRoot` watches it and keeps
   the date strip visible on the Day surface, while the desktop sidebar's month
@@ -435,12 +438,57 @@ sequenceDiagram
     SavedPendingTranscription --> SavedPendingTranscription: transcription fails
   ```
 
-  The day-scoped `CaptureEntity` is still created only after the user submits a
-  non-empty reviewed transcript, and its manual parse wake still lives in the
-  in-memory `WakeQueue`. The next implementation slice is therefore the
-  device-local processing outbox, Activity timeline, manual retry, and
-  later-invocation discovery specified in
-  [`2026-07-18_resilient_day_planning_capture_and_timeline.md`](../../../docs/implementation_plans/2026-07-18_resilient_day_planning_capture_and_timeline.md).
+  After `JournalAudio` commits, a checksummed device-local processing job is
+  published before derived work proceeds. The app-wide
+  `DayProcessingRuntime` repairs journal/outbox gaps, reclaims expired leases,
+  resumes network waits on interface changes and periodic safety probes, and
+  writes a job-correlated `AudioTranscript` receipt
+  before acknowledging success. Valid interrupted Daily OS spools are promoted
+  at startup into a deterministic recovered WAV, `JournalAudio`, and outbox job;
+  Activity also exposes the same recovery explicitly. Recovery reuses a
+  previously persisted final WAV target, so a kill during or after WAV
+  publication cannot strand a valid spool.
+
+  ```mermaid
+  stateDiagram-v2
+    [*] --> Queued
+    Queued --> Running: fenced claim
+    Running --> WaitingForNetwork: offline / socket failure
+    WaitingForNetwork --> Queued: interface event / safety probe / manual retry
+    Running --> WaitingForUser: inference setup required
+    WaitingForUser --> Queued: manual retry after setup
+    Running --> Failed: deterministic provider response
+    Failed --> Queued: manual retry
+    Running --> Succeeded: receipt attached to JournalAudio
+    Running --> Queued: lease expires or retryable failure
+    Succeeded --> [*]
+  ```
+
+  The Day header now exposes Agenda, Day, and Activity. Activity is a local
+  chronological projection over day-scoped `JournalAudio`, spool recovery,
+  outbox state, typed and voice `CaptureEntity` check-ins, and the generated
+  plan. It remains available offline and keeps the prior list visible during
+  background refresh. A saved recording can be played, retried, recovered
+  after interruption, given user-reviewed text without inference, or routed
+  into the existing Reconcile/Refine flow. A submitted capture remains a
+  visible durable continuation handle: reopening it re-enqueues parsing after
+  a process restart.
+  Async recovery actions expose progress and local failures without hiding the
+  retained entry. Reviewed text satisfies pending transcription work, so it is
+  not overwritten or followed by unnecessary inference. Missing local audio is
+  reported to both Activity and the agent context, and setup-required rows link
+  directly to AI settings. The list opens on the newest activity while older
+  entries remain reachable by scrolling.
+
+  Later planner wakes load metadata for every persisted day recording plus
+  bounded reviewed/correlated text into `<day_entries>`, even before a
+  `CaptureEntity` exists. Pending recordings therefore remain discoverable
+  without fabricated transcript content. Submitted capture events and
+  `search_memory` are filtered to the wake's selected day, preventing the
+  long-lived planner from mixing daily workspaces. See
+  [`2026-07-18_resilient_day_planning_capture_and_timeline.md`](../../../docs/implementation_plans/2026-07-18_resilient_day_planning_capture_and_timeline.md)
+  for the architecture, data lifecycle, UI wireframe, retry policy, and
+  degraded-network test matrix.
 - Capture and Refine share one **anchored voice template**: a per-phase
   headline at the top (the state narrator — "What's on your mind …", "I'm
   listening.", "Writing that down…", "Does this look right?"), a flexible

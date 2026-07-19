@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
     as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_plan_availability.dart';
+import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
@@ -14,9 +15,10 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page_header.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_edit_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
@@ -45,8 +47,8 @@ enum _QuickRefinement { tooMuch, moveLighter, addBuffer }
 /// voice-driven plan changes.
 ///
 /// With no plan ([hasPlan] false — the route-level root passes a
-/// synthetic empty [draft]) the page lands on the **Day** view so
-/// recorded sessions are immediately visible on the timeline, and the
+/// synthetic empty [draft]) the page lands on **Activity** so every saved or
+/// recoverable recording remains immediately visible, and the
 /// footer carries a single "Speak a check-in" CTA instead of
 /// Refine/Commit (handoff v2 item 2).
 class DayPage extends ConsumerStatefulWidget {
@@ -78,7 +80,7 @@ class DayPage extends ConsumerStatefulWidget {
 }
 
 class _DayPageState extends ConsumerState<DayPage> {
-  late PlanView _view = widget.hasPlan ? PlanView.agenda : PlanView.day;
+  late PlanView _view = widget.hasPlan ? PlanView.agenda : PlanView.activity;
 
   /// Measurement anchor for the onboarding spotlight over the empty-Day CTA.
   final GlobalKey _checkInCtaKey = GlobalKey();
@@ -94,6 +96,39 @@ class _DayPageState extends ConsumerState<DayPage> {
     );
     if (!mounted) return;
     ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
+  }
+
+  Future<void> _useActivityEntry(DayActivityEntry entry) async {
+    final transcript = entry.transcript?.trim();
+    if (transcript == null || transcript.isEmpty) return;
+    if (widget.hasPlan) {
+      await _openRefine(initialTranscript: transcript);
+      return;
+    }
+    final captureId = entry.capture == null
+        ? await ref
+              .read(dayAgentProvider)
+              .submitCapture(
+                transcript: transcript,
+                capturedAt: entry.createdAt,
+                dayDate: widget.draft.dayDate,
+                audioId: entry.audio?.meta.id,
+              )
+        : CaptureId(entry.capture!.id);
+    if (entry.capture != null) {
+      await ref
+          .read(agent_providers.dayAgentCaptureServiceProvider)
+          .retryCapture(entry.capture!.id);
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => ReconcilePage(
+          captureId: captureId,
+          dayDate: widget.draft.dayDate,
+        ),
+      ),
+    );
   }
 
   void _openQuickRefinement(_QuickRefinement refinement) {
@@ -368,7 +403,6 @@ class _DayPageState extends ConsumerState<DayPage> {
                 onOpenSettings: () =>
                     nav_service.beamToNamed('/settings/daily-os'),
               ),
-            CapturesPanel(date: widget.draft.dayDate),
             // Proposed learnings surface here on both views and both
             // form factors; renders nothing when there is nothing to
             // confirm.
@@ -388,26 +422,32 @@ class _DayPageState extends ConsumerState<DayPage> {
                 rampExtent: 36,
                 fadeTop: false,
                 minFraction: 0.04,
-                child: _view == PlanView.agenda
-                    ? AgendaView(
-                        draft: widget.draft,
-                        actualBlocks: actualBlocks ?? const [],
-                        hasPlan: widget.hasPlan,
-                        onRenameItem: onRenameItem,
-                      )
-                    : DayTimeline(
-                        draft: widget.draft,
-                        actualBlocks: actualBlocks,
-                        onRenameBlock: onRenameBlock,
-                        onEditBlock: onEditBlock,
-                        onRescheduleBlock: onRescheduleBlock,
-                        showGestureHint: !prefs.timelineGesturesLearned,
-                        onGesturesLearned: ref
-                            .read(
-                              dailyOsPreferencesControllerProvider.notifier,
-                            )
-                            .markTimelineGesturesLearned,
-                      ),
+                child: switch (_view) {
+                  PlanView.agenda => AgendaView(
+                    draft: widget.draft,
+                    actualBlocks: actualBlocks ?? const [],
+                    hasPlan: widget.hasPlan,
+                    onRenameItem: onRenameItem,
+                  ),
+                  PlanView.day => DayTimeline(
+                    draft: widget.draft,
+                    actualBlocks: actualBlocks,
+                    onRenameBlock: onRenameBlock,
+                    onEditBlock: onEditBlock,
+                    onRescheduleBlock: onRescheduleBlock,
+                    showGestureHint: !prefs.timelineGesturesLearned,
+                    onGesturesLearned: ref
+                        .read(
+                          dailyOsPreferencesControllerProvider.notifier,
+                        )
+                        .markTimelineGesturesLearned,
+                  ),
+                  PlanView.activity => DayActivityView(
+                    date: widget.draft.dayDate,
+                    hasPlan: widget.hasPlan,
+                    onUseEntry: (entry) => unawaited(_useActivityEntry(entry)),
+                  ),
+                },
               ),
             ),
             if (widget.hasPlan)

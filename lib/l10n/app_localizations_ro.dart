@@ -3456,6 +3456,98 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsDayPlan => 'Planul zilei';
 
   @override
+  String get dailyOsNextActivityEmpty =>
+      'Nu există încă înregistrări sau check-in-uri.';
+
+  @override
+  String get dailyOsNextActivityLoadFailed =>
+      'Activitatea dvs. salvată se află în continuare pe acest dispozitiv, dar nu a putut fi încărcată acum.';
+
+  @override
+  String get dailyOsNextActivityMissingAudio =>
+      'Această intrare este păstrată, dar fișierul audio nu este disponibil pe acest dispozitiv. Restaurați fișierul, apoi încercați din nou.';
+
+  @override
+  String get dailyOsNextActivityRetryLoad => 'Încărcați din nou';
+
+  @override
+  String get dailyOsNextActivityAddOrEditText => 'Adăugați sau editați textul';
+
+  @override
+  String get dailyOsNextActivityActionFailed =>
+      'Acțiunea nu s-a finalizat. Înregistrarea dvs. este în continuare în siguranță — încercați din nou.';
+
+  @override
+  String get dailyOsNextActivityTextDialogTitle => 'Textul înregistrării';
+
+  @override
+  String get dailyOsNextActivityTextHint =>
+      'Scrieți ce ați dorit să păstrați prin această înregistrare.';
+
+  @override
+  String get dailyOsNextActivityTextSaveFailed =>
+      'Înregistrarea este în siguranță, dar textul nu a putut fi salvat. Încercați din nou.';
+
+  @override
+  String get dailyOsNextActivityNeedsAttention => 'Necesită atenție';
+
+  @override
+  String get dailyOsNextActivityOpenSetup =>
+      'Deschideți configurarea transcrierii';
+
+  @override
+  String get dailyOsNextActivityPlanAvailable =>
+      'Planul dvs. pentru zi este disponibil.';
+
+  @override
+  String get dailyOsNextActivityPlanCreated => 'Plan creat';
+
+  @override
+  String get dailyOsNextActivityReady => 'Gata de utilizare';
+
+  @override
+  String get dailyOsNextActivityRecover => 'Recuperați înregistrarea';
+
+  @override
+  String get dailyOsNextActivityRecoveryDescription =>
+      'Această înregistrare a fost întreruptă, dar fișierul audio este încă salvat local.';
+
+  @override
+  String get dailyOsNextActivityRecoveryNeeded => 'Este necesară recuperarea';
+
+  @override
+  String get dailyOsNextActivityRetry => 'Reîncercați transcrierea';
+
+  @override
+  String get dailyOsNextActivitySaved => 'Salvat local';
+
+  @override
+  String get dailyOsNextActivityDaySummary => 'Rezumatul zilei';
+
+  @override
+  String get dailyOsNextActivitySetupRequired =>
+      'Înregistrarea dvs. este în siguranță. Configurați un model de transcriere audio, apoi încercați din nou.';
+
+  @override
+  String get dailyOsNextActivitySubmitted => 'Adăugat la zi';
+
+  @override
+  String get dailyOsNextActivityTranscribing => 'Se transcrie';
+
+  @override
+  String get dailyOsNextActivityTranscriptPending =>
+      'Înregistrarea dvs. este salvată. Transcrierea este încă în așteptare.';
+
+  @override
+  String get dailyOsNextActivityUseToPlan => 'Folosiți pentru a crea planul';
+
+  @override
+  String get dailyOsNextActivityUseToRefine => 'Folosiți pentru ajustare';
+
+  @override
+  String get dailyOsNextActivityWaitingForNetwork => 'Se așteaptă conexiunea';
+
+  @override
   String get dailyOsNextAgendaCapacityComfortable => 'Confortabil';
 
   @override
@@ -3665,9 +3757,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureRecordingSavedStatus => 'Înregistrare salvată';
-
-  @override
-  String get dailyOsNextCapturesPanelTitle => 'Capturi';
 
   @override
   String get dailyOsNextCaptureTranscribing => 'Se transcrie…';
@@ -3952,6 +4041,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Desface legătura';
+
+  @override
+  String get dailyOsNextPlanViewActivity => 'Activitate';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
