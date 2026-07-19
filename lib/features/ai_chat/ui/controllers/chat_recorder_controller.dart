@@ -51,7 +51,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
            tempDirectoryProvider ?? (() async => getTemporaryDirectory()),
        _durableDirectoryProvider =
            durableDirectoryProvider ??
-           (() async => getApplicationSupportDirectory()),
+           // Widget tests inject a directory; the default delegates directly
+           // to the platform path-provider bridge.
+           (() async =>
+               getApplicationSupportDirectory()), // coverage:ignore-line
        _config = config ?? const ChatRecorderConfig(),
        _transcriptionServiceOverride = transcriptionService,
        _realtimeServiceOverride = realtimeTranscriptionService;
@@ -781,6 +784,20 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         subDomain: 'startRealtime',
       );
     } catch (e) {
+      // Failures before the PCM stream is owned by controller state still
+      // need to release the locally-created recorder.
+      if (!identical(_recorder, recorder)) {
+        try {
+          await recorder.dispose();
+        } catch (error, stackTrace) {
+          getIt<DomainLogger>().error(
+            LogDomain.chat,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'cleanupRealtime.setupRecorder',
+          );
+        }
+      }
       // Cancel realtime-specific subscriptions that may have been set up
       // before the failure (e.g. amplitude subscription started before
       // startRealtimeTranscription threw).

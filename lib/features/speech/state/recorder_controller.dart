@@ -42,10 +42,24 @@ final audioRecorderControllerProvider =
       name: 'audioRecorderControllerProvider',
     );
 
+typedef SpeechAudioEntryWriter =
+    Future<JournalAudio?> Function(
+      AudioNote audioNote, {
+      String? linkedId,
+      String? categoryId,
+    });
+
+/// Persistence boundary used after a durable realtime asset is finalized.
+final speechAudioEntryWriterProvider = Provider<SpeechAudioEntryWriter>(
+  (ref) => SpeechRepository.createAudioEntry,
+  name: 'speechAudioEntryWriterProvider',
+);
+
 class AudioRecorderController extends Notifier<AudioRecorderState> {
   late final AudioRecorderRepository _recorderRepository;
   StreamSubscription<Amplitude>? _amplitudeSub;
   late final DomainLogger _loggingService;
+  late final SpeechAudioEntryWriter _writeAudioEntry;
   String? _linkedId;
   String? _categoryId;
   AudioNote? _audioNote;
@@ -78,6 +92,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   AudioRecorderState build() {
     _recorderRepository = ref.watch(audioRecorderRepositoryProvider);
     _loggingService = getIt<DomainLogger>();
+    _writeAudioEntry = ref.watch(speechAudioEntryWriterProvider);
 
     // Don't initialize AudioPlayerCubit here - it depends on MediaKit which might fail
     // We'll get it lazily when needed
@@ -666,7 +681,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       );
 
       // Create the journal audio entry (only when we have an actual audio file)
-      final journalAudio = await SpeechRepository.createAudioEntry(
+      final journalAudio = await _writeAudioEntry(
         audioNote,
         linkedId: _linkedId,
         categoryId: _categoryId,

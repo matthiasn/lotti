@@ -264,6 +264,30 @@ void main() {
     expect(scheduledDelay, const Duration(minutes: 3));
   });
 
+  test('a restored network cannot bypass a provider retry boundary', () async {
+    final claim = await repository.claimNext();
+    await repository.markFailure(
+      jobId: claim!.job.id,
+      claimToken: claim.token,
+      failureClass: DayProcessingFailureClass.network,
+      error: 'HTTP 429 after reconnect',
+      retryAfter: const Duration(minutes: 2),
+    );
+    await repository.signalConnectivityRestored();
+    Duration? scheduledDelay;
+    final runtime = DayProcessingRuntime(
+      repository: repository,
+      now: () => now,
+      drain: () async => 0,
+      schedule: (delay, _) => scheduledDelay = delay,
+    );
+    addTearDown(runtime.dispose);
+
+    await runtime.nudge();
+
+    expect(scheduledDelay, const Duration(minutes: 2));
+  });
+
   test('a due-work callback nudges the runtime again', () async {
     void Function()? scheduledCallback;
     final secondDrain = Completer<void>();

@@ -147,6 +147,10 @@ class DayProcessingRuntime {
   };
 
   static void _defaultSchedule(Duration delay, void Function() callback) {
+    // Unit tests inject a deterministic scheduler; this is the platform timer
+    // adapter used only by the long-lived application runtime.
+    // coverage:ignore-start
     Timer(delay, callback);
+    // coverage:ignore-end
   }
 }

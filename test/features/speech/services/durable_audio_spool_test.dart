@@ -918,6 +918,38 @@ void main() {
   });
 
   test(
+    'reclaimed PCM in a recovery-required manifest is quarantined',
+    () async {
+      final spool = await DurableAudioSpool.start(
+        rootDirectory: root,
+        context: contextFor('session-reclaimed-recovery-required'),
+        chunkBytes: 4,
+      );
+      await spool.append(Uint8List.fromList(<int>[1, 2, 3, 4]));
+      await spool.finalize(
+        destinationFile: destinationFor('session-reclaimed-recovery-required'),
+      );
+      await spool.markCommitted(journalAudioId: 'journal-reclaimed-recovery');
+      await spool.reclaimCommittedPcm();
+      writeManifest(
+        spool.sessionDirectory,
+        manifestInState(spool, DurableAudioSpoolState.recoveryRequired),
+      );
+
+      final recovery = await DurableAudioSpool.recover(
+        sessionDirectory: spool.sessionDirectory,
+      );
+
+      expect(recovery.spool, isNull);
+      expect(recovery.manifest.state, DurableAudioSpoolState.quarantined);
+      expect(
+        recovery.manifest.recoveryReason,
+        DurableAudioRecoveryReason.invalidReclaimedWav,
+      );
+    },
+  );
+
+  test(
     'emits ordered durability boundaries before publication completes',
     () async {
       final boundaries = <AudioSpoolDurabilityBoundary>[];

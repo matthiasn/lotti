@@ -229,10 +229,12 @@ void main() {
       return _persistedAudio();
     }
 
-    ProviderContainer buildContainer() => _aliveContainer(
+    ProviderContainer buildContainer({
+      Future<JournalAudio?> Function(AudioNote)? persistAudioOverride,
+    }) => _aliveContainer(
       transcriber: transcriber,
       realtimeService: realtimeService,
-      persistAudio: persistAudio,
+      persistAudio: persistAudioOverride ?? persistAudio,
       realtimeRecorderFactory: () => fakeRecorder,
     );
 
@@ -563,13 +565,20 @@ void main() {
 
     test('reset drains a PCM stream opened by an obsolete start', () async {
       final stream = Completer<Stream<Uint8List>>();
-      fakeRecorder.startStreamFuture = stream.future;
+      final streamRequested = Completer<void>();
+      fakeRecorder
+        ..startStreamFuture = stream.future
+        ..onCall = (event) {
+          if (event == 'stream' && !streamRequested.isCompleted) {
+            streamRequested.complete();
+          }
+        };
       final container = buildContainer();
       addTearDown(container.dispose);
       final notifier = container.read(captureControllerProvider.notifier);
 
       final start = notifier.toggle();
-      await pumpEventQueue();
+      await streamRequested.future;
       notifier.reset();
       stream.complete(pcmController.stream);
       await start;
@@ -628,6 +637,7 @@ void main() {
 
     test('reset contains a late realtime startup failure', () async {
       final realtimeStart = Completer<void>();
+      final realtimeStarted = Completer<void>();
       when(
         () => realtimeService.startRealtimeTranscription(
           capture: any(named: 'capture'),
@@ -637,13 +647,16 @@ void main() {
           config: any(named: 'config'),
           resolveConfigWhenAbsent: false,
         ),
-      ).thenAnswer((_) => realtimeStart.future);
+      ).thenAnswer((_) {
+        realtimeStarted.complete();
+        return realtimeStart.future;
+      });
       final container = buildContainer();
       addTearDown(container.dispose);
       final notifier = container.read(captureControllerProvider.notifier);
 
       final start = notifier.toggle();
-      await pumpEventQueue();
+      await realtimeStarted.future;
       notifier.reset();
       realtimeStart.completeError(StateError('late backend failure'));
       await start;
@@ -830,6 +843,41 @@ void main() {
       );
       expect(persistedNotes, isEmpty);
     });
+
+    test(
+      'retains durable audio when journal persistence returns null',
+      () async {
+        final container = buildContainer(
+          persistAudioOverride: (_) async => null,
+        );
+        addTearDown(container.dispose);
+        final notifier = container.read(captureControllerProvider.notifier);
+
+        await notifier.toggle();
+        await notifier.toggle();
+
+        expect(
+          container.read(captureControllerProvider),
+          isA<CaptureState>()
+              .having((state) => state.phase, 'phase', CapturePhase.error)
+              .having(
+                (state) => state.error,
+                'error',
+                CaptureError.recordingRetainedForRecovery,
+              )
+              .having(
+                (state) => state.transcript,
+                'transcript',
+                'hello realtime',
+              ),
+        );
+        verifyNever(
+          () => durableCapture.markCommitted(
+            journalAudioId: any(named: 'journalAudioId'),
+          ),
+        );
+      },
+    );
 
     test(
       'finishing without an active realtime session reports '

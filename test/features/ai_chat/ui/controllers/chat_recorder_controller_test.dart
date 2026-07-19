@@ -2003,6 +2003,49 @@ void main() {
   );
 
   group('startRealtime error handling', () {
+    test('disposes the recorder when durable capture setup fails', () async {
+      final recorder = MockAudioRecorder();
+      when(recorder.stop).thenAnswer((_) async => null);
+      when(recorder.dispose).thenAnswer((_) async {});
+      final realtime = MockRealtimeTranscriptionService();
+      when(
+        () => realtime.prepareDefaultDurableCapture(
+          assetRootDirectory: any(named: 'assetRootDirectory'),
+          createdAt: any(named: 'createdAt'),
+          origin: any(named: 'origin'),
+          intent: any(named: 'intent'),
+        ),
+      ).thenThrow(StateError('durable storage unavailable'));
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => recorder,
+              realtimeTranscriptionService: realtime,
+              durableDirectoryProvider: _testDurableDirectory,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        chatRecorderControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+
+      await container
+          .read(chatRecorderControllerProvider.notifier)
+          .startRealtime();
+
+      expect(
+        container.read(chatRecorderControllerProvider).errorType,
+        ChatRecorderErrorType.startFailed,
+      );
+      verify(recorder.dispose).called(1);
+      verifyNever(() => recorder.stop());
+    });
+
     test('sets error state when startRealtimeTranscription throws', () async {
       final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);

@@ -2215,6 +2215,47 @@ void main() {
         );
       });
 
+      test(
+        'retains durable audio when journal persistence returns null',
+        () async {
+          container.dispose();
+          container = ProviderContainer(
+            overrides: [
+              audioRecorderRepositoryProvider.overrideWithValue(
+                mockAudioRecorderRepository,
+              ),
+              playerFactoryProvider.overrideWithValue(() => mockPlayer),
+              realtimeTranscriptionServiceProvider.overrideWithValue(
+                mockRealtimeService,
+              ),
+              realtimeRecorderFactoryProvider.overrideWithValue(
+                () => mockRecorder,
+              ),
+              speechAudioEntryWriterProvider.overrideWithValue(
+                (audioNote, {linkedId, categoryId}) async => null,
+              ),
+            ],
+          );
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+
+          await controller.recordRealtime();
+
+          expect(await controller.stopRealtime(), isNull);
+          final state = container.read(audioRecorderControllerProvider);
+          expect(
+            state.lastSaveOutcome,
+            AudioRecorderSaveOutcome.savedPendingRecovery,
+          );
+          verifyNever(
+            () => durableCapture.markCommitted(
+              journalAudioId: any(named: 'journalAudioId'),
+            ),
+          );
+        },
+      );
+
       for (final testCase
           in <
             ({

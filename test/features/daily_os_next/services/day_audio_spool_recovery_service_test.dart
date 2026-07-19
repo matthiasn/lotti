@@ -343,6 +343,90 @@ void main() {
     },
   );
 
+  test('searches later journal pages for an existing recording', () async {
+    final spool = await createSpool('session-page-two');
+    final destination = File('${root.path}/audio/page-two.wav');
+    final finalized = await spool.finalize(destinationFile: destination);
+    final source = (await DurableAudioSpool.recover(
+      sessionDirectory: spool.sessionDirectory,
+    )).manifest.context;
+    final matching = audioForNote(
+      AudioNote(
+        createdAt: source.createdAt,
+        audioFile: 'page-two.wav',
+        audioDirectory: '/audio/',
+        duration: finalized.duration,
+        dayContext: DayAudioContext(
+          dayId: source.dayId!,
+          planDate: source.planDate!,
+          recordingSessionId: source.recordingSessionId,
+          activityEntryId: source.activityEntryId,
+          processingJobId: 'transcribe_session-page-two',
+          capturedAt: source.createdAt,
+          intent: 'dayPlan',
+          originHostId: source.originHostId,
+        ),
+      ),
+      id: 'audio-page-two',
+    );
+    final unrelated = audioForNote(
+      AudioNote(
+        createdAt: capturedAt,
+        audioFile: 'unrelated.wav',
+        audioDirectory: '/audio/',
+        duration: const Duration(seconds: 1),
+        dayContext: DayAudioContext(
+          dayId: 'dayplan-2026-07-18',
+          planDate: DateTime(2026, 7, 18),
+          recordingSessionId: 'another-session',
+          activityEntryId: 'another-activity',
+          processingJobId: 'transcribe_another-session',
+          capturedAt: capturedAt,
+          intent: 'dayPlan',
+          originHostId: 'test-host',
+        ),
+      ),
+      id: 'unrelated-audio',
+    );
+    when(
+      () => journalDb.getJournalEntities(
+        types: const ['JournalAudio'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: const [1, 0],
+        ids: null,
+        limit: 64,
+        // ignore: avoid_redundant_argument_values
+        offset: 0,
+      ),
+    ).thenAnswer((_) async => List<JournalEntity>.filled(64, unrelated));
+    when(
+      () => journalDb.getJournalEntities(
+        types: const ['JournalAudio'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: const [1, 0],
+        ids: null,
+        limit: 64,
+        offset: 64,
+      ),
+    ).thenAnswer((_) async => [matching]);
+    final service = DayAudioSpoolRecoveryService(
+      journalDb: journalDb,
+      outbox: outbox,
+      assetRoot: root,
+      persistAudio: (_) async => throw StateError('must reuse journal audio'),
+    );
+
+    final recovered = await service.recoverSession('session-page-two');
+
+    expect(recovered, same(matching));
+    expect(
+      (await outbox.getById('transcribe_session-page-two'))?.audioId,
+      'audio-page-two',
+    );
+  });
+
   test(
     'recoverAll heals valid sessions while isolating damaged ones',
     () async {

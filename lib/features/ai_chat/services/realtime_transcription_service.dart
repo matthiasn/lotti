@@ -404,7 +404,10 @@ class RealtimeTranscriptionService {
     required String outputPath,
   }) async {
     if (!_isActive || _activeCapture == null) {
-      throw StateError('No durable realtime capture is active');
+      // stop() validates the capture synchronously before entering this method.
+      throw StateError(
+        'No durable realtime capture is active',
+      ); // coverage:ignore-line
     }
     if (_activeBackend == _RealtimeBackendKind.mlxAudio) {
       return _stopMlxRealtimeTranscription(
@@ -463,7 +466,9 @@ class RealtimeTranscriptionService {
         if (terminalError != null) {
           Error.throwWithStackTrace(
             terminalError,
-            doneErrorStackTrace ?? StackTrace.current,
+            // Dart stream errors carry a stack; retain a fallback for custom
+            // stream implementations that violate that convention.
+            doneErrorStackTrace ?? StackTrace.current, // coverage:ignore-line
           );
         }
         transcript = moreCompleteTranscript(
@@ -903,7 +908,7 @@ class RealtimeTranscriptionService {
         _mlxEventSubscription = null;
         _mlxDoneCompleter = null;
         await _mlxAudioChannel.cancelRealtimeTranscription();
-      case null:
+      case null: // coverage:ignore-line
         break;
     }
   }
@@ -975,7 +980,9 @@ class RealtimeTranscriptionService {
   ) async {
     final capture = _activeCapture;
     if (capture == null) {
-      throw StateError('No durable realtime capture is active');
+      throw StateError(
+        'No durable realtime capture is active',
+      ); // coverage:ignore-line
     }
     final destination = File(
       outputPath.toLowerCase().endsWith('.wav')
@@ -1001,7 +1008,9 @@ class RealtimeTranscriptionService {
   }) async {
     final recordingSessionId = _activeCapture?.recordingSessionId;
     if (recordingSessionId == null) {
-      throw StateError('No durable realtime capture is active');
+      throw StateError(
+        'No durable realtime capture is active',
+      ); // coverage:ignore-line
     }
     try {
       final finalized = await _finalizeDurableCapture(outputPath);
