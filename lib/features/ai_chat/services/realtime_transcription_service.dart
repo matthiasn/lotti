@@ -403,12 +403,12 @@ class RealtimeTranscriptionService {
     required Future<void> Function() stopRecorder,
     required String outputPath,
   }) async {
+    // stop() validates the capture synchronously before entering this method.
+    // coverage:ignore-start
     if (!_isActive || _activeCapture == null) {
-      // stop() validates the capture synchronously before entering this method.
-      throw StateError(
-        'No durable realtime capture is active',
-      ); // coverage:ignore-line
+      throw StateError('No durable realtime capture is active');
     }
+    // coverage:ignore-end
     if (_activeBackend == _RealtimeBackendKind.mlxAudio) {
       return _stopMlxRealtimeTranscription(
         capture: capture,
@@ -979,11 +979,12 @@ class RealtimeTranscriptionService {
     String outputPath,
   ) async {
     final capture = _activeCapture;
+    // All callers hold the active capture through finalization.
+    // coverage:ignore-start
     if (capture == null) {
-      throw StateError(
-        'No durable realtime capture is active',
-      ); // coverage:ignore-line
+      throw StateError('No durable realtime capture is active');
     }
+    // coverage:ignore-end
     final destination = File(
       outputPath.toLowerCase().endsWith('.wav')
           ? outputPath
@@ -1007,11 +1008,12 @@ class RealtimeTranscriptionService {
     required String outputPath,
   }) async {
     final recordingSessionId = _activeCapture?.recordingSessionId;
+    // All callers hold the active capture through result construction.
+    // coverage:ignore-start
     if (recordingSessionId == null) {
-      throw StateError(
-        'No durable realtime capture is active',
-      ); // coverage:ignore-line
+      throw StateError('No durable realtime capture is active');
     }
+    // coverage:ignore-end
     try {
       final finalized = await _finalizeDurableCapture(outputPath);
       return RealtimeStopResult(

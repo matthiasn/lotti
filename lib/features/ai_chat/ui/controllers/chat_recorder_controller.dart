@@ -53,8 +53,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
            durableDirectoryProvider ??
            // Widget tests inject a directory; the default delegates directly
            // to the platform path-provider bridge.
-           (() async =>
-               getApplicationSupportDirectory()), // coverage:ignore-line
+           // coverage:ignore-start
+           (() async => getApplicationSupportDirectory()),
+       // coverage:ignore-end
        _config = config ?? const ChatRecorderConfig(),
        _transcriptionServiceOverride = transcriptionService,
        _realtimeServiceOverride = realtimeTranscriptionService;

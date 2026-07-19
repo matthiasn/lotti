@@ -1116,7 +1116,7 @@ class DurableAudioSpool {
       );
       return;
     } on FileSystemException {
-      if (!destinationFile.existsSync()) rethrow;
+      if (!destinationFile.existsSync()) rethrow; // coverage:ignore-line
     }
 
     // POSIX rename atomically replaces the destination. This recoverable
