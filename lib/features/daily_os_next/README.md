@@ -265,7 +265,8 @@ preferred-name prompt when inference is ready but personalization is missing.
 - The root surface is identical on every no-plan day (design handoff v2,
   item 2): `DailyOsNextRoot` mounts `DayPage` in **empty mode**
   (`hasPlan: false` with a synthetic `DraftPlan.emptyForDay`) so any recorded
-  sessions stay visible on the timeline without creating a plan first. Empty
+  sessions stay visible in Activity's `TimeSpentCard` without creating a plan
+  first. Empty
   mode renders an honest "No plan yet" stat strip (neutral `CapacityDonut` over
   tracked minutes, tracked legend), swaps the Refine/Commit footer for a single
   "Speak a check-in" CTA that opens the day-planning modal, and hides the
@@ -467,7 +468,9 @@ sequenceDiagram
   The Day header now exposes Agenda, Day, and Activity. Activity is a local
   chronological projection over day-scoped `JournalAudio`, spool recovery,
   outbox state, typed and voice `CaptureEntity` check-ins, and the generated
-  plan. It remains available offline and keeps the prior list visible during
+  plan. The same surface keeps the day's already-tracked sessions visible in a
+  `TimeSpentCard`, including before the first plan exists. It remains available
+  offline and keeps the prior list visible during
   background refresh. A saved recording can be played, retried, recovered
   after interruption, given user-reviewed text without inference, or routed
   into the existing Reconcile/Refine flow. A submitted capture remains a

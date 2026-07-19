@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -18,12 +20,14 @@ class DayActivityView extends ConsumerWidget {
     required this.date,
     required this.hasPlan,
     required this.onUseEntry,
+    required this.actualBlocks,
     super.key,
   });
 
   final DateTime date;
   final bool hasPlan;
   final ValueChanged<DayActivityEntry> onUseEntry;
+  final List<TimeBlock> actualBlocks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,16 +35,19 @@ class DayActivityView extends ConsumerWidget {
     return activity.when(
       skipLoadingOnReload: true,
       skipError: true,
-      data: (entries) => entries.isEmpty
+      data: (entries) => entries.isEmpty && actualBlocks.isEmpty
           ? const _ActivityEmptyState()
           : ListView.separated(
               reverse: true,
               padding: EdgeInsets.all(context.designTokens.spacing.step5),
-              itemCount: entries.length,
+              itemCount: entries.length + (actualBlocks.isEmpty ? 0 : 1),
               separatorBuilder: (_, _) => SizedBox(
                 height: context.designTokens.spacing.step4,
               ),
               itemBuilder: (context, index) {
+                if (index == entries.length) {
+                  return TimeSpentCard(blocks: actualBlocks, compact: true);
+                }
                 final entry = entries[entries.length - 1 - index];
                 return _ActivityCard(
                   entry: entry,

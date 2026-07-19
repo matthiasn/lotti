@@ -445,6 +445,7 @@ class _DayPageState extends ConsumerState<DayPage> {
                   PlanView.activity => DayActivityView(
                     date: widget.draft.dayDate,
                     hasPlan: widget.hasPlan,
+                    actualBlocks: actualBlocks ?? const [],
                     onUseEntry: (entry) => unawaited(_useActivityEntry(entry)),
                   ),
                 },

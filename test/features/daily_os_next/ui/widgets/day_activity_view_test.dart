@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
@@ -105,6 +106,7 @@ void main() {
         DayActivityView(
           date: date,
           hasPlan: false,
+          actualBlocks: const [],
           onUseEntry: (entry) => used = entry,
         ),
         overrides: [
@@ -166,6 +168,7 @@ void main() {
         DayActivityView(
           date: date,
           hasPlan: false,
+          actualBlocks: const [],
           onUseEntry: (_) {},
         ),
         overrides: [
@@ -180,6 +183,43 @@ void main() {
     final messages = tester.element(find.byType(DayActivityView)).messages;
     expect(find.text(messages.dailyOsNextActivityLoadFailed), findsOneWidget);
     expect(find.text(messages.dailyOsNextActivityRetryLoad), findsOneWidget);
+    expect(find.text(messages.dailyOsNextActivityEmpty), findsNothing);
+  });
+
+  testWidgets('keeps tracked time visible when the day has no agent entries', (
+    tester,
+  ) async {
+    final block = TimeBlock(
+      id: 'actual:client',
+      title: 'Client follow-up',
+      start: DateTime(2026, 7, 18, 8),
+      end: DateTime(2026, 7, 18, 9),
+      type: TimeBlockType.manual,
+      state: TimeBlockState.completed,
+      category: const DayAgentCategory(
+        id: 'work',
+        name: 'Work',
+        colorHex: '5ED4B7',
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayActivityView(
+          date: date,
+          hasPlan: false,
+          actualBlocks: [block],
+          onUseEntry: (_) {},
+        ),
+        overrides: [
+          dayActivityProvider.overrideWith((ref, date) async => const []),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final messages = tester.element(find.byType(DayActivityView)).messages;
+    expect(find.text('Client follow-up'), findsOneWidget);
     expect(find.text(messages.dailyOsNextActivityEmpty), findsNothing);
   });
 }
