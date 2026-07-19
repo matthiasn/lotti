@@ -29,14 +29,7 @@ void main() {
     );
     journalDb = mocks.journalDb;
     when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 64,
-      ),
+      () => journalDb.getDayAudioEntries('dayplan-2026-07-18'),
     ).thenAnswer((_) async => const []);
   });
 
@@ -76,6 +69,9 @@ void main() {
           dailyOsPlannerAgentId,
           type: AgentEntityTypes.daySummary,
         ),
+      ).called(1);
+      verify(
+        () => journalDb.getDayAudioEntries('dayplan-2026-07-18'),
       ).called(1);
     },
   );
