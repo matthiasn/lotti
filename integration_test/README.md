@@ -26,9 +26,9 @@ client is closed; Bob then reopens with a fresh client/pipeline but the same per
 (150 in slow network mode, 30-minute test timeout with a 15-minute internal
 convergence-wait budget). Once Bob's startup bridge is in flight, Alice resumes the burst. This
 deterministically overlaps bridge pagination with new sends. After the startup bridge reaches the
-server's then-current end, the test runs one explicit tail bridge to collect messages sent later.
-The `event_id UNIQUE` constraint on `inbound_event_queue` deduplicates events seen by both bridge
-passes near their pagination boundaries.
+server's then-current end, the test runs the production full-history sweep to collect messages sent
+later without relying on a second forward walk. The `event_id UNIQUE` constraint on
+`inbound_event_queue` deduplicates events visited by both passes near the bridge boundary.
 
 **Problems this catches:**
 - Regressions in Matrix SDK integration

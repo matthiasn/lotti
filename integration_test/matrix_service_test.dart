@@ -21,6 +21,7 @@ import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
+import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
@@ -733,7 +734,7 @@ void main() {
 
     test(
       'Mid-burst rejoin: Bob comes online while Alice is halfway through '
-      'a 600-message burst — startup bridge overlaps sends, tail bridge '
+      'a 600-message burst — startup bridge overlaps sends, history sweep '
       'converges without duplicates or drops',
       () async {
         // Unlike the 1000-message cold-start test above — where Alice
@@ -743,10 +744,10 @@ void main() {
         //  - The startup bridge's `/messages` pagination backfills every
         //    message Alice sent while Bob was offline and overlaps the
         //    resumed burst.
-        //  - A deterministic tail bridge collects anything sent after the
-        //    startup bridge reached the server's then-current end.
-        //  - Events near both bridge boundaries may be delivered more than
-        //    once; `event_id UNIQUE` in
+        //  - A deterministic full-history sweep collects anything sent after
+        //    the startup bridge reached the server's then-current end.
+        //  - Events near the bridge boundary are visited more than once;
+        //    `event_id UNIQUE` in
         //    `inbound_event_queue` is the only primitive that keeps
         //    each event from applying twice.
         const convergenceTimeout = Duration(minutes: 15);
@@ -872,9 +873,10 @@ void main() {
         // The startup bridge walks a moving tail and can legitimately reach
         // the server's current end before Alice finishes a degraded-network
         // burst. Wait for that pass to settle, verify it covered the offline
-        // prefix, then run one explicit tail pass. This keeps the overlap and
-        // dedupe assertions deterministic without relying on Matrix SDK live
-        // delivery timing.
+        // prefix, then run the production full-history sweep. A second
+        // forward bridge can jump directly to the newest event and strand
+        // the middle of the gap; the backward sweep deterministically walks
+        // every visible page while the queue deduplicates the overlap.
         final coordinator = bob.queueCoordinator;
         await waitUntilAsync(
           () async => !coordinator.isBridgeInFlight,
@@ -889,12 +891,19 @@ void main() {
         debugPrint(
           'Startup bridge applied '
           '${countBeforeTailBridge - bobCountBefore}/$n new entries; '
-          'running tail bridge',
+          'running full-history sweep',
         );
-        await coordinator.triggerBridge();
+        final historyResult = await coordinator.collectHistory(
+          overallTimeout: convergenceTimeout,
+        );
+        expect(
+          historyResult.stopReason,
+          BootstrapStopReason.serverExhausted,
+        );
+        expect(historyResult.totalEvents, greaterThanOrEqualTo(n));
 
-        // Phase 6: wait for Bob to converge to the full target after both
-        // bridge passes.
+        // Phase 6: wait for Bob to converge after the overlapping startup
+        // bridge and the full-history sweep.
         debugPrint('\n--- Phase 6: waiting for Bob to converge to $n new');
         final expectedTotal = bobCountBefore + n;
         var lastBobCount = -1;
