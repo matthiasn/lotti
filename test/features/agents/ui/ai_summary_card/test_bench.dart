@@ -68,7 +68,7 @@ class AgentTestBench {
   AgentTestBench({
     this._report,
     this._suggestions = const UnifiedSuggestionList.empty(),
-    this._isRunning = false,
+    this.isRunning = false,
     this._state,
     this._enableAgents = true,
     this._enableSummaryTts = false,
@@ -101,7 +101,7 @@ class AgentTestBench {
 
   final AgentReportEntity? _report;
   final UnifiedSuggestionList _suggestions;
-  final bool _isRunning;
+  final bool isRunning;
   final AgentStateEntity? _state;
   final bool _enableAgents;
   final bool _enableSummaryTts;
@@ -192,7 +192,7 @@ class AgentTestBench {
           (ref, agentId) async => _template,
         ),
         agentIsRunningProvider.overrideWith(
-          _isRunningOverride ?? (ref, agentId) => Stream.value(_isRunning),
+          _isRunningOverride ?? (ref, agentId) => Stream.value(isRunning),
         ),
         agentStateProvider.overrideWith(
           (ref, agentId) async => _state,

@@ -6,8 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -25,6 +28,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
@@ -441,18 +445,37 @@ void main() {
   });
 
   group('TaskDetailsPage Suggestions Anchor - ', () {
-    setUpAll(registerTaskDetailsFallbacks);
+    setUpAll(() {
+      registerTaskDetailsFallbacks();
+      registerAllFallbackValues();
+    });
     setUp(registerTaskDetailsServices);
     tearDown(getIt.reset);
 
     testWidgets(
-      'confirming a proposal (open count drops) engages the scroll anchor and '
-      'updates the list without crashing',
+      'Accept all keeps the proposals position stable at a nonzero scroll '
+      'offset while its rows collapse',
       (tester) async {
-        final container = ProviderContainer(
+        tester.view.physicalSize = const Size(800, 500);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final confirmationService = MockChangeSetConfirmationService();
+        late final ProviderContainer container;
+        when(() => confirmationService.confirmAll(any())).thenAnswer((_) async {
+          container
+              .read(controllableOpenSuggestionCountProvider.notifier)
+              .set(0);
+          return const [ToolExecutionResult(success: true, output: 'ok')];
+        });
+
+        container = ProviderContainer(
           overrides: [
             ...hTaskDetailsPageOverrides(),
             ...hControllableSuggestionOverrides(),
+            changeSetConfirmationServiceProvider.overrideWith(
+              (ref) => confirmationService,
+            ),
           ],
         );
 
@@ -470,28 +493,42 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The proposals section is up with the (first) open proposal showing.
-        expect(
-          find.textContaining('Set estimate to 30 minutes'),
-          findsOneWidget,
-        );
+        final proposals = find.byType(ProposalsSection);
+        final confirmAll = find.text('Confirm all');
+        expect(proposals, findsOneWidget);
+        expect(confirmAll, findsOneWidget);
 
-        // Simulate confirming one proposal: the open list shrinks 2 -> 1,
-        // which fires the page's suggestion listener and engages the scroll
-        // anchor (capturing the proposals' position to hold it across the
-        // relayout a confirm can trigger above the card).
-        container.read(controllableOpenSuggestionCountProvider.notifier).set(1);
+        await tester.ensureVisible(confirmAll);
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.pump(const Duration(milliseconds: 100));
+        final position = tester
+            .state<ScrollableState>(
+              find
+                  .descendant(
+                    of: find.byType(CustomScrollView),
+                    matching: find.byType(Scrollable),
+                  )
+                  .first,
+            )
+            .position;
+        expect(position.pixels, greaterThan(0));
+        final proposalsTop = tester.getTopLeft(proposals).dy;
 
-        // The page absorbed the shrink cleanly (the anchor ran, no exception)
-        // and the surviving proposal is still shown.
-        expect(tester.takeException(), isNull);
+        await tester.tap(confirmAll);
+        for (var frame = 0; frame < 6; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(
+            tester.getTopLeft(proposals).dy,
+            closeTo(proposalsTop, 1),
+            reason: 'proposals moved during Accept-all frame $frame',
+          );
+        }
+
+        verify(() => confirmationService.confirmAll(any())).called(1);
         expect(
-          find.textContaining('Set estimate to 30 minutes'),
-          findsOneWidget,
+          container.read(controllableOpenSuggestionCountProvider),
+          isZero,
         );
+        expect(tester.takeException(), isNull);
 
         // Dispose the container (cancels the entry-controller cache timer)
         // before the framework's pending-timer check.

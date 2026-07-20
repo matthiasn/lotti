@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
+import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
@@ -123,6 +125,8 @@ void main() {
         );
 
         expect(find.text('Next update in 1:30'), findsOneWidget);
+        expect(find.byType(DsPill), findsOneWidget);
+        expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
         // One wake affordance per state: the scheduled update replaces the
         // manual wake button.
         expect(find.byKey(const ValueKey('taskAgentWakeButton')), findsNothing);
@@ -132,15 +136,23 @@ void main() {
         final context = tester.element(
           find.byType(TaskAgentControlsFooter),
         );
+        final tokens = context.designTokens;
+        final countdownPill = find.byType(DsPill);
+        final cancelIcon = find.byIcon(Icons.close_rounded);
         expect(
           tester.getSize(
             find.byKey(
               const ValueKey('taskAgentCancelCountdownTarget'),
             ),
           ),
-          Size.square(context.designTokens.spacing.step9),
+          Size.square(tokens.spacing.step9),
         );
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        expect(
+          tester.getTopLeft(cancelIcon).dx -
+              tester.getTopRight(countdownPill).dx,
+          tokens.spacing.step1,
+        );
+        await tester.tap(cancelIcon);
       });
 
       expect(cancellations, 1);
@@ -215,6 +227,38 @@ void main() {
 
     expect(find.text('Thinking…'), findsOneWidget);
     expect(find.text('Wake agent'), findsNothing);
+
+    final context = tester.element(find.byType(TaskAgentControlsFooter));
+    final spinner = find.byKey(const ValueKey('taskAgentThinkingSpinner'));
+    final label = find.byKey(const ValueKey('taskAgentThinkingLabel'));
+    expect(
+      tester.getTopLeft(label).dx - tester.getTopRight(spinner).dx,
+      context.designTokens.spacing.step3,
+    );
+  });
+
+  testWidgets('narrow localized thinking status truncates without overflow', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 180,
+            child: subject(isRunning: true, onRunNow: () {}),
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(180, 800)),
+        locale: const Locale('de'),
+      ),
+    );
+
+    final label = tester.widget<Text>(
+      find.byKey(const ValueKey('taskAgentThinkingLabel')),
+    );
+    expect(label.maxLines, 1);
+    expect(label.overflow, TextOverflow.ellipsis);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(
@@ -265,7 +309,7 @@ void main() {
   });
 
   testWidgets(
-    'narrow German footer stacks identity above untruncated automation',
+    'narrow German footer groups automation and identity without truncation',
     (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -288,12 +332,134 @@ void main() {
       final automation = find.text('Automatische Aktualisierungen');
       expect(automation, findsOneWidget);
       expect(
-        tester.getBottomLeft(identity).dy,
-        lessThan(tester.getTopLeft(automation).dy),
+        tester.getBottomLeft(automation).dy,
+        lessThan(tester.getTopLeft(identity).dy),
       );
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('wide footer keeps identity beside the automation cluster', (
+    tester,
+  ) async {
+    final now = DateTime(2026, 7, 16, 9);
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Center(
+            child: SizedBox(
+              width: 730,
+              child: subject(
+                automaticUpdatesEnabled: true,
+                showCountdown: true,
+                nextWakeAt: now.add(
+                  const Duration(minutes: 1, seconds: 30),
+                ),
+                onRunNow: () {},
+              ),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        ),
+      );
+    });
+
+    final identity = find.byType(TaskAgentIdentityRegion);
+    final cluster = find.byKey(
+      const ValueKey('taskAgentAutomationCluster'),
+    );
+    expect(cluster, findsOneWidget);
+    expect(
+      tester.getCenter(identity).dy,
+      moreOrLessEquals(tester.getCenter(cluster).dy, epsilon: 1),
+    );
+    expect(
+      tester.getCenter(identity).dx,
+      lessThan(tester.getCenter(cluster).dx),
+    );
+  });
+
+  testWidgets(
+    'narrow scheduled cluster wraps countdown and switch without overflow',
+    (tester) async {
+      final now = DateTime(2026, 7, 16, 9);
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Center(
+              child: SizedBox(
+                width: 300,
+                child: subject(
+                  automaticUpdatesEnabled: true,
+                  showCountdown: true,
+                  nextWakeAt: now.add(
+                    const Duration(minutes: 1, seconds: 30),
+                  ),
+                  onRunNow: () {},
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(300, 800)),
+          ),
+        );
+      });
+
+      final countdown = find.text('Next update in 1:30');
+      final automation = find.text('Automatic updates');
+      final identity = find.textContaining('Qwen 3.5 Plus').first;
+      expect(
+        tester.getCenter(automation).dy,
+        greaterThan(tester.getCenter(countdown).dy),
+      );
+      expect(
+        tester.getCenter(identity).dy,
+        greaterThan(tester.getCenter(automation).dy),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('countdown width and neighboring controls never jump', (
+    tester,
+  ) async {
+    var now = DateTime(2026, 7, 16, 9);
+    await withClock(Clock(() => now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Center(
+            child: SizedBox(
+              width: 730,
+              child: subject(
+                automaticUpdatesEnabled: true,
+                showCountdown: true,
+                nextWakeAt: now.add(const Duration(hours: 1)),
+                onRunNow: () {},
+              ),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        ),
+      );
+
+      expect(find.text('Next update in 1:00:00'), findsOneWidget);
+      final pill = find.byType(DsPill);
+      final toggle = find.byKey(
+        const Key('taskAgentAutomaticUpdatesCheckbox'),
+      );
+      final identity = find.textContaining('Qwen 3.5 Plus').first;
+      final initialPillSize = tester.getSize(pill);
+      final initialToggleOffset = tester.getTopLeft(toggle);
+      final initialIdentityOffset = tester.getTopLeft(identity);
+
+      now = now.add(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Next update in 59:59'), findsOneWidget);
+      expect(tester.getSize(pill), initialPillSize);
+      expect(tester.getTopLeft(toggle), initialToggleOffset);
+      expect(tester.getTopLeft(identity), initialIdentityOffset);
+    });
+  });
 
   testWidgets('large text selects the compact footer layout', (tester) async {
     await tester.pumpWidget(
@@ -388,11 +554,18 @@ void main() {
     await tester.pumpWidget(makeTestableWidget(subject()));
 
     final context = tester.element(find.byType(TaskAgentControlsFooter));
+    final tokens = context.designTokens;
+    final target = find.byKey(
+      const ValueKey('taskAgentAutomaticUpdatesTarget'),
+    );
     expect(
-      tester.getSize(
-        find.byKey(const ValueKey('taskAgentAutomaticUpdatesTarget')),
-      ),
-      Size.square(context.designTokens.spacing.step9),
+      tester.getSize(target),
+      Size.square(tokens.spacing.step9),
+    );
+    expect(
+      tester.getTopLeft(target).dx -
+          tester.getTopRight(find.text('Automatic updates')).dx,
+      tokens.spacing.step3,
     );
   });
 }

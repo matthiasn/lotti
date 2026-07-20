@@ -35,7 +35,7 @@
   <releases>
     <release version="0.9.1054" date="2026-07-18">
       <description>
-        <p>Task AI summaries are now cleaner and more compact: report and proposal text matches editor entries and card summaries, metadata is easier to read, secondary controls have larger interaction targets, and the footer adapts cleanly to narrow layouts and larger text.</p>
+        <p>Task AI summaries are now cleaner and more compact: report and proposal text matches editor entries and card summaries, metadata is easier to read, and scheduled updates plus their switch form one responsive footer group beside the model on wide cards and above it on phones. Countdown ticks no longer shift neighboring controls, turning off automation during a pending update keeps the summary correctly marked as out of date, and accepting suggestions keeps the task detail scroll position stable while checklist and proposal content resize.</p>
         <p>Date pickers now follow the device region's week order. Entry dates, entry ranges, due dates, and project target dates start on Monday in European regions and Sunday in the US, with matching weekday headers and calendar-day positions.</p>
         <p>Screen-reader controls now expose one clear actionable announcement with their label and state. New accessibility labels are also available in Danish, Swedish, and Dutch.</p>
         <p>Matrix sync now finishes catching up after reconnecting during a large burst, even on poor networks. Reconnected devices recover every missed entry instead of stopping after a partial server page.</p>

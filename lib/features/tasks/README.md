@@ -283,7 +283,14 @@ subtle frame in light and dark themes.
   The existing `ScrollAnchor` remains a fallback for proposal-driven changes in
   other task regions above the AI card, and the
   `unifiedSuggestionListProvider` count listener arms both paths for externally
-  resolved proposals. Newly created checklist rows and cards still reveal
+  resolved proposals. When checklist content above the proposals and card
+  content below them shrink in the same layout pass, the custom position bases
+  the checklist correction on the hold-owned offset rather than Flutter's
+  already range-clamped live offset, so the same shrink is never counted twice.
+  If the shorter card leaves too little trailing extent to preserve the held
+  position, the position retains only the missing extent until deliberate
+  scrolling returns inside the real range; ending the timer therefore cannot
+  cause a delayed jump. Newly created checklist rows and cards still reveal
   through `SizeFadeEntrance`; the stabilizer preserves geometry rather than
   suppressing useful motion. The hold spans the checked item's delayed row
   collapse (`checklistCompletionAnimationDuration` +
@@ -890,8 +897,11 @@ has two region adapters backed by the same `ViewportStableScrollController`:
 
 Both adapters feed exact region-height deltas into the viewport's own layout
 cycle, so the content currently being read never paints at an intermediate
-displaced position. User scrolling cancels the hold immediately, and the
-standalone journal-entry detail page remains outside the scope.
+displaced position. The scroll position also retains a temporary trailing
+extent when a simultaneous shrink below the anchor would otherwise clamp the
+viewport; that extent disappears once the user scrolls inside the real range.
+User scrolling cancels the hold immediately, and the standalone journal-entry
+detail page remains outside the scope.
 
 ## Current Constraints
 

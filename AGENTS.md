@@ -57,6 +57,7 @@
 - **Prefer `tester.pump(duration)` over `tester.pumpAndSettle()`.** `pumpAndSettle` has a default 10-second timeout and will hang if animations never settle. Use it only when you genuinely need all animations to complete, and never pass a duration > 1 second.
 - **Use `fakeAsync` for unit/service tests** that involve timers, delays, retries, or debounce. See `test/test_utils/retry_fake_time.dart` and `test/test_utils/pump_retry_time.dart` for helpers.
 - **Use deterministic dates.** Never use `DateTime.now()` in tests. Use specific dates like `DateTime(2024, 3, 15)`.
+- **Time-driven UI must never jump.** Any visible count-up or countdown must use tabular figures and stable geometry so digit changes, minute/hour transitions, and format-length changes do not move adjacent controls or trigger responsive reflow. Reserve space for the supported format or isolate the changing label inside a fixed layout region. Add a deterministic widget regression test that crosses representative digit/format boundaries and asserts that the timer and neighboring widgets keep the same size and position.
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits (e.g., `feat:`, `fix:`, `chore:`, `ci:`). Keep subjects concise and imperative.

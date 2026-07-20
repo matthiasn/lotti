@@ -328,8 +328,11 @@ class TaskAgentService {
   ///
   /// Turning this on allows retained subscriptions to schedule future wakes,
   /// but never enqueues work or replays changes received while it was off.
-  /// Turning it off clears the countdown and queued automatic jobs while the
-  /// subscriptions continue observing changes and marking the report stale.
+  /// Turning it off clears the countdown and queued automatic jobs. When that
+  /// countdown represented a pending report refresh, the report is first
+  /// marked stale so removing the timer cannot make the card claim that the
+  /// older report is up to date. Subscriptions continue observing later
+  /// changes and marking the report stale while automation remains off.
   Future<void> updateAutomaticUpdates({
     required String agentId,
     required bool enabled,
@@ -349,11 +352,25 @@ class TaskAgentService {
         );
       }
 
+      final now = clock.now();
       final updated = identity.copyWith(
         config: identity.config.copyWith(automaticUpdatesEnabled: enabled),
-        updatedAt: clock.now(),
+        updatedAt: now,
       );
       await syncService.upsertEntity(updated);
+
+      if (!enabled) {
+        final state = await repository.getAgentState(agentId);
+        final pendingWake = state?.nextWakeAt;
+        if (state != null &&
+            pendingWake != null &&
+            pendingWake.isAfter(now) &&
+            !state.isReportStale) {
+          await syncService.upsertEntity(
+            state.copyWith(reportStaleAt: now, updatedAt: now),
+          );
+        }
+      }
     });
 
     if (enabled && identity.lifecycle == AgentLifecycle.active) {
