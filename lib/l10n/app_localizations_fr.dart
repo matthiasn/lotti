@@ -1224,9 +1224,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiAttributionTitle => 'Attribution IA';
 
   @override
-  String get aiAttributionTokens => 'Jetons';
-
-  @override
   String aiAttributionTokenBreakdown(
     String input,
     String output,
@@ -1235,6 +1232,9 @@ class AppLocalizationsFr extends AppLocalizations {
   ) {
     return 'Entrée : $input · Sortie : $output · En cache : $cached · Raisonnement : $reasoning';
   }
+
+  @override
+  String get aiAttributionTokens => 'Jetons';
 
   @override
   String get aiAttributionTokenUsageUnknown =>

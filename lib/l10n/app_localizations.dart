@@ -2195,12 +2195,6 @@ abstract class AppLocalizations {
   /// **'AI attribution'**
   String get aiAttributionTitle;
 
-  /// No description provided for @aiAttributionTokens.
-  ///
-  /// In en, this message translates to:
-  /// **'Tokens'**
-  String get aiAttributionTokens;
-
   /// No description provided for @aiAttributionTokenBreakdown.
   ///
   /// In en, this message translates to:
@@ -2211,6 +2205,12 @@ abstract class AppLocalizations {
     String cached,
     String reasoning,
   );
+
+  /// No description provided for @aiAttributionTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens'**
+  String get aiAttributionTokens;
 
   /// No description provided for @aiAttributionTokenUsageUnknown.
   ///

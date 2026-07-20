@@ -1216,9 +1216,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAttributionTitle => 'Přiřazení AI';
 
   @override
-  String get aiAttributionTokens => 'Tokeny';
-
-  @override
   String aiAttributionTokenBreakdown(
     String input,
     String output,
@@ -1227,6 +1224,9 @@ class AppLocalizationsCs extends AppLocalizations {
   ) {
     return 'Vstup: $input · Výstup: $output · V mezipaměti: $cached · Uvažování: $reasoning';
   }
+
+  @override
+  String get aiAttributionTokens => 'Tokeny';
 
   @override
   String get aiAttributionTokenUsageUnknown => 'Využití tokenů není známé';
