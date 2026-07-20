@@ -196,6 +196,9 @@ class _ViewportStableScrollPosition extends ScrollPositionWithSingleContext {
         _retainedMaxScrollExtent ?? maxScrollExtent,
         desiredHeldOffset,
       );
+      controller
+        .._expectedOffset = desiredHeldOffset
+        .._takePendingExtentDelta();
       if ((pixels - desiredHeldOffset).abs() >
           ViewportStableScrollController._tolerance) {
         correctPixels(desiredHeldOffset);

@@ -252,6 +252,43 @@ void main() {
   );
 
   testWidgets(
+    'advances the held baseline across successive retained shrink deltas',
+    (tester) async {
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          _ReportedSizeHarness(key: key, initialHeight: 250),
+        ),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..controller.jumpTo(1000);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy;
+
+      state
+        ..hold()
+        ..resizeAndTail(height: 150, tailHeight: 800);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(900, 0.1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 0.1),
+      );
+
+      state.resize(50);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(800, 0.1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 0.1),
+      );
+    },
+  );
+
+  testWidgets(
     'retains trailing extent until the user scrolls into the real range',
     (tester) async {
       final key = GlobalKey<_ReportedSizeHarnessState>();
