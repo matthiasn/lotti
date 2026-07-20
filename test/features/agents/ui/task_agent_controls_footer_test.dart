@@ -136,15 +136,23 @@ void main() {
         final context = tester.element(
           find.byType(TaskAgentControlsFooter),
         );
+        final tokens = context.designTokens;
+        final countdownPill = find.byType(DsPill);
+        final cancelIcon = find.byIcon(Icons.close_rounded);
         expect(
           tester.getSize(
             find.byKey(
               const ValueKey('taskAgentCancelCountdownTarget'),
             ),
           ),
-          Size.square(context.designTokens.spacing.step8),
+          Size.square(tokens.spacing.step9),
         );
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        expect(
+          tester.getTopLeft(cancelIcon).dx -
+              tester.getTopRight(countdownPill).dx,
+          tokens.spacing.step1,
+        );
+        await tester.tap(cancelIcon);
       });
 
       expect(cancellations, 1);
@@ -546,11 +554,18 @@ void main() {
     await tester.pumpWidget(makeTestableWidget(subject()));
 
     final context = tester.element(find.byType(TaskAgentControlsFooter));
+    final tokens = context.designTokens;
+    final target = find.byKey(
+      const ValueKey('taskAgentAutomaticUpdatesTarget'),
+    );
     expect(
-      tester.getSize(
-        find.byKey(const ValueKey('taskAgentAutomaticUpdatesTarget')),
-      ),
-      Size.square(context.designTokens.spacing.step9),
+      tester.getSize(target),
+      Size.square(tokens.spacing.step9),
+    );
+    expect(
+      tester.getTopLeft(target).dx -
+          tester.getTopRight(find.text('Automatic updates')).dx,
+      tokens.spacing.step3,
     );
   });
 }

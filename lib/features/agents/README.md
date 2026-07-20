@@ -166,15 +166,15 @@ cards place model/provider identity beside that cluster. Narrow cards place
 the cluster first and wrap identity below; within the cluster, wake status and
 the automatic-updates setting also wrap when their localized content cannot
 share a line. A scheduled wake is a design-system `DsPill` with a clock glyph;
-its separate `spacing.step8` close target cancels the wake without making the
+its separate `spacing.step9` close target cancels the wake without making the
 informational pill itself destructive. The countdown uses tabular figures and
 reserves its initial formatted-label width, so minute/hour digit transitions
 cannot move the pill, toggle, model identity, or responsive wrap point.
 Running uses a non-interactive status row with an explicit `spacing.step3`
 spinner/label gap and defensive single-line truncation rather than presenting
-disabled work as a loading button. The toggle retains its `spacing.step9`
-target, while cancel, status, and identity use the denser `spacing.step8`
-rhythm so the footer stays compact without becoming cramped.
+disabled work as a loading button. The toggle and cancel retain full-size
+`spacing.step9` targets, while status and identity use the denser
+`spacing.step8` rhythm so the footer stays compact without becoming cramped.
 Meaningful attribution uses `aiCard.metaText` rather than the fainter
 decorative color. When setup is
 missing, the disabled toggle explains itself via an info tooltip. The filled

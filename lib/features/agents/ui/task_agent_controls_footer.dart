@@ -116,7 +116,7 @@ class TaskAgentControlsFooter extends StatelessWidget {
     )..layout();
     final automationSettingWidth =
         automationLabelPainter.width +
-        tokens.spacing.step2 +
+        tokens.spacing.step3 +
         tokens.spacing.step9;
     final automationSetting = LayoutBuilder(
       builder: (context, constraints) {
@@ -133,7 +133,7 @@ class TaskAgentControlsFooter extends StatelessWidget {
                   style: automationLabelStyle,
                 ),
               ),
-              SizedBox(width: tokens.spacing.step2),
+              SizedBox(width: tokens.spacing.step3),
               automationToggle,
             ],
           ),
@@ -347,7 +347,7 @@ class _CountdownControlState extends State<_CountdownControl>
         tokens.spacing.step4 +
         tokens.spacing.step2 +
         (tokens.spacing.step3 * 2) +
-        tokens.spacing.step8;
+        tokens.spacing.step9;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -393,13 +393,19 @@ class _CountdownControlState extends State<_CountdownControl>
                         key: const ValueKey(
                           'taskAgentCancelCountdownTarget',
                         ),
-                        width: tokens.spacing.step8,
-                        height: tokens.spacing.step8,
-                        child: Center(
-                          child: Icon(
-                            Icons.close_rounded,
-                            size: tokens.spacing.step4,
-                            color: ai.metaText,
+                        width: tokens.spacing.step9,
+                        height: tokens.spacing.step9,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              left: tokens.spacing.step1,
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: tokens.spacing.step4,
+                              color: ai.metaText,
+                            ),
                           ),
                         ),
                       ),
