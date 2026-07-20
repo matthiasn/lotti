@@ -754,9 +754,12 @@ void main() {
         const convergenceTimeout = Duration(minutes: 15);
         const n = testSlowNetwork ? 150 : 600;
         // Percentage of Alice's burst that must land before Bob starts
-        // coming online. 40% leaves plenty of runway for the live
-        // stream + bridge overlap to actually occur.
+        // coming online. Pause the sender at this boundary so degraded
+        // network startup cannot consume an arbitrary part of the remaining
+        // burst before Bob's live listener and bridge are ready.
         const bobRejoinAtPercent = 40;
+        const rejoinThreshold = (n * bobRejoinAtPercent) ~/ 100;
+        final resumeBurst = Completer<void>();
 
         final bobCountBefore = await bobDb.getJournalCount();
         debugPrint(
@@ -788,6 +791,9 @@ void main() {
               journalDb: aliceDb,
             );
             aliceSent = i + 1;
+            if (aliceSent == rejoinThreshold) {
+              await resumeBurst.future;
+            }
             if (aliceSent % 100 == 0) {
               debugPrint(
                 '  Alice sent $aliceSent/$n (${aliceStopwatch.elapsed.inSeconds}s)',
@@ -795,11 +801,16 @@ void main() {
             }
           }
         }();
+        addTearDown(() async {
+          if (!resumeBurst.isCompleted) {
+            resumeBurst.complete();
+          }
+          await burstFuture;
+        });
 
         // Phase 3: Wait until Alice has sent `bobRejoinAtPercent`% of
-        // the burst, then cold-start Bob. The remaining burst races
-        // Bob's startup bridge + live subscription.
-        const rejoinThreshold = (n * bobRejoinAtPercent) ~/ 100;
+        // the burst and paused, then cold-start Bob. The remaining burst
+        // is released only after Bob's startup bridge is in flight.
         debugPrint(
           '\n--- Phase 3: waiting for Alice to reach $rejoinThreshold sent',
         );
@@ -839,6 +850,16 @@ void main() {
         await bob.joinRoom(roomId);
         await bob.saveRoom(roomId);
         debugPrint('Bob re-joined room $roomId mid-burst');
+
+        await waitUntilAsync(
+          () async => bob.queueCoordinator.isBridgeInFlight,
+          timeout: convergenceTimeout,
+        );
+        expect(aliceSent, rejoinThreshold);
+        resumeBurst.complete();
+        debugPrint(
+          'Bob bridge is in flight; Alice resumes at $aliceSent/$n sent',
+        );
 
         // Phase 5: wait for Alice's burst to finish so the target
         // count is stable.
