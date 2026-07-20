@@ -2,6 +2,8 @@
 
 [![codecov](https://codecov.io/gh/matthiasn/lotti/graph/badge.svg?token=VB6FWvA1yW)](https://codecov.io/gh/matthiasn/lotti) [![Flathub Downloads](https://img.shields.io/flathub/downloads/com.matthiasn.lotti?style=flat&label=Flathub%20installs)](https://flathub.org/en/apps/com.matthiasn.lotti) [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/matthiasn/lotti/total?label=GitHub%20Releases%20downloads)](https://github.com/matthiasn/lotti/releases)
 
+[Discord for support](https://discord.gg/uuSaa8NpY)
+
 **A private, open‑source logbook with a local agentic layer that helps you get things done.**
 
 Lotti is the system of record for the things you actually do — tasks, time recordings, voice notes, transcriptions, journal entries, habits, and health data — paired with an **agentic layer** of long‑living AI agents that observe, suggest, summarise, and nudge.
