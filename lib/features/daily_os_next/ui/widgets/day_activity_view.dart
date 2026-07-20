@@ -56,12 +56,6 @@ class DayActivityView extends ConsumerWidget {
                   onRetry: entry.processingJob == null
                       ? null
                       : () => _retry(ref, entry.processingJob!.id),
-                  onRecover: entry.kind != DayActivityEntryKind.recovery
-                      ? null
-                      : () => _recover(
-                          ref,
-                          entry.recoveryManifest!.context.recordingSessionId,
-                        ),
                   onEditText:
                       (entry.audio?.meta.id ?? entry.processingJob?.audioId) ==
                               null ||
@@ -80,13 +74,6 @@ class DayActivityView extends ConsumerWidget {
 
   Future<void> _retry(WidgetRef ref, String jobId) async {
     await ref.read(dayProcessingOutboxRepositoryProvider).retryNow(jobId);
-    await ref.read(dayProcessingRuntimeProvider).nudge();
-  }
-
-  Future<void> _recover(WidgetRef ref, String recordingSessionId) async {
-    await ref
-        .read(dayAudioSpoolRecoveryServiceProvider)
-        .recoverSession(recordingSessionId);
     await ref.read(dayProcessingRuntimeProvider).nudge();
   }
 
@@ -216,7 +203,6 @@ class _ActivityCard extends StatelessWidget {
     required this.hasPlan,
     required this.onUse,
     this.onRetry,
-    this.onRecover,
     this.onEditText,
   });
 
@@ -224,7 +210,6 @@ class _ActivityCard extends StatelessWidget {
   final bool hasPlan;
   final VoidCallback onUse;
   final Future<void> Function()? onRetry;
-  final Future<void> Function()? onRecover;
   final Future<void> Function()? onEditText;
 
   @override
@@ -246,8 +231,6 @@ class _ActivityCard extends StatelessWidget {
             children: [
               Icon(
                 switch (entry.kind) {
-                  DayActivityEntryKind.recovery =>
-                    Icons.settings_backup_restore_rounded,
                   DayActivityEntryKind.plan => Icons.auto_awesome_rounded,
                   DayActivityEntryKind.summary => Icons.summarize_rounded,
                   DayActivityEntryKind.checkIn => Icons.notes_rounded,
@@ -276,8 +259,6 @@ class _ActivityCard extends StatelessWidget {
                 entry.summary?.text ??
                 (entry.kind == DayActivityEntryKind.plan
                     ? context.messages.dailyOsNextActivityPlanAvailable
-                    : entry.kind == DayActivityEntryKind.recovery
-                    ? context.messages.dailyOsNextActivityRecoveryDescription
                     : entry.processingJob?.lastFailureClass ==
                           DayProcessingFailureClass.missingAsset
                     ? context.messages.dailyOsNextActivityMissingAudio
@@ -299,8 +280,7 @@ class _ActivityCard extends StatelessWidget {
             SizedBox(height: tokens.spacing.step4),
             AudioPlayerWidget(audio),
           ],
-          if (onRecover != null ||
-              onEditText != null ||
+          if (onEditText != null ||
               entry.processingJob?.lastFailureClass ==
                   DayProcessingFailureClass.setupRequired ||
               _canRetry(entry) ||
@@ -310,13 +290,6 @@ class _ActivityCard extends StatelessWidget {
               spacing: tokens.spacing.step3,
               runSpacing: tokens.spacing.step3,
               children: [
-                if (onRecover != null)
-                  _AsyncActivityButton(
-                    label: context.messages.dailyOsNextActivityRecover,
-                    action: onRecover!,
-                    variant: DesignSystemButtonVariant.secondary,
-                    leadingIcon: Icons.settings_backup_restore_rounded,
-                  ),
                 if (_canRetry(entry))
                   _AsyncActivityButton(
                     label: context.messages.dailyOsNextActivityRetry,
@@ -369,9 +342,6 @@ class _ActivityCard extends StatelessWidget {
   }
 
   String _status(BuildContext context, DayActivityEntry entry) {
-    if (entry.kind == DayActivityEntryKind.recovery) {
-      return context.messages.dailyOsNextActivityRecoveryNeeded;
-    }
     if (entry.kind == DayActivityEntryKind.plan) {
       return context.messages.dailyOsNextActivityPlanCreated;
     }

@@ -80,6 +80,15 @@ DraftPlan _draftPlan() {
   );
 }
 
+/// Recorder stub whose denied permission keeps toggle() a no-op error path,
+/// so root-page tests never touch the mic or transcription stack.
+MockAudioRecorderRepository _permissionlessRecorder() {
+  final recorder = MockAudioRecorderRepository();
+  when(recorder.hasPermission).thenAnswer((_) async => false);
+  when(recorder.stopRecording).thenAnswer((_) async {});
+  return recorder;
+}
+
 void main() {
   tearDown(() => nav_service.beamToNamedOverride = null);
 
@@ -88,8 +97,6 @@ void main() {
       tester,
     ) async {
       final requestedDates = <DateTime>[];
-      final realtimeService = MockRealtimeTranscriptionService();
-      when(realtimeService.resolveRealtimeConfig).thenAnswer((_) async => null);
 
       await withClock(Clock.fixed(DateTime(2026, 5, 26, 16, 15)), () async {
         await tester.pumpWidget(
@@ -97,7 +104,7 @@ void main() {
             const DailyOsNextRoot(),
             overrides: [
               captureControllerProvider.overrideWith(
-                () => CaptureController(realtimeService: realtimeService),
+                () => CaptureController(recorder: _permissionlessRecorder()),
               ),
               currentDraftPlanProvider.overrideWith((ref, date) async {
                 requestedDates.add(date);
@@ -137,10 +144,6 @@ void main() {
           category: _category,
           taskId: 'task-1',
         );
-        final realtimeService = MockRealtimeTranscriptionService();
-        when(
-          realtimeService.resolveRealtimeConfig,
-        ).thenAnswer((_) async => null);
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -149,7 +152,7 @@ void main() {
               actualBlocks: [actualBlock],
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => null),
               ],
@@ -233,15 +236,12 @@ void main() {
     });
 
     testWidgets('AsyncLoading shows the loading shell', (tester) async {
-      final realtimeService = MockRealtimeTranscriptionService();
-      when(realtimeService.resolveRealtimeConfig).thenAnswer((_) async => null);
-
       await tester.pumpWidget(
         _wrap(
           const DailyOsNextRoot(),
           overrides: [
             captureControllerProvider.overrideWith(
-              () => CaptureController(realtimeService: realtimeService),
+              () => CaptureController(recorder: _permissionlessRecorder()),
             ),
             currentDraftPlanProvider.overrideWith(
               (ref, date) => Completer<DraftPlan?>().future,
@@ -260,10 +260,6 @@ void main() {
       'when a plan exists for the date, DayPage renders with the date strip',
       (tester) async {
         final plan = _draftPlan();
-        final realtimeService = MockRealtimeTranscriptionService();
-        when(
-          realtimeService.resolveRealtimeConfig,
-        ).thenAnswer((_) async => null);
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -271,7 +267,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 capturesForDateProvider.overrideWith(
                   (ref, _) async => const [],
@@ -300,10 +296,6 @@ void main() {
           if (!pendingReload.isCompleted) pendingReload.complete(plan);
           return reloadTicks.close();
         });
-        final realtimeService = MockRealtimeTranscriptionService();
-        when(
-          realtimeService.resolveRealtimeConfig,
-        ).thenAnswer((_) async => null);
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -311,7 +303,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 capturesForDateProvider.overrideWith(
                   (ref, _) async => const [],
@@ -354,10 +346,6 @@ void main() {
         addTearDown(() {
           if (!pendingRefresh.isCompleted) pendingRefresh.complete(plan);
         });
-        final realtimeService = MockRealtimeTranscriptionService();
-        when(
-          realtimeService.resolveRealtimeConfig,
-        ).thenAnswer((_) async => null);
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -365,7 +353,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 capturesForDateProvider.overrideWith(
                   (ref, _) async => const [],
@@ -402,10 +390,6 @@ void main() {
       'prev chevron shifts the selected date back by one day',
       (tester) async {
         final requestedDates = <DateTime>[];
-        final realtimeService = MockRealtimeTranscriptionService();
-        when(
-          realtimeService.resolveRealtimeConfig,
-        ).thenAnswer((_) async => null);
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -413,7 +397,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, date) async {
                   requestedDates.add(date);
@@ -439,18 +423,13 @@ void main() {
     testWidgets(
       'tapping the date label opens showDatePicker; cancelling keeps selection',
       (tester) async {
-        final realtimeService = MockRealtimeTranscriptionService();
-        when(
-          realtimeService.resolveRealtimeConfig,
-        ).thenAnswer((_) async => null);
-
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => null),
               ],
@@ -479,18 +458,13 @@ void main() {
     testWidgets(
       'long-pressing the date label returns selection to today',
       (tester) async {
-        final realtimeService = MockRealtimeTranscriptionService();
-        when(
-          realtimeService.resolveRealtimeConfig,
-        ).thenAnswer((_) async => null);
-
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => null),
               ],
@@ -521,18 +495,13 @@ void main() {
     testWidgets(
       'confirming a date in the picker updates the selected date',
       (tester) async {
-        final realtimeService = MockRealtimeTranscriptionService();
-        when(
-          realtimeService.resolveRealtimeConfig,
-        ).thenAnswer((_) async => null);
-
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => null),
               ],

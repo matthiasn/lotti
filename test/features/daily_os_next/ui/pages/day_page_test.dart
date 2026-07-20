@@ -109,12 +109,12 @@ DraftPlan _draftedWithReasons() => DraftPlan(
 /// when DayPage pushes it) can dispose cleanly without touching the AI
 /// providers during teardown.
 CaptureController _stubCapture() {
+  final recorder = MockAudioRecorderRepository();
   final transcriber = MockAudioTranscriptionService();
-  final realtime = MockRealtimeTranscriptionService();
-  when(realtime.resolveRealtimeConfig).thenAnswer((_) async => null);
+  when(recorder.stopRecording).thenAnswer((_) async {});
   return CaptureController(
+    recorder: recorder,
     transcriber: transcriber,
-    realtimeService: realtime,
     docDir: Directory.systemTemp.createTempSync,
     persistAudio: (_) async => null,
     now: () => DateTime(2026, 5, 26, 9),

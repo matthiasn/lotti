@@ -722,6 +722,9 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
     try {
       final captureId = await agent.submitCapture(
         transcript: transcript,
+        // Keep the source timestamp and selected planning workspace explicit.
+        // Activity can later reuse the same source while another day is open.
+        dayDate: widget.forDate ?? clock.now(),
         // `capturedAt` routes the capture to the day-agent for that
         // day. When the route-level root mounts CapturePage for a
         // non-today selected date, pass that date so the resulting

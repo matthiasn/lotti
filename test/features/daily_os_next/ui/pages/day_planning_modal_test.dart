@@ -132,6 +132,7 @@ class _PendingSubmitAgent extends MockDayAgent {
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    required DateTime dayDate,
     String? audioId,
   }) {
     submitCalls++;

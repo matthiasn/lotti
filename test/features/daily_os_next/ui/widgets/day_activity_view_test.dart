@@ -11,7 +11,6 @@ import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
-import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -57,7 +56,6 @@ void main() {
     DayActivityEntry? used;
     final transcriptWriter = MockDayAudioTranscriptWriter();
     final outbox = MockDayProcessingOutboxRepository();
-    final recoveryService = MockDayAudioSpoolRecoveryService();
     final runtime = MockDayProcessingRuntime();
     when(
       () => transcriptWriter.attachManual(
@@ -69,9 +67,6 @@ void main() {
       () => outbox.satisfyWithReviewedText(any(), any()),
     ).thenAnswer((_) async => null);
     when(() => outbox.retryNow(any())).thenAnswer((_) async => null);
-    when(
-      () => recoveryService.recoverSession(any()),
-    ).thenAnswer((_) async => null);
     when(runtime.nudge).thenAnswer((_) async {});
     final waiting = DayActivityEntry(
       id: 'waiting',
@@ -96,30 +91,6 @@ void main() {
         transcript: 'Protect the afternoon for focused work.',
       ),
     );
-    final recovery = DayActivityEntry(
-      id: 'recovery',
-      kind: DayActivityEntryKind.recovery,
-      createdAt: capturedAt.add(const Duration(minutes: 10)),
-      activityEntryId: 'recovery',
-      recoveryManifest: DurableAudioSpoolManifest(
-        generation: 1,
-        context: DurableAudioSpoolContext(
-          recordingSessionId: 'session-recovery',
-          activityEntryId: 'recovery',
-          createdAt: capturedAt,
-          assetRootPath: '/tmp',
-          origin: AudioCaptureOrigin.dailyOs,
-          intent: AudioCaptureIntent.dayPlan,
-          dayId: 'dayplan-2026-07-18',
-          planDate: date,
-        ),
-        state: DurableAudioSpoolState.recoveryRequired,
-        chunks: const [],
-        activeChunkBytes: 4,
-        acceptedPcmBytes: 4,
-        chunkBytes: 4,
-      ),
-    );
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         DayActivityView(
@@ -130,13 +101,10 @@ void main() {
         ),
         overrides: [
           dayActivityProvider.overrideWith(
-            (ref, date) async => [waiting, ready, recovery],
+            (ref, date) async => [waiting, ready],
           ),
           dayAudioTranscriptWriterProvider.overrideWithValue(transcriptWriter),
           dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
-          dayAudioSpoolRecoveryServiceProvider.overrideWithValue(
-            recoveryService,
-          ),
           dayProcessingRuntimeProvider.overrideWithValue(runtime),
         ],
       ),
@@ -153,7 +121,6 @@ void main() {
       findsOneWidget,
     );
     expect(find.text(messages.dailyOsNextActivityRetry), findsOneWidget);
-    expect(find.text(messages.dailyOsNextActivityRecover), findsOneWidget);
     expect(
       find.text('Protect the afternoon for focused work.'),
       findsOneWidget,
@@ -162,11 +129,6 @@ void main() {
     await tester.tap(find.text(messages.dailyOsNextActivityRetry));
     await tester.pump();
     verify(() => outbox.retryNow('job-waiting')).called(1);
-    verify(runtime.nudge).called(1);
-
-    await tester.tap(find.text(messages.dailyOsNextActivityRecover));
-    await tester.pump();
-    verify(() => recoveryService.recoverSession('session-recovery')).called(1);
     verify(runtime.nudge).called(1);
 
     await tester.tap(

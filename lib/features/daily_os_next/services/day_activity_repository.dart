@@ -6,10 +6,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
-import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:path/path.dart' as path;
 
-enum DayActivityEntryKind { recording, checkIn, recovery, plan, summary }
+enum DayActivityEntryKind { recording, checkIn, plan, summary }
 
 /// One coalesced, local-first row in a day's Activity timeline.
 @immutable
@@ -23,7 +22,6 @@ class DayActivityEntry {
     this.audioPath,
     this.processingJob,
     this.capture,
-    this.recoveryManifest,
     this.plan,
     this.summary,
   });
@@ -36,7 +34,6 @@ class DayActivityEntry {
   final String? audioPath;
   final DayProcessingJob? processingJob;
   final CaptureEntity? capture;
-  final DurableAudioSpoolManifest? recoveryManifest;
   final DayPlanEntity? plan;
   final DaySummaryEntity? summary;
 
@@ -59,8 +56,8 @@ class DayActivityEntry {
       audioPath == null ? null : File(audioPath!).existsSync();
 }
 
-/// Builds the offline Activity projection from journal rows, the device outbox,
-/// agent captures, and uncommitted durable-spool sessions.
+/// Builds the offline Activity projection from journal rows, the device
+/// outbox, and agent captures.
 class DayActivityRepository {
   DayActivityRepository({
     required this.journalDb,
@@ -149,10 +146,6 @@ class DayActivityRepository {
               createdAt: capture.capturedAt,
               capture: capture,
             ),
-          ...await _loadRecoveryEntries(
-            dayId: dayId,
-            knownActivityIds: activityIds,
-          ),
           if (plan != null && plan.deletedAt == null && plan.dayId == dayId)
             DayActivityEntry(
               id: plan.id,
@@ -176,42 +169,5 @@ class DayActivityRepository {
           return byTime != 0 ? byTime : a.id.compareTo(b.id);
         });
     return List<DayActivityEntry>.unmodifiable(entries);
-  }
-
-  Future<List<DayActivityEntry>> _loadRecoveryEntries({
-    required String dayId,
-    required Set<String> knownActivityIds,
-  }) async {
-    final root = Directory(path.join(assetRoot.path, '.audio_spool'));
-    if (!root.existsSync()) return const <DayActivityEntry>[];
-    final entries = <DayActivityEntry>[];
-    for (final directory in root.listSync().whereType<Directory>()) {
-      try {
-        final recovery = await DurableAudioSpool.recover(
-          sessionDirectory: directory,
-        );
-        final manifest = recovery.manifest;
-        final context = manifest.context;
-        if (context.origin != AudioCaptureOrigin.dailyOs ||
-            context.dayId != dayId ||
-            knownActivityIds.contains(context.activityEntryId) ||
-            manifest.state == DurableAudioSpoolState.discarded) {
-          continue;
-        }
-        entries.add(
-          DayActivityEntry(
-            id: 'recovery:${context.recordingSessionId}',
-            kind: DayActivityEntryKind.recovery,
-            createdAt: context.createdAt,
-            activityEntryId: context.activityEntryId,
-            recoveryManifest: manifest,
-          ),
-        );
-      } catch (_) {
-        // An unreadable session is preserved on disk for diagnostics. Without
-        // trustworthy day provenance it cannot safely appear in one day.
-      }
-    }
-    return entries;
   }
 }

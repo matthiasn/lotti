@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_audio_context.dart';
@@ -8,7 +7,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
-import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -127,38 +125,6 @@ void main() {
       expect(entries.single.isSubmitted, isTrue);
     },
   );
-
-  test('surfaces an uncommitted Daily OS spool as a recovery entry', () async {
-    when(
-      () => journalDb.getDayAudioEntries(dayId),
-    ).thenAnswer((_) async => []);
-    final spoolRoot = Directory('${root.path}/.audio_spool')..createSync();
-    final spool = await DurableAudioSpool.start(
-      rootDirectory: spoolRoot,
-      context: DurableAudioSpoolContext(
-        recordingSessionId: 'session-recovery',
-        activityEntryId: 'activity-recovery',
-        createdAt: capturedAt,
-        assetRootPath: root.absolute.path,
-        origin: AudioCaptureOrigin.dailyOs,
-        intent: AudioCaptureIntent.dayPlan,
-        dayId: dayId,
-        planDate: capturedAt,
-      ),
-      chunkBytes: 4,
-    );
-    expect(
-      await spool.append(Uint8List.fromList([1, 2, 3, 4])),
-      SpoolAppendResult.persisted,
-    );
-
-    final entries = await repository.load(dayId: dayId);
-
-    expect(entries, hasLength(1));
-    expect(entries.single.kind, DayActivityEntryKind.recovery);
-    expect(entries.single.activityEntryId, 'activity-recovery');
-    expect(entries.single.recoveryManifest?.acceptedPcmBytes, 4);
-  });
 
   test(
     'includes typed and unresolved-audio check-ins chronologically',
