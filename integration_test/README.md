@@ -25,10 +25,10 @@ client is closed; Bob then reopens with a fresh client/pipeline but the same per
 **`Mid-burst rejoin`** — Alice pauses 40% into a 600-message burst while Bob comes online
 (150 in slow network mode, 30-minute test timeout with a 15-minute internal
 convergence-wait budget). Once Bob's startup bridge is in flight, Alice resumes the burst. This
-deterministically interleaves the two delivery paths: the live `onTimelineEvent` stream covers
-messages sent after Bob rejoins, while the bridge's `/messages` pagination backfills what was
-missed offline. The `event_id UNIQUE` constraint on `inbound_event_queue` deduplicates events
-delivered by both paths near the join boundary.
+deterministically overlaps bridge pagination with new sends. After the startup bridge reaches the
+server's then-current end, the test runs one explicit tail bridge to collect messages sent later.
+The `event_id UNIQUE` constraint on `inbound_event_queue` deduplicates events seen by both bridge
+passes near their pagination boundaries.
 
 **Problems this catches:**
 - Regressions in Matrix SDK integration

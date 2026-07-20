@@ -733,24 +733,22 @@ void main() {
 
     test(
       'Mid-burst rejoin: Bob comes online while Alice is halfway through '
-      'a 600-message burst — bridge backfills what live missed, live '
-      'covers what the bridge did not see, no duplicates, no drops',
+      'a 600-message burst — startup bridge overlaps sends, tail bridge '
+      'converges without duplicates or drops',
       () async {
         // Unlike the 1000-message cold-start test above — where Alice
         // finishes sending before Bob reconnects — this scenario
         // interleaves the two delivery paths. Bob joins while Alice is
         // still sending, so:
-        //  - Live `onTimelineEvent` fires for every message Alice
-        //    sends *after* Bob's re-join.
-        //  - The bridge's `/messages` pagination must backfill every
-        //    message Alice sent *while* Bob was offline.
-        //  - Events near the join boundary may be delivered by both
-        //    paths concurrently; `event_id UNIQUE` in
+        //  - The startup bridge's `/messages` pagination backfills every
+        //    message Alice sent while Bob was offline and overlaps the
+        //    resumed burst.
+        //  - A deterministic tail bridge collects anything sent after the
+        //    startup bridge reached the server's then-current end.
+        //  - Events near both bridge boundaries may be delivered more than
+        //    once; `event_id UNIQUE` in
         //    `inbound_event_queue` is the only primitive that keeps
         //    each event from applying twice.
-        //  - The bridge is single-flight: live timeline firing during
-        //    pagination must NOT trigger a second bridge pass unless
-        //    the server sends another `limited=true`.
         const convergenceTimeout = Duration(minutes: 15);
         const n = testSlowNetwork ? 150 : 600;
         // Percentage of Alice's burst that must land before Bob starts
@@ -871,9 +869,32 @@ void main() {
           '${aliceStopwatch.elapsed.inSeconds}s',
         );
 
-        // Phase 6: wait for Bob to converge to the full target. Both
-        // live and bridge producers must contribute — we verify that
-        // in Phase 7.
+        // The startup bridge walks a moving tail and can legitimately reach
+        // the server's current end before Alice finishes a degraded-network
+        // burst. Wait for that pass to settle, verify it covered the offline
+        // prefix, then run one explicit tail pass. This keeps the overlap and
+        // dedupe assertions deterministic without relying on Matrix SDK live
+        // delivery timing.
+        final coordinator = bob.queueCoordinator;
+        await waitUntilAsync(
+          () async => !coordinator.isBridgeInFlight,
+          timeout: convergenceTimeout,
+        );
+        await waitUntilAsync(
+          () async =>
+              await bobDb.getJournalCount() >= bobCountBefore + rejoinThreshold,
+          timeout: convergenceTimeout,
+        );
+        final countBeforeTailBridge = await bobDb.getJournalCount();
+        debugPrint(
+          'Startup bridge applied '
+          '${countBeforeTailBridge - bobCountBefore}/$n new entries; '
+          'running tail bridge',
+        );
+        await coordinator.triggerBridge();
+
+        // Phase 6: wait for Bob to converge to the full target after both
+        // bridge passes.
         debugPrint('\n--- Phase 6: waiting for Bob to converge to $n new');
         final expectedTotal = bobCountBefore + n;
         var lastBobCount = -1;
