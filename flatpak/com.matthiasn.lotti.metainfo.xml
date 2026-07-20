@@ -12,6 +12,7 @@
     <p>
       No accounts, no telemetry, no cloud storage. End-to-end encrypted multi-device sync runs over Matrix using Vodozemac (Rust) for Megolm crypto; the homeserver you bring relays only ciphertext between your own devices.
     </p>
+    <p>Get support and join the Lotti community on Discord via the Contact link.</p>
     <p>What it does:</p>
     <ul>
       <li>Long-living AI agents (mission, soul, report directive) that read your logbook, propose changes, and only act after you approve</li>
@@ -29,6 +30,7 @@
   </developer>
   <url type="homepage">https://github.com/matthiasn/lotti</url>
   <url type="help">https://matthiasn.github.io/lotti/manual/</url>
+  <url type="contact">https://discord.gg/uuSaa8NpY</url>
   <url type="bugtracker">https://github.com/matthiasn/lotti/issues</url>
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
