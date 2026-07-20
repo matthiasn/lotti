@@ -173,6 +173,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:matrix/encryption.dart';
@@ -659,6 +660,8 @@ class MockRealtimeTranscriptionService extends Mock
     implements RealtimeTranscriptionService {}
 
 class MockNavService extends Mock implements NavService {}
+
+class MockWindowService extends Mock implements WindowService {}
 
 /// Minimal settings navigation fake for tests that render the desktop
 /// settings master/detail shell without constructing Beamer delegates.

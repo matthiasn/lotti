@@ -47,6 +47,9 @@ Future<AppExitResponse> _handleAppExitRequested() async {
   return AppExitResponse.exit;
 }
 
+/// Test seam for the desktop exit callback.
+Future<AppExitResponse> handleAppExitRequested() => _handleAppExitRequested();
+
 Future<void> main() async {
   // Raise the file descriptor soft limit before anything opens an FD. On
   // macOS, GUI apps inherit launchd's legacy soft limit of 256, which is

@@ -149,11 +149,7 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
   Future<void> shutdown() => _shutdownFuture ??= _shutdown();
 
   Future<void> _shutdown() async {
-    try {
-      await _disposer.disposeAll();
-    } catch (e, s) {
-      _logDisposalError(e, s, 'disposeAll');
-    }
+    await _disposer.disposeAll();
 
     try {
       await _playerDisposer();

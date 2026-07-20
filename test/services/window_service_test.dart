@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -102,6 +103,22 @@ void main() {
 
       final exitCode = await exitCompleter.future;
       expect(exitCode, equals(0));
+    });
+
+    test('shutdown continues when the final log flush fails', () async {
+      final loggingService = MockLoggingService();
+      when(loggingService.flush).thenThrow(StateError('flush failed'));
+      getIt.registerSingleton<LoggingService>(loggingService);
+
+      await WindowService(
+        skipWindowManagerSetup: true,
+        isMacOSOverride: () => true,
+        exitOverride: (_) {},
+        playerDisposerOverride: () async {},
+      ).shutdown();
+
+      verify(loggingService.flush).called(1);
+      verify(() => getIt<SettingsDb>().close()).called(1);
     });
 
     test('detached lifecycle event triggers macOS shutdown sequence', () async {
