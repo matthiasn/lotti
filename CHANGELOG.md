@@ -23,6 +23,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   contributes to its parent task's AI-consumption total.
 
 ## [0.9.1056]
+### Added
+- **A recording of your day can no longer get lost.** Stopping a Daily OS
+  check-in now saves the audio to your journal immediately — before any
+  transcription is attempted. If you are offline or the transcription service
+  fails, the recording stays safe and is retried automatically in the
+  background once you are back online.
+- **New Activity view for your day.** The Day header now offers
+  Agenda | Day | Activity. Activity shows everything that happened around your
+  day in order: saved recordings (with playback), check-ins, the generated
+  plan, and day summaries. Recordings waiting for transcription show their
+  status with retry and "add text yourself" actions, and a transcript can be
+  sent straight into planning or refining.
+- **The planner sees your recordings.** Day recordings become visible to the
+  day agent as soon as their transcript exists — even if you never manually
+  submitted them — so a later planning session picks up what you said while
+  offline.
+
+### Removed
+- **Live (realtime) transcription is gone.** The realtime mode toggle in the
+  recording sheet and chat input has been removed. All transcription now runs
+  over the finished recording, which allows better provider choice and speech
+  dictionary support; the transcript appears a few seconds after you stop
+  instead of streaming word-by-word.
+
 ### Changed
 - **The logbook now matches the rest of the app.** On desktop it uses the same
   split layout as Tasks: the entry list stays on the left, and opening an entry

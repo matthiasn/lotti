@@ -43,6 +43,7 @@
     </release>
     <release version="0.9.1056" date="2026-07-20">
       <description>
+        <p>Day recordings can no longer get lost: stopping a Daily OS check-in saves the audio to the journal before any transcription is attempted, and failed or offline transcriptions retry automatically in the background. A new Activity view on the Day header shows saved recordings with playback, check-ins, the generated plan, and day summaries in order, with retry and manual-text actions for pending transcripts. The day planner also sees recordings as soon as their transcript exists. Live (realtime) transcription and its mode toggles were removed; transcription always runs over the finished recording.</p>
         <p>The logbook now matches the rest of the app. On desktop it uses the same split layout as Tasks: the entry list stays on the left, and opening an entry fills a reading panel on the right instead of navigating away, with a resizable divider and a highlighted selected row. The list got the same titled header as Tasks and Projects, denser cards with matching font sizes, and the entry details page now shares one unified background with the list, presenting the entry as a card with a comfortable reading width on wide windows.</p>
       </description>
     </release>

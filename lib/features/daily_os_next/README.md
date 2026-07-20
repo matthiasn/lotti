@@ -234,7 +234,10 @@ preferred-name prompt when inference is ready but personalization is missing.
   both enforce the planner identity's category allow-list: the planner
   cannot close, re-date, or create tasks outside its configured categories.
 - `submit_capture` persists a `CaptureEntity` and enqueues a manual wake with a
-  `capture_submitted:<captureId>` trigger token.
+  `capture_submitted:<captureId>` trigger token. The caller supplies the
+  selected planning day independently of the recording timestamp, so reusing a
+  retained check-in from a past or future Day Activity view cannot enqueue work
+  into the wrong workspace.
 - The selected local plan date lives in `dailyOsNextSelectedDateProvider`
   (`state/selected_date_provider.dart`); `DailyOsNextRoot` watches it and keeps
   the date strip visible on the Day surface, while the desktop sidebar's month
@@ -262,7 +265,8 @@ preferred-name prompt when inference is ready but personalization is missing.
 - The root surface is identical on every no-plan day (design handoff v2,
   item 2): `DailyOsNextRoot` mounts `DayPage` in **empty mode**
   (`hasPlan: false` with a synthetic `DraftPlan.emptyForDay`) so any recorded
-  sessions stay visible on the timeline without creating a plan first. Empty
+  sessions stay visible in Activity's `TimeSpentCard` without creating a plan
+  first. Empty
   mode renders an honest "No plan yet" stat strip (neutral `CapacityDonut` over
   tracked minutes, tracked legend), swaps the Refine/Commit footer for a single
   "Speak a check-in" CTA that opens the day-planning modal, and hides the
@@ -395,27 +399,96 @@ sequenceDiagram
   grow-with-content `DesignSystemTextarea`: multiline recognition uses the
   available middle zone instead of stopping after an arbitrary five or six
   lines, while the surrounding template scrolls on genuinely short screens.
-- The Capture voice path asks realtime transcription to prefer Mistral cloud
-  realtime before MLX local realtime, then verifies the final editable
-  transcript against the saved full recording via the batch transcriber when
-  realtime output looks truncated. Refine uses the same Mistral-preferred
-  realtime path but disables the full-file batch verifier for that session so a
-  reviewed Mistral transcript is not replaced by an MLX fallback.
-- When Capture attaches either its realtime result or batch fallback to the
-  persisted `JournalAudio`, `TranscriptAttributionCoordinator` has already
-  created an in-memory attribution session before inference. Realtime evidence includes
-  provider usage; the optional full-file verifier records a second interaction
-  under the same attribution instead of creating duplicate top-level work.
-  Batch inference records through the shared capture boundary under that same
-  session. The resulting `AudioTranscript`
-  carries a stable sub-id and embedded attribution; unreported provider cost
-  stays null. Attribution is projected only after the journal update confirms
-  that it applied, while the embedded carrier remains authoritative. Batch capture
-  begins its session whenever the coordinator is
-  available, independently of the concrete transcriber implementation. Provider
-  failures, empty transcripts, missing audio carriers, rejected transcript
-  persistence, and user cancellation terminalize without a carrier; process
-  interruption leaves no fabricated terminal record.
+- **Batch-first durable capture.** Every voice session fixes its context
+  before the microphone opens: a fresh recording-session id, a deterministic
+  UUIDv5 activity id, the selected `dayId`/`planDate` (never the wall clock at
+  stop), the capture intent (`dayPlan`/`dayRefine`), and the host id when
+  available. The platform recorder writes a plain `.m4a`; stop follows a
+  strict local-first commit order — persist the `JournalAudio` with its
+  `DayAudioContext` provenance, enqueue-and-claim the durable transcription
+  job, then run foreground batch transcription through that job's state
+  machine. A transcription or network failure keeps the saved recording and
+  hands retries to the background runtime; it is displayed as a saved-pending
+  warning, never as a successful empty capture or a lost recording.
+  Controller lifecycle epochs fence each start boundary: reset, route
+  disposal, or a superseding start cannot resurrect an obsolete microphone
+  session. There is no streaming/realtime transcription path and no live
+  transcript; the orb caption carries listening/transcribing status.
+
+  ```mermaid
+  stateDiagram-v2
+    [*] --> Listening
+    Listening --> Error: permission denied / recorder start fails
+    Listening --> Transcribing: stop
+    Transcribing --> Error: journal persist rejected (audioPersistFailed)
+    Transcribing --> SavedPendingTranscription: transcription fails after commit
+    Transcribing --> Captured: transcript attached, job succeeded
+    SavedPendingTranscription --> Captured: background retry / reviewed text
+  ```
+
+  After `JournalAudio` commits, a checksummed device-local processing job is
+  published before derived work proceeds. The app-wide
+  `DayProcessingRuntime` repairs journal/outbox gaps (rebuilding jobs from
+  persisted `dayContext` provenance), reclaims expired leases, resumes
+  network waits on interface changes and periodic safety probes, and writes a
+  job-correlated `AudioTranscript` receipt before acknowledging success.
+
+  ```mermaid
+  stateDiagram-v2
+    [*] --> Queued
+    Queued --> Running: fenced claim
+    Running --> WaitingForNetwork: offline / socket failure
+    WaitingForNetwork --> Queued: interface event / safety probe / manual retry
+    Running --> WaitingForUser: inference setup required
+    WaitingForUser --> Queued: manual retry after setup
+    Running --> Failed: deterministic provider response
+    Failed --> Queued: manual retry
+    Running --> Succeeded: receipt attached to JournalAudio
+    Running --> Queued: lease expires / retryable failure / asset not synced yet
+    Succeeded --> [*]
+  ```
+
+  The Day header now exposes Agenda, Day, and Activity. Activity is a local
+  chronological projection over day-scoped `JournalAudio`, outbox state,
+  typed and voice `CaptureEntity` check-ins, and the generated plan. The same surface keeps the day's already-tracked sessions visible in a
+  `TimeSpentCard`, including before the first plan exists. It remains available
+  offline and keeps the prior list visible during
+  background refresh. A saved recording can be played, retried, given
+  user-reviewed text without inference, or routed into the existing
+  Reconcile/Refine flow. A submitted capture remains a
+  visible durable continuation handle: reopening it re-enqueues parsing after
+  a process restart.
+  `JournalAudio` writes denormalize `dayContext.dayId` and
+  `dayContext.recordingSessionId` into indexed journal columns. Activity and
+  outbox repair therefore perform bounded day/session lookups instead of
+  deserializing the full audio history; the schema migration backfills existing
+  rows and preserves one canonical owner for each stable recording session.
+  Async card actions expose progress and local failures without hiding the
+  retained entry. Reviewed text satisfies pending transcription work, so it is
+  not overwritten or followed by unnecessary inference. Missing local audio is
+  reported to both Activity and the agent context, and setup-required rows link
+  directly to AI settings. The list opens on the newest activity while older
+  entries remain reachable by scrolling.
+
+  Later planner wakes load metadata for every persisted day recording plus
+  bounded reviewed/correlated text into `<day_entries>`, even before a
+  `CaptureEntity` exists. Pending recordings therefore remain discoverable
+  without fabricated transcript content. Submitted capture events and
+  `search_memory` are filtered to the wake's selected day, preventing the
+  long-lived planner from mixing daily workspaces. See
+  [`2026-07-18_resilient_day_planning_capture_and_timeline.md`](../../../docs/implementation_plans/2026-07-18_resilient_day_planning_capture_and_timeline.md)
+  for the architecture, data lifecycle, UI wireframe, retry policy, and
+  degraded-network test matrix.
+- When Capture attaches the transcript to the persisted `JournalAudio`,
+  `TranscriptAttributionCoordinator` has already created an in-memory
+  attribution session before inference (whenever the coordinator is
+  available, independently of the concrete transcriber implementation). The
+  resulting `AudioTranscript` carries a stable sub-id and embedded
+  attribution; unreported provider cost stays null. Attribution is projected
+  only after the journal update confirms it applied, while the embedded
+  carrier remains authoritative. Provider failures, empty transcripts,
+  rejected transcript persistence, and user cancellation terminalize without
+  a carrier; process interruption leaves no fabricated terminal record.
 - Capture and Refine share one **anchored voice template**: a per-phase
   headline at the top (the state narrator — "What's on your mind …", "I'm
   listening.", "Writing that down…", "Does this look right?"), a flexible
