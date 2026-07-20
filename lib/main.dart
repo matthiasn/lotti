@@ -39,11 +39,11 @@ class AppConstants {
 // ignore: unused_element
 late final AppLifecycleListener _appLifecycleListener;
 
-/// Awaits the same ordered teardown used by window-manager close events.
-/// Returning before that shared future completes would allow the Flutter
-/// engine to tear down SQLite's Dart FFI callbacks while handles are live.
+/// Runs the same ordered teardown and platform-aware close path used by
+/// window-manager close events. On macOS this reaches the immediate-exit path
+/// only after all SQLite handles have been released.
 Future<AppExitResponse> _handleAppExitRequested() async {
-  await getIt<WindowService>().shutdown();
+  await getIt<WindowService>().closeWindow();
   return AppExitResponse.exit;
 }
 

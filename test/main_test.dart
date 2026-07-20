@@ -14,7 +14,7 @@ void main() {
 
   setUp(() async {
     windowService = MockWindowService();
-    when(windowService.shutdown).thenAnswer((_) async {});
+    when(windowService.closeWindow).thenAnswer((_) async {});
     await setUpTestGetIt(
       additionalSetup: () {
         getIt.registerSingleton<WindowService>(windowService);
@@ -24,10 +24,11 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  test('exit request awaits the shared window-service shutdown', () async {
+  test('exit request awaits the platform-aware window close path', () async {
     final response = await app.handleAppExitRequested();
 
     expect(response, AppExitResponse.exit);
-    verify(windowService.shutdown).called(1);
+    verify(windowService.closeWindow).called(1);
+    verifyNever(windowService.shutdown);
   });
 }

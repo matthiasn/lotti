@@ -40,7 +40,7 @@ class ServiceDisposer {
   final void Function(dynamic error, StackTrace stackTrace, String service)
   _logError;
 
-  /// Disposes all services and databases. Used on non-macOS platforms.
+  /// Disposes all services and databases during application shutdown.
   Future<void> disposeAll() async {
     await _disposeServices();
     await _disposeDatabases();
