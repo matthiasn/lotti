@@ -21,6 +21,7 @@ import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
+import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
@@ -733,30 +734,31 @@ void main() {
 
     test(
       'Mid-burst rejoin: Bob comes online while Alice is halfway through '
-      'a 600-message burst — bridge backfills what live missed, live '
-      'covers what the bridge did not see, no duplicates, no drops',
+      'a 600-message burst — startup bridge overlaps sends, history sweep '
+      'converges without duplicates or drops',
       () async {
         // Unlike the 1000-message cold-start test above — where Alice
         // finishes sending before Bob reconnects — this scenario
         // interleaves the two delivery paths. Bob joins while Alice is
         // still sending, so:
-        //  - Live `onTimelineEvent` fires for every message Alice
-        //    sends *after* Bob's re-join.
-        //  - The bridge's `/messages` pagination must backfill every
-        //    message Alice sent *while* Bob was offline.
-        //  - Events near the join boundary may be delivered by both
-        //    paths concurrently; `event_id UNIQUE` in
+        //  - The startup bridge's `/messages` pagination backfills every
+        //    message Alice sent while Bob was offline and overlaps the
+        //    resumed burst.
+        //  - A deterministic full-history sweep collects anything sent after
+        //    the startup bridge reached the server's then-current end.
+        //  - Events near the bridge boundary are visited more than once;
+        //    `event_id UNIQUE` in
         //    `inbound_event_queue` is the only primitive that keeps
         //    each event from applying twice.
-        //  - The bridge is single-flight: live timeline firing during
-        //    pagination must NOT trigger a second bridge pass unless
-        //    the server sends another `limited=true`.
         const convergenceTimeout = Duration(minutes: 15);
         const n = testSlowNetwork ? 150 : 600;
         // Percentage of Alice's burst that must land before Bob starts
-        // coming online. 40% leaves plenty of runway for the live
-        // stream + bridge overlap to actually occur.
+        // coming online. Pause the sender at this boundary so degraded
+        // network startup cannot consume an arbitrary part of the remaining
+        // burst before Bob's live listener and bridge are ready.
         const bobRejoinAtPercent = 40;
+        const rejoinThreshold = (n * bobRejoinAtPercent) ~/ 100;
+        final resumeBurst = Completer<void>();
 
         final bobCountBefore = await bobDb.getJournalCount();
         debugPrint(
@@ -788,6 +790,9 @@ void main() {
               journalDb: aliceDb,
             );
             aliceSent = i + 1;
+            if (aliceSent == rejoinThreshold) {
+              await resumeBurst.future;
+            }
             if (aliceSent % 100 == 0) {
               debugPrint(
                 '  Alice sent $aliceSent/$n (${aliceStopwatch.elapsed.inSeconds}s)',
@@ -795,11 +800,16 @@ void main() {
             }
           }
         }();
+        addTearDown(() async {
+          if (!resumeBurst.isCompleted) {
+            resumeBurst.complete();
+          }
+          await burstFuture;
+        });
 
         // Phase 3: Wait until Alice has sent `bobRejoinAtPercent`% of
-        // the burst, then cold-start Bob. The remaining burst races
-        // Bob's startup bridge + live subscription.
-        const rejoinThreshold = (n * bobRejoinAtPercent) ~/ 100;
+        // the burst and paused, then cold-start Bob. The remaining burst
+        // is released only after Bob's startup bridge is in flight.
         debugPrint(
           '\n--- Phase 3: waiting for Alice to reach $rejoinThreshold sent',
         );
@@ -840,6 +850,16 @@ void main() {
         await bob.saveRoom(roomId);
         debugPrint('Bob re-joined room $roomId mid-burst');
 
+        await waitUntilAsync(
+          () async => bob.queueCoordinator.isBridgeInFlight,
+          timeout: convergenceTimeout,
+        );
+        expect(aliceSent, rejoinThreshold);
+        resumeBurst.complete();
+        debugPrint(
+          'Bob bridge is in flight; Alice resumes at $aliceSent/$n sent',
+        );
+
         // Phase 5: wait for Alice's burst to finish so the target
         // count is stable.
         debugPrint('\n--- Phase 5: waiting for Alice to finish burst');
@@ -850,9 +870,40 @@ void main() {
           '${aliceStopwatch.elapsed.inSeconds}s',
         );
 
-        // Phase 6: wait for Bob to converge to the full target. Both
-        // live and bridge producers must contribute — we verify that
-        // in Phase 7.
+        // The startup bridge walks a moving tail and can legitimately reach
+        // the server's current end before Alice finishes a degraded-network
+        // burst. Wait for that pass to settle, verify it covered the offline
+        // prefix, then run the production full-history sweep. A second
+        // forward bridge can jump directly to the newest event and strand
+        // the middle of the gap; the backward sweep deterministically walks
+        // every visible page while the queue deduplicates the overlap.
+        final coordinator = bob.queueCoordinator;
+        await waitUntilAsync(
+          () async => !coordinator.isBridgeInFlight,
+          timeout: convergenceTimeout,
+        );
+        await waitUntilAsync(
+          () async =>
+              await bobDb.getJournalCount() >= bobCountBefore + rejoinThreshold,
+          timeout: convergenceTimeout,
+        );
+        final countBeforeTailBridge = await bobDb.getJournalCount();
+        debugPrint(
+          'Startup bridge applied '
+          '${countBeforeTailBridge - bobCountBefore}/$n new entries; '
+          'running full-history sweep',
+        );
+        final historyResult = await coordinator.collectHistory(
+          overallTimeout: convergenceTimeout,
+        );
+        expect(
+          historyResult.stopReason,
+          BootstrapStopReason.serverExhausted,
+        );
+        expect(historyResult.totalEvents, greaterThanOrEqualTo(n));
+
+        // Phase 6: wait for Bob to converge after the overlapping startup
+        // bridge and the full-history sweep.
         debugPrint('\n--- Phase 6: waiting for Bob to converge to $n new');
         final expectedTotal = bobCountBefore + n;
         var lastBobCount = -1;

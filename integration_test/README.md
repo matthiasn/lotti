@@ -22,12 +22,13 @@ convergence-wait budget) — Alice sends a large burst while Bob's
 client is closed; Bob then reopens with a fresh client/pipeline but the same persisted DB
 (sync token + journal) and must bootstrap catch-up from scratch.
 
-**`Mid-burst rejoin`** — Bob comes online while Alice is halfway through a 600-message burst
+**`Mid-burst rejoin`** — Alice pauses 40% into a 600-message burst while Bob comes online
 (150 in slow network mode, 30-minute test timeout with a 15-minute internal
-convergence-wait budget). This interleaves the two delivery paths: the
-live `onTimelineEvent` stream covers messages sent after Bob rejoins, while the bridge's
-`/messages` pagination backfills what was missed offline. The `event_id UNIQUE` constraint on
-`inbound_event_queue` deduplicates events delivered by both paths near the join boundary.
+convergence-wait budget). Once Bob's startup bridge is in flight, Alice resumes the burst. This
+deterministically overlaps bridge pagination with new sends. After the startup bridge reaches the
+server's then-current end, the test runs the production full-history sweep to collect messages sent
+later without relying on a second forward walk. The `event_id UNIQUE` constraint on
+`inbound_event_queue` deduplicates events visited by both passes near the bridge boundary.
 
 **Problems this catches:**
 - Regressions in Matrix SDK integration
