@@ -431,6 +431,24 @@ void main() {
   });
 
   test(
+    'getAll skips and quarantines a corrupt job file',
+    () async {
+      await enqueue();
+      final corrupt = File(path.join(root.path, 'corrupt.json'))
+        ..writeAsStringSync('not an envelope');
+
+      final jobs = await repository.getAll();
+
+      expect(jobs.map((job) => job.id), ['transcribe_session-1']);
+      expect(corrupt.existsSync(), isFalse);
+      expect(
+        File(path.join(root.path, 'quarantine', 'corrupt.json')).existsSync(),
+        isTrue,
+      );
+    },
+  );
+
+  test(
     'corrupt jobs are quarantined instead of blocking healthy work',
     () async {
       await enqueue();

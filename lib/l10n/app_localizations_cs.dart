@@ -2839,6 +2839,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputListening => 'Naslouchám...';
 
   @override
+  String get chatInputNoAudioRecorded =>
+      'Nebyl nahrán žádný zvuk. Zkus to znovu.';
+
+  @override
   String get chatInputPleaseWait => 'Čekejte prosím...';
 
   @override
@@ -3468,6 +3472,87 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsDayPlan => 'Plán dne';
 
   @override
+  String get dailyOsNextActivityActionFailed =>
+      'Akci se nepodařilo dokončit. Nahrávka je pořád v bezpečí — zkus to znovu.';
+
+  @override
+  String get dailyOsNextActivityAddOrEditText => 'Přidat nebo upravit text';
+
+  @override
+  String get dailyOsNextActivityDaySummary => 'Shrnutí dne';
+
+  @override
+  String get dailyOsNextActivityEmpty =>
+      'Zatím tu nejsou žádné nahrávky ani check-iny.';
+
+  @override
+  String get dailyOsNextActivityLoadFailed =>
+      'Tvoje uložená aktivita je pořád v tomto zařízení, ale teď ji nejde načíst.';
+
+  @override
+  String get dailyOsNextActivityMissingAudio =>
+      'Tento záznam zůstal uložený, ale zvukový soubor v tomto zařízení není dostupný. Obnov soubor a pak to zkus znovu.';
+
+  @override
+  String get dailyOsNextActivityNeedsAttention => 'Vyžaduje pozornost';
+
+  @override
+  String get dailyOsNextActivityOpenSetup => 'Otevřít nastavení přepisu';
+
+  @override
+  String get dailyOsNextActivityPlanAvailable =>
+      'Tvůj denní plán je k dispozici.';
+
+  @override
+  String get dailyOsNextActivityPlanCreated => 'Plán vytvořen';
+
+  @override
+  String get dailyOsNextActivityReady => 'Připraveno k použití';
+
+  @override
+  String get dailyOsNextActivityRetry => 'Zkusit přepis znovu';
+
+  @override
+  String get dailyOsNextActivityRetryLoad => 'Zkusit načíst znovu';
+
+  @override
+  String get dailyOsNextActivitySaved => 'Uloženo místně';
+
+  @override
+  String get dailyOsNextActivitySetupRequired =>
+      'Nahrávka je v bezpečí. Nastav model pro přepis zvuku a pak to zkus znovu.';
+
+  @override
+  String get dailyOsNextActivitySubmitted => 'Přidáno ke dni';
+
+  @override
+  String get dailyOsNextActivityTextDialogTitle => 'Text nahrávky';
+
+  @override
+  String get dailyOsNextActivityTextHint =>
+      'Napiš, co jsi chtěl/a v nahrávce zachytit.';
+
+  @override
+  String get dailyOsNextActivityTextSaveFailed =>
+      'Nahrávka je v bezpečí, ale text se nepodařilo uložit. Zkus to znovu.';
+
+  @override
+  String get dailyOsNextActivityTranscribing => 'Přepisuji';
+
+  @override
+  String get dailyOsNextActivityTranscriptPending =>
+      'Nahrávka je uložená. Přepis ještě čeká.';
+
+  @override
+  String get dailyOsNextActivityUseToPlan => 'Použít k vytvoření plánu';
+
+  @override
+  String get dailyOsNextActivityUseToRefine => 'Použít k úpravě';
+
+  @override
+  String get dailyOsNextActivityWaitingForNetwork => 'Čekám na připojení';
+
+  @override
   String get dailyOsNextAgendaCapacityComfortable => 'Pohodové';
 
   @override
@@ -3650,6 +3735,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Zkontrolovat';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Nahrávka je uložená';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Záznamy';
@@ -3936,6 +4024,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Odpojit';
+
+  @override
+  String get dailyOsNextPlanViewActivity => 'Aktivita';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -9624,6 +9715,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Rozpoznávání řeči';
+
+  @override
+  String get speechNoAudioRecorded => 'Nebyl nahrán žádný zvuk. Zkus to znovu.';
 
   @override
   String get speechSettingsModelDescription => 'Hlasový model v zařízení';

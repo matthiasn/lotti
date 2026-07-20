@@ -41,11 +41,15 @@ class _FakeCaptureController extends CaptureController {
     amplitudes: [],
   );
 
+  DateTime? lastToggleForDate;
+
   @override
   Future<void> toggle({
     DateTime? forDate,
     AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
-  }) async {}
+  }) async {
+    lastToggleForDate = forDate;
+  }
 }
 
 /// Reconcile agent whose parse step throws — drives the error branch.
@@ -164,6 +168,7 @@ Future<void> _settle(WidgetTester tester) async {
 Future<void> _openCreate(
   WidgetTester tester, {
   CaptureState capture = const CaptureState.idle(),
+  _FakeCaptureController Function()? captureFactory,
   MockDayAgent? agent,
   List<TimeBlock> actualBlocks = const [],
   Size size = const Size(420, 900),
@@ -185,7 +190,7 @@ Future<void> _openCreate(
       mediaQueryData: MediaQueryData(size: size),
       overrides: [
         captureControllerProvider.overrideWith(
-          () => _FakeCaptureController(capture),
+          captureFactory ?? () => _FakeCaptureController(capture),
         ),
         // Pin the tracked-time projection so the capture step's "Today so
         // far" card is deterministic and never reaches GetIt-backed services.
@@ -330,6 +335,29 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(DayPlanningThinkingShader.indicatorKey), findsNothing);
+    });
+
+    testWidgets('tapping the Done pill stops capture against the planning '
+        'day, not the wall clock', (tester) async {
+      late _FakeCaptureController capture;
+      await _openCreate(
+        tester,
+        captureFactory: () => capture = _FakeCaptureController(
+          const CaptureState(
+            phase: CapturePhase.listening,
+            transcript: '',
+            amplitudes: [],
+          ),
+        ),
+      );
+      final messages = _l10n(tester);
+
+      await tester.tap(
+        find.widgetWithText(DsGlassPill, messages.dailyOsNextCaptureDoneCta),
+      );
+      await tester.pump();
+
+      expect(capture.lastToggleForDate, DateTime(2024, 3, 15));
     });
 
     testWidgets('transcribing bar lights the thinking shader', (tester) async {

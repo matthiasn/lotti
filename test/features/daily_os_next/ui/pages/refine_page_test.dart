@@ -108,6 +108,28 @@ class _DriveableCaptureController extends CaptureController {
   }) async {}
 }
 
+/// Capture controller that records the toggle arguments so tests can pin
+/// the plan-date/intent contract of the refine voice tap.
+class _RecordingToggleCaptureController extends CaptureController {
+  DateTime? lastForDate;
+  AudioCaptureIntent? lastIntent;
+
+  @override
+  CaptureState build() => const CaptureState.idle();
+
+  @override
+  void reset() {}
+
+  @override
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async {
+    lastForDate = forDate;
+    lastIntent = intent;
+  }
+}
+
 Widget _wrap(
   Widget child, {
   List<Override> overrides = const [],
@@ -937,6 +959,80 @@ void main() {
               .controller
               .text,
           'add a wrap-up block at five',
+        );
+      },
+    );
+  });
+
+  group('RefineModalContent voice orb', () {
+    testWidgets(
+      'orb tap begins a refine capture bound to the plan date',
+      (tester) async {
+        final draft = _emptyPlan();
+        late _RecordingToggleCaptureController capture;
+        await tester.pumpWidget(
+          _wrap(
+            RefineModalContent(draft: draft),
+            captureFactory: () => capture = _RecordingToggleCaptureController(),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byType(VoiceButton));
+        await tester.pump();
+
+        // The refine session records against the draft's day workspace with
+        // the refine intent — never the wall clock or the default intent.
+        expect(capture.lastForDate, draft.dayDate);
+        expect(capture.lastIntent, AudioCaptureIntent.dayRefine);
+        final refineState = ProviderScope.containerOf(
+          tester.element(find.byType(RefineModalContent)),
+        ).read(refineControllerProvider(draft));
+        expect(refineState.phase, RefinePhase.listening);
+      },
+    );
+  });
+
+  group('RefinePage saved-pending capture problem', () {
+    testWidgets(
+      'a saved-pending capture error surfaces the warning notice',
+      (tester) async {
+        final draft = _emptyPlan();
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            captureFactory: _DriveableCaptureController.new,
+          ),
+        );
+        await tester.pump();
+
+        _readNotifier(tester, draft).beginListening(resetTranscript: true);
+        await tester.pump();
+        _readCapture(tester).emit(
+          const CaptureState(
+            phase: CapturePhase.error,
+            transcript: '',
+            amplitudes: <double>[],
+            error: CaptureError.recordingSavedPendingTranscription,
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(RefinePage)).messages;
+        // The recording is durable, so the notice reads as a warning about
+        // pending transcription — not a generic failure.
+        expect(
+          find.text(
+            messages.dailyOsNextCaptureErrorRecordingSavedPendingTranscription,
+          ),
+          findsOneWidget,
+        );
+        final refineState = ProviderScope.containerOf(
+          tester.element(find.byType(RefinePage)),
+        ).read(refineControllerProvider(draft));
+        expect(
+          refineState.problem,
+          RefineProblem.captureSavedPendingTranscription,
         );
       },
     );

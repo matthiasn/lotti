@@ -2843,6 +2843,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chatInputListening => 'Écoute en cours...';
 
   @override
+  String get chatInputNoAudioRecorded =>
+      'Aucun son n\'a été enregistré. Réessaie.';
+
+  @override
   String get chatInputPleaseWait => 'Patiente un instant...';
 
   @override
@@ -3470,6 +3474,87 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsDayPlan => 'Plan du jour';
 
   @override
+  String get dailyOsNextActivityActionFailed =>
+      'L’action n’a pas abouti. Ton enregistrement est toujours en sécurité — réessaie.';
+
+  @override
+  String get dailyOsNextActivityAddOrEditText => 'Ajouter ou modifier le texte';
+
+  @override
+  String get dailyOsNextActivityDaySummary => 'Résumé de la journée';
+
+  @override
+  String get dailyOsNextActivityEmpty =>
+      'Pas encore d’enregistrement ni de check-in.';
+
+  @override
+  String get dailyOsNextActivityLoadFailed =>
+      'Ton activité enregistrée est toujours sur cet appareil, mais elle n’a pas pu être chargée pour le moment.';
+
+  @override
+  String get dailyOsNextActivityMissingAudio =>
+      'Cette entrée est conservée, mais le fichier audio n’est pas disponible sur cet appareil. Restaure le fichier, puis réessaie.';
+
+  @override
+  String get dailyOsNextActivityNeedsAttention => 'À vérifier';
+
+  @override
+  String get dailyOsNextActivityOpenSetup => 'Configurer la transcription';
+
+  @override
+  String get dailyOsNextActivityPlanAvailable =>
+      'Ton plan de journée est disponible.';
+
+  @override
+  String get dailyOsNextActivityPlanCreated => 'Plan créé';
+
+  @override
+  String get dailyOsNextActivityReady => 'Prêt à utiliser';
+
+  @override
+  String get dailyOsNextActivityRetry => 'Réessayer la transcription';
+
+  @override
+  String get dailyOsNextActivityRetryLoad => 'Recharger';
+
+  @override
+  String get dailyOsNextActivitySaved => 'Enregistré localement';
+
+  @override
+  String get dailyOsNextActivitySetupRequired =>
+      'Ton enregistrement est en sécurité. Configure un modèle de transcription audio, puis réessaie.';
+
+  @override
+  String get dailyOsNextActivitySubmitted => 'Ajouté à la journée';
+
+  @override
+  String get dailyOsNextActivityTextDialogTitle => 'Texte de l’enregistrement';
+
+  @override
+  String get dailyOsNextActivityTextHint =>
+      'Écris ce que tu voulais garder avec cet enregistrement.';
+
+  @override
+  String get dailyOsNextActivityTextSaveFailed =>
+      'L’enregistrement est en sécurité, mais le texte n’a pas pu être sauvegardé. Réessaie.';
+
+  @override
+  String get dailyOsNextActivityTranscribing => 'Transcription en cours';
+
+  @override
+  String get dailyOsNextActivityTranscriptPending =>
+      'Ton enregistrement est sauvegardé. La transcription est encore en attente.';
+
+  @override
+  String get dailyOsNextActivityUseToPlan => 'Utiliser pour créer le plan';
+
+  @override
+  String get dailyOsNextActivityUseToRefine => 'Utiliser pour ajuster';
+
+  @override
+  String get dailyOsNextActivityWaitingForNetwork => 'En attente de connexion';
+
+  @override
   String get dailyOsNextAgendaCapacityComfortable => 'Confortable';
 
   @override
@@ -3658,6 +3743,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Vérifier';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus =>
+      'Enregistrement sauvegardé';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Captures';
@@ -3946,6 +4035,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Dissocier';
+
+  @override
+  String get dailyOsNextPlanViewActivity => 'Activité';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -9686,6 +9778,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Reconnaissance vocale';
+
+  @override
+  String get speechNoAudioRecorded =>
+      'Aucun son n\'a été enregistré. Réessaie.';
 
   @override
   String get speechSettingsModelDescription => 'Modèle vocal sur l\'appareil';

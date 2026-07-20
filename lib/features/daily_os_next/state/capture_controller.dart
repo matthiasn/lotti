@@ -276,7 +276,7 @@ class CaptureController extends Notifier<CaptureState> {
     final note = _recordingNote;
     final session = _session;
     final startedAt = _recordingStartedAt;
-    if (note == null || session == null) {
+    if (note == null || session == null || startedAt == null) {
       _clearSession();
       state = const CaptureState(
         phase: CapturePhase.error,
@@ -291,10 +291,8 @@ class CaptureController extends Notifier<CaptureState> {
 
     final docDir = _docDir();
     final fullPath = '${docDir.path}${note.audioDirectory}${note.audioFile}';
-    final capturedAt = startedAt ?? _now();
-    final duration = startedAt == null
-        ? Duration.zero
-        : _now().difference(startedAt);
+    final capturedAt = startedAt;
+    final duration = _now().difference(startedAt);
     final dayContext = DayAudioContext(
       dayId: session.dayId,
       planDate: session.planDate,

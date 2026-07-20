@@ -14,6 +14,7 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
@@ -199,6 +200,8 @@ void main() {
   setUpAll(() {
     registerAllFallbackValues();
     registerFallbackValue(_audioNoteFixture());
+    registerFallbackValue(DayProcessingFailureClass.local);
+    registerFallbackValue(Duration.zero);
     registerFallbackValue(
       Metadata(
         id: 'meta',
@@ -575,6 +578,44 @@ void main() {
       expect(container.read(captureControllerProvider).transcript, '');
     });
 
+    test('toggle from captured resets to idle for a re-record', () async {
+      bench.stubTranscript('take one');
+      final container = bench.aliveContainer(outbox: bench.outbox);
+      addTearDown(container.dispose);
+      final controller = container.read(captureControllerProvider.notifier);
+
+      await controller.toggle();
+      await controller.toggle();
+      expect(
+        container.read(captureControllerProvider).phase,
+        CapturePhase.captured,
+      );
+
+      await controller.toggle();
+
+      expect(
+        container.read(captureControllerProvider).phase,
+        CapturePhase.idle,
+      );
+    });
+
+    test('amplitude stream errors are non-fatal while recording', () async {
+      final container = bench.aliveContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(captureControllerProvider.notifier);
+
+      await controller.toggle();
+      bench.ampController
+        ..addError(StateError('meter glitch'))
+        ..add(Amplitude(current: -30, max: 0));
+      await Future<void>.delayed(Duration.zero);
+
+      // The session survives the meter error and keeps accepting samples.
+      final state = container.read(captureControllerProvider);
+      expect(state.phase, CapturePhase.listening);
+      expect(state.dbfs, -30);
+    });
+
     test('stopping with no active session surfaces noAudioRecorded', () async {
       when(bench.recorder.startRecording).thenAnswer((_) async {
         return _audioNoteFixture();
@@ -600,6 +641,168 @@ void main() {
         CaptureError.noAudioRecorded,
       );
     });
+  });
+
+  group('CaptureController service-locator wiring', () {
+    test('resolves the outbox and origin host from the service locator '
+        'when no overrides are injected', () async {
+      final vectorClock = MockVectorClockService();
+      when(vectorClock.getHost).thenAnswer((_) async => 'locator-host');
+      getIt
+        ..registerSingleton<VectorClockService>(vectorClock)
+        ..registerSingleton<DayProcessingOutboxRepository>(bench.outbox);
+      bench.stubTranscript('from locator wiring');
+      final container = ProviderContainer(
+        overrides: [
+          captureControllerProvider.overrideWith(
+            () => CaptureController(
+              recorder: bench.recorder,
+              transcriber: bench.transcriber,
+              persistAudio: (note) => bench.persistAudio(note),
+              docDir: () => bench.docDir,
+              sessionIdFactory: () => _sessionId,
+              now: () => _now,
+            ),
+          ),
+        ],
+      )..listen(captureControllerProvider, (_, _) {});
+      addTearDown(container.dispose);
+      final controller = container.read(captureControllerProvider.notifier);
+
+      await controller.toggle();
+      await controller.toggle();
+
+      expect(
+        container.read(captureControllerProvider).phase,
+        CapturePhase.captured,
+      );
+      // Provenance host id came from VectorClockService, and the job landed
+      // in the getIt-registered outbox.
+      expect(bench.persistedNote!.dayContext!.originHostId, 'locator-host');
+      final job = await bench.outbox.getById(
+        DayProcessingOutboxRepository.transcriptionJobId(_sessionId),
+      );
+      expect(job!.status, DayProcessingJobStatus.succeeded);
+    });
+
+    test(
+      'a recording that finishes starting after disposal is stopped',
+      () async {
+        var startInvoked = false;
+        final startGate = Completer<AudioNote?>();
+        when(bench.recorder.startRecording).thenAnswer((_) {
+          startInvoked = true;
+          return startGate.future;
+        });
+        final container = bench.aliveContainer();
+        final controller = container.read(captureControllerProvider.notifier);
+
+        // Dispose only once the controller is suspended inside
+        // startRecording, so the late note must be stopped, not adopted.
+        final starting = controller.toggle();
+        while (!startInvoked) {
+          await Future<void>.delayed(Duration.zero);
+        }
+        container.dispose();
+        startGate.complete(_audioNoteFixture());
+        await starting;
+        await Future<void>.delayed(Duration.zero);
+
+        // The stale session's platform recorder must not keep running.
+        verify(bench.recorder.stopRecording).called(1);
+      },
+    );
+
+    test('persistAudio throwing surfaces audioPersistFailed', () async {
+      bench
+        ..stubTranscript('never used')
+        ..persistAudio = (_) async => throw StateError('journal down');
+      final container = bench.aliveContainer(outbox: bench.outbox);
+      addTearDown(container.dispose);
+      final controller = container.read(captureControllerProvider.notifier);
+
+      await controller.toggle();
+      await controller.toggle();
+
+      final state = container.read(captureControllerProvider);
+      expect(state.phase, CapturePhase.error);
+      expect(state.error, CaptureError.audioPersistFailed);
+      expect(
+        await bench.outbox.getById(
+          DayProcessingOutboxRepository.transcriptionJobId(_sessionId),
+        ),
+        isNull,
+      );
+    });
+
+    test(
+      'an exception inside foreground completion fails the job locally',
+      () async {
+        final outbox = MockDayProcessingOutboxRepository();
+        final job = DayProcessingJob(
+          id: DayProcessingOutboxRepository.transcriptionJobId(_sessionId),
+          kind: DayProcessingJobKind.transcribeAudio,
+          status: DayProcessingJobStatus.running,
+          dayId: 'dayplan-2026-07-20',
+          activityEntryId: audioActivityEntryIdForSession(_sessionId),
+          recordingSessionId: _sessionId,
+          audioId: 'audio_001',
+          audioPath: '/tmp/capture.m4a',
+          createdAt: _now,
+          updatedAt: _now,
+          nextAttemptAt: _now,
+          attempts: 0,
+          generation: 1,
+        );
+        when(
+          () => outbox.enqueueAndClaimTranscription(
+            dayId: any(named: 'dayId'),
+            activityEntryId: any(named: 'activityEntryId'),
+            recordingSessionId: any(named: 'recordingSessionId'),
+            audioId: any(named: 'audioId'),
+            audioPath: any(named: 'audioPath'),
+            capturedAt: any(named: 'capturedAt'),
+          ),
+        ).thenAnswer(
+          (_) async => DayProcessingClaim(job: job, token: 'token-1'),
+        );
+        when(
+          () => outbox.markTranscriptReady(
+            jobId: any(named: 'jobId'),
+            claimToken: any(named: 'claimToken'),
+            transcript: any(named: 'transcript'),
+          ),
+        ).thenThrow(StateError('outbox storage failed'));
+        when(
+          () => outbox.markFailure(
+            jobId: any(named: 'jobId'),
+            claimToken: any(named: 'claimToken'),
+            failureClass: any(named: 'failureClass'),
+            error: any(named: 'error'),
+            retryDelay: any(named: 'retryDelay'),
+          ),
+        ).thenAnswer((_) async => job);
+        bench.stubTranscript('good words');
+        final container = bench.aliveContainer(outbox: outbox);
+        addTearDown(container.dispose);
+        final controller = container.read(captureControllerProvider.notifier);
+
+        await controller.toggle();
+        await controller.toggle();
+
+        final state = container.read(captureControllerProvider);
+        expect(state.error, CaptureError.recordingSavedPendingTranscription);
+        verify(
+          () => outbox.markFailure(
+            jobId: job.id,
+            claimToken: 'token-1',
+            failureClass: DayProcessingFailureClass.local,
+            error: any(named: 'error'),
+            retryDelay: any(named: 'retryDelay'),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('CaptureController transcript attribution', () {
@@ -669,29 +872,32 @@ void main() {
       },
     );
 
-    test('an empty transcript records an unusable attributed output', () async {
-      final attribution = _registerTranscriptAttribution();
-      stubAttributedTranscribe(bench, '   ');
-      final container = bench.aliveContainer(outbox: bench.outbox);
-      addTearDown(container.dispose);
-      final controller = container.read(captureControllerProvider.notifier);
+    test(
+      'an empty transcript records an unusable attributed output',
+      () async {
+        final attribution = _registerTranscriptAttribution();
+        stubAttributedTranscribe(bench, '   ');
+        final container = bench.aliveContainer(outbox: bench.outbox);
+        addTearDown(container.dispose);
+        final controller = container.read(captureControllerProvider.notifier);
 
-      await controller.toggle();
-      await controller.toggle();
+        await controller.toggle();
+        await controller.toggle();
 
-      expect(
-        container.read(captureControllerProvider).error,
-        CaptureError.recordingSavedPendingTranscription,
-      );
-      verify(
-        () => attribution.service.prepareCompletion(
-          attributionId: 'attribution-1',
-          outputs: const [],
-          status: AiWorkStatus.failed,
-          errorCode: 'empty_transcript',
-        ),
-      ).called(1);
-    });
+        expect(
+          container.read(captureControllerProvider).error,
+          CaptureError.recordingSavedPendingTranscription,
+        );
+        verify(
+          () => attribution.service.prepareCompletion(
+            attributionId: 'attribution-1',
+            outputs: const [],
+            status: AiWorkStatus.failed,
+            errorCode: 'empty_transcript',
+          ),
+        ).called(1);
+      },
+    );
 
     test('a transcription failure fails the attribution session', () async {
       final attribution = _registerTranscriptAttribution();
