@@ -9,12 +9,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
@@ -1132,6 +1134,64 @@ void main() {
               .first,
         );
         expect(constrained.constraints.maxWidth, 760);
+      },
+    );
+
+    testWidgets(
+      'main entry card and linked-entry cards share one horizontal rail',
+      (tester) async {
+        final linked = testTextEntryNoGeo;
+        when(
+          () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
+        when(
+          () => mockJournalDbEdge.journalEntityById(linked.meta.id),
+        ).thenAnswer((_) async => linked);
+
+        final link = EntryLink.basic(
+          id: 'rail-test-link',
+          fromId: testTextEntry.meta.id,
+          toId: linked.meta.id,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailsPage(itemId: testTextEntry.meta.id),
+            overrides: [
+              sortedLinkedEntriesProvider.overrideWith(
+                (ref, id) =>
+                    id == testTextEntry.meta.id ? [link] : const <EntryLink>[],
+              ),
+            ],
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // EntryDetailsWidget keys its section card by entry id, for the
+        // standalone card and each linked row alike.
+        final mainCard = find.byKey(Key(testTextEntry.meta.id));
+        final linkedCard = find.byKey(Key(linked.meta.id));
+        expect(mainCard, findsOneWidget);
+        expect(linkedCard, findsOneWidget);
+
+        // The card widget's own rect includes its internal margin, so measure
+        // the painted surface: the outermost DecoratedBox inside each card.
+        Rect surfaceRect(Finder card) => tester.getRect(
+          find.descendant(of: card, matching: find.byType(DecoratedBox)).first,
+        );
+
+        // Regression: linked rows only carry the tight embedded step2 inset
+        // and used to render 12px wider per side than the standalone card;
+        // the page pads the linked sections up to the same step5 rail.
+        final mainRect = surfaceRect(mainCard);
+        final linkedRect = surfaceRect(linkedCard);
+        expect(linkedRect.left, mainRect.left);
+        expect(linkedRect.right, mainRect.right);
       },
     );
 

@@ -207,16 +207,31 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
                                     showTaskDetails: true,
                                     showAiEntry: true,
                                   ),
-                                  LinkedEntriesWithTimer(
-                                    item: item,
-                                    entryKeyBuilder: _getEntryKey,
-                                    highlightedEntryId: highlightedEntryId,
+                                  // Linked rows carry only the tight step2
+                                  // embedded card inset; pad the sections up
+                                  // to the standalone card's step5 rail so
+                                  // every card on the page shares one exact
+                                  // left/right edge.
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: tokens.spacing.step4,
+                                    ),
+                                    child: Column(
+                                      children: <Widget>[
+                                        LinkedEntriesWithTimer(
+                                          item: item,
+                                          entryKeyBuilder: _getEntryKey,
+                                          highlightedEntryId:
+                                              highlightedEntryId,
+                                        ),
+                                        LinkedFromEntriesWidget(item),
+                                        if (item is ChecklistItem)
+                                          LinkedFromChecklistWidget(item),
+                                        if (item is Checklist)
+                                          LinkedFromTaskWidget(item),
+                                      ],
+                                    ),
                                   ),
-                                  LinkedFromEntriesWidget(item),
-                                  if (item is ChecklistItem)
-                                    LinkedFromChecklistWidget(item),
-                                  if (item is Checklist)
-                                    LinkedFromTaskWidget(item),
                                 ],
                               ).animate().fadeIn(
                                 duration: MotionDurations.short2,
