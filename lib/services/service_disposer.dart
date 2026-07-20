@@ -4,11 +4,15 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
+import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -27,7 +31,8 @@ const _perOperationTimeout = Duration(seconds: 3);
 /// 2. Stop the outbox (depends on MatrixService being alive)
 /// 3. Stop Matrix sync and close its FFI-backed database
 /// 4. Close the ObjectBox embedding store (no FFI-callback issue, safe on macOS)
-/// 5. Close application Drift databases
+/// 5. Close repositories that own private Drift databases
+/// 6. Close all registered application Drift databases
 class ServiceDisposer {
   ServiceDisposer(this._getIt, this._logError);
 
@@ -39,13 +44,6 @@ class ServiceDisposer {
   Future<void> disposeAll() async {
     await _disposeServices();
     await _disposeDatabases();
-  }
-
-  /// Disposes only non-database services. Used on macOS where calling
-  /// sqlite3_close_v2 triggers a fatal FFI assertion (SIGABRT) during
-  /// VM teardown — see window_service.dart for details.
-  Future<void> disposeServicesOnly() async {
-    await _disposeServices();
   }
 
   Future<void> _disposeServices() async {
@@ -82,7 +80,15 @@ class ServiceDisposer {
   }
 
   Future<void> _disposeDatabases() async {
-    // 5. Close Drift databases so no WAL/lock files are left dangling.
+    // 5. Close repositories that own databases not registered directly.
+    await _disposeAsyncSafely<AiConfigRepository>(
+      (repository) => repository.close(),
+      'AiConfigRepository',
+    );
+
+    // 6. Close every registered Drift database so no native handle is left
+    // for a Dart finalizer to release after the Flutter engine starts tearing
+    // down FFI callback metadata.
     await _disposeAsyncSafely<JournalDb>((db) => db.close(), 'JournalDb');
     await _disposeAsyncSafely<SyncDatabase>((db) => db.close(), 'SyncDatabase');
     await _disposeAsyncSafely<AgentDatabase>(
@@ -91,6 +97,18 @@ class ServiceDisposer {
     );
     await _disposeAsyncSafely<EditorDb>((db) => db.close(), 'EditorDb');
     await _disposeAsyncSafely<Fts5Db>((db) => db.close(), 'Fts5Db');
+    await _disposeAsyncSafely<ConsumptionDatabase>(
+      (db) => db.close(),
+      'ConsumptionDatabase',
+    );
+    await _disposeAsyncSafely<NotificationsDb>(
+      (db) => db.close(),
+      'NotificationsDb',
+    );
+    await _disposeAsyncSafely<OnboardingMetricsDb>(
+      (db) => db.close(),
+      'OnboardingMetricsDb',
+    );
     await _disposeAsyncSafely<SettingsDb>((db) => db.close(), 'SettingsDb');
   }
 

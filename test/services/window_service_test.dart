@@ -30,6 +30,7 @@ void main() {
       when(mockEmbeddingService.stop).thenAnswer((_) async {});
       when(mockOutbox.dispose).thenAnswer((_) async {});
       when(mockMatrix.dispose).thenAnswer((_) async {});
+      when(mockSettingsDb.close).thenAnswer((_) async {});
 
       getIt
         ..registerSingleton<DomainLogger>(mockDomainLogger)
@@ -44,9 +45,12 @@ void main() {
       await getIt.reset();
     });
 
-    test('macOS shutdown disposes player then calls exit', () async {
+    test('macOS shutdown closes databases before player and exit', () async {
       final callOrder = <String>[];
       final exitCompleter = Completer<int>();
+      when(() => getIt<SettingsDb>().close()).thenAnswer((_) async {
+        callOrder.add('databaseClose');
+      });
 
       WindowService(
         skipWindowManagerSetup: true,
@@ -63,7 +67,7 @@ void main() {
       // Deterministically wait for exit to be called
       final exitCode = await exitCompleter.future;
 
-      expect(callOrder, equals(['playerDispose', 'exit']));
+      expect(callOrder, equals(['databaseClose', 'playerDispose', 'exit']));
       expect(exitCode, equals(0));
     });
 
@@ -170,6 +174,33 @@ void main() {
         expect(playerDisposeCalls, equals(1));
       },
     );
+
+    test('concurrent shutdown callers share one database teardown', () async {
+      final outboxStarted = Completer<void>();
+      final allowOutboxToStop = Completer<void>();
+      when(() => getIt<OutboxService>().dispose()).thenAnswer((_) async {
+        outboxStarted.complete();
+        await allowOutboxToStop.future;
+      });
+
+      final service = WindowService(
+        skipWindowManagerSetup: true,
+        isMacOSOverride: () => true,
+        exitOverride: (_) {},
+        playerDisposerOverride: () async {},
+      );
+
+      final first = service.shutdown();
+      await outboxStarted.future;
+      final second = service.shutdown();
+      expect(identical(first, second), isTrue);
+
+      allowOutboxToStop.complete();
+      await Future.wait([first, second]);
+
+      verify(() => getIt<SettingsDb>().close()).called(1);
+      verify(() => getIt<OutboxService>().dispose()).called(1);
+    });
 
     test('non-macOS shutdown calls disposeAll', () async {
       // Track when the last service disposal completes so we can

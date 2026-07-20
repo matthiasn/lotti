@@ -42,9 +42,9 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
     _disposer = ServiceDisposer(getIt, _logDisposalError);
   }
 
-  bool _isShuttingDown = false;
-
   late final ServiceDisposer _disposer;
+  Future<void>? _shutdownFuture;
+  Future<void>? _closeFuture;
   final ExitCallback _exitFn;
   final AsyncDisposer _playerDisposer;
   final PlatformCheck _isMacOS;
@@ -130,66 +130,59 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
 
   @override
   void onWindowClose() {
-    unawaited(_handleClose());
+    unawaited(closeWindow());
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.detached) {
-      unawaited(_handleClose());
+      unawaited(closeWindow());
     }
   }
 
-  Future<void> _handleClose() async {
-    if (_isShuttingDown) return;
-    _isShuttingDown = true;
+  /// Stops native/background work and closes every database exactly once.
+  ///
+  /// Both Flutter's app-exit callback and the window-manager callback await
+  /// this same future. This prevents concurrent or duplicate Drift closes and
+  /// ensures a second shutdown signal cannot let engine teardown race ahead of
+  /// the first teardown sequence.
+  Future<void> shutdown() => _shutdownFuture ??= _shutdown();
+
+  Future<void> _shutdown() async {
+    try {
+      await _disposer.disposeAll();
+    } catch (e, s) {
+      _logDisposalError(e, s, 'disposeAll');
+    }
+
+    try {
+      await _playerDisposer();
+    } catch (e, s) {
+      _logDisposalError(e, s, 'audioPlayer');
+    }
+
+    // Bounded so a hung file flush cannot indefinitely delay shutdown.
+    try {
+      if (getIt.isRegistered<LoggingService>()) {
+        await getIt<LoggingService>().flush().timeout(
+          const Duration(seconds: 1),
+        );
+      }
+    } catch (_) {
+      // Logging is best-effort during shutdown.
+    }
+  }
+
+  /// Runs the shared teardown and then terminates the desktop window once.
+  Future<void> closeWindow() => _closeFuture ??= _closeWindow();
+
+  Future<void> _closeWindow() async {
+    await shutdown();
     if (_isMacOS()) {
-      // macOS shutdown sequence — four steps, all while the Dart VM is alive:
-      //
-      // 1. Stop non-database services (outbox, sync, timers).
-      // 2. Dispose the media_kit Player so mpv's native core thread stops
-      //    cleanly and won't try to invoke FFI callbacks during VM teardown.
-      // 3. Flush LoggingService so buffered log lines (the 500 ms batching
-      //    timer) reach disk before _exit cancels all pending Dart timers.
-      // 4. Call POSIX _exit(0) via FFI. Unlike Dart's exit() (which calls
-      //    C exit() → atexit handlers → Dart VM teardown → GC finalizers),
-      //    _exit() terminates immediately. This prevents:
-      //    - NativeFinalizer on FinalizableDatabase triggering sqlite3_close_v2
-      //      → functionDestroy → DLRT_GetFfiCallbackMetadata → SIGABRT
-      //    - Any remaining native threads invoking Dart FFI callbacks
-      //
-      // Safety: SQLite WAL mode guarantees data integrity on abrupt exit;
-      // the WAL is replayed on next open. The OS reclaims all resources.
-      try {
-        await _disposer.disposeServicesOnly();
-      } catch (e, s) {
-        _logDisposalError(e, s, 'disposeServicesOnly');
-      }
-
-      try {
-        await _playerDisposer();
-      } catch (e, s) {
-        _logDisposalError(e, s, 'audioPlayer');
-      }
-
-      // Bounded so a hung file-flush cannot indefinitely delay shutdown.
-      try {
-        if (getIt.isRegistered<LoggingService>()) {
-          await getIt<LoggingService>().flush().timeout(
-            const Duration(seconds: 1),
-          );
-        }
-      } catch (_) {
-        // Logging is best-effort during shutdown; do not block _exit on it.
-      }
-
+      // All SQLite handles have been released while Dart FFI callbacks are
+      // still valid. Avoid a second native-finalizer pass during VM teardown.
       _exitFn(0);
     } else {
-      try {
-        await _disposer.disposeAll();
-      } catch (e, s) {
-        _logDisposalError(e, s, 'disposeAll');
-      }
       try {
         await windowManager.destroy();
       } catch (e, s) {

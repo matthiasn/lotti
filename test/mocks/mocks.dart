@@ -26,6 +26,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -88,6 +89,7 @@ import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -750,6 +752,10 @@ class RecordingMockNavService extends Mock implements NavService {
 class MockNotificationService extends Mock implements NotificationService {}
 
 class MockNotificationsDb extends Mock implements NotificationsDb {}
+
+class MockOnboardingMetricsDb extends Mock implements OnboardingMetricsDb {}
+
+class MockConsumptionDatabase extends Mock implements ConsumptionDatabase {}
 
 class MockNotificationRepository extends Mock
     implements NotificationRepository {}
