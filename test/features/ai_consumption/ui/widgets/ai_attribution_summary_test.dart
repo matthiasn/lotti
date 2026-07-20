@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -14,6 +15,7 @@ void main() {
     bool includeCarrier = true,
     AiWorkAttribution? carrier,
     Future<AiAttributionDetails?> Function()? loadDetails,
+    bool asPill = false,
   }) async {
     final attribution = carrier ?? makeAiWorkAttribution();
     await tester.pumpWidget(
@@ -21,6 +23,7 @@ void main() {
         AiAttributionSummary(
           artifact: makeAiArtifact(),
           attribution: includeCarrier ? attribution : null,
+          asPill: asPill,
         ),
         overrides: [
           aiAttributionDetailsProvider.overrideWith(
@@ -83,6 +86,34 @@ void main() {
     expect(find.text('1,500'), findsOneWidget);
     expect(find.text('request-sha'), findsOneWidget);
     expect(find.text('response-sha'), findsOneWidget);
+  });
+
+  testWidgets('pill presents entry attribution and opens the details modal', (
+    tester,
+  ) async {
+    final attribution = makeAiWorkAttribution();
+    final details = AiAttributionDetails(
+      attribution: attribution,
+      interactions: [
+        makeConsumptionEvent(
+          attributionId: attribution.id,
+          providerModelId: 'voxtral-small',
+          credits: 0.0042,
+          costCreditsDecimal: '0.0042',
+        ),
+      ],
+    );
+
+    await pumpSummary(tester, details: details, asPill: true);
+
+    expect(find.byType(DsPill), findsOneWidget);
+    expect(find.text('voxtral-small · <€0.01'), findsOneWidget);
+
+    await tester.tap(find.byType(DsPill));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI attribution'), findsOneWidget);
+    expect(find.text('<€0.01'), findsWidgets);
   });
 
   testWidgets('renders nothing when neither carrier nor projection exists', (

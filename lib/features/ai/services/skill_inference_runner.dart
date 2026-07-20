@@ -214,27 +214,45 @@ class SkillInferenceRunner {
           automationResult: automationResult,
           taskId: linkedTaskId,
         );
-        final responseStream = _cloudRepository.generateWithAudio(
-          promptResult.userMessage,
-          model: modelId,
-          audioBase64: audioBase64,
-          baseUrl: provider.baseUrl,
-          apiKey: provider.apiKey,
-          provider: provider,
-          systemMessage: promptResult.systemMessage,
-          geminiThinkingMode: effectiveThinkingMode,
-          speechDictionaryTerms: speechDictionaryTerms.isNotEmpty
-              ? speechDictionaryTerms
-              : null,
-        );
+        final impactCollector =
+            provider.inferenceProviderType == InferenceProviderType.melious
+            ? InferenceImpactCollector()
+            : null;
+        final responseStream = impactCollector == null
+            ? _cloudRepository.generateWithAudio(
+                promptResult.userMessage,
+                model: modelId,
+                audioBase64: audioBase64,
+                baseUrl: provider.baseUrl,
+                apiKey: provider.apiKey,
+                provider: provider,
+                systemMessage: promptResult.systemMessage,
+                geminiThinkingMode: effectiveThinkingMode,
+                speechDictionaryTerms: speechDictionaryTerms.isNotEmpty
+                    ? speechDictionaryTerms
+                    : null,
+              )
+            : _cloudRepository.generateWithAudio(
+                promptResult.userMessage,
+                model: modelId,
+                audioBase64: audioBase64,
+                baseUrl: provider.baseUrl,
+                apiKey: provider.apiKey,
+                provider: provider,
+                systemMessage: promptResult.systemMessage,
+                geminiThinkingMode: effectiveThinkingMode,
+                speechDictionaryTerms: speechDictionaryTerms.isNotEmpty
+                    ? speechDictionaryTerms
+                    : null,
+                impactCollector: impactCollector,
+              );
 
         // 6. Collect streaming response.
         final collected = await _collectStream(responseStream);
 
-        // Audio providers report token usage inconsistently and this surface
-        // has no impact side-channel. Preserve any returned usage while leaving
-        // environmental impact unset for both chat-audio and transcription
-        // endpoints.
+        // The Melious chat-audio adapter supplies provider-reported billing
+        // and environmental impact through this collector; other providers
+        // leave it empty.
         final attributionEnvelope = await _recordAttributedConsumption(
           attribution: attribution,
           entryId: audioEntryId,
@@ -245,7 +263,7 @@ class SkillInferenceRunner {
           modelId: modelId,
           responseType: skill.skillType.toResponseType,
           usage: collected.usage,
-          impact: null,
+          impact: impactCollector?.impact,
           start: start,
           interactionKind: AiInteractionKind.audioTranscription,
           requestText:

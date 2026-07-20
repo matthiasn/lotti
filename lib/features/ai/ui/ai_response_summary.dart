@@ -92,6 +92,7 @@ class AiResponseSummary extends StatelessWidget {
               id: aiResponse.meta.id,
             ),
             attribution: aiResponse.data.aiAttribution,
+            asPill: true,
           ),
         ],
       ),

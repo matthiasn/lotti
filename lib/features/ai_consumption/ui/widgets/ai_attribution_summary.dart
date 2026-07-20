@@ -5,6 +5,7 @@ import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart'
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
@@ -17,6 +18,7 @@ class AiAttributionSummary extends ConsumerWidget {
     required this.artifact,
     this.attribution,
     this.compact = false,
+    this.asPill = false,
     this.includeTopSpacing = true,
     super.key,
   });
@@ -24,6 +26,7 @@ class AiAttributionSummary extends ConsumerWidget {
   final AiArtifactReference artifact;
   final AiWorkAttribution? attribution;
   final bool compact;
+  final bool asPill;
   final bool includeTopSpacing;
 
   @override
@@ -51,6 +54,7 @@ class AiAttributionSummary extends ConsumerWidget {
       attribution: resolvedAttribution,
       details: details,
       compact: compact,
+      asPill: asPill,
       isLoading: asyncDetails.isLoading && details == null,
     );
     if (!includeTopSpacing) return row;
@@ -105,12 +109,14 @@ class _AttributionRow extends StatelessWidget {
     required this.attribution,
     required this.details,
     required this.compact,
+    required this.asPill,
     required this.isLoading,
   });
 
   final AiWorkAttribution attribution;
   final AiAttributionDetails? details;
   final bool compact;
+  final bool asPill;
   final bool isLoading;
 
   @override
@@ -129,6 +135,28 @@ class _AttributionRow extends StatelessWidget {
             details?.interactions.length ?? 0,
           );
     final cost = isLoading ? '…' : _formatTotalCost(context, details);
+    if (asPill) {
+      final model = isLoading
+          ? '…'
+          : _firstModel(details) ?? context.messages.aiAttributionUnknownModel;
+      return Semantics(
+        button: !isLoading,
+        label: '$primary. $model. $cost',
+        child: DsPill(
+          variant: DsPillVariant.filled,
+          bordered: true,
+          label: '$model · $cost',
+          leading: Icon(
+            Icons.auto_awesome_outlined,
+            size: 12,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          onTap: isLoading
+              ? null
+              : () => _showDetails(context, attribution, details),
+        ),
+      );
+    }
     final radius = BorderRadius.circular(tokens.radii.m);
 
     return Semantics(

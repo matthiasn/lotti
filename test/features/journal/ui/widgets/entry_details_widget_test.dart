@@ -20,6 +20,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
@@ -1427,11 +1428,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(
-        find.textContaining('Ada · Manual · Completed'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('Cost unknown'), findsOneWidget);
+      expect(find.byType(DsPill), findsOneWidget);
+      expect(find.text('Unknown model · Cost unknown'), findsOneWidget);
       expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
     });
 

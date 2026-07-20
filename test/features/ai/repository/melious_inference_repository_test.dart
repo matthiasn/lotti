@@ -52,6 +52,8 @@ http.Response _voxtralChatResponse({
   Object? id = 'chatcmpl-voxtral',
   Object? model = 'voxtral-small-24b-2507',
   Object? created = 123,
+  Map<String, Object>? environmentImpact,
+  Map<String, Object>? billingCost,
 }) => http.Response(
   jsonEncode({
     'id': ?id,
@@ -72,6 +74,8 @@ http.Response _voxtralChatResponse({
       'completion_tokens': 4,
       'total_tokens': 15,
     },
+    'environment_impact': ?environmentImpact,
+    'billing_cost': ?billingCost,
   }),
   200,
 );
@@ -993,6 +997,57 @@ void main() {
         });
         expect(body['max_tokens'], 321);
         expect(temporaryMp3.existsSync(), isFalse);
+      },
+    );
+
+    test(
+      'transcribeChatAudio captures Melious billing and impact data',
+      () async {
+        final impactCollector = InferenceImpactCollector();
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient(
+            (_) async => _voxtralChatResponse(
+              environmentImpact: {
+                'energy_kwh': 0.0125,
+                'carbon_g_co2': 3.75,
+                'water_liters': 0.5,
+                'renewable_percent': 87.5,
+                'pue': 1.2,
+                'location': 'FI',
+                'provider_id': 'upstream-voxtral',
+              },
+              billingCost: {'credits': '0.0042'},
+            ),
+          ),
+          audioToTemporaryMp3Encoder: (_) async => _temporaryMp3File(),
+        );
+        addTearDown(repository.close);
+
+        await repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+              impactCollector: impactCollector,
+            )
+            .drain<void>();
+
+        expect(
+          impactCollector.impact,
+          const MeliousCallImpact(
+            energyKwh: 0.0125,
+            carbonGCo2: 3.75,
+            waterLiters: 0.5,
+            renewablePercent: 87.5,
+            pue: 1.2,
+            dataCenter: 'FI',
+            providerId: 'upstream-voxtral',
+            costCredits: 0.0042,
+            costCreditsDecimal: '0.0042',
+          ),
+        );
       },
     );
 

@@ -221,6 +221,17 @@ class UnifiedAiInferenceRepository {
           ? getIt<AiInteractionCapture>()
           : null;
       final outputId = existingOutputId ?? const Uuid().v4();
+      // Coding prompts are shown under their resolved parent task. Resolve that
+      // task before starting attribution too, so the provider interaction is
+      // included in the task's lifetime consumption totals rather than merely
+      // linked to the task after the fact.
+      final attributionTask =
+          promptConfig.aiResponseType == AiResponseType.promptGeneration &&
+              entity is! Task
+          ? await _getTaskForEntity(entity)
+          : entity is Task
+          ? entity
+          : null;
       final attributionSession =
           existingAttributionSession ??
           await capture?.beginSession(
@@ -236,7 +247,7 @@ class UnifiedAiInferenceRepository {
                 outputId: outputId,
               ),
             ],
-            taskId: entity is Task ? entity.id : null,
+            taskId: attributionTask?.id,
             categoryId: entity.meta.categoryId,
           );
 
@@ -286,7 +297,7 @@ class UnifiedAiInferenceRepository {
               ),
               existingSession: attributionSession,
               terminalizeSuccess: false,
-              taskId: entity is Task ? entity.id : null,
+              taskId: attributionTask?.id,
               categoryId: entity.meta.categoryId,
             );
 
@@ -485,6 +496,21 @@ class UnifiedAiInferenceRepository {
       final speechTerms = speechDictionaryTerms.isNotEmpty
           ? speechDictionaryTerms
           : null;
+      if (provider.inferenceProviderType == InferenceProviderType.melious) {
+        return cloudRepo.generateWithAudio(
+          prompt,
+          model: model.providerModelId,
+          audioBase64: preparedAudio.base64,
+          baseUrl: provider.baseUrl,
+          apiKey: provider.apiKey,
+          provider: provider,
+          maxCompletionTokens: model.maxCompletionTokens,
+          stream: isAiStreamingEnabled,
+          audioFormat: preparedAudio.format,
+          speechDictionaryTerms: speechTerms,
+          impactCollector: impactCollector,
+        );
+      }
       return cloudRepo.generateWithAudio(
         prompt,
         model: model.providerModelId,

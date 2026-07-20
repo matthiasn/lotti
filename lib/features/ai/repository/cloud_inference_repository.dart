@@ -171,6 +171,7 @@ class CloudInferenceRepository {
     List<String>? speechDictionaryTerms,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
+    InferenceImpactCollector? impactCollector,
   }) => _generateMore.generateWithAudio(
     prompt,
     model: model,
@@ -186,6 +187,7 @@ class CloudInferenceRepository {
     speechDictionaryTerms: speechDictionaryTerms,
     systemMessage: systemMessage,
     geminiThinkingMode: geminiThinkingMode,
+    impactCollector: impactCollector,
   );
 
   Stream<CreateChatCompletionStreamResponse> generateWithMessages({

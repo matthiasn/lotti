@@ -673,6 +673,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     required String prompt,
     int? maxCompletionTokens,
     Duration timeout = temporaryMp3ChatAudioTimeout,
+    InferenceImpactCollector? impactCollector,
   }) => transcribeTemporaryMp3ChatAudio(
     httpClient: httpClient,
     provider: const TemporaryMp3ChatAudioProvider(
@@ -693,6 +694,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     temporaryFileReader: _temporaryFileReader,
     temporaryFileDeleter: _temporaryFileDeleter,
     clockSource: _clock,
+    impactCollector: impactCollector,
   );
 
   /// Generates an image through Melious' `/images/generations` endpoint.

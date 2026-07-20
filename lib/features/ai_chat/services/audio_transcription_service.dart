@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -200,6 +201,10 @@ class AudioTranscriptionService {
     final audioBase64 = base64Encode(bytes);
 
     final cloud = ref.read(cloudInferenceRepositoryProvider);
+    final impactCollector =
+        provider.inferenceProviderType == InferenceProviderType.melious
+        ? InferenceImpactCollector()
+        : null;
     final useGeminiThinkingMode =
         provider.inferenceProviderType == InferenceProviderType.gemini &&
         GeminiThinkingConfig.isGemini3(model.providerModelId);
@@ -218,6 +223,7 @@ class AudioTranscriptionService {
           geminiThinkingMode: useGeminiThinkingMode
               ? model.geminiThinkingMode
               : null,
+          impactCollector: impactCollector,
         )) {
           final content = chunk.choices?.firstOrNull?.delta?.content ?? '';
           if (content.trim().isNotEmpty) {
@@ -263,6 +269,7 @@ class AudioTranscriptionService {
                 totalTokens: usage.totalTokens,
               );
             },
+            impact: () => impactCollector?.impact,
             existingSession: attributionSession,
             terminalizeSuccess: attributionSession == null,
             terminalizeFailure: terminalizeAttributionFailure,

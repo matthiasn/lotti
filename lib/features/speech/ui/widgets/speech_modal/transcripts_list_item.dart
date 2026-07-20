@@ -158,6 +158,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
               subId: widget.transcript.id,
             ),
             attribution: widget.transcript.aiAttribution,
+            asPill: true,
           ),
         ],
       ),
