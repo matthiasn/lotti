@@ -26,9 +26,12 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
+import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
+import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
@@ -360,6 +363,67 @@ DraftPlan _plan() {
       ),
     ],
   );
+}
+
+List<DayActivityEntry> _activityEntries() {
+  DayProcessingJob job({
+    required String id,
+    required DateTime createdAt,
+    required DayProcessingJobStatus status,
+    DayProcessingFailureClass? failureClass,
+    String? transcript,
+  }) => DayProcessingJob(
+    id: 'job-$id',
+    kind: DayProcessingJobKind.transcribeAudio,
+    status: status,
+    dayId: 'dayplan-2026-06-08',
+    activityEntryId: id,
+    recordingSessionId: 'session-$id',
+    audioId: 'audio-$id',
+    audioPath: '/tmp/$id.wav',
+    createdAt: createdAt,
+    updatedAt: createdAt,
+    nextAttemptAt: createdAt,
+    attempts: status == DayProcessingJobStatus.succeeded ? 1 : 3,
+    generation: 2,
+    lastFailureClass: failureClass,
+    resultTranscript: transcript,
+    completedAt: status == DayProcessingJobStatus.succeeded ? createdAt : null,
+  );
+
+  final readyAt = _at(8, 20);
+  final waitingAt = _at(15, 35);
+  return [
+    DayActivityEntry(
+      id: 'activity-gym-check-in',
+      kind: DayActivityEntryKind.recording,
+      createdAt: readyAt,
+      activityEntryId: 'activity-gym-check-in',
+      processingJob: job(
+        id: 'activity-gym-check-in',
+        createdAt: readyAt,
+        status: DayProcessingJobStatus.succeeded,
+        transcript: _t(
+          'Protect the habitat inspection this morning and leave a buffer '
+              'before Mission Control.',
+          'Schütze heute Vormittag die Habitat-Inspektion und lasse einen '
+              'Puffer vor der Missionskontrolle.',
+        ),
+      ),
+    ),
+    DayActivityEntry(
+      id: 'activity-afternoon-check-in',
+      kind: DayActivityEntryKind.recording,
+      createdAt: waitingAt,
+      activityEntryId: 'activity-afternoon-check-in',
+      processingJob: job(
+        id: 'activity-afternoon-check-in',
+        createdAt: waitingAt,
+        status: DayProcessingJobStatus.waitingForNetwork,
+        failureClass: DayProcessingFailureClass.network,
+      ),
+    ),
+  ];
 }
 
 /// Recorded reality: late starts, an escaped penguin nobody planned,
@@ -830,6 +894,7 @@ Future<void> _pumpDayPage(
   Brightness brightness = Brightness.dark,
   double textScale = 1.0,
   bool showPlannerReview = true,
+  List<DayActivityEntry> activityEntries = const [],
 }) async {
   applyScreenshotDevice(tester, device);
   final documentsDirectory = _manualDocumentsDirectory;
@@ -853,6 +918,9 @@ Future<void> _pumpDayPage(
         textScale: textScale,
         overrides: [
           capturesForDateProvider.overrideWith((ref, date) async => const []),
+          dayActivityProvider.overrideWith(
+            (ref, date) async => activityEntries,
+          ),
           dailyOsActualTimeBlocksProvider.overrideWith(
             (ref, date) async => _actuals(),
           ),
@@ -954,15 +1022,37 @@ Future<void> _pumpManualDailyOsSurface(
 AppLocalizations _messages(WidgetTester tester) =>
     tester.element(find.byType(DayPage)).messages;
 
-Future<void> _switchToDayView(WidgetTester tester) async {
+/// Taps a PlanViewToggle segment in either rendering mode: by visible label
+/// when the toggle is wide enough for text (`.last` skips the invisible
+/// width-reserving ghost label), or by glyph once the three-segment toggle
+/// collapses to icons at narrow widths / large text scales.
+Future<void> _tapPlanViewSegment(
+  WidgetTester tester, {
+  required String label,
+  required IconData icon,
+}) async {
   await withClock(Clock.fixed(_now), () async {
-    // `.last` skips the toggle's invisible width-reserving ghost label.
-    await tester.tap(
-      find.text(_messages(tester).dailyOsNextPlanViewDay).last,
-    );
+    final text = find.text(label);
+    if (tester.any(text)) {
+      await tester.tap(text.last);
+    } else {
+      await tester.tap(find.byIcon(icon).last);
+    }
     await settleFrames(tester);
   });
 }
+
+Future<void> _switchToDayView(WidgetTester tester) => _tapPlanViewSegment(
+  tester,
+  label: _messages(tester).dailyOsNextPlanViewDay,
+  icon: Icons.calendar_view_day_outlined,
+);
+
+Future<void> _switchToActivityView(WidgetTester tester) => _tapPlanViewSegment(
+  tester,
+  label: _messages(tester).dailyOsNextPlanViewActivity,
+  icon: Icons.timeline_outlined,
+);
 
 Future<void> _enableArrangeMode(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('daily_os_timeline_arrange_toggle')));
@@ -1135,6 +1225,23 @@ void main() {
     await _switchToDayView(tester);
     await _enableArrangeMode(tester);
     await captureScreenshot(tester, 'day_desktop_05_timeline_arrange_dark');
+  });
+
+  testWidgets('desktop activity recovery — dark', (tester) async {
+    await _pumpDayPage(
+      tester,
+      device: desktopDevice,
+      activityEntries: _activityEntries(),
+    );
+    await _switchToActivityView(tester);
+    final messages = _messages(tester);
+    expect(
+      find.text(messages.dailyOsNextActivityWaitingForNetwork),
+      findsOneWidget,
+    );
+    expect(find.text(messages.dailyOsNextActivityRetry), findsOneWidget);
+    expect(find.text(messages.dailyOsNextActivityUseToRefine), findsOneWidget);
+    await captureScreenshot(tester, 'daily_os_activity_desktop_dark');
   });
 
   testWidgets('pro block editor overview — dark', (tester) async {
