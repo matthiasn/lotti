@@ -67,18 +67,12 @@ void main() {
   test(
     'returns ready and pending persisted recordings for the requested day',
     () async {
-      when(
-        () => journalDb.getJournalEntities(
-          types: const ['JournalAudio'],
-          starredStatuses: const [true, false],
-          privateStatuses: const [true, false],
-          flaggedStatuses: const [1, 0],
-          ids: null,
-          limit: 64,
-          // ignore: avoid_redundant_argument_values
-          offset: 0,
-        ),
-      ).thenAnswer(
+      final withoutContext = audio(
+        id: 'no-context',
+        entryDayId: dayId,
+        processingJobId: 'job-no-context',
+      );
+      when(() => journalDb.getDayAudioEntries(dayId)).thenAnswer(
         (_) async => [
           audio(
             id: 'included',
@@ -94,12 +88,10 @@ void main() {
             transcript: 'Wrong receipt',
             receiptJobId: 'job-other',
           ),
-          audio(
-            id: 'other-day',
-            entryDayId: 'dayplan-2026-07-19',
-            processingJobId: 'job-other-day',
-            transcript: 'Tomorrow',
-            receiptJobId: 'job-other-day',
+          // A row the index matched but whose payload lost its provenance
+          // must be skipped, not crash context assembly.
+          withoutContext.copyWith(
+            data: withoutContext.data.copyWith(dayContext: null),
           ),
         ],
       );
@@ -128,18 +120,7 @@ void main() {
       journalDb: journalDb,
       assetRoot: root,
     );
-    when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 64,
-        // ignore: avoid_redundant_argument_values
-        offset: 0,
-      ),
-    ).thenAnswer(
+    when(() => journalDb.getDayAudioEntries(dayId)).thenAnswer(
       (_) async => [
         audio(
           id: 'bounded',
@@ -161,18 +142,7 @@ void main() {
   });
 
   test('retains metadata for every persisted recording in the day', () async {
-    when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 64,
-        // ignore: avoid_redundant_argument_values
-        offset: 0,
-      ),
-    ).thenAnswer(
+    when(() => journalDb.getDayAudioEntries(dayId)).thenAnswer(
       (_) async => [
         for (var index = 0; index < 21; index++)
           audio(
@@ -192,7 +162,7 @@ void main() {
     );
   });
 
-  test('paginates and prefers user-reviewed text over receipts', () async {
+  test('prefers user-reviewed text over receipts', () async {
     final reviewed =
         audio(
           id: 'reviewed',
@@ -207,42 +177,12 @@ void main() {
           ),
         );
     when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 1,
-        // ignore: avoid_redundant_argument_values
-        offset: 0,
-      ),
+      () => journalDb.getDayAudioEntries(dayId),
     ).thenAnswer((_) async => [reviewed]);
-    when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 1,
-        offset: 1,
-      ),
-    ).thenAnswer((_) async => const []);
 
-    final entries = await service.loadForDay(dayId, pageSize: 1);
+    final entries = await service.loadForDay(dayId);
 
     expect(entries.single.transcript, 'My reviewed wording');
-    verify(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 1,
-        offset: 1,
-      ),
-    ).called(1);
+    verify(() => journalDb.getDayAudioEntries(dayId)).called(1);
   });
 }

@@ -112,7 +112,9 @@ class _DayPageState extends ConsumerState<DayPage> {
                 transcript: transcript,
                 capturedAt: entry.createdAt,
                 dayDate: widget.draft.dayDate,
-                audioId: entry.audio?.meta.id,
+                // The journal row can lag behind the outbox job (e.g. a
+                // sync race), so fall back to the job's audio reference.
+                audioId: entry.audio?.meta.id ?? entry.processingJob?.audioId,
               )
         : CaptureId(entry.capture!.id);
     if (entry.capture != null) {

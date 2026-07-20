@@ -403,6 +403,9 @@ void main() {
 
         expect(agent.capturedAt, sourceCapturedAt);
         expect(agent.capturedDayDate, selectedDay);
+        // The journal row hasn't landed for this entry, so the outbox job's
+        // audio reference keeps the capture correlated to its recording.
+        expect(agent.capturedAudioId, 'audio-retained');
       },
     );
 

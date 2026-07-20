@@ -45,41 +45,29 @@ class DayAudioEntryContextService {
 
   Future<List<DayAudioEntryContext>> loadForDay(
     String dayId, {
-    int pageSize = 64,
     int maxTranscriptCharacters = 600,
   }) async {
+    final audios = await journalDb.getDayAudioEntries(dayId);
     final entries = <DayAudioEntryContext>[];
-    for (var pageIndex = 0; ; pageIndex++) {
-      final page = await journalDb.getJournalEntities(
-        types: const <String>['JournalAudio'],
-        starredStatuses: const <bool>[true, false],
-        privateStatuses: const <bool>[true, false],
-        flaggedStatuses: const <int>[1, 0],
-        ids: null,
-        limit: pageSize,
-        offset: pageIndex * pageSize,
+    for (final audio in audios) {
+      final context = audio.data.dayContext;
+      if (context == null) continue;
+      final transcript = _discoverableTranscript(
+        audio,
+        context.processingJobId,
       );
-      for (final audio in page.whereType<JournalAudio>()) {
-        final context = audio.data.dayContext;
-        if (audio.meta.deletedAt != null || context?.dayId != dayId) continue;
-        final transcript = _discoverableTranscript(
-          audio,
-          context!.processingJobId,
-        );
-        entries.add(
-          DayAudioEntryContext(
-            audioId: audio.meta.id,
-            activityEntryId: context.activityEntryId,
-            capturedAt: context.capturedAt,
-            processingState: transcript == null ? 'pending' : 'ready',
-            audioAvailableLocally: _audioAvailableLocally(audio),
-            transcript: transcript == null
-                ? null
-                : _bounded(transcript, maxTranscriptCharacters),
-          ),
-        );
-      }
-      if (page.length < pageSize) break;
+      entries.add(
+        DayAudioEntryContext(
+          audioId: audio.meta.id,
+          activityEntryId: context.activityEntryId,
+          capturedAt: context.capturedAt,
+          processingState: transcript == null ? 'pending' : 'ready',
+          audioAvailableLocally: _audioAvailableLocally(audio),
+          transcript: transcript == null
+              ? null
+              : _bounded(transcript, maxTranscriptCharacters),
+        ),
+      );
     }
     entries.sort((a, b) => a.capturedAt.compareTo(b.capturedAt));
     return List<DayAudioEntryContext>.unmodifiable(entries);

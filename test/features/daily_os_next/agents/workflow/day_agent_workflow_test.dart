@@ -1184,18 +1184,7 @@ void main() {
       'surfaces completed persisted recordings before CaptureEntity creation',
       () async {
         final journalDb = MockJournalDb();
-        when(
-          () => journalDb.getJournalEntities(
-            types: const ['JournalAudio'],
-            starredStatuses: const [true, false],
-            privateStatuses: const [true, false],
-            flaggedStatuses: const [1, 0],
-            ids: null,
-            limit: 64,
-            // ignore: avoid_redundant_argument_values
-            offset: 0,
-          ),
-        ).thenAnswer(
+        when(() => journalDb.getDayAudioEntries(dayId)).thenAnswer(
           (_) async => [
             JournalAudio(
               meta: Metadata(
