@@ -6,11 +6,15 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
+import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -66,6 +70,10 @@ void main() {
       when(embeddingStore.close).thenAnswer((_) {
         order.add('EmbeddingStore');
       });
+      final aiConfigRepository = MockAiConfigRepository();
+      when(aiConfigRepository.close).thenAnswer((_) async {
+        order.add('AiConfigRepository');
+      });
 
       final journalDb = MockJournalDb();
       when(journalDb.close).thenAnswer((_) async {
@@ -87,6 +95,18 @@ void main() {
       when(fts5Db.close).thenAnswer((_) async {
         order.add('Fts5Db');
       });
+      final consumptionDb = MockConsumptionDatabase();
+      when(consumptionDb.close).thenAnswer((_) async {
+        order.add('ConsumptionDatabase');
+      });
+      final notificationsDb = MockNotificationsDb();
+      when(notificationsDb.close).thenAnswer((_) async {
+        order.add('NotificationsDb');
+      });
+      final onboardingMetricsDb = MockOnboardingMetricsDb();
+      when(onboardingMetricsDb.close).thenAnswer((_) async {
+        order.add('OnboardingMetricsDb');
+      });
       final settingsDb = MockSettingsDb();
       when(settingsDb.close).thenAnswer((_) async {
         order.add('SettingsDb');
@@ -98,11 +118,15 @@ void main() {
         ..registerSingleton<OutboxService>(outbox)
         ..registerSingleton<MatrixService>(matrix)
         ..registerSingleton<EmbeddingStore>(embeddingStore)
+        ..registerSingleton<AiConfigRepository>(aiConfigRepository)
         ..registerSingleton<JournalDb>(journalDb)
         ..registerSingleton<SyncDatabase>(syncDb)
         ..registerSingleton<AgentDatabase>(agentDb)
         ..registerSingleton<EditorDb>(editorDb)
         ..registerSingleton<Fts5Db>(fts5Db)
+        ..registerSingleton<ConsumptionDatabase>(consumptionDb)
+        ..registerSingleton<NotificationsDb>(notificationsDb)
+        ..registerSingleton<OnboardingMetricsDb>(onboardingMetricsDb)
         ..registerSingleton<SettingsDb>(settingsDb);
 
       await disposer.disposeAll();
@@ -113,35 +137,17 @@ void main() {
         'OutboxService',
         'MatrixService',
         'EmbeddingStore',
+        'AiConfigRepository',
         'JournalDb',
         'SyncDatabase',
         'AgentDatabase',
         'EditorDb',
         'Fts5Db',
+        'ConsumptionDatabase',
+        'NotificationsDb',
+        'OnboardingMetricsDb',
         'SettingsDb',
       ]);
-      expect(loggedErrors, isEmpty);
-    });
-
-    test('disposeServicesOnly skips Drift databases', () async {
-      final order = <String>[];
-
-      final embeddingService = MockEmbeddingService();
-      when(embeddingService.stop).thenAnswer((_) async {
-        order.add('EmbeddingService');
-      });
-      final journalDb = MockJournalDb();
-      when(journalDb.close).thenAnswer((_) async {
-        order.add('JournalDb');
-      });
-
-      testGetIt
-        ..registerSingleton<EmbeddingService>(embeddingService)
-        ..registerSingleton<JournalDb>(journalDb);
-
-      await disposer.disposeServicesOnly();
-
-      expect(order, ['EmbeddingService']);
       expect(loggedErrors, isEmpty);
     });
 
@@ -160,7 +166,7 @@ void main() {
         ..registerSingleton<BackfillRequestService>(backfill)
         ..registerSingleton<EmbeddingService>(embeddingService);
 
-      await disposer.disposeServicesOnly();
+      await disposer.disposeAll();
 
       expect(order, ['EmbeddingService']);
       expect(loggedErrors.single.service, 'BackfillRequestService');
@@ -182,7 +188,7 @@ void main() {
         ..registerSingleton<OutboxService>(outbox)
         ..registerSingleton<MatrixService>(matrix);
 
-      await disposer.disposeServicesOnly();
+      await disposer.disposeAll();
 
       expect(order, ['MatrixService']);
       expect(loggedErrors.single.service, 'OutboxService');
@@ -235,7 +241,7 @@ void main() {
           ..registerSingleton<OutboxService>(outbox)
           ..registerSingleton<MatrixService>(matrix);
 
-        unawaited(disposer.disposeServicesOnly());
+        unawaited(disposer.disposeAll());
 
         // Advance just past the per-operation timeout (3s).
         async

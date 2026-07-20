@@ -33,6 +33,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1055" date="2026-07-20">
+      <description>
+        <p>Fixed a SIGABRT crash after closing Lotti by stopping background services and releasing every SQLite database before the Flutter engine exits.</p>
+      </description>
+    </release>
     <release version="0.9.1054" date="2026-07-18">
       <description>
         <p>Task AI summaries are now cleaner and more compact: report and proposal text matches editor entries and card summaries, metadata is easier to read, and scheduled updates plus their switch form one responsive footer group beside the model on wide cards and above it on phones. Countdown ticks no longer shift neighboring controls, turning off automation during a pending update keeps the summary correctly marked as out of date, and accepting suggestions keeps the task detail scroll position stable while checklist and proposal content resize.</p>
