@@ -10,9 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Report and proposal text now match editor entries and card summaries, quiet
   metadata is easier to read, secondary controls have larger interaction
   targets, and the footer adapts cleanly to narrow layouts and larger text.
-  Scheduled-update, model, and automation controls now form a tighter,
-  intentional footer group; canceling automation while an update is pending
-  also keeps the summary correctly marked as out of date.
+  Scheduled updates and their switch now form one responsive automation group
+  beside the model on wide cards and above it on phones; countdown ticks no
+  longer shift neighboring controls. Canceling automation while an update is
+  pending also keeps the summary correctly marked as out of date.
 - **Date pickers now start the week according to your device region.** Entry
   dates, entry ranges, due dates, and project target dates show Monday first in
   European regions and Sunday first in the US, including matching weekday

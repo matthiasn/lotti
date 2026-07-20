@@ -160,18 +160,21 @@ narrow widths. Proposal prose uses the same unmodified `body.bodySmall`
 metrics as the report instead of introducing a separate line height.
 
 All secondary controls live in a quiet, flat footer pinned to the card bottom
-(`TaskAgentControlsFooter`). Wide cards render one compact utility rail:
-model/provider identity, wake status, and automatic updates. Narrow cards use
-two groups instead of three independent bands: wake status first, then a
-settings row with the automation label directly above model identity and the
-toggle pinned trailing. A scheduled wake is a design-system `DsPill` with a
-clock glyph; its separate `spacing.step8` close target cancels the wake without
-making the informational pill itself destructive. Running uses a
-non-interactive status row with an explicit `spacing.step3` spinner/label gap,
-rather than presenting disabled work as a loading button. Only the toggle and
-toggle retains its `spacing.step9` target, while cancel, status, and identity
-use the denser `spacing.step8` rhythm so the footer stays compact without
-becoming cramped.
+(`TaskAgentControlsFooter`). Wake status and automatic updates share one
+bounded automation cluster instead of reading as unrelated controls. Wide
+cards place model/provider identity beside that cluster. Narrow cards place
+the cluster first and wrap identity below; within the cluster, wake status and
+the automatic-updates setting also wrap when their localized content cannot
+share a line. A scheduled wake is a design-system `DsPill` with a clock glyph;
+its separate `spacing.step8` close target cancels the wake without making the
+informational pill itself destructive. The countdown uses tabular figures and
+reserves its initial formatted-label width, so minute/hour digit transitions
+cannot move the pill, toggle, model identity, or responsive wrap point.
+Running uses a non-interactive status row with an explicit `spacing.step3`
+spinner/label gap and defensive single-line truncation rather than presenting
+disabled work as a loading button. The toggle retains its `spacing.step9`
+target, while cancel, status, and identity use the denser `spacing.step8`
+rhythm so the footer stays compact without becoming cramped.
 Meaningful attribution uses `aiCard.metaText` rather than the fainter
 decorative color. When setup is
 missing, the disabled toggle explains itself via an info tooltip. The filled
@@ -1981,8 +1984,11 @@ agent runtime produces:
   needed) with a separate full-size cancel target that calls
   `cancelScheduledWake`, the automatic-updates toggle, and the tappable
   model/provider identity row (`TaskAgentIdentityRegion`, opens
-  `AgentModelSheet`). Wide cards keep these on one utility rail; narrow cards
-  keep wake status above one grouped automation/model row. While
+  `AgentModelSheet`). The countdown and toggle form one bounded automation
+  cluster. Wide cards keep model identity beside the cluster; narrow cards
+  wrap identity below, and the cluster wraps its own controls when needed.
+  Countdown label width is reserved for the scheduled interval so ticking
+  across digit and hour-format boundaries never causes layout movement. While
   automation is off, `TaskAgentFreshnessStrip` directly under the
   report owns the wake CTA instead (stale warning or quiet up-to-date
   confirmation in one constant-geometry slot). Disabling automation while a

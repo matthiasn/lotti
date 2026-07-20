@@ -13,11 +13,12 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Quiet settings zone pinned to the bottom of the task-agent card.
 ///
-/// Wide cards place model identity, wake status, and automation on one compact
-/// utility rail. Narrow cards use two intentional groups: wake status first,
-/// then one settings row that stacks the automation label directly above
-/// model identity with the toggle pinned trailing. This preserves full-size
-/// controls without turning every caption into its own airy footer band.
+/// Wake status and automatic updates form one bounded automation cluster so
+/// the countdown, spinner, and switch read as one system. Wide cards place
+/// that cluster beside model identity. Narrow cards place the cluster first
+/// and wrap identity below it; the cluster itself also wraps when its wake
+/// status and switch cannot share a line. The countdown reserves the width of
+/// its initial label so ticking digits never move adjacent controls.
 ///
 /// The wake control is omitted while the freshness strip above owns the CTA
 /// ([showWakeButton] false).
@@ -62,14 +63,6 @@ class TaskAgentControlsFooter extends StatelessWidget {
     final countdownVisible = showCountdown && wakeAt != null;
     final hasWakeControl = showWakeButton || countdownVisible;
 
-    final automationLabel = Text(
-      messages.taskAgentAutomaticUpdatesLabel,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: ai.metaText,
-      ),
-    );
     final automationToggle = ConstrainedBox(
       key: const ValueKey('taskAgentAutomaticUpdatesTarget'),
       constraints: BoxConstraints(
@@ -110,57 +103,87 @@ class TaskAgentControlsFooter extends StatelessWidget {
             variant: DesignSystemButtonVariant.tertiary,
             onPressed: inferenceAvailable ? onRunNow : null,
           );
-
-    Widget wideUtilityRail() {
-      return Row(
-        key: const ValueKey('taskAgentFooterWideLayout'),
-        children: [
-          Expanded(flex: 7, child: identity),
-          if (hasWakeControl) ...[
-            SizedBox(width: tokens.spacing.cardItemSpacing),
-            Flexible(flex: 6, child: wakeControl),
-          ],
-          SizedBox(width: tokens.spacing.cardItemSpacing),
-          Flexible(
-            flex: 5,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(child: automationLabel),
-                SizedBox(width: tokens.spacing.step2),
-                automationToggle,
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    Widget compactUtilityStack() {
-      return Column(
-        key: const ValueKey('taskAgentFooterCompactLayout'),
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (hasWakeControl) ...[
-            Align(alignment: Alignment.centerLeft, child: wakeControl),
-            SizedBox(height: tokens.spacing.step1),
-          ],
-          Row(
+    final automationLabelStyle = tokens.typography.styles.others.caption
+        .copyWith(color: ai.metaText);
+    final automationLabelPainter = TextPainter(
+      text: TextSpan(
+        text: messages.taskAgentAutomaticUpdatesLabel,
+        style: automationLabelStyle,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final automationSettingWidth =
+        automationLabelPainter.width +
+        tokens.spacing.step2 +
+        tokens.spacing.step9;
+    final automationSetting = LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          key: const ValueKey('taskAgentAutomationSetting'),
+          width: constraints.constrainWidth(automationSettingWidth),
+          child: Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    automationLabel,
-                    identity,
-                  ],
+                child: Text(
+                  messages.taskAgentAutomaticUpdatesLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: automationLabelStyle,
                 ),
               ),
               SizedBox(width: tokens.spacing.step2),
               automationToggle,
             ],
           ),
+        );
+      },
+    );
+
+    final automationCluster = Container(
+      key: const ValueKey('taskAgentAutomationCluster'),
+      constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+      decoration: BoxDecoration(
+        color: ai.subtleWashStrong,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        border: Border.all(color: ai.rowBorder),
+      ),
+      child: Wrap(
+        key: const ValueKey('taskAgentAutomationWrap'),
+        alignment: hasWakeControl
+            ? WrapAlignment.spaceBetween
+            : WrapAlignment.end,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: tokens.spacing.cardItemSpacing,
+        runSpacing: tokens.spacing.step1,
+        children: [
+          if (hasWakeControl) wakeControl,
+          automationSetting,
+        ],
+      ),
+    );
+
+    Widget wideFooter() {
+      return Row(
+        key: const ValueKey('taskAgentFooterWideLayout'),
+        children: [
+          Expanded(flex: 4, child: identity),
+          SizedBox(width: tokens.spacing.cardItemSpacing),
+          Expanded(flex: 6, child: automationCluster),
+        ],
+      );
+    }
+
+    Widget compactFooter() {
+      return Column(
+        key: const ValueKey('taskAgentFooterCompactLayout'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          automationCluster,
+          SizedBox(height: tokens.spacing.step1),
+          identity,
         ],
       );
     }
@@ -184,12 +207,10 @@ class TaskAgentControlsFooter extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final textScale = MediaQuery.textScalerOf(context).scale(1);
-              final compactWidth =
-                  TaskAgentFreshnessStrip.compactWidth +
-                  (hasWakeControl ? tokens.spacing.step10 : 0);
               final compact =
-                  constraints.maxWidth < compactWidth || textScale > 1.3;
-              return compact ? compactUtilityStack() : wideUtilityRail();
+                  constraints.maxWidth < TaskAgentFreshnessStrip.compactWidth ||
+                  textScale > 1.3;
+              return compact ? compactFooter() : wideFooter();
             },
           ),
         ),
@@ -207,29 +228,50 @@ class _ThinkingStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    return ConstrainedBox(
-      constraints: BoxConstraints(minHeight: tokens.spacing.step8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox.square(
-            key: const ValueKey('taskAgentThinkingSpinner'),
-            dimension: tokens.spacing.step4,
-            child: CircularProgressIndicator(
-              strokeWidth: tokens.spacing.step1,
-              color: ai.accent,
+    final label = context.messages.aiSummaryThinkingLabel;
+    final labelStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
+      color: ai.accent,
+    );
+    final labelPainter = TextPainter(
+      text: TextSpan(text: label, style: labelStyle),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final naturalWidth =
+        tokens.spacing.step4 + tokens.spacing.step3 + labelPainter.width;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          width: constraints.constrainWidth(naturalWidth),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+            child: Row(
+              children: [
+                SizedBox.square(
+                  key: const ValueKey('taskAgentThinkingSpinner'),
+                  dimension: tokens.spacing.step4,
+                  child: CircularProgressIndicator(
+                    strokeWidth: tokens.spacing.step1,
+                    color: ai.accent,
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Text(
+                    label,
+                    key: const ValueKey('taskAgentThinkingLabel'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: labelStyle,
+                  ),
+                ),
+              ],
             ),
           ),
-          SizedBox(width: tokens.spacing.step3),
-          Text(
-            context.messages.aiSummaryThinkingLabel,
-            key: const ValueKey('taskAgentThinkingLabel'),
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: ai.accent,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -256,13 +298,24 @@ class _CountdownControl extends StatefulWidget {
 
 class _CountdownControlState extends State<_CountdownControl>
     with WakeCountdownState<_CountdownControl> {
+  late int _widthAnchorSeconds;
+
   @override
   DateTime get nextWakeAt => widget.nextWakeAt;
 
   @override
+  void initState() {
+    super.initState();
+    _widthAnchorSeconds = countdownSeconds;
+  }
+
+  @override
   void didUpdateWidget(covariant _CountdownControl oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.nextWakeAt != widget.nextWakeAt) resyncCountdown();
+    if (oldWidget.nextWakeAt != widget.nextWakeAt) {
+      resyncCountdown();
+      _widthAnchorSeconds = countdownSeconds;
+    }
   }
 
   @override
@@ -276,59 +329,88 @@ class _CountdownControlState extends State<_CountdownControl>
     final label = context.messages.taskAgentNextUpdateIn(
       formatCountdown(countdownSeconds),
     );
+    final widthAnchorLabel = context.messages.taskAgentNextUpdateIn(
+      formatCountdown(_widthAnchorSeconds),
+    );
+    final labelStyle = tokens.typography.styles.others.caption.copyWith(
+      color: ai.metaText,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    final widthAnchorPainter = TextPainter(
+      text: TextSpan(text: widthAnchorLabel, style: labelStyle),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final naturalWidth =
+        widthAnchorPainter.width +
+        tokens.spacing.step4 +
+        tokens.spacing.step2 +
+        (tokens.spacing.step3 * 2) +
+        tokens.spacing.step8;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: DsPill(
-            variant: DsPillVariant.filled,
-            bordered: true,
-            borderColor: ai.borderSoft,
-            leading: Icon(
-              Icons.schedule_rounded,
-              size: tokens.spacing.step4,
-              color: ai.metaText,
-            ),
-            labelWidget: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: ai.metaText,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-        ),
-        Semantics(
-          button: true,
-          label: widget.cancelTooltip,
-          excludeSemantics: true,
-          child: Tooltip(
-            message: widget.cancelTooltip,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onCancel,
-                borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-                child: SizedBox(
-                  key: const ValueKey('taskAgentCancelCountdownTarget'),
-                  width: tokens.spacing.step8,
-                  height: tokens.spacing.step8,
-                  child: Center(
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: tokens.spacing.step4,
-                      color: ai.metaText,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          width: constraints.constrainWidth(naturalWidth),
+          child: Row(
+            children: [
+              Flexible(
+                child: DsPill(
+                  variant: DsPillVariant.filled,
+                  bordered: true,
+                  borderColor: ai.borderSoft,
+                  leading: Icon(
+                    Icons.schedule_rounded,
+                    size: tokens.spacing.step4,
+                    color: ai.metaText,
+                  ),
+                  labelWidget: SizedBox(
+                    width: widthAnchorPainter.width,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: labelStyle,
                     ),
                   ),
                 ),
               ),
-            ),
+              Semantics(
+                button: true,
+                label: widget.cancelTooltip,
+                excludeSemantics: true,
+                child: Tooltip(
+                  message: widget.cancelTooltip,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: widget.onCancel,
+                      borderRadius: BorderRadius.circular(
+                        tokens.radii.badgesPills,
+                      ),
+                      child: SizedBox(
+                        key: const ValueKey(
+                          'taskAgentCancelCountdownTarget',
+                        ),
+                        width: tokens.spacing.step8,
+                        height: tokens.spacing.step8,
+                        child: Center(
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: tokens.spacing.step4,
+                            color: ai.metaText,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

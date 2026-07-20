@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
+import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -228,6 +229,30 @@ void main() {
     );
   });
 
+  testWidgets('narrow localized thinking status truncates without overflow', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 180,
+            child: subject(isRunning: true, onRunNow: () {}),
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(180, 800)),
+        locale: const Locale('de'),
+      ),
+    );
+
+    final label = tester.widget<Text>(
+      find.byKey(const ValueKey('taskAgentThinkingLabel')),
+    );
+    expect(label.maxLines, 1);
+    expect(label.overflow, TextOverflow.ellipsis);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'missing setup disables wake and toggle and explains via tooltip',
     (tester) async {
@@ -306,7 +331,7 @@ void main() {
     },
   );
 
-  testWidgets('wide countdown and toggle share one compact utility rail', (
+  testWidgets('wide footer keeps identity beside the automation cluster', (
     tester,
   ) async {
     final now = DateTime(2026, 7, 16, 9);
@@ -331,14 +356,101 @@ void main() {
       );
     });
 
-    final countdown = find.text('Next update in 1:30');
-    final toggle = find.byKey(
-      const Key('taskAgentAutomaticUpdatesCheckbox'),
+    final identity = find.byType(TaskAgentIdentityRegion);
+    final cluster = find.byKey(
+      const ValueKey('taskAgentAutomationCluster'),
+    );
+    expect(cluster, findsOneWidget);
+    expect(
+      tester.getCenter(identity).dy,
+      moreOrLessEquals(tester.getCenter(cluster).dy, epsilon: 1),
     );
     expect(
-      tester.getCenter(countdown).dy,
-      moreOrLessEquals(tester.getCenter(toggle).dy, epsilon: 1),
+      tester.getCenter(identity).dx,
+      lessThan(tester.getCenter(cluster).dx),
     );
+  });
+
+  testWidgets(
+    'narrow scheduled cluster wraps countdown and switch without overflow',
+    (tester) async {
+      final now = DateTime(2026, 7, 16, 9);
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Center(
+              child: SizedBox(
+                width: 300,
+                child: subject(
+                  automaticUpdatesEnabled: true,
+                  showCountdown: true,
+                  nextWakeAt: now.add(
+                    const Duration(minutes: 1, seconds: 30),
+                  ),
+                  onRunNow: () {},
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(300, 800)),
+          ),
+        );
+      });
+
+      final countdown = find.text('Next update in 1:30');
+      final automation = find.text('Automatic updates');
+      final identity = find.textContaining('Qwen 3.5 Plus').first;
+      expect(
+        tester.getCenter(automation).dy,
+        greaterThan(tester.getCenter(countdown).dy),
+      );
+      expect(
+        tester.getCenter(identity).dy,
+        greaterThan(tester.getCenter(automation).dy),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('countdown width and neighboring controls never jump', (
+    tester,
+  ) async {
+    var now = DateTime(2026, 7, 16, 9);
+    await withClock(Clock(() => now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Center(
+            child: SizedBox(
+              width: 730,
+              child: subject(
+                automaticUpdatesEnabled: true,
+                showCountdown: true,
+                nextWakeAt: now.add(const Duration(hours: 1)),
+                onRunNow: () {},
+              ),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        ),
+      );
+
+      expect(find.text('Next update in 1:00:00'), findsOneWidget);
+      final pill = find.byType(DsPill);
+      final toggle = find.byKey(
+        const Key('taskAgentAutomaticUpdatesCheckbox'),
+      );
+      final identity = find.textContaining('Qwen 3.5 Plus').first;
+      final initialPillSize = tester.getSize(pill);
+      final initialToggleOffset = tester.getTopLeft(toggle);
+      final initialIdentityOffset = tester.getTopLeft(identity);
+
+      now = now.add(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Next update in 59:59'), findsOneWidget);
+      expect(tester.getSize(pill), initialPillSize);
+      expect(tester.getTopLeft(toggle), initialToggleOffset);
+      expect(tester.getTopLeft(identity), initialIdentityOffset);
+    });
   });
 
   testWidgets('large text selects the compact footer layout', (tester) async {
