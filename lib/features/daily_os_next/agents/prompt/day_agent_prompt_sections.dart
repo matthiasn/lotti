@@ -37,6 +37,9 @@ abstract final class DayAgentPromptTags {
   /// record splices around.
   static const dayLog = 'day_log';
 
+  /// Completed local day recordings, including entries not submitted yet.
+  static const dayEntries = 'day_entries';
+
   /// Day-scoped attention claims and standing agreements (JSON).
   static const attentionPlanning = 'attention_planning';
 
@@ -73,6 +76,7 @@ abstract final class DayAgentPromptTags {
     planDate,
     knowledgeIndex,
     dayLog,
+    dayEntries,
     attentionPlanning,
     knowledgeStatements,
     recentDays,

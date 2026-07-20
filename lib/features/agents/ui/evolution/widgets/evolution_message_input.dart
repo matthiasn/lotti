@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_circle_button.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_realtime_view.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_transcription_progress.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_voice_controls.dart';
-import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -144,8 +142,6 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
   Widget build(BuildContext context) {
     final recState = ref.watch(chatRecorderControllerProvider);
     final isRecording = recState.status == ChatRecorderStatus.recording;
-    final isRealtimeRecording =
-        recState.status == ChatRecorderStatus.realtimeRecording;
     final isProcessing = recState.status == ChatRecorderStatus.processing;
     final colorScheme = Theme.of(context).colorScheme;
     final tokens = context.designTokens;
@@ -178,15 +174,6 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
                 onStop: () => ref
                     .read(chatRecorderControllerProvider.notifier)
                     .stopAndTranscribe(),
-              )
-            : isRealtimeRecording
-            ? EvolutionRealtimeView(
-                partialTranscript: recState.partialTranscript,
-                onCancel: () =>
-                    ref.read(chatRecorderControllerProvider.notifier).cancel(),
-                onStop: () => ref
-                    .read(chatRecorderControllerProvider.notifier)
-                    .stopRealtime(),
               )
             : isProcessing && recState.partialTranscript != null
             ? EvolutionTranscriptionProgress(
@@ -277,41 +264,6 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
   }
 
   Widget _buildMicButtons(ChatRecorderState recState) {
-    final realtimeAsync = ref.watch(realtimeAvailableProvider);
-    final realtimeAvailable = realtimeAsync.value ?? false;
-
-    if (realtimeAvailable) {
-      final useRealtime = recState.useRealtimeMode;
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          EvolutionCircleButton(
-            icon: useRealtime ? Icons.mic : Icons.graphic_eq,
-            size: 32,
-            iconSize: 16,
-            onPressed: () => ref
-                .read(chatRecorderControllerProvider.notifier)
-                .toggleRealtimeMode(),
-            tooltip: useRealtime
-                ? context.messages.aiBatchToggleTooltip
-                : context.messages.aiRealtimeToggleTooltip,
-          ),
-          SizedBox(width: context.designTokens.spacing.step2),
-          EvolutionCircleButton(
-            icon: useRealtime ? Icons.graphic_eq : Icons.mic,
-            onPressed: useRealtime
-                ? ref
-                      .read(chatRecorderControllerProvider.notifier)
-                      .startRealtime
-                : ref.read(chatRecorderControllerProvider.notifier).start,
-            tooltip: useRealtime
-                ? context.messages.chatInputStartRealtime
-                : context.messages.chatInputRecordVoice,
-          ),
-        ],
-      );
-    }
-
     return EvolutionCircleButton(
       icon: Icons.mic,
       onPressed: () =>

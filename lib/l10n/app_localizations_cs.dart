@@ -1161,9 +1161,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAttributionYou => 'Ty';
 
   @override
-  String get aiBatchToggleTooltip => 'Přepnout na standardní nahrávání';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Generování obrázků';
 
   @override
@@ -2035,9 +2032,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (lokální)';
 
   @override
-  String get aiRealtimeToggleTooltip => 'Přepnout na živý přepis';
-
-  @override
   String get aiResponseDeleteCancel => 'Zrušit';
 
   @override
@@ -2447,22 +2441,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Zahodit nahrávku?';
 
   @override
-  String get audioRecordingListening => 'Naslouchám...';
-
-  @override
   String get audioRecordingPause => 'POZASTAVIT';
-
-  @override
-  String get audioRecordingRealtime => 'Živý přepis';
 
   @override
   String get audioRecordingResume => 'POKRAČOVAT';
 
   @override
   String get audioRecordings => 'Audiozáznamy';
-
-  @override
-  String get audioRecordingStandard => 'Standardní';
 
   @override
   String get audioRecordingStop => 'STOP';
@@ -2864,9 +2849,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get chatInputSendTooltip => 'Odeslat zprávu';
-
-  @override
-  String get chatInputStartRealtime => 'Spustit živý přepis';
 
   @override
   String get chatInputStopRealtime => 'Zastavit živý přepis';

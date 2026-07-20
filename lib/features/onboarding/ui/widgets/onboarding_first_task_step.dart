@@ -18,7 +18,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// takeover).
 ///
 /// Hosts the presentational [OnboardingFirstTaskView] and wires it to the
-/// **shared** [captureControllerProvider] (the same mic/realtime pipeline the
+/// **shared** [captureControllerProvider] (the same mic/transcription pipeline the
 /// Daily OS capture screen uses — no bespoke audio wiring), to the persisted
 /// [recordingStyleProvider] (so the visual the user picked one step earlier is
 /// the one that records their first task), and to the

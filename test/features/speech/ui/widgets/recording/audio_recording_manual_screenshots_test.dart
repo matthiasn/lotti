@@ -7,7 +7,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
@@ -109,7 +108,6 @@ Future<void> _pumpActiveRecording(
           audioRecorderControllerProvider.overrideWith(
             () => _FixedAudioRecorderController(fixedState),
           ),
-          realtimeAvailableProvider.overrideWith((ref) async => false),
           recordingStyleAppPrefsProvider.overrideWithValue(
             _modernRecordingStylePreferences,
           ),

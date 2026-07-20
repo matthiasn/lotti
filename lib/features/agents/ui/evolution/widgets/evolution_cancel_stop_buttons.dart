@@ -3,7 +3,7 @@ import 'package:lotti/features/agents/ui/evolution/widgets/evolution_circle_butt
 
 /// Cancel and stop button pair used during recording states.
 ///
-/// Shared by the voice controls and realtime view widgets.
+/// Shared by the voice-recording control widgets.
 class EvolutionCancelStopButtons extends StatelessWidget {
   const EvolutionCancelStopButtons({
     required this.onCancel,

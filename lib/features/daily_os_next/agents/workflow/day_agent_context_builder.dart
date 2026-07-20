@@ -16,6 +16,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required AttentionPlanningInputs attentionPlanning,
     required KnowledgeContext knowledge,
     WeekContext? weekContext,
+    List<DayAudioEntryContext> dayAudioEntries = const [],
     String? compactedLog,
   }) {
     // Section order is deliberately STABLE → VOLATILE for prompt-prefix /
@@ -42,6 +43,14 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       // byte-stable at its head between folds. The derivable section the v2
       // prompt record splices around.
       ..addText(DayAgentPromptTags.dayLog, compactedLog)
+      // Durable recording receipts are independent of CaptureEntity creation,
+      // so a later wake can recover a completed offline check-in immediately.
+      ..addJson(
+        DayAgentPromptTags.dayEntries,
+        dayAudioEntries.isEmpty
+            ? null
+            : [for (final entry in dayAudioEntries) entry.toJson()],
+      )
       // Day-stable attention claims/agreements precede the per-wake mode blocks.
       ..addJson(
         DayAgentPromptTags.attentionPlanning,
@@ -128,6 +137,19 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     } catch (e, s) {
       _logError('failed to load week context', error: e, stackTrace: s);
       return null;
+    }
+  }
+
+  Future<List<DayAudioEntryContext>> _dayAudioEntries(String dayId) async {
+    try {
+      return await dayAudioEntryContextService?.loadForDay(dayId) ?? const [];
+    } catch (e, s) {
+      _logError(
+        'failed to load durable day audio entries',
+        error: e,
+        stackTrace: s,
+      );
+      return const [];
     }
   }
 

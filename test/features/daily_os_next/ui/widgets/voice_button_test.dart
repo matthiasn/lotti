@@ -270,6 +270,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   });
 
+  testWidgets('cancelled press restores the core scale without a tap', (
+    tester,
+  ) async {
+    var taps = 0;
+    await pumpVoiceButton(tester, onTap: () => taps += 1);
+
+    double scaleTarget() => tester
+        .widget<TweenAnimationBuilder<double>>(
+          find.byKey(VoiceButton.pressScaleKey),
+        )
+        .tween
+        .end!;
+
+    final gesture = await tester.press(find.byKey(VoiceButton.coreButtonKey));
+    await tester.pump();
+    expect(scaleTarget(), VoiceButton.pressedScale);
+
+    await gesture.cancel();
+    await tester.pump();
+
+    expect(scaleTarget(), 1);
+    expect(taps, 0);
+    await tester.pump(const Duration(milliseconds: 300));
+  });
+
   testWidgets(
     'while listening the core breathes with the voice level: rests '
     'smaller at silence, swells with dBFS, full size in other phases',

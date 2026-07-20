@@ -8,15 +8,19 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
+import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -105,12 +109,12 @@ DraftPlan _draftedWithReasons() => DraftPlan(
 /// when DayPage pushes it) can dispose cleanly without touching the AI
 /// providers during teardown.
 CaptureController _stubCapture() {
-  final recorder = MockAudioRecorderRepository();
   final transcriber = MockAudioTranscriptionService();
-  when(recorder.stopRecording).thenAnswer((_) async {});
+  final realtime = MockRealtimeTranscriptionService();
+  when(realtime.resolveRealtimeConfig).thenAnswer((_) async => null);
   return CaptureController(
-    recorder: recorder,
     transcriber: transcriber,
+    realtimeService: realtime,
     docDir: Directory.systemTemp.createTempSync,
     persistAudio: (_) async => null,
     now: () => DateTime(2026, 5, 26, 9),
@@ -121,6 +125,7 @@ Widget _wrap(
   Widget child, {
   List<Override> overrides = const [],
   List<TimeBlock> actualBlocks = const [],
+  List<DayActivityEntry> activityEntries = const [],
   Size size = const Size(1400, 1200),
   MediaQueryData? mediaQueryData,
   ThemeData? theme,
@@ -132,9 +137,8 @@ Widget _wrap(
   return makeTestableWidgetNoScroll(
     child,
     overrides: [
-      // CapturesPanel watches this; stub to empty so the panel collapses
-      // to SizedBox.shrink instead of touching the DB.
       capturesForDateProvider.overrideWith((ref, date) async => const []),
+      dayActivityProvider.overrideWith((ref, date) async => activityEntries),
       dailyOsActualTimeBlocksProvider.overrideWith(
         (ref, date) async => actualBlocks,
       ),
@@ -236,7 +240,7 @@ void main() {
     });
 
     testWidgets(
-      'empty mode (no plan) lands on the Day view with the check-in CTA '
+      'empty mode (no plan) lands on Activity with the check-in CTA '
       'instead of Refine/Commit, and hides the delete-plan menu entry',
       (tester) async {
         _setSurface(tester);
@@ -263,8 +267,10 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Lands on the Day projection so recorded time is visible.
-        expect(find.byType(DayTimeline), findsOneWidget);
+        // Failed or pending recordings are the primary no-plan recovery path,
+        // while already-tracked time remains visible on the same surface.
+        expect(find.byType(DayActivityView), findsOneWidget);
+        expect(find.byType(DayTimeline), findsNothing);
         expect(find.byType(AgendaView), findsNothing);
         expect(find.text('Recorded session'), findsOneWidget);
 
@@ -346,6 +352,171 @@ void main() {
         ]);
       },
     );
+
+    testWidgets(
+      'using a retained recording targets the selected day workspace',
+      (tester) async {
+        _setSurface(tester);
+        final agent = RecordingDayAgent();
+        final sourceCapturedAt = DateTime(2026, 7, 18, 8, 15);
+        final selectedDay = DateTime(2026, 5, 26);
+        final job = DayProcessingJob(
+          id: 'job-retained',
+          kind: DayProcessingJobKind.transcribeAudio,
+          status: DayProcessingJobStatus.succeeded,
+          dayId: 'dayplan-2026-05-26',
+          activityEntryId: 'activity-retained',
+          recordingSessionId: 'session-retained',
+          audioId: 'audio-retained',
+          audioPath: '/tmp/audio-retained.wav',
+          createdAt: sourceCapturedAt,
+          updatedAt: sourceCapturedAt,
+          nextAttemptAt: sourceCapturedAt,
+          attempts: 1,
+          generation: 1,
+          resultTranscript: 'Use this check-in for the selected day.',
+          completedAt: sourceCapturedAt,
+        );
+        final entry = DayActivityEntry(
+          id: 'activity-retained',
+          kind: DayActivityEntryKind.recording,
+          createdAt: sourceCapturedAt,
+          activityEntryId: 'activity-retained',
+          processingJob: job,
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(
+              draft: DraftPlan.emptyForDay(selectedDay),
+              hasPlan: false,
+            ),
+            activityEntries: [entry],
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextActivityUseToPlan));
+        await tester.pump();
+
+        expect(agent.capturedAt, sourceCapturedAt);
+        expect(agent.capturedDayDate, selectedDay);
+      },
+    );
+
+    testWidgets('a submitted check-in retries its existing capture', (
+      tester,
+    ) async {
+      _setSurface(tester);
+      final captureService = MockDayAgentCaptureService();
+      when(
+        () => captureService.retryCapture('capture-activity'),
+      ).thenAnswer((_) async => true);
+      final capture = makeTestCapture(
+        id: 'capture-activity',
+        transcript: 'Retry this submitted check-in.',
+        capturedAt: DateTime(2026, 5, 26, 8),
+        dayId: 'dayplan-2026-05-26',
+      );
+      final entry = DayActivityEntry(
+        id: capture.id,
+        kind: DayActivityEntryKind.checkIn,
+        createdAt: capture.capturedAt,
+        activityEntryId: capture.id,
+        capture: capture,
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(
+            draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+            hasPlan: false,
+          ),
+          activityEntries: [entry],
+          overrides: [
+            agent_providers.dayAgentCaptureServiceProvider.overrideWithValue(
+              captureService,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      final messages = tester.element(find.byType(DayPage)).messages;
+
+      await tester.tap(find.text(messages.dailyOsNextActivityUseToPlan));
+      await tester.pump();
+
+      verify(() => captureService.retryCapture('capture-activity')).called(1);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a retained recording seeds refinement for an existing plan', (
+      tester,
+    ) async {
+      _setSurface(tester);
+      final agent = RecordingDayAgent(
+        diff: PlanDiff(
+          id: 'activity-refine-diff',
+          transcript: 'Make the afternoon lighter.',
+          changes: const [],
+          updatedPlan: _drafted(),
+        ),
+      );
+      final capturedAt = DateTime(2026, 5, 26, 8);
+      final job = DayProcessingJob(
+        id: 'activity-refine-job',
+        kind: DayProcessingJobKind.transcribeAudio,
+        status: DayProcessingJobStatus.succeeded,
+        dayId: 'dayplan-2026-05-26',
+        activityEntryId: 'activity-refine',
+        recordingSessionId: 'activity-refine-session',
+        audioId: 'activity-refine-audio',
+        audioPath: '/tmp/activity-refine.wav',
+        createdAt: capturedAt,
+        updatedAt: capturedAt,
+        nextAttemptAt: capturedAt,
+        attempts: 1,
+        generation: 1,
+        resultTranscript: 'Make the afternoon lighter.',
+        completedAt: capturedAt,
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(draft: _drafted()),
+          activityEntries: [
+            DayActivityEntry(
+              id: 'activity-refine',
+              kind: DayActivityEntryKind.recording,
+              createdAt: capturedAt,
+              activityEntryId: 'activity-refine',
+              processingJob: job,
+            ),
+          ],
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump();
+      tester
+          .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+          .onChanged(PlanView.activity);
+      await tester.pump();
+      await tester.pump();
+      final messages = tester.element(find.byType(DayPage)).messages;
+      expect(find.byType(DayActivityView), findsOneWidget);
+      expect(find.text('Make the afternoon lighter.'), findsOneWidget);
+
+      await tester.tap(find.text(messages.dailyOsNextActivityUseToRefine));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump();
+
+      expect(find.byType(RefineModalContent), findsOneWidget);
+      expect(agent.proposeCount, 1);
+      expect(agent.proposedTranscript, 'Make the afternoon lighter.');
+    });
 
     testWidgets('missing name stays discoverable without blocking check-in', (
       tester,
@@ -950,7 +1121,7 @@ void main() {
       expect(find.text('2026-05-26'), findsOneWidget);
     });
 
-    testWidgets('header keeps the plan toggle inline when it fits', (
+    testWidgets('header stacks the three-view toggle when it needs room', (
       tester,
     ) async {
       _setSurfaceSize(tester, const Size(640, 844));
@@ -968,13 +1139,10 @@ void main() {
       );
       await tester.pump();
 
-      final dateTop = tester.getTopLeft(find.text(label)).dy;
       final dateBottom = tester.getBottomLeft(find.text(label)).dy;
       final toggleTop = tester.getTopLeft(find.byType(PlanViewToggle)).dy;
-      final toggleBottom = tester.getBottomLeft(find.byType(PlanViewToggle)).dy;
 
-      expect(toggleTop, lessThan(dateBottom));
-      expect(toggleBottom, greaterThan(dateTop));
+      expect(toggleTop, greaterThan(dateBottom));
       expect(tester.takeException(), isNull);
     });
 

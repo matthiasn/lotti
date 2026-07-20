@@ -405,7 +405,7 @@ stateDiagram-v2
 `OnboardingFirstTaskStep` (`ui/widgets/`) is the flow's **final in-panel step**
 — the finale never leaves the onboarding dialogue for a full-screen takeover.
 It hosts the presentational `OnboardingFirstTaskView` and wires it to the
-**shared** `captureControllerProvider` (the same mic/realtime pipeline the
+**shared** `captureControllerProvider` (the same mic/transcription pipeline the
 Daily OS capture screen uses — no bespoke audio wiring), to the persisted
 `recordingStyleProvider`, and to the `onboardingCaptureToTaskServiceProvider`
 orchestrator.

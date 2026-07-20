@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_realtime_view.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_transcription_progress.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_voice_controls.dart';
-import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -146,26 +144,6 @@ void main() {
       expect(startCalled, isTrue);
     });
 
-    testWidgets('shows mode toggle when realtime available', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(
-          overrides: [
-            chatRecorderControllerProvider.overrideWith(
-              ChatRecorderController.new,
-            ),
-            realtimeAvailableProvider.overrideWith((_) async => true),
-            realtimeTranscriptionServiceProvider.overrideWithValue(
-              realtimeServiceWithConfig(),
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.mic), findsOneWidget);
-      expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
-    });
-
     testWidgets('transcript populates text field on completion', (
       tester,
     ) async {
@@ -275,90 +253,6 @@ void main() {
       expect(stopCalled, isTrue);
     });
 
-    testWidgets('shows realtime view when realtime recording', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(
-          overrides: [
-            chatRecorderControllerProvider.overrideWith(
-              RealtimeRecordingTestController.new,
-            ),
-          ],
-        ),
-      );
-      // Use pump() — EvolutionRealtimeView has a CircularProgressIndicator
-      // that never settles.
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.byType(EvolutionRealtimeView), findsOneWidget);
-      expect(find.byType(TextField), findsNothing);
-    });
-
-    testWidgets('realtime view shows partial transcript', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(
-          overrides: [
-            chatRecorderControllerProvider.overrideWith(
-              () => RealtimeRecordingTestController(
-                partialTranscript: 'Hello world',
-              ),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.byType(EvolutionRealtimeView), findsOneWidget);
-      expect(find.text('Hello world'), findsOneWidget);
-    });
-
-    testWidgets('realtime cancel calls controller cancel', (tester) async {
-      var cancelCalled = false;
-      await tester.pumpWidget(
-        buildSubject(
-          overrides: [
-            chatRecorderControllerProvider.overrideWith(
-              () => RealtimeCallbackController(
-                onCancelCalled: () => cancelCalled = true,
-              ),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.byType(EvolutionRealtimeView), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.close));
-      await tester.pump();
-
-      expect(cancelCalled, isTrue);
-    });
-
-    testWidgets('realtime stop calls stopRealtime', (tester) async {
-      var stopCalled = false;
-      await tester.pumpWidget(
-        buildSubject(
-          overrides: [
-            chatRecorderControllerProvider.overrideWith(
-              () => RealtimeCallbackController(
-                onStopCalled: () => stopCalled = true,
-              ),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.byType(EvolutionRealtimeView), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.stop));
-      await tester.pump();
-
-      expect(stopCalled, isTrue);
-    });
-
     testWidgets('shows transcription progress when processing with partial', (
       tester,
     ) async {
@@ -405,85 +299,6 @@ void main() {
         expect(textField.enabled, isFalse);
       },
     );
-
-    testWidgets('toggle realtime mode switches icons when realtime available', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildSubject(
-          overrides: [
-            chatRecorderControllerProvider.overrideWith(
-              ChatRecorderController.new,
-            ),
-            realtimeAvailableProvider.overrideWith((_) async => true),
-            realtimeTranscriptionServiceProvider.overrideWithValue(
-              realtimeServiceWithConfig(),
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Helper: find the icon inside a Container of given size to
-      // distinguish the small toggle button (32) from the main button (40).
-      Icon iconInButtonOfSize(double size) {
-        final containers = find.byWidgetPredicate(
-          (w) => w is Container && w.constraints?.maxWidth == size,
-        );
-        // Each EvolutionCircleButton is a Container > IconButton > Icon.
-        final iconFinder = find.descendant(
-          of: containers,
-          matching: find.byType(Icon),
-        );
-        return tester.widget<Icon>(iconFinder.first);
-      }
-
-      // Default: batch mode. Toggle (small=32) shows graphic_eq,
-      // main (40) shows mic.
-      expect(iconInButtonOfSize(32).icon, Icons.graphic_eq);
-      expect(iconInButtonOfSize(40).icon, Icons.mic);
-
-      // Tap toggle button (the smaller one)
-      await tester.tap(find.byIcon(Icons.graphic_eq));
-      await tester.pump();
-
-      // After toggle: realtime mode. Toggle (32) shows mic,
-      // main (40) shows graphic_eq.
-      expect(iconInButtonOfSize(32).icon, Icons.mic);
-      expect(iconInButtonOfSize(40).icon, Icons.graphic_eq);
-    });
-
-    testWidgets('realtime mode starts realtime recording on main button tap', (
-      tester,
-    ) async {
-      var startRealtimeCalled = false;
-      await tester.pumpWidget(
-        buildSubject(
-          overrides: [
-            chatRecorderControllerProvider.overrideWith(
-              () => IdleCallbackController(
-                onStartRealtimeCalled: () => startRealtimeCalled = true,
-              ),
-            ),
-            realtimeAvailableProvider.overrideWith((_) async => true),
-            realtimeTranscriptionServiceProvider.overrideWithValue(
-              realtimeServiceWithConfig(),
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Toggle to realtime mode first
-      await tester.tap(find.byIcon(Icons.graphic_eq));
-      await tester.pump();
-
-      // Now tap the main button (graphic_eq in realtime mode)
-      await tester.tap(find.byIcon(Icons.graphic_eq));
-      await tester.pump();
-
-      expect(startRealtimeCalled, isTrue);
-    });
 
     testWidgets('does not send when isWaiting even with text', (tester) async {
       await tester.pumpWidget(buildSubject(isWaiting: true));

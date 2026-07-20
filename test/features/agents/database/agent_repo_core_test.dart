@@ -213,6 +213,7 @@ void main() {
       final metas = await core.getCaptureEventMetaByAgentId('agent-1');
       expect(metas, hasLength(1));
       expect(metas.single.id, 'cap-1');
+      expect(metas.single.dayId, isEmpty);
       expect(metas.single.capturedAt, DateTime(2026, 3, 15, 10));
     });
   });

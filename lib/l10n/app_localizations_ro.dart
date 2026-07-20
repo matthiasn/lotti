@@ -1169,9 +1169,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAttributionYou => 'Dvs.';
 
   @override
-  String get aiBatchToggleTooltip => 'Comutare la înregistrare standard';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Generare de imagini';
 
   @override
@@ -2046,9 +2043,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (local)';
 
   @override
-  String get aiRealtimeToggleTooltip => 'Comutare la transcriere în direct';
-
-  @override
   String get aiResponseDeleteCancel => 'Anulați';
 
   @override
@@ -2457,22 +2451,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Renunțați la înregistrare?';
 
   @override
-  String get audioRecordingListening => 'Se ascultă...';
-
-  @override
   String get audioRecordingPause => 'PAUZĂ';
-
-  @override
-  String get audioRecordingRealtime => 'Transcriere în direct';
 
   @override
   String get audioRecordingResume => 'RELUARE';
 
   @override
   String get audioRecordings => 'Înregistrări audio';
-
-  @override
-  String get audioRecordingStandard => 'Standard';
 
   @override
   String get audioRecordingStop => 'OPRIȚI';
@@ -2871,9 +2856,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get chatInputSendTooltip => 'Trimiteți mesajul';
-
-  @override
-  String get chatInputStartRealtime => 'Porniți transcrierea în timp real';
 
   @override
   String get chatInputStopRealtime => 'Opriți transcrierea în timp real';

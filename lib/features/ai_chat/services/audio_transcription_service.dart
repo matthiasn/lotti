@@ -10,7 +10,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
-import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -97,8 +96,8 @@ class AudioTranscriptionService {
     final models = await modelsFuture;
     final providers = await providersFuture;
 
-    // Find all audio-capable models, excluding realtime-only models that
-    // require WebSocket streaming (handled by RealtimeTranscriptionService).
+    // Find all audio-capable models, excluding realtime-only models —
+    // they require WebSocket streaming, which this app does not use.
     final allProviders = providers.whereType<AiConfigInferenceProvider>();
     final audioModels = models
         .whereType<AiConfigModel>()
@@ -112,9 +111,7 @@ class AudioTranscriptionService {
           if (provider == null) return true; // keep orphan models, fail later
           return !(provider.inferenceProviderType ==
                   InferenceProviderType.mistral &&
-              MistralRealtimeTranscriptionRepository.isRealtimeModel(
-                m.providerModelId,
-              ));
+              _isRealtimeOnlyModel(m.providerModelId));
         })
         .toList();
 
@@ -396,3 +393,8 @@ final Provider<AudioTranscriptionService> audioTranscriptionServiceProvider =
     Provider<AudioTranscriptionService>((ref) {
       return AudioTranscriptionService(ref);
     });
+
+/// Matches Mistral model IDs that only serve the WebSocket realtime API
+/// (e.g. `voxtral-mini-transcribe-realtime-2602`); they cannot batch-​transcribe.
+bool _isRealtimeOnlyModel(String model) =>
+    model.contains('transcribe-realtime');

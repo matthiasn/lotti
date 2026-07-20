@@ -1156,9 +1156,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiAttributionYou => 'You';
 
   @override
-  String get aiBatchToggleTooltip => 'Skift til standardoptagelse';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Billedgenerering';
 
   @override
@@ -2018,9 +2015,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (lokal)';
 
   @override
-  String get aiRealtimeToggleTooltip => 'Skift til live transskription';
-
-  @override
   String get aiResponseDeleteCancel => 'Annuller';
 
   @override
@@ -2423,22 +2417,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Kassere optagelse?';
 
   @override
-  String get audioRecordingListening => 'Lytter...';
-
-  @override
   String get audioRecordingPause => 'PAS';
-
-  @override
-  String get audioRecordingRealtime => 'Live transskription';
 
   @override
   String get audioRecordingResume => 'CV';
 
   @override
   String get audioRecordings => 'Lydoptagelser';
-
-  @override
-  String get audioRecordingStandard => 'Standard';
 
   @override
   String get audioRecordingStop => 'STOP';
@@ -2827,9 +2812,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get chatInputSendTooltip => 'Send besked';
-
-  @override
-  String get chatInputStartRealtime => 'Start live-transskription';
 
   @override
   String get chatInputStopRealtime => 'Stop live-transskriptionen';

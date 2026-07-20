@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -24,6 +26,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tok
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/get_it.dart';
@@ -164,6 +167,7 @@ void main() {
     MockDayAgentPlanService? planService,
     MockDayAgentKnowledgeService? knowledgeService,
     MockDayAgentWeekContextService? weekContextService,
+    DayAudioEntryContextService? dayAudioEntryContextService,
   }) {
     return DayAgentWorkflow(
       agentRepository: repository,
@@ -177,6 +181,7 @@ void main() {
       planService: planService,
       knowledgeService: knowledgeService,
       weekContextService: weekContextService,
+      dayAudioEntryContextService: dayAudioEntryContextService,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
@@ -651,15 +656,17 @@ void main() {
                   id: 'cap-1',
                   agentId: agentId,
                   transcript: 'remember to buy oat milk',
-                  capturedAt: DateTime.utc(2026, 5, 20, 7),
-                  createdAt: DateTime.utc(2026, 5, 20, 7, 1),
+                  capturedAt: DateTime(2026, 5, 24, 23),
+                  createdAt: DateTime(2026, 5, 25, 7, 1),
                   vectorClock: null,
+                  dayId: dayId,
                 )
                 as CaptureEntity;
         when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
           (_) async => [
             (
               id: capture.id,
+              dayId: capture.dayId,
               createdAt: capture.createdAt,
               capturedAt: capture.capturedAt,
             ),
@@ -721,8 +728,8 @@ void main() {
                   id: 'cap-1',
                   agentId: agentId,
                   transcript: 'buy oat milk',
-                  capturedAt: DateTime.utc(2026, 5, 20, 7),
-                  createdAt: DateTime.utc(2026, 5, 20, 7, 1),
+                  capturedAt: DateTime(2026, 5, 25, 7),
+                  createdAt: DateTime(2026, 5, 25, 7, 1),
                   vectorClock: null,
                 )
                 as CaptureEntity;
@@ -730,6 +737,7 @@ void main() {
           (_) async => [
             (
               id: capture.id,
+              dayId: capture.dayId,
               createdAt: capture.createdAt,
               capturedAt: capture.capturedAt,
             ),
@@ -806,8 +814,8 @@ void main() {
                   id: 'cap-1',
                   agentId: agentId,
                   transcript: 'remember to buy oat milk',
-                  capturedAt: DateTime.utc(2026, 5, 20, 7),
-                  createdAt: DateTime.utc(2026, 5, 20, 7, 1),
+                  capturedAt: DateTime(2026, 5, 25, 7),
+                  createdAt: DateTime(2026, 5, 25, 7, 1),
                   vectorClock: null,
                 )
                 as CaptureEntity;
@@ -815,6 +823,7 @@ void main() {
           (_) async => [
             (
               id: capture.id,
+              dayId: capture.dayId,
               createdAt: capture.createdAt,
               capturedAt: capture.capturedAt,
             ),
@@ -1171,6 +1180,114 @@ void main() {
       );
     });
 
+    test(
+      'surfaces completed persisted recordings before CaptureEntity creation',
+      () async {
+        final journalDb = MockJournalDb();
+        when(
+          () => journalDb.getJournalEntities(
+            types: const ['JournalAudio'],
+            starredStatuses: const [true, false],
+            privateStatuses: const [true, false],
+            flaggedStatuses: const [1, 0],
+            ids: null,
+            limit: 64,
+            // ignore: avoid_redundant_argument_values
+            offset: 0,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            JournalAudio(
+              meta: Metadata(
+                id: 'audio-offline',
+                createdAt: now,
+                updatedAt: now,
+                dateFrom: now,
+                dateTo: now,
+              ),
+              data: AudioData(
+                dateFrom: now,
+                dateTo: now,
+                audioFile: 'offline.wav',
+                audioDirectory: '/audio/',
+                duration: const Duration(minutes: 1),
+                dayContext: DayAudioContext(
+                  dayId: dayId,
+                  planDate: now,
+                  recordingSessionId: 'session-offline',
+                  activityEntryId: 'activity-offline',
+                  processingJobId: 'transcribe_session-offline',
+                  capturedAt: now,
+                  intent: 'dayPlan',
+                ),
+                transcripts: [
+                  AudioTranscript(
+                    created: now,
+                    library: 'daily-os-outbox',
+                    model: 'configured-audio-model',
+                    detectedLanguage: 'en',
+                    transcript: 'Keep the afternoon free for recovery.',
+                    processingJobId: 'transcribe_session-offline',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+
+        final result = await execute(
+          workflow(
+            dayAudioEntryContextService: DayAudioEntryContextService(
+              journalDb: journalDb,
+            ),
+          ),
+        );
+
+        expect(result.success, isTrue);
+        final entries =
+            sentPrompt().json(DayAgentPromptTags.dayEntries)! as List;
+        expect(entries, hasLength(1));
+        expect(entries.single, containsPair('audioId', 'audio-offline'));
+        expect(
+          entries.single,
+          containsPair(
+            'transcript',
+            'Keep the afternoon free for recovery.',
+          ),
+        );
+      },
+    );
+
+    test(
+      'keeps planning available when durable recording lookup fails',
+      () async {
+        final journalDb = MockJournalDb();
+        when(
+          () => journalDb.getJournalEntities(
+            types: const ['JournalAudio'],
+            starredStatuses: const [true, false],
+            privateStatuses: const [true, false],
+            flaggedStatuses: const [1, 0],
+            ids: null,
+            limit: 64,
+            // ignore: avoid_redundant_argument_values
+            offset: 0,
+          ),
+        ).thenThrow(StateError('local audio index unavailable'));
+
+        final result = await execute(
+          workflow(
+            dayAudioEntryContextService: DayAudioEntryContextService(
+              journalDb: journalDb,
+            ),
+          ),
+        );
+
+        expect(result.success, isTrue);
+        expect(sentPrompt().json(DayAgentPromptTags.dayEntries), isNull);
+      },
+    );
+
     test('read-flips to a dayLog of capture transcripts and observations, '
         'dropping the recentObservations listing', () async {
       when(() => syncService.repository).thenReturn(repository);
@@ -1186,9 +1303,10 @@ void main() {
                 id: 'cap-1',
                 agentId: agentId,
                 transcript: 'morning planning capture',
-                capturedAt: DateTime.utc(2026, 5, 25, 7),
+                capturedAt: DateTime.utc(2026, 5, 24, 23),
                 createdAt: DateTime.utc(2026, 5, 25, 7, 1),
                 vectorClock: null,
+                dayId: dayId,
               )
               as CaptureEntity;
       // The substrate loads only lightweight metadata; the transcript is
@@ -1197,6 +1315,7 @@ void main() {
         (_) async => [
           (
             id: capture.id,
+            dayId: capture.dayId,
             createdAt: capture.createdAt,
             capturedAt: capture.capturedAt,
           ),
@@ -3034,6 +3153,7 @@ void main() {
           (_) async => [
             (
               id: capture.id,
+              dayId: capture.dayId,
               createdAt: capture.createdAt,
               capturedAt: capture.capturedAt,
             ),

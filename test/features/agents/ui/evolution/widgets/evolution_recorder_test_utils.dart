@@ -1,34 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
-import 'package:mocktail/mocktail.dart';
-
-import '../../../../../mocks/mocks.dart';
-
-/// Creates a [MockRealtimeTranscriptionService] (from the central mocks
-/// file) that reports realtime config available.
-MockRealtimeTranscriptionService realtimeServiceWithConfig() {
-  final mock = MockRealtimeTranscriptionService();
-  when(mock.resolveRealtimeConfig).thenAnswer(
-    (_) async => (
-      provider: const FakeProvider(),
-      model: const FakeModel(),
-    ),
-  );
-  return mock;
-}
-
-class FakeProvider implements AiConfigInferenceProvider {
-  const FakeProvider();
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
-}
-
-class FakeModel implements AiConfigModel {
-  const FakeModel();
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
-}
 
 /// Controller that starts in recording state.
 class RecordingTestController extends ChatRecorderController {
@@ -76,53 +47,6 @@ class RecordingCallbackController extends ChatRecorderController {
 
   @override
   List<double> getNormalizedAmplitudeHistory() => [];
-}
-
-/// Controller that starts in realtime recording state.
-class RealtimeRecordingTestController extends ChatRecorderController {
-  RealtimeRecordingTestController({this._partialTranscript});
-
-  final String? _partialTranscript;
-
-  @override
-  ChatRecorderState build() {
-    return ChatRecorderState(
-      status: ChatRecorderStatus.realtimeRecording,
-      amplitudeHistory: const [],
-      partialTranscript: _partialTranscript,
-    );
-  }
-}
-
-/// Realtime controller that tracks cancel/stop calls.
-class RealtimeCallbackController extends ChatRecorderController {
-  RealtimeCallbackController({
-    this.onCancelCalled,
-    this.onStopCalled,
-  });
-
-  final VoidCallback? onCancelCalled;
-  final VoidCallback? onStopCalled;
-
-  @override
-  ChatRecorderState build() {
-    return const ChatRecorderState(
-      status: ChatRecorderStatus.realtimeRecording,
-      amplitudeHistory: [],
-    );
-  }
-
-  @override
-  Future<void> cancel() async {
-    onCancelCalled?.call();
-    state = state.copyWith(status: ChatRecorderStatus.idle);
-  }
-
-  @override
-  Future<void> stopRealtime() async {
-    onStopCalled?.call();
-    state = state.copyWith(status: ChatRecorderStatus.idle);
-  }
 }
 
 /// Controller that starts in processing state.
@@ -180,13 +104,9 @@ class TranscriptEmittingController extends ChatRecorderController {
 
 /// Idle controller that tracks start calls.
 class IdleCallbackController extends ChatRecorderController {
-  IdleCallbackController({
-    this.onStartCalled,
-    this.onStartRealtimeCalled,
-  });
+  IdleCallbackController({this.onStartCalled});
 
   final VoidCallback? onStartCalled;
-  final VoidCallback? onStartRealtimeCalled;
 
   @override
   ChatRecorderState build() {
@@ -199,10 +119,5 @@ class IdleCallbackController extends ChatRecorderController {
   @override
   Future<void> start() async {
     onStartCalled?.call();
-  }
-
-  @override
-  Future<void> startRealtime() async {
-    onStartRealtimeCalled?.call();
   }
 }

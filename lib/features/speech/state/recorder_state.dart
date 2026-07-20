@@ -50,13 +50,5 @@ abstract class AudioRecorderState with _$AudioRecorderState {
     /// Whether to trigger speech recognition after recording.
     /// If null, uses category default settings.
     bool? enableSpeechRecognition,
-
-    /// Live transcript text from realtime transcription service.
-    /// Updated incrementally as deltas arrive from the WebSocket.
-    String? partialTranscript,
-
-    /// Whether the current recording session uses realtime mode
-    /// (PCM stream to WebSocket) vs standard file recording.
-    @Default(false) bool isRealtimeMode,
   }) = _AudioRecorderState;
 }

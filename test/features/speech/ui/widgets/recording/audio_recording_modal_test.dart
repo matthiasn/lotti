@@ -13,7 +13,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
-import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -620,7 +619,6 @@ void main() {
             ProviderScope(
               overrides: [
                 ...baseOverrides(),
-                realtimeAvailableProvider.overrideWith((_) async => false),
                 audioRecorderControllerProvider.overrideWith(
                   () => _CallbackTrackingController(
                     fixedState: recordingState,
@@ -773,7 +771,6 @@ void main() {
           await pumpModalContent(
             tester,
             extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => false),
               audioRecorderControllerProvider.overrideWith(
                 () => TestAudioRecorderController(recordingState),
               ),
@@ -818,7 +815,6 @@ void main() {
           await pumpModalContent(
             tester,
             extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => false),
               audioRecorderControllerProvider.overrideWith(
                 () => TestAudioRecorderController(pausedState),
               ),
@@ -912,250 +908,7 @@ void main() {
       );
     });
 
-    group('Realtime Mode UI Coverage', () {
-      testWidgets(
-        'should render mode toggle when realtime is available',
-        (tester) async {
-          stubCategory();
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => true),
-            ],
-          );
-
-          await tester.pump();
-
-          await tester.pump(const Duration(milliseconds: 300));
-
-          expect(find.byType(Switch), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should toggle between standard and realtime mode',
-        (tester) async {
-          stubCategory();
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => true),
-            ],
-          );
-
-          await tester.pump();
-
-          await tester.pump(const Duration(milliseconds: 300));
-
-          final switchWidget = find.byType(Switch);
-          expect(switchWidget, findsOneWidget);
-
-          await tester.tap(switchWidget);
-          await tester.pump();
-
-          final switchState = tester.widget<Switch>(switchWidget);
-          expect(switchState.value, isTrue);
-        },
-      );
-
-      testWidgets(
-        'should render cancel button in realtime recording mode',
-        (tester) async {
-          stubCategory();
-
-          final realtimeRecordingState = AudioRecorderState(
-            status: AudioRecorderStatus.recording,
-            progress: const Duration(seconds: 5),
-            vu: 80,
-            dBFS: -20,
-            showIndicator: false,
-            modalVisible: true,
-            isRealtimeMode: true,
-          );
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => true),
-              audioRecorderControllerProvider.overrideWith(
-                () => TestAudioRecorderController(realtimeRecordingState),
-              ),
-            ],
-          );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 250));
-
-          expect(
-            find.byKey(const ValueKey('cancel_recording')),
-            findsOneWidget,
-          );
-          expect(find.text('STOP'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should render live transcript area with listening spinner',
-        (tester) async {
-          stubCategory();
-
-          final realtimeRecordingState = AudioRecorderState(
-            status: AudioRecorderStatus.recording,
-            progress: const Duration(seconds: 3),
-            vu: 60,
-            dBFS: -30,
-            showIndicator: false,
-            modalVisible: true,
-            isRealtimeMode: true,
-          );
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => true),
-              audioRecorderControllerProvider.overrideWith(
-                () => TestAudioRecorderController(realtimeRecordingState),
-              ),
-            ],
-          );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 250));
-
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should render live transcript text when available',
-        (tester) async {
-          stubCategory();
-
-          final realtimeRecordingState = AudioRecorderState(
-            status: AudioRecorderStatus.recording,
-            progress: const Duration(seconds: 5),
-            vu: 60,
-            dBFS: -30,
-            showIndicator: false,
-            modalVisible: true,
-            isRealtimeMode: true,
-            partialTranscript: 'Hello this is a test transcription',
-          );
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => true),
-              audioRecorderControllerProvider.overrideWith(
-                () => TestAudioRecorderController(realtimeRecordingState),
-              ),
-            ],
-          );
-
-          await tester.pump();
-
-          await tester.pump(const Duration(milliseconds: 300));
-
-          expect(
-            find.text('Hello this is a test transcription'),
-            findsOneWidget,
-          );
-          expect(find.byType(CircularProgressIndicator), findsNothing);
-        },
-      );
-
-      testWidgets('tapping STOP in realtime mode calls stopRealtime', (
-        tester,
-      ) async {
-        stubCategory();
-
-        var stopRealtimeCalled = false;
-        final realtimeRecordingState = AudioRecorderState(
-          status: AudioRecorderStatus.recording,
-          progress: const Duration(seconds: 5),
-          vu: 80,
-          dBFS: -20,
-          showIndicator: false,
-          modalVisible: true,
-          isRealtimeMode: true,
-        );
-
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => true),
-            audioRecorderControllerProvider.overrideWith(
-              () => _CallbackTrackingController(
-                fixedState: realtimeRecordingState,
-                onStopRealtimeCalled: () => stopRealtimeCalled = true,
-              ),
-            ),
-          ],
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
-
-        expect(find.text('STOP'), findsOneWidget);
-        await tester.tap(find.text('STOP'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(stopRealtimeCalled, isTrue);
-      });
-
-      testWidgets('tapping CANCEL in realtime mode calls cancelRealtime', (
-        tester,
-      ) async {
-        stubCategory();
-
-        var cancelRealtimeCalled = false;
-        final realtimeRecordingState = AudioRecorderState(
-          status: AudioRecorderStatus.recording,
-          progress: const Duration(seconds: 5),
-          vu: 80,
-          dBFS: -20,
-          showIndicator: false,
-          modalVisible: true,
-          isRealtimeMode: true,
-        );
-
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => true),
-            audioRecorderControllerProvider.overrideWith(
-              () => _CallbackTrackingController(
-                fixedState: realtimeRecordingState,
-                onCancelRealtimeCalled: () => cancelRealtimeCalled = true,
-              ),
-            ),
-          ],
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
-
-        final cancelButton = find.byKey(const ValueKey('cancel_recording'));
-        expect(cancelButton, findsOneWidget);
-        await tester.tap(cancelButton);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.text('Discard recording?'), findsOneWidget);
-        expect(cancelRealtimeCalled, isFalse);
-
-        await tester.tap(
-          find.widgetWithText(DesignSystemButton, 'DISCARD'),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(cancelRealtimeCalled, isTrue);
-      });
-
+    group('Cancel (Discard) Controls', () {
       testWidgets(
         'should render cancel (X) button in standard recording mode',
         (tester) async {
@@ -1173,7 +926,6 @@ void main() {
           await pumpModalContent(
             tester,
             extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => false),
               audioRecorderControllerProvider.overrideWith(
                 () => TestAudioRecorderController(standardRecordingState),
               ),
@@ -1183,7 +935,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 250));
 
-          // The discard control is available even though realtime is off.
+          // The discard control is always available while recording.
           expect(
             find.byKey(const ValueKey('cancel_recording')),
             findsOneWidget,
@@ -1212,7 +964,6 @@ void main() {
         await pumpModalContent(
           tester,
           extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => false),
             audioRecorderControllerProvider.overrideWith(
               () => _CallbackTrackingController(
                 fixedState: standardRecordingState,
@@ -1271,7 +1022,6 @@ void main() {
         await pumpModalContent(
           tester,
           extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => false),
             audioRecorderControllerProvider.overrideWith(
               () => _CallbackTrackingController(
                 fixedState: standardRecordingState,
@@ -1299,83 +1049,6 @@ void main() {
         expect(cancelCalled, isFalse);
         expect(find.text('STOP'), findsOneWidget);
       });
-
-      testWidgets('tapping RECORD in realtime mode calls recordRealtime', (
-        tester,
-      ) async {
-        stubCategory();
-
-        var recordRealtimeCalled = false;
-        final idleState = AudioRecorderState(
-          status: AudioRecorderStatus.stopped,
-          progress: Duration.zero,
-          vu: 0,
-          dBFS: -160,
-          showIndicator: false,
-          modalVisible: true,
-        );
-
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => true),
-            audioRecorderControllerProvider.overrideWith(
-              () => _CallbackTrackingController(
-                fixedState: idleState,
-                onRecordRealtimeCalled: () => recordRealtimeCalled = true,
-              ),
-            ),
-          ],
-        );
-
-        await tester.pump();
-
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Toggle to realtime mode first
-        final switchWidget = find.byType(Switch);
-        expect(switchWidget, findsOneWidget);
-        await tester.tap(switchWidget);
-        await tester.pump();
-
-        // Tap the RECORD button (now in realtime mode)
-        expect(find.text('RECORD'), findsOneWidget);
-        await tester.tap(find.text('RECORD'));
-        await tester.pump();
-
-        expect(recordRealtimeCalled, isTrue);
-      });
-
-      testWidgets('should not show mode toggle when recording', (
-        tester,
-      ) async {
-        stubCategory();
-
-        final recordingState = AudioRecorderState(
-          status: AudioRecorderStatus.recording,
-          progress: const Duration(seconds: 5),
-          vu: 80,
-          dBFS: -20,
-          showIndicator: false,
-          modalVisible: true,
-        );
-
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => true),
-            audioRecorderControllerProvider.overrideWith(
-              () => TestAudioRecorderController(recordingState),
-            ),
-          ],
-        );
-
-        await tester.pump();
-
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.byType(Switch), findsNothing);
-      });
     });
 
     group('Pause / Resume Controls', () {
@@ -1396,7 +1069,6 @@ void main() {
         await pumpModalContent(
           tester,
           extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => false),
             audioRecorderControllerProvider.overrideWith(
               () => TestAudioRecorderController(standardRecording()),
             ),
@@ -1417,35 +1089,6 @@ void main() {
         expect(find.text('STOP'), findsOneWidget);
       });
 
-      testWidgets('omits pause button in realtime recording mode', (
-        tester,
-      ) async {
-        stubCategory();
-
-        final realtime = standardRecording().copyWith(isRealtimeMode: true);
-
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => true),
-            audioRecorderControllerProvider.overrideWith(
-              () => TestAudioRecorderController(realtime),
-            ),
-          ],
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
-
-        expect(
-          find.byKey(const ValueKey('pause_resume_button')),
-          findsNothing,
-        );
-        // Cancel and stop remain available in realtime mode.
-        expect(find.byKey(const ValueKey('cancel_recording')), findsOneWidget);
-        expect(find.text('STOP'), findsOneWidget);
-      });
-
       testWidgets(
         'tapping pause calls pause() and swaps to a resume (play) button',
         (tester) async {
@@ -1456,7 +1099,6 @@ void main() {
           await pumpModalContent(
             tester,
             extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => false),
               audioRecorderControllerProvider.overrideWith(
                 () => _CallbackTrackingController(
                   fixedState: standardRecording(),
@@ -1497,7 +1139,6 @@ void main() {
           await pumpModalContent(
             tester,
             extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => false),
               audioRecorderControllerProvider.overrideWith(
                 () => _CallbackTrackingController(
                   fixedState: paused,
@@ -1548,7 +1189,6 @@ void main() {
         await pumpModalContent(
           tester,
           extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => false),
             audioRecorderControllerProvider.overrideWith(
               () => TestAudioRecorderController(restingState),
             ),
@@ -1571,7 +1211,6 @@ void main() {
         await pumpModalContent(
           tester,
           extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => false),
             audioRecorderControllerProvider.overrideWith(
               () => TestAudioRecorderController(restingState),
             ),
@@ -1595,7 +1234,6 @@ void main() {
           await pumpModalContent(
             tester,
             extraOverrides: [
-              realtimeAvailableProvider.overrideWith((_) async => false),
               audioRecorderControllerProvider.overrideWith(
                 () => TestAudioRecorderController(restingState),
               ),
@@ -1629,7 +1267,6 @@ void main() {
         await pumpModalContent(
           tester,
           extraOverrides: [
-            realtimeAvailableProvider.overrideWith((_) async => false),
             audioRecorderControllerProvider.overrideWith(
               () => TestAudioRecorderController(loudState),
             ),
@@ -1669,7 +1306,6 @@ void main() {
               tester,
               theme: scenario.$1,
               extraOverrides: [
-                realtimeAvailableProvider.overrideWith((_) async => false),
                 audioRecorderControllerProvider.overrideWith(
                   () => TestAudioRecorderController(restingState),
                 ),
@@ -2400,9 +2036,6 @@ class _CallbackTrackingController extends AudioRecorderController {
     required this.fixedState,
     this.onStopCalled,
     this.onCancelCalled,
-    this.onStopRealtimeCalled,
-    this.onCancelRealtimeCalled,
-    this.onRecordRealtimeCalled,
     this.createdId,
     this.onPauseCalled,
     this.onResumeCalled,
@@ -2411,9 +2044,6 @@ class _CallbackTrackingController extends AudioRecorderController {
   final AudioRecorderState fixedState;
   final VoidCallback? onStopCalled;
   final VoidCallback? onCancelCalled;
-  final VoidCallback? onStopRealtimeCalled;
-  final VoidCallback? onCancelRealtimeCalled;
-  final VoidCallback? onRecordRealtimeCalled;
   final String? createdId;
   final VoidCallback? onPauseCalled;
   final VoidCallback? onResumeCalled;
@@ -2431,30 +2061,6 @@ class _CallbackTrackingController extends AudioRecorderController {
   Future<void> resume() async {
     onResumeCalled?.call();
     state = state.copyWith(status: AudioRecorderStatus.recording);
-  }
-
-  @override
-  Future<String?> stopRealtime() async {
-    onStopRealtimeCalled?.call();
-    state = fixedState.copyWith(
-      status: AudioRecorderStatus.stopped,
-      modalVisible: false,
-    );
-    return createdId;
-  }
-
-  @override
-  Future<void> cancelRealtime() async {
-    onCancelRealtimeCalled?.call();
-    state = fixedState.copyWith(
-      status: AudioRecorderStatus.stopped,
-      modalVisible: false,
-    );
-  }
-
-  @override
-  Future<void> recordRealtime({String? linkedId}) async {
-    onRecordRealtimeCalled?.call();
   }
 
   @override

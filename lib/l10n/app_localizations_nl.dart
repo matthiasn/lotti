@@ -1161,9 +1161,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiAttributionYou => 'You';
 
   @override
-  String get aiBatchToggleTooltip => 'Overschakelen naar standaard opname';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Beeldgeneratie';
 
   @override
@@ -2028,9 +2025,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiProviderWhisperName => 'Fluisteren (lokaal)';
 
   @override
-  String get aiRealtimeToggleTooltip => 'Overschakelen naar live transcriptie';
-
-  @override
   String get aiResponseDeleteCancel => 'Annuleren';
 
   @override
@@ -2434,22 +2428,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Opname weggooien?';
 
   @override
-  String get audioRecordingListening => 'Luisteren...';
-
-  @override
   String get audioRecordingPause => 'Pauzeren';
-
-  @override
-  String get audioRecordingRealtime => 'Levende omschrijving';
 
   @override
   String get audioRecordingResume => 'Hervatten';
 
   @override
   String get audioRecordings => 'Audio-opnames';
-
-  @override
-  String get audioRecordingStandard => 'Standaard';
 
   @override
   String get audioRecordingStop => 'Stoppen';
@@ -2836,9 +2821,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get chatInputSendTooltip => 'Bericht versturen';
-
-  @override
-  String get chatInputStartRealtime => 'Live transcriptie starten';
 
   @override
   String get chatInputStopRealtime => 'Stop live transcriptie';

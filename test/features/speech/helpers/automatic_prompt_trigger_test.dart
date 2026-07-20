@@ -226,49 +226,6 @@ void main() {
         ).called(1);
       });
 
-      test('skips transcription when realtime transcript provided', () async {
-        const taskId = 'test-task';
-        const entryId = 'test-entry';
-        final skill = testSkill();
-
-        final result = AutomationResult(handled: true, skill: skill);
-
-        when(
-          () => mockProfileAutomationService.tryTranscribe(
-            taskId: taskId,
-            enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
-          ),
-        ).thenAnswer((_) async => result);
-
-        final trigger = container.read(automaticPromptTriggerProvider);
-
-        await trigger.triggerAutomaticPrompts(
-          entryId,
-          stoppedState(),
-          linkedTaskId: taskId,
-          realtimeTranscriptProvided: true,
-        );
-
-        // Should log that it was not handled due to realtime
-        verify(
-          () => mockDomainLogger.log(
-            LogDomain.ai,
-            any<String>(
-              that: contains('realtimeProvided=true'),
-            ),
-            subDomain: 'triggerAutomaticPrompts',
-          ),
-        ).called(1);
-
-        verifyNever(
-          () => mockRunner.runTranscription(
-            audioEntryId: any(named: 'audioEntryId'),
-            automationResult: any(named: 'automationResult'),
-            linkedTaskId: any(named: 'linkedTaskId'),
-          ),
-        );
-      });
-
       test('logs when profile does not handle transcription', () async {
         const taskId = 'test-task';
         const entryId = 'test-entry';
@@ -425,52 +382,6 @@ void main() {
               LogDomain.ai,
               any<String>(that: contains('Marked report stale')),
               subDomain: 'nudgeTaskAgent',
-            ),
-          ).called(1);
-        },
-      );
-
-      test(
-        'still nudges the agent when the realtime transcript was already '
-        'provided (cloud transcription is skipped, but the content is fresh)',
-        () async {
-          const taskId = 'task-rt';
-          const entryId = 'entry-rt';
-          final skill = testSkill();
-          final result = AutomationResult(handled: true, skill: skill);
-          final agent = makeTestIdentity(agentId: 'agent-rt');
-
-          when(
-            () => mockProfileAutomationService.tryTranscribe(
-              taskId: taskId,
-              enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
-            ),
-          ).thenAnswer((_) async => result);
-          when(
-            () => mockTaskAgentService.getTaskAgentForTask(taskId),
-          ).thenAnswer((_) async => agent);
-
-          final trigger = container.read(automaticPromptTriggerProvider);
-
-          await trigger.triggerAutomaticPrompts(
-            entryId,
-            stoppedState(),
-            linkedTaskId: taskId,
-            realtimeTranscriptProvided: true,
-          );
-
-          verifyNever(
-            () => mockRunner.runTranscription(
-              audioEntryId: any(named: 'audioEntryId'),
-              automationResult: any(named: 'automationResult'),
-              linkedTaskId: any(named: 'linkedTaskId'),
-            ),
-          );
-          verify(
-            () => mockWakeOrchestrator.requestContentWake(
-              agentId: 'agent-rt',
-              reason: 'transcriptionComplete',
-              triggerTokens: {taskId, entryId},
             ),
           ).called(1);
         },

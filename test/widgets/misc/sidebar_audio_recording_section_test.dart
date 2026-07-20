@@ -18,7 +18,6 @@ class _FakeAudioRecorderController extends AudioRecorderController {
 
   final AudioRecorderState _initial;
   int stopCalls = 0;
-  int stopRealtimeCalls = 0;
   final List<String?> setCategoryIdCalls = <String?>[];
 
   @override
@@ -36,13 +35,6 @@ class _FakeAudioRecorderController extends AudioRecorderController {
     state = state.copyWith(status: AudioRecorderStatus.stopped);
     return 'audio-entry';
   }
-
-  @override
-  Future<String?> stopRealtime() async {
-    stopRealtimeCalls += 1;
-    state = state.copyWith(status: AudioRecorderStatus.stopped);
-    return 'realtime-audio-entry';
-  }
 }
 
 void main() {
@@ -56,7 +48,6 @@ void main() {
     double dBFS = -18,
     bool modalVisible = false,
     String? linkedId,
-    bool isRealtimeMode = false,
   }) {
     return AudioRecorderState(
       status: status,
@@ -66,7 +57,6 @@ void main() {
       showIndicator: true,
       modalVisible: modalVisible,
       linkedId: linkedId,
-      isRealtimeMode: isRealtimeMode,
     );
   }
 
@@ -196,22 +186,6 @@ void main() {
     await tester.pump();
 
     expect(controller.stopCalls, 1);
-    expect(controller.stopRealtimeCalls, 0);
-  });
-
-  testWidgets('stop button uses realtime stop for realtime sessions', (
-    tester,
-  ) async {
-    await pumpSection(
-      tester,
-      recorderState(isRealtimeMode: true),
-    );
-
-    await tester.tap(find.byIcon(Icons.stop_rounded));
-    await tester.pump();
-
-    expect(controller.stopCalls, 0);
-    expect(controller.stopRealtimeCalls, 1);
   });
 
   testWidgets('uses localized fallback title when there is no linked entry', (

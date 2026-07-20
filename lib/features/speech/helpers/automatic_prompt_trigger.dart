@@ -30,7 +30,6 @@ class AutomaticPromptTrigger {
     String entryId,
     AudioRecorderState state, {
     String? linkedTaskId,
-    bool realtimeTranscriptProvided = false,
   }) async {
     try {
       if (linkedTaskId == null) {
@@ -49,23 +48,13 @@ class AutomaticPromptTrigger {
         enableSpeechRecognition: state.enableSpeechRecognition,
       );
 
-      if (!result.handled || realtimeTranscriptProvided) {
+      if (!result.handled) {
         loggingService.log(
           LogDomain.ai,
           'Profile automation did not handle transcription for '
-          'task $linkedTaskId (handled=${result.handled}, '
-          'realtimeProvided=$realtimeTranscriptProvided)',
+          'task $linkedTaskId (handled=${result.handled})',
           subDomain: 'triggerAutomaticPrompts',
         );
-        // A realtime transcript is still a completed transcription — nudge
-        // the agent so it processes the freshly-spoken content immediately
-        // instead of waiting through the standard 2-minute throttle.
-        if (realtimeTranscriptProvided) {
-          await _nudgeTaskAgent(
-            entryId: entryId,
-            linkedTaskId: linkedTaskId,
-          );
-        }
         return;
       }
 

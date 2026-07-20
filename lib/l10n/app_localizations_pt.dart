@@ -1163,9 +1163,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiAttributionYou => 'You';
 
   @override
-  String get aiBatchToggleTooltip => 'Mudar para gravação padrão';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Geração de imagem';
 
   @override
@@ -2034,9 +2031,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiProviderWhisperName => 'Sussurro (local)';
 
   @override
-  String get aiRealtimeToggleTooltip => 'Mudar para transcrição ao vivo';
-
-  @override
   String get aiResponseDeleteCancel => 'Cancelar';
 
   @override
@@ -2447,22 +2441,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Descartar gravação?';
 
   @override
-  String get audioRecordingListening => 'Ouvindo...';
-
-  @override
   String get audioRecordingPause => 'PAUSA';
-
-  @override
-  String get audioRecordingRealtime => 'Transcrição ao vivo';
 
   @override
   String get audioRecordingResume => 'RETOMAR';
 
   @override
   String get audioRecordings => 'Gravações de áudio';
-
-  @override
-  String get audioRecordingStandard => 'Padrão';
 
   @override
   String get audioRecordingStop => 'PARAR';
@@ -2854,9 +2839,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get chatInputSendTooltip => 'Enviar mensagem';
-
-  @override
-  String get chatInputStartRealtime => 'Iniciar transcrição ao vivo';
 
   @override
   String get chatInputStopRealtime => 'Interromper a transcrição ao vivo';

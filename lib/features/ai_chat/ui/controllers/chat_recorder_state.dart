@@ -4,7 +4,7 @@
 /// `realtimeRecording` is the streaming WebSocket path; `processing` covers
 /// post-stop transcription for the batch path. Drives which input affordance
 /// `InputArea` renders.
-enum ChatRecorderStatus { idle, recording, realtimeRecording, processing }
+enum ChatRecorderStatus { idle, recording, processing }
 
 /// Classifies a recorder failure so the UI can map it to a localized message
 /// or recovery action. `concurrentOperation` flags a start attempt while
@@ -32,7 +32,6 @@ class ChatRecorderState {
     this.partialTranscript,
     this.error,
     this.errorType,
-    this.useRealtimeMode = false,
   });
 
   const ChatRecorderState.initial()
@@ -41,8 +40,7 @@ class ChatRecorderState {
       transcript = null,
       partialTranscript = null,
       error = null,
-      errorType = null,
-      useRealtimeMode = false;
+      errorType = null;
 
   // Fields
   final ChatRecorderStatus status;
@@ -52,18 +50,13 @@ class ChatRecorderState {
   final String? error;
   final ChatRecorderErrorType? errorType;
 
-  /// Whether the user has selected realtime transcription mode.
-  /// Persists across widget rebuilds within the controller's lifetime.
-  final bool useRealtimeMode;
-
   // Methods
   /// Footgun: [transcript], [partialTranscript], [error], and [errorType] are
   /// NOT preserved when omitted — passing nothing resets them to null. This is
   /// deliberate (each new status implies a fresh result), so callers that want
   /// to keep a value must pass it explicitly (e.g. re-passing
-  /// `partialTranscript: state.partialTranscript`). [status],
-  /// [amplitudeHistory], and [useRealtimeMode] use the usual keep-on-omit
-  /// semantics.
+  /// `partialTranscript: state.partialTranscript`). [status] and
+  /// [amplitudeHistory] use the usual keep-on-omit semantics.
   ChatRecorderState copyWith({
     ChatRecorderStatus? status,
     List<double>? amplitudeHistory,
@@ -71,7 +64,6 @@ class ChatRecorderState {
     String? partialTranscript,
     String? error,
     ChatRecorderErrorType? errorType,
-    bool? useRealtimeMode,
   }) {
     return ChatRecorderState(
       status: status ?? this.status,
@@ -80,7 +72,6 @@ class ChatRecorderState {
       partialTranscript: partialTranscript,
       error: error,
       errorType: errorType,
-      useRealtimeMode: useRealtimeMode ?? this.useRealtimeMode,
     );
   }
 }
@@ -88,9 +79,7 @@ class ChatRecorderState {
 /// Tuning for the batch (file-based) recording path.
 ///
 /// [maxSeconds] is a safety cap after which `ChatRecorderController` auto-stops
-/// and transcribes; [amplitudeIntervalMs] throttles waveform sampling. The
-/// realtime path ignores [sampleRate] (it forces 16kHz mono PCM as the Mistral
-/// API requires) but still honors [maxSeconds].
+/// and transcribes; [amplitudeIntervalMs] throttles waveform sampling.
 class ChatRecorderConfig {
   const ChatRecorderConfig({
     this.sampleRate = 48000,

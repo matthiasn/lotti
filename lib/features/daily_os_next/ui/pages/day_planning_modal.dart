@@ -289,6 +289,7 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
       final captureId = await agent.submitCapture(
         transcript: transcript,
         capturedAt: _capturedAtForDay(widget.day),
+        dayDate: widget.day,
         audioId: state.audioId,
       );
       if (!mounted) return;
@@ -361,7 +362,9 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
             label: messages.dailyOsNextCaptureDoneCta,
             fillColor: tokens.colors.interactive.enabled,
             foregroundColor: tokens.colors.text.onInteractiveAlert,
-            onTap: () => ref.read(captureControllerProvider.notifier).toggle(),
+            onTap: () => ref
+                .read(captureControllerProvider.notifier)
+                .toggle(forDate: widget.day),
           ),
         ]);
       case CapturePhase.transcribing:

@@ -80,6 +80,7 @@ class RealDayAgent implements DayAgentInterface {
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    required DateTime dayDate,
     String? audioId,
   }) async {
     // One long-lived planner owns every day (ADR 0022); create it lazily on
@@ -89,6 +90,7 @@ class RealDayAgent implements DayAgentInterface {
       agentId: identity.agentId,
       transcript: transcript,
       capturedAt: capturedAt,
+      dayId: dayAgentIdForDate(dayDate),
       audioRef: audioId,
     );
     return CaptureId(capture.id);

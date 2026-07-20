@@ -2148,12 +2148,6 @@ abstract class AppLocalizations {
   /// **'You'**
   String get aiAttributionYou;
 
-  /// No description provided for @aiBatchToggleTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to standard recording'**
-  String get aiBatchToggleTooltip;
-
   /// No description provided for @aiCapabilityChipImageGeneration.
   ///
   /// In en, this message translates to:
@@ -3570,12 +3564,6 @@ abstract class AppLocalizations {
   /// **'Whisper (local)'**
   String get aiProviderWhisperName;
 
-  /// No description provided for @aiRealtimeToggleTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to live transcription'**
-  String get aiRealtimeToggleTooltip;
-
   /// No description provided for @aiResponseDeleteCancel.
   ///
   /// In en, this message translates to:
@@ -4254,23 +4242,11 @@ abstract class AppLocalizations {
   /// **'Discard recording?'**
   String get audioRecordingDiscardDialogTitle;
 
-  /// No description provided for @audioRecordingListening.
-  ///
-  /// In en, this message translates to:
-  /// **'Listening...'**
-  String get audioRecordingListening;
-
   /// No description provided for @audioRecordingPause.
   ///
   /// In en, this message translates to:
   /// **'PAUSE'**
   String get audioRecordingPause;
-
-  /// No description provided for @audioRecordingRealtime.
-  ///
-  /// In en, this message translates to:
-  /// **'Live Transcription'**
-  String get audioRecordingRealtime;
 
   /// No description provided for @audioRecordingResume.
   ///
@@ -4283,12 +4259,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Audio Recordings'**
   String get audioRecordings;
-
-  /// No description provided for @audioRecordingStandard.
-  ///
-  /// In en, this message translates to:
-  /// **'Standard'**
-  String get audioRecordingStandard;
 
   /// No description provided for @audioRecordingStop.
   ///
@@ -4895,12 +4865,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send message'**
   String get chatInputSendTooltip;
-
-  /// No description provided for @chatInputStartRealtime.
-  ///
-  /// In en, this message translates to:
-  /// **'Start live transcription'**
-  String get chatInputStartRealtime;
 
   /// No description provided for @chatInputStopRealtime.
   ///

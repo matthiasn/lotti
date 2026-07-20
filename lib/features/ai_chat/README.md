@@ -18,7 +18,7 @@ At runtime, the feature owns five concrete jobs:
 2. explicit model selection for each chat session
 3. streaming assistant output, including tool-calling turns
 4. the task-summary retrieval tool used by the assistant
-5. batch and realtime transcription for chat input
+5. batch transcription for chat input
 
 It does not own:
 
@@ -43,14 +43,10 @@ lib/features/ai_chat/
 │   └── task_summary_repository.dart    # Task data retrieval for tool calls
 ├── services/
 │   ├── audio_transcription_service.dart    # Batch audio transcription
-│   ├── realtime_audio_buffer.dart          # Capped PCM buffer + dBFS amplitude stream
-│   ├── realtime_audio_writer.dart          # WAV write + M4A conversion for captured audio
-│   ├── realtime_transcript_merge.dart      # Pure confirmed-delta/transcript-merge functions
-│   ├── realtime_transcription_service.dart # Real-time transcription orchestration
 │   └── system_message_service.dart        # System prompt construction
 ├── ui/
 │   ├── controllers/
-│   │   ├── chat_amplitude_history.dart       # Pure waveform/amplitude helpers (batch + realtime)
+│   │   ├── chat_amplitude_history.dart       # Pure waveform/amplitude helpers
 │   │   ├── chat_recorder_controller.dart    # Audio recording state machine
 │   │   ├── chat_recorder_state.dart          # Recorder state/enum/config (standalone file)
 │   │   ├── chat_session_controller.dart     # Active conversation state
@@ -96,14 +92,12 @@ flowchart LR
   Sessions --> Repo["ChatRepository"]
   Session --> Repo
   Recorder --> BatchTx["AudioTranscriptionService"]
-  Recorder --> RtTx["RealtimeTranscriptionService"]
 
   Repo --> Processor["ChatMessageProcessor"]
   Repo --> System["SystemMessageService"]
   Processor --> ToolRepo["TaskSummaryRepository"]
   Processor --> Cloud["CloudInferenceRepository"]
   BatchTx --> Cloud
-  RtTx --> RtProvider["MLX or Mistral realtime backend"]
 
   ToolRepo --> Journal["JournalDb / task + work-entry reads"]
   Cloud --> Providers["Configured provider adapters"]
@@ -115,7 +109,7 @@ The structure is intentionally split:
 - `ChatRepository` orchestrates a chat turn
 - `ChatMessageProcessor` holds the testable prompt, tool, and stream logic
 - task retrieval stays in `TaskSummaryRepository`
-- transcription paths are separated into batch and realtime services
+- transcription stays in its own service (`AudioTranscriptionService`)
 
 Every production provider call enters `AiInteractionCapture` before invocation.
 The boundary keeps creator/trigger ownership in memory and stores request and
@@ -258,12 +252,9 @@ The chat recorder has its own controller and its own state machine. It is separa
 ```mermaid
 stateDiagram-v2
   [*] --> Idle
-  Idle --> Recording: start batch recording
-  Idle --> RealtimeRecording: start realtime mode
+  Idle --> Recording: start recording
   Recording --> Processing: stop and transcribe
   Recording --> Idle: cancel
-  RealtimeRecording --> Idle: stop realtime and finalize transcript
-  RealtimeRecording --> Idle: cancel
   Processing --> Idle: transcript ready
   Processing --> Idle: transcription error
   Processing --> Idle: cancel
@@ -273,17 +264,15 @@ Controller states are:
 
 - `idle`
 - `recording`
-- `realtimeRecording`
 - `processing`
 
 The controller also tracks:
 
 - waveform amplitude history
-- `partialTranscript` for live mode
+- `partialTranscript` (streamed batch-transcription text during `processing`)
 - final `transcript`
 - structured error type
 - provider diagnostic detail for failed batch transcription
-- whether realtime mode is selected
 
 Batch errors are logged by `ChatRecorderController` and rendered by both chat
 input and evolution input as an error toast. The UI clears the consumed result
@@ -314,7 +303,7 @@ is treated as a failure rather than a successful empty dictation.
 - then local MLX Qwen3-ASR models, which receive the same speech dictionary as
   prompt context
 - otherwise uses a `gemini-2.5-flash` model, or the first audio-capable model
-- excludes realtime-only Mistral models
+- excludes realtime-only Mistral models (WebSocket-only; not usable for batch)
 - sends MLX Audio model files directly to the native Swift bridge
 - otherwise base64-encodes the local audio file and calls `CloudInferenceRepository.generateWithAudio(...)`
 - yields text chunks as they arrive
@@ -356,48 +345,6 @@ sequenceDiagram
   UI->>UI: accumulate transcript
 ```
 
-### Realtime transcription path
-
-`RealtimeTranscriptionService` bypasses the normal HTTP inference path entirely.
-The code path is kept in place, but `realtimeTranscriptionUiEnabled` is
-currently `false`, so chat input surfaces do not show the live-mode toggle.
-Realtime can be exposed again once the local realtime path supports the same
-dictionary/biasing behavior as batch transcription.
-
-It:
-
-- resolves a Mistral realtime transcription model when configured, otherwise a
-  local MLX Qwen3-ASR realtime model
-- opens the native MLX realtime session or Mistral WebSocket session
-- streams PCM audio chunks
-- accumulates capped PCM audio and computes amplitude values via
-  `RealtimeAudioBuffer` (exposed through `amplitudeStream`)
-- accumulates text deltas, diffing MLX full-confirmed-text events into
-  deltas with `confirmedTextDelta` (`realtime_transcript_merge.dart`)
-- on stop, waits for `transcription.done` and picks the more complete of
-  the final text and the accumulated deltas (`moreCompleteTranscript`)
-- persists the buffered audio via `RealtimeAudioWriter` (temp WAV, then
-  M4A conversion, keeping the WAV as fallback)
-
-```mermaid
-sequenceDiagram
-  participant UI as "ChatRecorderController"
-  participant RT as "RealtimeTranscriptionService"
-  participant Backend as "MLX or Mistral realtime backend"
-
-  UI->>RT: startRealtimeTranscription(pcmStream)
-  RT->>Backend: open realtime session
-  UI->>RT: stream PCM chunks
-  RT->>Backend: append PCM
-  Backend-->>RT: transcription deltas
-  RT-->>UI: onDelta(delta)
-  UI->>UI: update partialTranscript
-  UI->>RT: stop(...)
-  RT->>Backend: end audio
-  Backend-->>RT: transcription.done
-  RT-->>UI: final transcript + audio file path
-```
-
 ### What happens after transcription
 
 The chat feature deliberately distinguishes between:
@@ -424,9 +371,6 @@ The chat feature does not invent its own privacy policy. It inherits routing fro
 
 - batch chat messages and batch transcription go through the selected provider path
 - MLX Audio batch transcription stays in-process through the native Apple bridge when supported
-- realtime transcription is currently hidden in the UI; the retained service
-  path can use either local MLX Qwen3-ASR or a configured Mistral realtime
-  endpoint
 - task retrieval happens locally from Lotti's databases before any tool result is sent upstream
 
 That means the privacy posture depends on the chosen provider configuration, not on the chat UI.
@@ -438,8 +382,6 @@ only digests and sanitized metadata, never chat text or audio bytes.
 - sessions are in-memory only
 - the built-in tool surface is intentionally narrow
 - chat requires explicit model selection
-- realtime transcription is gated by `realtimeTranscriptionUiEnabled` and can be
-  re-enabled once its dictionary/biasing behavior matches the batch path
 - hidden reasoning behavior is normalized, but provider quirks still matter at the stream level
 
 ## Relationship to Other Features

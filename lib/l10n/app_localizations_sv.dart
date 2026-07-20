@@ -1161,9 +1161,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiAttributionYou => 'You';
 
   @override
-  String get aiBatchToggleTooltip => 'Övergång till standardinspelning';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Bildgenerering';
 
   @override
@@ -2023,9 +2020,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (lokal)';
 
   @override
-  String get aiRealtimeToggleTooltip => 'Byt till livetranskription';
-
-  @override
   String get aiResponseDeleteCancel => 'Avbryt';
 
   @override
@@ -2429,22 +2423,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Släng inspelningen?';
 
   @override
-  String get audioRecordingListening => 'Lyssnar...';
-
-  @override
   String get audioRecordingPause => 'PAUS';
-
-  @override
-  String get audioRecordingRealtime => 'Livetranskription';
 
   @override
   String get audioRecordingResume => 'CV';
 
   @override
   String get audioRecordings => 'Ljudinspelningar';
-
-  @override
-  String get audioRecordingStandard => 'Standard';
 
   @override
   String get audioRecordingStop => 'STOPP';
@@ -2832,9 +2817,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get chatInputSendTooltip => 'Skicka meddelande';
-
-  @override
-  String get chatInputStartRealtime => 'Starta livetranskription';
 
   @override
   String get chatInputStopRealtime => 'Stoppa livetranskriptionen';

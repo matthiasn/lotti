@@ -3,7 +3,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Styled container for transcript text in the evolution composer.
 ///
-/// Shared by the realtime view and transcription progress widgets.
+/// Shared by the transcription progress widgets.
 class EvolutionTranscriptContainer extends StatelessWidget {
   const EvolutionTranscriptContainer({
     required this.child,
