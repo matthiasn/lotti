@@ -11,6 +11,9 @@ _AudioNote _$AudioNoteFromJson(Map<String, dynamic> json) => _AudioNote(
   audioFile: json['audioFile'] as String,
   audioDirectory: json['audioDirectory'] as String,
   duration: Duration(microseconds: (json['duration'] as num).toInt()),
+  dayContext: json['dayContext'] == null
+      ? null
+      : DayAudioContext.fromJson(json['dayContext'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$AudioNoteToJson(_AudioNote instance) =>
@@ -19,4 +22,5 @@ Map<String, dynamic> _$AudioNoteToJson(_AudioNote instance) =>
       'audioFile': instance.audioFile,
       'audioDirectory': instance.audioDirectory,
       'duration': instance.duration.inMicroseconds,
+      'dayContext': instance.dayContext,
     };
