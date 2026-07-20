@@ -536,7 +536,7 @@ class EventAgentWorkflow {
         }
       } else if (recordConsumption) {
         await finalizeCarrierlessAttribution(
-          status: AiWorkStatus.failed,
+          status: AiWorkStatus.partial,
           errorCode: 'output_carrier_unavailable',
         );
       }

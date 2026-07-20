@@ -306,6 +306,7 @@ class ConversationRepository extends Notifier<void> {
 
     // Start conversation loop
     var shouldContinue = true;
+    var nonAgentStreamFailed = false;
     var accumulated = InferenceUsage.empty;
 
     while (shouldContinue) {
@@ -387,7 +388,10 @@ class ConversationRepository extends Notifier<void> {
                   ),
                   existingSession: attributionSession,
                   terminalizeSuccess: false,
-                  terminalizeFailure: false,
+                  // Agent workflows own their wake's terminal attribution.
+                  // A standalone chat has no outer coordinator, so the
+                  // capture boundary must terminalize a failed stream itself.
+                  terminalizeFailure: consumptionAgentId == null,
                   taskId: consumptionTaskId,
                   categoryId: consumptionCategoryId,
                 );
@@ -431,6 +435,7 @@ class ConversationRepository extends Notifier<void> {
             }
           }
         } catch (e, stackTrace) {
+          nonAgentStreamFailed = consumptionAgentId == null;
           if (turnUsage != null) {
             accumulated = accumulated.merge(turnUsage);
           }
@@ -521,7 +526,8 @@ class ConversationRepository extends Notifier<void> {
     }
 
     if (attributionSession != null &&
-        (consumptionAgentId == null || consumptionWakeRunKey == null)) {
+        (consumptionAgentId == null || consumptionWakeRunKey == null) &&
+        !nonAgentStreamFailed) {
       await capture!.completeSession(
         session: attributionSession,
         outputs: const [],

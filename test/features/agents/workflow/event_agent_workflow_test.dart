@@ -557,7 +557,7 @@ void main() {
           () => attribution.service.prepareCompletion(
             attributionId: agentWakeAttributionId(runKey),
             outputs: const [],
-            status: AiWorkStatus.failed,
+            status: AiWorkStatus.partial,
             errorCode: 'output_carrier_unavailable',
           ),
         ).called(1);
@@ -605,7 +605,7 @@ void main() {
           () => attribution.service.prepareCompletion(
             attributionId: agentWakeAttributionId(runKey),
             outputs: const [],
-            status: AiWorkStatus.failed,
+            status: AiWorkStatus.partial,
             errorCode: 'output_carrier_unavailable',
           ),
         ).called(1);

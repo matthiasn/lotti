@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:mocktail/mocktail.dart';
@@ -2219,6 +2220,26 @@ void main() {
             expect(event.agentId, isNull);
           },
         );
+
+        test('terminalizes a failed non-agent stream exactly once', () async {
+          final bench = _registerInteractionCapture();
+          _stubGenerateText(mockOllamaRepo).thenAnswer(
+            (_) => Stream.error(StateError('provider unavailable')),
+          );
+
+          final usage = await sendWithConsumption(agentId: null);
+
+          expect(usage, isNull);
+          verify(
+            () => bench.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: const [],
+              status: AiWorkStatus.failed,
+              errorCode: 'StateError',
+            ),
+          ).called(1);
+          verify(() => bench.service.finalize(any())).called(1);
+        });
 
         test(
           'completes normally when no interaction capture is registered',
