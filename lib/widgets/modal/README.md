@@ -153,10 +153,11 @@ If no `controller` is supplied, the widget creates and disposes an internal
 handled in `didUpdateWidget`, and animations are re-initialized when scale,
 opacity, elevation, or the controller change.
 
-The only consumer of `AnimatedModalItem` outside this directory is
-`AnimatedModernTaskCard`
-(`lib/features/journal/ui/widgets/list_cards/animated_task_card.dart`), which
-wraps `ModernTaskCard` with `margin: EdgeInsets.zero` and `disableShadow: true`.
+The only consumer of `AnimatedModalItem` outside this directory is the
+onboarding connect panel
+(`lib/features/onboarding/ui/widgets/onboarding_connect_panel.dart`). The
+former `AnimatedModernTaskCard` consumer was removed when the logbook feed
+unified task rows onto `ModernJournalCard`.
 
 ### AnimatedModalItemController
 

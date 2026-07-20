@@ -22,9 +22,17 @@ class FloatingAddActionButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // On a detail page the FAB creates an entry *linked to* the open one — a
+    // different action than the list's create-new. The link glyph and label
+    // announce that changed meaning instead of leaving it to be discovered
+    // after the fact.
+    final createsLinked = linkedFromId != null;
     return DesignSystemBottomNavigationFabPadding(
       child: DesignSystemFloatingActionButton(
-        semanticLabel: context.messages.createEntryLabel,
+        icon: createsLinked ? Icons.add_link_rounded : Icons.add_rounded,
+        semanticLabel: createsLinked
+            ? context.messages.addLinkedEntryLabel
+            : context.messages.createEntryLabel,
         onPressed: () => CreateEntryModal.show(
           context: context,
           linkedFromId: linkedFromId,

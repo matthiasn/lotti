@@ -6,6 +6,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
@@ -41,10 +44,27 @@ import 'package:lotti/widgets/media/media_drop_target.dart';
 class EntryDetailsPage extends ConsumerStatefulWidget {
   const EntryDetailsPage({
     required this.itemId,
+    this.showBackButton = true,
+    this.showFloatingActionButton = true,
     super.key,
   });
 
   final String itemId;
+
+  /// Whether the app bar renders a back affordance.
+  ///
+  /// True on mobile, where the page is pushed as its own route and back is the
+  /// only way out. False in the desktop split pane, where the list stays on
+  /// screen beside the details and there is nothing to go back to.
+  final bool showBackButton;
+
+  /// Whether this page contributes its own create FAB.
+  ///
+  /// True on mobile, where this page is the only thing on screen. False in
+  /// the desktop split pane, where the list pane already shows the create FAB
+  /// and a second one floating over the details would duplicate it — matching
+  /// the tasks split, whose detail pane has no FAB either.
+  final bool showFloatingActionButton;
 
   @override
   ConsumerState<EntryDetailsPage> createState() => _EntryDetailsPageState();
@@ -110,6 +130,7 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
     final provider = entryControllerProvider(widget.itemId);
     final asyncItem = ref.watch(provider);
     final item = asyncItem.value?.entry;
+    final tokens = context.designTokens;
 
     // Only attempt to scroll after entry data is loaded
     if (asyncItem.hasValue && item != null) {
@@ -141,49 +162,82 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
           analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
         ),
         child: Scaffold(
-          floatingActionButton: FloatingAddActionButton(
-            linkedFromId: item.meta.id,
-            categoryId: item.meta.categoryId,
-          ),
+          // One unified canvas across the whole logbook: the detail page
+          // shares the list column's page surface, and the entry body sits on
+          // it as a card — the same card-on-canvas recipe as the list rows.
+          backgroundColor: dsPageSurface(context),
+          floatingActionButton: widget.showFloatingActionButton
+              ? FloatingAddActionButton(
+                  linkedFromId: item.meta.id,
+                  categoryId: item.meta.categoryId,
+                )
+              : null,
           body: Stack(
             children: [
               CustomScrollView(
                 scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
                 controller: _scrollController,
                 slivers: [
-                  JournalSliverAppBar(entryId: widget.itemId),
+                  JournalSliverAppBar(
+                    entryId: widget.itemId,
+                    showBackButton: widget.showBackButton,
+                  ),
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                        top: 8,
-                        bottom: 200,
-                        left: 5,
-                        right: 5,
-                      ),
-                      child:
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: <Widget>[
-                              EntryDetailsWidget(
-                                itemId: widget.itemId,
-                                showTaskDetails: true,
-                                showAiEntry: true,
-                              ),
-                              LinkedEntriesWithTimer(
-                                item: item,
-                                entryKeyBuilder: _getEntryKey,
-                                highlightedEntryId: highlightedEntryId,
-                              ),
-                              LinkedFromEntriesWidget(item),
-                              if (item is ChecklistItem)
-                                LinkedFromChecklistWidget(item),
-                              if (item is Checklist) LinkedFromTaskWidget(item),
-                            ],
-                          ).animate().fadeIn(
-                            duration: const Duration(
-                              milliseconds: 100,
-                            ),
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        // The same reading measure as the tasks detail pane:
+                        // in a wide split the text must not run the full pane.
+                        constraints: const BoxConstraints(
+                          maxWidth: kDetailContentMaxWidth,
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            top: tokens.spacing.step3,
+                            // Room to scroll the last section clear of the FAB
+                            // and the AI running strip pinned to the bottom.
+                            bottom: tokens.spacing.step11 * 2,
                           ),
+                          child:
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: <Widget>[
+                                  EntryDetailsWidget(
+                                    itemId: widget.itemId,
+                                    showTaskDetails: true,
+                                    showAiEntry: true,
+                                  ),
+                                  // Linked rows carry only the tight step2
+                                  // embedded card inset; pad the sections up
+                                  // to the standalone card's step5 rail so
+                                  // every card on the page shares one exact
+                                  // left/right edge.
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: tokens.spacing.step4,
+                                    ),
+                                    child: Column(
+                                      children: <Widget>[
+                                        LinkedEntriesWithTimer(
+                                          item: item,
+                                          entryKeyBuilder: _getEntryKey,
+                                          highlightedEntryId:
+                                              highlightedEntryId,
+                                        ),
+                                        LinkedFromEntriesWidget(item),
+                                        if (item is ChecklistItem)
+                                          LinkedFromChecklistWidget(item),
+                                        if (item is Checklist)
+                                          LinkedFromTaskWidget(item),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ).animate().fadeIn(
+                                duration: MotionDurations.short2,
+                              ),
+                        ),
+                      ),
                     ),
                   ),
                 ],

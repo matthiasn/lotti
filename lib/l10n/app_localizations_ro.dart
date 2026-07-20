@@ -48,6 +48,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get addHabitDateLabel => 'Finalizat la';
 
   @override
+  String get addLinkedEntryLabel => 'Adăugați o intrare asociată';
+
+  @override
   String get addMeasurementCommentLabel => 'Comentariu';
 
   @override
@@ -6561,6 +6564,23 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Leagă o sarcină existentă...';
+
+  @override
+  String get logbookEmptyHint =>
+      'Creați prima dvs. intrare pentru a începe jurnalul.';
+
+  @override
+  String get logbookEmptyTitle => 'Jurnalul dvs. este gol';
+
+  @override
+  String get logbookNewEntriesHint => 'Intrările noi se vor deschide aici.';
+
+  @override
+  String get logbookNoMatchesHint =>
+      'Ajustați căutarea sau filtrele pentru a vedea mai multe.';
+
+  @override
+  String get logbookNoMatchesTitle => 'Nicio intrare nu corespunde';
 
   @override
   String get loggingDomainAgentRuntime => 'Rulare agenți';

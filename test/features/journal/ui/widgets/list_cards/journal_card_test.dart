@@ -15,9 +15,11 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart' as entry_tools;
@@ -32,7 +34,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
 import 'package:mocktail/mocktail.dart';
@@ -158,6 +159,185 @@ void main() {
       expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
     });
 
+    testWidgets('entry text uses the 14px list row scale, matching the '
+        'tasks list rows', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: testTextEntry),
+        ),
+      );
+
+      final text = tester.widget<Text>(
+        find.text(testTextEntry.entryText!.plainText),
+      );
+      final context = tester.element(find.byType(ModernJournalCard));
+      final expected =
+          context.designTokens.typography.styles.subtitle.subtitle2;
+      expect(text.style?.fontSize, expected.fontSize);
+      expect(text.style?.fontWeight, expected.fontWeight);
+    });
+
+    testWidgets('selected flag reaches the base card', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: testTextEntry, selected: true),
+        ),
+      );
+
+      final baseCard = tester.widget<ModernBaseCard>(
+        find.byType(ModernBaseCard),
+      );
+      expect(baseCard.selected, isTrue);
+    });
+
+    testWidgets('multi-line entry text collapses to a single-spaced preview', (
+      tester,
+    ) async {
+      final entry = testTextEntry.copyWith(
+        entryText: const EntryText(
+          plainText: 'Title line\n\nBody paragraph after a blank line.',
+        ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: entry)),
+      );
+
+      // The first line renders at title tier; the remainder drops to the
+      // quiet caption preview — neither keeps the blank line.
+      expect(find.text('Title line'), findsOneWidget);
+      expect(
+        find.text('Body paragraph after a blank line.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('task row shares the feed anatomy: 14px title, date line, '
+        'priority + status chips, and the opens-elsewhere glyph', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: testTask)),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(ModernJournalCard));
+      final title = tester.widget<Text>(find.text(testTask.data.title));
+      expect(
+        title.style?.fontSize,
+        context.designTokens.typography.styles.subtitle.subtitle2.fontSize,
+      );
+      // The same humanized date line every other card type shows.
+      expect(
+        find.text(
+          entry_tools.entryDateLabel(context, testTask.meta.dateFrom),
+        ),
+        findsOneWidget,
+      );
+      // Tasks navigate to the Tasks tab, so the row carries the quiet
+      // opens-elsewhere marker.
+      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+    });
+
+    testWidgets('task with an empty title shows the untitled placeholder', (
+      tester,
+    ) async {
+      final untitledTask = testTask.copyWith(
+        data: testTask.data.copyWith(title: '   '),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: untitledTask)),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(ModernJournalCard));
+      final placeholder = context.messages.taskUntitled;
+      final text = tester.widget<Text>(find.text(placeholder));
+      // Rendered in the error color, italic — an obvious gap rather than a
+      // silently blank card, matching the tasks list row.
+      expect(
+        text.style?.color,
+        context.designTokens.colors.alert.error.defaultColor,
+      );
+      expect(text.style?.fontStyle, FontStyle.italic);
+    });
+
+    testWidgets('event row carries the opens-elsewhere glyph too', (
+      tester,
+    ) async {
+      final event = JournalEvent(
+        meta: testTask.meta.copyWith(id: 'event-glyph'),
+        data: const EventData(
+          title: 'Concert',
+          status: EventStatus.planned,
+          stars: 3,
+        ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: event)),
+      );
+      await tester.pump();
+
+      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+    });
+
+    testWidgets('a private event keeps its shield beside the glyph', (
+      tester,
+    ) async {
+      // Status indicators and the opens-elsewhere glyph share the trailing
+      // cluster, so a private event must show both, not either-or.
+      final event = JournalEvent(
+        meta: testTask.meta.copyWith(id: 'event-private', private: true),
+        data: const EventData(
+          title: 'Concert',
+          status: EventStatus.planned,
+          stars: 3,
+        ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: event)),
+      );
+      await tester.pump();
+
+      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+    });
+
+    testWidgets(
+      'private shield is a neutral annotation and the import flag warning '
+      'orange — never error red',
+      (tester) async {
+        final entry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            private: true,
+            flag: EntryFlag.import,
+            starred: false,
+          ),
+        );
+        await tester.pumpWidget(
+          makeTestableWidget(ModernJournalCard(item: entry)),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(ModernJournalCard));
+        final tokens = context.designTokens;
+        // Privacy is a property, not an alert: neutral ink keeps semantic
+        // hues (status blue, error red) unambiguous; the tooltip carries the
+        // meaning.
+        final shield = tester.widget<Icon>(find.byIcon(MdiIcons.security));
+        expect(shield.color, tokens.colors.text.mediumEmphasis);
+        expect(
+          find.ancestor(
+            of: find.byIcon(MdiIcons.security),
+            matching: find.byType(Tooltip),
+          ),
+          findsOneWidget,
+        );
+        final flag = tester.widget<Icon>(find.byIcon(MdiIcons.flag));
+        expect(flag.color, tokens.colors.alert.warning.defaultColor);
+        expect(shield.color, isNot(Theme.of(context).colorScheme.error));
+      },
+    );
+
     testWidgets('surfaces a tracked entry as a span in a linked timeline', (
       tester,
     ) async {
@@ -173,6 +353,33 @@ void main() {
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
       expect(find.text('1h'), findsOneWidget);
     });
+
+    testWidgets(
+      'a tracked entry with more text stacks the preview above the span bar',
+      (tester) async {
+        // Both secondary pieces exist: the text remainder and the tracked
+        // interval. They must stack instead of one displacing the other.
+        final tracked = testTextEntry.copyWith(
+          entryText: const EntryText(
+            plainText: 'Tracked work\nMore detail about the work',
+          ),
+        );
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: tracked, showLinkedDuration: true),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('More detail about the work'), findsOneWidget);
+        expect(find.byType(TimeSpanBar), findsOneWidget);
+        // Reading order: the note preview sits above the interval bar.
+        expect(
+          tester.getTopLeft(find.text('More detail about the work')).dy,
+          lessThan(tester.getTopLeft(find.byType(TimeSpanBar)).dy),
+        );
+      },
+    );
 
     testWidgets('keeps a tracked entry a plain note in the main logbook', (
       tester,
@@ -218,11 +425,12 @@ void main() {
       expect(find.byIcon(Icons.image_rounded), findsOneWidget);
     });
 
-    testWidgets('audio mic glyph is tinted with the primary color', (
+    testWidgets('audio mic glyph is tinted with the token accent', (
       tester,
     ) async {
-      // The mic glyph color no longer varies with transcripts; it is the
-      // type tint (primary), surfaced through the leading TintedTypeGlyph.
+      // The mic glyph color no longer varies with transcripts; without a
+      // category it falls back to the design-token accent (not the Material
+      // colorScheme.primary, which would introduce a second accent family).
       await tester.pumpWidget(
         makeTestableWidget(
           ModernJournalCard(item: testAudioEntryWithTranscripts),
@@ -236,7 +444,7 @@ void main() {
         find.byType(TintedTypeGlyph),
       );
       expect(glyph.icon, Icons.mic_rounded);
-      expect(glyph.color, context.colorScheme.primary);
+      expect(glyph.color, context.designTokens.colors.interactive.enabled);
     });
 
     testWidgets('renders day plan entry with custom label', (tester) async {
@@ -305,8 +513,15 @@ void main() {
         ),
       );
 
+      final context = tester.element(find.byType(ModernJournalCard));
       expect(find.text(taskEntry.data.title), findsOneWidget);
-      expect(find.byType(TaskStatusWidget), findsOneWidget);
+      // Status renders as a tonal metric chip (same grammar as every other
+      // chip) instead of the loud filled TaskStatusWidget.
+      expect(find.byType(TaskStatusWidget), findsNothing);
+      expect(
+        find.text(taskEntry.data.status.localizedLabel(context)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders measurement entry with ruler glyph and value chip', (
@@ -435,11 +650,12 @@ void main() {
         ),
       );
 
-      // The content title clamps to 3 lines with ellipsis overflow.
+      // The title tier clamps to 2 lines with ellipsis overflow — a body
+      // excerpt must never render three bold lines.
       final textWidget = tester.widget<Text>(
         find.text(testEntry.entryText!.plainText),
       );
-      expect(textWidget.maxLines, 3);
+      expect(textWidget.maxLines, 2);
       expect(textWidget.overflow, TextOverflow.ellipsis);
     });
 

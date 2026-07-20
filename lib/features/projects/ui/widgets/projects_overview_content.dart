@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_header.dart';
@@ -89,7 +90,7 @@ class _ProjectsOverviewContentState extends State<ProjectsOverviewContent> {
     return Column(
       children: [
         if (widget.renderHeader)
-          ProjectsOverviewContentWidth(
+          DetailContentWidth(
             child: ProjectsHeader(
               title: widget.title,
               query: widget.query,
@@ -114,7 +115,7 @@ class _ProjectsOverviewContentState extends State<ProjectsOverviewContent> {
                     padding: EdgeInsets.only(bottom: widget.listBottomPadding),
                     sliver: const SliverFillRemaining(
                       hasScrollBody: false,
-                      child: ProjectsOverviewContentWidth(
+                      child: DetailContentWidth(
                         child: NoResultsPane(),
                       ),
                     ),

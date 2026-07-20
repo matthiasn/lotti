@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
-import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
+import 'package:lotti/features/journal/ui/pages/journal_root_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/uuid.dart';
 
 class JournalLocation extends BeamLocation<BeamState> {
@@ -16,18 +20,36 @@ class JournalLocation extends BeamLocation<BeamState> {
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
-    final entryId = state.pathParameters['entryId'];
+    final rawEntryId = state.pathParameters['entryId'];
+    // `/journal/:entryId` also greedily matches the `fill_survey` segment, so
+    // only a real uuid counts as an entry selection.
+    final entryId = isUuid(rawEntryId) ? rawEntryId : null;
+    final navService = getIt<NavService>();
+    final isDesktop = navService.isDesktopMode;
+
+    if (isDesktop) {
+      // Writing during build would mutate a notifier other widgets are already
+      // listening to in this frame; defer to the next microtask. Guarded
+      // against the service being replaced/disposed in the meantime (tests
+      // reset getIt between cases).
+      scheduleMicrotask(() {
+        if (getIt.isRegistered<NavService>() &&
+            identical(getIt<NavService>(), navService)) {
+          navService.desktopSelectedEntryId.value = entryId;
+        }
+      });
+    }
 
     return [
       const BeamPage(
         key: ValueKey('journal'),
         title: 'Journal',
-        child: InfiniteJournalPage(),
+        child: JournalRootPage(),
       ),
-      if (isUuid(entryId))
+      if (!isDesktop && entryId != null)
         BeamPage(
           key: ValueKey('journal-$entryId'),
-          child: EntryDetailsPage(itemId: entryId!),
+          child: EntryDetailsPage(itemId: entryId),
         ),
     ];
   }

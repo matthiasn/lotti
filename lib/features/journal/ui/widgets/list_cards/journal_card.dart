@@ -16,7 +16,6 @@ import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/state/checklist_completion_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
-import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -50,6 +49,7 @@ class ModernJournalCard extends StatelessWidget {
     this.maxHeight = 120,
     this.showLinkedDuration = false,
     this.removeHorizontalMargin = false,
+    this.selected = false,
     super.key,
   });
 
@@ -57,6 +57,9 @@ class ModernJournalCard extends StatelessWidget {
   final double maxHeight;
   final bool showLinkedDuration;
   final bool removeHorizontalMargin;
+
+  /// Whether this entry is the one open in the desktop detail pane.
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -74,16 +77,26 @@ class ModernJournalCard extends StatelessWidget {
       }
     }
 
+    final tokens = context.designTokens;
+
     return ModernBaseCard(
       onTap: onTap,
+      selected: selected,
       backgroundColor: dsCardSurface(context),
+      // Same flat material as DesignSystemSectionCard: hairline decorative
+      // border, no drop shadow — list rows and the detail card are one
+      // surface recipe, not two coincidentally similar ones.
+      borderColor: tokens.colors.decorative.level01,
+      customShadows: const [],
+      // step2 vertical: an 8px seam between neighbours, so the canvas
+      // actually separates cards instead of leaving a hairline stripe.
       margin: EdgeInsets.symmetric(
-        horizontal: removeHorizontalMargin ? 0 : AppTheme.spacingLarge,
-        vertical: AppTheme.cardSpacing / 2,
+        horizontal: removeHorizontalMargin ? 0 : tokens.spacing.step5,
+        vertical: tokens.spacing.step2,
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.cardPadding,
-        vertical: AppTheme.cardPaddingCompact,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step4,
+        vertical: tokens.spacing.step4,
       ),
       child: _EntryCardContent(
         item: item,
@@ -106,8 +119,6 @@ class _EntryCardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = context.colorScheme;
-
     return switch (item) {
       final JournalEntry e => _journalEntryCard(context, e),
       final JournalAudio a => _scaffold(
@@ -119,6 +130,7 @@ class _EntryCardContent extends StatelessWidget {
           a.entryText,
           fallback: context.messages.entryTypeLabelJournalAudio,
         ),
+        secondary: _contentRemainder(context, a.entryText),
         metaChips: [
           _metricChip(
             context,
@@ -136,6 +148,7 @@ class _EntryCardContent extends StatelessWidget {
           img.entryText,
           fallback: context.messages.entryTypeLabelJournalImage,
         ),
+        secondary: _contentRemainder(context, img.entryText),
       ),
       final Task t => _taskScaffold(context, t),
       final JournalEvent ev => _scaffold(
@@ -157,6 +170,7 @@ class _EntryCardContent extends StatelessWidget {
           ),
         ],
         secondary: _notePreview(context, ev.entryText),
+        opensElsewhere: true,
       ),
       final QuantitativeEntry qe => _scaffold(
         context,
@@ -203,13 +217,23 @@ class _EntryCardContent extends StatelessWidget {
         context,
         icon: Icons.auto_awesome_rounded,
         iconColor: _categoryColor(context, item),
-        title: _previewText(context, ai.data.response, maxLines: 3),
+        // Same first-line split as text entries: no entry type may render a
+        // multi-line bold block at title tier.
+        title: _contentTitle(
+          context,
+          EntryText(plainText: ai.data.response),
+          fallback: 'AI',
+        ),
+        secondary: _contentRemainder(
+          context,
+          EntryText(plainText: ai.data.response),
+        ),
         metaChips: [
           _metricChip(
             context,
             icon: Icons.auto_awesome_rounded,
             label: 'AI',
-            color: cs.primary,
+            color: context.designTokens.colors.interactive.enabled,
           ),
         ],
       ),
@@ -266,7 +290,18 @@ class _EntryCardContent extends StatelessWidget {
     required Widget title,
     List<Widget> metaChips = const [],
     Widget? secondary,
+    bool opensElsewhere = false,
   }) {
+    final indicators = _statusIndicators(context);
+    final trailing = opensElsewhere
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ?indicators,
+              _opensElsewhereGlyph(context),
+            ],
+          )
+        : indicators;
     return _EntryCardScaffold(
       icon: icon,
       iconColor: iconColor,
@@ -274,7 +309,7 @@ class _EntryCardContent extends StatelessWidget {
       dateLabel: entryDateLabel(context, item.meta.dateFrom),
       metaChips: metaChips,
       secondary: secondary,
-      trailing: _statusIndicators(context),
+      trailing: trailing,
       labelIds: item.meta.labelIds,
     );
   }
@@ -296,13 +331,24 @@ class _EntryCardContent extends StatelessWidget {
         e.entryText,
         fallback: context.messages.entryTypeLabelJournalEntry,
       ),
-      secondary: isTimeRecording
-          ? TimeSpanBar(
-              startLabel: hhMmFormat.format(e.meta.dateFrom.toLocal()),
-              endLabel: hhMmFormat.format(e.meta.dateTo.toLocal()),
-              durationLabel: formatRangeDuration(span),
-            )
-          : null,
+      secondary: () {
+        final remainder = _contentRemainder(context, e.entryText);
+        final timeSpan = isTimeRecording
+            ? TimeSpanBar(
+                startLabel: hhMmFormat.format(e.meta.dateFrom.toLocal()),
+                endLabel: hhMmFormat.format(e.meta.dateTo.toLocal()),
+                durationLabel: formatRangeDuration(span),
+              )
+            : null;
+        if (remainder != null && timeSpan != null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [remainder, timeSpan],
+          );
+        }
+        return remainder ?? timeSpan;
+      }(),
     );
   }
 
@@ -316,15 +362,27 @@ class _EntryCardContent extends StatelessWidget {
     return _EntryCardScaffold(
       icon: Icons.check_circle_outline_rounded,
       iconColor: _categoryColor(context, item),
-      title: _titleText(context, task.data.title),
+      title: _taskTitle(context, task.data.title),
       dateLabel: entryDateLabel(context, task.meta.dateFrom),
       metaChips: [
+        // Neutral like the other metric chips: hue is reserved for workflow
+        // status, so a P2-blue chip can't read as one thing with an
+        // In-Progress-blue chip beside it.
         _metricChip(
           context,
           label: task.data.priority.short,
-          color: task.data.priority.colorForBrightness(brightness),
         ),
-        TaskStatusWidget(task),
+        // Tonal like every other metric chip — a filled saturated status
+        // chip in a logbook of entries outshouted the selection highlight
+        // and the titles. Hue lives in the tint alone; the label sits at the
+        // same luminance tier as its neutral neighbours (the tasks-showcase
+        // pattern), so it is neither the dimmest nor the loudest small text.
+        _metricChip(
+          context,
+          label: task.data.status.localizedLabel(context),
+          color: task.data.status.colorForBrightness(brightness),
+          labelColor: context.designTokens.colors.text.highEmphasis,
+        ),
       ],
       secondary: secondary.isEmpty
           ? null
@@ -333,8 +391,40 @@ class _EntryCardContent extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: secondary,
             ),
-      trailing: TimeRecordingIcon(taskId: task.id),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TimeRecordingIcon(taskId: task.id),
+          _opensElsewhereGlyph(context),
+        ],
+      ),
       labelIds: task.meta.labelIds,
+    );
+  }
+
+  /// Trailing marker for rows that navigate away from the logbook on tap
+  /// (tasks open in the Tasks tab, events in the Events tab) instead of
+  /// filling the split-pane details like every other entry type. Medium
+  /// emphasis with a tooltip: it is the only signal of a different navigation
+  /// model, so it must not be the faintest ink on the row.
+  Widget _opensElsewhereGlyph(BuildContext context) {
+    final tokens = context.designTokens;
+    final label = item is Task
+        ? context.messages.navTabTitleTasks
+        : context.messages.navTabTitleEvents;
+    return Padding(
+      padding: EdgeInsets.only(left: tokens.spacing.step2),
+      child: Tooltip(
+        message: label,
+        child: Semantics(
+          label: label,
+          child: Icon(
+            Icons.open_in_new_rounded,
+            size: tokens.spacing.step4,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      ),
     );
   }
 
@@ -469,47 +559,84 @@ class _EntryCardContent extends StatelessWidget {
     final category = getIt<EntitiesCacheService>().getCategoryById(
       item.categoryId,
     );
+    // Fall back to the design-token accent, not colorScheme.primary — the
+    // Material primary is a second accent family that made uncategorized
+    // glyph tiles clash with the app's teal.
     return category != null
         ? colorFromCssHex(category.color)
-        : context.colorScheme.primary;
+        : context.designTokens.colors.interactive.enabled;
   }
 
   // --- Shared content widgets ------------------------------------------------
 
-  /// Primary line for a "content is text" entry: a plain-text preview, falling
-  /// back to the localized type label when the entry has no text.
+  /// Splits an entry's text into a title-tier first line and a quiet
+  /// remainder, so a body excerpt never renders three bold lines that
+  /// outshout the real titles around it: the first line keeps subtitle2, the
+  /// rest drops to the caption note-preview tier.
+  ({String title, String? remainder}) _splitContent(EntryText? entryText) {
+    final raw = entryText?.plainText.trim() ?? '';
+    if (raw.isEmpty) {
+      return (title: '', remainder: null);
+    }
+    final newline = raw.indexOf('\n');
+    if (newline < 0) {
+      return (title: _collapseWhitespace(raw), remainder: null);
+    }
+    final remainder = _collapseWhitespace(raw.substring(newline));
+    return (
+      title: _collapseWhitespace(raw.substring(0, newline)),
+      remainder: remainder.isEmpty ? null : remainder,
+    );
+  }
+
+  /// Primary line for a "content is text" entry: the first line of the entry's
+  /// text at title tier, falling back to the localized type label when the
+  /// entry has no text. Pair with [_contentRemainder] for the rest of the
+  /// text.
   Widget _contentTitle(
     BuildContext context,
     EntryText? entryText, {
     required String fallback,
   }) {
-    final text = entryText?.plainText.trim() ?? '';
-    if (text.isEmpty) {
+    final title = _splitContent(entryText).title;
+    if (title.isEmpty) {
       return _titleText(context, fallback);
     }
     return Text(
-      text,
-      maxLines: 3,
+      title,
+      maxLines: 2,
       overflow: TextOverflow.ellipsis,
-      style: context.designTokens.typography.styles.body.bodyLarge.copyWith(
-        color: context.colorScheme.onSurface,
+      style: context.designTokens.typography.styles.subtitle.subtitle2.copyWith(
+        color: context.designTokens.colors.text.highEmphasis,
       ),
     );
   }
 
-  Widget _previewText(
-    BuildContext context,
-    String text, {
-    int maxLines = 2,
-  }) {
+  /// The lines after the first, rendered at the quiet note-preview tier — or
+  /// null when the entry is a single line.
+  Widget? _contentRemainder(BuildContext context, EntryText? entryText) {
+    final remainder = _splitContent(entryText).remainder;
+    if (remainder == null) {
+      return null;
+    }
     return Text(
-      text.trim(),
-      maxLines: maxLines,
+      remainder,
+      maxLines: 2,
       overflow: TextOverflow.ellipsis,
-      style: context.designTokens.typography.styles.body.bodyLarge.copyWith(
-        color: context.colorScheme.onSurface,
+      // bodySmall, one step above the caption date line, so the two grey
+      // tiers inside a card stay distinguishable while both defer to the
+      // title.
+      style: context.designTokens.typography.styles.body.bodySmall.copyWith(
+        color: context.designTokens.colors.text.mediumEmphasis,
       ),
     );
+  }
+
+  /// Flattens an entry's multi-line text into one preview string. Without
+  /// this, an entry whose text starts with "title\n\nbody" renders a phantom
+  /// blank line inside the row's 2–3 line preview window.
+  static String _collapseWhitespace(String text) {
+    return text.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
   Widget _titleText(
@@ -521,26 +648,50 @@ class _EntryCardContent extends StatelessWidget {
     final styles = context.designTokens.typography.styles;
     // A "done" line (dim) drops to regular body weight so the strikethrough
     // reads as a quiet de-emphasis rather than a heavy crossed-out heading.
-    final base = dim ? styles.body.bodyLarge : styles.subtitle.subtitle1;
+    // Both sit at 14px to match the tasks list row title.
+    final base = dim ? styles.body.bodySmall : styles.subtitle.subtitle2;
     return Text(
       text,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
       style: base.copyWith(
         color: dim
-            ? context.colorScheme.onSurfaceVariant.withValues(alpha: 0.62)
-            : context.colorScheme.onSurface,
+            ? context.designTokens.colors.text.mediumEmphasis.withValues(
+                alpha: 0.62,
+              )
+            : context.designTokens.colors.text.highEmphasis,
         decoration: strikethrough ? TextDecoration.lineThrough : null,
-        decorationColor: context.colorScheme.onSurfaceVariant.withValues(
-          alpha: 0.4,
-        ),
+        decorationColor: context.designTokens.colors.text.mediumEmphasis
+            .withValues(
+              alpha: 0.4,
+            ),
         decorationThickness: strikethrough ? 1 : null,
       ),
     );
   }
 
+  /// Task title line. An empty title renders the localized `(untitled)`
+  /// placeholder in the error color (italic), matching the tasks list row, so a
+  /// titleless task is an obvious gap rather than a silently blank card.
+  Widget _taskTitle(BuildContext context, String title) {
+    final trimmed = title.trim();
+    if (trimmed.isNotEmpty) {
+      return _titleText(context, trimmed);
+    }
+    return Text(
+      context.messages.taskUntitled,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: context.designTokens.typography.styles.subtitle.subtitle2.copyWith(
+        color: context.designTokens.colors.alert.error.defaultColor,
+        fontWeight: FontWeight.w600,
+        fontStyle: FontStyle.italic,
+      ),
+    );
+  }
+
   Widget? _notePreview(BuildContext context, EntryText? entryText) {
-    final text = entryText?.plainText.trim() ?? '';
+    final text = _collapseWhitespace(entryText?.plainText ?? '');
     if (text.isEmpty) {
       return null;
     }
@@ -548,8 +699,8 @@ class _EntryCardContent extends StatelessWidget {
       text,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
-      style: context.designTokens.typography.styles.body.bodyMedium.copyWith(
-        color: context.colorScheme.onSurfaceVariant,
+      style: context.designTokens.typography.styles.body.bodySmall.copyWith(
+        color: context.designTokens.colors.text.mediumEmphasis,
       ),
     );
   }
@@ -559,24 +710,56 @@ class _EntryCardContent extends StatelessWidget {
     required String label,
     IconData? icon,
     Color? color,
+    Color? labelColor,
   }) {
     return ModernStatusChip(
       label: label,
-      color: color ?? context.colorScheme.onSurfaceVariant,
+      color: color ?? context.designTokens.colors.text.mediumEmphasis,
+      labelColor: labelColor,
       icon: icon,
     );
   }
 
   Widget? _statusIndicators(BuildContext context) {
-    final cs = context.colorScheme;
+    final tokens = context.designTokens;
     final isEvent = item is JournalEvent;
+    // Status glyphs sit one step under the 18px they used to be, so they read
+    // as annotations next to the 14px title rather than competing with it.
+    final size = tokens.spacing.step5;
+    // Tooltip + semantic label on every glyph: state must not be conveyed by
+    // pictogram-and-color alone.
+    Widget labeled(String label, Icon icon) => Tooltip(
+      message: label,
+      child: Semantics(label: label, child: icon),
+    );
     final indicators = <Widget>[
+      // Privacy is a property, not an alert: a neutral annotation keeps the
+      // semantic hues (status blue, error red) unambiguous. The tooltip and
+      // semantic label carry the meaning.
       if (fromNullableBool(item.meta.private))
-        Icon(MdiIcons.security, color: cs.error, size: 18),
+        labeled(
+          context.messages.journalFilterPrivate,
+          Icon(
+            MdiIcons.security,
+            color: tokens.colors.text.mediumEmphasis,
+            size: size,
+          ),
+        ),
       if (!isEvent && fromNullableBool(item.meta.starred))
-        const Icon(MdiIcons.star, color: starredGold, size: 18),
+        labeled(
+          context.messages.journalFilterStarred,
+          Icon(MdiIcons.star, color: starredGold, size: size),
+        ),
+      // An import flag means "needs review", which is a warning, not an error.
       if (!isEvent && item.meta.flag == EntryFlag.import)
-        Icon(MdiIcons.flag, color: cs.error, size: 18),
+        labeled(
+          context.messages.journalFilterFlagged,
+          Icon(
+            MdiIcons.flag,
+            color: tokens.colors.alert.warning.defaultColor,
+            size: size,
+          ),
+        ),
     ];
 
     if (indicators.isEmpty) {
@@ -587,7 +770,7 @@ class _EntryCardContent extends StatelessWidget {
       children: [
         for (final indicator in indicators)
           Padding(
-            padding: const EdgeInsets.only(left: 4),
+            padding: EdgeInsets.only(left: tokens.spacing.step2),
             child: indicator,
           ),
       ],
@@ -643,15 +826,28 @@ class _EntryCardScaffold extends StatelessWidget {
                 ],
               ),
               SizedBox(height: tokens.spacing.step1),
-              _MetaRow(dateLabel: dateLabel),
-              if (metaChips.isNotEmpty) ...[
-                SizedBox(height: tokens.spacing.step2),
-                Wrap(
-                  spacing: tokens.spacing.step2,
-                  runSpacing: tokens.spacing.step1,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: metaChips,
-                ),
+              // A lone metric on an otherwise bare card (Weight, a
+              // measurement) shares the meta row with the date: one fact does
+              // not need its own band, and the feed skims two rows tighter.
+              if (metaChips.length == 1 && secondary == null && !showLabels)
+                Row(
+                  children: [
+                    Flexible(child: _MetaRow(dateLabel: dateLabel)),
+                    SizedBox(width: tokens.spacing.step3),
+                    metaChips.single,
+                  ],
+                )
+              else ...[
+                _MetaRow(dateLabel: dateLabel),
+                if (metaChips.isNotEmpty) ...[
+                  SizedBox(height: tokens.spacing.step2),
+                  Wrap(
+                    spacing: tokens.spacing.step2,
+                    runSpacing: tokens.spacing.step1,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: metaChips,
+                  ),
+                ],
               ],
               if (secondary != null) ...[
                 SizedBox(height: tokens.spacing.step2),
@@ -684,8 +880,10 @@ class _MetaRow extends StatelessWidget {
       dateLabel,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
+      // mediumEmphasis, not outline: timestamps are wayfinding in a
+      // chronological feed and were flagged as too faint to skim by.
       style: tokens.typography.styles.others.caption.copyWith(
-        color: context.colorScheme.outline,
+        color: tokens.colors.text.mediumEmphasis,
       ),
     );
   }
@@ -760,8 +958,8 @@ class _HabitCompletionContentState extends State<_HabitCompletionContent> {
             name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: context.designTokens.typography.styles.subtitle.subtitle1
-                .copyWith(color: context.colorScheme.onSurface),
+            style: context.designTokens.typography.styles.subtitle.subtitle2
+                .copyWith(color: context.designTokens.colors.text.highEmphasis),
           ),
           dateLabel: widget.dateLabel,
           metaChips: [_statusChip(context, completion)],
@@ -771,8 +969,10 @@ class _HabitCompletionContentState extends State<_HabitCompletionContent> {
                   note,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: context.designTokens.typography.styles.body.bodyMedium
-                      .copyWith(color: context.colorScheme.onSurfaceVariant),
+                  style: context.designTokens.typography.styles.body.bodySmall
+                      .copyWith(
+                        color: context.designTokens.colors.text.mediumEmphasis,
+                      ),
                 ),
           trailing: widget.trailing,
           labelIds: widget.labelIds,
@@ -786,7 +986,7 @@ class _HabitCompletionContentState extends State<_HabitCompletionContent> {
     final (label, color) = switch (type) {
       HabitCompletionType.success => (
         context.messages.habitCompletionStatusCompleted,
-        cs.primary,
+        context.designTokens.colors.alert.success.defaultColor,
       ),
       HabitCompletionType.skip => (
         context.messages.habitCompletionStatusSkipped,
@@ -818,15 +1018,14 @@ class _HabitCompletionContentState extends State<_HabitCompletionContent> {
   }
 
   Color _habitColor(BuildContext context, HabitDefinition? habit) {
+    final accent = context.designTokens.colors.interactive.enabled;
     if (habit == null) {
-      return context.colorScheme.primary;
+      return accent;
     }
     final category = getIt<EntitiesCacheService>().getCategoryById(
       habit.categoryId,
     );
-    return category != null
-        ? colorFromCssHex(category.color)
-        : context.colorScheme.primary;
+    return category != null ? colorFromCssHex(category.color) : accent;
   }
 }
 
@@ -873,7 +1072,7 @@ class _ChecklistContent extends ConsumerWidget {
       metaChips.add(
         ModernStatusChip(
           label: '$completed/$total',
-          color: context.colorScheme.primary,
+          color: context.designTokens.colors.interactive.enabled,
           icon: Icons.checklist_rounded,
         ),
       );
@@ -887,8 +1086,8 @@ class _ChecklistContent extends ConsumerWidget {
         checklist.data.title,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: context.designTokens.typography.styles.subtitle.subtitle1
-            .copyWith(color: context.colorScheme.onSurface),
+        style: context.designTokens.typography.styles.subtitle.subtitle2
+            .copyWith(color: context.designTokens.colors.text.highEmphasis),
       ),
       dateLabel: dateLabel,
       metaChips: metaChips,
@@ -914,7 +1113,9 @@ class _TypeProgressBar extends StatelessWidget {
         value: value.clamp(0.0, 1.0),
         minHeight: 4,
         backgroundColor: cs.surfaceContainerHighest,
-        valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+        valueColor: AlwaysStoppedAnimation<Color>(
+          context.designTokens.colors.interactive.enabled,
+        ),
       ),
     );
   }
@@ -949,9 +1150,10 @@ class _JournalCardLabelsRow extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final tokens = context.designTokens;
     return Wrap(
-      spacing: 6,
-      runSpacing: 6,
+      spacing: tokens.spacing.step2,
+      runSpacing: tokens.spacing.step2,
       children: labels.map((label) => LabelChip(label: label)).toList(),
     );
   }

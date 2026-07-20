@@ -43,18 +43,6 @@ three independent booleans, so they render as multi-select design-system choice
 pills (`DesignSystemFilterChoicePill`) with icon + label — matching the entry-type
 and tasks filters — rather than a single-select segmented control.
 
-### LogbookFilterSheet
-The full logbook filter shown in the filter modal: labeled sections ("Show",
-"Entry types", "Category") composing `JournalFilter`, `EntryTypeFilter`, and the
-category filter. Mirrors the sectioned structure of the tasks filter sheet so the
-two filters read as one system.
-
-### JournalFilterIcon
-Icon component for the journal filter; opens [LogbookFilterSheet] in a modal.
-
-### JournalSliverAppBar
-A sliver app bar specifically designed for journal pages with scrolling behavior.
-
 ### SettingsPageHeader
 Sliver settings header that adapts to phone, tablet, and desktop layouts. Measures the actual pane width via `SliverLayoutBuilder` (correct on desktop split-pane layouts) and supports a title, optional subtitle, back button, bottom widget, and actions. Used across settings, sync, AI, categories, and other feature pages.
 

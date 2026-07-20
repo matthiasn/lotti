@@ -112,7 +112,16 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         Expanded(
           child: Row(
             children: [
-              Flexible(child: EntryDatetimeWidget(entryId: widget.entryId)),
+              Flexible(
+                child: EntryDatetimeWidget(
+                  entryId: widget.entryId,
+                  // A journal entry has no title; in the standalone detail
+                  // header the date is the page's identity, so it anchors the
+                  // pane at title tier. Inside a parent's linked-entries list
+                  // the date stays quiet caption metadata.
+                  prominent: !widget.inLinkedEntries,
+                ),
+              ),
               if (showCategory) ...[
                 SizedBox(width: tokens.spacing.step3),
                 CategorySelectionIconButton(entry: entry),

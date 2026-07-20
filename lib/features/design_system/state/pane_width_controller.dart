@@ -8,6 +8,7 @@ import 'package:lotti/get_it.dart';
 /// Settings keys for persisted pane widths.
 const sidebarWidthKey = 'PANE_WIDTH_SIDEBAR';
 const listPaneWidthKey = 'PANE_WIDTH_LIST';
+const journalListPaneWidthKey = 'PANE_WIDTH_JOURNAL_LIST';
 const sidebarCollapsedKey = 'PANE_WIDTH_SIDEBAR_COLLAPSED';
 
 /// Default and constraint values for pane widths.
@@ -18,6 +19,13 @@ const maxSidebarWidth = 500.0;
 const defaultListPaneWidth = 540.0;
 const minListPaneWidth = 300.0;
 const maxListPaneWidth = 800.0;
+
+/// The logbook list pane resizes independently of the tasks/projects list
+/// pane: logbook rows are denser and carry longer free-text previews, so the
+/// width that reads well there is not the width that reads well for tasks.
+const defaultJournalListPaneWidth = 460.0;
+const minJournalListPaneWidth = 300.0;
+const maxJournalListPaneWidth = 800.0;
 
 /// How long to wait after the last drag update before persisting to disk.
 @visibleForTesting
@@ -35,21 +43,25 @@ class PaneWidths {
   const PaneWidths({
     this.sidebarWidth = defaultSidebarWidth,
     this.listPaneWidth = defaultListPaneWidth,
+    this.journalListPaneWidth = defaultJournalListPaneWidth,
     this.sidebarCollapsed = false,
   });
 
   final double sidebarWidth;
   final double listPaneWidth;
+  final double journalListPaneWidth;
   final bool sidebarCollapsed;
 
   PaneWidths copyWith({
     double? sidebarWidth,
     double? listPaneWidth,
+    double? journalListPaneWidth,
     bool? sidebarCollapsed,
   }) {
     return PaneWidths(
       sidebarWidth: sidebarWidth ?? this.sidebarWidth,
       listPaneWidth: listPaneWidth ?? this.listPaneWidth,
+      journalListPaneWidth: journalListPaneWidth ?? this.journalListPaneWidth,
       sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
     );
   }
@@ -61,12 +73,14 @@ class PaneWidths {
           runtimeType == other.runtimeType &&
           sidebarWidth == other.sidebarWidth &&
           listPaneWidth == other.listPaneWidth &&
+          journalListPaneWidth == other.journalListPaneWidth &&
           sidebarCollapsed == other.sidebarCollapsed;
 
   @override
   int get hashCode => Object.hash(
     sidebarWidth,
     listPaneWidth,
+    journalListPaneWidth,
     sidebarCollapsed,
   );
 }
@@ -88,12 +102,14 @@ class PaneWidthController extends Notifier<PaneWidths> {
   bool _userAdjusted = false;
   Timer? _sidebarDebounce;
   Timer? _listPaneDebounce;
+  Timer? _journalListPaneDebounce;
 
   @override
   PaneWidths build() {
     ref.onDispose(() {
       _sidebarDebounce?.cancel();
       _listPaneDebounce?.cancel();
+      _journalListPaneDebounce?.cancel();
     });
     unawaited(_loadPersistedWidths());
     return const PaneWidths();
@@ -105,6 +121,7 @@ class PaneWidthController extends Notifier<PaneWidths> {
       final values = await settingsDb.itemsByKeys({
         sidebarWidthKey,
         listPaneWidthKey,
+        journalListPaneWidthKey,
         sidebarCollapsedKey,
       });
 
@@ -122,11 +139,18 @@ class PaneWidthController extends Notifier<PaneWidths> {
         minListPaneWidth,
         maxListPaneWidth,
       );
+      final journalListPaneWidth = _parseWidth(
+        values[journalListPaneWidthKey],
+        defaultJournalListPaneWidth,
+        minJournalListPaneWidth,
+        maxJournalListPaneWidth,
+      );
       final sidebarCollapsed = values[sidebarCollapsedKey] == 'true';
 
       state = PaneWidths(
         sidebarWidth: sidebarWidth,
         listPaneWidth: listPaneWidth,
+        journalListPaneWidth: journalListPaneWidth,
         sidebarCollapsed: sidebarCollapsed,
       );
     } catch (error, stackTrace) {
@@ -175,6 +199,20 @@ class PaneWidthController extends Notifier<PaneWidths> {
     );
     state = state.copyWith(listPaneWidth: newWidth);
     _debounceListPanePersist();
+  }
+
+  /// Applies a drag [delta] to the logbook list-pane width, clamped to
+  /// [minJournalListPaneWidth]..[maxJournalListPaneWidth], and debounces
+  /// persistence. Independent of [updateListPaneWidth] so resizing the logbook
+  /// does not resize tasks and projects.
+  void updateJournalListPaneWidth(double delta) {
+    _userAdjusted = true;
+    final newWidth = (state.journalListPaneWidth + delta).clamp(
+      minJournalListPaneWidth,
+      maxJournalListPaneWidth,
+    );
+    state = state.copyWith(journalListPaneWidth: newWidth);
+    _debounceJournalListPanePersist();
   }
 
   /// Collapses the sidebar to the widget's fixed narrow layout.
@@ -227,12 +265,26 @@ class PaneWidthController extends Notifier<PaneWidths> {
     _listPaneDebounce = Timer(persistDebounce, _persistListPaneWidth);
   }
 
+  void _debounceJournalListPanePersist() {
+    _journalListPaneDebounce?.cancel();
+    _journalListPaneDebounce = Timer(
+      persistDebounce,
+      _persistJournalListPaneWidth,
+    );
+  }
+
   void _persistSidebarWidth() {
     unawaited(_persistWidth(sidebarWidthKey, state.sidebarWidth));
   }
 
   void _persistListPaneWidth() {
     unawaited(_persistWidth(listPaneWidthKey, state.listPaneWidth));
+  }
+
+  void _persistJournalListPaneWidth() {
+    unawaited(
+      _persistWidth(journalListPaneWidthKey, state.journalListPaneWidth),
+    );
   }
 
   void _persistCollapseFlag() {
@@ -261,9 +313,11 @@ class PaneWidthController extends Notifier<PaneWidths> {
     _userAdjusted = true;
     _sidebarDebounce?.cancel();
     _listPaneDebounce?.cancel();
+    _journalListPaneDebounce?.cancel();
     state = const PaneWidths();
     _persistSidebarWidth();
     _persistListPaneWidth();
+    _persistJournalListPaneWidth();
     _persistCollapseFlag();
   }
 }

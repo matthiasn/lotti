@@ -48,6 +48,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addHabitDateLabel => 'Abgeschlossen um';
 
   @override
+  String get addLinkedEntryLabel => 'Verknüpften Eintrag hinzufügen';
+
+  @override
   String get addMeasurementCommentLabel => 'Kommentar';
 
   @override
@@ -6481,6 +6484,23 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
+
+  @override
+  String get logbookEmptyHint =>
+      'Erstelle deinen ersten Eintrag, um mit dem Logbuch zu starten.';
+
+  @override
+  String get logbookEmptyTitle => 'Dein Logbuch ist leer';
+
+  @override
+  String get logbookNewEntriesHint => 'Neue Einträge erscheinen hier.';
+
+  @override
+  String get logbookNoMatchesHint =>
+      'Passe deine Suche oder Filter an, um mehr zu sehen.';
+
+  @override
+  String get logbookNoMatchesTitle => 'Keine passenden Einträge';
 
   @override
   String get loggingDomainAgentRuntime => 'Agent-Runtime';

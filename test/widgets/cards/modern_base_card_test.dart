@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
@@ -389,6 +391,213 @@ void main() {
 
       // Dark theme should have gradient immediately
       expect(darkDecoration.gradient, isNotNull);
+    });
+
+    group('selected', () {
+      BoxDecoration decorationOf(WidgetTester tester) {
+        final container = tester.widget<Container>(
+          find.byType(Container).first,
+        );
+        return container.decoration! as BoxDecoration;
+      }
+
+      testWidgets(
+        'paints the activated fill over the base color and an accent border',
+        (tester) async {
+          const baseColor = Color(0xFF222222);
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              const ModernBaseCard(
+                selected: true,
+                backgroundColor: baseColor,
+                child: Text('Selected'),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final context = tester.element(find.byType(ModernBaseCard));
+          final tokens = context.designTokens;
+          final decoration = decorationOf(tester);
+
+          expect(decoration.gradient, isNull);
+          expect(
+            decoration.color,
+            Color.alphaBlend(
+              DesignSystemListPalette.activatedFill(tokens),
+              baseColor,
+            ),
+          );
+          expect(
+            decoration.border,
+            Border.all(color: tokens.colors.interactive.enabled),
+          );
+        },
+      );
+
+      testWidgets(
+        'without an explicit background, the fill blends over colorScheme '
+        'surface',
+        (tester) async {
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              const ModernBaseCard(
+                selected: true,
+                child: Text('Selected, no background'),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final context = tester.element(find.byType(ModernBaseCard));
+          final tokens = context.designTokens;
+          final decoration = decorationOf(tester);
+
+          // The selected base falls back to the theme surface when no
+          // backgroundColor is supplied.
+          expect(
+            decoration.color,
+            Color.alphaBlend(
+              DesignSystemListPalette.activatedFill(tokens),
+              context.colorScheme.surface,
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'unselected card under the same theme keeps the plain treatment',
+        (tester) async {
+          const baseColor = Color(0xFF222222);
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              const ModernBaseCard(
+                backgroundColor: baseColor,
+                child: Text('Not selected'),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final context = tester.element(find.byType(ModernBaseCard));
+          final decoration = decorationOf(tester);
+
+          expect(decoration.color, baseColor);
+          expect(
+            decoration.border,
+            isNot(
+              Border.all(
+                color: context.designTokens.colors.interactive.enabled,
+              ),
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'isEnhanced draws the two-layer shadow instead of the standard one',
+        (tester) async {
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              const ModernBaseCard(
+                isEnhanced: true,
+                child: Text('Enhanced'),
+              ),
+              theme: ThemeData.dark(),
+            ),
+          );
+          await tester.pump();
+
+          final container = tester.widget<Container>(
+            find.byType(Container).first,
+          );
+          final decoration = container.decoration! as BoxDecoration;
+          // The enhanced treatment layers two shadows; the standard card
+          // draws exactly one.
+          expect(decoration.boxShadow, hasLength(2));
+        },
+      );
+
+      testWidgets(
+        'EnhancedModernCard wraps ModernBaseCard with the enhanced treatment '
+        'and forwards taps',
+        (tester) async {
+          var tapped = 0;
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              EnhancedModernCard(
+                onTap: () => tapped++,
+                child: const Text('Enhanced wrapper'),
+              ),
+              theme: ThemeData.dark(),
+            ),
+          );
+          await tester.pump();
+
+          final baseCard = tester.widget<ModernBaseCard>(
+            find.byType(ModernBaseCard),
+          );
+          expect(baseCard.isEnhanced, isTrue);
+          expect(baseCard.gradient, isNotNull);
+
+          await tester.tap(find.text('Enhanced wrapper'));
+          await tester.pump();
+          expect(tapped, 1);
+        },
+      );
+
+      testWidgets(
+        'unselected card renders under a theme without design tokens',
+        (tester) async {
+          // Regression guard: token resolution must stay lazy — an unselected
+          // card on a plain ThemeData (no DsTokens extension) must not throw.
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              const ModernBaseCard(child: Text('Plain theme')),
+              theme: ThemeData.dark(),
+            ),
+          );
+          await tester.pump();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('Plain theme'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'ink feedback falls back to colorScheme.primary under a token-less '
+        'theme',
+        (tester) async {
+          // Built without the test helper (which injects DsTokens), so the
+          // theme genuinely lacks the extension — exercising the fallback that
+          // real token-less consumers rely on for the tap splash.
+          final theme = ThemeData(useMaterial3: true);
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: theme,
+              home: Scaffold(
+                body: ModernBaseCard(
+                  onTap: () {},
+                  child: const Text('Token-less ink'),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+          expect(
+            inkWell.splashColor,
+            theme.colorScheme.primary.withValues(alpha: AppTheme.alphaPrimary),
+          );
+          expect(
+            inkWell.highlightColor,
+            theme.colorScheme.primary.withValues(
+              alpha: AppTheme.alphaPrimaryHighlight,
+            ),
+          );
+        },
+      );
     });
   });
 }

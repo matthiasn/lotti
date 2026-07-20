@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Base card widget with modern gradient styling and Material 3 design
@@ -19,6 +21,7 @@ class ModernBaseCard extends StatelessWidget {
     this.margin,
     this.padding,
     this.isEnhanced = false,
+    this.selected = false,
     this.customShadows,
     super.key,
   });
@@ -31,31 +34,67 @@ class ModernBaseCard extends StatelessWidget {
   final EdgeInsets? margin;
   final EdgeInsets? padding;
   final bool isEnhanced;
+
+  /// Whether this card is the active row of a desktop list/detail split.
+  ///
+  /// Opt-in and false everywhere else, so cards in single-pane lists (where
+  /// nothing stays selected after a tap) are unaffected. When true the card
+  /// takes the shared list activated fill and an accent border, matching the
+  /// selected row treatment in the tasks and projects lists.
+  final bool selected;
+
   final List<BoxShadow>? customShadows;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Resolved lazily: only the selected treatment needs design tokens, and
+    // unselected cards must keep rendering under themes without the DsTokens
+    // extension (several consumers pump plain ThemeData in tests).
+    final tokens = selected ? context.designTokens : null;
 
-    // Determine background color or gradient
-    final effectiveGradient =
-        gradient ??
-        (backgroundColor == null ? GradientThemes.cardGradient(context) : null);
+    // Accent for the ink feedback: the design-token interactive color when the
+    // theme carries DsTokens, falling back to the Material primary for
+    // token-less themes (several consumers pump plain ThemeData in tests). So a
+    // tapped card flashes the same accent family as the selection treatment.
+    final inkAccent =
+        Theme.of(context).extension<DsTokens>()?.colors.interactive.enabled ??
+        context.colorScheme.primary;
 
-    final effectiveBackgroundColor =
+    // Determine background color or gradient. A selected card is drawn as a
+    // flat activated fill rather than the usual gradient, so the accent reads
+    // uniformly across the row.
+    final effectiveGradient = tokens != null
+        ? null
+        : gradient ??
+              (backgroundColor == null
+                  ? GradientThemes.cardGradient(context)
+                  : null);
+
+    final baseBackgroundColor =
         backgroundColor ??
         (effectiveGradient == null ? context.colorScheme.surface : null);
 
+    final effectiveBackgroundColor = tokens != null
+        ? Color.alphaBlend(
+            DesignSystemListPalette.activatedFill(tokens),
+            // Selected always paints a solid base (no gradient), so fall back to
+            // the surface when no explicit background is supplied.
+            backgroundColor ?? context.colorScheme.surface,
+          )
+        : baseBackgroundColor;
+
     // Determine border color - very subtle in light mode, slightly visible in dark mode
-    final effectiveBorderColor =
-        borderColor ??
-        (isDark
-            ? context.colorScheme.outlineVariant.withValues(
-                alpha: AppTheme.alphaCardBorderDark,
-              )
-            : context.colorScheme.outline.withValues(
-                alpha: AppTheme.alphaCardBorderLight,
-              ));
+    final effectiveBorderColor = tokens != null
+        ? tokens.colors.interactive.enabled
+        : borderColor ??
+              (isDark
+                  ? context.colorScheme.outlineVariant.withValues(
+                      alpha: AppTheme.alphaCardBorderDark,
+                    )
+                  : context.colorScheme.outline.withValues(
+                      alpha: AppTheme.alphaCardBorderLight,
+                    ));
 
     return Container(
       margin: margin,
@@ -113,10 +152,8 @@ class ModernBaseCard extends StatelessWidget {
             ? InkWell(
                 onTap: onTap,
                 borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-                splashColor: context.colorScheme.primary.withValues(
-                  alpha: AppTheme.alphaPrimary,
-                ),
-                highlightColor: context.colorScheme.primary.withValues(
+                splashColor: inkAccent.withValues(alpha: AppTheme.alphaPrimary),
+                highlightColor: inkAccent.withValues(
                   alpha: AppTheme.alphaPrimaryHighlight,
                 ),
                 child: Container(

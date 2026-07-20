@@ -33,6 +33,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1056" date="2026-07-20">
+      <description>
+        <p>The logbook now matches the rest of the app. On desktop it uses the same split layout as Tasks: the entry list stays on the left, and opening an entry fills a reading panel on the right instead of navigating away, with a resizable divider and a highlighted selected row. The list got the same titled header as Tasks and Projects, denser cards with matching font sizes, and the entry details page now shares one unified background with the list, presenting the entry as a card with a comfortable reading width on wide windows.</p>
+      </description>
+    </release>
     <release version="0.9.1055" date="2026-07-20">
       <description>
         <p>Fixed a SIGABRT crash after closing Lotti by stopping background services and releasing every SQLite database before the Flutter engine exits.</p>

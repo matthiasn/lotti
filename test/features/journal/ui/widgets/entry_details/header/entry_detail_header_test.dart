@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/get_it.dart';
@@ -693,8 +693,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
+      final local = testTextEntry.meta.dateFrom.toLocal();
       final entryDateFromFinder = find.text(
-        dfShorter.format(testTextEntry.meta.dateFrom),
+        '${DateFormat.yMMMd('en_US').format(local)} '
+        '${DateFormat.jm('en_US').format(local)}',
       );
       expect(entryDateFromFinder, findsOneWidget);
     });

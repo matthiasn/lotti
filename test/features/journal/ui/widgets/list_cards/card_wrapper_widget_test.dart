@@ -9,7 +9,6 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/animated_task_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
@@ -217,10 +216,10 @@ void main() {
       // Assert
       expect(find.byType(ModernJournalImageCard), findsOneWidget);
       expect(find.byType(ModernJournalCard), findsNothing);
-      expect(find.byType(AnimatedModernTaskCard), findsNothing);
     });
 
-    testWidgets('renders AnimatedModernTaskCard for Task entity', (
+    testWidgets('renders a Task through the shared ModernJournalCard '
+        'anatomy (title, date, priority/status chips)', (
       WidgetTester tester,
     ) async {
       // Arrange
@@ -232,10 +231,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Assert
-      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
-      expect(find.byType(ModernJournalCard), findsNothing);
+      // Assert — tasks share the feed's card anatomy instead of a bespoke
+      // task card, so the mixed list keeps one scanning rhythm.
+      expect(find.byType(ModernJournalCard), findsOneWidget);
       expect(find.byType(ModernJournalImageCard), findsNothing);
+      expect(find.text(testTask.data.title), findsOneWidget);
     });
 
     testWidgets('renders ModernJournalCard for JournalEntry entity', (
@@ -252,7 +252,6 @@ void main() {
 
       // Assert
       expect(find.byType(ModernJournalCard), findsOneWidget);
-      expect(find.byType(AnimatedModernTaskCard), findsNothing);
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
@@ -270,49 +269,7 @@ void main() {
 
       // Assert
       expect(find.byType(ModernJournalCard), findsOneWidget);
-      expect(find.byType(AnimatedModernTaskCard), findsNothing);
       expect(find.byType(ModernJournalImageCard), findsNothing);
-    });
-
-    testWidgets('passes showCreationDate to AnimatedModernTaskCard', (
-      WidgetTester tester,
-    ) async {
-      // Arrange - with showCreationDate: true
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: CardWrapperWidget(
-            item: testTask,
-            showCreationDate: true,
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Assert - AnimatedModernTaskCard should receive showCreationDate: true
-      final animatedCard = tester.widget<AnimatedModernTaskCard>(
-        find.byType(AnimatedModernTaskCard),
-      );
-      expect(animatedCard.showCreationDate, isTrue);
-    });
-
-    testWidgets('showCreationDate defaults to false', (
-      WidgetTester tester,
-    ) async {
-      // Arrange - without showCreationDate parameter
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: CardWrapperWidget(item: testTask),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Assert - AnimatedModernTaskCard should have showCreationDate: false
-      final animatedCard = tester.widget<AnimatedModernTaskCard>(
-        find.byType(AnimatedModernTaskCard),
-      );
-      expect(animatedCard.showCreationDate, isFalse);
     });
 
     testWidgets('shows distance badge when vectorDistance is provided', (
@@ -343,7 +300,7 @@ void main() {
           .toList();
       expect(ignorePointers, hasLength(1));
       // The card is still rendered
-      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
+      expect(find.byType(ModernJournalCard), findsOneWidget);
     });
 
     testWidgets('does not show distance badge when vectorDistance is null', (
@@ -359,7 +316,7 @@ void main() {
       // Badge widget should not be in the tree
       expect(find.byKey(const Key('distanceBadge')), findsNothing);
       // Card still renders
-      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
+      expect(find.byType(ModernJournalCard), findsOneWidget);
     });
 
     // One badge test per color band, including the band boundaries.
@@ -401,6 +358,99 @@ void main() {
         expect(decoration.color, expectedColor, reason: 'd=$distance');
       });
     }
+  });
+
+  group('CardWrapperWidget desktop selection', () {
+    const desktopMediaQuery = MediaQueryData(size: Size(1280, 800));
+    late ValueNotifier<String?> selectedEntryId;
+
+    setUp(() {
+      selectedEntryId = ValueNotifier<String?>(null);
+      when(
+        () => mockNavService.desktopSelectedEntryId,
+      ).thenReturn(selectedEntryId);
+    });
+
+    tearDown(() => selectedEntryId.dispose());
+
+    testWidgets(
+      'highlights the entry that is open in the detail pane and follows '
+      'selection changes live',
+      (tester) async {
+        selectedEntryId.value = 'test-entry-id';
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            mediaQueryData: desktopMediaQuery,
+            child: CardWrapperWidget(item: testJournalEntry),
+          ),
+        );
+        await tester.pump();
+
+        ModernJournalCard card() =>
+            tester.widget<ModernJournalCard>(find.byType(ModernJournalCard));
+        expect(card().selected, isTrue);
+
+        // Selecting another entry un-highlights this row without a repump.
+        selectedEntryId.value = 'some-other-entry';
+        await tester.pump();
+        expect(card().selected, isFalse);
+      },
+    );
+
+    testWidgets('below the desktop breakpoint no row tracks selection', (
+      tester,
+    ) async {
+      selectedEntryId.value = 'test-entry-id';
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          // Default bench media query is phone-sized.
+          child: CardWrapperWidget(item: testJournalEntry),
+        ),
+      );
+      await tester.pump();
+
+      final card = tester.widget<ModernJournalCard>(
+        find.byType(ModernJournalCard),
+      );
+      // Mobile navigates away on tap, so nothing may stay highlighted —
+      // even when the notifier happens to hold this entry's id.
+      expect(card.selected, isFalse);
+    });
+
+    testWidgets('tasks never track the logbook selection', (tester) async {
+      selectedEntryId.value = 'test-task-id';
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: desktopMediaQuery,
+          child: CardWrapperWidget(item: testTask),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Tasks open in the tasks tab's own split pane; the logbook selection
+      // must not paint them, even when the notifier holds this task's id.
+      final card = tester.widget<ModernJournalCard>(
+        find.byType(ModernJournalCard),
+      );
+      expect(card.selected, isFalse);
+      expect(find.byType(ValueListenableBuilder<String?>), findsNothing);
+    });
+
+    testWidgets('image entries participate in selection', (tester) async {
+      selectedEntryId.value = 'test-image-id';
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: desktopMediaQuery,
+          child: CardWrapperWidget(item: testImage),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final card = tester.widget<ModernJournalImageCard>(
+        find.byType(ModernJournalImageCard),
+      );
+      expect(card.selected, isTrue);
+    });
   });
 
   group('colorForVectorDistance — properties', () {

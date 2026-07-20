@@ -5,6 +5,11 @@ import 'package:lotti/classes/journal_entities.dart';
 part 'journal_page_state.freezed.dart';
 part 'journal_page_state.g.dart';
 
+/// The task statuses selected by default (open work: not yet done, rejected, or
+/// parked). The tasks list starts here; a selection that differs from this set
+/// is a user-applied status filter.
+const defaultSelectedTaskStatuses = {'OPEN', 'GROOMED', 'IN PROGRESS'};
+
 /// Display filter options for journal entries.
 enum DisplayFilter {
   starredEntriesOnly,
@@ -64,6 +69,12 @@ abstract class JournalPageState with _$JournalPageState {
     @Default(false) bool showPrivateEntries,
     @Default(false) bool showTasks,
     @Default([]) List<String> selectedEntryTypes,
+
+    /// Entry types currently permitted by active feature flags (events, habits,
+    /// dashboards). The un-narrowed selection equals this set; a strict subset
+    /// means the user deselected an allowed type. Distinct from a flag-hidden
+    /// type, which never appears here at all.
+    @Default([]) List<String> allowedEntryTypes,
     @Default(<String>{}) Set<String> fullTextMatches,
     @JsonKey(includeFromJson: false, includeToJson: false)
     PagingController<int, JournalEntity>? pagingController,

@@ -1121,6 +1121,52 @@ void main() {
   );
 
   testWidgets(
+    'header filter is inactive for the default status set and no other facets',
+    (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(
+            selectedCategoryIds: const <String>{},
+            selectedTaskStatuses: defaultSelectedTaskStatuses,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        tester
+            .widget<TabSectionHeader>(find.byType(TabSectionHeader))
+            .filtersActive,
+        isFalse,
+      );
+    },
+  );
+
+  testWidgets(
+    'header filter is active when the status selection differs from default',
+    (tester) async {
+      // Narrowed to a single non-default status, no other facets → the
+      // affordance still flips active on the status dimension alone.
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(
+            selectedCategoryIds: const <String>{},
+            selectedTaskStatuses: const <String>{'DONE'},
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        tester
+            .widget<TabSectionHeader>(find.byType(TabSectionHeader))
+            .filtersActive,
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
     'clear and submit on the search header route through setSearchString',
     (tester) async {
       await tester.pumpWidget(buildSubject(state: state()));

@@ -93,6 +93,16 @@ class NavService {
   final ValueNotifier<String?> desktopSelectedDashboardId =
       ValueNotifier<String?>(null);
 
+  /// Desktop split-pane logbook selection — the entry whose details fill the
+  /// right pane, or `null` for the empty state.
+  ///
+  /// Written exclusively by `JournalLocation` from the URL, so the route stays
+  /// the single source of truth. Unlike tasks there is no stack: logbook
+  /// entries do not open other entries in place, so a single slot is enough.
+  final ValueNotifier<String?> desktopSelectedEntryId = ValueNotifier<String?>(
+    null,
+  );
+
   /// Whether the full-screen Time Analysis surface is active. Written
   /// exclusively by `CalendarLocation` from the URL (`/calendar/time`) —
   /// the URL is the single source of truth; the Daily OS sidebar
@@ -384,6 +394,7 @@ class NavService {
     desktopSelectedTaskId.dispose();
     desktopSelectedProjectId.dispose();
     desktopSelectedDashboardId.dispose();
+    desktopSelectedEntryId.dispose();
     desktopShowTimeAnalysis.dispose();
     desktopShowAiImpact.dispose();
     desktopSelectedSettingsRoute.dispose();

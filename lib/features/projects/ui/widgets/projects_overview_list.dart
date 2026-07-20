@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
-
-const _desktopContentMaxWidth = 760.0;
-const _horizontalContentPadding = 16.0;
 
 /// Sliver that renders the grouped project overview as a vertical stack of
 /// [ProjectGroupSection]s, one per category group, with spacing between them.
 ///
-/// Each group is width-constrained by [ProjectsOverviewContentWidth], and
+/// Each group is width-constrained by [DetailContentWidth], and
 /// [selectedProjectId] highlights the active row in the desktop split view.
 class ProjectsOverviewSliverList extends StatelessWidget {
   const ProjectsOverviewSliverList({
@@ -33,7 +30,7 @@ class ProjectsOverviewSliverList extends StatelessWidget {
         slivers: [
           for (var index = 0; index < groups.length; index++) ...[
             SliverToBoxAdapter(
-              child: ProjectsOverviewContentWidth(
+              child: DetailContentWidth(
                 child: ProjectGroupSection(
                   group: groups[index],
                   selectedProjectId: selectedProjectId,
@@ -45,38 +42,6 @@ class ProjectsOverviewSliverList extends StatelessWidget {
               const SliverToBoxAdapter(child: SizedBox(height: 16)),
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// Centers [child] and caps its width on wide (desktop-breakpoint) screens so
-/// the overview content stays readable, while letting it span full width on
-/// narrow ones. Also applies the standard horizontal content padding.
-class ProjectsOverviewContentWidth extends StatelessWidget {
-  const ProjectsOverviewContentWidth({
-    required this.child,
-    super.key,
-  });
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final maxWidth = screenWidth >= kDesktopBreakpoint
-        ? _desktopContentMaxWidth
-        : double.infinity;
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: _horizontalContentPadding,
-          ),
-          child: child,
-        ),
       ),
     );
   }

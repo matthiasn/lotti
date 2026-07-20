@@ -4,7 +4,7 @@ import 'package:flutter_material_design_icons/flutter_material_design_icons.dart
 /// Maps an entry-type key (as stored in `selectedEntryTypes`) to the glyph the
 /// matching list card leads with, so the filter and the feed share one icon
 /// vocabulary. Keep this in sync with the per-type glyphs in
-/// `ModernJournalCard` / `ModernJournalImageCard` / `ModernTaskCard`.
+/// `ModernJournalCard` / `ModernJournalImageCard`.
 IconData entryTypeIcon(String type) {
   return switch (type) {
     'Task' => Icons.check_circle_outline_rounded,

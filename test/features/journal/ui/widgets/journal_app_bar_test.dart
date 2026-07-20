@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/save_button_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
@@ -16,11 +17,19 @@ class _FakeSaveButtonController extends SaveButtonController {
 void main() {
   const entryId = 'entry-42';
 
-  Future<void> pumpAppBar(WidgetTester tester) async {
+  Future<void> pumpAppBar(
+    WidgetTester tester, {
+    bool showBackButton = true,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        const CustomScrollView(
-          slivers: [JournalSliverAppBar(entryId: entryId)],
+        CustomScrollView(
+          slivers: [
+            JournalSliverAppBar(
+              entryId: entryId,
+              showBackButton: showBackButton,
+            ),
+          ],
         ),
         overrides: [
           saveButtonControllerProvider(
@@ -54,6 +63,31 @@ void main() {
       final bar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
       expect(bar.pinned, isTrue);
       expect(bar.automaticallyImplyLeading, isFalse);
+    });
+
+    testWidgets(
+      'hides the back affordance in the desktop split pane '
+      '(showBackButton false)',
+      (tester) async {
+        await pumpAppBar(tester, showBackButton: false);
+
+        expect(find.byType(BackWidget), findsNothing);
+        final bar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
+        expect(bar.leading, isNull);
+        expect(bar.leadingWidth, 0);
+        // The save action must survive losing the back button.
+        expect(find.byType(SaveButton), findsOneWidget);
+      },
+    );
+
+    testWidgets('paints the unified logbook canvas, not the default '
+        'app-bar background', (tester) async {
+      await pumpAppBar(tester);
+
+      final bar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
+      final context = tester.element(find.byType(SliverAppBar));
+      expect(bar.backgroundColor, dsPageSurface(context));
+      expect(bar.surfaceTintColor, Colors.transparent);
     });
   });
 }

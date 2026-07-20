@@ -48,6 +48,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get addHabitDateLabel => 'Færdiggjort i';
 
   @override
+  String get addLinkedEntryLabel => 'Add linked entry';
+
+  @override
   String get addMeasurementCommentLabel => 'Kommentar';
 
   @override
@@ -6449,6 +6452,22 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Link eksisterende opgave...';
+
+  @override
+  String get logbookEmptyHint => 'Create your first entry to start journaling.';
+
+  @override
+  String get logbookEmptyTitle => 'Your logbook is empty';
+
+  @override
+  String get logbookNewEntriesHint => 'New entries will open here.';
+
+  @override
+  String get logbookNoMatchesHint =>
+      'Adjust your search or filters to see more.';
+
+  @override
+  String get logbookNoMatchesTitle => 'No entries match';
 
   @override
   String get loggingDomainAgentRuntime => 'Agentens runtime';

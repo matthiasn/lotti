@@ -48,6 +48,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addHabitDateLabel => 'Voltooid op';
 
   @override
+  String get addLinkedEntryLabel => 'Add linked entry';
+
+  @override
   String get addMeasurementCommentLabel => 'Opmerking';
 
   @override
@@ -6468,6 +6471,22 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Bestaande taak koppelen...';
+
+  @override
+  String get logbookEmptyHint => 'Create your first entry to start journaling.';
+
+  @override
+  String get logbookEmptyTitle => 'Your logbook is empty';
+
+  @override
+  String get logbookNewEntriesHint => 'New entries will open here.';
+
+  @override
+  String get logbookNoMatchesHint =>
+      'Adjust your search or filters to see more.';
+
+  @override
+  String get logbookNoMatchesTitle => 'No entries match';
 
   @override
   String get loggingDomainAgentRuntime => 'Agent runtime';

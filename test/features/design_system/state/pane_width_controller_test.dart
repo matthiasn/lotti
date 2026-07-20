@@ -20,6 +20,7 @@ void main() {
       (_) async => <String, String?>{
         sidebarWidthKey: null,
         listPaneWidthKey: null,
+        journalListPaneWidthKey: null,
         // Include the key explicitly (rather than relying on a missing-key
         // lookup returning null) so the stub mirrors what SettingsDb returns
         // and the test does not pass by accident if lookup semantics change.
@@ -39,6 +40,7 @@ void main() {
       const widths = PaneWidths();
       expect(widths.sidebarWidth, defaultSidebarWidth);
       expect(widths.listPaneWidth, defaultListPaneWidth);
+      expect(widths.journalListPaneWidth, defaultJournalListPaneWidth);
       expect(widths.sidebarCollapsed, isFalse);
     });
 
@@ -63,14 +65,28 @@ void main() {
       expect(updated.sidebarWidth, defaultSidebarWidth);
     });
 
+    test('copyWith updates journal list pane width independently', () {
+      const widths = PaneWidths();
+      final updated = widths.copyWith(journalListPaneWidth: 520);
+      expect(updated.journalListPaneWidth, 520);
+      expect(updated.listPaneWidth, defaultListPaneWidth);
+      expect(updated.sidebarWidth, defaultSidebarWidth);
+    });
+
     test('equality compares all field values', () {
       const a = PaneWidths(sidebarWidth: 300, listPaneWidth: 500);
       const b = PaneWidths(sidebarWidth: 300, listPaneWidth: 500);
       const c = PaneWidths(sidebarWidth: 300, listPaneWidth: 600);
       const d = PaneWidths(sidebarWidth: 300, sidebarCollapsed: true);
+      const e = PaneWidths(
+        sidebarWidth: 300,
+        listPaneWidth: 500,
+        journalListPaneWidth: 350,
+      );
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
       expect(a, isNot(equals(d)));
+      expect(a, isNot(equals(e)));
     });
 
     test('hashCode is consistent with equality', () {
@@ -373,15 +389,106 @@ void main() {
     });
   });
 
+  group('PaneWidthController journal list pane width', () {
+    test('hydrates the persisted journal width', () async {
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        journalListPaneWidth: '420.0',
+      );
+
+      final result = await hAwaitHydration(container);
+      expect(result.journalListPaneWidth, 420.0);
+    });
+
+    test('clamps persisted journal width into its window', () async {
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        journalListPaneWidth: '50.0',
+      );
+      expect(
+        (await hAwaitHydration(container)).journalListPaneWidth,
+        minJournalListPaneWidth,
+      );
+
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        journalListPaneWidth: '2000.0',
+      );
+      expect(
+        (await hAwaitHydration(container)).journalListPaneWidth,
+        maxJournalListPaneWidth,
+      );
+    });
+
+    test('updateJournalListPaneWidth applies delta and clamps', () {
+      final notifier = container.read(paneWidthControllerProvider.notifier)
+        ..updateJournalListPaneWidth(60);
+      expect(
+        container.read(paneWidthControllerProvider).journalListPaneWidth,
+        defaultJournalListPaneWidth + 60,
+      );
+
+      notifier.updateJournalListPaneWidth(-2000);
+      expect(
+        container.read(paneWidthControllerProvider).journalListPaneWidth,
+        minJournalListPaneWidth,
+      );
+
+      notifier.updateJournalListPaneWidth(5000);
+      expect(
+        container.read(paneWidthControllerProvider).journalListPaneWidth,
+        maxJournalListPaneWidth,
+      );
+    });
+
+    test('resizing the journal pane leaves the shared list pane alone', () {
+      container
+          .read(paneWidthControllerProvider.notifier)
+          .updateJournalListPaneWidth(80);
+      final state = container.read(paneWidthControllerProvider);
+      expect(state.listPaneWidth, defaultListPaneWidth);
+      expect(state.sidebarWidth, defaultSidebarWidth);
+    });
+
+    test('persists after debounce, coalescing rapid drags', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..updateJournalListPaneWidth(10)
+          ..updateJournalListPaneWidth(20)
+          ..updateJournalListPaneWidth(30);
+        async.flushMicrotasks();
+
+        verifyNever(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            journalListPaneWidthKey,
+            any(),
+          ),
+        );
+
+        async.elapse(persistDebounce);
+
+        // 460 + 10 + 20 + 30 — only the final accumulated value is written.
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            journalListPaneWidthKey,
+            '520.0',
+          ),
+        ).called(1);
+      });
+    });
+  });
+
   group('PaneWidthController resetToDefaults', () {
-    test('resets both widths to defaults', () {
+    test('resets all widths to defaults', () {
       container.read(paneWidthControllerProvider.notifier)
         ..updateSidebarWidth(50)
         ..updateListPaneWidth(100)
+        ..updateJournalListPaneWidth(80)
         ..resetToDefaults();
       final state = container.read(paneWidthControllerProvider);
       expect(state.sidebarWidth, defaultSidebarWidth);
       expect(state.listPaneWidth, defaultListPaneWidth);
+      expect(state.journalListPaneWidth, defaultJournalListPaneWidth);
     });
 
     test('persists immediately without debounce', () {
@@ -400,6 +507,12 @@ void main() {
         () => getIt<SettingsDb>().saveSettingsItem(
           listPaneWidthKey,
           '540.0',
+        ),
+      ).called(1);
+      verify(
+        () => getIt<SettingsDb>().saveSettingsItem(
+          journalListPaneWidthKey,
+          '460.0',
         ),
       ).called(1);
     });

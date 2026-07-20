@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -22,12 +22,12 @@ void main() {
     final mockEditorStateService = MockEditorStateService();
 
     // testTextEntry.meta.dateFrom is DateTime(2022, 7, 7, 13).
-    final date = testTextEntry.meta.dateFrom;
-    final dateText = dfShort.format(date); // 2022-07-07
-    final timeText = hhMmFormat.format(date); // 13:00
-    // Mirror the widget's own concatenation so the test can't drift from what
-    // it renders if dfShort/hhMmFormat ever change independently of dfShorter.
-    final oneLine = '$dateText $timeText'; // 2022-07-07 13:00
+    final date = testTextEntry.meta.dateFrom.toLocal();
+    // Mirror the widget's own humanized, locale-aware formatting (en_US under
+    // makeTestableWidget) so the test can't drift from what it renders.
+    final dateText = DateFormat.yMMMd('en_US').format(date); // Jul 7, 2022
+    final timeText = DateFormat.jm('en_US').format(date); // 1:00 PM
+    final oneLine = '$dateText $timeText'; // Jul 7, 2022 1:00 PM
 
     setUpAll(() async {
       await getIt.reset();
@@ -85,6 +85,99 @@ void main() {
       expect(find.text(dateText), findsNothing);
       expect(find.text(timeText), findsNothing);
     });
+
+    testWidgets(
+      'prominent renders at title tier, default at quiet caption',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            SizedBox(
+              width: 400,
+              child: EntryDatetimeWidget(
+                entryId: testTextEntry.meta.id,
+                prominent: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(EntryDatetimeWidget));
+        final tokens = context.designTokens;
+        final prominentText = tester.widget<Text>(find.text(oneLine));
+        expect(
+          prominentText.style?.fontSize,
+          tokens.typography.styles.subtitle.subtitle1.fontSize,
+        );
+        expect(prominentText.style?.color, tokens.colors.text.highEmphasis);
+
+        // The default stays quiet caption metadata.
+        await pumpAtWidth(tester, 400);
+        final quietText = tester.widget<Text>(find.text(oneLine));
+        expect(
+          quietText.style?.fontSize,
+          tokens.typography.styles.others.caption.fontSize,
+        );
+        expect(quietText.style?.color, tokens.colors.text.lowEmphasis);
+      },
+    );
+
+    testWidgets(
+      'prominent falls back one type step before stacking',
+      (tester) async {
+        // Pump wide first to grab the design tokens for measuring.
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            SizedBox(
+              width: 400,
+              child: EntryDatetimeWidget(
+                entryId: testTextEntry.meta.id,
+                prominent: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final context = tester.element(find.byType(EntryDatetimeWidget));
+        final tokens = context.designTokens;
+        final subtitle1 = tokens.typography.styles.subtitle.subtitle1;
+        final subtitle2 = tokens.typography.styles.subtitle.subtitle2;
+
+        double widthAt(TextStyle style) {
+          final painter = TextPainter(
+            text: TextSpan(text: oneLine, style: style),
+            textDirection: Directionality.of(context),
+            maxLines: 1,
+          )..layout();
+          final width = painter.width;
+          painter.dispose();
+          return width;
+        }
+
+        // A width between the two type steps: too narrow for the subtitle1
+        // line, roomy enough for the subtitle2 fallback.
+        final betweenWidth = (widthAt(subtitle2) + widthAt(subtitle1)) / 2;
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            SizedBox(
+              width: betweenWidth,
+              child: EntryDatetimeWidget(
+                entryId: testTextEntry.meta.id,
+                prominent: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Still one line — one type step down, not the two-line stack.
+        final text = tester.widget<Text>(find.text(oneLine));
+        expect(text.style?.fontSize, subtitle2.fontSize);
+        expect(text.style?.color, tokens.colors.text.highEmphasis);
+        expect(find.text(dateText), findsNothing);
+        expect(find.text(timeText), findsNothing);
+      },
+    );
 
     testWidgets('stacks the date over the time when width is constrained', (
       WidgetTester tester,

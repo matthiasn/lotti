@@ -195,6 +195,12 @@ abstract class AppLocalizations {
   /// **'Completed at'**
   String get addHabitDateLabel;
 
+  /// No description provided for @addLinkedEntryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add linked entry'**
+  String get addLinkedEntryLabel;
+
   /// No description provided for @addMeasurementCommentLabel.
   ///
   /// In en, this message translates to:
@@ -11217,6 +11223,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Link existing task...'**
   String get linkExistingTask;
+
+  /// No description provided for @logbookEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first entry to start journaling.'**
+  String get logbookEmptyHint;
+
+  /// No description provided for @logbookEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your logbook is empty'**
+  String get logbookEmptyTitle;
+
+  /// No description provided for @logbookNewEntriesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New entries will open here.'**
+  String get logbookNewEntriesHint;
+
+  /// No description provided for @logbookNoMatchesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust your search or filters to see more.'**
+  String get logbookNoMatchesHint;
+
+  /// No description provided for @logbookNoMatchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries match'**
+  String get logbookNoMatchesTitle;
 
   /// No description provided for @loggingDomainAgentRuntime.
   ///

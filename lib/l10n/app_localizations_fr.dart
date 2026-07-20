@@ -49,6 +49,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addHabitDateLabel => 'Terminé à';
 
   @override
+  String get addLinkedEntryLabel => 'Ajouter une entrée liée';
+
+  @override
   String get addMeasurementCommentLabel => 'Commentaire';
 
   @override
@@ -6553,6 +6556,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Lier une tâche existante...';
+
+  @override
+  String get logbookEmptyHint =>
+      'Crée ta première entrée pour commencer ton journal.';
+
+  @override
+  String get logbookEmptyTitle => 'Ton journal est vide';
+
+  @override
+  String get logbookNewEntriesHint => 'Les nouvelles entrées s’ouvriront ici.';
+
+  @override
+  String get logbookNoMatchesHint =>
+      'Ajuste ta recherche ou tes filtres pour en voir plus.';
+
+  @override
+  String get logbookNoMatchesTitle => 'Aucune entrée ne correspond';
 
   @override
   String get loggingDomainAgentRuntime => 'Exécution des agents';

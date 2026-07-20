@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/components/navigation/desktop_detai
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
@@ -66,7 +67,10 @@ class TasksRootPage extends ConsumerWidget {
                   );
 
             return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 480),
+              // Fast cross-fade (200ms): stepping row-by-row through tasks is
+              // the split view's core interaction, and matches the logbook
+              // split so both panes feel identical.
+              duration: MotionDurations.short4,
               switchInCurve: Curves.easeInOutCubic,
               switchOutCurve: Curves.easeInOutCubic,
               layoutBuilder: (currentChild, previousChildren) {

@@ -31,6 +31,7 @@ extension AnyPaneWidth on glados.Any {
 Future<ProviderContainer> hCreateContainerWithPersistedWidths({
   String? sidebarWidth,
   String? listPaneWidth,
+  String? journalListPaneWidth,
   String? sidebarCollapsed,
 }) async {
   await tearDownTestGetIt();
@@ -41,6 +42,7 @@ Future<ProviderContainer> hCreateContainerWithPersistedWidths({
     (_) async => <String, String?>{
       sidebarWidthKey: sidebarWidth,
       listPaneWidthKey: listPaneWidth,
+      journalListPaneWidthKey: journalListPaneWidth,
       sidebarCollapsedKey: sidebarCollapsed,
     },
   );
@@ -77,6 +79,7 @@ Future<PaneWidths> hAwaitHydration(ProviderContainer container) async {
 Future<PaneWidths> hHydrateWith({
   String? sidebarWidth,
   String? listPaneWidth,
+  String? journalListPaneWidth,
   String? sidebarCollapsed,
 }) async {
   when(
@@ -85,6 +88,7 @@ Future<PaneWidths> hHydrateWith({
     (_) async => <String, String?>{
       sidebarWidthKey: sidebarWidth,
       listPaneWidthKey: listPaneWidth,
+      journalListPaneWidthKey: journalListPaneWidth,
       sidebarCollapsedKey: sidebarCollapsed,
     },
   );
