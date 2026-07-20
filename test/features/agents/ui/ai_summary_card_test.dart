@@ -1,16 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 
 import '../../../test_helper.dart';
-import '../../ai_consumption/test_utils.dart';
-import '../test_data/entity_factories.dart';
 import 'ai_summary_card/test_bench.dart';
 
 /// Root-shell routing of [AiSummaryCard]: the four `taskAgentProvider`
@@ -73,25 +68,5 @@ void main() {
 
     expect(find.text('AI summary'), findsOneWidget);
     expect(find.text('Assign Agent'), findsNothing);
-  });
-
-  testWidgets('report carrier surfaces its compact AI attribution summary', (
-    tester,
-  ) async {
-    final envelope = makeAiWorkAttribution();
-    final report = makeTestReport().copyWith(
-      provenance: {
-        aiAttributionProvenanceKey: jsonDecode(
-          jsonEncode(envelope.toJson()),
-        ),
-      },
-    );
-
-    await tester.pumpWidget(AgentTestBench(report: report).build());
-    await tester.pump();
-    await tester.pump();
-
-    expect(find.byType(AiAttributionSummary), findsOneWidget);
-    expect(find.textContaining('Ada · Manual · Completed'), findsOneWidget);
   });
 }

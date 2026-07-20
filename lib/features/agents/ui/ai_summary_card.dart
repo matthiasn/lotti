@@ -23,9 +23,6 @@ import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart'
 import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
 import 'package:lotti/features/agents/ui/task_agent_freshness_strip.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
-import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -597,20 +594,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       onToggle: () => setState(() => _expanded = !_expanded),
       onOpenInternals: () => _openInternals(agentName: subtitle),
     );
-    final attributionEnvelope = report == null
-        ? null
-        : attributionFromAgentEntity(report);
-    final attributionSummary = report == null || attributionEnvelope == null
-        ? null
-        : AiAttributionSummary(
-            artifact: AiArtifactReference(
-              type: AiArtifactType.agentReport,
-              id: report.id,
-            ),
-            attribution: attributionEnvelope,
-            compact: true,
-            includeTopSpacing: false,
-          );
     final proposalsSection = list == null
         ? null
         : ProposalsSection(
@@ -687,16 +670,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                   tokens.spacing.step3,
                 ),
                 child: reportBody,
-              ),
-            if (attributionSummary != null)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spacing.cardPadding,
-                  0,
-                  tokens.spacing.cardPadding,
-                  tokens.spacing.step4,
-                ),
-                child: attributionSummary,
               ),
             if (showFreshnessStrip)
               Padding(
