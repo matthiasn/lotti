@@ -78,6 +78,15 @@ DraftPlan _draftPlan() {
   );
 }
 
+/// Recorder stub whose denied permission keeps toggle() a no-op error path,
+/// so root-page tests never touch the mic or transcription stack.
+MockAudioRecorderRepository _permissionlessRecorder() {
+  final recorder = MockAudioRecorderRepository();
+  when(recorder.hasPermission).thenAnswer((_) async => false);
+  when(recorder.stopRecording).thenAnswer((_) async {});
+  return recorder;
+}
+
 void main() {
   tearDown(() => nav_service.beamToNamedOverride = null);
 
@@ -86,9 +95,6 @@ void main() {
       tester,
     ) async {
       final requestedDates = <DateTime>[];
-      final realtimeService = MockRealtimeTranscriptionService();
-      when(realtimeService.resolveRealtimeConfig).thenAnswer((_) async => null);
-      when(realtimeService.dispose).thenAnswer((_) async {});
 
       await withClock(Clock.fixed(DateTime(2026, 5, 26, 16, 15)), () async {
         await tester.pumpWidget(
@@ -96,7 +102,7 @@ void main() {
             const DailyOsNextRoot(),
             overrides: [
               captureControllerProvider.overrideWith(
-                () => CaptureController(realtimeService: realtimeService),
+                () => CaptureController(recorder: _permissionlessRecorder()),
               ),
               currentDraftPlanProvider.overrideWith((ref, date) async {
                 requestedDates.add(date);
@@ -149,7 +155,7 @@ void main() {
               actualBlocks: [actualBlock],
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => null),
               ],
@@ -233,16 +239,12 @@ void main() {
     });
 
     testWidgets('AsyncLoading shows the loading shell', (tester) async {
-      final realtimeService = MockRealtimeTranscriptionService();
-      when(realtimeService.resolveRealtimeConfig).thenAnswer((_) async => null);
-      when(realtimeService.dispose).thenAnswer((_) async {});
-
       await tester.pumpWidget(
         _wrap(
           const DailyOsNextRoot(),
           overrides: [
             captureControllerProvider.overrideWith(
-              () => CaptureController(realtimeService: realtimeService),
+              () => CaptureController(recorder: _permissionlessRecorder()),
             ),
             currentDraftPlanProvider.overrideWith(
               (ref, date) => Completer<DraftPlan?>().future,
@@ -273,7 +275,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 capturesForDateProvider.overrideWith(
                   (ref, _) async => const [],
@@ -314,7 +316,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 capturesForDateProvider.overrideWith(
                   (ref, _) async => const [],
@@ -369,7 +371,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 capturesForDateProvider.overrideWith(
                   (ref, _) async => const [],
@@ -418,7 +420,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, date) async {
                   requestedDates.add(date);
@@ -456,7 +458,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => null),
               ],
@@ -497,7 +499,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => null),
               ],
@@ -540,7 +542,7 @@ void main() {
               const DailyOsNextRoot(),
               overrides: [
                 captureControllerProvider.overrideWith(
-                  () => CaptureController(realtimeService: realtimeService),
+                  () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => null),
               ],

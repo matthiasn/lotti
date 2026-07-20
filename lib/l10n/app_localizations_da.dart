@@ -3554,32 +3554,24 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextCaptureDoneCta => 'Færdig';
 
   @override
-  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Mikrofontilladelse blev nægtet.';
+  String get dailyOsNextCaptureErrorAudioPersistFailed =>
+      'The recording couldn\'t be saved.';
 
   @override
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
-      'Ingen aktiv realtidssession.';
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Mikrofontilladelse blev nægtet.';
 
   @override
   String get dailyOsNextCaptureErrorNoAudioRecorded =>
       'Der blev ikke optaget lyd.';
 
   @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
-      'Realtime-transskription fejlede.';
-
-  @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
-      'Realtime-transskription kunne ikke starte.';
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Your recording is saved. Transcription couldn\'t finish.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Optagelsen kunne ikke starte.';
-
-  @override
-  String get dailyOsNextCaptureErrorTranscriptionFailed =>
-      'Transskriptionen mislykkedes.';
 
   @override
   String get dailyOsNextCaptureHeadlineCaptured => 'Ser det rigtigt ud?';

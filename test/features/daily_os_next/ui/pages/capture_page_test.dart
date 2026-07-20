@@ -19,7 +19,6 @@ import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -567,24 +566,16 @@ void main() {
     final remainingErrorCases =
         <(CaptureError, String Function(AppLocalizations))>[
           (
-            CaptureError.realtimeTranscriptionStartFailed,
-            (m) => m.dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed,
-          ),
-          (
-            CaptureError.noActiveRealtimeSession,
-            (m) => m.dailyOsNextCaptureErrorNoActiveRealtimeSession,
-          ),
-          (
-            CaptureError.realtimeTranscriptionFailed,
-            (m) => m.dailyOsNextCaptureErrorRealtimeTranscriptionFailed,
-          ),
-          (
             CaptureError.noAudioRecorded,
             (m) => m.dailyOsNextCaptureErrorNoAudioRecorded,
           ),
           (
-            CaptureError.transcriptionFailed,
-            (m) => m.dailyOsNextCaptureErrorTranscriptionFailed,
+            CaptureError.audioPersistFailed,
+            (m) => m.dailyOsNextCaptureErrorAudioPersistFailed,
+          ),
+          (
+            CaptureError.recordingSavedPendingTranscription,
+            (m) => m.dailyOsNextCaptureErrorRecordingSavedPendingTranscription,
           ),
         ];
     for (final c in remainingErrorCases) {
@@ -616,113 +607,6 @@ void main() {
     }
 
     testWidgets(
-      'listening phase with a partial transcript shows the live preview text',
-      (tester) async {
-        const liveTranscript =
-            'streaming words keep coming\n'
-            'then another sentence lands\n'
-            'and the viewport should stay on the tail';
-
-        await tester.pumpWidget(
-          _wrap(
-            const CapturePage(),
-            overrides: [
-              captureControllerProvider.overrideWith(
-                _StubCaptureController.factory(
-                  const CaptureState(
-                    phase: CapturePhase.listening,
-                    transcript: '',
-                    amplitudes: [0.2, 0.4, 0.6],
-                    partialTranscript: liveTranscript,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-
-        final context = tester.element(find.byType(CapturePage));
-        final tokens = context.designTokens;
-        expect(find.byType(LiveWaveform), findsOneWidget);
-        expect(find.text(liveTranscript), findsOneWidget);
-        expect(
-          tester
-              .getSize(
-                find.byKey(
-                  const Key('daily_os_capture_live_transcript_viewport'),
-                ),
-              )
-              .height,
-          greaterThan(tokens.typography.lineHeight.bodyMedium * 3),
-        );
-        final scrollView = tester.widget<SingleChildScrollView>(
-          find.descendant(
-            of: find.byKey(
-              const Key('daily_os_capture_live_transcript_viewport'),
-            ),
-            matching: find.byType(SingleChildScrollView),
-          ),
-        );
-        expect(scrollView.reverse, isTrue);
-        final transcriptText = tester.widget<Text>(find.text(liveTranscript));
-        expect(transcriptText.maxLines, isNull);
-        expect(transcriptText.overflow, isNull);
-      },
-    );
-
-    testWidgets(
-      'listening preview keeps a readable viewport on very small phone layouts',
-      (tester) async {
-        const liveTranscript = 'live words appear while speaking';
-        await tester.binding.setSurfaceSize(const Size(320, 568));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        await tester.pumpWidget(
-          _wrap(
-            const CapturePage(),
-            mediaQueryData: const MediaQueryData(size: Size(320, 568)),
-            overrides: [
-              captureControllerProvider.overrideWith(
-                _StubCaptureController.factory(
-                  const CaptureState(
-                    phase: CapturePhase.listening,
-                    transcript: '',
-                    amplitudes: [0.2, 0.4, 0.6],
-                    partialTranscript: liveTranscript,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-
-        // On a squeezed viewport the transcript zone yields height so the
-        // orb and its caption stay fully above the fold (the anchored
-        // layout's priority); the live text itself must stay rendered and
-        // on screen.
-        expect(tester.takeException(), isNull);
-        expect(find.text(liveTranscript), findsOneWidget);
-        expect(tester.getTopLeft(find.text(liveTranscript)).dy, greaterThan(0));
-        expect(
-          tester
-              .getSize(
-                find.byKey(
-                  const Key('daily_os_capture_live_transcript_viewport'),
-                ),
-              )
-              .height,
-          greaterThan(0),
-        );
-        final messages = tester.element(find.byType(CapturePage)).messages;
-        final caption = find.text(messages.dailyOsNextCaptureListeningStatus);
-        expect(caption, findsOneWidget);
-        expect(tester.getBottomLeft(caption).dy, lessThanOrEqualTo(568));
-      },
-    );
-
-    testWidgets(
       'voice orb keeps its exact position while listening starts and text grows',
       (tester) async {
         Future<Offset> pumpWithState(CaptureState state) async {
@@ -750,25 +634,11 @@ void main() {
             amplitudes: [0.2, 0.4, 0.6],
           ),
         );
-        final longTranscript = await pumpWithState(
-          const CaptureState(
-            phase: CapturePhase.listening,
-            transcript: '',
-            amplitudes: [0.2, 0.4, 0.6],
-            partialTranscript:
-                'First recognised line\n'
-                'then a second recognised line\n'
-                'then a third recognised line\n'
-                'then a fourth recognised line',
-          ),
-        );
-
         // The core's diameter breathes while listening, but its CENTER —
         // the position under the finger — must not move. Sub-pixel float
         // tolerance: centering an odd breathing diameter inside the fixed
         // field shifts the computed center by < 1e-3.
         expect((listening - idle).distance, lessThan(0.01));
-        expect((longTranscript - idle).distance, lessThan(0.01));
       },
     );
 
@@ -1319,17 +1189,12 @@ void main() {
       CapturePhase.listening: CaptureState(
         phase: CapturePhase.listening,
         transcript: '',
-        partialTranscript:
-            'Tomorrow I want to start with two hours of deep work on the '
-            'planner before any meetings, then a check-in with the design '
-            'team about the new layout.',
         amplitudes: [0.2, 0.6, 0.4, 0.8, 0.3],
         dbfs: -18,
       ),
       CapturePhase.transcribing: CaptureState(
         phase: CapturePhase.transcribing,
         transcript: '',
-        partialTranscript: 'Tomorrow I want to start with deep work',
         amplitudes: [0.2, 0.6, 0.4],
       ),
       CapturePhase.captured: CaptureState(
@@ -1341,7 +1206,7 @@ void main() {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: [],
-        error: CaptureError.transcriptionFailed,
+        error: CaptureError.audioPersistFailed,
       ),
     };
 
@@ -1393,36 +1258,6 @@ void main() {
         },
       );
     }
-
-    testWidgets('long live transcript never overflows at 1.3x on a mini', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _wrap(
-          const SizedBox(
-            width: 375,
-            height: 560,
-            child: CaptureModalContent(),
-          ),
-          overrides: [
-            captureControllerProvider.overrideWith(
-              _StubCaptureController.factory(
-                phasesWithStates[CapturePhase.listening]!,
-              ),
-            ),
-          ],
-          mediaQueryData: const MediaQueryData(
-            size: Size(375, 812),
-            textScaler: TextScaler.linear(1.3),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-      // The old metric-driven layout overflowed here; the anchored layout
-      // absorbs the pressure in the transcript zone. No exception = pass.
-      expect(tester.takeException(), isNull);
-      expect(find.byKey(VoiceButton.coreButtonKey), findsOneWidget);
-    });
   });
 
   group('capturedAtForSelectedDate', () {
@@ -1525,18 +1360,10 @@ class _AudioHarness {
   final MockAudioRecorderRepository recorder = MockAudioRecorderRepository();
   final MockAudioTranscriptionService transcriber =
       MockAudioTranscriptionService();
-  final MockRealtimeTranscriptionService realtimeService =
-      MockRealtimeTranscriptionService();
   final StreamController<Amplitude> ampController =
       StreamController<Amplitude>.broadcast();
 
   void arm() {
-    // Page tests pin the batch path; realtime coverage lives in the
-    // controller test.
-    when(
-      realtimeService.resolveRealtimeConfig,
-    ).thenAnswer((_) async => null);
-    when(realtimeService.dispose).thenAnswer((_) async {});
     when(recorder.hasPermission).thenAnswer((_) async => true);
     when(
       () => recorder.amplitudeStream,
@@ -1561,7 +1388,6 @@ class _AudioHarness {
   CaptureController controllerFactory() => CaptureController(
     recorder: recorder,
     transcriber: transcriber,
-    realtimeService: realtimeService,
     docDir: Directory.systemTemp.createTempSync,
     persistAudio: (_) async => JournalAudio(
       meta: Metadata(

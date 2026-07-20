@@ -3599,31 +3599,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureDoneCta => 'Hotovo';
 
   @override
-  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Přístup k mikrofonu byl odepřen.';
+  String get dailyOsNextCaptureErrorAudioPersistFailed =>
+      'Nahrávku se nepodařilo uložit.';
 
   @override
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
-      'Žádná aktivní relace v reálném čase.';
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Přístup k mikrofonu byl odepřen.';
 
   @override
   String get dailyOsNextCaptureErrorNoAudioRecorded =>
       'Nebylo nahráno žádné audio.';
 
   @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
-      'Přepis v reálném čase selhal.';
-
-  @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
-      'Přepis v reálném čase se nepodařilo spustit.';
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Nahrávka je uložená. Přepis se nepodařilo dokončit.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Nahrávání se nepodařilo spustit.';
-
-  @override
-  String get dailyOsNextCaptureErrorTranscriptionFailed => 'Přepis selhal.';
 
   @override
   String get dailyOsNextCaptureHeadlineCaptured => 'Sedí to takhle?';

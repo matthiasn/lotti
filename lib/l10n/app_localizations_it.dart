@@ -3600,32 +3600,24 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextCaptureDoneCta => 'Fatto';
 
   @override
-  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Il permesso del microfono è stato negato.';
+  String get dailyOsNextCaptureErrorAudioPersistFailed =>
+      'The recording couldn\'t be saved.';
 
   @override
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
-      'Nessuna sessione in tempo reale attiva.';
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Il permesso del microfono è stato negato.';
 
   @override
   String get dailyOsNextCaptureErrorNoAudioRecorded =>
       'Nessun audio è stato registrato.';
 
   @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
-      'La trascrizione in tempo reale è fallita.';
-
-  @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
-      'La trascrizione in tempo reale non può iniziare.';
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Your recording is saved. Transcription couldn\'t finish.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'La registrazione non poteva iniziare.';
-
-  @override
-  String get dailyOsNextCaptureErrorTranscriptionFailed =>
-      'La trascrizione e\' fallita.';
 
   @override
   String get dailyOsNextCaptureHeadlineCaptured => 'Ti sembra giusto?';

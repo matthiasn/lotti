@@ -35,6 +35,12 @@ enum RefineProblem {
 
   /// The proposal request failed or timed out.
   proposalFailed,
+
+  /// Audio reached its journal entry, but transcription is still pending.
+  captureSavedPendingTranscription,
+
+  /// Voice capture failed before a saved or retained artifact was confirmed.
+  captureFailed,
 }
 
 /// Immutable snapshot the Refine screen renders: the current [phase], the
@@ -291,11 +297,13 @@ class RefineController extends Notifier<RefineState> {
     );
   }
 
-  void cancelListening() {
+  void cancelListening({RefineProblem? problem}) {
     if (state.phase != RefinePhase.listening) return;
     _transcriptPrefix = '';
     state = state.copyWith(
       phase: state.diff == null ? RefinePhase.idle : RefinePhase.diffReady,
+      problem: problem,
+      clearProblem: problem == null,
     );
   }
 

@@ -193,13 +193,9 @@ class _OnboardingFirstTaskStepState
     widget.onTaskCreated(taskId);
   }
 
-  /// The transcript surfaced under the thinking shimmer. Falls back to the
-  /// live realtime partial while transcription is still resolving so the user
-  /// sees their words echoed before the final transcript lands.
-  String _displayTranscript(CaptureState state) {
-    if (state.transcript.isNotEmpty) return state.transcript;
-    return state.partialTranscript;
-  }
+  /// The transcript surfaced under the thinking shimmer once the batch
+  /// transcription round-trip lands.
+  String _displayTranscript(CaptureState state) => state.transcript;
 
   /// Resolves the visible frame. Once a task has landed the created beat owns
   /// the panel; while structuring is in flight the controller's

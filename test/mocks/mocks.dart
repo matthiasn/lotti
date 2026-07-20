@@ -692,7 +692,10 @@ class FakeCaptureController extends CaptureController {
   CaptureState build() => const CaptureState.idle();
 
   @override
-  Future<void> toggle() async => onToggle?.call();
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async => onToggle?.call();
 
   @override
   void startTyping() {

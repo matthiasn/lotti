@@ -6083,17 +6083,17 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get dailyOsNextCaptureDoneCta;
 
+  /// No description provided for @dailyOsNextCaptureErrorAudioPersistFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording couldn\'t be saved.'**
+  String get dailyOsNextCaptureErrorAudioPersistFailed;
+
   /// No description provided for @dailyOsNextCaptureErrorMicrophonePermissionDenied.
   ///
   /// In en, this message translates to:
   /// **'Microphone permission was denied.'**
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied;
-
-  /// No description provided for @dailyOsNextCaptureErrorNoActiveRealtimeSession.
-  ///
-  /// In en, this message translates to:
-  /// **'No active realtime session.'**
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession;
 
   /// No description provided for @dailyOsNextCaptureErrorNoAudioRecorded.
   ///
@@ -6101,29 +6101,17 @@ abstract class AppLocalizations {
   /// **'No audio was recorded.'**
   String get dailyOsNextCaptureErrorNoAudioRecorded;
 
-  /// No description provided for @dailyOsNextCaptureErrorRealtimeTranscriptionFailed.
+  /// No description provided for @dailyOsNextCaptureErrorRecordingSavedPendingTranscription.
   ///
   /// In en, this message translates to:
-  /// **'Realtime transcription failed.'**
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed;
-
-  /// No description provided for @dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Realtime transcription could not start.'**
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed;
+  /// **'Your recording is saved. Transcription couldn\'t finish.'**
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription;
 
   /// No description provided for @dailyOsNextCaptureErrorRecordingStartFailed.
   ///
   /// In en, this message translates to:
   /// **'Recording could not start.'**
   String get dailyOsNextCaptureErrorRecordingStartFailed;
-
-  /// No description provided for @dailyOsNextCaptureErrorTranscriptionFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcription failed.'**
-  String get dailyOsNextCaptureErrorTranscriptionFailed;
 
   /// No description provided for @dailyOsNextCaptureHeadlineCaptured.
   ///

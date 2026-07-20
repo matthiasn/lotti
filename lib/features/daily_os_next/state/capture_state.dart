@@ -6,34 +6,46 @@ enum CapturePhase {
   idle,
 
   /// Mic is open. Amplitudes stream into [CaptureState.amplitudes] and
-  /// drive the live waveform. Realtime mode also streams transcript
-  /// deltas into [CaptureState.partialTranscript].
+  /// drive the live waveform.
   listening,
 
-  /// Recording stopped. Awaiting the final transcript + audio
-  /// persistence. Realtime mode usually sits here briefly while
-  /// `transcription.done` is awaited; the batch fallback path stays
-  /// longer while the post-recording transcribe call runs.
+  /// Recording stopped. The audio entry is persisted first, then the
+  /// foreground transcription round-trip runs over the finished file.
   transcribing,
 
   /// Final transcript ready and audio persisted. The "Reconcile →" CTA
   /// is enabled.
   captured,
 
-  /// Microphone, recording, or transcription failed. The user can tap
-  /// the voice button again to retry.
+  /// Microphone, recording, persistence, or transcription failed. The
+  /// user can tap the voice button again to retry; a journal-saved
+  /// recording awaiting transcription is terminal for this capture
+  /// session — the processing outbox owns the retry.
   error,
+}
+
+/// What a Daily OS voice session is for. Persisted (via `name`) into the
+/// journal audio `DayAudioContext.intent` provenance, so renames are data
+/// migrations.
+enum AudioCaptureIntent {
+  /// A day check-in / plan-building capture.
+  dayPlan,
+
+  /// A refine pass over an existing plan.
+  dayRefine,
 }
 
 /// Localizable capture failures surfaced by the UI.
 enum CaptureError {
   microphonePermissionDenied,
   recordingStartFailed,
-  realtimeTranscriptionStartFailed,
-  noActiveRealtimeSession,
-  realtimeTranscriptionFailed,
   noAudioRecorded,
-  transcriptionFailed,
+  audioPersistFailed,
+
+  /// The recording is durable in the journal and a transcription job is
+  /// queued; only the foreground transcript is missing. The Day Activity
+  /// timeline surfaces retry/manual-text actions for it.
+  recordingSavedPendingTranscription,
 }
 
 /// State held by `CaptureController`.
@@ -44,7 +56,6 @@ class CaptureState {
     required this.transcript,
     required this.amplitudes,
     this.dbfs = defaultDbfs,
-    this.partialTranscript = '',
     this.audioId,
     this.error,
   });
@@ -52,7 +63,6 @@ class CaptureState {
   const CaptureState.idle()
     : phase = CapturePhase.idle,
       transcript = '',
-      partialTranscript = '',
       amplitudes = const <double>[],
       dbfs = defaultDbfs,
       audioId = null,
@@ -64,11 +74,6 @@ class CaptureState {
 
   /// The final transcript. Empty until [CapturePhase.captured].
   final String transcript;
-
-  /// Live transcript text from realtime mode. Updated word-by-word as
-  /// the model emits deltas. Cleared once the final [transcript] is
-  /// available. Always empty in the batch-fallback path.
-  final String partialTranscript;
 
   /// Rolling window of normalised amplitude values (0..1). The
   /// live-waveform widget renders these as bar heights.
@@ -90,7 +95,6 @@ class CaptureState {
   CaptureState copyWith({
     CapturePhase? phase,
     String? transcript,
-    String? partialTranscript,
     List<double>? amplitudes,
     double? dbfs,
     String? audioId,
@@ -99,7 +103,6 @@ class CaptureState {
     return CaptureState(
       phase: phase ?? this.phase,
       transcript: transcript ?? this.transcript,
-      partialTranscript: partialTranscript ?? this.partialTranscript,
       amplitudes: amplitudes ?? this.amplitudes,
       dbfs: dbfs ?? this.dbfs,
       audioId: audioId ?? this.audioId,
@@ -123,7 +126,6 @@ class CaptureState {
       other is CaptureState &&
           other.phase == phase &&
           other.transcript == transcript &&
-          other.partialTranscript == partialTranscript &&
           listEquals(other.amplitudes, amplitudes) &&
           other.dbfs == dbfs &&
           other.audioId == audioId &&
@@ -133,7 +135,6 @@ class CaptureState {
   int get hashCode => Object.hash(
     phase,
     transcript,
-    partialTranscript,
     Object.hashAll(amplitudes),
     dbfs,
     audioId,

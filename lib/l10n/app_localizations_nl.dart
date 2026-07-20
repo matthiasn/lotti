@@ -3566,32 +3566,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextCaptureDoneCta => 'Klaar';
 
   @override
-  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Microfoon toestemming werd geweigerd.';
+  String get dailyOsNextCaptureErrorAudioPersistFailed =>
+      'The recording couldn\'t be saved.';
 
   @override
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
-      'Geen actieve real-time sessie.';
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Microfoon toestemming werd geweigerd.';
 
   @override
   String get dailyOsNextCaptureErrorNoAudioRecorded =>
       'Er is geen audio opgenomen.';
 
   @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
-      'Realtime transcriptie mislukt.';
-
-  @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
-      'Realtime transcriptie kon niet starten.';
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Your recording is saved. Transcription couldn\'t finish.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Opname kon niet beginnen.';
-
-  @override
-  String get dailyOsNextCaptureErrorTranscriptionFailed =>
-      'De transcriptie is mislukt.';
 
   @override
   String get dailyOsNextCaptureHeadlineCaptured => 'Ziet dit er goed uit?';

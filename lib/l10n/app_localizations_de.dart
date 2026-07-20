@@ -3578,32 +3578,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextCaptureDoneCta => 'Fertig';
 
   @override
-  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Der Zugriff auf das Mikrofon wurde verweigert.';
+  String get dailyOsNextCaptureErrorAudioPersistFailed =>
+      'Deine Aufnahme konnte nicht gespeichert werden.';
 
   @override
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
-      'Keine aktive Echtzeit-Sitzung.';
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Der Zugriff auf das Mikrofon wurde verweigert.';
 
   @override
   String get dailyOsNextCaptureErrorNoAudioRecorded =>
       'Es wurde kein Audio aufgenommen.';
 
   @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
-      'Die Echtzeit-Transkription ist fehlgeschlagen.';
-
-  @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
-      'Die Echtzeit-Transkription konnte nicht starten.';
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Deine Aufnahme ist gespeichert. Die Transkription konnte nicht abgeschlossen werden.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Die Aufnahme konnte nicht starten.';
-
-  @override
-  String get dailyOsNextCaptureErrorTranscriptionFailed =>
-      'Die Transkription ist fehlgeschlagen.';
 
   @override
   String get dailyOsNextCaptureHeadlineCaptured => 'Passt das so?';

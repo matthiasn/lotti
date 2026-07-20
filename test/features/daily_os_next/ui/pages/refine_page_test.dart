@@ -71,9 +71,6 @@ PlanDiff _diffWithTwoChanges(DraftPlan plan) => PlanDiff(
 CaptureController _stubCapture() {
   final recorder = MockAudioRecorderRepository();
   final transcriber = MockAudioTranscriptionService();
-  final realtime = MockRealtimeTranscriptionService();
-  when(realtime.dispose).thenAnswer((_) async {});
-  when(realtime.resolveRealtimeConfig).thenAnswer((_) async => null);
   when(recorder.stopRecording).thenAnswer((_) async {});
   // Permission denied → toggle() lands the controller in CapturePhase.error
   // synchronously enough for tests to observe the resulting refine state.
@@ -81,7 +78,6 @@ CaptureController _stubCapture() {
   return CaptureController(
     recorder: recorder,
     transcriber: transcriber,
-    realtimeService: realtime,
     docDir: Directory.systemTemp.createTempSync,
     persistAudio: (_) async => null,
     now: () => DateTime(2026, 5, 26, 9),
@@ -106,10 +102,10 @@ class _DriveableCaptureController extends CaptureController {
   void reset() {}
 
   @override
-  void skipRealtimeTranscriptVerificationForNextCapture() {}
-
-  @override
-  Future<void> toggle() async {}
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async {}
 }
 
 Widget _wrap(
@@ -894,57 +890,6 @@ void main() {
   // `ref.listen(captureControllerProvider, ...)` forwarding into the
   // refine controller is exercised end to end.
   group('RefinePage capture → refine forwarding', () {
-    testWidgets(
-      'partial transcript while listening is forwarded to the refine panel',
-      (tester) async {
-        final draft = _emptyPlan();
-        await tester.pumpWidget(
-          _wrap(
-            RefinePage(draft: draft),
-            captureFactory: _DriveableCaptureController.new,
-          ),
-        );
-        await tester.pump();
-
-        // Refine must already be listening for updateActiveTranscript to
-        // take effect (it ignores updates outside RefinePhase.listening).
-        _readNotifier(tester, draft).beginListening(resetTranscript: true);
-        await tester.pump();
-
-        // Capture goes live and streams a partial transcript → the panel's
-        // listener forwards it via refineNotifier.updateActiveTranscript.
-        _readCapture(tester).emit(
-          const CaptureState(
-            phase: CapturePhase.listening,
-            transcript: '',
-            amplitudes: <double>[],
-            partialTranscript: '  move lunch later  ',
-          ),
-        );
-        await tester.pump();
-
-        expect(find.text('move lunch later'), findsOneWidget);
-
-        // A blank partial transcript is ignored (the trimmed-empty guard),
-        // so the previously forwarded text is preserved.
-        _readCapture(tester).emit(
-          const CaptureState(
-            phase: CapturePhase.transcribing,
-            transcript: '',
-            amplitudes: <double>[],
-            partialTranscript: '   ',
-          ),
-        );
-        await tester.pump();
-
-        expect(find.text('move lunch later'), findsOneWidget);
-        final refineState = ProviderScope.containerOf(
-          tester.element(find.byType(RefinePage)),
-        ).read(refineControllerProvider(draft));
-        expect(refineState.transcript, 'move lunch later');
-      },
-    );
-
     testWidgets(
       'captured capture state moves refine into reviewing with the transcript',
       (tester) async {

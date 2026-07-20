@@ -3537,31 +3537,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextCaptureDoneCta => 'Done';
 
   @override
-  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Microphone permission was denied.';
+  String get dailyOsNextCaptureErrorAudioPersistFailed =>
+      'The recording couldn\'t be saved.';
 
   @override
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
-      'No active realtime session.';
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Microphone permission was denied.';
 
   @override
   String get dailyOsNextCaptureErrorNoAudioRecorded => 'No audio was recorded.';
 
   @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
-      'Realtime transcription failed.';
-
-  @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
-      'Realtime transcription could not start.';
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Your recording is saved. Transcription couldn\'t finish.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Recording could not start.';
-
-  @override
-  String get dailyOsNextCaptureErrorTranscriptionFailed =>
-      'Transcription failed.';
 
   @override
   String get dailyOsNextCaptureHeadlineCaptured => 'Does this look right?';

@@ -48,11 +48,6 @@ import '../../screenshot_harness.dart';
 final DateTime _now = DateTime(2026, 6, 7, 9, 41);
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
-final String _shortUtterance = _t(
-  'Tomorrow starts with the orbital penguin habitat inspection',
-  'Morgen beginnt mit der Inspektion des Pinguin-Habitats im Orbit',
-);
-
 final String _longUtterance = _t(
   'Tomorrow I need to inspect the orbital penguin habitat before Mission '
       'Control wakes up, run the emperor penguin roll call, and negotiate the '
@@ -85,10 +80,9 @@ List<double> _amplitudes(int count) => [
 // Loud simulated speech level: with the widget's default −80 dBFS floor the
 // normalized drive is ≈0.9, so the tension-loop shader renders near its full
 // extent in the stills.
-CaptureState _listening({required String partial}) => CaptureState(
+CaptureState _listening() => CaptureState(
   phase: CapturePhase.listening,
   transcript: '',
-  partialTranscript: partial,
   amplitudes: _amplitudes(48),
   dbfs: -7,
 );
@@ -96,7 +90,6 @@ CaptureState _listening({required String partial}) => CaptureState(
 final _transcribing = CaptureState(
   phase: CapturePhase.transcribing,
   transcript: '',
-  partialTranscript: _shortUtterance,
   amplitudes: _amplitudes(48),
 );
 
@@ -206,7 +199,10 @@ class _FakeCaptureController extends CaptureController {
   );
 
   @override
-  Future<void> toggle() async {}
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async {}
 }
 
 /// Realistic, deterministic corpus for the manual's fictional Director of
@@ -503,7 +499,7 @@ void main() {
         tester,
         intent: const DayPlanningCreate(),
         device: device,
-        capture: _listening(partial: _shortUtterance),
+        capture: _listening(),
       );
       await captureScreenshot(tester, '${device.name}_02_listening_short_dark');
     });
@@ -515,7 +511,7 @@ void main() {
         tester,
         intent: const DayPlanningCreate(),
         device: device,
-        capture: _listening(partial: _longUtterance),
+        capture: _listening(),
       );
       await captureScreenshot(tester, '${device.name}_03_listening_long_dark');
     });
@@ -661,7 +657,7 @@ void main() {
       tester,
       intent: const DayPlanningCreate(),
       device: miniDevice,
-      capture: _listening(partial: _longUtterance),
+      capture: _listening(),
       textScale: 1.3,
     );
     await captureScreenshot(tester, 'mini_12_listening_long_dark_ts13');
@@ -683,7 +679,7 @@ void main() {
   // reachable and no text may clip.
   for (final (name, capture) in <(String, CaptureState)>[
     ('idle', const CaptureState.idle()),
-    ('listening', _listening(partial: _longUtterance)),
+    ('listening', _listening()),
     ('captured', _captured),
   ]) {
     testWidgets('mini $name — dark, 2.0x text', (tester) async {

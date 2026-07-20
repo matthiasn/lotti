@@ -42,7 +42,10 @@ class _FakeCaptureController extends CaptureController {
   );
 
   @override
-  Future<void> toggle() async {}
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async {}
 }
 
 /// Reconcile agent whose parse step throws — drives the error branch.

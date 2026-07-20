@@ -3613,32 +3613,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureDoneCta => 'Gata';
 
   @override
-  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Permisiunea pentru microfon a fost refuzată.';
+  String get dailyOsNextCaptureErrorAudioPersistFailed =>
+      'Înregistrarea dvs. nu a putut fi salvată.';
 
   @override
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
-      'Nu există nicio sesiune în timp real activă.';
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Permisiunea pentru microfon a fost refuzată.';
 
   @override
   String get dailyOsNextCaptureErrorNoAudioRecorded =>
       'Nu s-a înregistrat niciun audio.';
 
   @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
-      'Transcrierea în timp real a eșuat.';
-
-  @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
-      'Transcrierea în timp real nu a putut porni.';
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Înregistrarea dvs. este salvată. Transcrierea nu a putut fi finalizată.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Înregistrarea nu a putut porni.';
-
-  @override
-  String get dailyOsNextCaptureErrorTranscriptionFailed =>
-      'Transcrierea a eșuat.';
 
   @override
   String get dailyOsNextCaptureHeadlineCaptured => 'Arată corect?';
