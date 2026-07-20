@@ -742,6 +742,23 @@
     }
   },
   "aiAttributionTitle": "AI attribution",
+  "aiAttributionTokenBreakdown": "Input: {input} · Output: {output} · Cached: {cached} · Reasoning: {reasoning}",
+  "@aiAttributionTokenBreakdown": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      },
+      "reasoning": {
+        "type": "String"
+      }
+    }
+  },
   "aiAttributionTokens": "Tokens",
   "aiAttributionTokenUsageUnknown": "Token usage unknown",
   "aiAttributionTrigger": "Trigger",

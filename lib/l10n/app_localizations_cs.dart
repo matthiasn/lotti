@@ -1219,6 +1219,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAttributionTokens => 'Tokeny';
 
   @override
+  String aiAttributionTokenBreakdown(
+    String input,
+    String output,
+    String cached,
+    String reasoning,
+  ) {
+    return 'Vstup: $input · Výstup: $output · V mezipaměti: $cached · Uvažování: $reasoning';
+  }
+
+  @override
   String get aiAttributionTokenUsageUnknown => 'Využití tokenů není známé';
 
   @override

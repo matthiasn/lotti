@@ -1226,6 +1226,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAttributionTokens => 'Tokenuri';
 
   @override
+  String aiAttributionTokenBreakdown(
+    String input,
+    String output,
+    String cached,
+    String reasoning,
+  ) {
+    return 'Intrare: $input · Ieșire: $output · Din cache: $cached · Raționament: $reasoning';
+  }
+
+  @override
   String get aiAttributionTokenUsageUnknown =>
       'Utilizarea tokenurilor este necunoscută';
 

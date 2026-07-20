@@ -528,6 +528,23 @@
   "aiAttributionStatusSucceeded": "Finalizat",
   "aiAttributionSummary": "{actor} · {trigger} · {status}",
   "aiAttributionTitle": "Atribuire AI",
+  "aiAttributionTokenBreakdown": "Intrare: {input} · Ieșire: {output} · Din cache: {cached} · Raționament: {reasoning}",
+  "@aiAttributionTokenBreakdown": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      },
+      "reasoning": {
+        "type": "String"
+      }
+    }
+  },
   "aiAttributionTokens": "Tokenuri",
   "aiAttributionTokenUsageUnknown": "Utilizarea tokenurilor este necunoscută",
   "aiAttributionTrigger": "Declanșator",

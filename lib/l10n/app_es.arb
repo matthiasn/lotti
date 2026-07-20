@@ -528,6 +528,23 @@
   "aiAttributionStatusSucceeded": "Completado",
   "aiAttributionSummary": "{actor} · {trigger} · {status}",
   "aiAttributionTitle": "Atribución de IA",
+  "aiAttributionTokenBreakdown": "Entrada: {input} · Salida: {output} · En caché: {cached} · Razonamiento: {reasoning}",
+  "@aiAttributionTokenBreakdown": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      },
+      "reasoning": {
+        "type": "String"
+      }
+    }
+  },
   "aiAttributionTokens": "Tokens",
   "aiAttributionTokenUsageUnknown": "Uso de tokens desconocido",
   "aiAttributionTrigger": "Activador",

@@ -2201,6 +2201,17 @@ abstract class AppLocalizations {
   /// **'Tokens'**
   String get aiAttributionTokens;
 
+  /// No description provided for @aiAttributionTokenBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Input: {input} · Output: {output} · Cached: {cached} · Reasoning: {reasoning}'**
+  String aiAttributionTokenBreakdown(
+    String input,
+    String output,
+    String cached,
+    String reasoning,
+  );
+
   /// No description provided for @aiAttributionTokenUsageUnknown.
   ///
   /// In en, this message translates to:

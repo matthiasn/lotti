@@ -528,6 +528,23 @@
   "aiAttributionStatusSucceeded": "Abgeschlossen",
   "aiAttributionSummary": "{actor} · {trigger} · {status}",
   "aiAttributionTitle": "KI-Zuordnung",
+  "aiAttributionTokenBreakdown": "Eingabe: {input} · Ausgabe: {output} · Zwischengespeichert: {cached} · Denken: {reasoning}",
+  "@aiAttributionTokenBreakdown": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      },
+      "reasoning": {
+        "type": "String"
+      }
+    }
+  },
   "aiAttributionTokens": "Tokens",
   "aiAttributionTokenUsageUnknown": "Token-Nutzung unbekannt",
   "aiAttributionTrigger": "Auslöser",

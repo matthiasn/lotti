@@ -86,6 +86,14 @@ void main() {
     expect(find.text('1,500'), findsOneWidget);
     expect(find.text('request-sha'), findsOneWidget);
     expect(find.text('response-sha'), findsOneWidget);
+    expect(
+      find.text('Input: 1,000 · Output: 500 · Cached: — · Reasoning: —'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Impact: <1 Wh · 0.1 g CO₂e · 10 mL water'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('pill presents entry attribution and opens the details modal', (
@@ -107,7 +115,10 @@ void main() {
     await pumpSummary(tester, details: details, asPill: true);
 
     expect(find.byType(DsPill), findsOneWidget);
-    expect(find.text('voxtral-small · <€0.01'), findsOneWidget);
+    expect(
+      find.text('voxtral-small · <€0.01 · <1 Wh · 0.1 g'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byType(DsPill));
     await tester.pumpAndSettle();
@@ -115,6 +126,63 @@ void main() {
     expect(find.text('AI attribution'), findsOneWidget);
     expect(find.text('<€0.01'), findsWidgets);
   });
+
+  testWidgets(
+    'group pill aggregates transcript cost and impact into one entry control',
+    (tester) async {
+      final first = makeAiWorkAttribution();
+      final second = makeAiWorkAttribution(attributionId: 'attribution-2');
+      final detailsById = {
+        first.id: AiAttributionDetails(
+          attribution: first,
+          interactions: [
+            makeConsumptionEvent(
+              attributionId: first.id,
+              credits: 0.1,
+              energyKwh: 0.002,
+              carbonGCo2: 0.5,
+            ),
+          ],
+        ),
+        second.id: AiAttributionDetails(
+          attribution: second,
+          interactions: [
+            makeConsumptionEvent(
+              attributionId: second.id,
+              credits: 0.2,
+              energyKwh: 0.01,
+              carbonGCo2: 2.5,
+              waterLiters: 0.02,
+            ),
+          ],
+        ),
+      };
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          AiAttributionSummaryGroup(
+            label: 'Transcription',
+            attributions: [first, second],
+          ),
+          overrides: [
+            aiAttributionDetailsProvider.overrideWith(
+              (ref, id) async => detailsById[id],
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.text('Transcription · €0.30 · 12 Wh · 3.0 g'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byType(DsPill));
+      await tester.pumpAndSettle();
+      expect(find.text('AI attribution'), findsOneWidget);
+    },
+  );
 
   testWidgets('renders nothing when neither carrier nor projection exists', (
     tester,

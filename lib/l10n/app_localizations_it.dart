@@ -1225,6 +1225,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiAttributionTokens => 'Tokens';
 
   @override
+  String aiAttributionTokenBreakdown(
+    String input,
+    String output,
+    String cached,
+    String reasoning,
+  ) {
+    return 'Input: $input · Output: $output · Cached: $cached · Reasoning: $reasoning';
+  }
+
+  @override
   String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
 
   @override

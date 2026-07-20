@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
@@ -149,16 +147,6 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                 ),
               ),
             ],
-          ),
-          AiAttributionSummary(
-            compact: true,
-            artifact: AiArtifactReference(
-              type: AiArtifactType.journalAudio,
-              id: widget.entryId,
-              subId: widget.transcript.id,
-            ),
-            attribution: widget.transcript.aiAttribution,
-            asPill: true,
           ),
         ],
       ),

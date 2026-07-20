@@ -528,6 +528,23 @@
   "aiAttributionStatusSucceeded": "Terminé",
   "aiAttributionSummary": "{actor} · {trigger} · {status}",
   "aiAttributionTitle": "Attribution IA",
+  "aiAttributionTokenBreakdown": "Entrée : {input} · Sortie : {output} · En cache : {cached} · Raisonnement : {reasoning}",
+  "@aiAttributionTokenBreakdown": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      },
+      "reasoning": {
+        "type": "String"
+      }
+    }
+  },
   "aiAttributionTokens": "Jetons",
   "aiAttributionTokenUsageUnknown": "Utilisation des jetons inconnue",
   "aiAttributionTrigger": "Déclencheur",

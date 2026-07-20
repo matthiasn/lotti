@@ -535,6 +535,23 @@
   "aiAttributionStatusSucceeded": "Dokončeno",
   "aiAttributionSummary": "{actor} · {trigger} · {status}",
   "aiAttributionTitle": "Přiřazení AI",
+  "aiAttributionTokenBreakdown": "Vstup: {input} · Výstup: {output} · V mezipaměti: {cached} · Uvažování: {reasoning}",
+  "@aiAttributionTokenBreakdown": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      },
+      "reasoning": {
+        "type": "String"
+      }
+    }
+  },
   "aiAttributionTokens": "Tokeny",
   "aiAttributionTokenUsageUnknown": "Využití tokenů není známé",
   "aiAttributionTrigger": "Spouštěč",

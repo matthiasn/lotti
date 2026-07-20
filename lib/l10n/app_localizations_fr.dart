@@ -1227,6 +1227,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiAttributionTokens => 'Jetons';
 
   @override
+  String aiAttributionTokenBreakdown(
+    String input,
+    String output,
+    String cached,
+    String reasoning,
+  ) {
+    return 'Entrée : $input · Sortie : $output · En cache : $cached · Raisonnement : $reasoning';
+  }
+
+  @override
   String get aiAttributionTokenUsageUnknown =>
       'Utilisation des jetons inconnue';
 

@@ -65,6 +65,74 @@ class AiAttributionSummary extends ConsumerWidget {
   }
 }
 
+/// A single entry-level pill for several AI outputs of the same kind.
+///
+/// Audio entries can contain more than one transcript, each with its own
+/// attribution. This keeps the card surface concise while retaining every
+/// individual attribution in the details sheet.
+class AiAttributionSummaryGroup extends ConsumerWidget {
+  const AiAttributionSummaryGroup({
+    required this.label,
+    required this.attributions,
+    this.includeTopSpacing = true,
+    super.key,
+  });
+
+  final String label;
+  final List<AiWorkAttribution> attributions;
+  final bool includeTopSpacing;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (attributions.isEmpty) return const SizedBox.shrink();
+
+    final asyncDetails = [
+      for (final attribution in attributions)
+        ref.watch(aiAttributionDetailsProvider(attribution.id)),
+    ];
+    final details = asyncDetails
+        .map((asyncDetail) => asyncDetail.value)
+        .whereType<AiAttributionDetails>()
+        .toList();
+    final isLoading = asyncDetails.any(
+      (asyncDetail) => asyncDetail.isLoading && asyncDetail.value == null,
+    );
+    final interactions = details.expand((detail) => detail.interactions);
+    final cost = isLoading
+        ? '…'
+        : _formatInteractionCosts(context, interactions);
+    final tokens = context.designTokens;
+    final pill = Semantics(
+      button: !isLoading,
+      label: '$label. $cost',
+      child: DsPill(
+        variant: DsPillVariant.filled,
+        bordered: true,
+        label: isLoading
+            ? '$label · $cost'
+            : _formatPillLabel(
+                context,
+                prefix: label,
+                interactions: interactions,
+              ),
+        leading: Icon(
+          Icons.auto_awesome_outlined,
+          size: 12,
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+        onTap: isLoading
+            ? null
+            : () => _showGroupDetails(context, label, details),
+      ),
+    );
+    if (!includeTopSpacing) return pill;
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.spacing.step3),
+      child: pill,
+    );
+  }
+}
+
 class _AttributionAvailability extends StatelessWidget {
   const _AttributionAvailability({
     required this.label,
@@ -145,7 +213,13 @@ class _AttributionRow extends StatelessWidget {
         child: DsPill(
           variant: DsPillVariant.filled,
           bordered: true,
-          label: '$model · $cost',
+          label: isLoading
+              ? '$model · $cost'
+              : _formatPillLabel(
+                  context,
+                  prefix: model,
+                  interactions: details?.interactions ?? const [],
+                ),
           leading: Icon(
             Icons.auto_awesome_outlined,
             size: 12,
@@ -245,6 +319,58 @@ Future<void> _showDetails(
     },
   ),
 );
+
+Future<void> _showGroupDetails(
+  BuildContext context,
+  String label,
+  List<AiAttributionDetails> details,
+) => ModalUtils.showSinglePageModal<void>(
+  context: context,
+  title: context.messages.aiAttributionTitle,
+  modalTypeBuilderOverride: (modalContext) {
+    final width = MediaQuery.sizeOf(modalContext).width;
+    return width < WoltModalConfig.pageBreakpoint
+        ? WoltModalType.bottomSheet()
+        : const SizedWoltSideSheetType();
+  },
+  builder: (modalContext) => _AttributionGroupDetailsBody(
+    label: label,
+    details: details,
+  ),
+);
+
+class _AttributionGroupDetailsBody extends StatelessWidget {
+  const _AttributionGroupDetailsBody({
+    required this.label,
+    required this.details,
+  });
+
+  final String label;
+  final List<AiAttributionDetails> details;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.all(tokens.spacing.cardPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _Detail(
+            label: label,
+            value: _formatInteractionCosts(
+              context,
+              details.expand((detail) => detail.interactions),
+            ),
+          ),
+          for (final detail in details)
+            _AttributionDetailsBody(details: detail),
+        ],
+      ),
+    );
+  }
+}
 
 class _AttributionDetailsBody extends StatelessWidget {
   const _AttributionDetailsBody({required this.details});
@@ -393,10 +519,36 @@ class _InteractionDetails extends StatelessWidget {
               label: context.messages.aiAttributionTokens,
               value: tokenText,
             ),
+            if (_hasTokenBreakdown(interaction))
+              _FullWidthDetail(
+                text: context.messages.aiAttributionTokenBreakdown(
+                  _formatTokenMetric(interaction.inputTokens),
+                  _formatTokenMetric(interaction.outputTokens),
+                  _formatTokenMetric(interaction.cachedInputTokens),
+                  _formatTokenMetric(interaction.thoughtsTokens),
+                ),
+              ),
             _Detail(
               label: context.messages.aiAttributionCost,
               value: _formatInteractionCost(context, interaction),
             ),
+            if (_hasImpact(interaction))
+              _FullWidthDetail(
+                text: context.messages.aiConsumptionImpactLine(
+                  _formatImpactMetric(
+                    interaction.energyKwh,
+                    formatEnergyKwh,
+                  ),
+                  _formatImpactMetric(
+                    interaction.carbonGCo2,
+                    formatCarbonGrams,
+                  ),
+                  _formatImpactMetric(
+                    interaction.waterLiters,
+                    formatWaterLiters,
+                  ),
+                ),
+              ),
             if (interaction.requestDigest != null)
               _Detail(
                 label: context.messages.aiAttributionRequestEvidence,
@@ -469,6 +621,21 @@ class _Detail extends StatelessWidget {
   }
 }
 
+class _FullWidthDetail extends StatelessWidget {
+  const _FullWidthDetail({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.only(bottom: context.designTokens.spacing.step2),
+    child: Text(
+      text,
+      style: context.designTokens.typography.styles.body.bodySmall,
+    ),
+  );
+}
+
 String? _firstModel(AiAttributionDetails? details) {
   for (final event in details?.interactions ?? const <AiConsumptionEvent>[]) {
     final model = event.providerModelId ?? event.modelId;
@@ -480,13 +647,14 @@ String? _firstModel(AiAttributionDetails? details) {
 String _formatTotalCost(
   BuildContext context,
   AiAttributionDetails? details,
+) => _formatInteractionCosts(context, details?.interactions ?? const []);
+
+String _formatInteractionCosts(
+  BuildContext context,
+  Iterable<AiConsumptionEvent> interactions,
 ) {
-  final values = details?.interactions
-      .map((event) => event.credits)
-      .whereType<double>();
-  if (values == null || values.isEmpty) {
-    return context.messages.aiAttributionCostUnknown;
-  }
+  final values = interactions.map((event) => event.credits).whereType<double>();
+  if (values.isEmpty) return context.messages.aiAttributionCostUnknown;
   final total = values.fold<double>(0, (sum, value) => sum + value);
   return formatCredits(total);
 }
@@ -500,6 +668,47 @@ String _formatInteractionCost(
       ? context.messages.aiAttributionCostUnknown
       : formatCredits(credits);
 }
+
+String _formatPillLabel(
+  BuildContext context, {
+  required String prefix,
+  required Iterable<AiConsumptionEvent> interactions,
+}) {
+  final values = interactions.toList();
+  final parts = [prefix, _formatInteractionCosts(context, values)];
+  final energy = values
+      .map((interaction) => interaction.energyKwh)
+      .whereType<double>();
+  if (energy.isNotEmpty) {
+    parts.add(formatEnergyKwh(energy.fold(0, (sum, value) => sum + value)));
+  }
+  final carbon = values
+      .map((interaction) => interaction.carbonGCo2)
+      .whereType<double>();
+  if (carbon.isNotEmpty) {
+    parts.add(formatCarbonGrams(carbon.fold(0, (sum, value) => sum + value)));
+  }
+  return parts.join(' · ');
+}
+
+bool _hasImpact(AiConsumptionEvent interaction) =>
+    interaction.energyKwh != null ||
+    interaction.carbonGCo2 != null ||
+    interaction.waterLiters != null;
+
+bool _hasTokenBreakdown(AiConsumptionEvent interaction) =>
+    interaction.inputTokens != null ||
+    interaction.outputTokens != null ||
+    interaction.cachedInputTokens != null ||
+    interaction.thoughtsTokens != null;
+
+String _formatTokenMetric(int? value) =>
+    value == null ? '—' : NumberFormat.decimalPattern().format(value);
+
+String _formatImpactMetric(
+  double? value,
+  String Function(double value) formatter,
+) => value == null ? '—' : formatter(value);
 
 String _interactionStatusLabel(
   BuildContext context,
