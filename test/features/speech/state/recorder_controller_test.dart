@@ -15,6 +15,10 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -28,7 +32,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' as rec;
 import 'package:record/record.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 class MockAmplitude extends Mock implements Amplitude {}
 
@@ -75,6 +81,23 @@ _fakeRealtimeConfig = (
           as AiConfigModel,
 );
 
+AiInteractionCaptureTestBench _registerTranscriptAttribution() {
+  final bench = AiInteractionCaptureTestBench.create()..register();
+  getIt.registerSingleton<TranscriptAttributionCoordinator>(
+    TranscriptAttributionCoordinator(bench.service, bench.identity),
+  );
+  return bench;
+}
+
+List<AiConsumptionEvent> _capturedAttributionEvents(
+  AiInteractionCaptureTestBench bench,
+) => verify(
+  () => bench.service.recordInteraction(
+    attributionId: any(named: 'attributionId'),
+    event: captureAny(named: 'event'),
+  ),
+).captured.cast<AiConsumptionEvent>();
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -89,6 +112,7 @@ void main() {
   late ProviderContainer container;
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(FakePlayable());
     registerFallbackValue(Duration.zero);
     registerFallbackValue(const Stream<Uint8List>.empty());
@@ -139,6 +163,15 @@ void main() {
           dateFrom: DateTime(2024),
           dateTo: DateTime(2024),
         ),
+      ),
+    );
+    registerFallbackValue(
+      AiAttributionSession(
+        id: 'fallback-attribution',
+        workType: AiWorkType.audioTranscription,
+        initiator: makeAiActor(),
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+        startedAt: DateTime.utc(2026, 7, 19, 10),
       ),
     );
   });
@@ -1600,6 +1633,27 @@ void main() {
     });
 
     group('recordRealtime - happy path', () {
+      test(
+        'begins transcript attribution with task and category context',
+        () async {
+          final attribution = _registerTranscriptAttribution();
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          )..setCategoryId('category-1');
+
+          await controller.recordRealtime(linkedId: 'task-1');
+
+          final command =
+              verify(
+                    () => attribution.service.begin(captureAny()),
+                  ).captured.single
+                  as AiAttributionStart;
+          expect(command.taskId, 'task-1');
+          expect(command.categoryId, 'category-1');
+          expect(command.workType, AiWorkType.audioTranscription);
+        },
+      );
+
       test('sets state to recording with isRealtimeMode true', () async {
         final controller = container.read(
           audioRecorderControllerProvider.notifier,
@@ -1748,6 +1802,7 @@ void main() {
       });
 
       test('cleans up on service startRealtimeTranscription failure', () async {
+        final attribution = _registerTranscriptAttribution();
         when(
           () => mockRealtimeService.startRealtimeTranscription(
             pcmStream: any(named: 'pcmStream'),
@@ -1765,10 +1820,95 @@ void main() {
         // startRealtimeTranscription, so cleanup handles the reset.
         final state = container.read(audioRecorderControllerProvider);
         expect(state.isRealtimeMode, isFalse);
+        expect(
+          _capturedAttributionEvents(attribution).single.interactionStatus,
+          AiInteractionStatus.failed,
+        );
       });
+
+      test(
+        'logs attribution cleanup failure without masking start error',
+        () async {
+          final attribution = _registerTranscriptAttribution();
+          when(
+            () => attribution.service.recordInteraction(
+              attributionId: any(named: 'attributionId'),
+              event: any(named: 'event'),
+            ),
+          ).thenThrow(StateError('attribution unavailable'));
+          when(
+            () => mockRealtimeService.startRealtimeTranscription(
+              pcmStream: any(named: 'pcmStream'),
+              onDelta: any(named: 'onDelta'),
+            ),
+          ).thenThrow(StateError('socket failed'));
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+
+          await controller.recordRealtime();
+
+          expect(
+            container.read(audioRecorderControllerProvider).status,
+            AudioRecorderStatus.stopped,
+          );
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.speech,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'realtimeAttributionFailure',
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('cancelRealtime', () {
+      test('records cancellation for the active attribution', () async {
+        final attribution = _registerTranscriptAttribution();
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+        await controller.recordRealtime();
+
+        await controller.cancelRealtime();
+
+        expect(
+          _capturedAttributionEvents(attribution).single.interactionStatus,
+          AiInteractionStatus.cancelled,
+        );
+      });
+
+      test('logs an attribution cancellation failure', () async {
+        final attribution = _registerTranscriptAttribution();
+        when(
+          () => attribution.service.recordInteraction(
+            attributionId: any(named: 'attributionId'),
+            event: any(named: 'event'),
+          ),
+        ).thenThrow(StateError('cancel write failed'));
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+        await controller.recordRealtime();
+
+        await controller.cancelRealtime();
+
+        expect(
+          container.read(audioRecorderControllerProvider).isRealtimeMode,
+          isTrue,
+        );
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'cancelRealtime',
+          ),
+        ).called(1);
+      });
+
       test('resets state and invalidates service provider', () async {
         final controller = container.read(
           audioRecorderControllerProvider.notifier,
@@ -1856,6 +1996,7 @@ void main() {
 
     group('stopRealtime - error handling', () {
       test('resets state and cleans up on error', () async {
+        final attribution = _registerTranscriptAttribution();
         // Make service.stop throw to trigger the catch block
         when(
           () => mockRealtimeService.stop(
@@ -1890,28 +2031,26 @@ void main() {
             ),
           ),
         ).called(1);
+        expect(
+          _capturedAttributionEvents(attribution).single.interactionStatus,
+          AiInteractionStatus.failed,
+        );
       });
     });
 
     group('stopRealtime - happy path', () {
-      test('creates audio entry and saves transcript', () async {
-        // Set up GetIt dependencies for createAssetDirectory and
-        // SpeechRepository.createAudioEntry
+      Future<MockPersistenceLogic> registerStopPersistence({
+        bool throwOnTranscriptMetadata = false,
+        bool persistTranscript = true,
+      }) async {
         final tempDir = await Directory.systemTemp.createTemp('rt_stop_');
         addTearDown(() => tempDir.delete(recursive: true));
+        getIt.registerSingleton<Directory>(tempDir);
 
-        if (!getIt.isRegistered<Directory>()) {
-          getIt.registerSingleton<Directory>(tempDir);
-        }
-
-        final mockPersistence = MockPersistenceLogic();
-        if (!getIt.isRegistered<PersistenceLogic>()) {
-          getIt.registerSingleton<PersistenceLogic>(mockPersistence);
-        }
-
-        // Mock PersistenceLogic methods
+        final persistence = MockPersistenceLogic();
+        getIt.registerSingleton<PersistenceLogic>(persistence);
         when(
-          () => mockPersistence.createMetadata(
+          () => persistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             uuidV5Input: any(named: 'uuidV5Input'),
@@ -1928,20 +2067,31 @@ void main() {
           ),
         );
         when(
-          () => mockPersistence.createDbEntity(
+          () => persistence.createDbEntity(
             any(),
             linkedId: any(named: 'linkedId'),
           ),
         ).thenAnswer((_) async => true);
-        when(() => mockPersistence.updateMetadata(any())).thenAnswer((
-          invocation,
-        ) async {
-          final meta = invocation.positionalArguments[0] as Metadata;
-          return meta;
-        });
+        if (throwOnTranscriptMetadata) {
+          when(
+            () => persistence.updateMetadata(any()),
+          ).thenThrow(StateError('metadata failed'));
+        } else {
+          when(() => persistence.updateMetadata(any())).thenAnswer((
+            invocation,
+          ) async {
+            return invocation.positionalArguments[0] as Metadata;
+          });
+        }
         when(
-          () => mockPersistence.updateDbEntity(any()),
-        ).thenAnswer((_) async => true);
+          () => persistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => persistTranscript);
+        return persistence;
+      }
+
+      test('creates audio entry and saves transcript', () async {
+        final attribution = _registerTranscriptAttribution();
+        final mockPersistence = await registerStopPersistence();
 
         // Mock automatic prompt trigger
         final mockTrigger = MockAutomaticPromptTrigger();
@@ -1966,6 +2116,8 @@ void main() {
           (_) async => const RealtimeStopResult(
             transcript: 'realtime transcript text',
             audioFilePath: '/tmp/audio.m4a',
+            usedTranscriptFallback: true,
+            usage: {'input_tokens': 17, 'output_tokens': 9},
           ),
         );
 
@@ -2010,8 +2162,20 @@ void main() {
         expect(state.status, AudioRecorderStatus.stopped);
         expect(state.modalVisible, isFalse);
 
-        // Verify transcript was saved via updateDbEntity
-        verify(() => mockPersistence.updateDbEntity(any())).called(1);
+        // Verify transcript and attribution were saved via updateDbEntity.
+        final updated =
+            verify(
+                  () => mockPersistence.updateDbEntity(captureAny()),
+                ).captured.single
+                as JournalAudio;
+        final transcript = updated.data.transcripts!.single;
+        expect(transcript.transcript, 'realtime transcript text');
+        expect(transcript.aiAttribution?.id, 'attribution-1');
+        final event = _capturedAttributionEvents(attribution).single;
+        expect(event.interactionStatus, AiInteractionStatus.partial);
+        expect(event.errorCode, 'realtime_completion_fallback');
+        expect(event.inputTokens, 17);
+        expect(event.outputTokens, 9);
 
         // Verify automatic prompts were triggered with realtimeTranscriptProvided: true
         verify(
@@ -2037,6 +2201,191 @@ void main() {
           ),
         ).called(1);
       });
+
+      test('missing audio finalizes the attributed output failure', () async {
+        final attribution = _registerTranscriptAttribution();
+        final tempDir = await Directory.systemTemp.createTemp('rt_empty_');
+        addTearDown(() => tempDir.delete(recursive: true));
+        getIt.registerSingleton<Directory>(tempDir);
+        when(
+          () => mockRealtimeService.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer(
+          (_) async => const RealtimeStopResult(transcript: 'spoken'),
+        );
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+        await controller.recordRealtime();
+
+        expect(await controller.stopRealtime(), isNull);
+
+        expect(
+          _capturedAttributionEvents(attribution).single.interactionStatus,
+          AiInteractionStatus.succeeded,
+        );
+        verify(
+          () => attribution.service.prepareCompletion(
+            attributionId: 'attribution-1',
+            outputs: const [],
+            status: AiWorkStatus.failed,
+            errorCode: 'audio_carrier_unavailable',
+          ),
+        ).called(1);
+      });
+
+      test(
+        'post-interaction transcript failure terminalizes the output once',
+        () async {
+          final attribution = _registerTranscriptAttribution();
+          await registerStopPersistence(throwOnTranscriptMetadata: true);
+          when(
+            () => mockRealtimeService.stop(
+              stopRecorder: any(named: 'stopRecorder'),
+              outputPath: any(named: 'outputPath'),
+            ),
+          ).thenAnswer(
+            (_) async => const RealtimeStopResult(
+              transcript: 'recorded before persistence',
+              audioFilePath: '/tmp/audio.m4a',
+            ),
+          );
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.recordRealtime();
+
+          expect(await controller.stopRealtime(), isNull);
+
+          expect(_capturedAttributionEvents(attribution), hasLength(1));
+          verify(
+            () => attribution.service.prepareCompletion(
+              attributionId: 'attribution-1',
+              outputs: const [],
+              status: AiWorkStatus.failed,
+              errorCode: 'transcript_output_failed',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'projection failure keeps the persisted transcript carrier',
+        () async {
+          final attribution = _registerTranscriptAttribution();
+          final persistence = await registerStopPersistence();
+          when(() => attribution.service.finalize(any())).thenThrow(
+            StateError('projection failed'),
+          );
+          when(
+            () => mockRealtimeService.stop(
+              stopRecorder: any(named: 'stopRecorder'),
+              outputPath: any(named: 'outputPath'),
+            ),
+          ).thenAnswer(
+            (_) async => const RealtimeStopResult(
+              transcript: 'durable transcript',
+              audioFilePath: '/tmp/audio.m4a',
+            ),
+          );
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.recordRealtime();
+
+          expect(await controller.stopRealtime(), 'test-entry-id');
+
+          final updated =
+              verify(
+                    () => persistence.updateDbEntity(captureAny()),
+                  ).captured.single
+                  as JournalAudio;
+          expect(updated.data.transcripts!.single.aiAttribution, isNotNull);
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.speech,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'realtimeAttributionFinalize',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'failed transcript update terminalizes the output carrier',
+        () async {
+          final attribution = _registerTranscriptAttribution();
+          await registerStopPersistence(persistTranscript: false);
+          when(
+            () => mockRealtimeService.stop(
+              stopRecorder: any(named: 'stopRecorder'),
+              outputPath: any(named: 'outputPath'),
+            ),
+          ).thenAnswer(
+            (_) async => const RealtimeStopResult(
+              transcript: 'not durable',
+              audioFilePath: '/tmp/audio.m4a',
+            ),
+          );
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.recordRealtime();
+
+          expect(await controller.stopRealtime(), 'test-entry-id');
+
+          verify(
+            () => attribution.service.prepareCompletion(
+              attributionId: 'attribution-1',
+              outputs: const [],
+              status: AiWorkStatus.failed,
+              errorCode: 'transcript_persistence_failed',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'failed output cleanup remains best effort after interaction',
+        () async {
+          final attribution = _registerTranscriptAttribution();
+          await registerStopPersistence(throwOnTranscriptMetadata: true);
+          when(
+            () => attribution.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: any(named: 'outputs'),
+              status: any(named: 'status'),
+              errorCode: any(named: 'errorCode'),
+            ),
+          ).thenThrow(StateError('cleanup failed'));
+          when(
+            () => mockRealtimeService.stop(
+              stopRecorder: any(named: 'stopRecorder'),
+              outputPath: any(named: 'outputPath'),
+            ),
+          ).thenAnswer(
+            (_) async => const RealtimeStopResult(
+              transcript: 'recorded first',
+              audioFilePath: '/tmp/audio.m4a',
+            ),
+          );
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.recordRealtime();
+
+          expect(await controller.stopRealtime(), isNull);
+
+          expect(_capturedAttributionEvents(attribution), hasLength(1));
+          expect(
+            container.read(audioRecorderControllerProvider).status,
+            AudioRecorderStatus.stopped,
+          );
+        },
+      );
     });
 
     group('state model', () {

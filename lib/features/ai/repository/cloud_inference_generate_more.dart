@@ -81,6 +81,7 @@ class CloudInferenceGenerateMore {
     List<String>? speechDictionaryTerms,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
+    InferenceImpactCollector? impactCollector,
   }) {
     // For Whisper, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.whisper) {
@@ -231,6 +232,7 @@ class CloudInferenceGenerateMore {
           speechDictionaryTerms,
         ),
         maxCompletionTokens: maxCompletionTokens,
+        impactCollector: impactCollector,
       );
     }
 

@@ -40,6 +40,17 @@ class ConsumptionEvents extends Table
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
+  static const VerificationMeta _attributionIdMeta = const VerificationMeta(
+    'attributionId',
+  );
+  late final GeneratedColumn<String> attributionId = GeneratedColumn<String>(
+    'attribution_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
   static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
   late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
     'task_id',
@@ -372,6 +383,7 @@ class ConsumptionEvents extends Table
     id,
     parentId,
     createdAt,
+    attributionId,
     taskId,
     categoryId,
     entryId,
@@ -433,6 +445,15 @@ class ConsumptionEvents extends Table
       );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('attribution_id')) {
+      context.handle(
+        _attributionIdMeta,
+        attributionId.isAcceptableOrUnknown(
+          data['attribution_id']!,
+          _attributionIdMeta,
+        ),
+      );
     }
     if (data.containsKey('task_id')) {
       context.handle(
@@ -683,6 +704,10 @@ class ConsumptionEvents extends Table
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      attributionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attribution_id'],
+      ),
       taskId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}task_id'],
@@ -821,6 +846,9 @@ class ConsumptionEvent extends DataClass
   final String? parentId;
   final DateTime createdAt;
 
+  /// Logical work attribution. Nullable so schema-v1 rows remain valid.
+  final String? attributionId;
+
   /// Denormalized owners (snapshot at call time)
   final String? taskId;
   final String? categoryId;
@@ -862,6 +890,7 @@ class ConsumptionEvent extends DataClass
     required this.id,
     this.parentId,
     required this.createdAt,
+    this.attributionId,
     this.taskId,
     this.categoryId,
     this.entryId,
@@ -901,6 +930,9 @@ class ConsumptionEvent extends DataClass
       map['parent_id'] = Variable<String>(parentId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || attributionId != null) {
+      map['attribution_id'] = Variable<String>(attributionId);
+    }
     if (!nullToAbsent || taskId != null) {
       map['task_id'] = Variable<String>(taskId);
     }
@@ -993,6 +1025,9 @@ class ConsumptionEvent extends DataClass
           ? const Value.absent()
           : Value(parentId),
       createdAt: Value(createdAt),
+      attributionId: attributionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(attributionId),
       taskId: taskId == null && nullToAbsent
           ? const Value.absent()
           : Value(taskId),
@@ -1085,6 +1120,7 @@ class ConsumptionEvent extends DataClass
       id: serializer.fromJson<String>(json['id']),
       parentId: serializer.fromJson<String?>(json['parent_id']),
       createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      attributionId: serializer.fromJson<String?>(json['attribution_id']),
       taskId: serializer.fromJson<String?>(json['task_id']),
       categoryId: serializer.fromJson<String?>(json['category_id']),
       entryId: serializer.fromJson<String?>(json['entry_id']),
@@ -1126,6 +1162,7 @@ class ConsumptionEvent extends DataClass
       'id': serializer.toJson<String>(id),
       'parent_id': serializer.toJson<String?>(parentId),
       'created_at': serializer.toJson<DateTime>(createdAt),
+      'attribution_id': serializer.toJson<String?>(attributionId),
       'task_id': serializer.toJson<String?>(taskId),
       'category_id': serializer.toJson<String?>(categoryId),
       'entry_id': serializer.toJson<String?>(entryId),
@@ -1163,6 +1200,7 @@ class ConsumptionEvent extends DataClass
     String? id,
     Value<String?> parentId = const Value.absent(),
     DateTime? createdAt,
+    Value<String?> attributionId = const Value.absent(),
     Value<String?> taskId = const Value.absent(),
     Value<String?> categoryId = const Value.absent(),
     Value<String?> entryId = const Value.absent(),
@@ -1197,6 +1235,9 @@ class ConsumptionEvent extends DataClass
     id: id ?? this.id,
     parentId: parentId.present ? parentId.value : this.parentId,
     createdAt: createdAt ?? this.createdAt,
+    attributionId: attributionId.present
+        ? attributionId.value
+        : this.attributionId,
     taskId: taskId.present ? taskId.value : this.taskId,
     categoryId: categoryId.present ? categoryId.value : this.categoryId,
     entryId: entryId.present ? entryId.value : this.entryId,
@@ -1243,6 +1284,9 @@ class ConsumptionEvent extends DataClass
       id: data.id.present ? data.id.value : this.id,
       parentId: data.parentId.present ? data.parentId.value : this.parentId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      attributionId: data.attributionId.present
+          ? data.attributionId.value
+          : this.attributionId,
       taskId: data.taskId.present ? data.taskId.value : this.taskId,
       categoryId: data.categoryId.present
           ? data.categoryId.value
@@ -1318,6 +1362,7 @@ class ConsumptionEvent extends DataClass
           ..write('id: $id, ')
           ..write('parentId: $parentId, ')
           ..write('createdAt: $createdAt, ')
+          ..write('attributionId: $attributionId, ')
           ..write('taskId: $taskId, ')
           ..write('categoryId: $categoryId, ')
           ..write('entryId: $entryId, ')
@@ -1357,6 +1402,7 @@ class ConsumptionEvent extends DataClass
     id,
     parentId,
     createdAt,
+    attributionId,
     taskId,
     categoryId,
     entryId,
@@ -1395,6 +1441,7 @@ class ConsumptionEvent extends DataClass
           other.id == this.id &&
           other.parentId == this.parentId &&
           other.createdAt == this.createdAt &&
+          other.attributionId == this.attributionId &&
           other.taskId == this.taskId &&
           other.categoryId == this.categoryId &&
           other.entryId == this.entryId &&
@@ -1431,6 +1478,7 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
   final Value<String> id;
   final Value<String?> parentId;
   final Value<DateTime> createdAt;
+  final Value<String?> attributionId;
   final Value<String?> taskId;
   final Value<String?> categoryId;
   final Value<String?> entryId;
@@ -1466,6 +1514,7 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
     this.id = const Value.absent(),
     this.parentId = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.attributionId = const Value.absent(),
     this.taskId = const Value.absent(),
     this.categoryId = const Value.absent(),
     this.entryId = const Value.absent(),
@@ -1502,6 +1551,7 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
     required String id,
     this.parentId = const Value.absent(),
     required DateTime createdAt,
+    this.attributionId = const Value.absent(),
     this.taskId = const Value.absent(),
     this.categoryId = const Value.absent(),
     this.entryId = const Value.absent(),
@@ -1542,6 +1592,7 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
     Expression<String>? id,
     Expression<String>? parentId,
     Expression<DateTime>? createdAt,
+    Expression<String>? attributionId,
     Expression<String>? taskId,
     Expression<String>? categoryId,
     Expression<String>? entryId,
@@ -1578,6 +1629,7 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
       if (id != null) 'id': id,
       if (parentId != null) 'parent_id': parentId,
       if (createdAt != null) 'created_at': createdAt,
+      if (attributionId != null) 'attribution_id': attributionId,
       if (taskId != null) 'task_id': taskId,
       if (categoryId != null) 'category_id': categoryId,
       if (entryId != null) 'entry_id': entryId,
@@ -1617,6 +1669,7 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
     Value<String>? id,
     Value<String?>? parentId,
     Value<DateTime>? createdAt,
+    Value<String?>? attributionId,
     Value<String?>? taskId,
     Value<String?>? categoryId,
     Value<String?>? entryId,
@@ -1653,6 +1706,7 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
       id: id ?? this.id,
       parentId: parentId ?? this.parentId,
       createdAt: createdAt ?? this.createdAt,
+      attributionId: attributionId ?? this.attributionId,
       taskId: taskId ?? this.taskId,
       categoryId: categoryId ?? this.categoryId,
       entryId: entryId ?? this.entryId,
@@ -1698,6 +1752,9 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (attributionId.present) {
+      map['attribution_id'] = Variable<String>(attributionId.value);
     }
     if (taskId.present) {
       map['task_id'] = Variable<String>(taskId.value);
@@ -1801,6 +1858,7 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
           ..write('id: $id, ')
           ..write('parentId: $parentId, ')
           ..write('createdAt: $createdAt, ')
+          ..write('attributionId: $attributionId, ')
           ..write('taskId: $taskId, ')
           ..write('categoryId: $categoryId, ')
           ..write('entryId: $entryId, ')
@@ -1837,6 +1895,1032 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
   }
 }
 
+class AiWorkAttributions extends Table
+    with TableInfo<AiWorkAttributions, AiWorkAttribution> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  AiWorkAttributions(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY',
+  );
+  static const VerificationMeta _workTypeMeta = const VerificationMeta(
+    'workType',
+  );
+  late final GeneratedColumn<String> workType = GeneratedColumn<String>(
+    'work_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _initiatorTypeMeta = const VerificationMeta(
+    'initiatorType',
+  );
+  late final GeneratedColumn<String> initiatorType = GeneratedColumn<String>(
+    'initiator_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _initiatorIdMeta = const VerificationMeta(
+    'initiatorId',
+  );
+  late final GeneratedColumn<String> initiatorId = GeneratedColumn<String>(
+    'initiator_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _initiatorDisplayNameMeta =
+      const VerificationMeta('initiatorDisplayName');
+  late final GeneratedColumn<String> initiatorDisplayName =
+      GeneratedColumn<String>(
+        'initiator_display_name',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        $customConstraints: 'NOT NULL',
+      );
+  static const VerificationMeta _triggerTypeMeta = const VerificationMeta(
+    'triggerType',
+  );
+  late final GeneratedColumn<String> triggerType = GeneratedColumn<String>(
+    'trigger_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _parentAttributionIdMeta =
+      const VerificationMeta('parentAttributionId');
+  late final GeneratedColumn<String> parentAttributionId =
+      GeneratedColumn<String>(
+        'parent_attribution_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: '',
+      );
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
+    'task_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+    'category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _primaryOutputTypeMeta = const VerificationMeta(
+    'primaryOutputType',
+  );
+  late final GeneratedColumn<String> primaryOutputType =
+      GeneratedColumn<String>(
+        'primary_output_type',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: '',
+      );
+  static const VerificationMeta _primaryOutputIdMeta = const VerificationMeta(
+    'primaryOutputId',
+  );
+  late final GeneratedColumn<String> primaryOutputId = GeneratedColumn<String>(
+    'primary_output_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _primaryOutputSubIdMeta =
+      const VerificationMeta('primaryOutputSubId');
+  late final GeneratedColumn<String> primaryOutputSubId =
+      GeneratedColumn<String>(
+        'primary_output_sub_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: '',
+      );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
+  late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _schemaVersionMeta = const VerificationMeta(
+    'schemaVersion',
+  );
+  late final GeneratedColumn<int> schemaVersion = GeneratedColumn<int>(
+    'schema_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
+    defaultValue: const CustomExpression('1'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workType,
+    status,
+    initiatorType,
+    initiatorId,
+    initiatorDisplayName,
+    triggerType,
+    startedAt,
+    completedAt,
+    parentAttributionId,
+    taskId,
+    categoryId,
+    primaryOutputType,
+    primaryOutputId,
+    primaryOutputSubId,
+    serialized,
+    schemaVersion,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_work_attributions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiWorkAttribution> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('work_type')) {
+      context.handle(
+        _workTypeMeta,
+        workType.isAcceptableOrUnknown(data['work_type']!, _workTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_workTypeMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('initiator_type')) {
+      context.handle(
+        _initiatorTypeMeta,
+        initiatorType.isAcceptableOrUnknown(
+          data['initiator_type']!,
+          _initiatorTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_initiatorTypeMeta);
+    }
+    if (data.containsKey('initiator_id')) {
+      context.handle(
+        _initiatorIdMeta,
+        initiatorId.isAcceptableOrUnknown(
+          data['initiator_id']!,
+          _initiatorIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_initiatorIdMeta);
+    }
+    if (data.containsKey('initiator_display_name')) {
+      context.handle(
+        _initiatorDisplayNameMeta,
+        initiatorDisplayName.isAcceptableOrUnknown(
+          data['initiator_display_name']!,
+          _initiatorDisplayNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_initiatorDisplayNameMeta);
+    }
+    if (data.containsKey('trigger_type')) {
+      context.handle(
+        _triggerTypeMeta,
+        triggerType.isAcceptableOrUnknown(
+          data['trigger_type']!,
+          _triggerTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_triggerTypeMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_completedAtMeta);
+    }
+    if (data.containsKey('parent_attribution_id')) {
+      context.handle(
+        _parentAttributionIdMeta,
+        parentAttributionId.isAcceptableOrUnknown(
+          data['parent_attribution_id']!,
+          _parentAttributionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('task_id')) {
+      context.handle(
+        _taskIdMeta,
+        taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta),
+      );
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
+    if (data.containsKey('primary_output_type')) {
+      context.handle(
+        _primaryOutputTypeMeta,
+        primaryOutputType.isAcceptableOrUnknown(
+          data['primary_output_type']!,
+          _primaryOutputTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('primary_output_id')) {
+      context.handle(
+        _primaryOutputIdMeta,
+        primaryOutputId.isAcceptableOrUnknown(
+          data['primary_output_id']!,
+          _primaryOutputIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('primary_output_sub_id')) {
+      context.handle(
+        _primaryOutputSubIdMeta,
+        primaryOutputSubId.isAcceptableOrUnknown(
+          data['primary_output_sub_id']!,
+          _primaryOutputSubIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('serialized')) {
+      context.handle(
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_serializedMeta);
+    }
+    if (data.containsKey('schema_version')) {
+      context.handle(
+        _schemaVersionMeta,
+        schemaVersion.isAcceptableOrUnknown(
+          data['schema_version']!,
+          _schemaVersionMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AiWorkAttribution map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiWorkAttribution(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}work_type'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      initiatorType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}initiator_type'],
+      )!,
+      initiatorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}initiator_id'],
+      )!,
+      initiatorDisplayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}initiator_display_name'],
+      )!,
+      triggerType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}trigger_type'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      )!,
+      parentAttributionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_attribution_id'],
+      ),
+      taskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_id'],
+      ),
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_id'],
+      ),
+      primaryOutputType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}primary_output_type'],
+      ),
+      primaryOutputId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}primary_output_id'],
+      ),
+      primaryOutputSubId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}primary_output_sub_id'],
+      ),
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      schemaVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}schema_version'],
+      )!,
+    );
+  }
+
+  @override
+  AiWorkAttributions createAlias(String alias) {
+    return AiWorkAttributions(attachedDatabase, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class AiWorkAttribution extends DataClass
+    implements Insertable<AiWorkAttribution> {
+  final String id;
+  final String workType;
+  final String status;
+  final String initiatorType;
+  final String initiatorId;
+  final String initiatorDisplayName;
+  final String triggerType;
+  final DateTime startedAt;
+  final DateTime completedAt;
+  final String? parentAttributionId;
+  final String? taskId;
+  final String? categoryId;
+  final String? primaryOutputType;
+  final String? primaryOutputId;
+  final String? primaryOutputSubId;
+  final String serialized;
+  final int schemaVersion;
+  const AiWorkAttribution({
+    required this.id,
+    required this.workType,
+    required this.status,
+    required this.initiatorType,
+    required this.initiatorId,
+    required this.initiatorDisplayName,
+    required this.triggerType,
+    required this.startedAt,
+    required this.completedAt,
+    this.parentAttributionId,
+    this.taskId,
+    this.categoryId,
+    this.primaryOutputType,
+    this.primaryOutputId,
+    this.primaryOutputSubId,
+    required this.serialized,
+    required this.schemaVersion,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['work_type'] = Variable<String>(workType);
+    map['status'] = Variable<String>(status);
+    map['initiator_type'] = Variable<String>(initiatorType);
+    map['initiator_id'] = Variable<String>(initiatorId);
+    map['initiator_display_name'] = Variable<String>(initiatorDisplayName);
+    map['trigger_type'] = Variable<String>(triggerType);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['completed_at'] = Variable<DateTime>(completedAt);
+    if (!nullToAbsent || parentAttributionId != null) {
+      map['parent_attribution_id'] = Variable<String>(parentAttributionId);
+    }
+    if (!nullToAbsent || taskId != null) {
+      map['task_id'] = Variable<String>(taskId);
+    }
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<String>(categoryId);
+    }
+    if (!nullToAbsent || primaryOutputType != null) {
+      map['primary_output_type'] = Variable<String>(primaryOutputType);
+    }
+    if (!nullToAbsent || primaryOutputId != null) {
+      map['primary_output_id'] = Variable<String>(primaryOutputId);
+    }
+    if (!nullToAbsent || primaryOutputSubId != null) {
+      map['primary_output_sub_id'] = Variable<String>(primaryOutputSubId);
+    }
+    map['serialized'] = Variable<String>(serialized);
+    map['schema_version'] = Variable<int>(schemaVersion);
+    return map;
+  }
+
+  AiWorkAttributionsCompanion toCompanion(bool nullToAbsent) {
+    return AiWorkAttributionsCompanion(
+      id: Value(id),
+      workType: Value(workType),
+      status: Value(status),
+      initiatorType: Value(initiatorType),
+      initiatorId: Value(initiatorId),
+      initiatorDisplayName: Value(initiatorDisplayName),
+      triggerType: Value(triggerType),
+      startedAt: Value(startedAt),
+      completedAt: Value(completedAt),
+      parentAttributionId: parentAttributionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentAttributionId),
+      taskId: taskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskId),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      primaryOutputType: primaryOutputType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(primaryOutputType),
+      primaryOutputId: primaryOutputId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(primaryOutputId),
+      primaryOutputSubId: primaryOutputSubId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(primaryOutputSubId),
+      serialized: Value(serialized),
+      schemaVersion: Value(schemaVersion),
+    );
+  }
+
+  factory AiWorkAttribution.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiWorkAttribution(
+      id: serializer.fromJson<String>(json['id']),
+      workType: serializer.fromJson<String>(json['work_type']),
+      status: serializer.fromJson<String>(json['status']),
+      initiatorType: serializer.fromJson<String>(json['initiator_type']),
+      initiatorId: serializer.fromJson<String>(json['initiator_id']),
+      initiatorDisplayName: serializer.fromJson<String>(
+        json['initiator_display_name'],
+      ),
+      triggerType: serializer.fromJson<String>(json['trigger_type']),
+      startedAt: serializer.fromJson<DateTime>(json['started_at']),
+      completedAt: serializer.fromJson<DateTime>(json['completed_at']),
+      parentAttributionId: serializer.fromJson<String?>(
+        json['parent_attribution_id'],
+      ),
+      taskId: serializer.fromJson<String?>(json['task_id']),
+      categoryId: serializer.fromJson<String?>(json['category_id']),
+      primaryOutputType: serializer.fromJson<String?>(
+        json['primary_output_type'],
+      ),
+      primaryOutputId: serializer.fromJson<String?>(json['primary_output_id']),
+      primaryOutputSubId: serializer.fromJson<String?>(
+        json['primary_output_sub_id'],
+      ),
+      serialized: serializer.fromJson<String>(json['serialized']),
+      schemaVersion: serializer.fromJson<int>(json['schema_version']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'work_type': serializer.toJson<String>(workType),
+      'status': serializer.toJson<String>(status),
+      'initiator_type': serializer.toJson<String>(initiatorType),
+      'initiator_id': serializer.toJson<String>(initiatorId),
+      'initiator_display_name': serializer.toJson<String>(initiatorDisplayName),
+      'trigger_type': serializer.toJson<String>(triggerType),
+      'started_at': serializer.toJson<DateTime>(startedAt),
+      'completed_at': serializer.toJson<DateTime>(completedAt),
+      'parent_attribution_id': serializer.toJson<String?>(parentAttributionId),
+      'task_id': serializer.toJson<String?>(taskId),
+      'category_id': serializer.toJson<String?>(categoryId),
+      'primary_output_type': serializer.toJson<String?>(primaryOutputType),
+      'primary_output_id': serializer.toJson<String?>(primaryOutputId),
+      'primary_output_sub_id': serializer.toJson<String?>(primaryOutputSubId),
+      'serialized': serializer.toJson<String>(serialized),
+      'schema_version': serializer.toJson<int>(schemaVersion),
+    };
+  }
+
+  AiWorkAttribution copyWith({
+    String? id,
+    String? workType,
+    String? status,
+    String? initiatorType,
+    String? initiatorId,
+    String? initiatorDisplayName,
+    String? triggerType,
+    DateTime? startedAt,
+    DateTime? completedAt,
+    Value<String?> parentAttributionId = const Value.absent(),
+    Value<String?> taskId = const Value.absent(),
+    Value<String?> categoryId = const Value.absent(),
+    Value<String?> primaryOutputType = const Value.absent(),
+    Value<String?> primaryOutputId = const Value.absent(),
+    Value<String?> primaryOutputSubId = const Value.absent(),
+    String? serialized,
+    int? schemaVersion,
+  }) => AiWorkAttribution(
+    id: id ?? this.id,
+    workType: workType ?? this.workType,
+    status: status ?? this.status,
+    initiatorType: initiatorType ?? this.initiatorType,
+    initiatorId: initiatorId ?? this.initiatorId,
+    initiatorDisplayName: initiatorDisplayName ?? this.initiatorDisplayName,
+    triggerType: triggerType ?? this.triggerType,
+    startedAt: startedAt ?? this.startedAt,
+    completedAt: completedAt ?? this.completedAt,
+    parentAttributionId: parentAttributionId.present
+        ? parentAttributionId.value
+        : this.parentAttributionId,
+    taskId: taskId.present ? taskId.value : this.taskId,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    primaryOutputType: primaryOutputType.present
+        ? primaryOutputType.value
+        : this.primaryOutputType,
+    primaryOutputId: primaryOutputId.present
+        ? primaryOutputId.value
+        : this.primaryOutputId,
+    primaryOutputSubId: primaryOutputSubId.present
+        ? primaryOutputSubId.value
+        : this.primaryOutputSubId,
+    serialized: serialized ?? this.serialized,
+    schemaVersion: schemaVersion ?? this.schemaVersion,
+  );
+  AiWorkAttribution copyWithCompanion(AiWorkAttributionsCompanion data) {
+    return AiWorkAttribution(
+      id: data.id.present ? data.id.value : this.id,
+      workType: data.workType.present ? data.workType.value : this.workType,
+      status: data.status.present ? data.status.value : this.status,
+      initiatorType: data.initiatorType.present
+          ? data.initiatorType.value
+          : this.initiatorType,
+      initiatorId: data.initiatorId.present
+          ? data.initiatorId.value
+          : this.initiatorId,
+      initiatorDisplayName: data.initiatorDisplayName.present
+          ? data.initiatorDisplayName.value
+          : this.initiatorDisplayName,
+      triggerType: data.triggerType.present
+          ? data.triggerType.value
+          : this.triggerType,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+      parentAttributionId: data.parentAttributionId.present
+          ? data.parentAttributionId.value
+          : this.parentAttributionId,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      primaryOutputType: data.primaryOutputType.present
+          ? data.primaryOutputType.value
+          : this.primaryOutputType,
+      primaryOutputId: data.primaryOutputId.present
+          ? data.primaryOutputId.value
+          : this.primaryOutputId,
+      primaryOutputSubId: data.primaryOutputSubId.present
+          ? data.primaryOutputSubId.value
+          : this.primaryOutputSubId,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
+      schemaVersion: data.schemaVersion.present
+          ? data.schemaVersion.value
+          : this.schemaVersion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiWorkAttribution(')
+          ..write('id: $id, ')
+          ..write('workType: $workType, ')
+          ..write('status: $status, ')
+          ..write('initiatorType: $initiatorType, ')
+          ..write('initiatorId: $initiatorId, ')
+          ..write('initiatorDisplayName: $initiatorDisplayName, ')
+          ..write('triggerType: $triggerType, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('parentAttributionId: $parentAttributionId, ')
+          ..write('taskId: $taskId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('primaryOutputType: $primaryOutputType, ')
+          ..write('primaryOutputId: $primaryOutputId, ')
+          ..write('primaryOutputSubId: $primaryOutputSubId, ')
+          ..write('serialized: $serialized, ')
+          ..write('schemaVersion: $schemaVersion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workType,
+    status,
+    initiatorType,
+    initiatorId,
+    initiatorDisplayName,
+    triggerType,
+    startedAt,
+    completedAt,
+    parentAttributionId,
+    taskId,
+    categoryId,
+    primaryOutputType,
+    primaryOutputId,
+    primaryOutputSubId,
+    serialized,
+    schemaVersion,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiWorkAttribution &&
+          other.id == this.id &&
+          other.workType == this.workType &&
+          other.status == this.status &&
+          other.initiatorType == this.initiatorType &&
+          other.initiatorId == this.initiatorId &&
+          other.initiatorDisplayName == this.initiatorDisplayName &&
+          other.triggerType == this.triggerType &&
+          other.startedAt == this.startedAt &&
+          other.completedAt == this.completedAt &&
+          other.parentAttributionId == this.parentAttributionId &&
+          other.taskId == this.taskId &&
+          other.categoryId == this.categoryId &&
+          other.primaryOutputType == this.primaryOutputType &&
+          other.primaryOutputId == this.primaryOutputId &&
+          other.primaryOutputSubId == this.primaryOutputSubId &&
+          other.serialized == this.serialized &&
+          other.schemaVersion == this.schemaVersion);
+}
+
+class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
+  final Value<String> id;
+  final Value<String> workType;
+  final Value<String> status;
+  final Value<String> initiatorType;
+  final Value<String> initiatorId;
+  final Value<String> initiatorDisplayName;
+  final Value<String> triggerType;
+  final Value<DateTime> startedAt;
+  final Value<DateTime> completedAt;
+  final Value<String?> parentAttributionId;
+  final Value<String?> taskId;
+  final Value<String?> categoryId;
+  final Value<String?> primaryOutputType;
+  final Value<String?> primaryOutputId;
+  final Value<String?> primaryOutputSubId;
+  final Value<String> serialized;
+  final Value<int> schemaVersion;
+  final Value<int> rowid;
+  const AiWorkAttributionsCompanion({
+    this.id = const Value.absent(),
+    this.workType = const Value.absent(),
+    this.status = const Value.absent(),
+    this.initiatorType = const Value.absent(),
+    this.initiatorId = const Value.absent(),
+    this.initiatorDisplayName = const Value.absent(),
+    this.triggerType = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.parentAttributionId = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.primaryOutputType = const Value.absent(),
+    this.primaryOutputId = const Value.absent(),
+    this.primaryOutputSubId = const Value.absent(),
+    this.serialized = const Value.absent(),
+    this.schemaVersion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AiWorkAttributionsCompanion.insert({
+    required String id,
+    required String workType,
+    required String status,
+    required String initiatorType,
+    required String initiatorId,
+    required String initiatorDisplayName,
+    required String triggerType,
+    required DateTime startedAt,
+    required DateTime completedAt,
+    this.parentAttributionId = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.primaryOutputType = const Value.absent(),
+    this.primaryOutputId = const Value.absent(),
+    this.primaryOutputSubId = const Value.absent(),
+    required String serialized,
+    this.schemaVersion = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workType = Value(workType),
+       status = Value(status),
+       initiatorType = Value(initiatorType),
+       initiatorId = Value(initiatorId),
+       initiatorDisplayName = Value(initiatorDisplayName),
+       triggerType = Value(triggerType),
+       startedAt = Value(startedAt),
+       completedAt = Value(completedAt),
+       serialized = Value(serialized);
+  static Insertable<AiWorkAttribution> custom({
+    Expression<String>? id,
+    Expression<String>? workType,
+    Expression<String>? status,
+    Expression<String>? initiatorType,
+    Expression<String>? initiatorId,
+    Expression<String>? initiatorDisplayName,
+    Expression<String>? triggerType,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? completedAt,
+    Expression<String>? parentAttributionId,
+    Expression<String>? taskId,
+    Expression<String>? categoryId,
+    Expression<String>? primaryOutputType,
+    Expression<String>? primaryOutputId,
+    Expression<String>? primaryOutputSubId,
+    Expression<String>? serialized,
+    Expression<int>? schemaVersion,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workType != null) 'work_type': workType,
+      if (status != null) 'status': status,
+      if (initiatorType != null) 'initiator_type': initiatorType,
+      if (initiatorId != null) 'initiator_id': initiatorId,
+      if (initiatorDisplayName != null)
+        'initiator_display_name': initiatorDisplayName,
+      if (triggerType != null) 'trigger_type': triggerType,
+      if (startedAt != null) 'started_at': startedAt,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (parentAttributionId != null)
+        'parent_attribution_id': parentAttributionId,
+      if (taskId != null) 'task_id': taskId,
+      if (categoryId != null) 'category_id': categoryId,
+      if (primaryOutputType != null) 'primary_output_type': primaryOutputType,
+      if (primaryOutputId != null) 'primary_output_id': primaryOutputId,
+      if (primaryOutputSubId != null)
+        'primary_output_sub_id': primaryOutputSubId,
+      if (serialized != null) 'serialized': serialized,
+      if (schemaVersion != null) 'schema_version': schemaVersion,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AiWorkAttributionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workType,
+    Value<String>? status,
+    Value<String>? initiatorType,
+    Value<String>? initiatorId,
+    Value<String>? initiatorDisplayName,
+    Value<String>? triggerType,
+    Value<DateTime>? startedAt,
+    Value<DateTime>? completedAt,
+    Value<String?>? parentAttributionId,
+    Value<String?>? taskId,
+    Value<String?>? categoryId,
+    Value<String?>? primaryOutputType,
+    Value<String?>? primaryOutputId,
+    Value<String?>? primaryOutputSubId,
+    Value<String>? serialized,
+    Value<int>? schemaVersion,
+    Value<int>? rowid,
+  }) {
+    return AiWorkAttributionsCompanion(
+      id: id ?? this.id,
+      workType: workType ?? this.workType,
+      status: status ?? this.status,
+      initiatorType: initiatorType ?? this.initiatorType,
+      initiatorId: initiatorId ?? this.initiatorId,
+      initiatorDisplayName: initiatorDisplayName ?? this.initiatorDisplayName,
+      triggerType: triggerType ?? this.triggerType,
+      startedAt: startedAt ?? this.startedAt,
+      completedAt: completedAt ?? this.completedAt,
+      parentAttributionId: parentAttributionId ?? this.parentAttributionId,
+      taskId: taskId ?? this.taskId,
+      categoryId: categoryId ?? this.categoryId,
+      primaryOutputType: primaryOutputType ?? this.primaryOutputType,
+      primaryOutputId: primaryOutputId ?? this.primaryOutputId,
+      primaryOutputSubId: primaryOutputSubId ?? this.primaryOutputSubId,
+      serialized: serialized ?? this.serialized,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workType.present) {
+      map['work_type'] = Variable<String>(workType.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (initiatorType.present) {
+      map['initiator_type'] = Variable<String>(initiatorType.value);
+    }
+    if (initiatorId.present) {
+      map['initiator_id'] = Variable<String>(initiatorId.value);
+    }
+    if (initiatorDisplayName.present) {
+      map['initiator_display_name'] = Variable<String>(
+        initiatorDisplayName.value,
+      );
+    }
+    if (triggerType.present) {
+      map['trigger_type'] = Variable<String>(triggerType.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (parentAttributionId.present) {
+      map['parent_attribution_id'] = Variable<String>(
+        parentAttributionId.value,
+      );
+    }
+    if (taskId.present) {
+      map['task_id'] = Variable<String>(taskId.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (primaryOutputType.present) {
+      map['primary_output_type'] = Variable<String>(primaryOutputType.value);
+    }
+    if (primaryOutputId.present) {
+      map['primary_output_id'] = Variable<String>(primaryOutputId.value);
+    }
+    if (primaryOutputSubId.present) {
+      map['primary_output_sub_id'] = Variable<String>(primaryOutputSubId.value);
+    }
+    if (serialized.present) {
+      map['serialized'] = Variable<String>(serialized.value);
+    }
+    if (schemaVersion.present) {
+      map['schema_version'] = Variable<int>(schemaVersion.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiWorkAttributionsCompanion(')
+          ..write('id: $id, ')
+          ..write('workType: $workType, ')
+          ..write('status: $status, ')
+          ..write('initiatorType: $initiatorType, ')
+          ..write('initiatorId: $initiatorId, ')
+          ..write('initiatorDisplayName: $initiatorDisplayName, ')
+          ..write('triggerType: $triggerType, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('parentAttributionId: $parentAttributionId, ')
+          ..write('taskId: $taskId, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('primaryOutputType: $primaryOutputType, ')
+          ..write('primaryOutputId: $primaryOutputId, ')
+          ..write('primaryOutputSubId: $primaryOutputSubId, ')
+          ..write('serialized: $serialized, ')
+          ..write('schemaVersion: $schemaVersion, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ConsumptionDatabase extends GeneratedDatabase {
   _$ConsumptionDatabase(QueryExecutor e) : super(e);
   _$ConsumptionDatabase.connect(DatabaseConnection c) : super.connect(c);
@@ -1853,6 +2937,27 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
   late final Index idxConsumptionCreated = Index(
     'idx_consumption_created',
     'CREATE INDEX idx_consumption_created ON consumption_events (created_at)',
+  );
+  late final Index idxConsumptionAttribution = Index(
+    'idx_consumption_attribution',
+    'CREATE INDEX idx_consumption_attribution ON consumption_events (attribution_id, created_at) WHERE attribution_id IS NOT NULL',
+  );
+  late final AiWorkAttributions aiWorkAttributions = AiWorkAttributions(this);
+  late final Index idxAttributionOutput = Index(
+    'idx_attribution_output',
+    'CREATE INDEX idx_attribution_output ON ai_work_attributions (primary_output_type, primary_output_id, primary_output_sub_id)',
+  );
+  late final Index idxAttributionTaskCreated = Index(
+    'idx_attribution_task_created',
+    'CREATE INDEX idx_attribution_task_created ON ai_work_attributions (task_id, completed_at) WHERE task_id IS NOT NULL',
+  );
+  late final Index idxAttributionActorCreated = Index(
+    'idx_attribution_actor_created',
+    'CREATE INDEX idx_attribution_actor_created ON ai_work_attributions (initiator_id, completed_at)',
+  );
+  late final Index idxAttributionTypeCreated = Index(
+    'idx_attribution_type_created',
+    'CREATE INDEX idx_attribution_type_created ON ai_work_attributions (work_type, completed_at)',
   );
   Selectable<ConsumptionEvent> getConsumptionEventById(String id) {
     return customSelect(
@@ -1909,6 +3014,12 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
     idxConsumptionTaskCreated,
     idxConsumptionCategoryCreated,
     idxConsumptionCreated,
+    idxConsumptionAttribution,
+    aiWorkAttributions,
+    idxAttributionOutput,
+    idxAttributionTaskCreated,
+    idxAttributionActorCreated,
+    idxAttributionTypeCreated,
   ];
 }
 
@@ -1917,6 +3028,7 @@ typedef $ConsumptionEventsCreateCompanionBuilder =
       required String id,
       Value<String?> parentId,
       required DateTime createdAt,
+      Value<String?> attributionId,
       Value<String?> taskId,
       Value<String?> categoryId,
       Value<String?> entryId,
@@ -1954,6 +3066,7 @@ typedef $ConsumptionEventsUpdateCompanionBuilder =
       Value<String> id,
       Value<String?> parentId,
       Value<DateTime> createdAt,
+      Value<String?> attributionId,
       Value<String?> taskId,
       Value<String?> categoryId,
       Value<String?> entryId,
@@ -2008,6 +3121,11 @@ class $ConsumptionEventsFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get attributionId => $composableBuilder(
+    column: $table.attributionId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2186,6 +3304,11 @@ class $ConsumptionEventsOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get attributionId => $composableBuilder(
+    column: $table.attributionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get taskId => $composableBuilder(
     column: $table.taskId,
     builder: (column) => ColumnOrderings(column),
@@ -2355,6 +3478,11 @@ class $ConsumptionEventsAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
+  GeneratedColumn<String> get attributionId => $composableBuilder(
+    column: $table.attributionId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get taskId =>
       $composableBuilder(column: $table.taskId, builder: (column) => column);
 
@@ -2522,6 +3650,7 @@ class $ConsumptionEventsTableManager
                 Value<String> id = const Value.absent(),
                 Value<String?> parentId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> attributionId = const Value.absent(),
                 Value<String?> taskId = const Value.absent(),
                 Value<String?> categoryId = const Value.absent(),
                 Value<String?> entryId = const Value.absent(),
@@ -2557,6 +3686,7 @@ class $ConsumptionEventsTableManager
                 id: id,
                 parentId: parentId,
                 createdAt: createdAt,
+                attributionId: attributionId,
                 taskId: taskId,
                 categoryId: categoryId,
                 entryId: entryId,
@@ -2594,6 +3724,7 @@ class $ConsumptionEventsTableManager
                 required String id,
                 Value<String?> parentId = const Value.absent(),
                 required DateTime createdAt,
+                Value<String?> attributionId = const Value.absent(),
                 Value<String?> taskId = const Value.absent(),
                 Value<String?> categoryId = const Value.absent(),
                 Value<String?> entryId = const Value.absent(),
@@ -2629,6 +3760,7 @@ class $ConsumptionEventsTableManager
                 id: id,
                 parentId: parentId,
                 createdAt: createdAt,
+                attributionId: attributionId,
                 taskId: taskId,
                 categoryId: categoryId,
                 entryId: entryId,
@@ -2690,12 +3822,476 @@ typedef $ConsumptionEventsProcessedTableManager =
       ConsumptionEvent,
       PrefetchHooks Function()
     >;
+typedef $AiWorkAttributionsCreateCompanionBuilder =
+    AiWorkAttributionsCompanion Function({
+      required String id,
+      required String workType,
+      required String status,
+      required String initiatorType,
+      required String initiatorId,
+      required String initiatorDisplayName,
+      required String triggerType,
+      required DateTime startedAt,
+      required DateTime completedAt,
+      Value<String?> parentAttributionId,
+      Value<String?> taskId,
+      Value<String?> categoryId,
+      Value<String?> primaryOutputType,
+      Value<String?> primaryOutputId,
+      Value<String?> primaryOutputSubId,
+      required String serialized,
+      Value<int> schemaVersion,
+      Value<int> rowid,
+    });
+typedef $AiWorkAttributionsUpdateCompanionBuilder =
+    AiWorkAttributionsCompanion Function({
+      Value<String> id,
+      Value<String> workType,
+      Value<String> status,
+      Value<String> initiatorType,
+      Value<String> initiatorId,
+      Value<String> initiatorDisplayName,
+      Value<String> triggerType,
+      Value<DateTime> startedAt,
+      Value<DateTime> completedAt,
+      Value<String?> parentAttributionId,
+      Value<String?> taskId,
+      Value<String?> categoryId,
+      Value<String?> primaryOutputType,
+      Value<String?> primaryOutputId,
+      Value<String?> primaryOutputSubId,
+      Value<String> serialized,
+      Value<int> schemaVersion,
+      Value<int> rowid,
+    });
+
+class $AiWorkAttributionsFilterComposer
+    extends Composer<_$ConsumptionDatabase, AiWorkAttributions> {
+  $AiWorkAttributionsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workType => $composableBuilder(
+    column: $table.workType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get initiatorType => $composableBuilder(
+    column: $table.initiatorType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get initiatorId => $composableBuilder(
+    column: $table.initiatorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get initiatorDisplayName => $composableBuilder(
+    column: $table.initiatorDisplayName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get triggerType => $composableBuilder(
+    column: $table.triggerType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentAttributionId => $composableBuilder(
+    column: $table.parentAttributionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get primaryOutputType => $composableBuilder(
+    column: $table.primaryOutputType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get primaryOutputId => $composableBuilder(
+    column: $table.primaryOutputId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get primaryOutputSubId => $composableBuilder(
+    column: $table.primaryOutputSubId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get schemaVersion => $composableBuilder(
+    column: $table.schemaVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $AiWorkAttributionsOrderingComposer
+    extends Composer<_$ConsumptionDatabase, AiWorkAttributions> {
+  $AiWorkAttributionsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workType => $composableBuilder(
+    column: $table.workType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get initiatorType => $composableBuilder(
+    column: $table.initiatorType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get initiatorId => $composableBuilder(
+    column: $table.initiatorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get initiatorDisplayName => $composableBuilder(
+    column: $table.initiatorDisplayName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get triggerType => $composableBuilder(
+    column: $table.triggerType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parentAttributionId => $composableBuilder(
+    column: $table.parentAttributionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get primaryOutputType => $composableBuilder(
+    column: $table.primaryOutputType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get primaryOutputId => $composableBuilder(
+    column: $table.primaryOutputId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get primaryOutputSubId => $composableBuilder(
+    column: $table.primaryOutputSubId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get schemaVersion => $composableBuilder(
+    column: $table.schemaVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $AiWorkAttributionsAnnotationComposer
+    extends Composer<_$ConsumptionDatabase, AiWorkAttributions> {
+  $AiWorkAttributionsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workType =>
+      $composableBuilder(column: $table.workType, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get initiatorType => $composableBuilder(
+    column: $table.initiatorType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get initiatorId => $composableBuilder(
+    column: $table.initiatorId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get initiatorDisplayName => $composableBuilder(
+    column: $table.initiatorDisplayName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get triggerType => $composableBuilder(
+    column: $table.triggerType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get parentAttributionId => $composableBuilder(
+    column: $table.parentAttributionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get taskId =>
+      $composableBuilder(column: $table.taskId, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get primaryOutputType => $composableBuilder(
+    column: $table.primaryOutputType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get primaryOutputId => $composableBuilder(
+    column: $table.primaryOutputId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get primaryOutputSubId => $composableBuilder(
+    column: $table.primaryOutputSubId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get schemaVersion => $composableBuilder(
+    column: $table.schemaVersion,
+    builder: (column) => column,
+  );
+}
+
+class $AiWorkAttributionsTableManager
+    extends
+        RootTableManager<
+          _$ConsumptionDatabase,
+          AiWorkAttributions,
+          AiWorkAttribution,
+          $AiWorkAttributionsFilterComposer,
+          $AiWorkAttributionsOrderingComposer,
+          $AiWorkAttributionsAnnotationComposer,
+          $AiWorkAttributionsCreateCompanionBuilder,
+          $AiWorkAttributionsUpdateCompanionBuilder,
+          (
+            AiWorkAttribution,
+            BaseReferences<
+              _$ConsumptionDatabase,
+              AiWorkAttributions,
+              AiWorkAttribution
+            >,
+          ),
+          AiWorkAttribution,
+          PrefetchHooks Function()
+        > {
+  $AiWorkAttributionsTableManager(
+    _$ConsumptionDatabase db,
+    AiWorkAttributions table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $AiWorkAttributionsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $AiWorkAttributionsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $AiWorkAttributionsAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workType = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> initiatorType = const Value.absent(),
+                Value<String> initiatorId = const Value.absent(),
+                Value<String> initiatorDisplayName = const Value.absent(),
+                Value<String> triggerType = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime> completedAt = const Value.absent(),
+                Value<String?> parentAttributionId = const Value.absent(),
+                Value<String?> taskId = const Value.absent(),
+                Value<String?> categoryId = const Value.absent(),
+                Value<String?> primaryOutputType = const Value.absent(),
+                Value<String?> primaryOutputId = const Value.absent(),
+                Value<String?> primaryOutputSubId = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> schemaVersion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiWorkAttributionsCompanion(
+                id: id,
+                workType: workType,
+                status: status,
+                initiatorType: initiatorType,
+                initiatorId: initiatorId,
+                initiatorDisplayName: initiatorDisplayName,
+                triggerType: triggerType,
+                startedAt: startedAt,
+                completedAt: completedAt,
+                parentAttributionId: parentAttributionId,
+                taskId: taskId,
+                categoryId: categoryId,
+                primaryOutputType: primaryOutputType,
+                primaryOutputId: primaryOutputId,
+                primaryOutputSubId: primaryOutputSubId,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workType,
+                required String status,
+                required String initiatorType,
+                required String initiatorId,
+                required String initiatorDisplayName,
+                required String triggerType,
+                required DateTime startedAt,
+                required DateTime completedAt,
+                Value<String?> parentAttributionId = const Value.absent(),
+                Value<String?> taskId = const Value.absent(),
+                Value<String?> categoryId = const Value.absent(),
+                Value<String?> primaryOutputType = const Value.absent(),
+                Value<String?> primaryOutputId = const Value.absent(),
+                Value<String?> primaryOutputSubId = const Value.absent(),
+                required String serialized,
+                Value<int> schemaVersion = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiWorkAttributionsCompanion.insert(
+                id: id,
+                workType: workType,
+                status: status,
+                initiatorType: initiatorType,
+                initiatorId: initiatorId,
+                initiatorDisplayName: initiatorDisplayName,
+                triggerType: triggerType,
+                startedAt: startedAt,
+                completedAt: completedAt,
+                parentAttributionId: parentAttributionId,
+                taskId: taskId,
+                categoryId: categoryId,
+                primaryOutputType: primaryOutputType,
+                primaryOutputId: primaryOutputId,
+                primaryOutputSubId: primaryOutputSubId,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $AiWorkAttributionsProcessedTableManager =
+    ProcessedTableManager<
+      _$ConsumptionDatabase,
+      AiWorkAttributions,
+      AiWorkAttribution,
+      $AiWorkAttributionsFilterComposer,
+      $AiWorkAttributionsOrderingComposer,
+      $AiWorkAttributionsAnnotationComposer,
+      $AiWorkAttributionsCreateCompanionBuilder,
+      $AiWorkAttributionsUpdateCompanionBuilder,
+      (
+        AiWorkAttribution,
+        BaseReferences<
+          _$ConsumptionDatabase,
+          AiWorkAttributions,
+          AiWorkAttribution
+        >,
+      ),
+      AiWorkAttribution,
+      PrefetchHooks Function()
+    >;
 
 class $ConsumptionDatabaseManager {
   final _$ConsumptionDatabase _db;
   $ConsumptionDatabaseManager(this._db);
   $ConsumptionEventsTableManager get consumptionEvents =>
       $ConsumptionEventsTableManager(_db, _db.consumptionEvents);
+  $AiWorkAttributionsTableManager get aiWorkAttributions =>
+      $AiWorkAttributionsTableManager(_db, _db.aiWorkAttributions);
 }
 
 class SumConsumptionByTaskResult {

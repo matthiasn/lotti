@@ -6,7 +6,7 @@ import 'package:meta/meta.dart';
 ///
 /// Value type with structural equality so Riverpod providers can short-circuit
 /// unchanged rebuilds. Token sums are `int`; cost/energy/carbon/water are
-/// `double` in the units Melious delivers (credits ≈ EUR, kWh, gCO₂, litres).
+/// `double` in the units Melious delivers (credits, kWh, gCO₂, litres).
 ///
 /// [callCount] is the total number of calls attributed to the owner;
 /// [impactCallCount] is how many of those actually reported environmental

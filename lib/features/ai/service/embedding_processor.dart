@@ -1,12 +1,18 @@
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/get_it.dart';
 
 /// Callback that resolves a list of label IDs to their display names.
 ///
@@ -196,24 +202,87 @@ class EmbeddingProcessor {
     String subtype = '',
   }) async {
     final chunks = TextChunker.chunk(text);
-
-    // Phase 1: Generate all embeddings (network calls that can fail).
-    final generated = <Float32List>[];
-    for (final chunk in chunks) {
-      generated.add(
-        await embeddingRepository.embed(input: chunk, baseUrl: baseUrl),
-      );
-    }
-
-    await embeddingStore.replaceEntityEmbeddings(
-      entityId: entityId,
-      entityType: entityType,
-      modelId: ollamaEmbedDefaultModel,
-      contentHash: contentHash,
-      embeddings: generated,
-      categoryId: categoryId,
-      taskId: taskId,
-      subtype: subtype,
+    final capture = getIt.isRegistered<AiInteractionCapture>()
+        ? getIt<AiInteractionCapture>()
+        : null;
+    final output = AiArtifactReference(
+      type: AiArtifactType.embeddingVector,
+      id: entityId,
+      subId: contentHash,
     );
+    final attributionSession = await capture?.beginSession(
+      workType: AiWorkType.embeddingIndexing,
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
+      automationId: 'automation:embedding-indexer',
+      automationDisplayName: 'Embedding indexer',
+      intendedOutputs: [output],
+      taskId: taskId.isEmpty ? null : taskId,
+      categoryId: categoryId.isEmpty ? null : categoryId,
+    );
+    var completionStarted = false;
+
+    try {
+      // Phase 1: Generate all embeddings (network calls that can fail).
+      final generated = <Float32List>[];
+      for (final chunk in chunks) {
+        Future<Float32List> invoke() => embeddingRepository.embed(
+          input: chunk,
+          baseUrl: baseUrl,
+        );
+        final embedding = capture == null
+            ? await invoke()
+            : await capture.captureUnary(
+                workType: AiWorkType.embeddingIndexing,
+                interactionKind: AiInteractionKind.embedding,
+                responseType: AiConsumptionResponseType.embeddingIndexing,
+                providerType: InferenceProviderType.ollama,
+                modelId: ollamaEmbedDefaultModel,
+                requestText: chunk,
+                invoke: invoke,
+                responseText: (value) =>
+                    sha256.convert(value.buffer.asUint8List()).toString(),
+                interactionContext: AiCapturedContext(
+                  entryId: entityId,
+                ),
+                existingSession: attributionSession,
+                terminalizeSuccess: false,
+                terminalizeFailure: false,
+                triggerType: AiTriggerType.automatic,
+                automationId: 'automation:embedding-indexer',
+                automationDisplayName: 'Embedding indexer',
+                taskId: taskId.isEmpty ? null : taskId,
+                categoryId: categoryId.isEmpty ? null : categoryId,
+              );
+        generated.add(embedding);
+      }
+
+      await embeddingStore.replaceEntityEmbeddings(
+        entityId: entityId,
+        entityType: entityType,
+        modelId: ollamaEmbedDefaultModel,
+        contentHash: contentHash,
+        embeddings: generated,
+        categoryId: categoryId,
+        taskId: taskId,
+        subtype: subtype,
+      );
+      if (attributionSession != null) {
+        completionStarted = true;
+        await capture!.completeSession(
+          session: attributionSession,
+          outputs: [output],
+        );
+      }
+    } on Object catch (error) {
+      if (attributionSession != null && !completionStarted) {
+        await capture!.completeSession(
+          session: attributionSession,
+          outputs: const [],
+          status: AiWorkStatus.failed,
+          errorCode: error.runtimeType.toString(),
+        );
+      }
+      rethrow;
+    }
   }
 }

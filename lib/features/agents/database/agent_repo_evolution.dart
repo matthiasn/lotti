@@ -151,6 +151,25 @@ class AgentRepoEvolution {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
+  /// Fetch active agent entities in stable ID order for bounded maintenance.
+  Future<List<AgentDomainEntity>> getEntitiesPage({
+    required int limit,
+    String? afterId,
+  }) async {
+    final query = _db.select(_db.agentEntities)
+      ..where(
+        (row) =>
+            row.deletedAt.isNull() &
+            (afterId == null
+                ? const Constant(true)
+                : row.id.isBiggerThanValue(afterId)),
+      )
+      ..orderBy([(row) => OrderingTerm.asc(row.id)])
+      ..limit(limit);
+    final rows = await query.get();
+    return rows.map(AgentDbConversions.fromEntityRow).toList();
+  }
+
   /// Fetches agent entities (including soft-deleted) updated in the
   /// half-open interval [start, end), paginated.
   Future<List<AgentDomainEntity>> getEntitiesInInterval({

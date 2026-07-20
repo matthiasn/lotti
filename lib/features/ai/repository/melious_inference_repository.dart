@@ -521,7 +521,12 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         content: content is String ? content : '',
         toolCalls: _parseToolCalls(messageMap['tool_calls']),
         usage: parseCompletionUsage(decoded['usage']),
-        impact: MeliousCallImpact.fromResponseJson(decoded),
+        impact: MeliousCallImpact.fromResponseJson(
+          decoded,
+          costCreditsDecimal: MeliousCallImpact.costDecimalFromResponseBody(
+            response.body,
+          ),
+        ),
       );
     } on MeliousInferenceException {
       rethrow;
@@ -668,6 +673,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     required String prompt,
     int? maxCompletionTokens,
     Duration timeout = temporaryMp3ChatAudioTimeout,
+    InferenceImpactCollector? impactCollector,
   }) => transcribeTemporaryMp3ChatAudio(
     httpClient: httpClient,
     provider: const TemporaryMp3ChatAudioProvider(
@@ -688,6 +694,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     temporaryFileReader: _temporaryFileReader,
     temporaryFileDeleter: _temporaryFileDeleter,
     clockSource: _clock,
+    impactCollector: impactCollector,
   );
 
   /// Generates an image through Melious' `/images/generations` endpoint.
@@ -778,7 +785,12 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       }
 
       if (impactCollector != null) {
-        final impact = MeliousCallImpact.fromResponseJson(decoded);
+        final impact = MeliousCallImpact.fromResponseJson(
+          decoded,
+          costCreditsDecimal: MeliousCallImpact.costDecimalFromResponseBody(
+            response.body,
+          ),
+        );
         if (impact.hasData) impactCollector.impact = impact;
       }
 

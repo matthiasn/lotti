@@ -26,7 +26,6 @@ import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -41,6 +40,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 enum _GeneratedPromptStreamPartKind { text, whitespace, empty }
 
@@ -187,23 +187,20 @@ void _stubLoggingExceptionFor(MockDomainLogger logger) {
   ).thenReturn(null);
 }
 
-/// Registers a stubbed [MockAiConsumptionRecorder] in getIt for one test.
-/// Guards against a pre-existing registration and unregisters via
-/// [addTearDown] so the recorder never leaks into other tests.
-MockAiConsumptionRecorder _registerConsumptionRecorder() {
-  final recorder = MockAiConsumptionRecorder();
-  when(() => recorder.record(any())).thenAnswer((_) async {});
-  if (getIt.isRegistered<AiConsumptionRecorder>()) {
-    getIt.unregister<AiConsumptionRecorder>();
-  }
-  getIt.registerSingleton<AiConsumptionRecorder>(recorder);
-  addTearDown(() {
-    if (getIt.isRegistered<AiConsumptionRecorder>()) {
-      getIt.unregister<AiConsumptionRecorder>();
-    }
-  });
-  return recorder;
+AiInteractionCaptureTestBench _registerInteractionCapture() {
+  final bench = AiInteractionCaptureTestBench.create()..register();
+  addTearDown(bench.unregister);
+  return bench;
 }
+
+List<AiConsumptionEvent> _capturedEvents(
+  AiInteractionCaptureTestBench bench,
+) => verify(
+  () => bench.service.recordInteraction(
+    attributionId: any(named: 'attributionId'),
+    event: captureAny(named: 'event'),
+  ),
+).captured.cast<AiConsumptionEvent>();
 
 /// Stubs the [MockDomainLogger.log] sink for event-path code. Shared by the
 /// file-level tests and the [_GeneratedSkillRunnerBench].
@@ -519,6 +516,21 @@ void main() {
     );
   }
 
+  AiResponseEntry makePersistedResponse(Invocation invocation) {
+    final start = invocation.namedArguments[#start] as DateTime;
+    return AiResponseEntry(
+      meta: Metadata(
+        id: invocation.namedArguments[#id] as String? ?? 'ai-response-1',
+        createdAt: start,
+        updatedAt: start,
+        dateFrom: start,
+        dateTo: start,
+        categoryId: invocation.namedArguments[#categoryId] as String?,
+      ),
+      data: invocation.namedArguments[#data] as AiResponseData,
+    );
+  }
+
   void stubLoggingException() => _stubLoggingExceptionFor(mockLoggingService);
 
   void stubLoggingEvent() => _stubLoggingEventFor(mockLoggingService);
@@ -814,7 +826,7 @@ void main() {
         'records a consumption event with tokens from the response usage '
         'and no environmental impact (transcription endpoint reports none)',
         () async {
-          final recorder = _registerConsumptionRecorder();
+          final attribution = _registerInteractionCapture();
           final audioEntity = makeAudioEntity(categoryId: 'cat-audio');
           await createStubAudioFile();
 
@@ -867,9 +879,7 @@ void main() {
             automationResult: makeTranscriptionResult(),
           );
 
-          final event =
-              verify(() => recorder.record(captureAny())).captured.single
-                  as AiConsumptionEvent;
+          final event = _capturedEvents(attribution).single;
           expect(event.entryId, 'audio-1');
           expect(event.taskId, isNull);
           expect(event.categoryId, 'cat-audio');
@@ -1662,6 +1672,67 @@ void main() {
         );
       });
 
+      test('persists attributed image analysis as an AI response', () async {
+        final attribution = _registerInteractionCapture();
+        final imageEntity = makeImageEntity();
+        await createStubImageFile();
+        when(
+          () => mockAiInputRepo.getEntity('img-1'),
+        ).thenAnswer((_) async => imageEntity);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithImages(
+            any(),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.value(makeStreamChunk('Attributed sunset analysis')),
+        );
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            id: any(named: 'id'),
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((invocation) async => makePersistedResponse(invocation));
+        stubLoggingEvent();
+
+        await runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: makeImageAnalysisResult(),
+        );
+
+        final data =
+            verify(
+                  () => mockAiInputRepo.createAiResponseEntry(
+                    id: any(named: 'id'),
+                    data: captureAny(named: 'data'),
+                    start: any(named: 'start'),
+                    linkedId: 'img-1',
+                    categoryId: any(named: 'categoryId'),
+                  ),
+                ).captured.single
+                as AiResponseData;
+        expect(data.response, 'Attributed sunset analysis');
+        expect(data.skillId, testImageSkill.id);
+        expect(data.type, AiResponseType.imageAnalysis);
+        expect(data.aiAttribution, isNotNull);
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        expect(_capturedEvents(attribution), hasLength(1));
+        verify(() => attribution.service.finalize(any())).called(1);
+      });
+
       test('appends analysis to existing entryText', () async {
         final imageEntity =
             JournalEntity.journalImage(
@@ -2296,6 +2367,67 @@ void main() {
           // Coding prompt links to the parent task, not the source text entry.
           expect(responseCaptured[1], 'task-text');
           expect(responseCaptured[2], 'cat-text');
+        },
+      );
+
+      test(
+        'persists generated prompts with their attribution carrier',
+        () async {
+          final attribution = _registerInteractionCapture();
+          final textEntry = makeTextEntry(
+            id: 'text-attributed',
+            markdown: 'Implement the attributed change.',
+            categoryId: 'cat-attributed',
+          );
+          when(
+            () => mockAiInputRepo.getEntity('text-attributed'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(
+              makeStreamChunk('## Summary\nChange\n\n## Prompt\nImplement it'),
+            ),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((invocation) async => makePersistedResponse(invocation));
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'text-attributed',
+            automationResult: makePromptGenerationResult(),
+          );
+
+          final data =
+              verify(
+                    () => mockAiInputRepo.createAiResponseEntry(
+                      id: any(named: 'id'),
+                      data: captureAny(named: 'data'),
+                      start: any(named: 'start'),
+                      linkedId: 'text-attributed',
+                      categoryId: 'cat-attributed',
+                    ),
+                  ).captured.single
+                  as AiResponseData;
+          expect(data.aiAttribution, isNotNull);
+          expect(_capturedEvents(attribution), hasLength(1));
+          verify(() => attribution.service.finalize(any())).called(1);
         },
       );
 
@@ -3081,7 +3213,9 @@ void main() {
                   linkedId: any(named: 'linkedId'),
                   categoryId: any(named: 'categoryId'),
                 ),
-              ).thenAnswer((_) async => null);
+              ).thenAnswer(
+                (invocation) async => makePersistedResponse(invocation),
+              );
               stubLocalLoggingEvent();
             } else {
               stubLocalLoggingException();
@@ -3244,7 +3378,9 @@ void main() {
                   linkedId: any(named: 'linkedId'),
                   categoryId: any(named: 'categoryId'),
                 ),
-              ).thenAnswer((_) async => null);
+              ).thenAnswer(
+                (invocation) async => makePersistedResponse(invocation),
+              );
               bench.stubLoggingEvent();
             } else {
               bench.stubLoggingException();
@@ -4230,7 +4366,7 @@ void main() {
         'linked task disappeared mid-flight (recording happens before the '
         'task-existence check)',
         () async {
-          final recorder = _registerConsumptionRecorder();
+          final attribution = _registerInteractionCapture();
           stubImageGenPipeline('img-gone', 'task-gone');
           when(
             () => mockCloudRepo.generateImage(
@@ -4289,9 +4425,7 @@ void main() {
           // …but the billed call was already recorded, without a category
           // (there is no task left to read it from) and without token counts
           // (image generation is a single request, not a token stream).
-          final event =
-              verify(() => recorder.record(captureAny())).captured.single
-                  as AiConsumptionEvent;
+          final event = _capturedEvents(attribution).single;
           expect(event.entryId, 'img-gone');
           expect(event.taskId, 'task-gone');
           expect(event.categoryId, isNull);

@@ -695,6 +695,7 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
     required String baseUrl,
     required String apiKey,
     required String prompt,
+    InferenceImpactCollector? impactCollector,
     int? maxCompletionTokens,
     Duration timeout = const Duration(minutes: 15),
   }) {
@@ -813,6 +814,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     required String baseUrl,
     required String apiKey,
     required String prompt,
+    InferenceImpactCollector? impactCollector,
     int? maxCompletionTokens,
     Duration timeout = const Duration(seconds: 60),
   }) {

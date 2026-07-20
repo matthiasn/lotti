@@ -149,11 +149,13 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     DateTime? dateFrom,
     String? linkedId,
     String? categoryId,
+    String? id,
   }) => logic.createAiResponseEntryImpl(
     data: data,
     dateFrom: dateFrom,
     linkedId: linkedId,
     categoryId: categoryId,
+    id: id,
   );
 
   Future<JournalEvent?> createEventEntry({

@@ -2069,6 +2069,221 @@ abstract class AppLocalizations {
   /// **'Generate…'**
   String get aiAssistantTitle;
 
+  /// No description provided for @aiAttributionArtifactOutput.
+  ///
+  /// In en, this message translates to:
+  /// **'Output'**
+  String get aiAttributionArtifactOutput;
+
+  /// No description provided for @aiAttributionCompletedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed at'**
+  String get aiAttributionCompletedAt;
+
+  /// No description provided for @aiAttributionCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get aiAttributionCost;
+
+  /// No description provided for @aiAttributionCostUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost unknown'**
+  String get aiAttributionCostUnknown;
+
+  /// No description provided for @aiAttributionCreator.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator'**
+  String get aiAttributionCreator;
+
+  /// No description provided for @aiAttributionDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get aiAttributionDiagnostics;
+
+  /// No description provided for @aiAttributionDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get aiAttributionDuration;
+
+  /// No description provided for @aiAttributionInteractions.
+  ///
+  /// In en, this message translates to:
+  /// **'Interactions'**
+  String get aiAttributionInteractions;
+
+  /// No description provided for @aiAttributionLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading AI attribution…'**
+  String get aiAttributionLoading;
+
+  /// No description provided for @aiAttributionNoInteractionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'No interaction details are available.'**
+  String get aiAttributionNoInteractionDetails;
+
+  /// No description provided for @aiAttributionRequestEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Request evidence'**
+  String get aiAttributionRequestEvidence;
+
+  /// No description provided for @aiAttributionResponseEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Response evidence'**
+  String get aiAttributionResponseEvidence;
+
+  /// No description provided for @aiAttributionSecondary.
+  ///
+  /// In en, this message translates to:
+  /// **'{model} · {time} · {callCount, plural, =0{no calls} =1{1 call} other{{callCount} calls}}'**
+  String aiAttributionSecondary(String model, String time, int callCount);
+
+  /// No description provided for @aiAttributionStartedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Started at'**
+  String get aiAttributionStartedAt;
+
+  /// No description provided for @aiAttributionStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get aiAttributionStatus;
+
+  /// No description provided for @aiAttributionStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get aiAttributionStatusCancelled;
+
+  /// No description provided for @aiAttributionStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get aiAttributionStatusFailed;
+
+  /// No description provided for @aiAttributionStatusPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get aiAttributionStatusPartial;
+
+  /// No description provided for @aiAttributionStatusSucceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get aiAttributionStatusSucceeded;
+
+  /// No description provided for @aiAttributionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{actor} · {trigger} · {status}'**
+  String aiAttributionSummary(String actor, String trigger, String status);
+
+  /// No description provided for @aiAttributionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI attribution'**
+  String get aiAttributionTitle;
+
+  /// No description provided for @aiAttributionTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens'**
+  String get aiAttributionTokens;
+
+  /// No description provided for @aiAttributionTokenBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Input: {input} · Output: {output} · Cached: {cached} · Reasoning: {reasoning}'**
+  String aiAttributionTokenBreakdown(
+    String input,
+    String output,
+    String cached,
+    String reasoning,
+  );
+
+  /// No description provided for @aiAttributionTokenUsageUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Token usage unknown'**
+  String get aiAttributionTokenUsageUnknown;
+
+  /// No description provided for @aiAttributionTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger'**
+  String get aiAttributionTrigger;
+
+  /// No description provided for @aiAttributionTriggerAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get aiAttributionTriggerAgent;
+
+  /// No description provided for @aiAttributionTriggerAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get aiAttributionTriggerAutomatic;
+
+  /// No description provided for @aiAttributionTriggerImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported'**
+  String get aiAttributionTriggerImported;
+
+  /// No description provided for @aiAttributionTriggerManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get aiAttributionTriggerManual;
+
+  /// No description provided for @aiAttributionTriggerScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get aiAttributionTriggerScheduled;
+
+  /// No description provided for @aiAttributionTriggerSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'From sync'**
+  String get aiAttributionTriggerSynced;
+
+  /// No description provided for @aiAttributionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'AI attribution is unavailable.'**
+  String get aiAttributionUnavailable;
+
+  /// No description provided for @aiAttributionUnknownCreator.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown creator'**
+  String get aiAttributionUnknownCreator;
+
+  /// No description provided for @aiAttributionUnknownModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown model'**
+  String get aiAttributionUnknownModel;
+
+  /// No description provided for @aiAttributionYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get aiAttributionYou;
+
   /// No description provided for @aiBatchToggleTooltip.
   ///
   /// In en, this message translates to:
@@ -2255,6 +2470,12 @@ abstract class AppLocalizations {
   /// **'Use Reasoning'**
   String get aiConfigUseReasoningFieldLabel;
 
+  /// No description provided for @aiConsumptionAttributionReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Attribution {id}'**
+  String aiConsumptionAttributionReference(String id);
+
   /// No description provided for @aiConsumptionCallsLine.
   ///
   /// In en, this message translates to:
@@ -2315,6 +2536,12 @@ abstract class AppLocalizations {
   /// **'Transcription'**
   String get aiConsumptionTypeAudioTranscription;
 
+  /// No description provided for @aiConsumptionTypeEmbeddingIndexing.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedding indexing'**
+  String get aiConsumptionTypeEmbeddingIndexing;
+
   /// No description provided for @aiConsumptionTypeImageAnalysis.
   ///
   /// In en, this message translates to:
@@ -2338,6 +2565,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Text generation'**
   String get aiConsumptionTypeTextGeneration;
+
+  /// No description provided for @aiConsumptionWorkGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'AI work · {callCount, plural, =1{1 call} other{{callCount} calls}}'**
+  String aiConsumptionWorkGroup(int callCount);
 
   /// No description provided for @aiDeleteToastCascadeDescription.
   ///
@@ -18160,6 +18393,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start'**
   String get timeEntryItemStart;
+
+  /// No description provided for @transcriptLanguageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language: {language}'**
+  String transcriptLanguageLabel(String language);
+
+  /// No description provided for @transcriptModelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model: {provider}, {model}'**
+  String transcriptModelLabel(String provider, String model);
 
   /// No description provided for @unlinkButton.
   ///

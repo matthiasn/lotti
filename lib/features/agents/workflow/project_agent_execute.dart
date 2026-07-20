@@ -197,6 +197,34 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       systemMessage: systemPrompt,
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
+    final recordConsumption =
+        getIt.isRegistered<AiInteractionCapture>() &&
+        getIt.isRegistered<AiAttributionService>();
+
+    Future<void> finalizeCarrierlessAttribution({
+      required AiWorkStatus status,
+      required String errorCode,
+      String? errorSummary,
+    }) async {
+      if (!recordConsumption) return;
+      try {
+        final attribution = await getIt<AiAttributionService>()
+            .prepareCompletion(
+              attributionId: agentWakeAttributionId(runKey),
+              outputs: const [],
+              status: status,
+              errorCode: errorCode,
+              errorSummary: errorSummary,
+            );
+        await getIt<AiAttributionService>().finalize(attribution);
+      } catch (error, stackTrace) {
+        _logError(
+          'failed to terminalize carrier-less attribution',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
 
     // 8a. Persist user message for inspectability — as a v2 prompt record
     // when the read flipped (the log block is derivable from the synced
@@ -269,7 +297,6 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       }
 
       // 9. Run the conversation.
-      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
       final usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -286,6 +313,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
             : null,
         consumptionWakeRunKey: recordConsumption ? runKey : null,
         consumptionThreadId: recordConsumption ? threadId : null,
+        rethrowInferenceErrors: true,
       );
 
       // Persist token usage.
@@ -323,6 +351,22 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       final reportHealthConfidence = strategy.extractReportHealthConfidence();
       final observations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
+      final reportId = reportContent.isEmpty
+          ? null
+          : ProjectAgentWorkflow._uuid.v4();
+      AiWorkAttribution? attributionEnvelope;
+      if (reportId != null && getIt.isRegistered<AiAttributionService>()) {
+        attributionEnvelope = await getIt<AiAttributionService>()
+            .prepareCompletion(
+              attributionId: agentWakeAttributionId(runKey),
+              outputs: [
+                AiArtifactReference(
+                  type: AiArtifactType.agentReport,
+                  id: reportId,
+                ),
+              ],
+            );
+      }
       await syncService.runInTransaction(() async {
         final latestState =
             await agentRepository.getAgentState(agentId) ?? state;
@@ -356,11 +400,9 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
 
         // Persist report.
         if (reportContent.isNotEmpty) {
-          final reportId = ProjectAgentWorkflow._uuid.v4();
-
           await syncService.upsertEntity(
             AgentDomainEntity.agentReport(
-              id: reportId,
+              id: reportId!,
               agentId: agentId,
               scope: AgentReportScopes.current,
               createdAt: now,
@@ -378,6 +420,8 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
                         ProjectAgentReportProvenanceKeys.healthConfidence:
                             reportHealthConfidence,
                       },
+                if (attributionEnvelope != null)
+                  aiAttributionProvenanceKey: attributionEnvelope.toJson(),
               },
               threadId: threadId,
             ),
@@ -507,6 +551,22 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
           );
         }
       });
+      if (attributionEnvelope != null) {
+        try {
+          await getIt<AiAttributionService>().finalize(attributionEnvelope);
+        } catch (error, stackTrace) {
+          _logError(
+            'report attribution projection remains pending for recovery',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      } else if (recordConsumption) {
+        await finalizeCarrierlessAttribution(
+          status: AiWorkStatus.partial,
+          errorCode: 'output_carrier_unavailable',
+        );
+      }
       onPersistedStateChanged?.call(agentId);
 
       _log(
@@ -518,6 +578,12 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       return const WakeResult(success: true);
     } catch (e, s) {
       _logError('wake failed', error: e, stackTrace: s);
+
+      await finalizeCarrierlessAttribution(
+        status: AiWorkStatus.failed,
+        errorCode: e.runtimeType.toString(),
+        errorSummary: e.toString(),
+      );
 
       try {
         await syncService.upsertEntity(

@@ -17,6 +17,7 @@ void main() {
           'imageAnalysis',
           'imageGeneration',
           'promptGeneration',
+          'embeddingIndexing',
         ]),
       );
     });

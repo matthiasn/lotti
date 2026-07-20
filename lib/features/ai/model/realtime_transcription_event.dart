@@ -29,6 +29,7 @@ class RealtimeStopResult {
     this.audioFilePath,
     this.usedTranscriptFallback = false,
     this.detectedLanguage,
+    this.usage,
   });
 
   /// Final transcript from `transcription.done`, or accumulated deltas
@@ -44,4 +45,7 @@ class RealtimeStopResult {
 
   /// Language detected by the real-time transcription server, if reported.
   final String? detectedLanguage;
+
+  /// Provider-reported token/audio usage from the terminal event, when any.
+  final Map<String, dynamic>? usage;
 }

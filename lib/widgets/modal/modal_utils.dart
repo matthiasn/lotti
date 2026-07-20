@@ -213,6 +213,7 @@ class ModalUtils {
     String? closeButtonTooltip,
     VoidCallback? onClosePressed,
     bool? useRootNavigator,
+    WoltModalType Function(BuildContext)? modalTypeBuilderOverride,
   }) async {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -222,6 +223,7 @@ class ModalUtils {
       useRootNavigator:
           useRootNavigator ?? shouldUseRootNavigatorForBottomSheet(context),
       modalDecorator: modalDecorator,
+      modalTypeBuilder: modalTypeBuilderOverride ?? modalTypeBuilder,
       pageListBuilder: (modalSheetContext) {
         return [
           modalSheetPage(
@@ -242,7 +244,6 @@ class ModalUtils {
           ),
         ];
       },
-      modalTypeBuilder: modalTypeBuilder,
       barrierDismissible: true,
       modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
     );

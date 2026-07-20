@@ -12,6 +12,7 @@
     <p>
       No accounts, no telemetry, no cloud storage. End-to-end encrypted multi-device sync runs over Matrix using Vodozemac (Rust) for Megolm crypto; the homeserver you bring relays only ciphertext between your own devices.
     </p>
+    <p>Get support and join the Lotti community on Discord via the Contact link.</p>
     <p>What it does:</p>
     <ul>
       <li>Long-living AI agents (mission, soul, report directive) that read your logbook, propose changes, and only act after you approve</li>
@@ -29,10 +30,16 @@
   </developer>
   <url type="homepage">https://github.com/matthiasn/lotti</url>
   <url type="help">https://matthiasn.github.io/lotti/manual/</url>
+  <url type="contact">https://discord.gg/uuSaa8NpY</url>
   <url type="bugtracker">https://github.com/matthiasn/lotti/issues</url>
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1057" date="2026-07-21">
+      <description>
+        <p>AI work now shows its real footprint where it was created. Coding prompts, generated and analyzed images, and audio transcripts carry a tappable attribution pill. Its details show the creator, model, request evidence, available input/output/cached/reasoning tokens, and the provider's actual cost. When Melious reports it, the same view also shows energy, CO₂e, and water use. Audio entries show the total across all their transcripts, while each transcript retains its own attribution. Coding-prompt usage also contributes to its parent task's AI-consumption total.</p>
+      </description>
+    </release>
     <release version="0.9.1056" date="2026-07-20">
       <description>
         <p>The logbook now matches the rest of the app. On desktop it uses the same split layout as Tasks: the entry list stays on the left, and opening an entry fills a reading panel on the right instead of navigating away, with a resizable divider and a highlighted selected row. The list got the same titled header as Tasks and Projects, denser cards with matching font sizes, and the entry details page now shares one unified background with the list, presenting the entry as a card with a comfortable reading width on wide windows.</p>
@@ -48,6 +55,7 @@
       <description>
         <p>Task AI summaries are now cleaner and more compact: report and proposal text matches editor entries and card summaries, metadata is easier to read, and scheduled updates plus their switch form one responsive footer group beside the model on wide cards and above it on phones. Countdown ticks no longer shift neighboring controls, turning off automation during a pending update keeps the summary correctly marked as out of date, and accepting suggestions keeps the task detail scroll position stable while checklist and proposal content resize.</p>
         <p>Date pickers now follow the device region's week order. Entry dates, entry ranges, due dates, and project target dates start on Monday in European regions and Sunday in the US, with matching weekday headers and calendar-day positions.</p>
+        <p>AI-generated work now carries a consistent attribution record. Coding prompts, generated and analyzed images, audio transcripts, and agent reports show who or what initiated the work and expose model, usage, timing, interaction evidence, and provider-reported cost. Attribution is preserved across encrypted sync. Existing work without attribution stays unattributed rather than receiving a guessed creator or cost.</p>
         <p>Screen-reader controls now expose one clear actionable announcement with their label and state. New accessibility labels are also available in Danish, Swedish, and Dutch.</p>
         <p>Matrix sync now finishes catching up after reconnecting during a large burst, even on poor networks. Reconnected devices recover every missed entry instead of stopping after a partial server page.</p>
       </description>

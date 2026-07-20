@@ -240,7 +240,7 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
         eventHandler: eventHandler,
       );
 
-      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
+      final recordConsumption = getIt.isRegistered<AiInteractionCapture>();
       await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: ctx.initialUserMessage,

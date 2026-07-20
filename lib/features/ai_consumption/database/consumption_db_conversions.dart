@@ -18,6 +18,7 @@ class ConsumptionDbConversions {
       id: Value(event.id),
       parentId: Value(event.parentId),
       createdAt: Value(event.createdAt),
+      attributionId: Value(event.attributionId),
       taskId: Value(event.taskId),
       categoryId: Value(event.categoryId),
       entryId: Value(event.entryId),

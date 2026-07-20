@@ -121,9 +121,10 @@ class ConsumptionSyncService {
     }
   }
 
-  Future<void> _enqueuePostWrite(SyncMessage message) async {
+  Future<bool> _enqueuePostWrite(SyncMessage message) async {
     try {
       await _outboxService.enqueueMessage(message);
+      return true;
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
         LogDomain.sync,
@@ -132,6 +133,7 @@ class ConsumptionSyncService {
         stackTrace: stackTrace,
         subDomain: 'consumptionSync.enqueue',
       );
+      return false;
     }
   }
 }

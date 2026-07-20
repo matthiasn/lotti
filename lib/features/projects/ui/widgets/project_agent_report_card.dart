@@ -9,6 +9,9 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -138,6 +141,9 @@ class ProjectAgentReportCard extends ConsumerWidget {
                 ?.value ??
             const <ProjectRecommendationEntity>[];
         final hasReport = report != null && report.content.trim().isNotEmpty;
+        final reportEnvelope = report == null
+            ? null
+            : attributionFromAgentEntity(report);
 
         return LottiFormSection(
           title: context.messages.projectAgentSectionTitle,
@@ -214,9 +220,22 @@ class ProjectAgentReportCard extends ConsumerWidget {
             else if (hasReport)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: AgentReportSection(
-                  content: report.content,
-                  tldr: report.tldr,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AgentReportSection(
+                      content: report.content,
+                      tldr: report.tldr,
+                    ),
+                    if (reportEnvelope != null)
+                      AiAttributionSummary(
+                        artifact: AiArtifactReference(
+                          type: AiArtifactType.agentReport,
+                          id: report.id,
+                        ),
+                        attribution: reportEnvelope,
+                      ),
+                  ],
                 ),
               )
             else

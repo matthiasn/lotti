@@ -29,7 +29,7 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -1084,7 +1084,7 @@ void main() {
           contains('test-conv-id'),
         );
 
-        // No AiConsumptionRecorder is registered in this suite's default
+        // No AiInteractionCapture is registered in this suite's default
         // setup, so the consumption gate stays closed: no owner ids are
         // forwarded to sendMessage.
         expect(mockConversationRepository.lastConsumptionAgentId, isNull);
@@ -1096,14 +1096,14 @@ void main() {
 
       test(
         'passes consumption owner ids to sendMessage when an '
-        'AiConsumptionRecorder is registered',
+        'AiInteractionCapture is registered',
         () async {
-          getIt.registerSingleton<AiConsumptionRecorder>(
-            MockAiConsumptionRecorder(),
+          getIt.registerSingleton<AiInteractionCapture>(
+            MockAiInteractionCapture(),
           );
           addTearDown(() {
-            if (getIt.isRegistered<AiConsumptionRecorder>()) {
-              getIt.unregister<AiConsumptionRecorder>();
+            if (getIt.isRegistered<AiInteractionCapture>()) {
+              getIt.unregister<AiInteractionCapture>();
             }
           });
 

@@ -326,6 +326,12 @@ class AgentRepository {
   Future<List<AgentDomainEntity>> getAllEntities() =>
       _evolution.getAllEntities();
 
+  /// Fetch active agent entities in bounded, stable-ID pages.
+  Future<List<AgentDomainEntity>> getEntitiesPage({
+    required int limit,
+    String? afterId,
+  }) => _evolution.getEntitiesPage(limit: limit, afterId: afterId);
+
   Future<List<AgentDomainEntity>> getEntitiesInInterval({
     required DateTime start,
     required DateTime end,

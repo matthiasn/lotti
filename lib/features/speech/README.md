@@ -41,6 +41,8 @@ flowchart LR
   RecorderCtl --> RtTx["RealtimeTranscriptionService"]
   RecorderCtl --> SpeechRepo["SpeechRepository"]
   RecorderCtl --> AutoPrompt["AutomaticPromptTrigger"]
+  RecorderCtl --> Attribution["TranscriptAttributionCoordinator"]
+  Attribution --> Consumption["AI consumption event"]
 
   PlaybackUI --> PlayerCtl["AudioPlayerController"]
   PlaybackUI --> WaveformProvider["audioWaveformProvider"]
@@ -54,6 +56,7 @@ flowchart LR
   DictSvc --> CategoryRepo["CategoryRepository + JournalRepository"]
   RtTx --> AiConfig["AI config + Mistral or MLX-audio realtime backend"]
   Persist --> JournalAudio["JournalAudio"]
+  Attribution --> JournalAudio
 ```
 
 The feature is not only a recorder. It also owns the app-wide playback
@@ -230,6 +233,7 @@ sequenceDiagram
   participant Modal as "AudioRecordingModal"
   participant Ctl as "AudioRecorderController"
   participant RT as "RealtimeTranscriptionService"
+  participant Attr as "TranscriptAttributionCoordinator"
   participant Speech as "SpeechRepository"
   participant Persist as "PersistenceLogic"
 
@@ -237,6 +241,7 @@ sequenceDiagram
   Modal->>Ctl: recordRealtime(linkedId)
   Ctl->>Ctl: pause active AudioPlayerController if needed
   Ctl->>RT: resolveRealtimeConfig()
+  Ctl->>Attr: begin(provider, model, task/category)
   Ctl->>RT: startRealtimeTranscription(pcmStream)
   RT-->>Ctl: amplitudeStream dBFS updates
   RT-->>Ctl: transcript deltas
@@ -246,7 +251,13 @@ sequenceDiagram
   Ctl->>RT: stop(stopRecorder, outputPath)
   RT-->>Ctl: transcript + detectedLanguage + saved audio file path
   Ctl->>Speech: createAudioEntry(...)
-  Ctl->>Ctl: save transcript onto JournalAudio and entryText
+  Speech-->>Ctl: JournalAudio carrier
+  Ctl->>Attr: recordInteraction(realtime digest, usage/status)
+  Ctl->>Attr: prepareOutput(audio id, transcript id)
+  Attr-->>Ctl: attribution record
+  Ctl->>Persist: save transcript + attribution onto JournalAudio and entryText
+  Persist-->>Ctl: write accepted
+  Ctl->>Attr: finalize local projection
   Ctl->>Ctl: reset recorder state
 ```
 
@@ -256,13 +267,20 @@ Two important implementation details:
    actually produced an audio file. Very short recordings can still return
    transcript text from the service, but the controller does not persist
    anything unless an audio artifact exists.
-2. When a realtime transcript exists, the controller appends an
-   `AudioTranscript` to `JournalAudio.data.transcripts` and also mirrors the
-   transcript into `entryText`.
+2. Before realtime inference starts, the controller asks
+   `TranscriptAttributionCoordinator` for an in-memory attribution session.
+   When a transcript exists, the coordinator records interaction metadata and
+   token usage, then appends an `AudioTranscript` with a stable id and embedded
+   attribution to `JournalAudio.data.transcripts`; it also mirrors the text
+   into `entryText`. The carrier is authoritative. After the journal update
+   succeeds, the coordinator upserts the local attribution projection. Missing
+   audio, empty transcript, or rejected persistence records a failed or
+   cancelled outcome without inventing provider cost.
 
-`cancelRealtime()` is the realtime discard path (the ✕ button in realtime
-mode). It tears down the recorder and realtime service without creating or
-updating a `JournalAudio` entry. The standard-mode discard path is `cancel()`,
+`cancelRealtime()` is the realtime discard path (the ✕ button in real-time
+mode). It records a terminal cancelled attribution, then tears down the recorder
+and realtime service without creating or updating a `JournalAudio` entry. The
+standard-mode discard path is `cancel()`,
 which mirrors this for file-based recordings (stop + delete the partial file,
 no entry).
 

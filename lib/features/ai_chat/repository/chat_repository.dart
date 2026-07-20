@@ -10,6 +10,8 @@ import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/system_message_service.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -87,6 +89,8 @@ class ChatRepository {
       throw ArgumentError('categoryId is required for sending messages');
     }
 
+    AiAttributionSession? attributionSession;
+    var attributionTerminalized = false;
     try {
       loggingService.log(
         LogDomain.chat,
@@ -116,18 +120,23 @@ class ChatRepository {
         message,
       );
       final tools = [TaskSummaryTool.toolDefinition];
+      if (getIt.isRegistered<AiInteractionCapture>()) {
+        attributionSession = await getIt<AiInteractionCapture>().beginSession(
+          workType: AiWorkType.textGeneration,
+          trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+          categoryId: categoryId,
+        );
+      }
 
       // Initial response stream
-      final stream = cloudInferenceRepository.generate(
-        fullPrompt,
-        model: config.model.providerModelId,
-        temperature: 0.7,
-        baseUrl: config.provider.baseUrl,
-        apiKey: config.provider.apiKey,
+      final stream = _messageProcessor.generateCapturedStream(
+        prompt: fullPrompt,
+        config: config,
         systemMessage: systemMessage,
-        provider: config.provider,
+        categoryId: categoryId,
         tools: tools,
-        geminiThinkingMode: config.model.geminiThinkingMode,
+        attributionSession: attributionSession,
+        terminalizeAttribution: attributionSession == null,
       );
 
       // Accumulate tool calls while streaming content to UI
@@ -175,11 +184,31 @@ class ChatRepository {
               messages: messages,
               config: config,
               systemMessage: systemMessage,
+              attributionSession: attributionSession,
+              categoryId: categoryId,
             )) {
           yield finalDelta;
         }
       }
+      if (attributionSession != null) {
+        attributionTerminalized = true;
+        await getIt<AiInteractionCapture>().completeSession(
+          session: attributionSession,
+          outputs: const [],
+          status: AiWorkStatus.partial,
+          errorCode: 'output_carrier_unavailable',
+        );
+      }
     } catch (e, stackTrace) {
+      if (attributionSession != null && !attributionTerminalized) {
+        attributionTerminalized = true;
+        await getIt<AiInteractionCapture>().completeSession(
+          session: attributionSession,
+          outputs: const [],
+          status: AiWorkStatus.failed,
+          errorCode: e.runtimeType.toString(),
+        );
+      }
       loggingService.error(
         LogDomain.chat,
         e,
@@ -187,6 +216,16 @@ class ChatRepository {
         subDomain: 'sendMessage',
       );
       throw ChatRepositoryException('Failed to send message: $e', e);
+    } finally {
+      if (attributionSession != null && !attributionTerminalized) {
+        attributionTerminalized = true;
+        await getIt<AiInteractionCapture>().completeSession(
+          session: attributionSession,
+          outputs: const [],
+          status: AiWorkStatus.cancelled,
+          errorCode: 'cancelled',
+        );
+      }
     }
   }
 

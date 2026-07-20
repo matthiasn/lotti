@@ -695,6 +695,83 @@
   "aggregationHourlySum": "Hourly sum",
   "aggregationNone": "Raw values",
   "aiAssistantTitle": "Generate…",
+  "aiAttributionArtifactOutput": "Output",
+  "aiAttributionCompletedAt": "Completed at",
+  "aiAttributionCost": "Cost",
+  "aiAttributionCostUnknown": "Cost unknown",
+  "aiAttributionCreator": "Creator",
+  "aiAttributionDiagnostics": "Diagnostics",
+  "aiAttributionDuration": "Duration",
+  "aiAttributionInteractions": "Interactions",
+  "aiAttributionLoading": "Loading AI attribution…",
+  "aiAttributionNoInteractionDetails": "No interaction details are available.",
+  "aiAttributionRequestEvidence": "Request evidence",
+  "aiAttributionResponseEvidence": "Response evidence",
+  "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{no calls} =1{1 call} other{{callCount} calls}}",
+  "@aiAttributionSecondary": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "callCount": {
+        "type": "int"
+      }
+    }
+  },
+  "aiAttributionStartedAt": "Started at",
+  "aiAttributionStatus": "Status",
+  "aiAttributionStatusCancelled": "Cancelled",
+  "aiAttributionStatusFailed": "Failed",
+  "aiAttributionStatusPartial": "Partial",
+  "aiAttributionStatusSucceeded": "Completed",
+  "aiAttributionSummary": "{actor} · {trigger} · {status}",
+  "@aiAttributionSummary": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "trigger": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "aiAttributionTitle": "AI attribution",
+  "aiAttributionTokenBreakdown": "Input: {input} · Output: {output} · Cached: {cached} · Reasoning: {reasoning}",
+  "@aiAttributionTokenBreakdown": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      },
+      "reasoning": {
+        "type": "String"
+      }
+    }
+  },
+  "aiAttributionTokens": "Tokens",
+  "aiAttributionTokenUsageUnknown": "Token usage unknown",
+  "aiAttributionTrigger": "Trigger",
+  "aiAttributionTriggerAgent": "Agent",
+  "aiAttributionTriggerAutomatic": "Automatic",
+  "aiAttributionTriggerImported": "Imported",
+  "aiAttributionTriggerManual": "Manual",
+  "aiAttributionTriggerScheduled": "Scheduled",
+  "aiAttributionTriggerSynced": "From sync",
+  "aiAttributionUnavailable": "AI attribution is unavailable.",
+  "aiAttributionUnknownCreator": "Unknown creator",
+  "aiAttributionUnknownModel": "Unknown model",
+  "aiAttributionYou": "You",
   "aiBatchToggleTooltip": "Switch to standard recording",
   "aiCapabilityChipImageGeneration": "Image generation",
   "aiCapabilityChipImageRecognition": "Image recognition",
@@ -733,6 +810,14 @@
   "aiConfigSelectProviderModalTitle": "Select Inference Provider",
   "aiConfigSelectProviderTypeModalTitle": "Select Provider Type",
   "aiConfigUseReasoningFieldLabel": "Use Reasoning",
+  "aiConsumptionAttributionReference": "Attribution {id}",
+  "@aiConsumptionAttributionReference": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "aiConsumptionCallsLine": "AI calls: {count} · impact measured for {measured}",
   "@aiConsumptionCallsLine": {
     "placeholders": {
@@ -797,10 +882,19 @@
   },
   "aiConsumptionTypeAgentTurn": "Agent turn",
   "aiConsumptionTypeAudioTranscription": "Transcription",
+  "aiConsumptionTypeEmbeddingIndexing": "Embedding indexing",
   "aiConsumptionTypeImageAnalysis": "Image analysis",
   "aiConsumptionTypeImageGeneration": "Image generation",
   "aiConsumptionTypePromptGeneration": "Prompt generation",
   "aiConsumptionTypeTextGeneration": "Text generation",
+  "aiConsumptionWorkGroup": "AI work · {callCount, plural, =1{1 call} other{{callCount} calls}}",
+  "@aiConsumptionWorkGroup": {
+    "placeholders": {
+      "callCount": {
+        "type": "int"
+      }
+    }
+  },
   "aiDeleteToastCascadeDescription": "{count, plural, =1{Also removed 1 model: {names}} other{Also removed {count} models: {names}}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {
@@ -5132,6 +5226,25 @@
   "timeEntryItemEnd": "End",
   "timeEntryItemRunning": "Running",
   "timeEntryItemStart": "Start",
+  "transcriptLanguageLabel": "Language: {language}",
+  "@transcriptLanguageLabel": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "transcriptModelLabel": "Model: {provider}, {model}",
+  "@transcriptModelLabel": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "model": {
+        "type": "String"
+      }
+    }
+  },
   "unlinkButton": "Unlink",
   "unlinkTaskConfirm": "Are you sure you want to unlink this task?",
   "unlinkTaskTitle": "Unlink Task",

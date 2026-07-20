@@ -10,6 +10,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:research_package/model.dart';
@@ -54,6 +55,7 @@ abstract class ImageData with _$ImageData {
     required String imageFile,
     required String imageDirectory,
     Geolocation? geolocation,
+    AiWorkAttribution? aiAttribution,
   }) = _ImageData;
 
   factory ImageData.fromJson(Map<String, dynamic> json) =>
@@ -86,6 +88,8 @@ abstract class AudioTranscript with _$AudioTranscript {
     required String detectedLanguage,
     required String transcript,
     Duration? processingTime,
+    String? id,
+    AiWorkAttribution? aiAttribution,
   }) = _AudioTranscript;
 
   factory AudioTranscript.fromJson(Map<String, dynamic> json) =>

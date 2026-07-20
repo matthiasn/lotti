@@ -474,7 +474,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
 
       // Resolve consumption owner ids only when a recorder is wired, so the
       // wake path (and its DB reads) is untouched when tracking is off.
-      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
+      final recordConsumption = getIt.isRegistered<AiInteractionCapture>();
       final consumptionCategoryId = recordConsumption
           ? (await journalDb.journalEntityById(taskId))?.categoryId
           : null;

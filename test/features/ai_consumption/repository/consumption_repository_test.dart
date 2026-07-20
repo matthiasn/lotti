@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -66,6 +67,72 @@ void main() {
 
     test('getEvent returns null for an unknown id', () async {
       expect(await repo.getEvent('nope'), isNull);
+    });
+  });
+
+  group('attribution projection', () {
+    test('round-trips attribution and resolves its primary output', () async {
+      final attribution = makeAiWorkAttribution();
+
+      await repo.upsertAttribution(attribution);
+
+      expect(await repo.getAttribution(attribution.id), attribution);
+      expect(
+        await repo.getAttributionForArtifact(attribution.primaryOutput!),
+        attribution,
+      );
+    });
+
+    test(
+      'resolves a transcript sub-artifact without matching its siblings',
+      () async {
+        final attribution = makeAiWorkAttribution().copyWith(
+          primaryOutput: const AiArtifactReference(
+            type: AiArtifactType.journalAudio,
+            id: 'audio-1',
+            subId: 'transcript-2',
+          ),
+        );
+        await repo.upsertAttribution(attribution);
+
+        expect(
+          await repo.getAttributionForArtifact(attribution.primaryOutput!),
+          attribution,
+        );
+        expect(
+          await repo.getAttributionForArtifact(
+            const AiArtifactReference(
+              type: AiArtifactType.journalAudio,
+              id: 'audio-1',
+              subId: 'transcript-1',
+            ),
+          ),
+          isNull,
+        );
+      },
+    );
+
+    test('returns linked interactions in creation order', () async {
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'second',
+          attributionId: 'attribution-1',
+          createdAt: DateTime.utc(2026, 7, 19, 10, 0, 2),
+        ),
+      );
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'first',
+          attributionId: 'attribution-1',
+          createdAt: DateTime.utc(2026, 7, 19, 10),
+        ),
+      );
+
+      final interactions = await repo.interactionsForAttribution(
+        'attribution-1',
+      );
+
+      expect(interactions.map((event) => event.id), ['first', 'second']);
     });
   });
 

@@ -11,6 +11,9 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:uuid/uuid.dart';
 
 /// Report details captured inside the wake transaction and returned to the
@@ -82,6 +85,28 @@ class WakeOutputWriter {
     // embedding. Declared outside so it survives the transaction scope.
     WakeReportToEmbed? reportToEmbed;
 
+    final sanitizedContent = sanitizeAgentReportText(reportContent);
+    final sanitizedTldr = reportTldr == null
+        ? null
+        : sanitizeAgentReportText(reportTldr);
+    final sanitizedOneLiner = reportOneLiner == null
+        ? null
+        : sanitizeAgentReportText(reportOneLiner);
+    final reportId = sanitizedContent.isEmpty ? null : _idGen.v4();
+    AiWorkAttribution? attributionEnvelope;
+    if (reportId != null && getIt.isRegistered<AiAttributionService>()) {
+      attributionEnvelope = await getIt<AiAttributionService>()
+          .prepareCompletion(
+            attributionId: agentWakeAttributionId(runKey),
+            outputs: [
+              AiArtifactReference(
+                type: AiArtifactType.agentReport,
+                id: reportId,
+              ),
+            ],
+          );
+    }
+
     await _sync.runInTransaction(() async {
       // 8. Persist the final assistant response as a thought message.
       final thoughtText = strategy.finalResponse;
@@ -116,19 +141,12 @@ class WakeOutputWriter {
       // tool calls), and weaker models copy those into the prose. Applies to
       // every wake regardless of the agent's baked directive, so already
       // created agents are cleaned too.
-      final sanitizedContent = sanitizeAgentReportText(reportContent);
-      final sanitizedTldr = reportTldr == null
-          ? null
-          : sanitizeAgentReportText(reportTldr);
-      final sanitizedOneLiner = reportOneLiner == null
-          ? null
-          : sanitizeAgentReportText(reportOneLiner);
       if (sanitizedContent.isNotEmpty) {
-        final reportId = _idGen.v4();
+        final persistedReportId = reportId!;
 
         await _sync.upsertEntity(
           AgentDomainEntity.agentReport(
-            id: reportId,
+            id: persistedReportId,
             agentId: agentId,
             scope: AgentReportScopes.current,
             createdAt: now,
@@ -136,7 +154,11 @@ class WakeOutputWriter {
             content: sanitizedContent,
             tldr: sanitizedTldr,
             oneLiner: sanitizedOneLiner,
-            provenance: reportProvenance?.toReportMap() ?? const {},
+            provenance: <String, Object?>{
+              ...?reportProvenance?.toReportMap(),
+              if (attributionEnvelope != null)
+                aiAttributionProvenanceKey: attributionEnvelope.toJson(),
+            },
             threadId: threadId,
           ),
         );
@@ -153,7 +175,7 @@ class WakeOutputWriter {
             id: headId,
             agentId: agentId,
             scope: AgentReportScopes.current,
-            reportId: reportId,
+            reportId: persistedReportId,
             updatedAt: now,
             vectorClock: null,
           ),
@@ -162,7 +184,7 @@ class WakeOutputWriter {
         // Capture report details for post-transaction embedding. Embeds the
         // sanitized text so the vector matches what the user actually reads.
         reportToEmbed = (
-          reportId: reportId,
+          reportId: persistedReportId,
           reportContent: sanitizedContent,
           taskId: taskId,
           previousReportId: existingHead?.reportId,
@@ -273,6 +295,9 @@ class WakeOutputWriter {
         runKey: runKey,
       );
     });
+    if (reportToEmbed != null && attributionEnvelope != null) {
+      await getIt<AiAttributionService>().finalize(attributionEnvelope);
+    }
     return reportToEmbed;
   }
 }

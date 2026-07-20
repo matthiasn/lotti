@@ -19,7 +19,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -57,6 +60,7 @@ import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../ai_consumption/test_utils.dart';
 import '../../../design_system/test_utils.dart';
 
 // ---------------------------------------------------------------------------
@@ -1392,6 +1396,42 @@ void main() {
         );
       },
     );
+
+    testWidgets('JournalImage surfaces its terminal AI attribution', (
+      tester,
+    ) async {
+      final attributedImage = testImageEntry.copyWith(
+        data: testImageEntry.data.copyWith(
+          aiAttribution: makeAiWorkAttribution(
+            output: AiArtifactReference(
+              type: AiArtifactType.journalImage,
+              id: testImageEntry.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            overrides: [
+              entryControllerProvider(attributedImage.id).overrideWith(
+                () => _FakeEntryController(attributedImage),
+              ),
+              aiAttributionDetailsProvider.overrideWith(
+                (ref, attributionId) async => null,
+              ),
+            ],
+            child: EntryDetailsContent(attributedImage.id),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(DsPill), findsOneWidget);
+      expect(find.text('Unknown model · Cost unknown'), findsOneWidget);
+      expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
+    });
 
     testWidgets(
       'JournalImage analysis refresh keeps later task content painted in place',

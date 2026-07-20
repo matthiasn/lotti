@@ -120,6 +120,59 @@ void main() {
     ).thenAnswer((_) async => events);
   }
 
+  group('attribution detail providers', () {
+    test('loads attribution and its interactions by attribution id', () async {
+      final attribution = makeAiWorkAttribution();
+      final interactions = [
+        makeConsumptionEvent(attributionId: attribution.id),
+      ];
+      when(
+        () => repository.getAttribution(attribution.id),
+      ).thenAnswer((_) async => attribution);
+      when(
+        () => repository.interactionsForAttribution(attribution.id),
+      ).thenAnswer((_) async => interactions);
+      final container = makeContainer();
+
+      final details = await container.read(
+        aiAttributionDetailsProvider(attribution.id).future,
+      );
+
+      expect(details?.attribution, attribution);
+      expect(details?.interactions, interactions);
+    });
+
+    test(
+      'loads attribution details by artifact and preserves missing',
+      () async {
+        final attribution = makeAiWorkAttribution();
+        final artifact = attribution.primaryOutput!;
+        when(
+          () => repository.getAttributionForArtifact(artifact),
+        ).thenAnswer((_) async => attribution);
+        when(
+          () => repository.interactionsForAttribution(attribution.id),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => repository.getAttribution('missing'),
+        ).thenAnswer((_) async => null);
+        final container = makeContainer();
+
+        final byArtifact = await container.read(
+          aiAttributionForArtifactProvider(artifact).future,
+        );
+        final missing = await container.read(
+          aiAttributionDetailsProvider('missing').future,
+        );
+
+        expect(byArtifact?.attribution, attribution);
+        expect(byArtifact?.interactions, isEmpty);
+        expect(missing, isNull);
+        verifyNever(() => repository.interactionsForAttribution('missing'));
+      },
+    );
+  });
+
   group('consumptionLedgerProvider', () {
     const range = InsightsRange(startDay: 20610, endDayExclusive: 20617);
 

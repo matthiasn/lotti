@@ -1,4 +1,3 @@
-// No direct blur usage; keep imports minimal
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,6 +8,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
@@ -33,6 +34,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -441,11 +443,27 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
         // defining value before any prose. For audio this also puts the player
         // above its transcript, matching the collapsible layout.
         ?detailSection,
+        if (item is JournalAudio)
+          AiAttributionSummaryGroup(
+            label: context.messages.aiConsumptionTypeAudioTranscription,
+            attributions: _transcriptAttributions(item),
+            includeTopSpacing: false,
+          ),
         if (!shouldHideEditor)
           _bodyEditor(
             itemId,
             stabilizeGeneratedText:
                 item is JournalImage || item is JournalAudio,
+          ),
+        if (item is JournalImage)
+          AiAttributionSummary(
+            artifact: AiArtifactReference(
+              type: AiArtifactType.journalImage,
+              id: item.id,
+            ),
+            attribution: item.data.aiAttribution,
+            asPill: true,
+            includeTopSpacing: false,
           ),
       ];
       return Column(
@@ -458,7 +476,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
           // gap the first body line crowds the header on phones.
           SizedBox(height: context.designTokens.spacing.step3),
           ..._withRhythm(context, body),
-          if (item is JournalAudio)
+          if (item is JournalAudio || item is JournalImage)
             NestedAiResponsesWidget(
               parentEntryId: itemId,
               linkedFromEntity: item,
@@ -475,11 +493,27 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     final collapsibleBody = <Widget>[
       if (item is JournalImage) EntryImageWidget(item),
       if (item is JournalAudio && detailSection != null) detailSection,
+      if (item is JournalAudio)
+        AiAttributionSummaryGroup(
+          label: context.messages.aiConsumptionTypeAudioTranscription,
+          attributions: _transcriptAttributions(item),
+          includeTopSpacing: false,
+        ),
       if (hasLabels) EntryLabelsDisplay(entryId: itemId),
       if (!shouldHideEditor)
         _bodyEditor(
           itemId,
           stabilizeGeneratedText: item is JournalImage || item is JournalAudio,
+        ),
+      if (item is JournalImage)
+        AiAttributionSummary(
+          artifact: AiArtifactReference(
+            type: AiArtifactType.journalImage,
+            id: item.id,
+          ),
+          attribution: item.data.aiAttribution,
+          asPill: true,
+          includeTopSpacing: false,
         ),
     ];
     final expandedContent = Column(
@@ -487,7 +521,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       mainAxisSize: MainAxisSize.min,
       children: [
         ..._withRhythm(context, collapsibleBody),
-        if (item is JournalAudio)
+        if (item is JournalAudio || item is JournalImage)
           NestedAiResponsesWidget(
             parentEntryId: itemId,
             linkedFromEntity: item,
@@ -535,6 +569,13 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       child: editor,
     );
   }
+
+  List<AiWorkAttribution> _transcriptAttributions(JournalAudio audio) =>
+      audio.data.transcripts
+          ?.map((transcript) => transcript.aiAttribution)
+          .whereType<AiWorkAttribution>()
+          .toList() ??
+      const [];
 
   /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) *between*
   /// stacked body sections — but not before the first one. The header row is

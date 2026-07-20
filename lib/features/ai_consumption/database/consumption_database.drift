@@ -16,6 +16,9 @@ CREATE TABLE consumption_events (
   parent_id TEXT,
   created_at DATETIME NOT NULL,
 
+  -- Logical work attribution. Nullable so schema-v1 rows remain valid.
+  attribution_id TEXT,
+
   -- Denormalized owners (snapshot at call time)
   task_id TEXT,
   category_id TEXT,
@@ -67,6 +70,46 @@ CREATE INDEX idx_consumption_category_created
 
 -- Global range scans (all categories, a time window).
 CREATE INDEX idx_consumption_created ON consumption_events(created_at);
+
+-- Interaction drill-down for one logical work item.
+CREATE INDEX idx_consumption_attribution
+  ON consumption_events(attribution_id, created_at)
+  WHERE attribution_id IS NOT NULL;
+
+-- One terminal, immutable top-level audit header per logical AI work item.
+CREATE TABLE ai_work_attributions (
+  id TEXT NOT NULL PRIMARY KEY,
+  work_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  initiator_type TEXT NOT NULL,
+  initiator_id TEXT NOT NULL,
+  initiator_display_name TEXT NOT NULL,
+  trigger_type TEXT NOT NULL,
+  started_at DATETIME NOT NULL,
+  completed_at DATETIME NOT NULL,
+  parent_attribution_id TEXT,
+  task_id TEXT,
+  category_id TEXT,
+  primary_output_type TEXT,
+  primary_output_id TEXT,
+  primary_output_sub_id TEXT,
+  serialized TEXT NOT NULL,
+  schema_version INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX idx_attribution_output
+  ON ai_work_attributions(
+    primary_output_type,
+    primary_output_id,
+    primary_output_sub_id
+  );
+CREATE INDEX idx_attribution_task_created
+  ON ai_work_attributions(task_id, completed_at)
+  WHERE task_id IS NOT NULL;
+CREATE INDEX idx_attribution_actor_created
+  ON ai_work_attributions(initiator_id, completed_at);
+CREATE INDEX idx_attribution_type_created
+  ON ai_work_attributions(work_type, completed_at);
 
 -- ── Named queries ───────────────────────────────────────────────────────────
 

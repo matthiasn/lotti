@@ -230,6 +230,7 @@ Widget makeTestableWidget(
   Widget child, {
   MediaQueryData? mediaQueryData,
   List<Override> overrides = const [],
+  Locale? locale,
 }) {
   final mq = mediaQueryData ?? phoneMediaQueryData;
 
@@ -247,6 +248,7 @@ Widget makeTestableWidget(
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
+        locale: locale,
         home: SingleChildScrollView(child: child),
       ),
     ),

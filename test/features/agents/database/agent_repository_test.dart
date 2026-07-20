@@ -4881,6 +4881,21 @@ void main() {
 
       expect(entities, isEmpty);
     });
+
+    test('returns stable bounded pages for maintenance scans', () async {
+      await repo.upsertEntity(makeAgent(id: 'agent-c', agentId: 'c-001'));
+      await repo.upsertEntity(makeAgent(id: 'agent-a', agentId: 'a-001'));
+      await repo.upsertEntity(makeAgent(id: 'agent-b', agentId: 'b-001'));
+
+      final first = await repo.getEntitiesPage(limit: 2);
+      final second = await repo.getEntitiesPage(
+        limit: 2,
+        afterId: first.last.id,
+      );
+
+      expect(first.map((entity) => entity.id), ['agent-a', 'agent-b']);
+      expect(second.map((entity) => entity.id), ['agent-c']);
+    });
   });
 
   group('getAllLinks', () {

@@ -1,8 +1,15 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/features/agents/projection/compaction_summary.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/get_it.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 /// The LLM edge of input-log compaction (ADR 0017): distills folded
 /// [RenderedSource]s into rolling summary prose with a one-shot generation
@@ -132,16 +139,58 @@ class AgentLogLlmSummarizer {
         '$lines\n\n'
         'Update the running summary to cover the new entries.';
 
-    final stream = _inference.generate(
-      prompt,
-      model: model,
-      temperature: _temperature,
-      baseUrl: provider.baseUrl,
-      apiKey: provider.apiKey,
-      systemMessage: _systemMessage,
-      maxCompletionTokens: maxSummaryTokens,
-      provider: provider,
-    );
+    final captureRegistered = getIt.isRegistered<AiInteractionCapture>();
+    final impactCollector = InferenceImpactCollector();
+    Stream<CreateChatCompletionStreamResponse> invoke() => captureRegistered
+        ? _inference.generate(
+            prompt,
+            model: model,
+            temperature: _temperature,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            systemMessage: _systemMessage,
+            maxCompletionTokens: maxSummaryTokens,
+            provider: provider,
+            impactCollector: impactCollector,
+          )
+        : _inference.generate(
+            prompt,
+            model: model,
+            temperature: _temperature,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            systemMessage: _systemMessage,
+            maxCompletionTokens: maxSummaryTokens,
+            provider: provider,
+          );
+    final stream = captureRegistered
+        ? getIt<AiInteractionCapture>().captureStream(
+            workType: AiWorkType.internalInference,
+            interactionKind: AiInteractionKind.textGeneration,
+            responseType: AiConsumptionResponseType.textGeneration,
+            providerType: provider.inferenceProviderType,
+            modelId: model,
+            requestText: prompt,
+            invoke: invoke,
+            responseText: (chunk) =>
+                chunk.choices?.firstOrNull?.delta?.content ?? '',
+            usageForChunk: (chunk) {
+              final usage = chunk.usage;
+              if (usage == null) return null;
+              return AiCapturedUsage(
+                inputTokens: usage.promptTokens,
+                outputTokens: usage.completionTokens,
+                cachedInputTokens: usage.promptTokensDetails?.cachedTokens,
+                thoughtsTokens: usage.completionTokensDetails?.reasoningTokens,
+                totalTokens: usage.totalTokens,
+              );
+            },
+            impact: () => impactCollector.impact,
+            triggerType: AiTriggerType.automatic,
+            automationId: 'automation:agent-log-compaction',
+            automationDisplayName: 'Agent log compaction',
+          )
+        : invoke();
 
     final buffer = StringBuffer();
     await for (final response in stream) {

@@ -91,12 +91,22 @@ Startup does this:
   A successful wake records its start time as `reportFreshAt`, so a task edit
   that arrives during inference remains visibly stale and is not erased by the
   older wake finishing later.
-- Every task-agent report written by `WakeOutputWriter` receives a versioned
-  inference provenance stamp captured once at wake start. It denormalizes model
-  name, publisher, serving-provider name/type, route identifiers and relevant
-  runtime settings without storing credentials or endpoint URLs. Historical
-  reports without the stamp show attribution unavailable instead of borrowing
-  the current setup.
+- Every agent report carrier receives AI-consumption provenance. Task agents
+  publish through `WakeOutputWriter`; project and event workflows use the same
+  report-carrier pattern. Attribution is stored under
+  `provenance[aiAttributionV1]`, linking the creator/trigger, calls in the wake,
+  actual provider-reported cost, and the report output.
+  `ReportInferenceProvenance` separately snapshots model routing and runtime
+  settings without credentials or endpoint URLs. The wake run key
+  deterministically groups initial calls, tool continuations, and forced-report
+  retries into one attribution. Historical reports are not assigned guessed
+  creator or cost data.
+- Agent turn recording persists consumption independently from the report.
+  The report carrier is authoritative and the local attribution projection is
+  updated after the report write.
+  Log-compaction inference is a separate carrier-less AI operation captured
+  before each backend call and terminalized as partial because its checkpoint
+  format has no attribution record.
 - Linked task context for agents is built directly in
   `TaskAgentContextBuilder.buildLinkedTasksContextJson` (the wake's prompt/context
   collaborator, which `TaskAgentWorkflow` holds and delegates to; forked from
@@ -120,6 +130,24 @@ flowchart LR
   Linked["Linked tasks (compact oneLiner/tldr)"] --> Wake
   Wake -.->|disabled today| Drill["get_related_task_details<br/>(enabled: false)"]
   Drill -.-> FullSibling["Full sibling task JSON + latest task-agent report"]
+```
+
+```mermaid
+sequenceDiagram
+  participant Wake as Agent workflow
+  participant Capture as AiInteractionCapture
+  participant Attr as AiAttributionService
+  participant Writer as WakeOutputWriter
+  participant AgentDb as agent.sqlite
+  Wake->>Capture: begin deterministic wake attribution before provider call
+  loop each model turn
+    Wake->>Capture: complete interaction with usage and exact cost
+    Capture->>Attr: append child interaction to wake attribution
+  end
+  Wake->>Writer: final report
+  Writer->>Attr: prepareCompletion(agentReport id)
+  Writer->>AgentDb: report + provenance[aiAttributionV1]
+  Writer->>Attr: finalize terminal projection
 ```
 
 ```mermaid

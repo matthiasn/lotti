@@ -1128,6 +1128,130 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiAssistantTitle => 'Generate…';
 
   @override
+  String get aiAttributionArtifactOutput => 'Output';
+
+  @override
+  String get aiAttributionCompletedAt => 'Completed at';
+
+  @override
+  String get aiAttributionCost => 'Cost';
+
+  @override
+  String get aiAttributionCostUnknown => 'Cost unknown';
+
+  @override
+  String get aiAttributionCreator => 'Creator';
+
+  @override
+  String get aiAttributionDiagnostics => 'Diagnostics';
+
+  @override
+  String get aiAttributionDuration => 'Duration';
+
+  @override
+  String get aiAttributionInteractions => 'Interactions';
+
+  @override
+  String get aiAttributionLoading => 'Loading AI attribution…';
+
+  @override
+  String get aiAttributionNoInteractionDetails =>
+      'No interaction details are available.';
+
+  @override
+  String get aiAttributionRequestEvidence => 'Request evidence';
+
+  @override
+  String get aiAttributionResponseEvidence => 'Response evidence';
+
+  @override
+  String aiAttributionSecondary(String model, String time, int callCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      callCount,
+      locale: localeName,
+      other: '$callCount calls',
+      one: '1 call',
+      zero: 'no calls',
+    );
+    return '$model · $time · $_temp0';
+  }
+
+  @override
+  String get aiAttributionStartedAt => 'Started at';
+
+  @override
+  String get aiAttributionStatus => 'Status';
+
+  @override
+  String get aiAttributionStatusCancelled => 'Cancelled';
+
+  @override
+  String get aiAttributionStatusFailed => 'Failed';
+
+  @override
+  String get aiAttributionStatusPartial => 'Partial';
+
+  @override
+  String get aiAttributionStatusSucceeded => 'Completed';
+
+  @override
+  String aiAttributionSummary(String actor, String trigger, String status) {
+    return '$actor · $trigger · $status';
+  }
+
+  @override
+  String get aiAttributionTitle => 'AI attribution';
+
+  @override
+  String get aiAttributionTokens => 'Tokens';
+
+  @override
+  String aiAttributionTokenBreakdown(
+    String input,
+    String output,
+    String cached,
+    String reasoning,
+  ) {
+    return 'Input: $input · Output: $output · Cached: $cached · Reasoning: $reasoning';
+  }
+
+  @override
+  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
+
+  @override
+  String get aiAttributionTrigger => 'Trigger';
+
+  @override
+  String get aiAttributionTriggerAgent => 'Agent';
+
+  @override
+  String get aiAttributionTriggerAutomatic => 'Automatic';
+
+  @override
+  String get aiAttributionTriggerImported => 'Imported';
+
+  @override
+  String get aiAttributionTriggerManual => 'Manual';
+
+  @override
+  String get aiAttributionTriggerScheduled => 'Scheduled';
+
+  @override
+  String get aiAttributionTriggerSynced => 'From sync';
+
+  @override
+  String get aiAttributionUnavailable => 'AI attribution is unavailable.';
+
+  @override
+  String get aiAttributionUnknownCreator => 'Unknown creator';
+
+  @override
+  String get aiAttributionUnknownModel => 'Unknown model';
+
+  @override
+  String get aiAttributionYou => 'You';
+
+  @override
   String get aiBatchToggleTooltip => 'Switch to standard recording';
 
   @override
@@ -1226,6 +1350,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Use Reasoning';
 
   @override
+  String aiConsumptionAttributionReference(String id) {
+    return 'Attribution $id';
+  }
+
+  @override
   String aiConsumptionCallsLine(int count, int measured) {
     return 'AI calls: $count · impact measured for $measured';
   }
@@ -1268,6 +1397,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiConsumptionTypeAudioTranscription => 'Transcription';
 
   @override
+  String get aiConsumptionTypeEmbeddingIndexing => 'Embedding indexing';
+
+  @override
   String get aiConsumptionTypeImageAnalysis => 'Image analysis';
 
   @override
@@ -1278,6 +1410,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiConsumptionTypeTextGeneration => 'Text generation';
+
+  @override
+  String aiConsumptionWorkGroup(int callCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      callCount,
+      locale: localeName,
+      other: '$callCount calls',
+      one: '1 call',
+    );
+    return 'AI work · $_temp0';
+  }
 
   @override
   String aiDeleteToastCascadeDescription(int count, String names) {
@@ -10448,6 +10591,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Start';
+
+  @override
+  String transcriptLanguageLabel(String language) {
+    return 'Language: $language';
+  }
+
+  @override
+  String transcriptModelLabel(String provider, String model) {
+    return 'Model: $provider, $model';
+  }
 
   @override
   String get unlinkButton => 'Unlink';

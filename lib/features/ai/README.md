@@ -27,6 +27,44 @@ flowchart TD
   Skills["skills/built_in_skills.dart<br/>(code, not DB)"] -.read.-> Registry["skillRegistryProvider"]
 ```
 
+## AI Work Attribution Boundary
+
+The `ai` feature creates output carriers, while `features/ai_consumption` owns
+their audit model and interaction ledger. `SkillInferenceRunner` begins an
+in-memory attribution session before transcription, image analysis, prompt
+generation, or image generation. Each provider call records usage, digests,
+and provider-reported Melious cost/impact; the completed output embeds the
+authoritative attribution and then updates the local query projection.
+
+```mermaid
+sequenceDiagram
+  participant Runner as SkillInferenceRunner
+  participant Attr as AiAttributionService
+  participant Provider as Cloud/native provider
+  participant Sync as ConsumptionSyncService
+  participant Journal as Journal/PersistenceLogic
+  Runner->>Attr: begin(work type, actor, trigger, intended output)
+  Runner->>Provider: inference request
+  Provider-->>Runner: response + usage/reported impact
+  Runner->>Attr: recordInteraction(digests + metadata)
+  Attr->>Sync: persist; enqueue best effort
+  Runner->>Attr: prepareCompletion(output reference)
+  Runner->>Journal: persist carrier with attribution
+  Runner->>Attr: finalize local projection
+```
+
+Carrier mapping is uniform: `AiResponseData.aiAttribution` for generated text
+and authoritative image-analysis results, `ImageData.aiAttribution` for
+generated images, and `AudioTranscript.id/aiAttribution` for transcripts.
+`UnifiedAiInferenceRepository` begins before provider invocation, reuses one
+owner and output id across automatic language reruns and finalizes the local
+projection after the carrier write. Attributed image
+analysis is stored as the authoritative `AiResponseEntry` instead of also
+duplicating the response into journal entry text. Embedding indexing begins
+before its first chunk, records one interaction per chunk with digests only and
+no invented monetary cost, and finalizes a typed `embeddingVector` output
+after the store replacement succeeds.
+
 ## Configuration Model
 
 `AiConfigRepository` persists provider-facing AI configuration objects in

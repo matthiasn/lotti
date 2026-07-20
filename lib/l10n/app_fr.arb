@@ -507,6 +507,57 @@
   "aggregationHourlySum": "Somme horaire",
   "aggregationNone": "Valeurs brutes",
   "aiAssistantTitle": "Générer…",
+  "aiAttributionArtifactOutput": "Sortie",
+  "aiAttributionCompletedAt": "Terminé le",
+  "aiAttributionCost": "Coût",
+  "aiAttributionCostUnknown": "Coût inconnu",
+  "aiAttributionCreator": "Créateur",
+  "aiAttributionDiagnostics": "Diagnostic",
+  "aiAttributionDuration": "Durée",
+  "aiAttributionInteractions": "Interactions",
+  "aiAttributionLoading": "Chargement de l’attribution IA…",
+  "aiAttributionNoInteractionDetails": "Aucun détail d’interaction disponible.",
+  "aiAttributionRequestEvidence": "Preuve de la requête",
+  "aiAttributionResponseEvidence": "Preuve de la réponse",
+  "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{aucun appel} =1{1 appel} other{{callCount} appels}}",
+  "aiAttributionStartedAt": "Démarré le",
+  "aiAttributionStatus": "Statut",
+  "aiAttributionStatusCancelled": "Annulé",
+  "aiAttributionStatusFailed": "Échec",
+  "aiAttributionStatusPartial": "Partiel",
+  "aiAttributionStatusSucceeded": "Terminé",
+  "aiAttributionSummary": "{actor} · {trigger} · {status}",
+  "aiAttributionTitle": "Attribution IA",
+  "aiAttributionTokenBreakdown": "Entrée : {input} · Sortie : {output} · En cache : {cached} · Raisonnement : {reasoning}",
+  "@aiAttributionTokenBreakdown": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      },
+      "reasoning": {
+        "type": "String"
+      }
+    }
+  },
+  "aiAttributionTokens": "Jetons",
+  "aiAttributionTokenUsageUnknown": "Utilisation des jetons inconnue",
+  "aiAttributionTrigger": "Déclencheur",
+  "aiAttributionTriggerAgent": "Agent",
+  "aiAttributionTriggerAutomatic": "Automatique",
+  "aiAttributionTriggerImported": "Importé",
+  "aiAttributionTriggerManual": "Manuel",
+  "aiAttributionTriggerScheduled": "Planifié",
+  "aiAttributionTriggerSynced": "Depuis la synchro",
+  "aiAttributionUnavailable": "L’attribution IA n’est pas disponible.",
+  "aiAttributionUnknownCreator": "Créateur inconnu",
+  "aiAttributionUnknownModel": "Modèle inconnu",
+  "aiAttributionYou": "Toi",
   "aiBatchToggleTooltip": "Passer à l'enregistrement standard",
   "aiCapabilityChipImageGeneration": "Génération d'images",
   "aiCapabilityChipImageRecognition": "Reconnaissance d'images",
@@ -545,6 +596,7 @@
   "aiConfigSelectProviderModalTitle": "Sélectionner un fournisseur d'inférence",
   "aiConfigSelectProviderTypeModalTitle": "Sélectionner le type de fournisseur",
   "aiConfigUseReasoningFieldLabel": "Utiliser le raisonnement",
+  "aiConsumptionAttributionReference": "Attribution {id}",
   "aiConsumptionCallsLine": "Appels IA : {count} · impact mesuré pour {measured}",
   "aiConsumptionCostLine": "Coût : {cost}",
   "aiConsumptionImpactLine": "Impact : {energy} · {carbon} CO₂e · {water} d'eau",
@@ -555,10 +607,12 @@
   "aiConsumptionTokensLine": "Jetons : {input} entrée · {output} sortie",
   "aiConsumptionTypeAgentTurn": "Tour d'agent",
   "aiConsumptionTypeAudioTranscription": "Transcription",
+  "aiConsumptionTypeEmbeddingIndexing": "Indexation des embeddings",
   "aiConsumptionTypeImageAnalysis": "Analyse d'image",
   "aiConsumptionTypeImageGeneration": "Génération d'image",
   "aiConsumptionTypePromptGeneration": "Génération de prompt",
   "aiConsumptionTypeTextGeneration": "Génération de texte",
+  "aiConsumptionWorkGroup": "Groupe de travail IA · {callCount, plural, =1{1 appel} other{{callCount} appels}}",
   "aiDeleteToastCascadeDescription": "{count, plural, =1{1 modèle aussi supprimé : {names}} other{{count} modèles aussi supprimés : {names}}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {
@@ -4308,6 +4362,8 @@
   "timeEntryItemEnd": "Fin",
   "timeEntryItemRunning": "En cours",
   "timeEntryItemStart": "Début",
+  "transcriptLanguageLabel": "Langue : {language}",
+  "transcriptModelLabel": "Modèle : {provider}, {model}",
   "unlinkButton": "Délier",
   "unlinkTaskConfirm": "Es-tu sûr de vouloir délier cette tâche ?",
   "unlinkTaskTitle": "Délier la tâche",

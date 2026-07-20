@@ -291,7 +291,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       );
 
       // Soul sessions only get soul tools (no propose_directives).
-      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
+      final recordConsumption = getIt.isRegistered<AiInteractionCapture>();
       await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: ctx.initialUserMessage,

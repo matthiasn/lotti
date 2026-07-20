@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -10,15 +12,15 @@ import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
-import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 // ChatCompletionMessage is a sealed class and cannot be faked
 
@@ -27,23 +29,20 @@ class FakeChatCompletionMessageToolCall extends Fake
 
 class FakeConversationManager extends Fake implements ConversationManager {}
 
-/// Registers a stubbed [MockAiConsumptionRecorder] in getIt for one test.
-/// Guards against a pre-existing registration and unregisters via
-/// [addTearDown] so the global getIt stays clean for other suites.
-MockAiConsumptionRecorder _registerConsumptionRecorder() {
-  final recorder = MockAiConsumptionRecorder();
-  when(() => recorder.record(any())).thenAnswer((_) async {});
-  if (getIt.isRegistered<AiConsumptionRecorder>()) {
-    getIt.unregister<AiConsumptionRecorder>();
-  }
-  getIt.registerSingleton<AiConsumptionRecorder>(recorder);
-  addTearDown(() {
-    if (getIt.isRegistered<AiConsumptionRecorder>()) {
-      getIt.unregister<AiConsumptionRecorder>();
-    }
-  });
-  return recorder;
+AiInteractionCaptureTestBench _registerInteractionCapture() {
+  final bench = AiInteractionCaptureTestBench.create()..register();
+  addTearDown(bench.unregister);
+  return bench;
 }
+
+List<AiConsumptionEvent> _capturedEvents(
+  AiInteractionCaptureTestBench bench,
+) => verify(
+  () => bench.service.recordInteraction(
+    attributionId: any(named: 'attributionId'),
+    event: captureAny(named: 'event'),
+  ),
+).captured.cast<AiConsumptionEvent>();
 
 /// Shared 8-argument stub for `generateTextWithMessages`;
 /// chain `.thenAnswer(...)` with the stream (or function) the test needs.
@@ -72,6 +71,7 @@ void main() {
   late MockConversationStrategy mockStrategy;
 
   setUpAll(() {
+    registerAllFallbackValues();
     // registerFallbackValue(FakeChatCompletionMessage()); // Not needed as ChatCompletionMessage is sealed
     registerFallbackValue(FakeChatCompletionMessageToolCall());
     registerFallbackValue(FakeAiConfigInferenceProvider());
@@ -1939,7 +1939,7 @@ void main() {
         test(
           'records an agentTurn event with owner ids, tokens, and impact',
           () async {
-            final recorder = _registerConsumptionRecorder();
+            final bench = _registerInteractionCapture();
             stubTurnWithUsage(
               usage: const CompletionUsage(
                 promptTokens: 100,
@@ -1967,9 +1967,7 @@ void main() {
               () => sendWithConsumption(agentId: 'agent-1'),
             );
 
-            final event =
-                verify(() => recorder.record(captureAny())).captured.single
-                    as AiConsumptionEvent;
+            final event = _capturedEvents(bench).single;
             expect(event.responseType, AiConsumptionResponseType.agentTurn);
             // The wake run key doubles as the causal parent id.
             expect(event.parentId, 'wake-1');
@@ -1984,7 +1982,7 @@ void main() {
             expect(event.turnIndex, 1);
             expect(event.providerModelId, 'test-model');
             expect(event.providerType, InferenceProviderType.ollama);
-            expect(event.createdAt, DateTime(2024, 3, 15, 10, 30));
+            expect(event.createdAt, DateTime(2024, 3, 15, 10, 30).toUtc());
             expect(event.durationMs, 0);
             expect(event.inputTokens, 100);
             expect(event.outputTokens, 40);
@@ -1999,6 +1997,10 @@ void main() {
             expect(event.pue, 1.2);
             expect(event.dataCenter, 'FI');
             expect(event.upstreamProviderId, 'upstream-x');
+            expect(
+              event.responseDigest,
+              sha256.convert(utf8.encode('Hi')).toString(),
+            );
           },
         );
 
@@ -2006,7 +2008,7 @@ void main() {
           'records executor and editor models as separate consumption events '
           'under one wake',
           () async {
-            final recorder = _registerConsumptionRecorder();
+            final bench = _registerInteractionCapture();
             _stubGenerateText(mockOllamaRepo).thenAnswer((invocation) {
               final model = invocation.namedArguments[#model] as String;
               final isEditor = model == 'qwen3.5-122b-a10b';
@@ -2066,9 +2068,7 @@ void main() {
               model: 'qwen3.5-122b-a10b',
             );
 
-            final events = verify(
-              () => recorder.record(captureAny()),
-            ).captured.cast<AiConsumptionEvent>();
+            final events = _capturedEvents(bench);
             expect(events, hasLength(2));
             expect(events.map((event) => event.id).toSet(), hasLength(2));
             expect(events.map((event) => event.wakeRunKey).toSet(), {'wake-1'});
@@ -2085,7 +2085,7 @@ void main() {
           'increments turnIndex per turn and parents every turn on the '
           'wake run key',
           () async {
-            final recorder = _registerConsumptionRecorder();
+            final bench = _registerInteractionCapture();
 
             var callCount = 0;
             _stubGenerateText(mockOllamaRepo).thenAnswer((_) {
@@ -2178,9 +2178,7 @@ void main() {
               ],
             );
 
-            final events = verify(
-              () => recorder.record(captureAny()),
-            ).captured.cast<AiConsumptionEvent>();
+            final events = _capturedEvents(bench);
             expect(events, hasLength(2));
             // turnIndex mirrors ConversationManager.turnCount (user-message
             // count at request time): 1 for the first turn, 2 after the
@@ -2200,9 +2198,9 @@ void main() {
         );
 
         test(
-          'does not record when consumptionAgentId is null (non-agent caller)',
+          'records non-agent calls as text generation without an agent owner',
           () async {
-            final recorder = _registerConsumptionRecorder();
+            final bench = _registerInteractionCapture();
             stubTurnWithUsage(
               usage: const CompletionUsage(
                 promptTokens: 10,
@@ -2214,16 +2212,39 @@ void main() {
             final usage = await sendWithConsumption(agentId: null);
 
             expect(usage, isNotNull);
-            verifyNever(() => recorder.record(any()));
+            final event = _capturedEvents(bench).single;
+            expect(
+              event.responseType,
+              AiConsumptionResponseType.textGeneration,
+            );
+            expect(event.agentId, isNull);
           },
         );
 
+        test('terminalizes a failed non-agent stream exactly once', () async {
+          final bench = _registerInteractionCapture();
+          _stubGenerateText(mockOllamaRepo).thenAnswer(
+            (_) => Stream.error(StateError('provider unavailable')),
+          );
+
+          final usage = await sendWithConsumption(agentId: null);
+
+          expect(usage, isNull);
+          verify(
+            () => bench.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: const [],
+              status: AiWorkStatus.failed,
+              errorCode: 'StateError',
+            ),
+          ).called(1);
+          verify(() => bench.service.finalize(any())).called(1);
+        });
+
         test(
-          'completes normally when no recorder is registered',
+          'completes normally when no interaction capture is registered',
           () async {
-            if (getIt.isRegistered<AiConsumptionRecorder>()) {
-              getIt.unregister<AiConsumptionRecorder>();
-            }
+            AiInteractionCaptureTestBench.create().unregister();
             stubTurnWithUsage(
               usage: const CompletionUsage(
                 promptTokens: 100,
@@ -2235,7 +2256,7 @@ void main() {
             final usage = await sendWithConsumption(agentId: 'agent-1');
 
             // The turn still completes and reports usage; the missing
-            // recorder is silently skipped.
+            // capture is silently skipped.
             expect(usage, isNotNull);
             expect(usage!.inputTokens, 100);
             final manager = repository.getConversation(conversationId)!;
@@ -2249,9 +2270,12 @@ void main() {
         test(
           'returns usage when consumption recording fails',
           () async {
-            final recorder = _registerConsumptionRecorder();
+            final bench = _registerInteractionCapture();
             when(
-              () => recorder.record(any()),
+              () => bench.service.recordInteraction(
+                attributionId: any(named: 'attributionId'),
+                event: any(named: 'event'),
+              ),
             ).thenThrow(StateError('telemetry write failed'));
             stubTurnWithUsage(
               usage: const CompletionUsage(

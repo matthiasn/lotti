@@ -24,7 +24,6 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -38,6 +37,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -45,20 +45,13 @@ void main() {
   test(
     'executes the real task-agent workflow against the configured provider',
     () async {
-      final consumptionEvents = <AiConsumptionEvent>[];
-      final consumptionRecorder = MockAiConsumptionRecorder();
-      when(() => consumptionRecorder.record(any())).thenAnswer((invocation) {
-        consumptionEvents.add(
-          invocation.positionalArguments.single as AiConsumptionEvent,
-        );
-        return Future<void>.value();
-      });
+      final attribution = AiInteractionCaptureTestBench.create();
       await setUpTestGetIt(
         additionalSetup: () {
           getIt
             ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-            ..registerSingleton<TimeService>(TimeService())
-            ..registerSingleton<AiConsumptionRecorder>(consumptionRecorder);
+            ..registerSingleton<TimeService>(TimeService());
+          attribution.register();
         },
       );
       addTearDown(tearDownTestGetIt);
@@ -188,6 +181,12 @@ void main() {
         threadId: threadId,
       );
       stopwatch.stop();
+      final consumptionEvents = verify(
+        () => attribution.service.recordInteraction(
+          attributionId: any(named: 'attributionId'),
+          event: captureAny(named: 'event'),
+        ),
+      ).captured.cast<AiConsumptionEvent>();
 
       final report = _WorkflowEvalReport.fromCaptured(
         provider: provider,

@@ -260,6 +260,10 @@ void main() {
         Icons.edit_note_outlined,
         'Prompt generation',
       ),
+      AiConsumptionResponseType.embeddingIndexing: (
+        Icons.hub_outlined,
+        'Embedding indexing',
+      ),
     };
     stubEvents([
       for (final type in cases.keys)
@@ -303,5 +307,57 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('groups child calls under their top-level attribution', (
+    tester,
+  ) async {
+    stubEvents([
+      makeConsumptionEvent(
+        id: 'evt-1',
+        attributionId: 'attr-1234567890abcdef',
+        providerModelId: 'planner-model',
+        totalTokens: 100,
+      ),
+      makeConsumptionEvent(
+        id: 'evt-2',
+        attributionId: 'attr-1234567890abcdef',
+        providerModelId: 'writer-model',
+        totalTokens: 50,
+      ),
+    ]);
+    await pumpLedger(tester);
+
+    expect(find.text('AI work · 2 calls'), findsOneWidget);
+    expect(find.text('Attribution attr-1234567'), findsOneWidget);
+    expect(find.text('150 tokens · <€0.01 · <1 Wh'), findsOneWidget);
+    expect(find.text('planner-model'), findsNothing);
+
+    await tester.tap(find.text('AI work · 2 calls'));
+    await tester.pump();
+
+    expect(find.text('planner-model'), findsOneWidget);
+    expect(find.text('writer-model'), findsOneWidget);
+  });
+
+  testWidgets('narrow attribution groups stack unreported metrics', (
+    tester,
+  ) async {
+    stubEvents([
+      makeConsumptionEvent(
+        id: 'evt-unreported',
+        attributionId: 'short-id',
+        providerModelId: 'local-model',
+        totalTokens: null,
+        credits: null,
+        energyKwh: null,
+      ),
+    ]);
+
+    await pumpLedger(tester, width: 360);
+
+    expect(find.text('AI work · 1 call'), findsOneWidget);
+    expect(find.text('Attribution short-id'), findsOneWidget);
+    expect(find.text('Not reported'), findsOneWidget);
   });
 }

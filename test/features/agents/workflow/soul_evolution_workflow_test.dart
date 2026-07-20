@@ -9,7 +9,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -722,14 +722,14 @@ void main() {
 
     test(
       'attributes consumption to the soul and conversation when an '
-      'AiConsumptionRecorder is registered',
+      'AiInteractionCapture is registered',
       () async {
-        getIt.registerSingleton<AiConsumptionRecorder>(
-          MockAiConsumptionRecorder(),
+        getIt.registerSingleton<AiInteractionCapture>(
+          MockAiInteractionCapture(),
         );
         addTearDown(() {
-          if (getIt.isRegistered<AiConsumptionRecorder>()) {
-            getIt.unregister<AiConsumptionRecorder>();
+          if (getIt.isRegistered<AiInteractionCapture>()) {
+            getIt.unregister<AiInteractionCapture>();
           }
         });
         stubSoulContext();

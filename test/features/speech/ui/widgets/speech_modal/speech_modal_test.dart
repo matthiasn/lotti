@@ -8,6 +8,7 @@ import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart'
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/editor_state_service.dart';
 
 import '../../../../../helpers/fake_entry_controller.dart';
@@ -78,12 +79,19 @@ void main() {
           findsNWidgets(transcripts.length),
         );
         final first = transcripts.first;
+        final context = tester.element(find.byType(TranscriptListItem).first);
         expect(
-          find.text('Lang: ${first.detectedLanguage.toUpperCase()}'),
+          find.text(
+            context.messages.transcriptLanguageLabel(
+              first.detectedLanguage.toUpperCase(),
+            ),
+          ),
           findsOneWidget,
         );
         expect(
-          find.text('Model: ${first.library}, ${first.model}'),
+          find.text(
+            context.messages.transcriptModelLabel(first.library, first.model),
+          ),
           findsOneWidget,
         );
       },

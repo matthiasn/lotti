@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -699,6 +700,8 @@ Future<String?> importGeneratedImageBytes({
   required String fileExtension,
   String? linkedId,
   String? categoryId,
+  String? imageId,
+  AiWorkAttribution? aiAttribution,
 }) async {
   // Validate file size
   if (data.length > ImageImportConstants.maxFileSizeBytes) {
@@ -711,7 +714,7 @@ Future<String?> importGeneratedImageBytes({
   }
 
   final capturedAt = DateTime.now();
-  final id = uuid.v1();
+  final id = imageId ?? uuid.v1();
 
   final day = DateFormat(
     AudioRecorderConstants.directoryDateFormat,
@@ -729,6 +732,7 @@ Future<String?> importGeneratedImageBytes({
     imageFile: targetFileName,
     imageDirectory: relativePath,
     capturedAt: capturedAt,
+    aiAttribution: aiAttribution,
   );
 
   final createdEntity = await JournalRepository.createImageEntry(

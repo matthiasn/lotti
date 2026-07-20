@@ -507,6 +507,57 @@
   "aggregationHourlySum": "Stundensumme",
   "aggregationNone": "Rohwerte",
   "aiAssistantTitle": "Generieren…",
+  "aiAttributionArtifactOutput": "Ausgabe",
+  "aiAttributionCompletedAt": "Abgeschlossen am",
+  "aiAttributionCost": "Kosten",
+  "aiAttributionCostUnknown": "Kosten unbekannt",
+  "aiAttributionCreator": "Erstellt von",
+  "aiAttributionDiagnostics": "Diagnose",
+  "aiAttributionDuration": "Dauer",
+  "aiAttributionInteractions": "Interaktionen",
+  "aiAttributionLoading": "KI-Zuordnung wird geladen…",
+  "aiAttributionNoInteractionDetails": "Keine Interaktionsdetails verfügbar.",
+  "aiAttributionRequestEvidence": "Anfrage-Nachweis",
+  "aiAttributionResponseEvidence": "Antwort-Nachweis",
+  "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{keine Aufrufe} =1{1 Aufruf} other{{callCount} Aufrufe}}",
+  "aiAttributionStartedAt": "Gestartet am",
+  "aiAttributionStatus": "Status",
+  "aiAttributionStatusCancelled": "Abgebrochen",
+  "aiAttributionStatusFailed": "Fehlgeschlagen",
+  "aiAttributionStatusPartial": "Teilweise",
+  "aiAttributionStatusSucceeded": "Abgeschlossen",
+  "aiAttributionSummary": "{actor} · {trigger} · {status}",
+  "aiAttributionTitle": "KI-Zuordnung",
+  "aiAttributionTokenBreakdown": "Eingabe: {input} · Ausgabe: {output} · Zwischengespeichert: {cached} · Denken: {reasoning}",
+  "@aiAttributionTokenBreakdown": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      },
+      "reasoning": {
+        "type": "String"
+      }
+    }
+  },
+  "aiAttributionTokens": "Tokens",
+  "aiAttributionTokenUsageUnknown": "Token-Nutzung unbekannt",
+  "aiAttributionTrigger": "Auslöser",
+  "aiAttributionTriggerAgent": "Agent",
+  "aiAttributionTriggerAutomatic": "Automatisch",
+  "aiAttributionTriggerImported": "Importiert",
+  "aiAttributionTriggerManual": "Manuell",
+  "aiAttributionTriggerScheduled": "Geplant",
+  "aiAttributionTriggerSynced": "Aus Sync",
+  "aiAttributionUnavailable": "KI-Zuordnung ist nicht verfügbar.",
+  "aiAttributionUnknownCreator": "Unbekannte Person",
+  "aiAttributionUnknownModel": "Unbekanntes Modell",
+  "aiAttributionYou": "Du",
   "aiBatchToggleTooltip": "Zur Standardaufnahme wechseln",
   "aiCapabilityChipImageGeneration": "Bildgenerierung",
   "aiCapabilityChipImageRecognition": "Bilderkennung",
@@ -545,6 +596,7 @@
   "aiConfigSelectProviderModalTitle": "Inferenz-Anbieter auswählen",
   "aiConfigSelectProviderTypeModalTitle": "Anbietertyp auswählen",
   "aiConfigUseReasoningFieldLabel": "Schlussfolgerung verwenden",
+  "aiConsumptionAttributionReference": "Zuordnung {id}",
   "aiConsumptionCallsLine": "KI-Aufrufe: {count} · Impact gemessen bei {measured}",
   "aiConsumptionCostLine": "Kosten: {cost}",
   "aiConsumptionImpactLine": "Impact: {energy} · {carbon} CO₂e · {water} Wasser",
@@ -555,10 +607,12 @@
   "aiConsumptionTokensLine": "Tokens: {input} rein · {output} raus",
   "aiConsumptionTypeAgentTurn": "Agentendurchlauf",
   "aiConsumptionTypeAudioTranscription": "Transkription",
+  "aiConsumptionTypeEmbeddingIndexing": "Embedding-Indexierung",
   "aiConsumptionTypeImageAnalysis": "Bildanalyse",
   "aiConsumptionTypeImageGeneration": "Bildgenerierung",
   "aiConsumptionTypePromptGeneration": "Prompt-Generierung",
   "aiConsumptionTypeTextGeneration": "Textgenerierung",
+  "aiConsumptionWorkGroup": "KI-Arbeit · {callCount, plural, =1{1 Aufruf} other{{callCount} Aufrufe}}",
   "aiDeleteToastCascadeDescription": "{count, plural, =1{Außerdem entfernt: 1 Modell ({names})} other{Außerdem entfernt: {count} Modelle ({names})}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {
@@ -4308,6 +4362,8 @@
   "timeEntryItemEnd": "Ende",
   "timeEntryItemRunning": "Läuft",
   "timeEntryItemStart": "Start",
+  "transcriptLanguageLabel": "Sprache: {language}",
+  "transcriptModelLabel": "Modell: {provider}, {model}",
   "unlinkButton": "Verknüpfung aufheben",
   "unlinkTaskConfirm": "Bist du sicher, dass du die Verknüpfung zu dieser Aufgabe aufheben möchtest?",
   "unlinkTaskTitle": "Verknüpfung aufheben",

@@ -169,6 +169,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   }
 
+  Future<void> swipeAiResponseToDelete(WidgetTester tester) async {
+    final dismissible = find.byKey(Key(testAiResponseEntry1.meta.id));
+    final swipeStart = tester.getTopLeft(dismissible) + const Offset(20, 20);
+
+    await tester.dragFrom(swipeStart, const Offset(-300, 0));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
   group('NestedAiResponsesWidget Rendering', () {
     testWidgets(
       'tracks response entrances outside build across provider updates',
@@ -519,9 +528,7 @@ void main() {
       await pumpWidget(tester);
 
       // Swipe to trigger confirmation dialog
-      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await swipeAiResponseToDelete(tester);
 
       // Verify AlertDialog is shown with title and content
       expect(find.byType(AlertDialog), findsOneWidget);
@@ -536,9 +543,7 @@ void main() {
       await pumpWidget(tester);
 
       // Swipe to trigger confirmation dialog
-      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await swipeAiResponseToDelete(tester);
 
       // Tap Cancel button
       await tester.tap(find.text('Cancel'));
@@ -566,9 +571,7 @@ void main() {
       await pumpWidget(tester);
 
       // Swipe to trigger confirmation dialog
-      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await swipeAiResponseToDelete(tester);
 
       // Tap Delete button
       await tester.tap(find.text('Delete'));
@@ -598,9 +601,7 @@ void main() {
       final dismissibleFinder = find.byKey(Key(testAiResponseEntry1.meta.id));
 
       // Swipe to trigger confirmation dialog
-      await tester.drag(dismissibleFinder, const Offset(-300, 0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await swipeAiResponseToDelete(tester);
 
       // Tap Delete button
       await tester.tap(find.text('Delete'));
@@ -635,9 +636,7 @@ void main() {
       final dismissibleFinder = find.byKey(Key(testAiResponseEntry1.meta.id));
 
       // Swipe to trigger confirmation dialog
-      await tester.drag(dismissibleFinder, const Offset(-300, 0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await swipeAiResponseToDelete(tester);
 
       // Tap Delete button
       await tester.tap(find.text('Delete'));
@@ -658,9 +657,7 @@ void main() {
       await pumpWidget(tester);
 
       // Swipe to trigger confirmation dialog
-      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await swipeAiResponseToDelete(tester);
 
       // Verify dialog is shown
       expect(find.byType(AlertDialog), findsOneWidget);

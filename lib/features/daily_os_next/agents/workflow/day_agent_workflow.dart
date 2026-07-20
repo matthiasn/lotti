@@ -23,7 +23,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake_context.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
@@ -375,7 +375,7 @@ class DayAgentWorkflow {
       }
 
       final tools = _buildToolDefinitions();
-      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
+      final recordConsumption = getIt.isRegistered<AiInteractionCapture>();
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -389,6 +389,7 @@ class DayAgentWorkflow {
         consumptionAgentId: recordConsumption ? agentId : null,
         consumptionWakeRunKey: recordConsumption ? runKey : null,
         consumptionThreadId: recordConsumption ? threadId : null,
+        rethrowInferenceErrors: true,
       );
 
       if (_requiresCaptureParse(
@@ -408,6 +409,9 @@ class DayAgentWorkflow {
             tools: tools,
             strategy: strategy,
             captureId: captureId,
+            consumptionAgentId: recordConsumption ? agentId : null,
+            consumptionWakeRunKey: recordConsumption ? runKey : null,
+            consumptionThreadId: recordConsumption ? threadId : null,
           );
           if (retryUsage != null) {
             usage = usage == null ? retryUsage : usage.merge(retryUsage);
@@ -427,6 +431,9 @@ class DayAgentWorkflow {
             inferenceRepo: inferenceRepo,
             tools: tools,
             strategy: strategy,
+            consumptionAgentId: recordConsumption ? agentId : null,
+            consumptionWakeRunKey: recordConsumption ? runKey : null,
+            consumptionThreadId: recordConsumption ? threadId : null,
           );
           if (retryUsage != null) {
             usage = usage == null ? retryUsage : usage.merge(retryUsage);

@@ -5,7 +5,10 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -56,6 +59,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   DateTime? _realtimeStartTime;
   String? _realtimeModelName;
   String? _realtimeProviderName;
+  TranscriptAttributionSession? _realtimeAttribution;
 
   /// Sliding-window VU meter driving the live level display.
   final VuMeter _vuMeter = VuMeter(
@@ -437,6 +441,19 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       final config = await service.resolveRealtimeConfig();
       _realtimeModelName = config?.model.providerModelId;
       _realtimeProviderName = config?.provider.name;
+      if (getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+        _realtimeAttribution = await getIt<TranscriptAttributionCoordinator>()
+            .begin(
+              providerName: config?.provider.name ?? 'Mistral',
+              modelId: config?.model.providerModelId ?? 'voxtral-mini',
+              providerType:
+                  config?.provider.inferenceProviderType ??
+                  InferenceProviderType.mistral,
+              interactionKind: AiInteractionKind.realtimeTranscription,
+              taskId: linkedId,
+              categoryId: _categoryId,
+            );
+      }
 
       // Subscribe to amplitude stream for VU meter
       _realtimeAmplitudeSub = service.amplitudeStream.listen((dbfs) {
@@ -475,6 +492,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       );
     } catch (exception, stackTrace) {
       // Clean up on failure
+      await _failRealtimeAttribution(exception);
       await _cleanupRealtime();
       state = state.copyWith(
         status: AudioRecorderStatus.stopped,
@@ -498,6 +516,8 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     // Capture metadata in locals before any cleanup nulls them (#6).
     final modelName = _realtimeModelName;
     final providerName = _realtimeProviderName;
+    final attributionSession = _realtimeAttribution;
+    var attributionInteractionRecorded = false;
 
     try {
       // Cancel amplitude subscription
@@ -572,6 +592,23 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       _linkedId = null;
       final entryId = journalAudio?.meta.id;
 
+      if (attributionSession != null &&
+          getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+        await getIt<TranscriptAttributionCoordinator>().recordInteraction(
+          session: attributionSession,
+          audioEntryId: entryId,
+          transcript: result.transcript,
+          usage: result.usage,
+          interactionStatus: result.usedTranscriptFallback
+              ? AiInteractionStatus.partial
+              : AiInteractionStatus.succeeded,
+          errorCode: result.usedTranscriptFallback
+              ? 'realtime_completion_fallback'
+              : null,
+        );
+        attributionInteractionRecorded = true;
+      }
+
       // Save the realtime transcript on the audio entry
       if (entryId != null &&
           result.transcript.isNotEmpty &&
@@ -582,6 +619,15 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
           providerName: providerName ?? 'Mistral',
           modelId: modelName ?? 'voxtral-mini',
           detectedLanguage: result.detectedLanguage,
+          attributionSession: attributionSession,
+        );
+      } else if (attributionSession != null &&
+          getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+        await getIt<TranscriptAttributionCoordinator>().failOutput(
+          session: attributionSession,
+          errorCode: entryId == null
+              ? 'audio_carrier_unavailable'
+              : 'empty_transcript',
         );
       }
 
@@ -598,6 +644,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
       _realtimeModelName = null;
       _realtimeProviderName = null;
+      _realtimeAttribution = null;
 
       _loggingService.log(
         LogDomain.speech,
@@ -617,6 +664,18 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         subDomain: 'stopRealtime',
       );
       _vuMeter.reset();
+      if (attributionInteractionRecorded && attributionSession != null) {
+        try {
+          await getIt<TranscriptAttributionCoordinator>().failOutput(
+            session: attributionSession,
+            errorCode: 'transcript_output_failed',
+          );
+        } catch (_) {
+          // The interaction remains recorded even if marking the output failed.
+        }
+      } else {
+        await _failRealtimeAttribution(exception, session: attributionSession);
+      }
       await _cleanupRealtime();
       try {
         await ref.read(realtimeTranscriptionServiceProvider).dispose();
@@ -634,9 +693,34 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     return null;
   }
 
+  Future<void> _failRealtimeAttribution(
+    Object error, {
+    TranscriptAttributionSession? session,
+  }) async {
+    final attribution = session ?? _realtimeAttribution;
+    if (attribution == null ||
+        !getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+      return;
+    }
+    try {
+      await getIt<TranscriptAttributionCoordinator>().fail(
+        session: attribution,
+        error: error,
+      );
+    } catch (attributionError, stackTrace) {
+      _loggingService.error(
+        LogDomain.speech,
+        attributionError,
+        stackTrace: stackTrace,
+        subDomain: 'realtimeAttributionFailure',
+      );
+    }
+  }
+
   /// Cancels the realtime recording session without saving.
   Future<void> cancelRealtime() async {
     try {
+      await _cancelRealtimeAttribution();
       await _cleanupRealtime();
 
       // Dispose the service to tear down WebSocket and subscriptions,
@@ -670,6 +754,15 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     }
   }
 
+  Future<void> _cancelRealtimeAttribution() async {
+    final attribution = _realtimeAttribution;
+    if (attribution == null ||
+        !getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+      return;
+    }
+    await getIt<TranscriptAttributionCoordinator>().cancel(attribution);
+  }
+
   /// Saves the realtime transcript as an [AudioTranscript] on the
   /// [JournalAudio] entry, making it searchable and visible.
   Future<void> _saveRealtimeTranscript({
@@ -678,14 +771,25 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     required String providerName,
     required String modelId,
     String? detectedLanguage,
+    TranscriptAttributionSession? attributionSession,
   }) async {
     final persistenceLogic = getIt<PersistenceLogic>();
+    final prepared =
+        getIt.isRegistered<TranscriptAttributionCoordinator>() &&
+            attributionSession != null
+        ? await getIt<TranscriptAttributionCoordinator>().prepareOutput(
+            session: attributionSession,
+            audioEntryId: journalAudio.id,
+          )
+        : null;
     final audioTranscript = AudioTranscript(
       created: DateTime.now(),
       library: providerName,
       model: modelId,
       detectedLanguage: detectedLanguage ?? '-',
       transcript: transcript,
+      id: prepared?.transcriptId,
+      aiAttribution: prepared?.attribution,
     );
 
     final existingTranscripts = journalAudio.data.transcripts ?? [];
@@ -713,7 +817,28 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       // Non-fatal: notification will still include the audio entry's own ID.
     }
 
-    await persistenceLogic.updateDbEntity(updated, linkedId: parentId);
+    final persisted = await persistenceLogic.updateDbEntity(
+      updated,
+      linkedId: parentId,
+    );
+    if (persisted == true && prepared != null) {
+      try {
+        await getIt<TranscriptAttributionCoordinator>().finalize(prepared);
+      } catch (error, stackTrace) {
+        _loggingService.error(
+          LogDomain.speech,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'realtimeAttributionFinalize',
+        );
+        // The transcript carrier is authoritative and already persisted.
+      }
+    } else if (prepared != null && attributionSession != null) {
+      await getIt<TranscriptAttributionCoordinator>().failOutput(
+        session: attributionSession,
+        errorCode: 'transcript_persistence_failed',
+      );
+    }
   }
 
   /// Cleans up realtime recording resources.
@@ -732,6 +857,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     _realtimeStartTime = null;
     _realtimeModelName = null;
     _realtimeProviderName = null;
+    _realtimeAttribution = null;
   }
 
   /// Pauses any currently playing audio. Shared between `record` and

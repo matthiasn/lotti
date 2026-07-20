@@ -1011,10 +1011,12 @@ void main() {
 
       // Create AI response entry
       final aiResponse = await getIt<PersistenceLogic>().createAiResponseEntry(
+        id: 'ai-response-id',
         data: aiResponseData,
       );
 
       expect(aiResponse, isNotNull);
+      expect(aiResponse?.id, 'ai-response-id');
       expect(aiResponse?.data, aiResponseData);
 
       // Retrieve the AI response from the database
@@ -2190,6 +2192,44 @@ void main() {
       expect(result, isNull);
       verifyLogged(LogDomain.persistence, 'createAiResponseEntry');
     });
+
+    test(
+      'createAiResponseEntry returns null when persistence is rejected',
+      () async {
+        when(
+          () => journalDb.updateJournalEntity(
+            any<JournalEntity>(),
+            overwrite: false,
+          ),
+        ).thenAnswer(
+          (_) async => JournalUpdateResult.skipped(
+            reason: JournalUpdateSkipReason.overwritePrevented,
+          ),
+        );
+
+        final result = await logic.createAiResponseEntry(
+          data: const AiResponseData(
+            model: 'model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: 'thoughts',
+            response: 'response',
+          ),
+          dateFrom: DateTime(2024, 3, 15, 10),
+        );
+
+        expect(result, isNull);
+        verify(
+          () => vectorClockService.burnUnboundVectorClock(
+            any<VectorClock?>(),
+            reason: any<String>(
+              named: 'reason',
+              that: contains('createDbEntity write rejected'),
+            ),
+          ),
+        ).called(1);
+      },
+    );
 
     test('createEventEntry logs and returns null on failure', () async {
       stubCreateMetadataThrows();

@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -79,6 +80,7 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
   TemporaryAudioFileReader temporaryFileReader = _readTemporaryFile,
   TemporaryAudioFileDeleter temporaryFileDeleter = _deleteTemporaryFile,
   Clock? clockSource,
+  InferenceImpactCollector? impactCollector,
 }) {
   final abortTrigger = Completer<void>();
   var canceled = false;
@@ -100,6 +102,7 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
         temporaryFileReader: temporaryFileReader,
         temporaryFileDeleter: temporaryFileDeleter,
         clockSource: clockSource,
+        impactCollector: impactCollector,
         abortTrigger: abortTrigger,
       );
       if (!canceled) controller.add(chunk);
@@ -135,6 +138,7 @@ Future<CreateChatCompletionStreamResponse> _transcribeTemporaryMp3ChatAudio({
   required Completer<void> abortTrigger,
   int? maxCompletionTokens,
   Clock? clockSource,
+  InferenceImpactCollector? impactCollector,
 }) async {
   final normalizedModel = model.trim();
   final normalizedBaseUrl = baseUrl.trim();
@@ -260,6 +264,16 @@ Future<CreateChatCompletionStreamResponse> _transcribeTemporaryMp3ChatAudio({
         '(request $requestId)',
         provider: provider.repositoryName,
       );
+    }
+
+    final impact = MeliousCallImpact.fromResponseJson(
+      decoded,
+      costCreditsDecimal: MeliousCallImpact.costDecimalFromResponseBody(
+        response.body,
+      ),
+    );
+    if (impact.hasData) {
+      impactCollector?.impact = impact;
     }
 
     final content = _responseContent(decoded);

@@ -1,383 +1,217 @@
-# AI Consumption
+# AI Consumption and Attribution
 
-Records **what every AI backend call actually burns** — tokens, money, energy,
-CO₂, water — as one immutable, append-only row per call, tagged with its owner
-(task / category / entry) and the call that caused it. Those rows roll up into
-per-task lifetime totals and per-category time-bucketed series, so the app can
-per-task lifetime totals and per-category, per-model, and per-location
-time-bucketed series, so the app can answer "how many kWh / € / g CO₂ did this
-task cost over its lifetime?" and "which categories/models/locations burned what
-this week/month?".
+This feature records two related facts:
 
-This module is the **data layer + sync + capture mechanism**. It is deliberately
-separate from the journal (`db.sqlite`) and agent (`agent.sqlite`) domains so
-high-volume diagnostics writes never contend with primary data.
+1. which creator initiated a logical piece of AI work; and
+2. which provider calls, usage, reported cost, and environmental impact
+   produced it.
 
-## Architecture
+The implementation deliberately keeps those facts small. A completed output
+embeds one `AiWorkAttribution`. Every provider call remains one
+`AiConsumptionEvent`. Both are linked by `attributionId`; there are no extra
+cost, payload, link, or recovery tables.
+
+## Runtime architecture
 
 ```mermaid
 flowchart LR
-  subgraph Capture
-    M[MeliousInferenceRepository<br/>non-streaming path] -->|MeliousCallImpact| C[InferenceImpactCollector]
-    call[AI call site<br/>agent turn / transcription /<br/>image / prompt] -->|InferenceUsage + impact| R[AiConsumptionRecorder]
-  end
-  R --> SS[ConsumptionSyncService.recordEvent]
-  SS -->|VC stamp| Repo[ConsumptionRepository]
-  Repo --> DB[(ai_consumption.sqlite<br/>consumption_events)]
-  SS -->|SyncMessage.consumptionEvent| OB[Outbox → Matrix]
-  OB -. inbound apply .-> DB
-  DB --> Agg[Aggregation<br/>totalsForTask / bucketize]
-  Agg --> UI[AI Impact dashboard<br/>ImpactAnalysisBody]
+  Action[User, automation, or agent action] --> Session[AiAttributionService.begin]
+  Session --> Call[Provider or local inference]
+  Call --> Event[AiConsumptionEvent]
+  Event --> Consumption[(consumption_events)]
+  Consumption --> Outbox[Existing Matrix consumption sync]
+  Call --> Output[Journal or agent output]
+  Output --> Carrier[Embedded AiWorkAttribution]
+  Carrier --> Projection[(ai_work_attributions)]
+  Consumption --> UI[Attribution details and impact UI]
+  Projection --> UI
 ```
+
+`AiAttributionSession` is an in-memory value used to carry creator, trigger,
+work type, timestamps, and output identity through one operation. It is not a
+database transaction or recovery state machine. Provider-call persistence and
+output persistence are independent:
+
+- `recordInteraction` writes the consumption event through
+  `ConsumptionSyncService`.
+- `prepareCompletion` builds the attribution that the caller embeds in the
+  output.
+- after the output is saved, `finalize` upserts the local query projection.
+- inbound journal and agent sync runs `AttributionCarrierProjector`, so an
+  embedded carrier repairs a missing local projection.
+
+An outbox failure does not block the generated output. The consumption sync
+path already stores the event before attempting enqueue and participates in the
+normal sequence-log/backfill mechanism.
 
 ## Data model
 
-One backend call → one `AiConsumptionEvent` (`model/ai_consumption_event.dart`),
-persisted in `consumption_events` (`database/consumption_database.drift`).
+```mermaid
+erDiagram
+  AI_WORK_ATTRIBUTION ||--o{ CONSUMPTION_EVENT : groups
 
-- **Owners (denormalized, snapshot at call time):** `taskId`, `categoryId`,
-  `entryId`, `agentId`, `wakeRunKey`, `threadId`, `turnIndex`, `promptId`,
-  `skillId`, `configId`. `parentId` records the causal parent (for an agent turn
-  this is the wake's run key).
-- **Provider / model:** `providerType` (reuses `InferenceProviderType`),
-  `modelId`, `providerModelId`, `responseType`
-  (`AiConsumptionResponseType`: agentTurn / textGeneration / audioTranscription /
-  imageAnalysis / imageGeneration / promptGeneration), `durationMs`.
-- **Tokens:** `inputTokens`, `outputTokens`, `cachedInputTokens`,
-  `thoughtsTokens`, `totalTokens`.
-- **Cost + impact (nullable — only Melious reports these):** `credits` (≈ EUR),
-  `energyKwh`, `carbonGCo2`, `waterLiters`, `renewablePercent`, `pue`,
-  `dataCenter`, `upstreamProviderId`. Units are **as delivered** by Melious (kWh,
-  grams CO₂, litres, credits) — no lossy conversion.
+  AI_WORK_ATTRIBUTION {
+    string id PK
+    string work_type
+    string status
+    json initiator
+    json trigger
+    datetime started_at
+    datetime completed_at
+    string primary_output_type
+    string primary_output_id
+    string primary_output_sub_id
+  }
 
-**Blob-plus-projection** (identical philosophy to `agent_entities`): the
-`serialized` JSON column (including `vectorClock`) is the sync source of truth
-and round-trips losslessly; the typed columns are a denormalized projection
-written on insert purely so aggregation never touches the JSON blob. The Drift
-row class is `ConsumptionEvent`; the domain model is `AiConsumptionEvent`
-(deliberately different names, mirroring `AgentEntity` vs `AgentDomainEntity`).
+  CONSUMPTION_EVENT {
+    string id PK
+    string attribution_id
+    string provider_type
+    string provider_model_id
+    string interaction_kind
+    string interaction_status
+    int input_tokens
+    int output_tokens
+    decimal melious_credits
+    decimal energy_kwh
+    decimal carbon_g_co2
+    decimal water_liters
+  }
+```
 
-Rows are immutable: a fresh UUID `id` is minted once, on the device that made the
-call, and never mutated.
+`ai_consumption.sqlite` remains the existing dedicated consumption database.
+Schema version 2 adds only:
 
-## Impact capture (Melious)
+- the nullable `consumption_events.attribution_id` column and its lookup index;
+- the `ai_work_attributions` projection table.
 
-Melious returns `environment_impact` + `billing_cost` **only on non-streaming
-responses** (verified against the reference service in `../greifswald`;
-streaming yields just token `usage`). So the measured Melious calls are issued
-non-streaming:
+Serialized JSON remains the lossless sync representation for consumption
+events and the round-trip representation for attribution. Typed columns exist
+only for lookup and aggregation.
 
-- `MeliousInferenceRepository` gains a raw non-streaming path
-  (`_postChatCompletion` + `_asSyntheticChunk`). When a caller passes an
-  `InferenceImpactCollector`, the adapter POSTs `stream: false`, parses
-  `usage` + `environment_impact` + `billing_cost`, writes the parsed
-  `MeliousCallImpact` (`model/ai_call_impact.dart`) to the collector, and
-  re-emits the buffered reply as a **single synthetic stream chunk** so existing
-  stream consumers are unchanged. Without a collector the original streaming path
-  is used verbatim (no behavior change for non-measured calls).
-- The `InferenceImpactCollector` is a mutable side-channel that mirrors
-  `ThoughtSignatureCollector`: a call site constructs one, passes it down the
-  inference call chain, and reads `impact` after the response drains. Non-Melious
-  providers never populate it, so their rows carry tokens with impact fields null.
+`AiWorkAttribution` contains the facts needed to explain a logical output:
 
-## Persistence & sync
+- creator snapshot (`type`, stable id, display name, accountable human id);
+- trigger snapshot (manual, automation, schedule, sync, or agent tool plus
+  applicable skill/prompt/profile/agent identifiers);
+- work type and terminal status;
+- start/completion timestamps;
+- one primary typed output reference;
+- optional task/category/parent attribution and sanitized error fields.
 
-`ConsumptionRepository` (`repository/consumption_repository.dart`) is raw,
-append-only, idempotent-by-id persistence. `ConsumptionSyncService`
-(`sync/consumption_sync_service.dart`) is the sync-aware write path — it stamps a
-vector clock, persists, records the send in the sync sequence log, and enqueues a
-`SyncMessage.consumptionEvent` for cross-device replication over Matrix.
+The primary output reference is sufficient for reverse lookup. Multiple SQL
+link rows are unnecessary because the generated carrier itself owns the
+attribution.
+
+`AiConsumptionEvent` contains one actual backend interaction:
+
+- provider, configured model, provider model, duration, and request id;
+- input/output/cached/reasoning/total token usage;
+- interaction kind/status and sanitized errors;
+- task, category, entry, agent, wake, thread, prompt, and skill identifiers;
+- optional SHA-256 request/response digests and sanitized parameters;
+- provider-reported monetary and environmental values.
+
+Request and response bodies are never stored by the consumption system. Their
+authoritative copies already live in journal/agent output entities. Digests are
+non-reversible correlation aids, not payload archives.
+
+## Output carriers
+
+| Work result | Authoritative carrier |
+| --- | --- |
+| Prompt or analysis response | `AiResponseData.aiAttribution` |
+| Generated image | `ImageData.aiAttribution` |
+| Transcript | `AudioTranscript.id` + `aiAttribution` |
+| Agent report | `AgentReportEntity.provenance[aiAttributionV1]` |
+
+`AttributionCarrierProjector` projects these values after local writes and
+inbound sync. Data created before attribution is not assigned a guessed creator
+or fabricated cost.
+
+## Actual cost and Melious impact
+
+There is no estimation or reconciliation layer. An event stores only the cost
+reported for that call:
+
+- `credits`: numeric Melious credits used by existing aggregates;
+- `costCreditsDecimal`: the exact decimal string returned by Melious.
+
+The data layer does not attach currency metadata or perform a conversion. The
+UI deliberately keeps the product's established EUR presentation for these
+numeric credits. Calls without a provider-reported cost keep both fields null;
+local compute does not create a synthetic zero-cost assessment.
+
+The same Melious response also records, when present:
+
+- `energyKwh`;
+- `carbonGCo2`;
+- `waterLiters`;
+- `renewablePercent`;
+- `pue`;
+- `dataCenter`;
+- `upstreamProviderId`.
+
+`MeliousInferenceRepository` uses its non-streaming response path when an
+`InferenceImpactCollector` is supplied because the impact and billing objects
+arrive on the completed response. It emits the buffered result as a synthetic
+stream chunk so existing stream consumers keep the same interface. Other
+providers leave unsupported values null.
+
+## Capture integrations
+
+`AiInteractionCapture` is the shared unary/stream boundary. It begins logical
+attribution before invoking the provider, accumulates usage, hashes request and
+response text, records success/failure/cancellation, and copies
+`MeliousCallImpact` values directly onto the event.
+
+The main integrations are:
+
+- `UnifiedAiInferenceRepository` for generated text, image work, and reruns;
+- `SkillInferenceRunner` for prompt generation, transcription, image analysis,
+  and image generation;
+- `ConversationRepository` and AI chat for multi-call conversations;
+- agent workflows, which use a deterministic attribution id per wake;
+- `TranscriptAttributionCoordinator` for realtime/batch transcript carriers;
+- `EmbeddingProcessor`, which groups per-chunk calls under one embedding
+  output without inventing monetary cost.
+
+## Persistence and sync
+
+`ConsumptionRepository` owns local Drift reads/writes. Consumption events are
+append-only and idempotent by UUID. `ConsumptionSyncService` stamps a vector
+clock, persists the event, records it in the sequence log, and enqueues the
+existing `SyncMessage.consumptionEvent` payload.
 
 ```mermaid
 sequenceDiagram
   participant A as Device A
-  participant Mx as Matrix
+  participant M as Matrix
   participant B as Device B
-  A->>A: recordEvent(event) — VC stamp, persist
-  A->>Mx: SyncMessage.consumptionEvent (inline, low priority)
-  Mx->>B: envelope
-  B->>B: dominance check (VectorClock.compare)
-  alt fresh id
-    B->>B: upsertEvent (direct write, no echo)
-    B->>B: notify(taskId, categoryId, aiConsumptionNotification)
-  else replay (local VC dominates/equals)
-    B->>B: skip (record received)
+  A->>A: stamp VC and upsert event
+  A->>M: enqueue consumption event
+  M->>B: deliver consumption event
+  B->>B: compare vector clock
+  alt fresh event
+    B->>B: upsert without echo
+  else replay
+    B->>B: skip row write
   end
 ```
 
-Consumption events are a tiny, immutable **inline** sync payload (like
-`SyncEntryLink`, not a file attachment). Because they consume the shared per-host
-vector-clock counter, they participate in the sequence log and backfill so they
-never look like gaps in journal/agent sync. Convergence is trivial: fresh id →
-applied; replayed id whose local clock dominates/equals → skipped. Rows never
-mutate, so there is no concurrent-merge case.
+Attribution projections do not need a second sync protocol: they are rebuilt
+from the journal/agent carriers already synchronized by their owning domains.
 
-## Aggregation
+## Aggregation and UI
 
-- **Per-task lifetime totals** — `ConsumptionRepository.totalsForTask(taskId)`
-  runs a single SQL `SUM` (`sumConsumptionByTask`) → `ConsumptionTotals`
-  (call count, impact-bearing count, all token sums, credits, energy, carbon,
-  water).
-- **Per-category, per-model, and per-location time-bucketed series** —
-  `metricRowsInRange({start, end})` reads a slim projection (never
-  `serialized`), then pure-Dart `bucketize`
-  (`logic/consumption_bucketing.dart`) folds each call additively into a
-  `(epochDay, categoryId)` cell → `ConsumptionDayBuckets.days` and into a
-  `(epochDay, modelKey)` cell → `ConsumptionDayBuckets.modelDays`.
-  `modelKey` prefers `providerModelId`, falls back to `modelId`, and uses null
-  for calls whose endpoint reported usage without a model identifier. Rows with
-  provider-reported `dataCenter` also fold into
-  `ConsumptionDayBuckets.locationDays`, keyed by the normalized data-centre id
-  and an inferred ISO-style country prefix when the id starts with one (`FI`,
-  `FI-HEL1`, `SE/stockholm`). Renewable percentages are energy-weighted when
-  energy is reported and fall back to a sample average otherwise. Reuses the
-  Insights epoch-day/period machinery and guards its two traps: no `julianday()`
-  on the epoch-int `created_at`, and the denormalized `categoryId` means no
-  `linked_entries` join fan-out.
+`ConsumptionRepository.totalsForTask` performs SQL aggregation for task-level
+calls, tokens, Melious credits, energy, carbon, and water.
+`metricRowsInRange` reads the slim typed projection used by
+`consumptionBucketsProvider` for category/model/location dashboards.
 
-Adaptive-unit display formatting lives beside the bucketing logic
-(`logic/consumption_formatting.dart`): every formatter returns the value
-**with** its unit (`€1.23`, `40 Wh`, `1.2 kg`, `12.3K`) so no call site can
-mislabel a converted number.
-
-## Impact dashboard (UI)
-
-`ui/impact_analysis_body.dart` (`ImpactAnalysisBody`) is the host-independent
-dashboard core. Two hosts embed it:
-
-- `ui/impact_analysis_page.dart` — the `/dashboards/impact` route (a thin
-  `Scaffold` around the body), reached under Insights via
-  `ui/widgets/impact_sidebar_entry.dart`. The sidebar entry is a
-  design-system `SidebarSubsectionSurface` with a `SidebarSubsectionAction`
-  row, matching the Daily OS Time Analysis subsection.
-- The Settings `ai-usage` panel (`settings_v2` panel registry), which wraps the
-  body in a `SingleChildScrollView`. The body adapts: with bounded height it
-  scrolls itself (`ListView`), with unbounded height it shrink-wraps and lets
-  the host scroll. It also degrades to phone-width panes (~390 px): the period
-  stepper and each chart's mode toggle are fixed intrinsic-width strips that
-  scroll horizontally instead of overflowing, and the KPI tiles reflow to a
-  two/three-per-row grid.
-
-```mermaid
-flowchart TD
-  RC[consumptionRangeControllerProvider<br/>InsightsRangeController instance] -->|selection| Body[ImpactAnalysisBody]
-  BP[consumptionBucketsProvider<br/>insightsWindowFor year window] -->|ConsumptionDayBuckets| Body
-  Cat[categoriesStreamProvider] -->|id → CategoryDefinition| Body
-  State[body state:<br/>metric · isolatedCategoryKey ·<br/>isolatedModelKey · ledgerBucketStart] -->|drives| Body
-  Body --> D1[impactTotalsInRange → ImpactKpiRow<br/>5 metric tiles = the selector]
-  Body --> D4a[buildImpactChartData category daily → ImpactChartCard<br/>Cost by category]
-  Body --> D4b[buildImpactChartData model daily → ImpactChartCard<br/>Cost by model]
-  Body --> D2[rankedImpactCategoryTotals → ImpactRankedTable]
-  Body --> D3[rankedModelMetrics → ImpactModelTable<br/>+ unit economics]
-  Body --> D5[rankedImpactLocationTotals → ImpactLocationTable]
-  Body --> D6[ImpactCallLedger<br/>range + category/model filters]
-  LP[consumptionLedgerProvider<br/>InsightsRange family] -->|newest calls| D6
-  D1 -.->|tap tile = select metric| State
-  D4a -.->|tap bar drill / legend isolate| State
-  D4b -.->|tap bar drill / legend isolate| State
-  D2 -.->|tap row| State
-  D3 -.->|tap row| State
-```
-
-The category chart pairs with the category table and the model chart with the
-model table; each chart isolates its own series independently. Drilling a bar on
-either chart scopes the ledger to that week (both charts share
-`ledgerBucketStart` and highlight the bucket), and the ledger below filters by
-the drilled week ∩ the category isolation ∩ the model isolation.
-
-The body is the single provider consumer; the children are dumb value widgets:
-
-- **Metric lens** — `model/impact_dashboard_models.dart` defines
-  `ConsumptionMetric { cost, energy, carbon, tokens, requests }` with `valueOf`
-  (projects credits / kWh / g CO₂ / total tokens / call count out of a
-  `ConsumptionMetrics`), `formatValue` (delegates to the shared formatters),
-  and `isCloudOnly` (false only for `requests`). `requests` (call count) is
-  the one metric every provider populates — cost/energy/carbon are cloud-only
-  and tokens need usage reporting — so it is the dependable lens for
-  "favorite models over time". The KPI row shows all five totals (a
-  responsive grid) plus a note that cost/energy/CO₂e are measured for cloud
-  models only. When the immediately-preceding period is inside the loaded
-  window (month/quarter views — a year-to-date view has no loaded prior year),
-  each tile also carries a period-over-period trend delta ("▲/▼ N% vs prev"),
-  computed from `impactTotalsInRange(buckets, previousPeriod(range, unit))`,
-  shown **only on the selected tile**, sign-coloured by valence (rising
-  cost/energy/CO₂e is caution, falling is positive; tokens/requests neutral —
-  the shared `InsightsDeltaChip`) against a named baseline ("vs May"). The KPI
-  tiles are themselves the **metric selector** — tapping one drives every chart
-  and table, and the active tile carries a teal selected border; there is no
-  separate segmented metric toggle.
-- **Pure derivations** — `logic/impact_dashboard_data.dart` mirrors the
-  Insights `time_bucketing.dart` builders over `ConsumptionDayBuckets`:
-  `dailyMetricTotals` (zero-filled per-day maps, zero values dropped),
-  `dailyModelMetricTotals` (the same projection over `modelDays`),
-  `rankedImpactCategoryTotals` (descending totals for nullable string keys),
-  `rankedModelMetrics` (per-model **full `ConsumptionMetrics`** ranked by the
-  selected metric, so the model table can show call count + cost-per-million-
-  tokens, not just the ranked total), `impactTotalsInRange` (KPI fold),
-  `rankedImpactLocationTotals` (range-scoped country/data-centre environmental
-  totals), `shareValues` (per-bucket 100 % normalization for the Share view,
-  zero-total buckets left at zero), `largestRemainderPercents` (Hamilton
-  apportionment so a breakdown table's integer share column sums to exactly 100,
-  not the 101 % independent rounding drifts to), and `buildImpactChartData`
-  (weekly aggregation via `weekStartDay`, largest-first stacking, "Other" rollup
-  via the Insights sentinel/caps — but a **lone** leftover series is shown by
-  name rather than folded into an anonymous "Other").
-  Granularity deliberately never goes hourly: consumption cells are
-  day-keyed, so a 1-day range renders one day bucket. The Y axis snaps to a
-  1/2/5 × 10ⁿ nice ceiling (`impactNiceCeiling`) with a nice-number tick step
-  (`impactNiceInterval`, so ticks read 10/20/30/40/50, never `ceiling/4`
-  = 13/25/38/50), not the Insights hour ladder.
-- **Breakdown charts + view picker** — the category and model breakdowns each
-  render as their own `ImpactChartCard` + companion table, fed the category and
-  model daily series respectively; the model chart is the Cursor-style "favorite
-  models over time" view. A `_BreakdownViewPicker` (`ImpactBreakdownView { both,
-  category, model }`, default `both`) narrows the page to one breakdown. **`model`
-  is the screenshot-safe view** — it renders no category name anywhere, so a
-  shared image can't leak private category labels; switching views also clears
-  both isolations + the drill so a hidden filter can't linger or leak via the
-  ledger chip. The picker only appears when the period has at least one
-  identified (non-null) model to switch to.
-- **Chart** — `ui/widgets/impact_chart_card.dart` + `impact_chart_card_charts.dart`
-  (`ImpactStackedBars` / `ImpactStackedArea` / `ImpactChartLegend`): a stateful
-  fl_chart card with three modes — per-bucket stacked bars, a cumulative stacked
-  area ("Running total"), and **Share** (per-bucket 100 % composition, drawn as
-  a smooth normalized stacked area — the mix-over-time view — falling back to
-  100 % bars below two elapsed buckets). Cumulative falls back to bars until two
-  buckets have elapsed so the toggle never produces a lone point. A persistent
-  hint caption names the two chart interactions.
-- **Series identity (`SeriesResolver`)** — `ui/widgets/series_resolver.dart`
-  abstracts key → label + fill/swatch color so the same chart renders any
-  dimension. `CategorySeriesResolver` wraps `InsightsCategoryResolver` +
-  `chartColorFor`/`swatchColorFor` (category charts stay pixel-identical to
-  before). `PaletteSeriesResolver` colors model/location keys from a **derived
-  categorical palette** (`seriesPaletteChartColor`/`Swatch` in
-  `insights/logic/chart_colors.dart`): twelve muted hues on a 30° ring, with the
-  first six slots taking the even ring positions so the realistic maximum of six
-  concurrent series always land ≥60° apart (no two same-family hues adjacent),
-  assigned by a stable sorted-key order so a model keeps one color across the
-  chart, its legend, and the table.
-- **Interactions** — the body holds one drill bucket plus **independent** per-
-  chart isolation (`isolatedCategoryKey`, `isolatedModelKey`).
-  - *Isolate*: tapping a legend entry **or** a breakdown-table row re-baselines
-    that chart to the one series (drawn from y=0, axis rescaled), fades the
-    other legend/table rows, scopes the "Recent calls" ledger, and shows an
-    in-viewport chip under that chart prefixed with the true call count
-    (`scopedCallCount`, e.g. "423 calls · claude-opus-4"). The two charts
-    isolate independently.
-  - *Drill*: tapping a bar on either chart highlights that bucket on **both**
-    (accent outline, siblings receding via an opaque hue-preserving lerp toward
-    the card surface — not a drain to transparency) and scopes the ledger to the
-    bucket's days.
-  - A single combined chip above the ledger lists every active filter (drilled
-    week ∩ category ∩ model) with a clear-all; the ledger filters by the
-    intersection. Any period change auto-clears the drill.
-  Truncated edge weeks are faded on-chart (except when isolating, so the single
-  clean series keeps its hue).
-- **Category identity** — reuses `InsightsCategoryResolver` +
-  `chartColorFor`/`swatchColorFor`, so both dashboards speak the same
-  color/label language ("Uncategorized", "Other", "Deleted category").
-- **Model table** — `ui/widgets/impact_model_table.dart` (`ImpactModelTable`)
-  renders the ranked model breakdown with a palette swatch matching the chart,
-  and a per-row unit-economics line ("N calls · €X/1M tok" — dropped when a
-  model reports no tokens/cost, e.g. local transcription). Rows are tappable to
-  isolate and carry a chevron affordance; the header reserves the chevron width
-  so columns stay aligned. Model keys use provider-native ids where available,
-  configured model ids as fallback, and an explicit "Unknown model" row for
-  usage rows without either id.
-- **Serving-location identity** — `ui/widgets/impact_location_table.dart`
-  (`ImpactLocationTable`) renders provider-reported data-centre impact by
-  inferred country/data-center, energy, CO₂e and renewable share. It renders
-  only when a provider reports a data centre; endpoints such as local Whisper
-  that do not report environmental metadata do not create an "unknown" bucket.
-- **Per-call ledger** — `ui/widgets/impact_call_ledger.dart`
-  (`ImpactCallLedger`) renders the newest individual calls in the selected
-  period (time · model · call type · tokens · cost · energy), the
-  Cursor-style request table. It watches `consumptionLedgerProvider`
-  (family-keyed by the value-equal `InsightsRange`, backed by
-  `ConsumptionRepository.newestEventsInRange`, capped at
-  `kConsumptionLedgerLimit` = 100 with an explicit "newest N" caption — never
-  a silent truncation) itself, so the body integrates it as one child.
-  Calls with tokens but no Melious impact omit cost/energy; calls whose provider
-  reports no token/cost/energy metrics (for example duration-only local
-  transcription endpoints) show "Not reported" rather than leaving the trailing
-  cell blank.
-- **keepPreviousData** — the buckets provider is year-window keyed; the body
-  retains the last fully-loaded generation (buckets + the selection they
-  cover) so window switches and failed refetches never flash a loading
-  shell. A failed load over retained data shows a slim stale-notice strip; a
-  failed *first* load shows the error text. An empty period renders a calm
-  icon + explanation card.
-
-## Task header chip
-
-`lib/features/tasks/ui/header/task_consumption_chip.dart`
-(`TaskConsumptionChip`) is the per-task surface: a `DsPill` in the task
-header's `MetaRow` (`consumptionSlot`) showing the task's lifetime AI cost —
-`€0.42 · 12 Wh · 3.4 g` when impact was measured, the token total otherwise —
-with the full breakdown (calls/measured, token split, energy/CO₂e/water,
-cost) in the tooltip. It watches `taskConsumptionTotalsProvider(taskId)`
-(refreshed via `aiConsumptionNotification`) and renders nothing for tasks
-without recorded calls, so non-AI tasks carry zero extra chrome.
-
-## Capture wiring
-
-A call site creates an `InferenceImpactCollector`, threads it down through the
-cloud-inference dispatch chain (`CloudInferenceRepository` →
-`cloud_inference_generate[_more]` → `MeliousInferenceRepository`), and, after the
-response drains, builds an `AiConsumptionEvent` (tokens from the response
-`usage`, impact from the collector, owner ids from the local context) and hands
-it to `AiConsumptionRecorder`. Recording is guarded end-to-end — a missing
-recorder or a record failure can never break an inference.
-
-**Live** — one event per completed call on:
-
-- The legacy unified path (`UnifiedAiInferenceRepository._processCompleteResponse`
-  → `_recordConsumption`): text generation, image analysis, audio transcription.
-- The modern `SkillInferenceRunner` (all four: transcription, image analysis,
-  image generation, prompt generation), each with its own `_recordConsumption`.
-- **Agent turns, per turn** — `ConversationRepository.sendMessage` records one
-  `agentTurn` event per turn (parent = wake run key), gated on owner ids passed
-  by the workflow. The **task agent** (`task_agent_execute`) passes them.
-
-Because a collector is threaded on these paths, Melious calls run
-**non-streaming** so their impact is returned. Recording is skipped entirely
-when no `AiConsumptionRecorder` is registered, so the wake path carries no
-overhead when tracking is off.
-
-**Remaining call sites** (same `sendMessage` mechanism, one guarded block each):
-the project / event / day / evolution agent workflows — they call
-`sendMessage` identically and just need to pass the (recorder-gated) owner ids.
-
-## Status
-
-Delivered and tested: the storage schema, repository, aggregation query layer,
-full Matrix sync integration, the Melious non-streaming impact-capture mechanism
-(`MeliousCallImpact` + `InferenceImpactCollector`), the `AiConsumptionRecorder`,
-end-to-end capture on the unified inference path, the skill runner, and
-task-agent turns, and the AI Impact dashboard (five-metric KPI row with a
-cloud-only coverage note whose tiles are the metric selector, two always-visible
-category and model breakdown charts each with a per-bucket / running-total /
-share mode, click-to-isolate and tap-to-drill that scope the call ledger,
-per-model unit economics, location table, and period stepper). The remaining
-agent workflows above are the follow-on work.
-
-## Testing
-
-- `test/features/ai_consumption/` — DB round-trip/idempotency, aggregation
-  (`totalsForTask`, `metricRowsInRange` epoch-int guard), pure bucketing
-  (example + Glados property), and the sync service (VC stamp + enqueue).
-- `test/features/ai_consumption/logic/impact_dashboard_data_test.dart` +
-  `model/impact_dashboard_models_test.dart` — exact bucket/ranking/model/
-  location rollup/ceiling expectations plus Glados properties (chart columns sum to
-  range totals, monotone ranking, never-hourly granularity, ceiling bounds).
-- `test/features/ai_consumption/ui/` — widget tests for the KPI row, chart
-  card (including cumulative running-total tooltip), ranked table, model table,
-  location
-  table, ledger missing-metric fallback, and the full body (provider-driven:
-  stubbed repository rows → formatter-exact KPI/table/model/location figures,
-  metric-selector tiles, two stacked breakdown charts, per-chart isolate +
-  shared drill, empty state, first-load error).
-- `test/features/ai/model/ai_call_impact_test.dart` — the Melious impact
-  contract parsing.
-- `test/features/sync/…` — `SyncMessage.consumptionEvent` round-trip, inbound
-  apply/dominance, and backfill (via the generated backfill bench).
+The impact dashboard shows calls and every metric actually reported by the
+provider. Missing values stay missing rather than becoming estimates.
+`AiAttributionSummary` appears beside generated outputs and shows creator,
+trigger, status, model, time, call count, and actual Melious credit total. Its
+detail sheet lists child interactions, token usage, duration, exact reported
+cost, and request/response digests.

@@ -236,6 +236,7 @@ class RealtimeTranscriptionService {
 
     String transcript;
     var usedFallback = false;
+    Map<String, dynamic>? usage;
 
     try {
       // 1. Stop forwarding audio
@@ -251,6 +252,7 @@ class RealtimeTranscriptionService {
       // 4. Wait for transcription.done — timeout starts here so the full
       //    budget applies to waiting for the server, not recorder shutdown.
       final done = await doneCompleter.future.timeout(_doneTimeout);
+      usage = done.usage;
       transcript = moreCompleteTranscript(
         finalText: done.text,
         accumulatedText: _deltaBuffer.toString(),
@@ -287,6 +289,7 @@ class RealtimeTranscriptionService {
       audioFilePath: audioFilePath,
       usedTranscriptFallback: usedFallback,
       detectedLanguage: detectedLanguage,
+      usage: usage,
     );
   }
 

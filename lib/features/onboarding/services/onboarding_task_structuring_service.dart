@@ -3,12 +3,17 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 /// The structured result of turning a raw spoken transcript into a task.
 ///
@@ -130,17 +135,59 @@ Rules:
 
     final buffer = StringBuffer();
     try {
-      final stream = _cloudInferenceRepository.generate(
-        trimmed,
-        model: resolved.model.providerModelId,
-        temperature: resolved.model.isReasoningModel ? 1.0 : _temperature,
-        baseUrl: resolved.provider.baseUrl,
-        apiKey: resolved.provider.apiKey,
-        systemMessage: systemPrompt,
-        maxCompletionTokens: resolved.model.maxCompletionTokens,
-        provider: resolved.provider,
-        geminiThinkingMode: resolved.model.geminiThinkingMode,
-      );
+      final captureRegistered = getIt.isRegistered<AiInteractionCapture>();
+      final impactCollector = InferenceImpactCollector();
+      Stream<CreateChatCompletionStreamResponse> invoke() => captureRegistered
+          ? _cloudInferenceRepository.generate(
+              trimmed,
+              model: resolved.model.providerModelId,
+              temperature: resolved.model.isReasoningModel ? 1.0 : _temperature,
+              baseUrl: resolved.provider.baseUrl,
+              apiKey: resolved.provider.apiKey,
+              systemMessage: systemPrompt,
+              maxCompletionTokens: resolved.model.maxCompletionTokens,
+              provider: resolved.provider,
+              geminiThinkingMode: resolved.model.geminiThinkingMode,
+              impactCollector: impactCollector,
+            )
+          : _cloudInferenceRepository.generate(
+              trimmed,
+              model: resolved.model.providerModelId,
+              temperature: resolved.model.isReasoningModel ? 1.0 : _temperature,
+              baseUrl: resolved.provider.baseUrl,
+              apiKey: resolved.provider.apiKey,
+              systemMessage: systemPrompt,
+              maxCompletionTokens: resolved.model.maxCompletionTokens,
+              provider: resolved.provider,
+              geminiThinkingMode: resolved.model.geminiThinkingMode,
+            );
+      final stream = captureRegistered
+          ? getIt<AiInteractionCapture>().captureStream(
+              workType: AiWorkType.textGeneration,
+              interactionKind: AiInteractionKind.textGeneration,
+              responseType: AiConsumptionResponseType.textGeneration,
+              providerType: resolved.provider.inferenceProviderType,
+              modelId: resolved.model.providerModelId,
+              requestText: trimmed,
+              invoke: invoke,
+              responseText: (chunk) =>
+                  chunk.choices?.firstOrNull?.delta?.content ?? '',
+              usageForChunk: (chunk) {
+                final usage = chunk.usage;
+                if (usage == null) return null;
+                return AiCapturedUsage(
+                  inputTokens: usage.promptTokens,
+                  outputTokens: usage.completionTokens,
+                  cachedInputTokens: usage.promptTokensDetails?.cachedTokens,
+                  thoughtsTokens:
+                      usage.completionTokensDetails?.reasoningTokens,
+                  totalTokens: usage.totalTokens,
+                );
+              },
+              impact: () => impactCollector.impact,
+              categoryId: categoryId,
+            )
+          : invoke();
       await for (final chunk in stream) {
         buffer.write(chunk.choices?.firstOrNull?.delta?.content ?? '');
       }

@@ -9,12 +9,15 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/workflow/wake_output_writer.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 // Deterministic identity / time used across the suite.
 const _agentId = 'agent-1';
@@ -211,6 +214,43 @@ void main() {
   });
 
   group('report', () {
+    test(
+      'embeds and finalizes attribution with the persisted report',
+      () async {
+        final attribution = AiInteractionCaptureTestBench.create()
+          ..register()
+          ..seedAgentWake(
+            wakeRunKey: _runKey,
+            agentId: _agentId,
+            taskId: _taskId,
+          );
+        addTearDown(attribution.unregister);
+        when(
+          () => repo.getReportHead(_agentId, AgentReportScopes.current),
+        ).thenAnswer((_) async => null);
+
+        final result = await run(
+          reportContent: 'Attributed wake report',
+          uuid: _SequentialUuid(['report-attributed', 'head-attributed']),
+        );
+
+        expect(result?.reportId, 'report-attributed');
+        final report = capturedUpserts().whereType<AgentReportEntity>().single;
+        expect(report.provenance, contains(aiAttributionProvenanceKey));
+        final outputs =
+            verify(
+                  () => attribution.service.prepareCompletion(
+                    attributionId: agentWakeAttributionId(_runKey),
+                    outputs: captureAny(named: 'outputs'),
+                  ),
+                ).captured.single
+                as List<AiArtifactReference>;
+        expect(outputs.single.type, AiArtifactType.agentReport);
+        expect(outputs.single.id, report.id);
+        verify(() => attribution.service.finalize(any())).called(1);
+      },
+    );
+
     test('stamps immutable inference provenance on a written report', () async {
       const provenance = ReportInferenceProvenance(
         runKey: _runKey,

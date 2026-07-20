@@ -60,6 +60,11 @@ _ImageData _$ImageDataFromJson(Map<String, dynamic> json) => _ImageData(
   geolocation: json['geolocation'] == null
       ? null
       : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
+  aiAttribution: json['aiAttribution'] == null
+      ? null
+      : AiWorkAttribution.fromJson(
+          json['aiAttribution'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$ImageDataToJson(_ImageData instance) =>
@@ -69,6 +74,7 @@ Map<String, dynamic> _$ImageDataToJson(_ImageData instance) =>
       'imageFile': instance.imageFile,
       'imageDirectory': instance.imageDirectory,
       'geolocation': instance.geolocation,
+      'aiAttribution': instance.aiAttribution,
     };
 
 _AudioData _$AudioDataFromJson(Map<String, dynamic> json) => _AudioData(
@@ -106,6 +112,12 @@ _AudioTranscript _$AudioTranscriptFromJson(Map<String, dynamic> json) =>
       processingTime: json['processingTime'] == null
           ? null
           : Duration(microseconds: (json['processingTime'] as num).toInt()),
+      id: json['id'] as String?,
+      aiAttribution: json['aiAttribution'] == null
+          ? null
+          : AiWorkAttribution.fromJson(
+              json['aiAttribution'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$AudioTranscriptToJson(_AudioTranscript instance) =>
@@ -116,6 +128,8 @@ Map<String, dynamic> _$AudioTranscriptToJson(_AudioTranscript instance) =>
       'detectedLanguage': instance.detectedLanguage,
       'transcript': instance.transcript,
       'processingTime': instance.processingTime?.inMicroseconds,
+      'id': instance.id,
+      'aiAttribution': instance.aiAttribution,
     };
 
 _SurveyData _$SurveyDataFromJson(Map<String, dynamic> json) => _SurveyData(

@@ -39,11 +39,45 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(onCreate: (m) => m.createAll());
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(consumptionEvents, consumptionEvents.attributionId);
+        await m.createTable(aiWorkAttributions);
+
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_consumption_attribution '
+          'ON consumption_events(attribution_id, created_at) '
+          'WHERE attribution_id IS NOT NULL',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_attribution_output '
+          'ON ai_work_attributions(primary_output_type, primary_output_id, '
+          'primary_output_sub_id)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_attribution_task_created '
+          'ON ai_work_attributions(task_id, completed_at) '
+          'WHERE task_id IS NOT NULL',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_attribution_actor_created '
+          'ON ai_work_attributions(initiator_id, completed_at)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_attribution_type_created '
+          'ON ai_work_attributions(work_type, completed_at)',
+        );
+      }
+    },
+    beforeOpen: (_) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
+  );
 
   /// Stream consumption events with their vector clocks for populating the sync
   /// sequence log. Yields batches of `(id, vectorClock)` records using

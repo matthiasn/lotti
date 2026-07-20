@@ -1,13 +1,16 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
+import 'package:lotti/features/ai_consumption/database/attribution_db_conversions.dart';
+import 'package:lotti/features/ai_consumption/database/consumption_database.dart'
+    as db;
 import 'package:lotti/features/ai_consumption/database/consumption_db_conversions.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
-/// Raw persistence for [AiConsumptionEvent]s, over [ConsumptionDatabase].
+/// Raw persistence for [AiConsumptionEvent]s, over [db.ConsumptionDatabase].
 ///
 /// Writes are append-only and idempotent: [upsertEvent] uses `id` as the
 /// conflict target, so a replayed sync event (same id) is a no-op rather than a
@@ -17,12 +20,65 @@ import 'package:lotti/features/sync/vector_clock.dart';
 class ConsumptionRepository {
   ConsumptionRepository(this._db);
 
-  final ConsumptionDatabase _db;
+  final db.ConsumptionDatabase _db;
 
   /// Insert or replace an event by `id` (ON CONFLICT DO UPDATE).
   Future<void> upsertEvent(AiConsumptionEvent event) => _db
       .into(_db.consumptionEvents)
       .insertOnConflictUpdate(ConsumptionDbConversions.toCompanion(event));
+
+  /// Idempotently projects one terminal attribution and its typed links.
+  Future<void> upsertAttribution(AiWorkAttribution attribution) => _db
+      .into(_db.aiWorkAttributions)
+      .insertOnConflictUpdate(
+        AttributionDbConversions.attributionToCompanion(attribution),
+      );
+
+  /// Fetch a terminal attribution by id.
+  Future<AiWorkAttribution?> getAttribution(String id) async {
+    final row = await (_db.select(
+      _db.aiWorkAttributions,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+    return row == null
+        ? null
+        : AttributionDbConversions.attributionFromRow(row);
+  }
+
+  /// Reverse lookup from a journal/agent artifact to its attribution.
+  Future<AiWorkAttribution?> getAttributionForArtifact(
+    AiArtifactReference artifact,
+  ) async {
+    final row =
+        await (_db.select(_db.aiWorkAttributions)
+              ..where(
+                (table) =>
+                    table.primaryOutputType.equals(artifact.type.name) &
+                    table.primaryOutputId.equals(artifact.id) &
+                    (artifact.subId == null
+                        ? table.primaryOutputSubId.isNull()
+                        : table.primaryOutputSubId.equals(artifact.subId!)),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return row == null
+        ? null
+        : AttributionDbConversions.attributionFromRow(row);
+  }
+
+  /// Ordered backend interactions used to produce one logical work item.
+  Future<List<AiConsumptionEvent>> interactionsForAttribution(
+    String attributionId,
+  ) async {
+    final rows =
+        await (_db.select(_db.consumptionEvents)
+              ..where((table) => table.attributionId.equals(attributionId))
+              ..orderBy([
+                (table) => OrderingTerm.asc(table.createdAt),
+                (table) => OrderingTerm.asc(table.id),
+              ]))
+            .get();
+    return rows.map(ConsumptionDbConversions.fromRow).toList();
+  }
 
   /// Fetch a single event by [id], or null if absent.
   Future<AiConsumptionEvent?> getEvent(String id) async {

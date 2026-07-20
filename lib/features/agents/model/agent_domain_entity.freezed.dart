@@ -669,7 +669,7 @@ class AgentStateEntity implements AgentDomainEntity {
 /// cannot accidentally clear a newer change that arrived during inference.
  final  DateTime? reportStaleAt;
 /// Start time of the most recent successful wake that refreshed the task
-/// report. A report is stale when [reportStaleAt] is not older than this
+/// report. A report is stale when `reportStaleAt` is not older than this
 /// watermark.
  final  DateTime? reportFreshAt;
 /// When true, the agent was auto-created from a category default and is

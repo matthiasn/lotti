@@ -514,6 +514,57 @@
   "aggregationHourlySum": "Hodinový součet",
   "aggregationNone": "Surové hodnoty",
   "aiAssistantTitle": "Generovat…",
+  "aiAttributionArtifactOutput": "Výstup",
+  "aiAttributionCompletedAt": "Dokončeno",
+  "aiAttributionCost": "Cena",
+  "aiAttributionCostUnknown": "Cena neznámá",
+  "aiAttributionCreator": "Tvůrce",
+  "aiAttributionDiagnostics": "Diagnostika",
+  "aiAttributionDuration": "Doba trvání",
+  "aiAttributionInteractions": "Interakce",
+  "aiAttributionLoading": "Načítá se přiřazení AI…",
+  "aiAttributionNoInteractionDetails": "Nejsou dostupné žádné podrobnosti interakce.",
+  "aiAttributionRequestEvidence": "Doklad požadavku",
+  "aiAttributionResponseEvidence": "Doklad odpovědi",
+  "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{žádná volání} =1{1 volání} other{{callCount} volání}}",
+  "aiAttributionStartedAt": "Zahájeno",
+  "aiAttributionStatus": "Stav",
+  "aiAttributionStatusCancelled": "Zrušeno",
+  "aiAttributionStatusFailed": "Selhalo",
+  "aiAttributionStatusPartial": "Částečné",
+  "aiAttributionStatusSucceeded": "Dokončeno",
+  "aiAttributionSummary": "{actor} · {trigger} · {status}",
+  "aiAttributionTitle": "Přiřazení AI",
+  "aiAttributionTokenBreakdown": "Vstup: {input} · Výstup: {output} · V mezipaměti: {cached} · Uvažování: {reasoning}",
+  "@aiAttributionTokenBreakdown": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      },
+      "reasoning": {
+        "type": "String"
+      }
+    }
+  },
+  "aiAttributionTokens": "Tokeny",
+  "aiAttributionTokenUsageUnknown": "Využití tokenů není známé",
+  "aiAttributionTrigger": "Spouštěč",
+  "aiAttributionTriggerAgent": "Agent",
+  "aiAttributionTriggerAutomatic": "Automaticky",
+  "aiAttributionTriggerImported": "Importováno",
+  "aiAttributionTriggerManual": "Ručně",
+  "aiAttributionTriggerScheduled": "Naplánováno",
+  "aiAttributionTriggerSynced": "Ze synchronizace",
+  "aiAttributionUnavailable": "Přiřazení AI není dostupné.",
+  "aiAttributionUnknownCreator": "Neznámý tvůrce",
+  "aiAttributionUnknownModel": "Neznámý model",
+  "aiAttributionYou": "Ty",
   "aiBatchToggleTooltip": "Přepnout na standardní nahrávání",
   "aiCapabilityChipImageGeneration": "Generování obrázků",
   "aiCapabilityChipImageRecognition": "Rozpoznávání obrázků",
@@ -552,6 +603,7 @@
   "aiConfigSelectProviderModalTitle": "Vyberte poskytovatele inferencí",
   "aiConfigSelectProviderTypeModalTitle": "Vyberte typ poskytovatele",
   "aiConfigUseReasoningFieldLabel": "Použít uvažování",
+  "aiConsumptionAttributionReference": "Atribuce {id}",
   "aiConsumptionCallsLine": "AI volání: {count} · dopad změřen u {measured}",
   "aiConsumptionCostLine": "Náklady: {cost}",
   "aiConsumptionImpactLine": "Dopad: {energy} · {carbon} CO₂e · {water} vody",
@@ -562,10 +614,12 @@
   "aiConsumptionTokensLine": "Tokeny: {input} vstup · {output} výstup",
   "aiConsumptionTypeAgentTurn": "Tah agenta",
   "aiConsumptionTypeAudioTranscription": "Přepis",
+  "aiConsumptionTypeEmbeddingIndexing": "Indexování embeddingů",
   "aiConsumptionTypeImageAnalysis": "Analýza obrázku",
   "aiConsumptionTypeImageGeneration": "Generování obrázku",
   "aiConsumptionTypePromptGeneration": "Generování promptu",
   "aiConsumptionTypeTextGeneration": "Generování textu",
+  "aiConsumptionWorkGroup": "Práce AI · {callCount, plural, =1{1 volání} few{{callCount} volání} other{{callCount} volání}}",
   "aiDeleteToastCascadeDescription": "{count, plural, =1{Odebrán také 1 model: {names}} few{Odebrány také {count} modely: {names}} other{Odebráno také {count} modelů: {names}}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {
@@ -4315,6 +4369,8 @@
   "timeEntryItemEnd": "Konec",
   "timeEntryItemRunning": "Probíhá",
   "timeEntryItemStart": "Začátek",
+  "transcriptLanguageLabel": "Jazyk: {language}",
+  "transcriptModelLabel": "Model: {provider}, {model}",
   "unlinkButton": "Zrušit propojení",
   "unlinkTaskConfirm": "Opravdu chcete zrušit propojení tohoto úkolu?",
   "unlinkTaskTitle": "Zrušit propojení úkolu",

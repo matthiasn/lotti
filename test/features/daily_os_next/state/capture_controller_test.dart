@@ -9,7 +9,11 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
+import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -18,7 +22,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' as record;
 import 'package:record/record.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 final _recordingStartedAt = DateTime(2026, 5, 26, 9);
 
@@ -124,11 +130,47 @@ _batchWiring({String? transcript}) {
   );
 }
 
+AiInteractionCaptureTestBench _registerTranscriptAttribution() {
+  final bench = AiInteractionCaptureTestBench.create()..register();
+  if (getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+    getIt.unregister<TranscriptAttributionCoordinator>();
+  }
+  getIt.registerSingleton<TranscriptAttributionCoordinator>(
+    TranscriptAttributionCoordinator(bench.service, bench.identity),
+  );
+  addTearDown(() {
+    if (getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+      getIt.unregister<TranscriptAttributionCoordinator>();
+    }
+    bench.unregister();
+  });
+  return bench;
+}
+
+List<AiConsumptionEvent> _capturedAttributionEvents(
+  AiInteractionCaptureTestBench bench,
+) => verify(
+  () => bench.service.recordInteraction(
+    attributionId: any(named: 'attributionId'),
+    event: captureAny(named: 'event'),
+  ),
+).captured.cast<AiConsumptionEvent>();
+
 void main() {
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(_audioNoteFixture());
     registerFallbackValue(_StreamFallback());
     registerFallbackValue(_StopRecorderFallback().call);
+    registerFallbackValue(
+      AiAttributionSession(
+        id: 'fallback-attribution',
+        workType: AiWorkType.audioTranscription,
+        initiator: makeAiActor(),
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+        startedAt: DateTime.utc(2026, 7, 19, 10),
+      ),
+    );
   });
 
   group('CaptureController (batch path)', () {
@@ -1568,6 +1610,490 @@ void main() {
         );
       },
     );
+
+    test(
+      'attributed batch capture embeds and finalizes the transcript carrier',
+      () async {
+        final attribution = _registerTranscriptAttribution();
+        when(
+          () => transcriber.transcribe(
+            any(),
+            attributionSession: any(named: 'attributionSession'),
+            terminalizeAttributionFailure: false,
+          ),
+        ).thenAnswer((_) async => 'attributed journal');
+
+        final container = _aliveContainer(
+          recorder: recorder,
+          transcriber: transcriber,
+          realtimeService: realtimeService,
+          persistAudio: (_) async => _persistedAudio(),
+        );
+        addTearDown(container.dispose);
+
+        final notifier = container.read(captureControllerProvider.notifier);
+        await notifier.toggle();
+        await notifier.toggle();
+
+        final transcript = latestUpdated!.data.transcripts!.single;
+        expect(transcript.transcript, 'attributed journal');
+        expect(transcript.id, isNotEmpty);
+        expect(transcript.aiAttribution?.id, 'attribution-1');
+        verify(() => attribution.service.finalize(any())).called(1);
+      },
+    );
+
+    test(
+      'failed attributed journal update terminalizes the missing carrier',
+      () async {
+        final attribution = _registerTranscriptAttribution();
+        when(
+          () => transcriber.transcribe(
+            any(),
+            attributionSession: any(named: 'attributionSession'),
+            terminalizeAttributionFailure: false,
+          ),
+        ).thenAnswer((_) async => 'not persisted');
+        when(
+          () => persistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => false);
+
+        final container = _aliveContainer(
+          recorder: recorder,
+          transcriber: transcriber,
+          realtimeService: realtimeService,
+          persistAudio: (_) async => _persistedAudio(),
+        );
+        addTearDown(container.dispose);
+
+        final notifier = container.read(captureControllerProvider.notifier);
+        await notifier.toggle();
+        await notifier.toggle();
+
+        verify(
+          () => attribution.service.prepareCompletion(
+            attributionId: 'attribution-1',
+            outputs: const [],
+            status: AiWorkStatus.failed,
+            errorCode: 'transcript_persistence_failed',
+          ),
+        ).called(1);
+        expect(
+          container.read(captureControllerProvider).transcript,
+          'not persisted',
+        );
+      },
+    );
+
+    for (final carrierCase in [
+      (name: 'missing audio', transcript: 'spoken', persistAudio: false),
+      (name: 'empty transcript', transcript: '   ', persistAudio: true),
+    ]) {
+      test(
+        '${carrierCase.name} finalizes the attributed output failure',
+        () async {
+          final attribution = _registerTranscriptAttribution();
+          when(
+            () => transcriber.transcribe(
+              any(),
+              attributionSession: any(named: 'attributionSession'),
+              terminalizeAttributionFailure: false,
+            ),
+          ).thenAnswer((_) async => carrierCase.transcript);
+
+          final container = _aliveContainer(
+            recorder: recorder,
+            transcriber: transcriber,
+            realtimeService: realtimeService,
+            persistAudio: (_) async =>
+                carrierCase.persistAudio ? _persistedAudio() : null,
+          );
+          addTearDown(container.dispose);
+
+          final notifier = container.read(captureControllerProvider.notifier);
+          await notifier.toggle();
+          await notifier.toggle();
+
+          verify(
+            () => attribution.service.prepareCompletion(
+              attributionId: 'attribution-1',
+              outputs: const [],
+              status: AiWorkStatus.failed,
+              errorCode: carrierCase.persistAudio
+                  ? 'empty_transcript'
+                  : 'audio_carrier_unavailable',
+            ),
+          ).called(1);
+        },
+      );
+    }
+
+    for (final evidenceState in TranscriptionEvidenceState.values) {
+      test(
+        '${evidenceState.name} attributed transcription failure avoids a '
+        'duplicate interaction',
+        () async {
+          final attribution = _registerTranscriptAttribution();
+          when(
+            () => transcriber.transcribe(
+              any(),
+              attributionSession: any(named: 'attributionSession'),
+              terminalizeAttributionFailure: false,
+            ),
+          ).thenThrow(
+            AttributedTranscriptionException(
+              cause: StateError('transcription failed'),
+              evidenceState: evidenceState,
+            ),
+          );
+
+          final container = _aliveContainer(
+            recorder: recorder,
+            transcriber: transcriber,
+            realtimeService: realtimeService,
+            persistAudio: (_) async => _persistedAudio(),
+          );
+          addTearDown(container.dispose);
+
+          final notifier = container.read(captureControllerProvider.notifier);
+          await notifier.toggle();
+          await notifier.toggle();
+
+          expect(
+            container.read(captureControllerProvider).error,
+            CaptureError.transcriptionFailed,
+          );
+          verifyNever(
+            () => attribution.service.recordInteraction(
+              attributionId: any(named: 'attributionId'),
+              event: any(named: 'event'),
+            ),
+          );
+          if (evidenceState == TranscriptionEvidenceState.recorded) {
+            verify(
+              () => attribution.service.prepareCompletion(
+                attributionId: 'attribution-1',
+                outputs: const [],
+                status: AiWorkStatus.failed,
+                errorCode: 'StateError',
+              ),
+            ).called(1);
+          } else {
+            verifyNever(
+              () => attribution.service.prepareCompletion(
+                attributionId: any(named: 'attributionId'),
+                outputs: any(named: 'outputs'),
+                status: any(named: 'status'),
+                errorCode: any(named: 'errorCode'),
+              ),
+            );
+          }
+        },
+      );
+    }
+  });
+
+  group('CaptureController realtime attribution', () {
+    late MockRealtimeTranscriptionService realtimeService;
+    late MockAudioTranscriptionService transcriber;
+    late _FakeRealtimeRecorder recorder;
+    late MockPersistenceLogic persistenceLogic;
+    late StreamController<double> amplitudeController;
+    late StreamController<Uint8List> pcmController;
+    late JournalAudio? persistResult;
+    late JournalAudio? updatedAudio;
+    late RealtimeStopResult stopResult;
+
+    setUp(() async {
+      await getIt.reset();
+      realtimeService = MockRealtimeTranscriptionService();
+      transcriber = MockAudioTranscriptionService();
+      recorder = _FakeRealtimeRecorder();
+      persistenceLogic = MockPersistenceLogic();
+      amplitudeController = StreamController<double>.broadcast();
+      pcmController = StreamController<Uint8List>.broadcast();
+      recorder.pcmStream = pcmController.stream;
+      persistResult = _persistedAudio();
+      updatedAudio = null;
+      stopResult = const RealtimeStopResult(
+        transcript: 'realtime transcript',
+        audioFilePath: '/tmp/realtime.m4a',
+      );
+
+      when(
+        realtimeService.resolveRealtimeConfig,
+      ).thenAnswer(
+        (_) async => (provider: _FakeProvider(), model: _FakeModel()),
+      );
+      when(
+        () => realtimeService.amplitudeStream,
+      ).thenAnswer((_) => amplitudeController.stream);
+      when(
+        () => realtimeService.startRealtimeTranscription(
+          pcmStream: any(named: 'pcmStream'),
+          onDelta: any(named: 'onDelta'),
+          config: any(named: 'config'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => realtimeService.stop(
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).thenAnswer((invocation) async {
+        final stopRecorder =
+            invocation.namedArguments[#stopRecorder] as Future<void> Function();
+        await stopRecorder();
+        return stopResult;
+      });
+      when(realtimeService.dispose).thenAnswer((_) async {});
+      when(
+        () => transcriber.transcribe(
+          any(),
+          attributionSession: any(named: 'attributionSession'),
+          terminalizeAttributionFailure: false,
+        ),
+      ).thenAnswer((_) async => 'verified transcript');
+      when(
+        () => persistenceLogic.updateMetadata(any()),
+      ).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(
+        () => persistenceLogic.updateDbEntity(any()),
+      ).thenAnswer((invocation) async {
+        updatedAudio = invocation.positionalArguments.first as JournalAudio;
+        return true;
+      });
+      getIt.registerSingleton<PersistenceLogic>(persistenceLogic);
+    });
+
+    tearDown(() async {
+      await amplitudeController.close();
+      await pcmController.close();
+      await getIt.reset();
+    });
+
+    ProviderContainer buildContainer() => _aliveContainer(
+      transcriber: transcriber,
+      realtimeService: realtimeService,
+      persistAudio: (_) async => persistResult,
+      realtimeRecorderFactory: () => recorder,
+    );
+
+    for (final fallback in [false, true]) {
+      test(
+        'records and embeds ${fallback ? 'partial fallback' : 'successful'} '
+        'realtime attribution',
+        () async {
+          final attribution = _registerTranscriptAttribution();
+          stopResult = RealtimeStopResult(
+            transcript: 'realtime transcript',
+            audioFilePath: '/tmp/realtime.m4a',
+            usedTranscriptFallback: fallback,
+            usage: const {'input_tokens': 11, 'output_tokens': 7},
+          );
+          final container = buildContainer();
+          addTearDown(container.dispose);
+
+          final notifier = container.read(captureControllerProvider.notifier);
+          await notifier.toggle();
+          await notifier.toggle();
+
+          final event = _capturedAttributionEvents(attribution).single;
+          expect(
+            event.interactionStatus,
+            fallback
+                ? AiInteractionStatus.partial
+                : AiInteractionStatus.succeeded,
+          );
+          expect(
+            event.errorCode,
+            fallback ? 'realtime_completion_fallback' : isNull,
+          );
+          expect(event.inputTokens, 11);
+          expect(event.outputTokens, 7);
+          expect(
+            updatedAudio!.data.transcripts!.single.aiAttribution?.id,
+            'attribution-1',
+          );
+          expect(
+            container.read(captureControllerProvider).transcript,
+            fallback ? 'verified transcript' : 'realtime transcript',
+          );
+          verify(() => attribution.service.finalize(any())).called(1);
+        },
+      );
+    }
+
+    test(
+      'start failure terminalizes the attributed realtime session',
+      () async {
+        final attribution = _registerTranscriptAttribution();
+        when(
+          () => realtimeService.startRealtimeTranscription(
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+            config: any(named: 'config'),
+          ),
+        ).thenThrow(StateError('socket failed'));
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        await container.read(captureControllerProvider.notifier).toggle();
+
+        expect(
+          container.read(captureControllerProvider).error,
+          CaptureError.realtimeTranscriptionStartFailed,
+        );
+        expect(
+          _capturedAttributionEvents(attribution).single.interactionStatus,
+          AiInteractionStatus.failed,
+        );
+      },
+    );
+
+    test('stop failure terminalizes the attributed realtime session', () async {
+      final attribution = _registerTranscriptAttribution();
+      when(
+        () => realtimeService.stop(
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).thenThrow(StateError('drain failed'));
+      final container = buildContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(captureControllerProvider.notifier);
+      await notifier.toggle();
+      await notifier.toggle();
+
+      expect(
+        container.read(captureControllerProvider).error,
+        CaptureError.realtimeTranscriptionFailed,
+      );
+      expect(
+        _capturedAttributionEvents(attribution).single.errorCode,
+        'StateError',
+      );
+    });
+
+    test(
+      'missing audio carrier finalizes the realtime output failure',
+      () async {
+        final attribution = _registerTranscriptAttribution();
+        persistResult = null;
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        final notifier = container.read(captureControllerProvider.notifier);
+        await notifier.toggle();
+        await notifier.toggle();
+
+        verify(
+          () => attribution.service.prepareCompletion(
+            attributionId: 'attribution-1',
+            outputs: const [],
+            status: AiWorkStatus.failed,
+            errorCode: 'audio_carrier_unavailable',
+          ),
+        ).called(1);
+        expect(
+          container.read(captureControllerProvider).audioId,
+          isNull,
+        );
+      },
+    );
+
+    test('reset cancels an active realtime attribution', () async {
+      final attribution = _registerTranscriptAttribution();
+      final container = buildContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(captureControllerProvider.notifier);
+      await notifier.toggle();
+
+      notifier.reset();
+      await pumpEventQueue();
+
+      expect(
+        container.read(captureControllerProvider).phase,
+        CapturePhase.idle,
+      );
+      expect(
+        _capturedAttributionEvents(attribution).single.interactionStatus,
+        AiInteractionStatus.cancelled,
+      );
+    });
+
+    test(
+      'interaction publication failure is surfaced during realtime stop',
+      () async {
+        final attribution = _registerTranscriptAttribution();
+        when(
+          () => attribution.service.recordInteraction(
+            attributionId: any(named: 'attributionId'),
+            event: any(named: 'event'),
+          ),
+        ).thenThrow(StateError('event write failed'));
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(captureControllerProvider.notifier);
+        await notifier.toggle();
+
+        await expectLater(notifier.toggle(), throwsStateError);
+
+        expect(
+          container.read(captureControllerProvider).phase,
+          CapturePhase.transcribing,
+        );
+      },
+    );
+
+    test('projection failure does not discard the persisted carrier', () async {
+      final attribution = _registerTranscriptAttribution();
+      when(() => attribution.service.finalize(any())).thenThrow(
+        StateError('projection failed'),
+      );
+      final container = buildContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(captureControllerProvider.notifier);
+      await notifier.toggle();
+      await notifier.toggle();
+
+      expect(updatedAudio!.data.transcripts!.single.aiAttribution, isNotNull);
+      expect(
+        container.read(captureControllerProvider).phase,
+        CapturePhase.captured,
+      );
+    });
+
+    test('carrier cleanup failure remains best effort', () async {
+      final attribution = _registerTranscriptAttribution();
+      when(
+        () => persistenceLogic.updateMetadata(any()),
+      ).thenThrow(StateError('metadata failed'));
+      when(
+        () => attribution.service.prepareCompletion(
+          attributionId: any(named: 'attributionId'),
+          outputs: any(named: 'outputs'),
+          status: any(named: 'status'),
+          errorCode: any(named: 'errorCode'),
+        ),
+      ).thenThrow(StateError('cleanup failed'));
+      final container = buildContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(captureControllerProvider.notifier);
+      await notifier.toggle();
+      await notifier.toggle();
+
+      expect(
+        container.read(captureControllerProvider).transcript,
+        'realtime transcript',
+      );
+      expect(updatedAudio, isNull);
+    });
   });
 
   group('CaptureController resolves realtimeService from the provider', () {
@@ -1692,6 +2218,10 @@ class _FakeRealtimeRecorder implements record.AudioRecorder {
 class _FakeProvider implements AiConfigInferenceProvider {
   @override
   String get name => 'fake-provider';
+
+  @override
+  InferenceProviderType get inferenceProviderType =>
+      InferenceProviderType.mistral;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;

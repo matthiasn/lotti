@@ -21,7 +21,7 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -31,6 +31,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 import '../test_utils.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
@@ -372,16 +373,16 @@ void main() {
 
       test(
         'passes consumption owner ids to sendMessage when an '
-        'AiConsumptionRecorder is registered',
+        'AiInteractionCapture is registered',
         () async {
-          getIt.registerSingleton<AiConsumptionRecorder>(
-            MockAiConsumptionRecorder(),
-          );
-          addTearDown(() {
-            if (getIt.isRegistered<AiConsumptionRecorder>()) {
-              getIt.unregister<AiConsumptionRecorder>();
-            }
-          });
+          final attribution = AiInteractionCaptureTestBench.create()
+            ..register()
+            ..seedAgentWake(
+              wakeRunKey: runKey,
+              agentId: agentId,
+              taskId: projectId,
+              categoryId: 'cat-project-001',
+            );
           // The project's own category is what consumption is attributed to.
           final project = _fakeProjectEntity();
           when(
@@ -408,6 +409,15 @@ void main() {
           );
           expect(mockConversationRepository.lastConsumptionWakeRunKey, runKey);
           expect(mockConversationRepository.lastConsumptionThreadId, threadId);
+          verify(
+            () => attribution.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: const [],
+              status: AiWorkStatus.partial,
+              errorCode: 'output_carrier_unavailable',
+            ),
+          ).called(1);
+          verify(() => attribution.service.finalize(any())).called(1);
         },
       );
 
@@ -1790,81 +1800,114 @@ void main() {
         expect(tokenUsages.first.modelId, 'models/test-model-v1');
       });
 
-      test('persists report and updates report head', () async {
-        mockConversationRepository.sendMessageDelegate =
-            ({
-              required conversationId,
-              required message,
-              required model,
-              required provider,
-              required inferenceRepo,
-              tools,
-              toolChoice,
-              temperature = 0.7,
-              strategy,
-            }) async {
-              if (strategy != null) {
-                final toolCalls = [
-                  ChatCompletionMessageToolCall(
-                    id: 'call-rpt',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.updateProjectReport,
-                      arguments: jsonEncode({
-                        'markdown': '# Status Report\nAll good.',
-                        'tldr': 'On track.',
-                        'one_liner': 'Steady progress; API v2 next.',
-                        'health_band': 'on_track',
-                        'health_rationale': 'Recent work is landing well.',
-                        'health_confidence': 0.88,
-                      }),
+      test(
+        'keeps a committed report successful when projection finalize fails',
+        () async {
+          final attribution = AiInteractionCaptureTestBench.create()
+            ..register()
+            ..seedAgentWake(
+              wakeRunKey: runKey,
+              agentId: agentId,
+              taskId: projectId,
+            );
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy != null) {
+                  final toolCalls = [
+                    ChatCompletionMessageToolCall(
+                      id: 'call-rpt',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: ProjectAgentToolNames.updateProjectReport,
+                        arguments: jsonEncode({
+                          'markdown': '# Status Report\nAll good.',
+                          'tldr': 'On track.',
+                          'one_liner': 'Steady progress; API v2 next.',
+                          'health_band': 'on_track',
+                          'health_rationale': 'Recent work is landing well.',
+                          'health_confidence': 0.88,
+                        }),
+                      ),
                     ),
-                  ),
-                ];
+                  ];
 
-                final manager = mockConversationRepository.getConversation(
-                  conversationId,
-                )!;
-                when(
-                  () => manager.addToolResponse(
-                    toolCallId: any(named: 'toolCallId'),
-                    response: any(named: 'response'),
-                  ),
-                ).thenReturn(null);
+                  final manager = mockConversationRepository.getConversation(
+                    conversationId,
+                  )!;
+                  when(
+                    () => manager.addToolResponse(
+                      toolCallId: any(named: 'toolCallId'),
+                      response: any(named: 'response'),
+                    ),
+                  ).thenReturn(null);
 
-                await strategy.processToolCalls(
-                  toolCalls: toolCalls,
-                  manager: manager,
-                );
-              }
-              return null;
-            };
+                  await strategy.processToolCalls(
+                    toolCalls: toolCalls,
+                    manager: manager,
+                  );
+                }
+                return null;
+              };
 
-        await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+          when(
+            () => attribution.service.finalize(any()),
+          ).thenThrow(StateError('projection unavailable'));
 
-        final captured = verify(
-          () => mockSyncService.upsertEntity(captureAny()),
-        ).captured;
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
 
-        final reports = captured.whereType<AgentReportEntity>().toList();
-        expect(reports, hasLength(1));
-        expect(reports.first.content, '# Status Report\nAll good.');
-        expect(reports.first.tldr, 'On track.');
-        expect(reports.first.oneLiner, 'Steady progress; API v2 next.');
-        expect(reports.first.provenance, {
-          'project_health_band': 'on_track',
-          'project_health_rationale': 'Recent work is landing well.',
-          'project_health_confidence': 0.88,
-        });
+          expect(result.success, isTrue);
 
-        final heads = captured.whereType<AgentReportHeadEntity>().toList();
-        expect(heads, hasLength(1));
-      });
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+
+          final reports = captured.whereType<AgentReportEntity>().toList();
+          expect(reports, hasLength(1));
+          expect(reports.first.content, '# Status Report\nAll good.');
+          expect(reports.first.tldr, 'On track.');
+          expect(reports.first.oneLiner, 'Steady progress; API v2 next.');
+          expect(
+            reports.first.provenance,
+            contains(aiAttributionProvenanceKey),
+          );
+          expect(reports.first.provenance['project_health_band'], 'on_track');
+          expect(
+            reports.first.provenance['project_health_rationale'],
+            'Recent work is landing well.',
+          );
+          expect(reports.first.provenance['project_health_confidence'], 0.88);
+
+          final heads = captured.whereType<AgentReportHeadEntity>().toList();
+          expect(heads, hasLength(1));
+          final outputs =
+              verify(
+                    () => attribution.service.prepareCompletion(
+                      attributionId: any(named: 'attributionId'),
+                      outputs: captureAny(named: 'outputs'),
+                    ),
+                  ).captured.single
+                  as List<AiArtifactReference>;
+          expect(outputs, hasLength(1));
+          expect(outputs.single.type, AiArtifactType.agentReport);
+          expect(outputs.single.id, reports.single.id);
+          verify(() => attribution.service.finalize(any())).called(1);
+        },
+      );
 
       test('persists observations with payloads', () async {
         mockConversationRepository.sendMessageDelegate =

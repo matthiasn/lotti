@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_task_structuring_service.dart';
 import 'package:lotti/get_it.dart';
@@ -9,11 +10,15 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai/test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 import '../../categories/test_utils.dart';
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   late MockCloudInferenceRepository cloudRepo;
   late MockAiConfigRepository aiConfigRepo;
   late MockCategoryRepository categoryRepo;
@@ -265,6 +270,69 @@ void main() {
 
       expect(lastGenerate!.namedArguments[#temperature], 1.0);
     });
+
+    test(
+      'captures the attributed call with usage and category ownership',
+      () async {
+        stubHappyResolution();
+        final attribution = AiInteractionCaptureTestBench.create()..register();
+        addTearDown(attribution.unregister);
+        when(
+          () => cloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            provider: any(named: 'provider'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            chunk('{"title":"Plan launch","items":[]}'),
+            const CreateChatCompletionStreamResponse(
+              id: 'usage',
+              object: 'chat.completion.chunk',
+              created: 0,
+              choices: [],
+              usage: CompletionUsage(
+                promptTokens: 12,
+                completionTokens: 8,
+                totalTokens: 20,
+                promptTokensDetails: PromptTokensDetails(cachedTokens: 3),
+                completionTokensDetails: CompletionTokensDetails(
+                  reasoningTokens: 2,
+                ),
+              ),
+            ),
+          ]),
+        );
+
+        final result = await service.structure(
+          transcript: '  plan the launch  ',
+          categoryId: categoryId,
+        );
+
+        expect(result.title, 'Plan launch');
+        final event =
+            verify(
+                  () => attribution.service.recordInteraction(
+                    attributionId: any(named: 'attributionId'),
+                    event: captureAny(named: 'event'),
+                  ),
+                ).captured.single
+                as AiConsumptionEvent;
+        expect(event.categoryId, categoryId);
+        expect(event.inputTokens, 12);
+        expect(event.outputTokens, 8);
+        expect(event.cachedInputTokens, 3);
+        expect(event.thoughtsTokens, 2);
+        expect(event.totalTokens, 20);
+      },
+    );
   });
 
   group('structure — resolution failures map to noModel', () {
