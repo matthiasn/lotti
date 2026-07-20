@@ -44,6 +44,7 @@ class CaptureController extends Notifier<CaptureState> {
     Future<JournalAudio?> Function(AudioNote)? persistAudio,
     DayProcessingOutboxRepository? processingOutbox,
     Directory Function()? docDir,
+    Future<Directory> Function(Directory directory)? createDirectory,
     DateTime Function()? now,
   }) : _transcriberOverride = transcriber,
        _realtimeServiceOverride = realtimeService,
@@ -52,7 +53,11 @@ class CaptureController extends Notifier<CaptureState> {
        _persistAudioOverride = persistAudio,
        _processingOutboxOverride = processingOutbox,
        _docDir = docDir ?? getDocumentsDirectory,
+       _createDirectory = createDirectory ?? _createDirectoryRecursively,
        _now = now ?? DateTime.now;
+
+  static Future<Directory> _createDirectoryRecursively(Directory directory) =>
+      directory.create(recursive: true);
 
   final AudioTranscriptionService? _transcriberOverride;
   final RealtimeTranscriptionService? _realtimeServiceOverride;
@@ -60,6 +65,7 @@ class CaptureController extends Notifier<CaptureState> {
   final Future<JournalAudio?> Function(AudioNote)? _persistAudioOverride;
   final DayProcessingOutboxRepository? _processingOutboxOverride;
   final Directory Function() _docDir;
+  final Future<Directory> Function(Directory directory) _createDirectory;
   final DateTime Function() _now;
 
   /// Rolling-window size for the live waveform (~1.6s at 20ms cadence).
@@ -279,7 +285,7 @@ class CaptureController extends Notifier<CaptureState> {
     _realtimeAudioFile = '$timestamp.wav';
     final absoluteDir = '${docDir.path}$_realtimeAudioDirectory';
     try {
-      await Directory(absoluteDir).create(recursive: true);
+      await _createDirectory(Directory(absoluteDir));
     } catch (error, stackTrace) {
       FlutterError.reportError(
         FlutterErrorDetails(
@@ -498,33 +504,15 @@ class CaptureController extends Notifier<CaptureState> {
         outputPath: outputBase,
       );
       if (result.recordingSessionId != capture.recordingSessionId) {
-        throw StateError('Realtime stop result belongs to another capture');
+        await _handleRealtimeStopFailure(
+          StateError('Realtime stop result belongs to another capture'),
+          StackTrace.current,
+          capture,
+        );
+        return;
       }
     } catch (error, stackTrace) {
-      final hasRecoverableAudio = capture.acceptedPcmBytes > 0;
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'daily_os_next',
-          context: ErrorDescription('while stopping realtime transcription'),
-        ),
-      );
-      await _cleanupRealtime(disposeRecorder: true);
-      state = const CaptureState(
-        phase: CapturePhase.error,
-        transcript: '',
-        amplitudes: <double>[],
-        error: CaptureError.noAudioRecorded,
-      );
-      if (hasRecoverableAudio) {
-        state = const CaptureState(
-          phase: CapturePhase.error,
-          transcript: '',
-          amplitudes: <double>[],
-          error: CaptureError.recordingRetainedForRecovery,
-        );
-      }
+      await _handleRealtimeStopFailure(error, stackTrace, capture);
       return;
     }
 
@@ -541,17 +529,7 @@ class CaptureController extends Notifier<CaptureState> {
       return;
     }
 
-    final audioFilePath = result.audioFilePath;
-    if (audioFilePath == null) {
-      await _cleanupRealtime(disposeRecorder: true, stopRecorder: false);
-      state = const CaptureState(
-        phase: CapturePhase.error,
-        transcript: '',
-        amplitudes: <double>[],
-        error: CaptureError.noAudioRecorded,
-      );
-      return;
-    }
+    final audioFilePath = result.audioFilePath!;
     final duration =
         result.audioDuration ??
         (startedAt == null ? Duration.zero : _now().difference(startedAt));
@@ -710,6 +688,31 @@ class CaptureController extends Notifier<CaptureState> {
       transcript: finalTranscript,
       amplitudes: const <double>[],
       audioId: journalAudio.meta.id,
+    );
+  }
+
+  Future<void> _handleRealtimeStopFailure(
+    Object error,
+    StackTrace stackTrace,
+    DurableRealtimeCapture capture,
+  ) async {
+    final hasRecoverableAudio = capture.acceptedPcmBytes > 0;
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'daily_os_next',
+        context: ErrorDescription('while stopping realtime transcription'),
+      ),
+    );
+    await _cleanupRealtime(disposeRecorder: true);
+    state = CaptureState(
+      phase: CapturePhase.error,
+      transcript: '',
+      amplitudes: const <double>[],
+      error: hasRecoverableAudio
+          ? CaptureError.recordingRetainedForRecovery
+          : CaptureError.noAudioRecorded,
     );
   }
 

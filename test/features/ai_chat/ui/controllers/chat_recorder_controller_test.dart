@@ -2046,6 +2046,53 @@ void main() {
       verifyNever(() => recorder.stop());
     });
 
+    test('logs recorder cleanup failure after durable setup fails', () async {
+      final recorder = MockAudioRecorder();
+      when(recorder.dispose).thenThrow(StateError('recorder dispose failed'));
+      final realtime = MockRealtimeTranscriptionService();
+      when(
+        () => realtime.prepareDefaultDurableCapture(
+          assetRootDirectory: any(named: 'assetRootDirectory'),
+          createdAt: any(named: 'createdAt'),
+          origin: any(named: 'origin'),
+          intent: any(named: 'intent'),
+        ),
+      ).thenThrow(StateError('durable storage unavailable'));
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => recorder,
+              realtimeTranscriptionService: realtime,
+              durableDirectoryProvider: _testDurableDirectory,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        chatRecorderControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+
+      await container
+          .read(chatRecorderControllerProvider.notifier)
+          .startRealtime();
+
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.errorType, ChatRecorderErrorType.startFailed);
+      expect(state.error, contains('durable storage unavailable'));
+      verify(
+        () => getIt<DomainLogger>().error(
+          LogDomain.chat,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'cleanupRealtime.setupRecorder',
+        ),
+      ).called(1);
+    });
+
     test('sets error state when startRealtimeTranscription throws', () async {
       final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);

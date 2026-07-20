@@ -152,6 +152,7 @@ class ControllableRealtimeRepository
   ControllableRealtimeRepository({this.throwOnDoneCancel = false});
 
   final bool throwOnDoneCancel;
+  bool throwOnDoneListen = false;
   final deltaController = StreamController<String>.broadcast();
   final languageController = StreamController<String>.broadcast();
   final doneController =
@@ -211,9 +212,16 @@ class ControllableRealtimeRepository
   Stream<String> get detectedLanguage => languageController.stream;
 
   @override
-  Stream<RealtimeTranscriptionDone> get transcriptionDone => throwOnDoneCancel
-      ? _CancelErrorStream<RealtimeTranscriptionDone>(doneController.stream)
-      : doneController.stream;
+  Stream<RealtimeTranscriptionDone> get transcriptionDone {
+    if (throwOnDoneListen) {
+      return const ThrowingListenStream<RealtimeTranscriptionDone>(
+        'done listener failed',
+      );
+    }
+    return throwOnDoneCancel
+        ? _CancelErrorStream<RealtimeTranscriptionDone>(doneController.stream)
+        : doneController.stream;
+  }
 
   Future<void> close() async {
     await deltaController.close();
@@ -295,6 +303,24 @@ class SynchronousErrorStream<T> extends Stream<T> {
     unawaited(controller.close());
     return subscription;
   }
+}
+
+/// Throws before returning a subscription.
+///
+/// This models a platform stream that cannot install its terminal listener and
+/// lets the stop tests verify that a failed operation releases its retry fence.
+class ThrowingListenStream<T> extends Stream<T> {
+  const ThrowingListenStream(this.message);
+
+  final String message;
+
+  @override
+  StreamSubscription<T> listen(
+    void Function(T event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => throw StateError(message);
 }
 
 class _CancelErrorSubscription<T> implements StreamSubscription<T> {
@@ -494,6 +520,7 @@ class RealtimeTranscriptionTestBench {
     Duration doneTimeout = const Duration(seconds: 10),
     Duration pcmDrainTimeout = const Duration(seconds: 2),
     MistralRealtimeTranscriptionRepository? repository,
+    AiConfigRepository? aiConfigRepository,
     String Function()? durableIdFactory,
   }) async {
     final db = AiConfigDb(inMemoryDatabase: true);
@@ -565,7 +592,9 @@ class RealtimeTranscriptionTestBench {
 
     final container = ProviderContainer(
       overrides: [
-        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
+        aiConfigRepositoryProvider.overrideWith(
+          (_) => aiConfigRepository ?? aiRepo,
+        ),
         realtimeTranscriptionServiceProvider.overrideWith(
           (ref) => RealtimeTranscriptionService(
             ref,

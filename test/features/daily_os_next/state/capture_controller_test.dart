@@ -76,6 +76,7 @@ ProviderContainer _aliveContainer({
   required Future<JournalAudio?> Function(AudioNote) persistAudio,
   AudioRecorder Function()? realtimeRecorderFactory,
   Directory Function()? docDir,
+  Future<Directory> Function(Directory directory)? createDirectory,
   DayProcessingOutboxRepository? processingOutbox,
 }) {
   when(
@@ -98,6 +99,7 @@ ProviderContainer _aliveContainer({
           persistAudio: persistAudio,
           processingOutbox: processingOutbox,
           docDir: docDir ?? Directory.systemTemp.createTempSync,
+          createDirectory: createDirectory,
           now: () => _recordingStartedAt,
         ),
       ),
@@ -563,6 +565,55 @@ void main() {
       verify(durableCapture.discard).called(1);
     });
 
+    test('reset fences asynchronous destination creation', () async {
+      final root = Directory.systemTemp.createTempSync(
+        'capture-destination-race-',
+      );
+      addTearDown(() => root.deleteSync(recursive: true));
+      final directoryCreationStarted = Completer<void>();
+      final releaseDirectoryCreation = Completer<void>();
+      final recorderEvents = <String>[];
+      fakeRecorder.onCall = recorderEvents.add;
+      final container = _aliveContainer(
+        transcriber: transcriber,
+        realtimeService: realtimeService,
+        persistAudio: persistAudio,
+        realtimeRecorderFactory: () => fakeRecorder,
+        docDir: () => root,
+        createDirectory: (directory) async {
+          directoryCreationStarted.complete();
+          await releaseDirectoryCreation.future;
+          return directory.create(recursive: true);
+        },
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(captureControllerProvider.notifier);
+
+      final start = notifier.toggle();
+      await directoryCreationStarted.future;
+      notifier.reset();
+      releaseDirectoryCreation.complete();
+      await start;
+
+      expect(
+        container.read(captureControllerProvider),
+        const CaptureState.idle(),
+      );
+      expect(fakeRecorder.disposed, isTrue);
+      expect(recorderEvents, ['permission']);
+      verify(durableCapture.discard).called(1);
+      verifyNever(
+        () => realtimeService.startRealtimeTranscription(
+          capture: any(named: 'capture'),
+          pcmStream: any(named: 'pcmStream'),
+          onDelta: any(named: 'onDelta'),
+          onCaptureFailure: any(named: 'onCaptureFailure'),
+          config: any(named: 'config'),
+          resolveConfigWhenAbsent: false,
+        ),
+      );
+    });
+
     test('reset drains a PCM stream opened by an obsolete start', () async {
       final stream = Completer<Stream<Uint8List>>();
       final streamRequested = Completer<void>();
@@ -596,6 +647,7 @@ void main() {
       'reset retains capture when realtime startup completes late',
       () async {
         final realtimeStart = Completer<void>();
+        final realtimeStarted = Completer<void>();
         when(
           () => realtimeService.startRealtimeTranscription(
             capture: any(named: 'capture'),
@@ -605,13 +657,16 @@ void main() {
             config: any(named: 'config'),
             resolveConfigWhenAbsent: false,
           ),
-        ).thenAnswer((_) => realtimeStart.future);
+        ).thenAnswer((_) {
+          realtimeStarted.complete();
+          return realtimeStart.future;
+        });
         final container = buildContainer();
         addTearDown(container.dispose);
         final notifier = container.read(captureControllerProvider.notifier);
 
         final start = notifier.toggle();
-        await pumpEventQueue();
+        await realtimeStarted.future;
         expect(
           container.read(captureControllerProvider).phase,
           CapturePhase.listening,
@@ -783,6 +838,8 @@ void main() {
     );
 
     test('rejects a stop result from another durable capture', () async {
+      var returnedForeignResult = false;
+      when(() => durableCapture.acceptedPcmBytes).thenReturn(128);
       when(
         () => realtimeService.stop(
           capture: any(named: 'capture'),
@@ -790,11 +847,15 @@ void main() {
           outputPath: any(named: 'outputPath'),
         ),
       ).thenAnswer(
-        (_) async => RealtimeStopResult(
-          transcript: 'wrong session',
-          recordingSessionId: 'another-session',
-          captureDisposition: RealtimeCaptureDisposition.complete,
-        ),
+        (_) async {
+          returnedForeignResult = true;
+          return RealtimeStopResult(
+            transcript: 'wrong session',
+            recordingSessionId: 'another-session',
+            audioFilePath: '/tmp/another-session.wav',
+            captureDisposition: RealtimeCaptureDisposition.complete,
+          );
+        },
       );
       final container = buildContainer();
       addTearDown(container.dispose);
@@ -803,6 +864,14 @@ void main() {
       await notifier.toggle();
       await notifier.toggle();
 
+      verify(
+        () => realtimeService.stop(
+          capture: durableCapture,
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).called(1);
+      expect(returnedForeignResult, isTrue);
       expect(
         container.read(captureControllerProvider),
         isA<CaptureState>()
@@ -810,36 +879,56 @@ void main() {
             .having(
               (value) => value.error,
               'error',
-              CaptureError.noAudioRecorded,
+              CaptureError.recordingRetainedForRecovery,
             ),
       );
       expect(persistedNotes, isEmpty);
+      expect(fakeRecorder.disposed, isTrue);
     });
 
-    test('complete stop without a WAV reports no recorded audio', () async {
+    test('reset during stop rejects an incomplete day context', () async {
+      final stopStarted = Completer<void>();
+      final terminal = Completer<RealtimeStopResult>();
       when(
         () => realtimeService.stop(
           capture: any(named: 'capture'),
           stopRecorder: any(named: 'stopRecorder'),
           outputPath: any(named: 'outputPath'),
         ),
-      ).thenAnswer(
-        (_) async => RealtimeStopResult(
-          transcript: 'text without an asset',
-          recordingSessionId: 'test-session',
-          captureDisposition: RealtimeCaptureDisposition.complete,
-        ),
-      );
+      ).thenAnswer((_) {
+        stopStarted.complete();
+        return terminal.future;
+      });
       final container = buildContainer();
       addTearDown(container.dispose);
       final notifier = container.read(captureControllerProvider.notifier);
-
-      await notifier.toggle();
       await notifier.toggle();
 
+      final stop = notifier.toggle();
+      await stopStarted.future;
+      notifier.reset();
+      terminal.complete(
+        RealtimeStopResult(
+          transcript: 'late transcript',
+          recordingSessionId: 'test-session',
+          audioFilePath: '/tmp/late.wav',
+          captureDisposition: RealtimeCaptureDisposition.complete,
+        ),
+      );
+
+      await expectLater(
+        stop,
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            'Daily capture context is incomplete',
+          ),
+        ),
+      );
       expect(
-        container.read(captureControllerProvider).error,
-        CaptureError.noAudioRecorded,
+        container.read(captureControllerProvider),
+        const CaptureState.idle(),
       );
       expect(persistedNotes, isEmpty);
     });

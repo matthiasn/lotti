@@ -13,9 +13,11 @@ import 'package:lotti/features/ai_chat/services/realtime_transcription_service.d
 import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
+import '../../../mocks/mocks.dart';
 import 'realtime_transcription_test_utils.dart';
 
 void main() {
@@ -321,6 +323,31 @@ void main() {
         expect(result.audioFilePath, isNotNull);
         expect(File(result.audioFilePath!).readAsBytesSync().sublist(44), pcm);
         expect(repository.sentChunks, isEmpty);
+      },
+    );
+
+    test(
+      'retains local capture and logs when config resolution fails',
+      () async {
+        final aiConfigRepository = MockAiConfigRepository();
+        when(
+          () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenThrow(StateError('config database unavailable'));
+        final bench = await RealtimeTranscriptionTestBench.create(
+          addConfig: false,
+          aiConfigRepository: aiConfigRepository,
+        );
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+
+        expect(bench.service.isActive, isTrue);
+        expect(
+          fakeLogging.exceptions.map((error) => error.toString()),
+          contains(contains('config database unavailable')),
+        );
+        final result = await bench.stop();
+        expect(result.captureDisposition, RealtimeCaptureDisposition.noAudio);
       },
     );
 
@@ -803,6 +830,55 @@ void main() {
       await capture.discard();
       expect(bench.service.isActive, isFalse);
     });
+
+    test(
+      'failed stop listener setup releases the operation for retry',
+      () async {
+        final repository = ControllableRealtimeRepository();
+        final bench = await RealtimeTranscriptionTestBench.create(
+          repository: repository,
+        );
+        addTearDown(() async {
+          await repository.close();
+          bench.dispose();
+        });
+        await bench.startTranscription();
+        await bench.sendPcm(pcmSilence(64));
+        final outputPath = path.join(
+          bench.rootDirectory.path,
+          'assets',
+          'retry-stop',
+        );
+        repository.throwOnDoneListen = true;
+
+        await expectLater(
+          bench.service.stop(
+            capture: bench.activeCapture!,
+            stopRecorder: () async {},
+            outputPath: outputPath,
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'done listener failed',
+            ),
+          ),
+        );
+        await pumpEventQueue();
+
+        repository.throwOnDoneListen = false;
+        final result = await bench.stop(
+          outputPath: outputPath,
+          afterListening: () => repository.doneController.add(
+            const RealtimeTranscriptionDone(text: 'retry succeeded'),
+          ),
+        );
+
+        expect(result.transcript, 'retry succeeded');
+        expect(result.captureDisposition, RealtimeCaptureDisposition.complete);
+      },
+    );
 
     test('returns transcript from transcription.done event', () async {
       final bench = await RealtimeTranscriptionTestBench.create();
@@ -1690,6 +1766,152 @@ void main() {
         fakeLogging.exceptions.map((error) => error.toString()),
         contains(contains('done cancellation failed')),
       );
+    });
+
+    test('contains cancellation failure while handling a PCM error', () async {
+      final bench = await RealtimeTranscriptionTestBench.create(
+        addConfig: false,
+      );
+      addTearDown(bench.dispose);
+      final pcm = await bench.startTranscription(
+        transformPcmStream: ThrowingCancelStream<Uint8List>.new,
+      );
+
+      pcm.addError(StateError('microphone stream failed'));
+      await pumpEventQueue();
+
+      expect(
+        fakeLogging.exceptions.map((error) => error.toString()),
+        containsAll(<Matcher>[
+          contains('microphone stream failed'),
+          contains('done cancellation failed'),
+        ]),
+      );
+      final result = await bench.stop();
+      expect(result.captureDisposition, RealtimeCaptureDisposition.noAudio);
+    });
+  });
+
+  group('backend forwarding backpressure', () {
+    test(
+      'disables a saturated MLX queue while preserving every durable frame',
+      () async {
+        final bench = await RealtimeTranscriptionTestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+        final appendGate = Completer<void>();
+        addTearDown(() {
+          if (!appendGate.isCompleted) appendGate.complete();
+        });
+        bench.mlxAudioChannel.appendGate = appendGate;
+
+        var countBoundaries = false;
+        var manifestPublishes = 0;
+        var activeFlushes = 0;
+        final secondFrameDurable = Completer<void>();
+        final overflowDurable = Completer<void>();
+        final capture = await bench.service.prepareDurableCapture(
+          rootDirectory: Directory(
+            path.join(bench.rootDirectory.path, 'backpressure-spool'),
+          ),
+          context: DurableAudioSpoolContext(
+            recordingSessionId: 'backend-backpressure',
+            activityEntryId: 'activity-backend-backpressure',
+            createdAt: DateTime.utc(2026, 7, 18, 7, 30),
+            assetRootPath: path.join(bench.rootDirectory.path, 'assets'),
+          ),
+          durability: AudioSpoolDurability(
+            onBoundary: (boundary) async {
+              if (!countBoundaries) return;
+              if (boundary == AudioSpoolDurabilityBoundary.manifestPublished) {
+                manifestPublishes += 1;
+                if (manifestPublishes == 4 && !secondFrameDurable.isCompleted) {
+                  secondFrameDurable.complete();
+                }
+              }
+              if (boundary == AudioSpoolDurabilityBoundary.activeFileFlushed) {
+                activeFlushes += 1;
+                if (activeFlushes == 5 && !overflowDurable.isCompleted) {
+                  overflowDurable.complete();
+                }
+              }
+            },
+          ),
+        );
+        bench.activeCapture = capture;
+        countBoundaries = true;
+        final pcm = StreamController<Uint8List>(sync: true);
+        addTearDown(() async {
+          if (!pcm.isClosed) await pcm.close();
+        });
+        await bench.service.startRealtimeTranscription(
+          capture: capture,
+          pcmStream: pcm.stream,
+          onDelta: (_) {},
+        );
+
+        pcm.add(Uint8List(128000));
+        await bench.mlxAudioChannel.appendEntered.future;
+        pcm.add(Uint8List(128000));
+        await secondFrameDurable.future;
+        await pumpEventQueue();
+        pcm.add(Uint8List(2));
+        await overflowDurable.future;
+        await pumpEventQueue();
+
+        expect(capture.acceptedPcmBytes, 256002);
+        expect(bench.mlxAudioChannel.cancelled, isTrue);
+        expect(
+          fakeLogging.exceptions.map((error) => error.toString()),
+          contains(
+            contains('Realtime backend forwarding queue saturated'),
+          ),
+        );
+
+        appendGate.complete();
+        await bench.service.flushPendingPcm();
+        final result = await bench.service.stop(
+          capture: capture,
+          stopRecorder: pcm.close,
+          outputPath: path.join(
+            bench.rootDirectory.path,
+            'assets',
+            'backpressure-output',
+          ),
+        );
+        expect(result.captureDisposition, RealtimeCaptureDisposition.complete);
+        expect(File(result.audioFilePath!).lengthSync(), 44 + 256002);
+      },
+    );
+
+    test('backend drain timeout cannot block durable finalization', () async {
+      final bench = await RealtimeTranscriptionTestBench.create(
+        addConfig: false,
+        addMlxConfig: true,
+        doneTimeout: Duration.zero,
+      );
+      addTearDown(bench.dispose);
+      final appendGate = Completer<void>();
+      addTearDown(() {
+        if (!appendGate.isCompleted) appendGate.complete();
+      });
+      bench.mlxAudioChannel.appendGate = appendGate;
+      await bench.startTranscription();
+      bench.sendPcmSync(pcmSilence(64));
+      await bench.mlxAudioChannel.appendEntered.future;
+
+      final result = await bench.stop();
+
+      expect(result.audioFilePath, isNotNull);
+      expect(bench.mlxAudioChannel.cancelled, isTrue);
+      expect(
+        fakeLogging.exceptions,
+        contains(isA<TimeoutException>()),
+      );
+      appendGate.complete();
+      await pumpEventQueue();
     });
   });
 

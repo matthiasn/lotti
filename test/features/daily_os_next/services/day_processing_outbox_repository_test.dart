@@ -435,6 +435,10 @@ void main() {
     () async {
       await enqueue();
       final corruptPayload = jsonEncode(<String, Object?>{'id': 'bad'});
+      final quarantine = Directory(path.join(root.path, 'quarantine'))
+        ..createSync();
+      final quarantined = File(path.join(quarantine.path, 'corrupt.json'))
+        ..writeAsStringSync('stale quarantine entry');
       await File(path.join(root.path, 'corrupt.json')).writeAsString(
         jsonEncode(<String, Object?>{
           'payload': corruptPayload,
@@ -443,14 +447,13 @@ void main() {
         flush: true,
       );
 
-      final jobs = await repository.getAll();
+      final claim = await repository.claimNext();
 
-      expect(jobs, hasLength(1));
-      expect(jobs.single.id, 'transcribe_session-1');
-      expect(
-        File(path.join(root.path, 'quarantine', 'corrupt.json')).existsSync(),
-        isTrue,
-      );
+      expect(claim?.job.id, 'transcribe_session-1');
+      expect(quarantined.existsSync(), isTrue);
+      final quarantinedEnvelope =
+          jsonDecode(await quarantined.readAsString())! as Map<String, Object?>;
+      expect(quarantinedEnvelope['payload'], corruptPayload);
     },
   );
 }

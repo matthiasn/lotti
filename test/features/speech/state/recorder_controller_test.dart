@@ -2172,42 +2172,16 @@ void main() {
           audioRecorderControllerProvider.notifier,
         );
         await controller.recordRealtime();
+        expect(
+          container.read(audioRecorderControllerProvider).status,
+          AudioRecorderStatus.recording,
+        );
 
         expect(await controller.stopRealtime(), isNull);
         expect(
           container.read(audioRecorderControllerProvider).lastSaveOutcome,
           AudioRecorderSaveOutcome.noAudio,
         );
-        verifyNever(
-          () => durableCapture.markCommitted(
-            journalAudioId: any(named: 'journalAudioId'),
-          ),
-        );
-      });
-
-      test('maps a complete stop without an audio asset to no audio', () async {
-        when(
-          () => mockRealtimeService.stop(
-            capture: any(named: 'capture'),
-            stopRecorder: any(named: 'stopRecorder'),
-            outputPath: any(named: 'outputPath'),
-          ),
-        ).thenAnswer(
-          (_) async => RealtimeStopResult(
-            transcript: 'text without a file',
-            recordingSessionId: 'speech-session',
-            captureDisposition: RealtimeCaptureDisposition.complete,
-          ),
-        );
-        final controller = container.read(
-          audioRecorderControllerProvider.notifier,
-        );
-        await controller.recordRealtime();
-
-        expect(await controller.stopRealtime(), isNull);
-        final state = container.read(audioRecorderControllerProvider);
-        expect(state.status, AudioRecorderStatus.stopped);
-        expect(state.lastSaveOutcome, AudioRecorderSaveOutcome.noAudio);
         verifyNever(
           () => durableCapture.markCommitted(
             journalAudioId: any(named: 'journalAudioId'),

@@ -639,32 +639,13 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         return null;
       }
 
-      // Only create an AudioNote when an actual audio file was produced.
-      // audioFilePath is null when no PCM data was captured (e.g. very short
-      // recording), and using a fabricated path would create a broken reference.
-      final audioFilePath = result.audioFilePath;
-      final audioNote = audioFilePath != null
-          ? AudioNote(
-              createdAt: created,
-              audioFile: audioFilePath.split('/').last,
-              audioDirectory: relativePath,
-              duration: result.audioDuration ?? duration,
-            )
-          : null;
-      if (audioNote == null) {
-        _vuMeter.reset();
-        state = state.copyWith(
-          status: AudioRecorderStatus.stopped,
-          progress: Duration.zero,
-          dBFS: -160,
-          vu: -20,
-          isRealtimeMode: false,
-          partialTranscript: null,
-          lastSaveOutcome: AudioRecorderSaveOutcome.noAudio,
-        );
-        _realtimeCapture = null;
-        return null;
-      }
+      final audioFilePath = result.audioFilePath!;
+      final audioNote = AudioNote(
+        createdAt: created,
+        audioFile: audioFilePath.split('/').last,
+        audioDirectory: relativePath,
+        duration: result.audioDuration ?? duration,
+      );
 
       // Preserve inference preferences before resetting state
       final enableSpeechRecognition = state.enableSpeechRecognition;

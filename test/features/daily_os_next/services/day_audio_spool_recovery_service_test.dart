@@ -296,14 +296,22 @@ void main() {
         ),
       );
       final matching = audioForNote(note, id: 'audio-fallback');
+      var lookupCount = 0;
       when(
         () => journalDb.journalAudioByRecordingSessionId('session-fallback'),
-      ).thenAnswer((_) async => matching);
+      ).thenAnswer((_) async {
+        lookupCount += 1;
+        return lookupCount == 1 ? null : matching;
+      });
+      var persistenceCalls = 0;
       final service = DayAudioSpoolRecoveryService(
         journalDb: journalDb,
         outbox: outbox,
         assetRoot: root,
-        persistAudio: (_) async => null,
+        persistAudio: (_) async {
+          persistenceCalls += 1;
+          return null;
+        },
       );
 
       final recovered = await service.recoverSession('session-fallback');
@@ -313,6 +321,10 @@ void main() {
         (await outbox.getById('transcribe_session-fallback'))?.audioId,
         'audio-fallback',
       );
+      expect(persistenceCalls, 1);
+      verify(
+        () => journalDb.journalAudioByRecordingSessionId('session-fallback'),
+      ).called(2);
     },
   );
 
