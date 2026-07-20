@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -8,11 +9,12 @@ import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 /// A task-details scroll controller that preserves visible content while an
 /// armed off-screen region changes the scrollable's extent.
 ///
-/// The correction is applied from [ScrollPosition.correctForNewDimensions],
-/// where the viewport can repeat layout with the corrected offset before it
-/// paints. Correcting from the changing descendant's own layout is too late:
-/// the viewport has already selected that frame's paint transform, producing
-/// a one-frame jump before the new offset takes effect.
+/// The position consumes exact region deltas while applying new content
+/// dimensions, where the viewport can repeat layout with the corrected offset
+/// before it paints. If unrelated content below the held region shrinks far
+/// enough to force a range clamp, the position temporarily retains that
+/// trailing extent until the user scrolls back inside the real range. This
+/// avoids both a one-frame displacement and a delayed jump when the hold ends.
 class ViewportStableScrollController extends ScrollController {
   ViewportStableScrollController({
     super.initialScrollOffset,
@@ -32,6 +34,12 @@ class ViewportStableScrollController extends ScrollController {
   static const _tolerance = 1.0;
 
   bool get _isHolding => _isExplicitlyHolding || _isAnimatedSizeHolding;
+
+  double? get _desiredHeldOffset {
+    final expectedOffset = _expectedOffset;
+    if (!_isHolding || expectedOffset == null) return null;
+    return expectedOffset + _pendingExtentDelta;
+  }
 
   /// Explicitly preserves reported-region content until [duration] elapses.
   ///
@@ -59,11 +67,18 @@ class ViewportStableScrollController extends ScrollController {
   }
 
   void _releaseOnUnexpectedOffsetChange() {
-    if (!_isHolding || positions.length != 1) return;
+    if (positions.length != 1) return;
+    final stablePosition = position;
+    if (stablePosition is _ViewportStableScrollPosition) {
+      stablePosition._releaseRetainedExtentIfWithinRealRange();
+    }
+    if (!_isHolding) return;
     final expectedOffset = _expectedOffset;
     if (expectedOffset == null) return;
     if ((offset - expectedOffset).abs() > _tolerance) {
       _releaseAllHolds();
+    } else {
+      _expectedOffset = offset;
     }
   }
 
@@ -169,31 +184,98 @@ class _ViewportStableScrollPosition extends ScrollPositionWithSingleContext {
   });
 
   final ViewportStableScrollController controller;
+  double? _realMaxScrollExtent;
+  double? _retainedMaxScrollExtent;
+
+  @override
+  bool applyContentDimensions(double minScrollExtent, double maxScrollExtent) {
+    _realMaxScrollExtent = maxScrollExtent;
+    final desiredHeldOffset = controller._desiredHeldOffset;
+    if (desiredHeldOffset != null && desiredHeldOffset > maxScrollExtent) {
+      _retainedMaxScrollExtent = math.max(
+        _retainedMaxScrollExtent ?? maxScrollExtent,
+        desiredHeldOffset,
+      );
+      if ((pixels - desiredHeldOffset).abs() >
+          ViewportStableScrollController._tolerance) {
+        correctPixels(desiredHeldOffset);
+      }
+    } else if ((_retainedMaxScrollExtent ?? double.infinity) <=
+        maxScrollExtent + ViewportStableScrollController._tolerance) {
+      _retainedMaxScrollExtent = null;
+    }
+
+    return super.applyContentDimensions(
+      minScrollExtent,
+      math.max(maxScrollExtent, _retainedMaxScrollExtent ?? maxScrollExtent),
+    );
+  }
+
+  /// Keeps a temporary trailing extent while held content would otherwise be
+  /// clamped upward by a simultaneous shrink below it. The extent remains
+  /// until the user naturally scrolls back inside the real range, avoiding a
+  /// delayed jump when the timed hold ends.
+  void _releaseRetainedExtentIfWithinRealRange() {
+    final realMaxScrollExtent = _realMaxScrollExtent;
+    if (_retainedMaxScrollExtent == null || realMaxScrollExtent == null) return;
+    if (pixels >
+        realMaxScrollExtent + ViewportStableScrollController._tolerance) {
+      return;
+    }
+    _retainedMaxScrollExtent = null;
+    correctBy(0);
+    final root = context.storageContext.findRenderObject();
+    RenderAbstractViewport? viewport;
+    void findViewport(RenderObject child) {
+      if (viewport != null) return;
+      if (child is RenderAbstractViewport) {
+        viewport = child;
+        return;
+      }
+      child.visitChildren(findViewport);
+    }
+
+    if (root is RenderAbstractViewport) {
+      viewport = root;
+    } else {
+      root?.visitChildren(findViewport);
+    }
+    viewport?.markNeedsLayout();
+  }
 
   @override
   bool correctForNewDimensions(
     ScrollMetrics oldPosition,
     ScrollMetrics newPosition,
   ) {
-    if (!super.correctForNewDimensions(oldPosition, newPosition)) return false;
     if (isScrollingNotifier.value) {
       controller._releaseAllHolds();
-      return true;
+      return super.correctForNewDimensions(oldPosition, newPosition);
     }
 
-    if (!controller._isHolding) return true;
-    final delta = controller._takePendingExtentDelta();
-    if (delta.abs() <= ViewportStableScrollController._tolerance) return true;
-    final target = (pixels + delta).clamp(
-      newPosition.minScrollExtent,
-      newPosition.maxScrollExtent,
-    );
-    if ((target - pixels).abs() <= ViewportStableScrollController._tolerance) {
-      return true;
+    if (controller._isHolding) {
+      final delta = controller._takePendingExtentDelta();
+      if (delta.abs() > ViewportStableScrollController._tolerance) {
+        // Derive the correction from the last offset owned by the hold, not
+        // [pixels]. When content below the reported region shrinks in the same
+        // layout pass, Flutter may already have clamped [pixels] to the new max
+        // extent before this hook runs. Applying [delta] to that clamped value
+        // counts the reported shrink twice and visibly moves the held content.
+        final heldOffset = controller._expectedOffset ?? pixels;
+        final target = (heldOffset + delta).clamp(
+          newPosition.minScrollExtent,
+          newPosition.maxScrollExtent,
+        );
+        if ((target - pixels).abs() >
+            ViewportStableScrollController._tolerance) {
+          controller._expectedOffset = target;
+          correctPixels(target);
+          return false;
+        }
+      }
     }
-    controller._expectedOffset = target;
-    correctPixels(target);
-    return false;
+
+    return super.correctForNewDimensions(oldPosition, newPosition);
   }
 }
 

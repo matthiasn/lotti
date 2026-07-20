@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Scheduled updates and their switch now form one responsive automation group
   beside the model on wide cards and above it on phones; countdown ticks no
   longer shift neighboring controls. Canceling automation while an update is
-  pending also keeps the summary correctly marked as out of date.
+  pending also keeps the summary correctly marked as out of date. Accepting
+  task-agent suggestions no longer shifts the task detail scroll position when
+  checklist and proposal content resize together.
 - **Date pickers now start the week according to your device region.** Entry
   dates, entry ranges, due dates, and project target dates show Monday first in
   European regions and Sunday first in the US, including matching weekday

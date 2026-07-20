@@ -202,6 +202,103 @@ void main() {
     },
   );
 
+  testWidgets(
+    'does not double-count a reported shrink when content below also shrinks',
+    (tester) async {
+      final paintedMarkerTops = <double>[];
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          _ReportedSizeHarness(
+            key: key,
+            initialHeight: 250,
+            onMarkerPaint: paintedMarkerTops.add,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..controller.jumpTo(1000);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy;
+      paintedMarkerTops.clear();
+
+      // The reported region models a checklist row collapsing above the
+      // viewport. The tail models proposal/card content shrinking in the same
+      // layout pass. The new max extent falls below the old offset, so Flutter
+      // would normally range-correct first; the region delta must not then be
+      // applied a second time to that already-clamped offset.
+      state
+        ..hold()
+        ..resizeAndTail(
+          height: 50,
+          tailHeight: 800,
+        );
+      await tester.pump();
+
+      expect(paintedMarkerTops, isNotEmpty);
+      expect(
+        paintedMarkerTops.every((top) => (top - markerTop).abs() <= 1),
+        isTrue,
+        reason: 'painted positions: $paintedMarkerTops',
+      );
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 1),
+      );
+      expect(state.controller.offset, closeTo(800, 1));
+      expect(state.controller.position.maxScrollExtent, closeTo(800, 1));
+    },
+  );
+
+  testWidgets(
+    'retains trailing extent until the user scrolls into the real range',
+    (tester) async {
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..controller.jumpTo(1000);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy;
+      state
+        ..hold()
+        ..resizeTail(800);
+      await tester.pump();
+
+      // Card/proposal content below the anchor became shorter than the current
+      // viewport position. Keep a virtual tail instead of clamping the page and
+      // moving what the user is reading.
+      expect(state.controller.offset, closeTo(1000, 0.1));
+      expect(state.controller.position.maxScrollExtent, closeTo(1000, 0.1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 0.1),
+      );
+
+      // A later content increase that reaches the held offset clears the
+      // virtual floor immediately because the real extent can own it again.
+      state.resizeTail(1200);
+      await tester.pump();
+      expect(state.controller.position.maxScrollExtent, closeTo(1090, 0.1));
+
+      // Recreate the short-tail state to exercise the user-navigation release.
+      state.resizeTail(800);
+      await tester.pump();
+      expect(state.controller.position.maxScrollExtent, closeTo(1000, 0.1));
+
+      // Once deliberate navigation brings the offset inside the real extent,
+      // the temporary tail is released without changing that offset.
+      state.controller.jumpTo(600);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(600, 0.1));
+      expect(state.controller.position.maxScrollExtent, closeTo(690, 0.1));
+    },
+  );
+
   testWidgets('keeps scroll offset fixed when the growing region is visible', (
     tester,
   ) async {
@@ -593,8 +690,13 @@ class _StableSizeHarnessState extends State<_StableSizeHarness> {
 }
 
 class _ReportedSizeHarness extends StatefulWidget {
-  const _ReportedSizeHarness({this.onMarkerPaint, super.key});
+  const _ReportedSizeHarness({
+    this.initialHeight = 50,
+    this.onMarkerPaint,
+    super.key,
+  });
 
+  final double initialHeight;
   final ValueChanged<double>? onMarkerPaint;
 
   @override
@@ -603,13 +705,28 @@ class _ReportedSizeHarness extends StatefulWidget {
 
 class _ReportedSizeHarnessState extends State<_ReportedSizeHarness> {
   final controller = ViewportStableScrollController();
-  final height = ValueNotifier<double>(50);
+  late final ValueNotifier<double> height;
   final animatedRegionHeight = ValueNotifier<double>(50);
+  final tailHeight = ValueNotifier<double>(1600);
+
+  @override
+  void initState() {
+    super.initState();
+    height = ValueNotifier(widget.initialHeight);
+  }
 
   void hold() => controller.hold(const Duration(seconds: 2));
 
   // ignore: use_setters_to_change_properties
   void resize(double value) => height.value = value;
+
+  void resizeAndTail({required double height, required double tailHeight}) {
+    this.height.value = height;
+    this.tailHeight.value = tailHeight;
+  }
+
+  // ignore: use_setters_to_change_properties
+  void resizeTail(double value) => tailHeight.value = value;
 
   // ignore: use_setters_to_change_properties
   void resizeAnimatedRegion(double value) => animatedRegionHeight.value = value;
@@ -618,6 +735,7 @@ class _ReportedSizeHarnessState extends State<_ReportedSizeHarness> {
   void dispose() {
     height.dispose();
     animatedRegionHeight.dispose();
+    tailHeight.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -651,7 +769,10 @@ class _ReportedSizeHarnessState extends State<_ReportedSizeHarness> {
                   onPaint: widget.onMarkerPaint,
                   child: const SizedBox(key: _reportedMarkerKey, height: 40),
                 ),
-                const SizedBox(height: 1600),
+                ValueListenableBuilder<double>(
+                  valueListenable: tailHeight,
+                  builder: (context, value, child) => SizedBox(height: value),
+                ),
               ],
             ),
           ),
