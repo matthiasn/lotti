@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1057]
+### Added
+- **AI work now shows its real footprint where it was created.** Coding
+  prompts, generated and analyzed images, and audio transcripts carry a
+  tappable attribution pill. Its details show the creator, model, request
+  evidence, available input/output/cached/reasoning tokens, and the provider's
+  actual cost. When Melious reports it, the same view also shows energy, CO₂e,
+  and water use. Audio entries show the total across all their transcripts,
+  while each transcript retains its own attribution. Coding-prompt usage also
+  contributes to its parent task's AI-consumption total.
+
 ## [0.9.1056]
 ### Changed
 - **The logbook now matches the rest of the app.** On desktop it uses the same
