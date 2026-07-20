@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docusaurus Manual Maintenance"
+  short_description: "Maintain a localized, verified manual site"
+  default_prompt: "Use $maintain-docusaurus-manual to update and validate this localized Docusaurus manual."

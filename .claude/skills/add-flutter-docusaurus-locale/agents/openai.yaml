@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flutter and Docusaurus Locale"
+  short_description: "Add a locale across app and manual"
+  default_prompt: "Use $add-flutter-docusaurus-locale to add a locale across this Flutter app and Docusaurus manual."
