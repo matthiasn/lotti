@@ -36,6 +36,7 @@
     <release version="0.9.1055" date="2026-07-20">
       <description>
         <p>Fixed a SIGABRT crash after closing Lotti by stopping background services and releasing every SQLite database before the Flutter engine exits.</p>
+        <p>Restored Flatpak access to the desktop Secret Service so Matrix credentials and other protected values can be read and persisted instead of failing with a misleading locked-keyring warning.</p>
       </description>
     </release>
     <release version="0.9.1054" date="2026-07-18">

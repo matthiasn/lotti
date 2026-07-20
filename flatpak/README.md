@@ -32,6 +32,15 @@ Flathub repository. Versioned entries add offline sources or patches for
 hosted Pub packages before `flatpak-flutter` emits
 `generated/sources/pubspec.json`.
 
+### Runtime permissions
+
+The manifest grants `--talk-name=org.freedesktop.secrets` because
+`flutter_secure_storage_linux` talks to the desktop Secret Service through
+libsecret. Without this permission, the service is invisible inside the
+sandbox and the plugin reports `KeyringLocked`, even when the host login
+keyring is unlocked. This permission is required for Matrix credentials and
+other protected settings; removing it breaks secure storage in the Flatpak.
+
 ### What It Does
 
 1. Clones flatpak-flutter if not present
