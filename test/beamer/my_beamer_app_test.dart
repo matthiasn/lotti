@@ -9,6 +9,7 @@ import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -181,6 +182,9 @@ void main() {
           overrides: [
             themingControllerProvider.overrideWith(
               _LoadingThemingController.new,
+            ),
+            dayProcessingRuntimeProvider.overrideWithValue(
+              MockDayProcessingRuntime(),
             ),
             agentInitializationProvider.overrideWith((ref) async {
               initializationRuns++;
@@ -384,6 +388,9 @@ void main() {
                   _GermanManualLanguageController.new,
                 ),
                 agentInitializationProvider.overrideWith((ref) async {}),
+                dayProcessingRuntimeProvider.overrideWithValue(
+                  MockDayProcessingRuntime(),
+                ),
                 matrixServiceProvider.overrideWithValue(mockMatrix),
                 loginStateStreamProvider.overrideWith(
                   (ref) => Stream.value(LoginState.loggedIn),

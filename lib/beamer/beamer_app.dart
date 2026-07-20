@@ -18,6 +18,7 @@ import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.da
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
+import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
@@ -1251,7 +1252,8 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
     //   forces construction so the listener subscribes to syncUpdateStream).
     ref
       ..listen(agentInitializationProvider, (_, _) {})
-      ..listen(syncedAudioInferenceListenerProvider, (_, _) {});
+      ..listen(syncedAudioInferenceListenerProvider, (_, _) {})
+      ..watch(dayProcessingRuntimeProvider);
 
     final themingState = ref.watch(themingControllerProvider);
     final enableTooltips = ref.watch(enableTooltipsProvider).value ?? true;
