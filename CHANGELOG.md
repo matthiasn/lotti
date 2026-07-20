@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ordered teardown that stops background services and releases every SQLite
   database before the Flutter engine exits, avoiding the SIGABRT crash seen
   after closing the app.
+- **Secure storage works again in the Flatpak build.** The sandbox can reach
+  the desktop Secret Service, so Matrix credentials and other protected values
+  can be read and persisted instead of failing with a misleading locked-keyring
+  warning.
 
 ## [0.9.1054]
 ### Fixed

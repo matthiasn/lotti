@@ -15,6 +15,10 @@ finish-args:
   - --filesystem=xdg-documents/Lotti:create
   - --filesystem=xdg-pictures:ro
   - --filesystem=xdg-download/Lotti:create
+  # flutter_secure_storage_linux uses libsecret directly. Without access to
+  # the Secret Service, the plugin reports the unavailable service as
+  # KeyringLocked and Matrix credentials cannot be read or persisted.
+  - --talk-name=org.freedesktop.secrets
   # Cursor theme access (fixes "Unable to load from cursor theme" warning)
   - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
 modules:
