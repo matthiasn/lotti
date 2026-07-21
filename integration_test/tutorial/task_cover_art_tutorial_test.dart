@@ -324,15 +324,22 @@ void main() {
         await driver.pumpUntilFound(skillRow);
         await driver.tapLikeUser(skillRow.hitTestable());
 
-        // A single image model is configured, so no provider/model picker
-        // appears — straight to the reference-image step. No reference
-        // images are seeded for this scenario, so skip straight to
-        // generation.
-        final skipButton = find.text(
-          localized(en: 'Skip', de: 'Überspringen'),
-        );
-        await driver.pumpUntilFound(skipButton);
-        await driver.tapLikeUser(skipButton.hitTestable());
+        // The harness's shared AI setup registers a real Gemini image
+        // model alongside the scenario's own "Tutorial Cover Artist",
+        // so 2+ image models means a provider/model picker appears —
+        // select the profile's configured default (already marked
+        // "Standard ✓") rather than overriding it.
+        final defaultModelOption = find
+            .text('Tutorial Cover Artist')
+            .hitTestable();
+        await driver.pumpUntilFound(defaultModelOption);
+        await driver.tapLikeUser(defaultModelOption.first);
+
+        // No other images are linked to this task, so
+        // ReferenceImageSelectionWidget's `availableImages` is empty and it
+        // auto-skips itself via a post-frame callback — there is no
+        // tappable "Skip" button to wait for; generation starts right
+        // after the model is picked.
 
         // Catch the "generating" state immediately — the mocked generation
         // is fast enough that this step's own min_duration hold (below)
@@ -391,10 +398,12 @@ void main() {
   );
 }
 
-/// Image-generation seed: provider + single image-output model (no picker
-/// modal) + default profile with the image-generation slot set. The fake
-/// repository makes no network calls, but profile resolution requires the
-/// rows to exist.
+/// Image-generation seed: provider + image-output model + default profile
+/// with the image-generation slot set. The fake repository makes no
+/// network calls, but profile resolution requires the rows to exist. The
+/// harness's shared setup also registers a real Gemini image model, so 2+
+/// image models are configured in practice — the model picker does appear
+/// (see the `generate` step).
 List<AiConfig> _imageGenConfigs() {
   final createdAt = DateTime.now();
   return [

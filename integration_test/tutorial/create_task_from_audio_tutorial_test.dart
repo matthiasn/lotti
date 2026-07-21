@@ -182,6 +182,14 @@ void main() {
         // category-default agent assignment never fires. Give the fresh task
         // its category and a real (non-dormant) agent through the same
         // services the production auto-assign path uses.
+        //
+        // awaitContent: true — matches assignCategoryDefaultTaskAgent's own
+        // default (the real path this mirrors). The task is still blank at
+        // this point (no title, no dictation yet); without this, the
+        // creation wake fires immediately instead of being gated behind
+        // WakeOrchestrator's awaiting-content check, showing "Thinking…" on
+        // a task that has nothing to think about yet — not something a real
+        // user would ever see.
         await container
             .read(journalRepositoryProvider)
             .updateCategoryId(taskId!, categoryId: harness.world.category.id);
@@ -192,6 +200,7 @@ void main() {
               allowedCategoryIds: {harness.world.category.id},
               templateId: lauraTemplateId,
               profileId: _profileId,
+              awaitContent: true,
             );
       });
 
