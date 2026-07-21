@@ -319,4 +319,50 @@ void main() {
       (await outbox.getById('transcribe_outbox-only'))!.createdAt,
     );
   });
+
+  test('terminal ledger jobs do not resurrect deleted recordings', () async {
+    // The recording rows were soft-deleted, so the indexed journal query no
+    // longer returns them; only the outbox ledger remembers the jobs.
+    when(
+      () => journalDb.getDayAudioEntries(dayId),
+    ).thenAnswer((_) async => const []);
+    await outbox.enqueueTranscription(
+      dayId: dayId,
+      activityEntryId: 'deleted-pending',
+      recordingSessionId: 'deleted-pending',
+      audioId: 'deleted-pending',
+      audioPath: '${root.path}/deleted-pending.wav',
+      capturedAt: capturedAt,
+    );
+    await outbox.cancel('transcribe_deleted-pending');
+    await outbox.enqueueTranscription(
+      dayId: dayId,
+      activityEntryId: 'deleted-transcribed',
+      recordingSessionId: 'deleted-transcribed',
+      audioId: 'deleted-transcribed',
+      audioPath: '${root.path}/deleted-transcribed.wav',
+      capturedAt: capturedAt,
+    );
+    await outbox.satisfyWithReviewedText(
+      'transcribe_deleted-transcribed',
+      'Transcribed before deletion',
+    );
+    // Pending work without a journal row (e.g. mid-delete crash window)
+    // must still surface so the user can retry or delete it.
+    await outbox.enqueueTranscription(
+      dayId: dayId,
+      activityEntryId: 'still-pending',
+      recordingSessionId: 'still-pending',
+      audioId: 'still-pending',
+      audioPath: '${root.path}/still-pending.wav',
+      capturedAt: capturedAt,
+    );
+
+    final entries = await repository.load(dayId: dayId);
+
+    expect(
+      entries.map((entry) => entry.activityEntryId),
+      ['still-pending'],
+    );
+  });
 }

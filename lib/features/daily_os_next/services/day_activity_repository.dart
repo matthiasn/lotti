@@ -98,9 +98,14 @@ class DayActivityRepository {
       }
     }
 
+    // A live journal recording always earns a row. A job alone only does so
+    // while it still represents pending work: once it is terminal (cancelled
+    // by a delete, or succeeded for a since-deleted recording) the job file
+    // is just the device-local ledger and must not resurrect a card.
     final activityIds = <String>{
       ...audioByActivity.keys,
-      ...jobsByActivity.keys,
+      for (final entry in jobsByActivity.entries)
+        if (!entry.value.isTerminal) entry.key,
     };
     final entries =
         <DayActivityEntry>[
