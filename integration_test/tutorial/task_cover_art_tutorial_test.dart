@@ -29,6 +29,8 @@ import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -216,6 +218,20 @@ void main() {
         ),
       );
       await tester.pump();
+
+      // Give the task a real (non-dormant) agent — without this the AI
+      // summary card only shows an "Assign agent" CTA for the whole video.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MyBeamerApp)),
+      );
+      await container
+          .read(taskAgentServiceProvider)
+          .createTaskAgent(
+            taskId: task.id,
+            allowedCategoryIds: {harness.world.category.id},
+            templateId: lauraTemplateId,
+            profileId: _profileId,
+          );
 
       final driver =
           TutorialDriver(
