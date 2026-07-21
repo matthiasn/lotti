@@ -344,6 +344,25 @@ class DayProcessingOutboxRepository {
     );
   });
 
+  /// Terminalizes a job the user no longer wants — e.g. its recording was
+  /// deleted. A concurrently running worker's next claimed mutation fails
+  /// its stale-claim check and is absorbed by the runtime's retry handling.
+  Future<DayProcessingJob?> cancel(String jobId) => _serialize(() async {
+    final job = await _readJobOrNull(jobId);
+    if (job == null || job.isTerminal) return job;
+    final now = _now();
+    final updated = job.copyWith(
+      status: DayProcessingJobStatus.cancelled,
+      updatedAt: now,
+      completedAt: now,
+      generation: job.generation + 1,
+      clearClaimToken: true,
+      clearLeaseUntil: true,
+    );
+    await _write(updated);
+    return updated;
+  });
+
   Future<DayProcessingJob?> retryNow(String jobId) => _serialize(() async {
     final job = await _readJobOrNull(jobId);
     if (job == null || job.isTerminal) return job;

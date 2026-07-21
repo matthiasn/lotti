@@ -18,6 +18,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_proc
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
 import 'package:lotti/features/daily_os_next/state/capture_state.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -71,6 +72,7 @@ class CaptureController extends Notifier<CaptureState> {
     Directory Function()? docDir,
     String Function()? sessionIdFactory,
     Future<String?> Function()? originHostId,
+    Future<DailyOsTranscriptionTarget?> Function()? transcriptionTarget,
     DateTime Function()? now,
   }) : _recorderOverride = recorder,
        _transcriberOverride = transcriber,
@@ -79,6 +81,7 @@ class CaptureController extends Notifier<CaptureState> {
        _docDir = docDir ?? getDocumentsDirectory,
        _sessionIdFactory = sessionIdFactory ?? _newSessionId,
        _originHostIdOverride = originHostId,
+       _transcriptionTargetOverride = transcriptionTarget,
        _now = now ?? DateTime.now;
 
   static String _newSessionId() => const Uuid().v4();
@@ -90,6 +93,8 @@ class CaptureController extends Notifier<CaptureState> {
   final Directory Function() _docDir;
   final String Function() _sessionIdFactory;
   final Future<String?> Function()? _originHostIdOverride;
+  final Future<DailyOsTranscriptionTarget?> Function()?
+  _transcriptionTargetOverride;
   final DateTime Function() _now;
 
   /// Rolling-window size for the live waveform (~1.6s at 20ms cadence).
@@ -118,6 +123,44 @@ class CaptureController extends Notifier<CaptureState> {
       return Future<String?>.value();
     }
     return getIt<VectorClockService>().getHost();
+  }
+
+  /// The planner profile's transcription slot; null falls back to the
+  /// transcription service's model discovery.
+  Future<DailyOsTranscriptionTarget?> _transcriptionTarget() async {
+    final override = _transcriptionTargetOverride;
+    if (override != null) return override();
+    try {
+      return await ref.read(dailyOsTranscriptionTargetProvider.future);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String> _runTranscription(
+    String filePath,
+    TranscriptAttributionSession? session,
+    DailyOsTranscriptionTarget? target,
+  ) {
+    if (session == null && target == null) {
+      return _transcriber.transcribe(filePath);
+    }
+    if (session == null) {
+      return _transcriber.transcribe(filePath, target: target);
+    }
+    if (target == null) {
+      return _transcriber.transcribe(
+        filePath,
+        attributionSession: session.pending,
+        terminalizeAttributionFailure: false,
+      );
+    }
+    return _transcriber.transcribe(
+      filePath,
+      attributionSession: session.pending,
+      terminalizeAttributionFailure: false,
+      target: target,
+    );
   }
 
   StreamSubscription<record.Amplitude>? _ampSub;
@@ -374,15 +417,12 @@ class CaptureController extends Notifier<CaptureState> {
         );
       }
       final attributionSession = _transcriptAttribution;
-      transcript =
-          (await (attributionSession == null
-                  ? _transcriber.transcribe(fullPath)
-                  : _transcriber.transcribe(
-                      fullPath,
-                      attributionSession: attributionSession.pending,
-                      terminalizeAttributionFailure: false,
-                    )))
-              .trim();
+      final transcriptionTarget = await _transcriptionTarget();
+      transcript = (await _runTranscription(
+        fullPath,
+        attributionSession,
+        transcriptionTarget,
+      )).trim();
       if (transcript.isEmpty) {
         // The provider answered, so usage evidence exists — record an
         // unusable output rather than a failed interaction.

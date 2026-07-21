@@ -6,6 +6,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_proc
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repair.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -21,7 +22,20 @@ dayProcessingOutboxProcessorProvider = Provider((ref) {
   final writer = ref.watch(dayAudioTranscriptWriterProvider);
   return DayProcessingOutboxProcessor(
     repository: ref.watch(dayProcessingOutboxRepositoryProvider),
-    transcribe: transcriber.transcribe,
+    // Resolve the planner profile's transcription slot per attempt so a
+    // configuration change between retries takes effect immediately;
+    // discovery remains the fallback when no profile slot exists.
+    transcribe: (audioPath) async {
+      DailyOsTranscriptionTarget? transcriptionTarget;
+      try {
+        transcriptionTarget = await ref.read(
+          dailyOsTranscriptionTargetProvider.future,
+        );
+      } catch (_) {
+        // Profile resolution is best-effort; discovery still applies.
+      }
+      return transcriber.transcribe(audioPath, target: transcriptionTarget);
+    },
     attachTranscript: (job, transcript) =>
         writer.attach(job: job, transcript: transcript),
     isOnline: () async {

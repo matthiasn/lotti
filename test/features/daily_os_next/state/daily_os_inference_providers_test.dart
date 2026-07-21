@@ -4,10 +4,14 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
 
 class _PreferencesController extends DailyOsPreferencesController {
@@ -163,4 +167,93 @@ void main() {
       expect(status.needsAttention, isTrue);
     },
   );
+
+  group('dailyOsTranscriptionTargetProvider', () {
+    AiConfigInferenceProvider profileProvider() =>
+        AiConfig.inferenceProvider(
+              id: 'p-profile',
+              baseUrl: 'http://localhost',
+              apiKey: 'k',
+              name: 'Profile Provider',
+              createdAt: DateTime(2026, 7, 21),
+              inferenceProviderType: InferenceProviderType.genericOpenAi,
+            )
+            as AiConfigInferenceProvider;
+
+    AiConfigModel profileModel() =>
+        AiConfig.model(
+              id: 'm-profile',
+              name: 'Profile Model',
+              providerModelId: 'profile-model',
+              inferenceProviderId: 'p-profile',
+              createdAt: DateTime(2026, 7, 21),
+              inputModalities: const [Modality.audio],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+            )
+            as AiConfigModel;
+
+    test('resolves the planner profile transcription slot', () async {
+      final resolver = MockProfileResolver();
+      when(() => resolver.resolveByProfileId('profile-1')).thenAnswer(
+        (_) async => ResolvedProfile(
+          thinkingModelId: 'thinking-model',
+          thinkingProvider: profileProvider(),
+          transcriptionModelId: 'profile-model',
+          transcriptionProvider: profileProvider(),
+          transcriptionModel: profileModel(),
+        ),
+      );
+      final template = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
+        profileId: 'profile-1',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          agentTemplateProvider.overrideWith((ref, id) async => template),
+          profileResolverProvider.overrideWithValue(resolver),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final target = await container.read(
+        dailyOsTranscriptionTargetProvider.future,
+      );
+
+      expect(target?.model.providerModelId, 'profile-model');
+      expect(target?.provider.id, 'p-profile');
+    });
+
+    test('is null without a profile or without a transcription slot', () async {
+      final resolver = MockProfileResolver();
+      when(() => resolver.resolveByProfileId('profile-1')).thenAnswer(
+        (_) async => ResolvedProfile(
+          thinkingModelId: 'thinking-model',
+          thinkingProvider: profileProvider(),
+        ),
+      );
+      for (final profileId in [null, 'profile-1']) {
+        final template = makeTestTemplate(
+          id: dayAgentTemplateId,
+          agentId: dayAgentTemplateId,
+          kind: AgentTemplateKind.dayAgent,
+          profileId: profileId,
+        );
+        final container = ProviderContainer(
+          overrides: [
+            agentTemplateProvider.overrideWith((ref, id) async => template),
+            profileResolverProvider.overrideWithValue(resolver),
+          ],
+        );
+        addTearDown(container.dispose);
+        expect(
+          await container.read(dailyOsTranscriptionTargetProvider.future),
+          isNull,
+          reason: 'profileId=$profileId',
+        );
+      }
+    });
+  });
 }

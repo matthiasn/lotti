@@ -348,6 +348,33 @@ void main() {
     await sharedTempDir.delete(recursive: true);
   });
 
+  test('an explicit target bypasses model discovery entirely', () async {
+    final file = await audioFile();
+    final mockCloud = MockCloudInferenceRepository();
+    _stubGenerateWithAudio(mockCloud, ['profile', ' text']);
+    final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+    // The target's provider/model are deliberately absent from the config
+    // repo — resolution must not touch discovery at all.
+    final provider =
+        _provider(id: 'p-profile', name: 'Profile Provider')
+            as AiConfigInferenceProvider;
+    final model =
+        _audioModel(
+              id: 'm-profile',
+              providerId: 'p-profile',
+              providerModelId: 'profile-model',
+            )
+            as AiConfigModel;
+
+    final transcript = await svc.transcribe(
+      file.path,
+      target: (provider: provider, model: model),
+    );
+
+    expect(transcript, 'profile text');
+    expect(_verifyGenerateWithAudio(mockCloud).model, 'profile-model');
+  });
+
   test('aggregates stream chunks into a single transcript', () async {
     final file = await audioFile();
     final mockCloud = MockCloudInferenceRepository();

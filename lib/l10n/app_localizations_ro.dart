@@ -3488,6 +3488,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextActivityDaySummary => 'Rezumatul zilei';
 
   @override
+  String get dailyOsNextActivityDeleteDialogBody =>
+      'Audio și transcrierea în așteptare sunt eliminate din această zi.';
+
+  @override
+  String get dailyOsNextActivityDeleteDialogTitle =>
+      'Ștergeți această înregistrare?';
+
+  @override
+  String get dailyOsNextActivityDeleteRecording => 'Ștergeți';
+
+  @override
   String get dailyOsNextActivityEmpty =>
       'Nu există încă înregistrări sau check-in-uri.';
 

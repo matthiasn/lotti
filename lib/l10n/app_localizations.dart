@@ -5873,6 +5873,24 @@ abstract class AppLocalizations {
   /// **'Day summary'**
   String get dailyOsNextActivityDaySummary;
 
+  /// No description provided for @dailyOsNextActivityDeleteDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The audio and its pending transcription are removed from this day.'**
+  String get dailyOsNextActivityDeleteDialogBody;
+
+  /// No description provided for @dailyOsNextActivityDeleteDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this recording?'**
+  String get dailyOsNextActivityDeleteDialogTitle;
+
+  /// No description provided for @dailyOsNextActivityDeleteRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get dailyOsNextActivityDeleteRecording;
+
   /// No description provided for @dailyOsNextActivityEmpty.
   ///
   /// In en, this message translates to:

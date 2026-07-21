@@ -3462,6 +3462,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextActivityDaySummary => 'Tageszusammenfassung';
 
   @override
+  String get dailyOsNextActivityDeleteDialogBody =>
+      'Die Aufnahme und ihre ausstehende Transkription werden aus diesem Tag entfernt.';
+
+  @override
+  String get dailyOsNextActivityDeleteDialogTitle => 'Diese Aufnahme löschen?';
+
+  @override
+  String get dailyOsNextActivityDeleteRecording => 'Löschen';
+
+  @override
   String get dailyOsNextActivityEmpty => 'Noch keine Aufnahmen oder Check-ins.';
 
   @override

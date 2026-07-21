@@ -3419,6 +3419,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextActivityDaySummary => 'Day summary';
 
   @override
+  String get dailyOsNextActivityDeleteDialogBody =>
+      'The audio and its pending transcription are removed from this day.';
+
+  @override
+  String get dailyOsNextActivityDeleteDialogTitle => 'Delete this recording?';
+
+  @override
+  String get dailyOsNextActivityDeleteRecording => 'Delete';
+
+  @override
   String get dailyOsNextActivityEmpty => 'No recordings or check-ins yet.';
 
   @override

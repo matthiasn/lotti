@@ -5,12 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_ids.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -147,7 +149,10 @@ class _Bench {
     });
   }
 
-  ProviderContainer aliveContainer({DayProcessingOutboxRepository? outbox}) {
+  ProviderContainer aliveContainer({
+    DayProcessingOutboxRepository? outbox,
+    DailyOsTranscriptionTarget? transcriptionTarget,
+  }) {
     final container = ProviderContainer(
       overrides: [
         captureControllerProvider.overrideWith(
@@ -159,6 +164,7 @@ class _Bench {
             docDir: () => docDir,
             sessionIdFactory: () => _sessionId,
             originHostId: () async => 'host-1',
+            transcriptionTarget: () async => transcriptionTarget,
             now: () => _now,
           ),
         ),
@@ -712,6 +718,58 @@ void main() {
         verify(bench.recorder.stopRecording).called(1);
       },
     );
+
+    test('the profile transcription target is forwarded to the '
+        'transcriber', () async {
+      final provider =
+          AiConfig.inferenceProvider(
+                id: 'p-profile',
+                baseUrl: 'http://localhost',
+                apiKey: 'k',
+                name: 'Profile Provider',
+                createdAt: _now,
+                inferenceProviderType: InferenceProviderType.genericOpenAi,
+              )
+              as AiConfigInferenceProvider;
+      final model =
+          AiConfig.model(
+                id: 'm-profile',
+                name: 'Profile Model',
+                providerModelId: 'profile-model',
+                inferenceProviderId: 'p-profile',
+                createdAt: _now,
+                inputModalities: const [Modality.audio],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+              )
+              as AiConfigModel;
+      when(
+        () => bench.transcriber.transcribe(any(), target: any(named: 'target')),
+      ).thenAnswer((_) async => 'targeted transcript');
+      final container = bench.aliveContainer(
+        outbox: bench.outbox,
+        transcriptionTarget: (provider: provider, model: model),
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(captureControllerProvider.notifier);
+
+      await controller.toggle();
+      await controller.toggle();
+
+      expect(
+        container.read(captureControllerProvider).transcript,
+        'targeted transcript',
+      );
+      final captured =
+          verify(
+                () => bench.transcriber.transcribe(
+                  any(),
+                  target: captureAny(named: 'target'),
+                ),
+              ).captured.single
+              as DailyOsTranscriptionTarget?;
+      expect(captured?.model.providerModelId, 'profile-model');
+    });
 
     test('persistAudio throwing surfaces audioPersistFailed', () async {
       bench

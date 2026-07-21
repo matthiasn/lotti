@@ -3482,6 +3482,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextActivityDaySummary => 'Shrnutí dne';
 
   @override
+  String get dailyOsNextActivityDeleteDialogBody =>
+      'Zvuk a jeho čekající přepis budou z tohoto dne odstraněny.';
+
+  @override
+  String get dailyOsNextActivityDeleteDialogTitle => 'Smazat tuto nahrávku?';
+
+  @override
+  String get dailyOsNextActivityDeleteRecording => 'Smazat';
+
+  @override
   String get dailyOsNextActivityEmpty =>
       'Zatím tu nejsou žádné nahrávky ani check-iny.';
 

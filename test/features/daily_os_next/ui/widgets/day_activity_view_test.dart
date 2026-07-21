@@ -11,6 +11,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -30,6 +31,7 @@ void main() {
     required DayProcessingJobStatus status,
     String? transcript,
     DayProcessingFailureClass? failureClass,
+    String? lastError,
   }) => DayProcessingJob(
     id: id,
     kind: DayProcessingJobKind.transcribeAudio,
@@ -46,6 +48,7 @@ void main() {
     generation: 0,
     resultTranscript: transcript,
     lastFailureClass: failureClass,
+    lastError: lastError,
   );
 
   tearDown(() => nav_service.beamToNamedOverride = null);
@@ -77,6 +80,7 @@ void main() {
         id: 'job-waiting',
         activityId: 'waiting',
         status: DayProcessingJobStatus.waitingForNetwork,
+        lastError: 'SocketException: connection refused',
       ),
     );
     final ready = DayActivityEntry(
@@ -134,6 +138,12 @@ void main() {
     // Both the waiting and the queued/backed-off recordings stay manually
     // retryable — backoff must never leave the user without a trigger.
     expect(find.text(messages.dailyOsNextActivityRetry), findsNWidgets(2));
+    // The stored failure reason is visible, so a retry that fails again
+    // is diagnosable instead of looking like a dead button.
+    expect(
+      find.text('SocketException: connection refused'),
+      findsOneWidget,
+    );
     expect(
       find.text('Protect the afternoon for focused work.'),
       findsOneWidget,
@@ -582,5 +592,65 @@ void main() {
 
     expect(find.byType(AudioPlayerWidget), findsOneWidget);
     expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+  });
+
+  testWidgets('deleting a recording cancels its job and soft-deletes the '
+      'journal entry', (tester) async {
+    final outbox = MockDayProcessingOutboxRepository();
+    final journalRepository = MockJournalRepository();
+    when(() => outbox.cancel(any())).thenAnswer((_) async => null);
+    when(
+      () => journalRepository.deleteJournalEntity(any()),
+    ).thenAnswer((_) async => true);
+    final entry = DayActivityEntry(
+      id: 'doomed',
+      kind: DayActivityEntryKind.recording,
+      createdAt: capturedAt,
+      activityEntryId: 'doomed',
+      processingJob: job(
+        id: 'job-doomed',
+        activityId: 'doomed',
+        status: DayProcessingJobStatus.queued,
+      ),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayActivityView(
+          date: date,
+          hasPlan: false,
+          actualBlocks: const [],
+          onUseEntry: (_) {},
+        ),
+        overrides: [
+          dayActivityProvider.overrideWith((ref, date) async => [entry]),
+          dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+          journalRepositoryProvider.overrideWithValue(journalRepository),
+        ],
+      ),
+    );
+    await tester.pump();
+    final messages = tester.element(find.byType(DayActivityView)).messages;
+
+    await tester.tap(find.text(messages.dailyOsNextActivityDeleteRecording));
+    await tester.pump();
+    // Cancelling keeps the recording until the user confirms.
+    await tester.tap(find.text(messages.dailyOsNextDayDeleteDialogCancel));
+    await tester.pump();
+    verifyNever(() => outbox.cancel(any()));
+
+    await tester.tap(find.text(messages.dailyOsNextActivityDeleteRecording));
+    await tester.pump();
+    await tester.tap(
+      find.widgetWithText(
+        FilledButton,
+        messages.dailyOsNextDayDeleteDialogConfirm,
+      ),
+    );
+    await tester.pump();
+
+    verify(() => outbox.cancel('job-doomed')).called(1);
+    verify(
+      () => journalRepository.deleteJournalEntity('audio-doomed'),
+    ).called(1);
   });
 }

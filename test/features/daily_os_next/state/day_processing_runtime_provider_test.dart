@@ -4,12 +4,14 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -155,4 +157,81 @@ void main() {
       ),
     ).called(4);
   });
+
+  test(
+    'the planner profile transcription target reaches the transcriber',
+    () async {
+      final transcriber = MockAudioTranscriptionService();
+      final provider =
+          AiConfig.inferenceProvider(
+                id: 'p-profile',
+                baseUrl: 'http://localhost',
+                apiKey: 'k',
+                name: 'Profile Provider',
+                createdAt: DateTime(2026, 7, 21),
+                inferenceProviderType: InferenceProviderType.genericOpenAi,
+              )
+              as AiConfigInferenceProvider;
+      final model =
+          AiConfig.model(
+                id: 'm-profile',
+                name: 'Profile Model',
+                providerModelId: 'profile-model',
+                inferenceProviderId: 'p-profile',
+                createdAt: DateTime(2026, 7, 21),
+                inputModalities: const [Modality.audio],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+              )
+              as AiConfigModel;
+      const channel = MethodChannel('dev.fluttercommunity.plus/connectivity');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            channel,
+            (call) async => call.method == 'check' ? ['wifi'] : null,
+          );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+      when(
+        () => transcriber.transcribe(any(), target: any(named: 'target')),
+      ).thenAnswer((_) async => 'profile transcript');
+      when(
+        () => journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      final container = ProviderContainer(
+        overrides: [
+          audioTranscriptionServiceProvider.overrideWithValue(transcriber),
+          dailyOsTranscriptionTargetProvider.overrideWith(
+            (ref) async => (provider: provider, model: model),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final processor = container.read(dayProcessingOutboxProcessorProvider);
+      final audio = File('${root.path}/profile.m4a')..writeAsBytesSync([1, 2]);
+      await outbox.enqueueTranscription(
+        dayId: 'dayplan-2026-07-21',
+        activityEntryId: 'activity-profile',
+        recordingSessionId: 'session-profile',
+        audioId: 'audio-profile',
+        audioPath: audio.path,
+        capturedAt: DateTime.utc(2026, 7, 21, 8),
+      );
+
+      await processor.processNext();
+
+      final captured =
+          verify(
+                () => transcriber.transcribe(
+                  any(),
+                  target: captureAny(named: 'target'),
+                ),
+              ).captured.single
+              as DailyOsTranscriptionTarget?;
+      expect(captured?.model.providerModelId, 'profile-model');
+      expect(captured?.provider.id, 'p-profile');
+    },
+  );
 }

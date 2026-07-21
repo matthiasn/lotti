@@ -431,6 +431,22 @@ void main() {
   });
 
   test(
+    'cancel terminalizes a pending job and no-ops on terminal ones',
+    () async {
+      final job = await enqueue();
+      final cancelled = await repository.cancel(job.id);
+
+      expect(cancelled!.status, DayProcessingJobStatus.cancelled);
+      expect(cancelled.completedAt, isNotNull);
+      expect(cancelled.isTerminal, isTrue);
+      // A terminal job stays exactly as it is.
+      final again = await repository.cancel(job.id);
+      expect(again!.status, DayProcessingJobStatus.cancelled);
+      expect(again.generation, cancelled.generation);
+    },
+  );
+
+  test(
     'getAll skips and quarantines a corrupt job file',
     () async {
       await enqueue();

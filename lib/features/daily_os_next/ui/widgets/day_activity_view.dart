@@ -11,6 +11,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
@@ -62,6 +63,11 @@ class DayActivityView extends ConsumerWidget {
                           entry.isSubmitted
                       ? null
                       : () => _editText(context, ref, entry),
+                  onDelete:
+                      entry.kind != DayActivityEntryKind.recording ||
+                          entry.isSubmitted
+                      ? null
+                      : () => _delete(context, ref, entry),
                 );
               },
             ),
@@ -75,6 +81,59 @@ class DayActivityView extends ConsumerWidget {
   Future<void> _retry(WidgetRef ref, String jobId) async {
     await ref.read(dayProcessingOutboxRepositoryProvider).retryNow(jobId);
     await ref.read(dayProcessingRuntimeProvider).nudge();
+  }
+
+  Future<void> _delete(
+    BuildContext context,
+    WidgetRef ref,
+    DayActivityEntry entry,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          dialogContext.messages.dailyOsNextActivityDeleteDialogTitle,
+        ),
+        content: Text(
+          dialogContext.messages.dailyOsNextActivityDeleteDialogBody,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              dialogContext.messages.dailyOsNextDayDeleteDialogCancel,
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.errorContainer,
+              foregroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.onErrorContainer,
+            ),
+            child: Text(
+              dialogContext.messages.dailyOsNextDayDeleteDialogConfirm,
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    // Cancel first so a background worker cannot attach a transcript to an
+    // entry that is about to disappear; the journal soft delete then hides
+    // the recording from every day projection.
+    final jobId = entry.processingJob?.id;
+    if (jobId != null) {
+      await ref.read(dayProcessingOutboxRepositoryProvider).cancel(jobId);
+    }
+    final audioId = entry.audio?.meta.id ?? entry.processingJob?.audioId;
+    if (audioId != null) {
+      await ref.read(journalRepositoryProvider).deleteJournalEntity(audioId);
+    }
+    ref.invalidate(dayActivityProvider);
   }
 
   Future<void> _editText(
@@ -204,6 +263,7 @@ class _ActivityCard extends StatelessWidget {
     required this.onUse,
     this.onRetry,
     this.onEditText,
+    this.onDelete,
   });
 
   final DayActivityEntry entry;
@@ -211,6 +271,7 @@ class _ActivityCard extends StatelessWidget {
   final VoidCallback onUse;
   final Future<void> Function()? onRetry;
   final Future<void> Function()? onEditText;
+  final Future<void> Function()? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -275,12 +336,26 @@ class _ActivityCard extends StatelessWidget {
                   : tokens.colors.text.highEmphasis,
             ),
           ),
+          if (entry.processingJob case final job?
+              when job.lastError != null &&
+                  job.status != DayProcessingJobStatus.succeeded) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              job.lastError!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
+          ],
           if (entry.audio case final audio?
               when entry.audioAvailableLocally != false) ...[
             SizedBox(height: tokens.spacing.step4),
             AudioPlayerWidget(audio),
           ],
           if (onEditText != null ||
+              onDelete != null ||
               entry.processingJob?.lastFailureClass ==
                   DayProcessingFailureClass.setupRequired ||
               _canRetry(entry) ||
@@ -319,6 +394,13 @@ class _ActivityCard extends StatelessWidget {
                         : context.messages.dailyOsNextActivityUseToPlan,
                     onPressed: onUse,
                     leadingIcon: Icons.auto_awesome_rounded,
+                  ),
+                if (onDelete != null)
+                  _AsyncActivityButton(
+                    label: context.messages.dailyOsNextActivityDeleteRecording,
+                    action: onDelete!,
+                    variant: DesignSystemButtonVariant.secondary,
+                    leadingIcon: Icons.delete_outline_rounded,
                   ),
               ],
             ),
