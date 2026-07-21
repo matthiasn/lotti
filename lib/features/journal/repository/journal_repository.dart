@@ -263,6 +263,7 @@ class JournalRepository {
     String? linkedId,
     String? categoryId,
     void Function(JournalEntity)? onCreated,
+    bool linkCollapsed = false,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
@@ -282,6 +283,7 @@ class JournalRepository {
         journalEntity,
         linkedId: linkedId,
         shouldAddGeolocation: false,
+        linkCollapsed: linkCollapsed,
       );
 
       // Invoke callback after successful creation

@@ -4171,6 +4171,7 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
+              linkCollapsed: any(named: 'linkCollapsed'),
             ),
           ).thenAnswer((_) async => true);
           when(
@@ -4283,6 +4284,7 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
+              linkCollapsed: any(named: 'linkCollapsed'),
             ),
           ).thenAnswer((_) async => true);
           when(
@@ -4417,6 +4419,7 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
+              linkCollapsed: any(named: 'linkCollapsed'),
             ),
           ).thenAnswer((_) async => true);
           when(
@@ -4687,6 +4690,7 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
+              linkCollapsed: any(named: 'linkCollapsed'),
             ),
           ).thenAnswer((_) async => true);
           when(
@@ -4837,6 +4841,7 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
+              linkCollapsed: any(named: 'linkCollapsed'),
             ),
           ).thenAnswer((_) async => true);
 
@@ -5111,6 +5116,7 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
+              linkCollapsed: any(named: 'linkCollapsed'),
             ),
           ).thenThrow(Exception('DB write failed'));
 
@@ -5224,6 +5230,7 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
+              linkCollapsed: any(named: 'linkCollapsed'),
             ),
           ).thenAnswer((_) async => true);
 
@@ -5355,6 +5362,7 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
+              linkCollapsed: any(named: 'linkCollapsed'),
             ),
           ).thenAnswer((_) async => true);
           when(

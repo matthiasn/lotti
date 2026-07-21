@@ -421,6 +421,7 @@ void main() {
           linkedId: any(named: 'linkedId'),
           shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
           enqueueSync: any(named: 'enqueueSync'),
+          linkCollapsed: any(named: 'linkCollapsed'),
         ),
       ).thenAnswer((_) async => true);
     });
@@ -1184,12 +1185,17 @@ void main() {
         // createDbEntity returns true, so createImageEntry returns the entity
         expect(result, equals('test-id'));
 
+        // linkCollapsed: true — an AI-generated image (cover art) already
+        // renders as the task's app-bar banner and list thumbnail; the
+        // linked-entries timeline row defaults to collapsed instead of
+        // duplicating it expanded.
         verify(
           () => mockPersistenceLogic.createDbEntity(
             any(that: isA<JournalImage>()),
             linkedId: 'linked-task-id',
             shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
             enqueueSync: any(named: 'enqueueSync'),
+            linkCollapsed: true,
           ),
         ).called(1);
       });
@@ -1201,6 +1207,7 @@ void main() {
             linkedId: any(named: 'linkedId'),
             shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
             enqueueSync: any(named: 'enqueueSync'),
+            linkCollapsed: any(named: 'linkCollapsed'),
           ),
         ).thenThrow(Exception('DB error'));
 

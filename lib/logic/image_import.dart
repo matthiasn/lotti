@@ -735,10 +735,15 @@ Future<String?> importGeneratedImageBytes({
     aiAttribution: aiAttribution,
   );
 
+  // Collapsed by default: an AI-generated image (cover art today) already
+  // renders as the task's detail-page banner and list-row thumbnail — a
+  // third, expanded copy in the linked-entries timeline is redundant
+  // clutter. Still shown as a collapsed row so it's discoverable/expandable.
   final createdEntity = await JournalRepository.createImageEntry(
     imageData,
     linkedId: linkedId,
     categoryId: categoryId,
+    linkCollapsed: true,
   );
 
   if (createdEntity == null) {

@@ -45,6 +45,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while each transcript retains its own attribution. Coding-prompt usage also
   contributes to its parent task's AI-consumption total.
 
+### Changed
+- **Generated cover art no longer clutters the task's timeline.** The banner
+  and list thumbnail are unchanged, but the generated image's own entry in
+  the task's linked entries now starts collapsed instead of showing the same
+  artwork a third time — tap it to expand if you want to see it there too.
+
 ### Fixed
 - **Generate Cover Art now actually shows the generated image.** The task was
   pointed at the wrong internal id after generation, so the artwork was

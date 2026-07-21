@@ -168,7 +168,8 @@ class PersistenceLogic implements PersistenceLogicContract {
   Future<bool> createLink({
     required String fromId,
     required String toId,
-  }) => _entries.createLink(fromId: fromId, toId: toId);
+    bool collapsed = false,
+  }) => _entries.createLink(fromId: fromId, toId: toId, collapsed: collapsed);
 
   @override
   Future<bool?> createDbEntity(
@@ -176,11 +177,13 @@ class PersistenceLogic implements PersistenceLogicContract {
     bool shouldAddGeolocation = true,
     bool enqueueSync = true,
     String? linkedId,
+    bool linkCollapsed = false,
   }) => _entries.createDbEntity(
     journalEntity,
     shouldAddGeolocation: shouldAddGeolocation,
     enqueueSync: enqueueSync,
     linkedId: linkedId,
+    linkCollapsed: linkCollapsed,
   );
 
   // --- Entry-creation builders (PersistenceCreateOps) ----------------------
