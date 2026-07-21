@@ -216,7 +216,20 @@ void main() {
 
       // The transcript must be SEEN, not just stored: wait for the text to
       // land, then scroll it into view on camera.
-      final transcriptText = find.textContaining('Waddle');
+      //
+      // findRichText: true — flutter_quill's editor renders each line as a
+      // bare RichText (text_line.dart), never wrapped in a Text widget, so
+      // the default text finder (Text/EditableText only) never matches
+      // editor-rendered content, regardless of whether it's populated.
+      // Scoped to TaskDetailsPage: the demo world's stock task list
+      // includes an unrelated seeded task titled "Startprüfung für Project
+      // Waddle" in the sidebar, always in the tree — an unscoped search for
+      // this word risks a false match there instead of actually verifying
+      // the transcript.
+      final transcriptText = find.descendant(
+        of: find.byType(TaskDetailsPage),
+        matching: find.textContaining('Waddle', findRichText: true),
+      );
       await driver.step('transcription', () async {
         // Re-assert automatic updates before the transcription-complete
         // nudge fires — the agent's initial wake may have finished during
@@ -242,6 +255,16 @@ void main() {
           },
           description: 'Voxtral transcript on the linked audio entry',
           timeout: const Duration(minutes: 3),
+        );
+        // The DB write above lands ahead of the UI: EditorWidget's Quill
+        // controller is (re)built from a microtask scheduled off the
+        // update-notification stream, so give it a beat to actually render
+        // before searching for it — unlike the other two scenarios, this
+        // note is written asynchronously into an ALREADY-MOUNTED page
+        // rather than seeded before the page ever mounts.
+        await driver.pumpUntilFound(
+          transcriptText,
+          timeout: const Duration(seconds: 15),
         );
         // Bring the transcript into view on camera.
         await driver.scrollIntoView(
@@ -306,54 +329,27 @@ void main() {
       });
 
       await driver.step('check_off', () async {
-        // Scroll back to the top first: `suggestions`/`confirm` left the
-        // pane scrolled down at "Confirm all", but the point of this beat
-        // is showing the whole confirmed checklist before checking an item
-        // off, not jumping straight to a mid-scroll checkbox.
-        final scrollableElements = detailScrollable.evaluate().toList();
-        ScrollableState? best;
-        for (final element in scrollableElements) {
-          final state = (element as StatefulElement).state as ScrollableState;
-          if (!state.position.hasViewportDimension) continue;
-          if (best == null ||
-              state.position.viewportDimension >
-                  best.position.viewportDimension) {
-            best = state;
-          }
-        }
-        if (best != null) {
-          final position = best.position;
-          while (position.pixels > position.minScrollExtent + 1) {
-            position.jumpTo(
-              (position.pixels - 40).clamp(
-                position.minScrollExtent,
-                position.maxScrollExtent,
-              ),
-            );
-            for (var frame = 0; frame < 6; frame++) {
-              await driver.tick();
-            }
-          }
-          await driver.holdUntil(
-            driver.timeline.elapsed + const Duration(seconds: 1),
-          );
-        }
+        // `suggestions`/`confirm` left the pane scrolled down at "Confirm
+        // all", but the point of this beat is showing the whole confirmed
+        // checklist before checking an item off, not jumping straight to a
+        // mid-scroll checkbox. Align the FIRST checklist item near the top
+        // (rather than jumping to the page's absolute top) so this frames
+        // the checklist from its own beginning regardless of whatever is
+        // above it.
+        final checklistItems = find.descendant(
+          of: find.byType(TaskDetailsPage),
+          matching: find.byType(Checkbox),
+        );
+        await driver.scrollIntoView(
+          checklistItems,
+          scrollable: detailScrollable,
+          alignment: 0.1,
+        );
+        await driver.holdUntil(
+          driver.timeline.elapsed + const Duration(seconds: 1),
+        );
 
-        final itemCheckbox = find
-            .descendant(
-              of: find.byType(TaskDetailsPage),
-              matching: find.byType(Checkbox),
-            )
-            .hitTestable();
-        if (itemCheckbox.evaluate().isEmpty) {
-          await driver.scrollIntoView(
-            find.descendant(
-              of: find.byType(TaskDetailsPage),
-              matching: find.byType(Checkbox),
-            ),
-            scrollable: detailScrollable,
-          );
-        }
+        final itemCheckbox = checklistItems.hitTestable();
         await driver.pumpUntilFound(itemCheckbox);
         await driver.tapLikeUser(itemCheckbox);
         await driver.pumpUntil(

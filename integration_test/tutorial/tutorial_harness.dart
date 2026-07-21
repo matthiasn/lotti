@@ -833,68 +833,121 @@ class TutorialDriver {
     }
   }
 
-  /// Scrolls until [target] is hit-testable by driving the scroll position
-  /// of the largest matching [scrollable] directly.
+  /// Scrolls [scrollable] so [target] sits at [alignment] within the
+  /// viewport (0.0 = flush with the leading/top edge, 0.5 = centered, 1.0 =
+  /// flush with the trailing/bottom edge) — computed directly from the
+  /// widget's own geometry via [Scrollable.ensureVisible] and animated
+  /// there smoothly.
   ///
-  /// Synthetic drags proved unreliable (inner scrollables swallow them, and
-  /// virtualized lists unmount off-screen rows), so this animates the
-  /// ScrollableState's position itself: down through the full extent, then
-  /// back up, checking after every step.
+  /// Deliberately NOT "sweep toward a page edge and stop at the first
+  /// `hitTestable` frame": a widget sitting a single pixel over the fold
+  /// already satisfies `hitTestable`, which reads as "not actually shown"
+  /// on camera, and sweeping to `maxScrollExtent`/`minScrollExtent`
+  /// overshoots the moment any more content exists past the target.
+  /// [Scrollable.ensureVisible] also walks outward through nested
+  /// scrollables correctly (e.g. a checklist's own reorderable list inside
+  /// the page's outer pane) instead of guessing which one is "the" page
+  /// scrollable.
+  ///
+  /// [target] must already be built somewhere in the tree. A virtualized
+  /// list only builds rows near the current scroll offset, so when
+  /// [target] isn't there yet this first does a coarse sweep — checking
+  /// bare existence, not `hitTestable` — using the matching [scrollable]
+  /// with the most actual scroll range (`maxScrollExtent -
+  /// minScrollExtent`), then hands off to [Scrollable.ensureVisible] for
+  /// the exact, animated placement.
+  ///
+  /// Deliberately NOT "the largest `viewportDimension`": a shrink-wrapped,
+  /// `NeverScrollableScrollPhysics` inner list (e.g. a checklist's own
+  /// `ReorderableListView`, embedded in — not competing with — the page's
+  /// real scrollable) sizes itself to its full content height, which can
+  /// exceed the outer pane's visible viewport height while having ZERO
+  /// scroll range of its own — driving it is a silent no-op that never
+  /// reaches a target sitting further down the actual page.
   Future<void> scrollIntoView(
     Finder target, {
     required Finder scrollable,
+    double alignment = 0.5,
     double step = 250,
+    Duration animation = const Duration(milliseconds: 900),
   }) async {
-    // NOTE: [scrollable] must be a plain (non-`.first`) finder — `.first`
-    // finders throw on evaluate() when empty instead of returning [].
-    if (scrollable.evaluate().isEmpty) {
-      await _failWithContext(
-        'scroll_no_scrollable',
-        'No scrollable found while scrolling to $target',
-      );
-    }
-    // Prefer the scrollable with the tallest viewport — inner cards nest
-    // their own scrollables that would otherwise win by traversal order.
-    ScrollableState? best;
-    for (final element in scrollable.evaluate()) {
-      final state = (element as StatefulElement).state as ScrollableState;
-      if (!state.position.hasViewportDimension) continue;
-      if (best == null ||
-          state.position.viewportDimension > best.position.viewportDimension) {
-        best = state;
-      }
-    }
-    if (best == null) {
-      await _failWithContext(
-        'scroll_no_scrollable',
-        'No laid-out scrollable found while scrolling to $target',
-      );
-    }
-    final position = best.position;
-
-    Future<bool> sweepTo(double destination) async {
-      final direction = destination >= position.pixels ? 1 : -1;
-      while ((destination - position.pixels) * direction > 1) {
-        if (target.hitTestable().evaluate().isNotEmpty) return true;
-        position.jumpTo(
-          (position.pixels + step * direction).clamp(
-            position.minScrollExtent,
-            position.maxScrollExtent,
-          ),
+    // The coarse "get it built" sweep below is only needed when [target]
+    // isn't in the tree yet (a virtualized list far off-screen) — a page
+    // that already fits entirely within the viewport has no scrollable
+    // with actual range at all, which is fine as long as there's nothing
+    // to build: don't demand one just to hand off to
+    // [Scrollable.ensureVisible], which needs no scroll position of its
+    // own.
+    if (target.evaluate().isEmpty) {
+      // NOTE: [scrollable] must be a plain (non-`.first`) finder — `.first`
+      // finders throw on evaluate() when empty instead of returning [].
+      if (scrollable.evaluate().isEmpty) {
+        await _failWithContext(
+          'scroll_no_scrollable',
+          'No scrollable found while scrolling to $target',
         );
-        for (var frame = 0; frame < 8; frame++) {
-          await tick();
+      }
+      ScrollableState? best;
+      for (final element in scrollable.evaluate()) {
+        final state = (element as StatefulElement).state as ScrollableState;
+        if (!state.position.hasViewportDimension) continue;
+        final range =
+            state.position.maxScrollExtent - state.position.minScrollExtent;
+        if (range <= 0) continue;
+        final bestRange = best == null
+            ? 0.0
+            : best.position.maxScrollExtent - best.position.minScrollExtent;
+        if (best == null || range > bestRange) {
+          best = state;
         }
       }
-      return target.hitTestable().evaluate().isNotEmpty;
+      if (best == null) {
+        await _failWithContext(
+          'scroll_no_scrollable',
+          'No scrollable with actual scroll range found while scrolling to '
+              '$target',
+        );
+      }
+      final position = best.position;
+
+      Future<bool> sweepUntilBuilt(double destination) async {
+        final direction = destination >= position.pixels ? 1 : -1;
+        while ((destination - position.pixels) * direction > 1) {
+          if (target.evaluate().isNotEmpty) return true;
+          position.jumpTo(
+            (position.pixels + step * direction).clamp(
+              position.minScrollExtent,
+              position.maxScrollExtent,
+            ),
+          );
+          for (var frame = 0; frame < 8; frame++) {
+            await tick();
+          }
+        }
+        return target.evaluate().isNotEmpty;
+      }
+
+      if (!await sweepUntilBuilt(position.maxScrollExtent) &&
+          !await sweepUntilBuilt(position.minScrollExtent)) {
+        await _failWithContext(
+          'scroll_exhausted',
+          'Could not scroll $target into the tree',
+        );
+      }
     }
 
-    if (await sweepTo(position.maxScrollExtent)) return;
-    if (await sweepTo(position.minScrollExtent)) return;
-    await _failWithContext(
-      'scroll_exhausted',
-      'Could not scroll $target into view',
+    final settle = Scrollable.ensureVisible(
+      target.evaluate().first,
+      alignment: alignment,
+      duration: animation,
+      curve: Curves.easeInOut,
     );
+    final deadline =
+        timeline.elapsed + animation + const Duration(milliseconds: 200);
+    while (timeline.elapsed < deadline) {
+      await tick();
+    }
+    await settle;
   }
 
   /// Live-pumps until [condition] returns true, failing after [timeout].

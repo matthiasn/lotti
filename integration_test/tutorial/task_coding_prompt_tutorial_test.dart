@@ -446,12 +446,7 @@ void main() {
 
       // This scenario starts from a dictated voice note (the "current
       // situation") — its card carries both the transcript and the
-      // "Generate…" control, so scrolling to the button also brings the
-      // transcript on screen. Scrolled straight to the button (rather than
-      // via a separate "scroll to the transcript text" step first): with a
-      // checklist above it, the checklist's own reorderable list can
-      // out-rank the page's outer scrollable as "largest viewport", making
-      // a sweep toward plain transcript text unreliable.
+      // "Generate…" control.
       final assistantButton = find
           .descendant(
             of: find.byType(TaskDetailsPage),
@@ -460,34 +455,33 @@ void main() {
             ),
           )
           .hitTestable();
+      // findRichText: true — flutter_quill's editor renders each line as a
+      // bare RichText (text_line.dart), never wrapped in a Text widget, so
+      // the default text finder (Text/EditableText only) never matches
+      // editor-rendered content at all, regardless of whether it's
+      // populated. Scoped to TaskDetailsPage: the demo world's stock task
+      // list includes an unrelated seeded task titled "Startprüfung für
+      // Project Waddle" in the sidebar, always in the tree — a search for
+      // this content unscoped would risk a false match there instead of
+      // actually verifying the editor.
+      final transcriptText = find.descendant(
+        of: find.byType(TaskDetailsPage),
+        matching: find.textContaining(
+          localized(en: 'staging', de: 'Staging-Umgebung'),
+          findRichText: true,
+        ),
+      );
 
       await driver.step('review_transcript', () async {
-        // scrollIntoView only guarantees `hitTestable` — with the note as
-        // the last item on the page, the button already satisfies that a
-        // few pixels above the fold (barely peeking in), so it no-ops
-        // without actually bringing the transcript comfortably into view.
-        // Scroll all the way down instead, framing the whole note card.
-        final scrollableElements = detailScrollable.evaluate().toList();
-        ScrollableState? best;
-        for (final element in scrollableElements) {
-          final state = (element as StatefulElement).state as ScrollableState;
-          if (!state.position.hasViewportDimension) continue;
-          if (best == null ||
-              state.position.viewportDimension >
-                  best.position.viewportDimension) {
-            best = state;
-          }
-        }
-        expect(best, isNotNull, reason: 'detail pane must be scrollable');
-        final position = best!.position;
-        while (position.pixels < position.maxScrollExtent - 1) {
-          position.jumpTo(
-            (position.pixels + 40).clamp(0, position.maxScrollExtent),
-          );
-          for (var frame = 0; frame < 6; frame++) {
-            await driver.tick();
-          }
-        }
+        // Center the transcript text itself (not the button below it) —
+        // Scrollable.ensureVisible walks outward through nested
+        // scrollables (the checklist above it has its own reorderable
+        // list) from the target's own position, so this reliably frames
+        // the transcript regardless of what else is on the page.
+        await driver.scrollIntoView(
+          transcriptText,
+          scrollable: detailScrollable,
+        );
         // A dedicated step (its own min_duration/narration in the
         // scenario YAML) so the hold survives the compositor's wait-span
         // compression — a hold embedded mid-step got compressed away.

@@ -4,7 +4,9 @@
 /// `tools/tutorial_videos/config/scenarios/task_cover_art.yaml`:
 ///
 ///  1. open a simple task that carries a voice note describing it,
-///  2. run "Generate Cover Art" from the note's advanced-actions menu,
+///  2. run "Generate Cover Art" from the note's AI assistant ("Generate…")
+///     menu — the real trigger path, not the "More actions" overflow's
+///     direct shortcut,
 ///  3. watch the generation progress, then the artwork land as the task's
 ///     cover in the header and on the list card.
 ///
@@ -270,25 +272,68 @@ void main() {
         await driver.tapLikeUser(taskCard.hitTestable());
         await driver.pumpUntilFound(find.byKey(TaskActionBar.audioKey));
         // Bring the voice note (with its description) into view.
+        //
+        // findRichText: true — flutter_quill's editor renders each line as
+        // a bare RichText (text_line.dart), never wrapped in a Text
+        // widget, so the default text finder never matches editor-rendered
+        // content, regardless of whether it's populated. Scoped to
+        // TaskDetailsPage: the demo world's stock task list includes an
+        // unrelated seeded task titled "Startprüfung für Project Waddle"
+        // in the sidebar, always in the tree — an unscoped search for this
+        // word risks a false match there instead of actually verifying
+        // the note's transcript.
+        final noteTranscriptText = find.descendant(
+          of: find.byType(TaskDetailsPage),
+          matching: find.textContaining('Waddle', findRichText: true),
+        );
+        // The action bar rendering doesn't guarantee the linked note's
+        // EditorWidget further down the page has built its Quill
+        // controller yet (a microtask scheduled off entry load) — give it
+        // a beat before searching for it.
+        await driver.pumpUntilFound(
+          noteTranscriptText,
+          timeout: const Duration(seconds: 15),
+        );
         await driver.scrollIntoView(
-          find.textContaining('Waddle'),
+          noteTranscriptText,
           scrollable: detailScrollable,
         );
       });
 
       await driver.step('generate', () async {
-        final moreActions = find
-            .byTooltip(localized(en: 'More actions', de: 'Weitere Aktionen'))
+        // The AI assistant ("Generate…") menu on the note — the real
+        // trigger path, not the "More actions" overflow's direct shortcut
+        // item, which duplicates the same skill without going through the
+        // skill picker a user actually sees.
+        final assistantButton = find
+            .descendant(
+              of: find.byType(TaskDetailsPage),
+              matching: find.byTooltip(
+                localized(en: 'Generate…', de: 'Generieren…'),
+              ),
+            )
             .hitTestable();
-        await driver.pumpUntilFound(moreActions);
-        // The task's own header carries the same tooltip; the note's menu
-        // is the later match in tree order.
-        await driver.tapLikeUser(moreActions.last);
-        final generateItem = find.text(
-          localized(en: 'Generate Cover Art', de: 'Titelbild generieren'),
+        await driver.pumpUntilFound(assistantButton);
+        await driver.scrollIntoView(
+          assistantButton,
+          scrollable: detailScrollable,
         );
-        await driver.pumpUntilFound(generateItem);
-        await driver.tapLikeUser(generateItem.hitTestable());
+        await driver.tapLikeUser(assistantButton.first);
+
+        final skillRow = find.byKey(const ValueKey('skill-image-gen-001'));
+        await driver.pumpUntilFound(skillRow);
+        await driver.tapLikeUser(skillRow.hitTestable());
+
+        // A single image model is configured, so no provider/model picker
+        // appears — straight to the reference-image step. No reference
+        // images are seeded for this scenario, so skip straight to
+        // generation.
+        final skipButton = find.text(
+          localized(en: 'Skip', de: 'Überspringen'),
+        );
+        await driver.pumpUntilFound(skipButton);
+        await driver.tapLikeUser(skipButton.hitTestable());
+
         // Catch the "generating" state immediately — the mocked generation
         // is fast enough that this step's own min_duration hold (below)
         // can otherwise outlast it, so a later poll would only ever see the

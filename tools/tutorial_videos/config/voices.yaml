@@ -16,7 +16,7 @@ model: models/gemini-3.1-flash-tts-preview
 streams:
   # Smooth male voice for the off-screen narrator.
   narrator:
-    voice: Charon
+    voice: Algieba
     style:
       en: "Speak as a calm, friendly tutorial narrator:"
       de: "Sprich als ruhiger, freundlicher Tutorial-Erzähler:"
