@@ -105,7 +105,7 @@ class _AppCommandScopeState extends State<AppCommandScope> {
         final primaryContext = FocusManager.instance.primaryFocus?.context;
         final closestScope = primaryContext == null
             ? null
-            : AppCommandScopeMarker.maybeOf(primaryContext);
+            : AppCommandScopeMarker.maybeReadIn(primaryContext);
         if (identical(closestScope, _node)) {
           _controller?.rememberActiveScope(_node);
         }
@@ -174,6 +174,26 @@ class AppCommandScopeMarker extends InheritedWidget {
 
   static AppCommandScopeNode? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<AppCommandScopeMarker>()?.node;
+
+  /// Reads the nearest scope node from a foreign context — typically the
+  /// primary focus's element — without subscribing that element to marker
+  /// changes.
+  ///
+  /// During startup warm-up frames (and mid-frame focus churn) the primary
+  /// focus can briefly point at a deactivated element, where any inherited
+  /// lookup trips a debug-only framework assertion. The guard skips the
+  /// lookup for non-active elements in debug builds; release builds never
+  /// assert, and a stale read is harmless because every resolved node is
+  /// re-checked via [AppCommandScopeNode.mounted] before use.
+  static AppCommandScopeNode? maybeReadIn(BuildContext context) {
+    var active = true;
+    assert(() {
+      active = context is Element && context.debugIsActive;
+      return true;
+    }(), 'side-effect assert: probes element lifecycle in debug builds only');
+    if (!active) return null;
+    return context.getInheritedWidgetOfExactType<AppCommandScopeMarker>()?.node;
+  }
 
   @override
   bool updateShouldNotify(AppCommandScopeMarker oldWidget) =>

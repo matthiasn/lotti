@@ -127,14 +127,7 @@ Future<void> main() async {
         onExitRequested: _handleAppExitRequested,
       );
 
-      FlutterError.onError = (FlutterErrorDetails details) {
-        getIt<DomainLogger>().error(
-          LogDomain.general,
-          details.exception,
-          stackTrace: details.stack,
-          subDomain: details.library,
-        );
-      };
+      FlutterError.onError = handleFlutterFrameworkError;
 
       runApp(
         ProviderScope(
@@ -153,22 +146,37 @@ Future<void> main() async {
         ),
       );
     },
-    (Object error, StackTrace stackTrace) {
-      // Defensive: an error thrown before DomainLogger is registered must not be
-      // masked by a GetIt lookup failure in the handler itself.
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt<DomainLogger>().error(
-          LogDomain.general,
-          error,
-          stackTrace: stackTrace,
-          subDomain: 'runZonedGuarded',
-        );
-      } else {
-        debugPrint(
-          'Unhandled startup error before logging init: $error\n'
-          '$stackTrace',
-        );
-      }
-    },
+    handleUncaughtZoneError,
   );
+}
+
+/// Global framework error handler: presents the error on the console exactly
+/// like Flutter's default handler (so `flutter run` output stays complete),
+/// then persists a durable log entry for post-hoc diagnosis.
+@visibleForTesting
+void handleFlutterFrameworkError(FlutterErrorDetails details) {
+  FlutterError.presentError(details);
+  getIt<DomainLogger>().error(
+    LogDomain.general,
+    details.exception,
+    stackTrace: details.stack,
+    subDomain: details.library,
+  );
+}
+
+/// Uncaught-zone error handler: always echoes to the console, then records a
+/// durable log entry when logging is already up. An error thrown before
+/// DomainLogger is registered must not be masked by a GetIt lookup failure
+/// in the handler itself.
+@visibleForTesting
+void handleUncaughtZoneError(Object error, StackTrace stackTrace) {
+  debugPrint('Uncaught zone error: $error\n$stackTrace');
+  if (getIt.isRegistered<DomainLogger>()) {
+    getIt<DomainLogger>().error(
+      LogDomain.general,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'runZonedGuarded',
+    );
+  }
 }

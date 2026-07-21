@@ -2148,12 +2148,6 @@ abstract class AppLocalizations {
   /// **'You'**
   String get aiAttributionYou;
 
-  /// No description provided for @aiBatchToggleTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to standard recording'**
-  String get aiBatchToggleTooltip;
-
   /// No description provided for @aiCapabilityChipImageGeneration.
   ///
   /// In en, this message translates to:
@@ -3570,12 +3564,6 @@ abstract class AppLocalizations {
   /// **'Whisper (local)'**
   String get aiProviderWhisperName;
 
-  /// No description provided for @aiRealtimeToggleTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch to live transcription'**
-  String get aiRealtimeToggleTooltip;
-
   /// No description provided for @aiResponseDeleteCancel.
   ///
   /// In en, this message translates to:
@@ -4254,23 +4242,11 @@ abstract class AppLocalizations {
   /// **'Discard recording?'**
   String get audioRecordingDiscardDialogTitle;
 
-  /// No description provided for @audioRecordingListening.
-  ///
-  /// In en, this message translates to:
-  /// **'Listening...'**
-  String get audioRecordingListening;
-
   /// No description provided for @audioRecordingPause.
   ///
   /// In en, this message translates to:
   /// **'PAUSE'**
   String get audioRecordingPause;
-
-  /// No description provided for @audioRecordingRealtime.
-  ///
-  /// In en, this message translates to:
-  /// **'Live Transcription'**
-  String get audioRecordingRealtime;
 
   /// No description provided for @audioRecordingResume.
   ///
@@ -4283,12 +4259,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Audio Recordings'**
   String get audioRecordings;
-
-  /// No description provided for @audioRecordingStandard.
-  ///
-  /// In en, this message translates to:
-  /// **'Standard'**
-  String get audioRecordingStandard;
 
   /// No description provided for @audioRecordingStop.
   ///
@@ -4872,6 +4842,12 @@ abstract class AppLocalizations {
   /// **'Listening...'**
   String get chatInputListening;
 
+  /// No description provided for @chatInputNoAudioRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'No audio was recorded. Try again.'**
+  String get chatInputNoAudioRecorded;
+
   /// No description provided for @chatInputPleaseWait.
   ///
   /// In en, this message translates to:
@@ -4895,12 +4871,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send message'**
   String get chatInputSendTooltip;
-
-  /// No description provided for @chatInputStartRealtime.
-  ///
-  /// In en, this message translates to:
-  /// **'Start live transcription'**
-  String get chatInputStartRealtime;
 
   /// No description provided for @chatInputStopRealtime.
   ///
@@ -5885,6 +5855,144 @@ abstract class AppLocalizations {
   /// **'Day Plan'**
   String get dailyOsDayPlan;
 
+  /// No description provided for @dailyOsNextActivityActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That action didn\'t finish. Your recording is still safe—try again.'**
+  String get dailyOsNextActivityActionFailed;
+
+  /// No description provided for @dailyOsNextActivityDaySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Day summary'**
+  String get dailyOsNextActivityDaySummary;
+
+  /// No description provided for @dailyOsNextActivityDeleteDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The audio and its pending transcription are removed from this day.'**
+  String get dailyOsNextActivityDeleteDialogBody;
+
+  /// No description provided for @dailyOsNextActivityDeleteDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this recording?'**
+  String get dailyOsNextActivityDeleteDialogTitle;
+
+  /// No description provided for @dailyOsNextActivityDeleteRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get dailyOsNextActivityDeleteRecording;
+
+  /// No description provided for @dailyOsNextActivityEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No recordings or check-ins yet.'**
+  String get dailyOsNextActivityEmpty;
+
+  /// No description provided for @dailyOsNextActivityLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your saved activity is still on this device, but it couldn\'t be loaded right now.'**
+  String get dailyOsNextActivityLoadFailed;
+
+  /// No description provided for @dailyOsNextActivityMissingAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'This entry is retained, but its audio file isn\'t available on this device. Restore the file, then retry.'**
+  String get dailyOsNextActivityMissingAudio;
+
+  /// No description provided for @dailyOsNextActivityNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get dailyOsNextActivityNeedsAttention;
+
+  /// No description provided for @dailyOsNextActivityOpenSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Open transcription setup'**
+  String get dailyOsNextActivityOpenSetup;
+
+  /// No description provided for @dailyOsNextActivityPlanAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Your day plan is available.'**
+  String get dailyOsNextActivityPlanAvailable;
+
+  /// No description provided for @dailyOsNextActivityPlanCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan created'**
+  String get dailyOsNextActivityPlanCreated;
+
+  /// No description provided for @dailyOsNextActivityReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to use'**
+  String get dailyOsNextActivityReady;
+
+  /// No description provided for @dailyOsNextActivityRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry transcription'**
+  String get dailyOsNextActivityRetry;
+
+  /// No description provided for @dailyOsNextActivityRetryLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Try loading again'**
+  String get dailyOsNextActivityRetryLoad;
+
+  /// No description provided for @dailyOsNextActivitySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved locally'**
+  String get dailyOsNextActivitySaved;
+
+  /// No description provided for @dailyOsNextActivitySetupRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recording is safe. Set up an audio transcription model, then retry.'**
+  String get dailyOsNextActivitySetupRequired;
+
+  /// No description provided for @dailyOsNextActivitySubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to day'**
+  String get dailyOsNextActivitySubmitted;
+
+  /// No description provided for @dailyOsNextActivityTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing'**
+  String get dailyOsNextActivityTranscribing;
+
+  /// No description provided for @dailyOsNextActivityTranscriptPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recording is saved. The transcript is still pending.'**
+  String get dailyOsNextActivityTranscriptPending;
+
+  /// No description provided for @dailyOsNextActivityUseToPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Use to build plan'**
+  String get dailyOsNextActivityUseToPlan;
+
+  /// No description provided for @dailyOsNextActivityUseToRefine.
+  ///
+  /// In en, this message translates to:
+  /// **'Use to refine'**
+  String get dailyOsNextActivityUseToRefine;
+
+  /// No description provided for @dailyOsNextActivityWaitingForNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for connection'**
+  String get dailyOsNextActivityWaitingForNetwork;
+
   /// No description provided for @dailyOsNextAgendaCapacityComfortable.
   ///
   /// In en, this message translates to:
@@ -6083,17 +6191,17 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get dailyOsNextCaptureDoneCta;
 
+  /// No description provided for @dailyOsNextCaptureErrorAudioPersistFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording couldn\'t be saved.'**
+  String get dailyOsNextCaptureErrorAudioPersistFailed;
+
   /// No description provided for @dailyOsNextCaptureErrorMicrophonePermissionDenied.
   ///
   /// In en, this message translates to:
   /// **'Microphone permission was denied.'**
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied;
-
-  /// No description provided for @dailyOsNextCaptureErrorNoActiveRealtimeSession.
-  ///
-  /// In en, this message translates to:
-  /// **'No active realtime session.'**
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession;
 
   /// No description provided for @dailyOsNextCaptureErrorNoAudioRecorded.
   ///
@@ -6101,29 +6209,17 @@ abstract class AppLocalizations {
   /// **'No audio was recorded.'**
   String get dailyOsNextCaptureErrorNoAudioRecorded;
 
-  /// No description provided for @dailyOsNextCaptureErrorRealtimeTranscriptionFailed.
+  /// No description provided for @dailyOsNextCaptureErrorRecordingSavedPendingTranscription.
   ///
   /// In en, this message translates to:
-  /// **'Realtime transcription failed.'**
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed;
-
-  /// No description provided for @dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Realtime transcription could not start.'**
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed;
+  /// **'Your recording is saved. Transcription couldn\'t finish.'**
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription;
 
   /// No description provided for @dailyOsNextCaptureErrorRecordingStartFailed.
   ///
   /// In en, this message translates to:
   /// **'Recording could not start.'**
   String get dailyOsNextCaptureErrorRecordingStartFailed;
-
-  /// No description provided for @dailyOsNextCaptureErrorTranscriptionFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcription failed.'**
-  String get dailyOsNextCaptureErrorTranscriptionFailed;
 
   /// No description provided for @dailyOsNextCaptureHeadlineCaptured.
   ///
@@ -6214,6 +6310,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review'**
   String get dailyOsNextCaptureReconcileCta;
+
+  /// No description provided for @dailyOsNextCaptureRecordingSavedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording saved'**
+  String get dailyOsNextCaptureRecordingSavedStatus;
 
   /// No description provided for @dailyOsNextCapturesPanelTitle.
   ///
@@ -6730,6 +6832,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Break link'**
   String get dailyOsNextParsedCardBreakLinkTooltip;
+
+  /// No description provided for @dailyOsNextPlanViewActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get dailyOsNextPlanViewActivity;
 
   /// No description provided for @dailyOsNextPlanViewAgenda.
   ///
@@ -16427,6 +16535,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speech Recognition'**
   String get speechModalTitle;
+
+  /// No description provided for @speechNoAudioRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'No audio was recorded. Try again.'**
+  String get speechNoAudioRecorded;
 
   /// No description provided for @speechSettingsModelDescription.
   ///

@@ -127,8 +127,13 @@ void main() {
         running.add(true);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
-        // Wake still running, parse hasn't produced items yet.
+        // Wake still running, parse hasn't produced items yet: the empty
+        // Heard column shows the thinking shader, not "done/empty".
         expect(find.byType(ParsedCard), findsNothing);
+        expect(
+          find.byKey(DayPlanningThinkingShader.indicatorKey),
+          findsOneWidget,
+        );
 
         // Wake completes and the parsed items are now available.
         agent.ready = true;
@@ -136,6 +141,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
         expect(find.byType(ParsedCard), findsOneWidget);
+        expect(
+          find.byKey(DayPlanningThinkingShader.indicatorKey),
+          findsNothing,
+        );
       },
     );
 

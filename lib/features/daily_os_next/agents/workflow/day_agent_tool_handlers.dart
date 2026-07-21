@@ -114,7 +114,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
     }
 
     if (DayAgentToolNames.isSearchMemoryTool(toolName)) {
-      return _searchMemory(agentId: agentId, args: args);
+      return _searchMemory(agentId: agentId, dayId: dayId, args: args);
     }
 
     if (!DayAgentToolNames.isSetNextWakeTool(toolName)) {
@@ -236,6 +236,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
   /// loading everything; this opt-in recall is the only reader beyond the tail.
   Future<DayAgentToolResult> _searchMemory({
     required String agentId,
+    required String dayId,
     required Map<String, dynamic> args,
   }) async {
     final rawIds = args['ids'];
@@ -258,9 +259,12 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
 
     var captureMetas = const <CaptureEventMeta>[];
     try {
-      captureMetas = await agentRepository.getCaptureEventMetaByAgentId(
-        agentId,
-      );
+      captureMetas =
+          (await agentRepository.getCaptureEventMetaByAgentId(
+                agentId,
+              ))
+              .where((meta) => captureEventDayId(meta) == dayId)
+              .toList(growable: false);
     } catch (e) {
       _logError('search_memory: failed to load capture metadata', error: e);
     }

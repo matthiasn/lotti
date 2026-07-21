@@ -11,8 +11,8 @@ In the current implementation it does three concrete jobs:
    transcripts, and category speech dictionaries
 
 It does not own provider configuration or the general AI inference stack.
-Whenever realtime transcription or linked-task automation is involved, it calls
-into AI-side services.
+Transcription and linked-task automation call into AI-side services after the
+recording is on disk; there is no streaming/realtime transcription path.
 
 ## Directory Shape
 
@@ -38,7 +38,6 @@ flowchart LR
 
   RecordingUI --> RecorderCtl["AudioRecorderController"]
   RecorderCtl --> RecorderRepo["AudioRecorderRepository"]
-  RecorderCtl --> RtTx["RealtimeTranscriptionService"]
   RecorderCtl --> SpeechRepo["SpeechRepository"]
   RecorderCtl --> AutoPrompt["AutomaticPromptTrigger"]
   RecorderCtl --> Attribution["TranscriptAttributionCoordinator"]
@@ -54,7 +53,6 @@ flowchart LR
 
   SpeechRepo --> Persist["PersistenceLogic + JournalDb"]
   DictSvc --> CategoryRepo["CategoryRepository + JournalRepository"]
-  RtTx --> AiConfig["AI config + Mistral or MLX-audio realtime backend"]
   Persist --> JournalAudio["JournalAudio"]
   Attribution --> JournalAudio
 ```
@@ -65,9 +63,9 @@ dictionary helper used from the editor.
 
 ## Recording
 
-### Standard recording path
+### Recording path
 
-Standard recording goes through `AudioRecorderRepository`, which wraps the
+Recording goes through `AudioRecorderRepository`, which wraps the
 `record` package and is responsible for:
 
 - permission checks
@@ -126,8 +124,6 @@ been removed.
 - `modalVisible`
 - `linkedId`
 - `enableSpeechRecognition`
-- `partialTranscript`
-- `isRealtimeMode`
 
 The enum still includes `AudioRecorderStatus.initializing`, but
 `AudioRecorderController.build()` returns `stopped` immediately and uses the
@@ -155,7 +151,7 @@ One implementation detail worth calling out: the state object still has
 mobile `AudioRecordingIndicator` derive visibility from
 `status == recording && !modalVisible` rather than that field.
 
-### Standard recording flow
+### Recording flow
 
 ```mermaid
 sequenceDiagram
@@ -197,92 +193,15 @@ sequenceDiagram
 The persisted `JournalAudio` is created from `AudioData` and stored through
 `PersistenceLogic`. The audio file lives under `/audio/YYYY-MM-DD/`.
 
-The modal also offers a discard (✕) control next to Stop while recording, in
-both standard and realtime modes. It asks for confirmation before discarding. In
-standard mode it calls `cancel()`, which stops the recorder, deletes the
-partially-written `/audio/YYYY-MM-DD/` file, and resets state without creating a
-`JournalAudio` — so the page returns to exactly how it looked before recording.
-In realtime mode it calls `cancelRealtime()` (see below).
+The modal also offers a discard (✕) control next to Stop while recording. It
+asks for confirmation before discarding, then calls `cancel()`, which stops
+the recorder, deletes the partially-written `/audio/YYYY-MM-DD/` file, and
+resets state without creating a `JournalAudio` — so the page returns to
+exactly how it looked before recording.
 
-## Realtime Recording
-
-Realtime recording is a separate transport path. It does not reuse
-`AudioRecorderRepository`. The implementation remains in the controller and
-service layer, but the product toggle is currently hidden because
-`realtimeTranscriptionUiEnabled` is `false`; the active user-facing path is
-post-recording transcription with dictionary/context biasing.
-
-`AudioRecorderController.recordRealtime()`:
-
-- creates a raw `record.AudioRecorder`
-- starts `pcm16bits`, `16kHz`, mono streaming
-- resolves realtime configuration through `RealtimeTranscriptionService`
-- prefers a configured Mistral realtime model/provider pair, falling back to a
-  local MLX-audio model/provider pair when only that is wired up
-- subscribes to the realtime amplitude stream for the same level visualizer
-- accumulates transcript deltas into `partialTranscript`
-
-The realtime toggle in `AudioRecordingModal` is only shown when
-`realtimeAvailableProvider` resolves to `true`. With the current feature gate
-that provider always resolves to `false`, even if a realtime-capable model is
-configured.
-
-```mermaid
-sequenceDiagram
-  participant User as "User"
-  participant Modal as "AudioRecordingModal"
-  participant Ctl as "AudioRecorderController"
-  participant RT as "RealtimeTranscriptionService"
-  participant Attr as "TranscriptAttributionCoordinator"
-  participant Speech as "SpeechRepository"
-  participant Persist as "PersistenceLogic"
-
-  User->>Modal: enable realtime and tap record
-  Modal->>Ctl: recordRealtime(linkedId)
-  Ctl->>Ctl: pause active AudioPlayerController if needed
-  Ctl->>RT: resolveRealtimeConfig()
-  Ctl->>Attr: begin(provider, model, task/category)
-  Ctl->>RT: startRealtimeTranscription(pcmStream)
-  RT-->>Ctl: amplitudeStream dBFS updates
-  RT-->>Ctl: transcript deltas
-  Ctl->>Ctl: update partialTranscript
-  User->>Modal: tap stop
-  Modal->>Ctl: stopRealtime()
-  Ctl->>RT: stop(stopRecorder, outputPath)
-  RT-->>Ctl: transcript + detectedLanguage + saved audio file path
-  Ctl->>Speech: createAudioEntry(...)
-  Speech-->>Ctl: JournalAudio carrier
-  Ctl->>Attr: recordInteraction(realtime digest, usage/status)
-  Ctl->>Attr: prepareOutput(audio id, transcript id)
-  Attr-->>Ctl: attribution record
-  Ctl->>Persist: save transcript + attribution onto JournalAudio and entryText
-  Persist-->>Ctl: write accepted
-  Ctl->>Attr: finalize local projection
-  Ctl->>Ctl: reset recorder state
-```
-
-Two important implementation details:
-
-1. `stopRealtime()` only creates a `JournalAudio` entry if the realtime service
-   actually produced an audio file. Very short recordings can still return
-   transcript text from the service, but the controller does not persist
-   anything unless an audio artifact exists.
-2. Before realtime inference starts, the controller asks
-   `TranscriptAttributionCoordinator` for an in-memory attribution session.
-   When a transcript exists, the coordinator records interaction metadata and
-   token usage, then appends an `AudioTranscript` with a stable id and embedded
-   attribution to `JournalAudio.data.transcripts`; it also mirrors the text
-   into `entryText`. The carrier is authoritative. After the journal update
-   succeeds, the coordinator upserts the local attribution projection. Missing
-   audio, empty transcript, or rejected persistence records a failed or
-   cancelled outcome without inventing provider cost.
-
-`cancelRealtime()` is the realtime discard path (the ✕ button in real-time
-mode). It records a terminal cancelled attribution, then tears down the recorder
-and realtime service without creating or updating a `JournalAudio` entry. The
-standard-mode discard path is `cancel()`,
-which mirrors this for file-based recordings (stop + delete the partial file,
-no entry).
+There is no realtime/streaming transcription path: transcription is always a
+batch pass over the finished file, with dictionary/context biasing, triggered
+via profile-driven automation or manual transcript actions.
 
 ## Playback And Waveforms
 
@@ -413,8 +332,6 @@ What it does not do:
 
 - it does not run for unlinked recordings
 - it does not expose a general menu of prompt automations in the modal
-- it does not batch-transcribe a realtime recording that already produced its
-  own transcript
 
 The checkbox UI in `AudioRecordingModal` is consistent with that behavior:
 `checkboxVisibilityProvider` only exposes a speech-recognition checkbox when
@@ -423,11 +340,10 @@ the linked task has profile-driven transcription available.
 ## Boundaries
 
 - `journal` owns entry detail surfaces and supplies `JournalAudio`
-- `ai_chat` owns realtime transcription transport orchestration
-  (`RealtimeTranscriptionService`)
-- `ai` owns the Mistral realtime WebSocket repository
-  (`MistralRealtimeTranscriptionRepository`), the MLX-audio backend
-  (`MlxAudioChannel`), profile automation, and skill execution
+- `ai_chat` owns batch transcription orchestration
+  (`AudioTranscriptionService`)
+- `ai` owns the MLX-audio backend (`MlxAudioChannel`), profile automation,
+  and skill execution
 - `categories` owns the speech dictionary persistence target
 - `speech` owns the audio-specific runtime, playback, waveform cache, and
   transcript maintenance layer that connects those systems

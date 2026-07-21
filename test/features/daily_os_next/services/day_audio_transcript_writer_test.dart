@@ -1,0 +1,302 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_audio_context.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
+
+void main() {
+  final now = DateTime.utc(2026, 7, 18, 8);
+  late MockJournalDb journalDb;
+  late MockPersistenceLogic persistenceLogic;
+  late DayAudioTranscriptWriter writer;
+
+  DayProcessingJob job() => DayProcessingJob(
+    id: 'transcribe_session-1',
+    kind: DayProcessingJobKind.transcribeAudio,
+    status: DayProcessingJobStatus.running,
+    dayId: 'dayplan-2026-07-18',
+    activityEntryId: 'activity-1',
+    recordingSessionId: 'session-1',
+    audioId: 'audio-1',
+    audioPath: '/audio/one.wav',
+    createdAt: now,
+    updatedAt: now,
+    nextAttemptAt: now,
+    attempts: 1,
+    generation: 1,
+    claimToken: 'claim-1',
+  );
+
+  JournalAudio audio({
+    String processingJobId = 'transcribe_session-1',
+    List<AudioTranscript>? transcripts,
+  }) => JournalAudio(
+    meta: Metadata(
+      id: 'audio-1',
+      createdAt: now,
+      updatedAt: now,
+      dateFrom: now,
+      dateTo: now.add(const Duration(minutes: 1)),
+    ),
+    data: AudioData(
+      dateFrom: now,
+      dateTo: now.add(const Duration(minutes: 1)),
+      audioFile: 'one.wav',
+      audioDirectory: '/audio/',
+      duration: const Duration(minutes: 1),
+      transcripts: transcripts,
+      dayContext: DayAudioContext(
+        dayId: 'dayplan-2026-07-18',
+        planDate: DateTime.utc(2026, 7, 18),
+        recordingSessionId: 'session-1',
+        activityEntryId: 'activity-1',
+        processingJobId: processingJobId,
+        capturedAt: now,
+        intent: 'dayPlan',
+      ),
+    ),
+  );
+
+  setUpAll(() {
+    registerAllFallbackValues();
+    registerFallbackValue(FakeJournalAudio());
+  });
+
+  setUp(() {
+    journalDb = MockJournalDb();
+    persistenceLogic = MockPersistenceLogic();
+    writer = DayAudioTranscriptWriter(
+      journalDb: journalDb,
+      persistenceLogic: persistenceLogic,
+      now: () => now,
+    );
+  });
+
+  test('attaches a searchable, job-correlated transcript once', () async {
+    final source = audio();
+    when(
+      () => journalDb.journalEntityById('audio-1'),
+    ).thenAnswer((_) async => source);
+    when(
+      () => persistenceLogic.updateMetadata(source.meta),
+    ).thenAnswer((_) async => source.meta.copyWith(updatedAt: now));
+    JournalAudio? persisted;
+    when(
+      () => persistenceLogic.updateDbEntity(any()),
+    ).thenAnswer((invocation) async {
+      persisted = invocation.positionalArguments.single as JournalAudio;
+      return true;
+    });
+
+    final attached = await writer.attach(
+      job: job(),
+      transcript: '  Gym first, then finish the proposal. ',
+    );
+
+    expect(attached, isTrue);
+    expect(
+      persisted!.entryText?.plainText,
+      'Gym first, then finish the proposal.',
+    );
+    expect(persisted!.data.transcripts, hasLength(1));
+    expect(
+      persisted!.data.transcripts!.single.processingJobId,
+      'transcribe_session-1',
+    );
+  });
+
+  test('receipt dedupe avoids a second journal write', () async {
+    final source = audio(
+      transcripts: <AudioTranscript>[
+        AudioTranscript(
+          created: now,
+          library: 'daily-os-outbox',
+          model: 'configured-audio-model',
+          detectedLanguage: '-',
+          transcript: 'Already attached',
+          processingJobId: 'transcribe_session-1',
+        ),
+      ],
+    );
+    when(
+      () => journalDb.journalEntityById('audio-1'),
+    ).thenAnswer((_) async => source);
+
+    final attached = await writer.attach(job: job(), transcript: 'Duplicate');
+
+    expect(attached, isTrue);
+    verifyNever(() => persistenceLogic.updateDbEntity(any()));
+  });
+
+  test('rejects an audio row that does not own the processing job', () async {
+    when(
+      () => journalDb.journalEntityById('audio-1'),
+    ).thenAnswer((_) async => audio(processingJobId: 'another-job'));
+
+    final attached = await writer.attach(job: job(), transcript: 'Text');
+
+    expect(attached, isFalse);
+    verifyNever(() => persistenceLogic.updateDbEntity(any()));
+  });
+
+  test('inline-edited entryText survives a later automatic attach', () async {
+    final source = audio().copyWith(
+      entryText: const EntryText(
+        plainText: ' My own wording. ',
+        markdown: 'My own wording.',
+      ),
+    );
+    when(
+      () => journalDb.journalEntityById('audio-1'),
+    ).thenAnswer((_) async => source);
+    when(
+      () => persistenceLogic.updateMetadata(source.meta),
+    ).thenAnswer((_) async => source.meta.copyWith(updatedAt: now));
+    JournalAudio? persisted;
+    when(
+      () => persistenceLogic.updateDbEntity(any()),
+    ).thenAnswer((invocation) async {
+      persisted = invocation.positionalArguments.single as JournalAudio;
+      return true;
+    });
+
+    final attached = await writer.attach(
+      job: job(),
+      transcript: 'Provider guess',
+    );
+
+    expect(attached, isTrue);
+    expect(persisted!.entryText?.plainText, ' My own wording. ');
+    expect(persisted!.data.transcripts!.single.transcript, 'Provider guess');
+  });
+
+  test('journalAudioReviewedText derives authorship from machine facts', () {
+    AudioTranscript machineFact(String text) => AudioTranscript(
+      created: now,
+      library: 'daily-os-outbox',
+      model: 'configured-audio-model',
+      detectedLanguage: '-',
+      transcript: text,
+      processingJobId: 'transcribe_session-0',
+    );
+    EntryText entryText(String text) =>
+        EntryText(plainText: text, markdown: text);
+
+    expect(journalAudioReviewedText(audio()), isNull);
+    expect(
+      journalAudioReviewedText(audio().copyWith(entryText: entryText('  '))),
+      isNull,
+    );
+    // Text identical to a machine transcript is not a user decision.
+    expect(
+      journalAudioReviewedText(
+        audio(
+          transcripts: [machineFact('Machine words')],
+        ).copyWith(entryText: entryText(' Machine words ')),
+      ),
+      isNull,
+    );
+    expect(
+      journalAudioReviewedText(
+        audio(
+          transcripts: [machineFact('Machine words')],
+        ).copyWith(entryText: entryText('Edited words')),
+      ),
+      'Edited words',
+    );
+    // Legacy manual receipts recorded user edits: matching them still counts
+    // as reviewed text.
+    expect(
+      journalAudioReviewedText(
+        audio(
+          transcripts: [
+            AudioTranscript(
+              created: now,
+              library: 'daily-os-manual',
+              model: 'user-reviewed',
+              detectedLanguage: '-',
+              transcript: 'Reviewed text',
+              processingJobId: 'manual:activity-1',
+            ),
+          ],
+        ).copyWith(entryText: entryText('Reviewed text')),
+      ),
+      'Reviewed text',
+    );
+  });
+
+  test('automatic receipt does not overwrite reviewed manual text', () async {
+    final manualReceipt = AudioTranscript(
+      created: now,
+      library: 'daily-os-manual',
+      model: 'user-reviewed',
+      detectedLanguage: '-',
+      transcript: 'Reviewed text',
+      processingJobId: 'manual:activity-1',
+    );
+    final source = audio(transcripts: [manualReceipt]).copyWith(
+      entryText: const EntryText(
+        plainText: 'Reviewed text',
+        markdown: 'Reviewed text',
+      ),
+    );
+    when(
+      () => journalDb.journalEntityById('audio-1'),
+    ).thenAnswer((_) async => source);
+    when(
+      () => persistenceLogic.updateMetadata(source.meta),
+    ).thenAnswer((_) async => source.meta.copyWith(updatedAt: now));
+    JournalAudio? persisted;
+    when(
+      () => persistenceLogic.updateDbEntity(any()),
+    ).thenAnswer((invocation) async {
+      persisted = invocation.positionalArguments.single as JournalAudio;
+      return true;
+    });
+
+    final attached = await writer.attach(
+      job: job(),
+      transcript: 'Provider guess',
+    );
+
+    expect(attached, isTrue);
+    expect(persisted!.entryText?.plainText, 'Reviewed text');
+    expect(persisted!.data.transcripts, hasLength(2));
+  });
+
+  test('propagates a write failure without blocking later writes', () async {
+    final completed = audio(
+      transcripts: <AudioTranscript>[
+        AudioTranscript(
+          created: now,
+          library: 'daily-os-outbox',
+          model: 'configured-audio-model',
+          detectedLanguage: '-',
+          transcript: 'Already attached',
+          processingJobId: 'transcribe_session-1',
+        ),
+      ],
+    );
+    var calls = 0;
+    when(() => journalDb.journalEntityById('audio-1')).thenAnswer((_) async {
+      if (calls++ == 0) throw StateError('database unavailable');
+      return completed;
+    });
+
+    await expectLater(
+      writer.attach(job: job(), transcript: 'First attempt'),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(
+      await writer.attach(job: job(), transcript: 'Duplicate retry'),
+      isTrue,
+    );
+    verifyNever(() => persistenceLogic.updateDbEntity(any()));
+  });
+}

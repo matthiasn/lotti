@@ -10,7 +10,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
-import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -67,11 +66,13 @@ class AudioTranscriptionService {
     List<String> speechDictionaryTerms = const [],
     AiAttributionSession? attributionSession,
     bool terminalizeAttributionFailure = true,
+    ({AiConfigInferenceProvider provider, AiConfigModel model})? target,
   }) => transcribeStream(
     filePath,
     speechDictionaryTerms: speechDictionaryTerms,
     attributionSession: attributionSession,
     terminalizeAttributionFailure: terminalizeAttributionFailure,
+    target: target,
   ).join();
 
   /// Transcribes audio from a local file at [filePath] with streaming output.
@@ -87,53 +88,59 @@ class AudioTranscriptionService {
     List<String> speechDictionaryTerms = const [],
     AiAttributionSession? attributionSession,
     bool terminalizeAttributionFailure = true,
+    ({AiConfigInferenceProvider provider, AiConfigModel model})? target,
   }) async* {
-    final aiRepo = ref.read(aiConfigRepositoryProvider);
-    // Fetch models and providers in parallel to reduce I/O latency
-    final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
-    final providersFuture = aiRepo.getConfigsByType(
-      AiConfigType.inferenceProvider,
-    );
-    final models = await modelsFuture;
-    final providers = await providersFuture;
+    final AiConfigModel model;
+    final AiConfigInferenceProvider provider;
+    if (target != null) {
+      // An explicit target (e.g. the caller's inference-profile
+      // transcription slot) skips discovery entirely.
+      model = target.model;
+      provider = target.provider;
+    } else {
+      final aiRepo = ref.read(aiConfigRepositoryProvider);
+      // Fetch models and providers in parallel to reduce I/O latency
+      final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
+      final providersFuture = aiRepo.getConfigsByType(
+        AiConfigType.inferenceProvider,
+      );
+      final models = await modelsFuture;
+      final providers = await providersFuture;
 
-    // Find all audio-capable models, excluding realtime-only models that
-    // require WebSocket streaming (handled by RealtimeTranscriptionService).
-    final allProviders = providers.whereType<AiConfigInferenceProvider>();
-    final audioModels = models
-        .whereType<AiConfigModel>()
-        .where(
-          (m) => m.inputModalities.contains(Modality.audio),
-        )
-        .where((m) {
-          final provider = allProviders
-              .where((p) => p.id == m.inferenceProviderId)
-              .firstOrNull;
-          if (provider == null) return true; // keep orphan models, fail later
-          return !(provider.inferenceProviderType ==
-                  InferenceProviderType.mistral &&
-              MistralRealtimeTranscriptionRepository.isRealtimeModel(
-                m.providerModelId,
-              ));
-        })
-        .toList();
+      // Find all audio-capable models, excluding realtime-only models —
+      // they require WebSocket streaming, which this app does not use.
+      final allProviders = providers.whereType<AiConfigInferenceProvider>();
+      final audioModels = models
+          .whereType<AiConfigModel>()
+          .where(
+            (m) => m.inputModalities.contains(Modality.audio),
+          )
+          .where((m) {
+            final candidate = allProviders
+                .where((p) => p.id == m.inferenceProviderId)
+                .firstOrNull;
+            if (candidate == null) return true; // keep orphans, fail later
+            return !(candidate.inferenceProviderType ==
+                    InferenceProviderType.mistral &&
+                _isRealtimeOnlyModel(m.providerModelId));
+          })
+          .toList();
 
-    if (audioModels.isEmpty) {
-      throw Exception('No audio-capable models configured');
+      if (audioModels.isEmpty) {
+        throw Exception('No audio-capable models configured');
+      }
+
+      model = _selectBatchAudioModel(
+        audioModels,
+        allProviders,
+      );
+
+      // Get the provider for the selected model
+      provider = providers.whereType<AiConfigInferenceProvider>().firstWhere(
+        (p) => p.id == model.inferenceProviderId,
+        orElse: () => throw Exception('Provider not found for audio model'),
+      );
     }
-
-    final model = _selectBatchAudioModel(
-      audioModels,
-      allProviders,
-    );
-
-    // Get the provider for the selected model
-    final provider = providers
-        .whereType<AiConfigInferenceProvider>()
-        .firstWhere(
-          (p) => p.id == model.inferenceProviderId,
-          orElse: () => throw Exception('Provider not found for audio model'),
-        );
 
     if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
       Future<MlxAudioTranscriptionResult> invoke() async {
@@ -396,3 +403,8 @@ final Provider<AudioTranscriptionService> audioTranscriptionServiceProvider =
     Provider<AudioTranscriptionService>((ref) {
       return AudioTranscriptionService(ref);
     });
+
+/// Matches Mistral model IDs that only serve the WebSocket realtime API
+/// (e.g. `voxtral-mini-transcribe-realtime-2602`); they cannot batch-​transcribe.
+bool _isRealtimeOnlyModel(String model) =>
+    model.contains('transcribe-realtime');

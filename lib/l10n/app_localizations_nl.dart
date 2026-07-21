@@ -1161,9 +1161,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiAttributionYou => 'You';
 
   @override
-  String get aiBatchToggleTooltip => 'Overschakelen naar standaard opname';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Beeldgeneratie';
 
   @override
@@ -2028,9 +2025,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiProviderWhisperName => 'Fluisteren (lokaal)';
 
   @override
-  String get aiRealtimeToggleTooltip => 'Overschakelen naar live transcriptie';
-
-  @override
   String get aiResponseDeleteCancel => 'Annuleren';
 
   @override
@@ -2434,22 +2428,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Opname weggooien?';
 
   @override
-  String get audioRecordingListening => 'Luisteren...';
-
-  @override
   String get audioRecordingPause => 'Pauzeren';
-
-  @override
-  String get audioRecordingRealtime => 'Levende omschrijving';
 
   @override
   String get audioRecordingResume => 'Hervatten';
 
   @override
   String get audioRecordings => 'Audio-opnames';
-
-  @override
-  String get audioRecordingStandard => 'Standaard';
 
   @override
   String get audioRecordingStop => 'Stoppen';
@@ -2826,6 +2811,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputListening => 'Luisteren...';
 
   @override
+  String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
   String get chatInputPleaseWait => 'Wacht even...';
 
   @override
@@ -2836,9 +2824,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get chatInputSendTooltip => 'Bericht versturen';
-
-  @override
-  String get chatInputStartRealtime => 'Live transcriptie starten';
 
   @override
   String get chatInputStopRealtime => 'Stop live transcriptie';
@@ -3453,6 +3438,81 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsDayPlan => 'Dagplan';
 
   @override
+  String get dailyOsNextActivityActionFailed =>
+      'That action didn\'t finish. Your recording is still safe—try again.';
+
+  @override
+  String get dailyOsNextActivityDaySummary => 'Day summary';
+
+  @override
+  String get dailyOsNextActivityDeleteDialogBody =>
+      'The audio and its pending transcription are removed from this day.';
+
+  @override
+  String get dailyOsNextActivityDeleteDialogTitle => 'Delete this recording?';
+
+  @override
+  String get dailyOsNextActivityDeleteRecording => 'Delete';
+
+  @override
+  String get dailyOsNextActivityEmpty => 'No recordings or check-ins yet.';
+
+  @override
+  String get dailyOsNextActivityLoadFailed =>
+      'Your saved activity is still on this device, but it couldn\'t be loaded right now.';
+
+  @override
+  String get dailyOsNextActivityMissingAudio =>
+      'This entry is retained, but its audio file isn\'t available on this device. Restore the file, then retry.';
+
+  @override
+  String get dailyOsNextActivityNeedsAttention => 'Needs attention';
+
+  @override
+  String get dailyOsNextActivityOpenSetup => 'Open transcription setup';
+
+  @override
+  String get dailyOsNextActivityPlanAvailable => 'Your day plan is available.';
+
+  @override
+  String get dailyOsNextActivityPlanCreated => 'Plan created';
+
+  @override
+  String get dailyOsNextActivityReady => 'Ready to use';
+
+  @override
+  String get dailyOsNextActivityRetry => 'Retry transcription';
+
+  @override
+  String get dailyOsNextActivityRetryLoad => 'Try loading again';
+
+  @override
+  String get dailyOsNextActivitySaved => 'Saved locally';
+
+  @override
+  String get dailyOsNextActivitySetupRequired =>
+      'Your recording is safe. Set up an audio transcription model, then retry.';
+
+  @override
+  String get dailyOsNextActivitySubmitted => 'Added to day';
+
+  @override
+  String get dailyOsNextActivityTranscribing => 'Transcribing';
+
+  @override
+  String get dailyOsNextActivityTranscriptPending =>
+      'Your recording is saved. The transcript is still pending.';
+
+  @override
+  String get dailyOsNextActivityUseToPlan => 'Use to build plan';
+
+  @override
+  String get dailyOsNextActivityUseToRefine => 'Use to refine';
+
+  @override
+  String get dailyOsNextActivityWaitingForNetwork => 'Waiting for connection';
+
+  @override
   String get dailyOsNextAgendaCapacityComfortable => 'Comfortabel';
 
   @override
@@ -3566,32 +3626,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextCaptureDoneCta => 'Klaar';
 
   @override
-  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Microfoon toestemming werd geweigerd.';
+  String get dailyOsNextCaptureErrorAudioPersistFailed =>
+      'The recording couldn\'t be saved.';
 
   @override
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
-      'Geen actieve real-time sessie.';
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Microfoon toestemming werd geweigerd.';
 
   @override
   String get dailyOsNextCaptureErrorNoAudioRecorded =>
       'Er is geen audio opgenomen.';
 
   @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
-      'Realtime transcriptie mislukt.';
-
-  @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
-      'Realtime transcriptie kon niet starten.';
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Your recording is saved. Transcription couldn\'t finish.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Opname kon niet beginnen.';
-
-  @override
-  String get dailyOsNextCaptureErrorTranscriptionFailed =>
-      'De transcriptie is mislukt.';
 
   @override
   String get dailyOsNextCaptureHeadlineCaptured => 'Ziet dit er goed uit?';
@@ -3643,6 +3695,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Evaluatie';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Recording saved';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Opnames';
@@ -3930,6 +3985,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Verwijzing verbreken';
+
+  @override
+  String get dailyOsNextPlanViewActivity => 'Activity';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -9556,6 +9614,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Erkenning van spraak';
+
+  @override
+  String get speechNoAudioRecorded => 'No audio was recorded. Try again.';
 
   @override
   String get speechSettingsModelDescription => 'Speechmodel voor het apparaat';

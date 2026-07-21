@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -449,6 +450,54 @@ void main() {
       final dbEntity = toDbEntity(entry);
       expect(dbEntity.dueAt, isNull);
       expect(dbEntity.task, isFalse);
+    });
+  });
+
+  group('toDbEntity Daily OS audio lookup columns', () {
+    test('mirrors day and stable recording-session identity', () {
+      final capturedAt = DateTime(2026, 7, 18, 8);
+      final entry = JournalEntity.journalAudio(
+        meta: _meta('daily-audio'),
+        data: AudioData(
+          dateFrom: capturedAt,
+          dateTo: capturedAt.add(const Duration(minutes: 1)),
+          audioFile: 'daily.wav',
+          audioDirectory: '/audio/',
+          duration: const Duration(minutes: 1),
+          dayContext: DayAudioContext(
+            dayId: 'dayplan-2026-07-18',
+            planDate: DateTime(2026, 7, 18),
+            recordingSessionId: 'stable-session',
+            activityEntryId: 'activity-stable-session',
+            processingJobId: 'transcribe_stable-session',
+            capturedAt: capturedAt,
+            intent: 'dayPlan',
+          ),
+        ),
+      );
+
+      final dbEntity = toDbEntity(entry);
+
+      expect(dbEntity.dayId, 'dayplan-2026-07-18');
+      expect(dbEntity.recordingSessionId, 'stable-session');
+    });
+
+    test('leaves lookup columns null for ordinary audio', () {
+      final dbEntity = toDbEntity(
+        JournalEntity.journalAudio(
+          meta: _meta('ordinary-audio'),
+          data: AudioData(
+            dateFrom: _baseTime,
+            dateTo: _baseTime,
+            audioFile: 'ordinary.wav',
+            audioDirectory: '/audio/',
+            duration: Duration.zero,
+          ),
+        ),
+      );
+
+      expect(dbEntity.dayId, isNull);
+      expect(dbEntity.recordingSessionId, isNull);
     });
   });
 

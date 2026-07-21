@@ -41,6 +41,7 @@ class MockDayAgentCapture {
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    required DateTime dayDate,
     String? audioId,
   }) async {
     await Future<void>.delayed(parseLatency);

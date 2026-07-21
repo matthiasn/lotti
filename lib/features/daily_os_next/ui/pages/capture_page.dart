@@ -237,7 +237,10 @@ class _CaptureFlowBody extends ConsumerWidget {
           child: _TranscriptZone(state: state, notifier: notifier),
         ),
         SizedBox(height: tokens.spacing.step4),
-        _OrbZone(state: state, onTap: notifier.toggle),
+        _OrbZone(
+          state: state,
+          onTap: () => notifier.toggle(forDate: forDate),
+        ),
         if (showInlineAdvanceCta) ...[
           SizedBox(height: tokens.spacing.step5),
           _InlineFooterSlot(state: state, forDate: forDate),
@@ -538,19 +541,10 @@ class _TranscriptZone extends StatelessWidget {
           ),
         );
       case CapturePhase.listening:
-        return LiveTranscriptView(
-          text: state.partialTranscript,
-          color: tokens.colors.text.mediumEmphasis,
-        );
       case CapturePhase.transcribing:
-        return AnimatedOpacity(
-          opacity: 0.55,
-          duration: const Duration(milliseconds: 200),
-          child: LiveTranscriptView(
-            text: state.partialTranscript,
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        );
+        // Batch transcription runs after stop; the orb caption carries the
+        // listening/transcribing status, so the transcript zone stays empty.
+        return const SizedBox.shrink();
       case CapturePhase.captured:
         return Center(
           child: SingleChildScrollView(
@@ -651,16 +645,12 @@ String? _captureErrorMessage(BuildContext context, CaptureError? error) {
       messages.dailyOsNextCaptureErrorMicrophonePermissionDenied,
     CaptureError.recordingStartFailed =>
       messages.dailyOsNextCaptureErrorRecordingStartFailed,
-    CaptureError.realtimeTranscriptionStartFailed =>
-      messages.dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed,
-    CaptureError.noActiveRealtimeSession =>
-      messages.dailyOsNextCaptureErrorNoActiveRealtimeSession,
-    CaptureError.realtimeTranscriptionFailed =>
-      messages.dailyOsNextCaptureErrorRealtimeTranscriptionFailed,
     CaptureError.noAudioRecorded =>
       messages.dailyOsNextCaptureErrorNoAudioRecorded,
-    CaptureError.transcriptionFailed =>
-      messages.dailyOsNextCaptureErrorTranscriptionFailed,
+    CaptureError.audioPersistFailed =>
+      messages.dailyOsNextCaptureErrorAudioPersistFailed,
+    CaptureError.recordingSavedPendingTranscription =>
+      messages.dailyOsNextCaptureErrorRecordingSavedPendingTranscription,
     null => null,
   };
 }
@@ -732,6 +722,9 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
     try {
       final captureId = await agent.submitCapture(
         transcript: transcript,
+        // Keep the source timestamp and selected planning workspace explicit.
+        // Activity can later reuse the same source while another day is open.
+        dayDate: widget.forDate ?? clock.now(),
         // `capturedAt` routes the capture to the day-agent for that
         // day. When the route-level root mounts CapturePage for a
         // non-today selected date, pass that date so the resulting

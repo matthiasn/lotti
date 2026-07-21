@@ -172,7 +172,7 @@ void main() {
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 44);
+      expect(db.schemaVersion, 45);
 
       final hasColumn = await db.columnExistsForTesting('journal', 'due_at');
       expect(hasColumn, isTrue);

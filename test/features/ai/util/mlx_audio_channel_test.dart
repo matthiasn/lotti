@@ -95,10 +95,6 @@ void main() {
           () => channel.speakText(text: 'hi', modelId: 'tts'),
           throwsA(unsupported()),
         );
-        await expectLater(
-          () => channel.startRealtimeTranscription(modelId: 'm'),
-          throwsA(unsupported()),
-        );
         expect(invocations, 0);
       },
     );
@@ -120,9 +116,6 @@ void main() {
       final channel = MlxAudioChannel(methodChannel: methodChannel);
 
       await channel.stopSpeaking();
-      await channel.appendRealtimePcm(Uint8List.fromList([1, 2]));
-      await channel.stopRealtimeTranscription();
-      await channel.cancelRealtimeTranscription();
 
       expect(invocations, 0);
     });
@@ -132,17 +125,10 @@ void main() {
       const downloadEventChannel = EventChannel(
         'test_mlx_audio_gate_download_events',
       );
-      const realtimeEventChannel = EventChannel(
-        'test_mlx_audio_gate_realtime_events',
-      );
 
-      final channel = MlxAudioChannel(
-        eventChannel: downloadEventChannel,
-        realtimeEventChannel: realtimeEventChannel,
-      );
+      final channel = MlxAudioChannel(eventChannel: downloadEventChannel);
 
       expect(await channel.downloadProgressStream.toList(), isEmpty);
-      expect(await channel.realtimeTranscriptionEvents.toList(), isEmpty);
     });
   });
 
@@ -254,14 +240,6 @@ void main() {
           language: 'English',
         );
         await channel.stopSpeaking();
-        await channel.startRealtimeTranscription(
-          modelId: 'model-a',
-          language: 'English',
-          delayPreset: 'word',
-        );
-        await channel.appendRealtimePcm(Uint8List.fromList([1, 2, 3, 4]));
-        await channel.stopRealtimeTranscription();
-        await channel.cancelRealtimeTranscription();
 
         expect(fileResult.text, 'local transcript');
         expect(fileResult.detectedLanguage, 'en');
@@ -276,10 +254,6 @@ void main() {
             'transcribeBase64Audio',
             'speakText',
             'stopSpeaking',
-            'startRealtimeTranscription',
-            'appendRealtimePcm',
-            'stopRealtimeTranscription',
-            'cancelRealtimeTranscription',
           ],
         );
         final fileArgs = calls[1].arguments! as Map<Object?, Object?>;
@@ -295,15 +269,6 @@ void main() {
         expect(base64Args['speechDictionaryTerms'], isEmpty);
         expect(base64Args, containsPair('language', null));
         expect(base64Args, containsPair('enableSpeakerDiarization', false));
-
-        final realtimeArgs = calls[5].arguments! as Map<Object?, Object?>;
-        expect(realtimeArgs, containsPair('modelId', 'model-a'));
-        expect(realtimeArgs, containsPair('language', 'English'));
-        expect(realtimeArgs, containsPair('delayPreset', 'word'));
-
-        final pcmArgs = calls[6].arguments! as Map<Object?, Object?>;
-        expect(pcmArgs['pcm16'], isA<Uint8List>());
-        expect(pcmArgs['pcm16']! as Uint8List, [1, 2, 3, 4]);
       },
     );
 
@@ -346,44 +311,6 @@ void main() {
         expect(events[0].status, MlxAudioModelStatus.downloading);
         expect(events[0].percentComplete, 50);
         expect(events[1].status, MlxAudioModelStatus.installed);
-      },
-    );
-
-    test(
-      'realtimeTranscriptionEvents maps native event payloads to events',
-      () async {
-        const eventChannel = EventChannel('test_mlx_audio_realtime_events');
-        final messenger =
-            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-        addTearDown(
-          () => messenger.setMockStreamHandler(eventChannel, null),
-        );
-        messenger.setMockStreamHandler(
-          eventChannel,
-          MockStreamHandler.inline(
-            onListen: (args, events) {
-              events
-                ..success(<String, Object?>{
-                  'type': 'transcription.confirmed',
-                  'text': 'hello world',
-                })
-                ..success(<String, Object?>{
-                  'type': 'transcription.done',
-                  'text': 'hello world.',
-                })
-                ..endOfStream();
-            },
-            onCancel: (_) {},
-          ),
-        );
-
-        final channel = MlxAudioChannel(realtimeEventChannel: eventChannel);
-        final events = await channel.realtimeTranscriptionEvents.toList();
-
-        expect(events, hasLength(2));
-        expect(events[0].type, MlxAudioRealtimeEventType.confirmed);
-        expect(events[0].text, 'hello world');
-        expect(events[1].type, MlxAudioRealtimeEventType.done);
       },
     );
 

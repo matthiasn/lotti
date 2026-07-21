@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 
@@ -91,3 +92,35 @@ final FutureProvider<DailyOsSetupStatus> dailyOsSetupStatusProvider =
       },
       name: 'dailyOsSetupStatusProvider',
     );
+
+/// The day planner profile's transcription slot — provider + model — or
+/// null when no profile or no slot is configured. Daily OS transcription
+/// (foreground capture and background outbox retries) prefers this over
+/// `AudioTranscriptionService`'s model discovery so the model the user
+/// picked in the inference profile is the one that runs.
+typedef DailyOsTranscriptionTarget = ({
+  AiConfigInferenceProvider provider,
+  AiConfigModel model,
+});
+
+final FutureProvider<DailyOsTranscriptionTarget?>
+dailyOsTranscriptionTargetProvider = FutureProvider(
+  (ref) async {
+    final templateEntity = await ref.watch(
+      agentTemplateProvider(dayAgentTemplateId).future,
+    );
+    final template = templateEntity?.mapOrNull(
+      agentTemplate: (value) => value,
+    );
+    final profileId = template?.profileId;
+    if (profileId == null) return null;
+    final resolved = await ref
+        .read(profileResolverProvider)
+        .resolveByProfileId(profileId);
+    final provider = resolved?.transcriptionProvider;
+    final model = resolved?.transcriptionModel;
+    if (provider == null || model == null) return null;
+    return (provider: provider, model: model);
+  },
+  name: 'dailyOsTranscriptionTargetProvider',
+);

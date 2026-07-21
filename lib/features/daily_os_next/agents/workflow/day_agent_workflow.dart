@@ -35,6 +35,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
@@ -65,6 +66,7 @@ class DayAgentWorkflow {
     this.knowledgeService,
     this.weekContextService,
     this.soulDocumentService,
+    this.dayAudioEntryContextService,
     this.onPersistedStateChanged,
     this.config = const DayAgentConfig(),
     this.logSummarizer,
@@ -92,6 +94,9 @@ class DayAgentWorkflow {
 
   /// Optional soul resolver.
   final SoulDocumentService? soulDocumentService;
+
+  /// Completed local day recordings that may not have a CaptureEntity yet.
+  final DayAudioEntryContextService? dayAudioEntryContextService;
 
   /// Capture/reconcile backend tool implementation.
   final DayAgentCaptureService? captureService;
@@ -259,9 +264,12 @@ class DayAgentWorkflow {
       // full transcripts — so per-wake cost stays flat as the single
       // long-lived planner's capture history grows. Transcripts are resolved
       // lazily for just the post-cutoff tail via [_resolveCaptureContent].
-      captureMetas = await agentRepository.getCaptureEventMetaByAgentId(
-        agentId,
-      );
+      captureMetas =
+          (await agentRepository.getCaptureEventMetaByAgentId(
+                agentId,
+              ))
+              .where((meta) => captureEventDayId(meta) == resolvedDayId)
+              .toList(growable: false);
       capturesLoaded = true;
     } catch (e) {
       _logError('failed to load capture metadata', error: e);
@@ -310,6 +318,7 @@ class DayAgentWorkflow {
     final weekContext = isDayTokenWake
         ? await _weekContext(agentId: agentId, planDate: dayDate, now: now)
         : null;
+    final dayAudioEntries = await _dayAudioEntries(resolvedDayId);
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       dayId: resolvedDayId,
@@ -324,6 +333,7 @@ class DayAgentWorkflow {
       attentionPlanning: attentionPlanning,
       knowledge: knowledge,
       weekContext: weekContext,
+      dayAudioEntries: dayAudioEntries,
       compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
     );
 

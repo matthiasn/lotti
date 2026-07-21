@@ -146,7 +146,7 @@ class JournalDb extends _$JournalDb
   final Directory? _documentsDirectory;
 
   @override
-  int get schemaVersion => 44;
+  int get schemaVersion => 45;
 
   // Check whether a column exists in a given table to make migrations safer
   @override

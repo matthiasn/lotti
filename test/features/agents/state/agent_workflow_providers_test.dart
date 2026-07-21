@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -38,7 +40,9 @@ void main() {
     setUp(() async {
       await setUpTestGetIt(
         additionalSetup: () {
-          getIt.registerSingleton<Fts5Db>(MockFts5Db());
+          getIt
+            ..registerSingleton<Fts5Db>(MockFts5Db())
+            ..registerSingleton<Directory>(Directory.systemTemp);
         },
       );
     });
@@ -102,6 +106,11 @@ void main() {
       expect(workflow.weekContextService?.syncService, same(syncService));
       expect(workflow.weekContextService?.journalDb, same(journalDb));
       expect(workflow.weekContextService?.domainLogger, same(domainLogger));
+      expect(workflow.dayAudioEntryContextService?.journalDb, same(journalDb));
+      expect(
+        workflow.dayAudioEntryContextService?.assetRoot?.path,
+        Directory.systemTemp.path,
+      );
       workflow.onPersistedStateChanged?.call('day-agent-001');
       verify(
         () => notifications.notifyUiOnly({

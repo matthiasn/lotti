@@ -164,9 +164,14 @@ class DayAgentCaptureService {
   }
 
   /// Writes a submitted capture and enqueues a parse wake.
+  ///
+  /// [dayId] is the selected planning workspace. It is intentionally
+  /// independent of [capturedAt], because Activity may reuse a retained
+  /// recording while the user is viewing another calendar day.
   Future<CaptureEntity> submitCapture({
     required String agentId,
     required String transcript,
+    required String dayId,
     DateTime? capturedAt,
     String? audioRef,
   }) async {
@@ -188,7 +193,7 @@ class DayAgentCaptureService {
               // Stamp the day workspace explicitly (ADR 0022) so the capture
               // is queryable by day and a parse wake can resolve its day from
               // the capture even when one planner owns many days.
-              dayId: dayAgentIdForDate(effectiveCapturedAt),
+              dayId: dayId,
               audioRef: blankToNull(audioRef),
             )
             as CaptureEntity;
@@ -226,6 +231,25 @@ class DayAgentCaptureService {
   Future<CaptureEntity?> getCapture(String captureId) async {
     final entity = await agentRepository.getEntity(captureId);
     return entity?.mapOrNull(capture: (capture) => capture);
+  }
+
+  /// Re-enqueues parsing for an already durable capture.
+  ///
+  /// This is the restart-safe manual continuation path used by Activity: the
+  /// capture remains the durable user intent even if the original in-memory
+  /// wake disappeared with the process.
+  Future<bool> retryCapture(String captureId) async {
+    final entity = await agentRepository.getEntity(captureId);
+    if (entity is! CaptureEntity || entity.deletedAt != null) return false;
+    if ((await parsedItemsForCapture(captureId)).isNotEmpty) return true;
+    orchestrator.enqueueManualWake(
+      agentId: entity.agentId,
+      reason: dayAgentCaptureSubmittedReason,
+      triggerTokens: {dayAgentCaptureSubmittedToken(entity.id)},
+      workspaceKey: dayAgentWorkspaceKey(captureDayId(entity)),
+      supersede: false,
+    );
+    return true;
   }
 
   /// Fetch parsed items linked to [captureId], oldest first.

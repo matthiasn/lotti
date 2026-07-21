@@ -926,7 +926,7 @@ recording stops. A PCM stream mode remains available as a diagnostic and
 fallback dBFS source, with input-device selection and raw peak/RMS diagnostics
 to catch silent default devices. The recorder readout uses tabular numeric
 features so dBFS and counter changes do not move the surrounding UI. Recorder
-voice processing defaults off to match the production realtime recorder path.
+voice processing defaults off to match the production recorder path.
 
 ```mermaid
 flowchart LR
@@ -1025,11 +1025,9 @@ macOS**: the Swift file compiles without the MLX package and returns
 register the plugin at all. The Dart channel short-circuits every method when
 `Platform.isMacOS` is false — `getModelStatus` returns
 `MlxAudioModelStatus.unsupported`, mutation methods (`installModel`,
-`transcribeFile`, `transcribeBase64Audio`, `startRealtimeTranscription`,
-`speakText`) throw `PlatformException(code: 'UNSUPPORTED')`, no-op methods (`stopSpeaking`,
-`appendRealtimePcm`, `stopRealtimeTranscription`,
-`cancelRealtimeTranscription`) silently return, and the event streams emit
-nothing. The FTUE provider picker hides the MLX Audio tile on non-macOS, the
+`transcribeFile`, `transcribeBase64Audio`, `speakText`) throw
+`PlatformException(code: 'UNSUPPORTED')`, `stopSpeaking` silently returns,
+and the event stream emits nothing. The FTUE provider picker hides the MLX Audio tile on non-macOS, the
 direct-fallback transcription ranker
 (`ProfileAutomationService._fallbackCandidateRank`) demotes MLX rows past
 every cloud and local non-MLX candidate on non-macOS, and the sync-node
@@ -1049,7 +1047,7 @@ This prevents provider/model overview rows from stealing the native stream from
 the modal, and lets a running download be reopened from the model row.
 
 Inference does not implicitly download MLX models. `installModel` is the only
-path that downloads from Hugging Face; transcription and realtime start first
+path that downloads from Hugging Face; transcription runs first
 verify that the cache contains a complete model and otherwise return a
 not-installed failure. This keeps a recording-triggered STT run from starting a
 multi-GB background download or loading a partial cache. The Swift bridge also

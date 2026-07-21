@@ -1,5 +1,15 @@
 targets:
   $default:
+    # Codegen only ever reads/writes lib/ and test/. Excluding everything
+    # else keeps build_runner from walking integration_test/docker/, whose
+    # dendrite volumes are root-owned and unreadable after local Matrix
+    # test runs.
+    sources:
+      include:
+        - lib/**
+        - test/**
+        - pubspec.yaml
+        - $package$
     builders:
       drift_dev:
         options:

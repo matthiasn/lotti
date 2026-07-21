@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
@@ -289,6 +291,7 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
       final captureId = await agent.submitCapture(
         transcript: transcript,
         capturedAt: _capturedAtForDay(widget.day),
+        dayDate: widget.day,
         audioId: state.audioId,
       );
       if (!mounted) return;
@@ -361,7 +364,9 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
             label: messages.dailyOsNextCaptureDoneCta,
             fillColor: tokens.colors.interactive.enabled,
             foregroundColor: tokens.colors.text.onInteractiveAlert,
-            onTap: () => ref.read(captureControllerProvider.notifier).toggle(),
+            onTap: () => ref
+                .read(captureControllerProvider.notifier)
+                .toggle(forDate: widget.day),
           ),
         ]);
       case CapturePhase.transcribing:
@@ -440,7 +445,9 @@ class _ReconcileStepContent extends ConsumerWidget {
           ),
         ),
       ),
-      _ => const ReconcileLoadingView(),
+      // The step's sticky action bar carries the thinking shader on its top
+      // edge (like every other step), so the loading body only narrates.
+      _ => const ReconcileLoadingView(showThinkingShader: false),
     };
   }
 }
@@ -484,8 +491,15 @@ class _ReconcileStepBarState extends ConsumerState<_ReconcileStepBar> {
     final messages = context.messages;
     final state = ref.watch(reconcileControllerProvider(widget.params));
     final canBuild = state.hasValue && !_pushing;
+    // Same busy signal placement as the Capture step: the thinking shader
+    // rides the bar's top edge while the initial snapshot loads or the
+    // capture-parse wake (keyed by the executing planner identity) runs.
+    final isParsing =
+        ref.watch(agentIsRunningProvider(dailyOsPlannerAgentId)).value ?? false;
+    final isWorking = (!state.hasValue && !state.hasError) || isParsing;
 
     return DayPlanningGlassActionBar(
+      topSlot: DayPlanningThinkingShader(isThinking: isWorking),
       actions: _layoutBarPills(context, [
         DsGlassPill(
           icon: Icons.mic_rounded,

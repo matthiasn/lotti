@@ -192,8 +192,8 @@ class AgentRepoCore {
   }
 
   /// Lightweight ordering metadata for [agentId]'s non-deleted `capture`
-  /// entities — id + the two timestamps that fix an event's log position —
-  /// **without** materializing the (potentially large) transcript.
+  /// entities — id, workspace day, and the two timestamps that fix an event's
+  /// log position — **without** materializing the large transcript.
   ///
   /// The day planner is a single long-lived agent, so its capture history grows
   /// without bound. The compaction substrate only needs each capture's id and
@@ -201,11 +201,21 @@ class AgentRepoCore {
   /// keys on id, not content); transcripts are pulled in lazily for just the
   /// post-cutoff tail (see `AgentLogCompactor.resolveInlineContent`). Reading
   /// only these columns keeps per-wake cost flat instead of O(all captures).
-  Future<List<({String id, DateTime createdAt, DateTime capturedAt})>>
+  Future<
+    List<
+      ({
+        String id,
+        String dayId,
+        DateTime createdAt,
+        DateTime capturedAt,
+      })
+    >
+  >
   getCaptureEventMetaByAgentId(String agentId) async {
     final rows = await _db
         .customSelect(
-          r"SELECT id, json_extract(serialized, '$.createdAt') AS created_at, "
+          r"SELECT id, json_extract(serialized, '$.dayId') AS day_id, "
+          r"json_extract(serialized, '$.createdAt') AS created_at, "
           r"json_extract(serialized, '$.capturedAt') AS captured_at "
           'FROM agent_entities '
           'WHERE agent_id = ? AND type = ? AND deleted_at IS NULL',
@@ -216,7 +226,15 @@ class AgentRepoCore {
           readsFrom: {_db.agentEntities},
         )
         .get();
-    final metas = <({String id, DateTime createdAt, DateTime capturedAt})>[];
+    final metas =
+        <
+          ({
+            String id,
+            String dayId,
+            DateTime createdAt,
+            DateTime capturedAt,
+          })
+        >[];
     for (final row in rows) {
       final createdAtRaw = row.read<String?>('created_at');
       final capturedAtRaw = row.read<String?>('captured_at');
@@ -226,6 +244,7 @@ class AgentRepoCore {
       if (createdAt == null || capturedAt == null) continue;
       metas.add((
         id: row.read<String>('id'),
+        dayId: row.read<String?>('day_id') ?? '',
         createdAt: createdAt,
         capturedAt: capturedAt,
       ));

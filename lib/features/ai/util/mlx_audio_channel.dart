@@ -20,11 +20,8 @@ class MlxAudioChannel {
   MlxAudioChannel({
     MethodChannel? methodChannel,
     EventChannel? eventChannel,
-    EventChannel? realtimeEventChannel,
   }) : _methodChannel = methodChannel ?? _defaultMethodChannel,
-       _eventChannel = eventChannel ?? _defaultEventChannel,
-       _realtimeEventChannel =
-           realtimeEventChannel ?? _defaultRealtimeEventChannel;
+       _eventChannel = eventChannel ?? _defaultEventChannel;
 
   static const _defaultMethodChannel = MethodChannel(
     'com.matthiasn.lotti/mlx_audio',
@@ -32,13 +29,9 @@ class MlxAudioChannel {
   static const _defaultEventChannel = EventChannel(
     'com.matthiasn.lotti/mlx_audio/events',
   );
-  static const _defaultRealtimeEventChannel = EventChannel(
-    'com.matthiasn.lotti/mlx_audio/realtime_events',
-  );
 
   final MethodChannel _methodChannel;
   final EventChannel _eventChannel;
-  final EventChannel _realtimeEventChannel;
 
   /// True when this build can run the native MLX Audio bridge.
   ///
@@ -63,19 +56,6 @@ class MlxAudioChannel {
     return _eventChannel.receiveBroadcastStream().map((event) {
       final map = Map<String, Object?>.from(event as Map);
       return MlxAudioModelDownloadProgress.fromMap(map);
-    });
-  }
-
-  /// Broadcast stream of live transcription events (partial/final transcripts,
-  /// errors) emitted during [startRealtimeTranscription]. Empty on unsupported
-  /// platforms.
-  Stream<MlxAudioRealtimeEvent> get realtimeTranscriptionEvents {
-    if (!_isPlatformSupported) {
-      return const Stream<MlxAudioRealtimeEvent>.empty();
-    }
-    return _realtimeEventChannel.receiveBroadcastStream().map((event) {
-      final map = Map<String, Object?>.from(event as Map);
-      return MlxAudioRealtimeEvent.fromMap(map);
     });
   }
 
@@ -199,58 +179,6 @@ class MlxAudioChannel {
     await _methodChannel.invokeMethod<void>('stopSpeaking');
   }
 
-  /// Opens a streaming transcription session for [modelId]; feed audio via
-  /// [appendRealtimePcm] and read results from [realtimeTranscriptionEvents].
-  /// [delayPreset] tunes the partial-result latency/accuracy trade-off
-  /// (e.g. 'subtitle'). Throws on unsupported platforms.
-  Future<void> startRealtimeTranscription({
-    required String modelId,
-    String? language,
-    String delayPreset = 'subtitle',
-  }) async {
-    if (!_isPlatformSupported) {
-      throw _unsupportedPlatformException();
-    }
-    await _methodChannel.invokeMethod<void>(
-      'startRealtimeTranscription',
-      {
-        'modelId': modelId,
-        'language': language,
-        'delayPreset': delayPreset,
-      },
-    );
-  }
-
-  /// Feeds a chunk of 16-bit PCM audio into the active realtime session.
-  /// No-op on unsupported platforms.
-  Future<void> appendRealtimePcm(Uint8List pcm16) async {
-    if (!_isPlatformSupported) {
-      return;
-    }
-    await _methodChannel.invokeMethod<void>(
-      'appendRealtimePcm',
-      {'pcm16': pcm16},
-    );
-  }
-
-  /// Ends the realtime session and flushes the final transcript (delivered via
-  /// [realtimeTranscriptionEvents]). No-op on unsupported platforms.
-  Future<void> stopRealtimeTranscription() async {
-    if (!_isPlatformSupported) {
-      return;
-    }
-    await _methodChannel.invokeMethod<void>('stopRealtimeTranscription');
-  }
-
-  /// Aborts the realtime session immediately, discarding pending audio. No-op
-  /// on unsupported platforms.
-  Future<void> cancelRealtimeTranscription() async {
-    if (!_isPlatformSupported) {
-      return;
-    }
-    await _methodChannel.invokeMethod<void>('cancelRealtimeTranscription');
-  }
-
   void _logPlatformException(String method, PlatformException error) {
     try {
       getIt<DomainLogger>().log(
@@ -261,67 +189,6 @@ class MlxAudioChannel {
     } catch (_) {
       // LoggingService may not be registered in tests.
     }
-  }
-}
-
-enum MlxAudioRealtimeEventType {
-  provisional,
-  confirmed,
-  display,
-  stats,
-  done,
-  error,
-}
-
-class MlxAudioRealtimeEvent {
-  const MlxAudioRealtimeEvent({
-    required this.type,
-    this.text,
-    this.confirmedText,
-    this.provisionalText,
-    this.message,
-    this.encodedWindowCount,
-    this.totalAudioSeconds,
-    this.tokensPerSecond,
-    this.realTimeFactor,
-    this.peakMemoryGB,
-  });
-
-  factory MlxAudioRealtimeEvent.fromMap(Map<String, Object?> map) {
-    return MlxAudioRealtimeEvent(
-      type: _typeFromString(map['type'] as String?),
-      text: map['text'] as String?,
-      confirmedText: map['confirmedText'] as String?,
-      provisionalText: map['provisionalText'] as String?,
-      message: map['message'] as String?,
-      encodedWindowCount: (map['encodedWindowCount'] as num?)?.toInt(),
-      totalAudioSeconds: (map['totalAudioSeconds'] as num?)?.toDouble(),
-      tokensPerSecond: (map['tokensPerSecond'] as num?)?.toDouble(),
-      realTimeFactor: (map['realTimeFactor'] as num?)?.toDouble(),
-      peakMemoryGB: (map['peakMemoryGB'] as num?)?.toDouble(),
-    );
-  }
-
-  final MlxAudioRealtimeEventType type;
-  final String? text;
-  final String? confirmedText;
-  final String? provisionalText;
-  final String? message;
-  final int? encodedWindowCount;
-  final double? totalAudioSeconds;
-  final double? tokensPerSecond;
-  final double? realTimeFactor;
-  final double? peakMemoryGB;
-
-  static MlxAudioRealtimeEventType _typeFromString(String? value) {
-    return switch (value) {
-      'transcription.provisional' => MlxAudioRealtimeEventType.provisional,
-      'transcription.confirmed' => MlxAudioRealtimeEventType.confirmed,
-      'transcription.display' => MlxAudioRealtimeEventType.display,
-      'transcription.stats' => MlxAudioRealtimeEventType.stats,
-      'transcription.done' => MlxAudioRealtimeEventType.done,
-      'transcription.error' || _ => MlxAudioRealtimeEventType.error,
-    };
   }
 }
 

@@ -91,6 +91,7 @@ class _FakeAgent implements DayAgentInterface {
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    required DateTime dayDate,
     String? audioId,
   }) async => const CaptureId('cap');
 

@@ -18,10 +18,12 @@ extension _DayAgentCaptureToolHandlers on DayAgentCaptureService {
         'capturedAt must be a valid ISO-8601 date-time',
       );
     }
+    final capturedAt = parsedCapturedAt ?? clock.now();
     final capture = await submitCapture(
       agentId: agentId,
       transcript: transcript,
-      capturedAt: parsedCapturedAt ?? clock.now(),
+      capturedAt: capturedAt,
+      dayId: dayAgentIdForDate(capturedAt),
       audioRef: _optionalString(args['audioRef']),
     );
     return {'captureId': capture.id};

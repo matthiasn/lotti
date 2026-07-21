@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   AI usage reporting lives in the AI Usage view instead.
 
 ### Added
+- **"Here's what I heard" is now visibly busy while it works.** The thinking
+  shader animates on the action bar's top edge — the same signal as the other
+  planning steps — until parsing fills the Heard column. Previously the
+  screen sat frozen for many seconds because the busy indicator was wired to
+  a signal that never fired.
+- **Edit a day recording's text right on its Activity card.** The separate
+  text dialog is gone — every unsubmitted recording now embeds the same
+  rich-text editor used across the journal, with its familiar toolbar and
+  save shortcut. Text you write or correct there is treated as your final
+  wording: a pending transcription completes instantly with your text, and a
+  transcript that arrives later is kept as a record but never overwrites what
+  you wrote.
 - **AI work now shows its real footprint where it was created.** Coding
   prompts, generated and analyzed images, and audio transcripts carry a
   tappable attribution pill. Its details show the creator, model, request
@@ -23,6 +35,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   contributes to its parent task's AI-consumption total.
 
 ## [0.9.1056]
+### Added
+- **A recording of your day can no longer get lost.** Stopping a Daily OS
+  check-in now saves the audio to your journal immediately — before any
+  transcription is attempted. If you are offline or the transcription service
+  fails, the recording stays safe and is retried automatically in the
+  background once you are back online.
+- **New Activity view for your day.** The Day header now offers
+  Agenda | Day | Activity. Activity shows everything that happened around your
+  day in order: saved recordings (with playback), check-ins, the generated
+  plan, and day summaries. Recordings waiting for transcription show their
+  status with retry and "add text yourself" actions, and a transcript can be
+  sent straight into planning or refining.
+- **The planner sees your recordings.** Day recordings become visible to the
+  day agent as soon as their transcript exists — even if you never manually
+  submitted them — so a later planning session picks up what you said while
+  offline.
+
+### Removed
+- **Live (realtime) transcription is gone.** The realtime mode toggle in the
+  recording sheet and chat input has been removed. All transcription now runs
+  over the finished recording, which allows better provider choice and speech
+  dictionary support; the transcript appears a few seconds after you stop
+  instead of streaming word-by-word.
+
 ### Changed
 - **The logbook now matches the rest of the app.** On desktop it uses the same
   split layout as Tasks: the entry list stays on the left, and opening an entry

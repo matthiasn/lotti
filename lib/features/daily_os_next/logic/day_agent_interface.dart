@@ -19,9 +19,14 @@ abstract class DayAgentInterface {
   /// [audioId] is the optional `JournalAudio.meta.id` of the persisted
   /// recording. When set it is forwarded as the capture's `audioRef`
   /// so the agent layer can find the underlying audio.
+  ///
+  /// [dayDate] identifies the selected planning workspace independently of
+  /// [capturedAt]. This matters when a retained recording is used while
+  /// viewing a past or future day.
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    required DateTime dayDate,
     String? audioId,
   });
 

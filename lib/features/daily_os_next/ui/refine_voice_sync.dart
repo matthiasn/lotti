@@ -11,28 +11,27 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// content and the standalone side panel so the two surfaces cannot
 /// drift (they previously held diverging copies of this logic).
 ///
-/// Wires the [CaptureController] stream into the refine controller:
-/// partial transcripts stream in while listening/transcribing, the final
-/// transcript lands as a review, and capture errors cancel listening.
+/// Wires the [CaptureController] stream into the refine controller: the
+/// final transcript lands as a review, and capture errors cancel
+/// listening with a problem the panel can explain.
 void listenCaptureForRefine(
   WidgetRef ref,
   DraftPlan draft,
 ) {
   ref.listen<CaptureState>(captureControllerProvider, (previous, next) {
     final refineNotifier = ref.read(refineControllerProvider(draft).notifier);
-    if (next.phase == CapturePhase.listening ||
-        next.phase == CapturePhase.transcribing) {
-      if (next.partialTranscript.trim().isNotEmpty) {
-        refineNotifier.updateActiveTranscript(next.partialTranscript);
-      }
-      return;
-    }
     if (next.phase == CapturePhase.captured) {
       refineNotifier.reviewTranscript(next.transcript);
       return;
     }
     if (next.phase == CapturePhase.error) {
-      refineNotifier.cancelListening();
+      refineNotifier.cancelListening(
+        problem: switch (next.error) {
+          CaptureError.recordingSavedPendingTranscription =>
+            RefineProblem.captureSavedPendingTranscription,
+          _ => RefineProblem.captureFailed,
+        },
+      );
     }
   });
 }
@@ -42,19 +41,24 @@ void handleRefineVoiceTap({
   required RefineState refineState,
   required RefineController refineNotifier,
   required CaptureController captureNotifier,
+  required DateTime planDate,
 }) {
   switch (refineState.phase) {
     case RefinePhase.idle:
     case RefinePhase.reviewing:
     case RefinePhase.diffReady:
       captureNotifier.reset();
-      captureNotifier.skipRealtimeTranscriptVerificationForNextCapture();
       refineNotifier.beginListening(
         resetTranscript: refineState.phase != RefinePhase.diffReady,
       );
-      unawaited(captureNotifier.toggle());
+      unawaited(
+        captureNotifier.toggle(
+          forDate: planDate,
+          intent: AudioCaptureIntent.dayRefine,
+        ),
+      );
     case RefinePhase.listening:
-      unawaited(captureNotifier.toggle());
+      unawaited(captureNotifier.toggle(forDate: planDate));
     case RefinePhase.thinking:
     case RefinePhase.accepted:
       break;

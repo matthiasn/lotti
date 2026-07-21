@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/assistant_settings_sheet.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/chat_voice_controls.dart';
@@ -14,14 +12,13 @@ export 'package:lotti/features/ai_chat/ui/widgets/chat_interface/chat_voice_cont
 /// Chat composer: text field plus voice controls.
 ///
 /// Swaps its body based on `ChatRecorderState.status` — text field when idle,
-/// waveform + stop/cancel while recording, live-transcript view in realtime
-/// mode, and a progress view during batch transcription. Listens to the
-/// recorder via `listenManual`: a finished transcript is auto-sent when the
-/// session can send, otherwise dropped into the text field for editing, then
-/// cleared so it is not re-consumed. Recorder errors are shown with their
-/// diagnostic detail in an error toast and consumed through the same clear
-/// path. The trailing button cycles through send / settings / mic (with a
-/// batch-vs-realtime toggle when realtime is available).
+/// waveform + stop/cancel while recording, and a progress view during
+/// transcription. Listens to the recorder via `listenManual`: a finished
+/// transcript is auto-sent when the session can send, otherwise dropped into
+/// the text field for editing, then cleared so it is not re-consumed.
+/// Recorder errors are shown with their diagnostic detail in an error toast
+/// and consumed through the same clear path. The trailing button cycles
+/// through send / settings / mic.
 class InputArea extends ConsumerStatefulWidget {
   const InputArea({
     required this.controller,
@@ -158,15 +155,6 @@ class InputAreaState extends ConsumerState<InputArea> {
                     .read(chatRecorderControllerProvider.notifier)
                     .stopAndTranscribe(),
               )
-            : (recState.status == ChatRecorderStatus.realtimeRecording)
-            ? _RealtimeRecordingView(
-                partialTranscript: recState.partialTranscript,
-                onCancel: () =>
-                    ref.read(chatRecorderControllerProvider.notifier).cancel(),
-                onStop: () => ref
-                    .read(chatRecorderControllerProvider.notifier)
-                    .stopRealtime(),
-              )
             : (recState.status == ChatRecorderStatus.processing &&
                   recState.partialTranscript != null)
             ? _TranscriptionProgress(
@@ -285,55 +273,7 @@ class InputAreaState extends ConsumerState<InputArea> {
       );
     }
 
-    // Idle, no text — show mic button(s)
-    final realtimeAsync = ref.watch(realtimeAvailableProvider);
-    final realtimeAvailable = realtimeAsync.value ?? false;
-
-    if (realtimeAvailable) {
-      final useRealtime = recState.useRealtimeMode;
-      // Both modes available — show mode toggle + mic button
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: Icon(
-              useRealtime ? Icons.mic : Icons.graphic_eq,
-              size: 18,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            onPressed: () => ref
-                .read(chatRecorderControllerProvider.notifier)
-                .toggleRealtimeMode(),
-            tooltip: useRealtime
-                ? context.messages.aiBatchToggleTooltip
-                : context.messages.aiRealtimeToggleTooltip,
-            style: IconButton.styleFrom(
-              minimumSize: const Size(36, 36),
-              padding: EdgeInsets.zero,
-            ),
-          ),
-          IconButton.filled(
-            icon: Icon(
-              useRealtime ? Icons.graphic_eq : Icons.mic,
-            ),
-            onPressed: () {
-              if (useRealtime) {
-                ref
-                    .read(chatRecorderControllerProvider.notifier)
-                    .startRealtime();
-              } else {
-                ref.read(chatRecorderControllerProvider.notifier).start();
-              }
-            },
-            tooltip: useRealtime
-                ? context.messages.chatInputStartRealtime
-                : context.messages.chatInputRecordVoice,
-          ),
-        ],
-      );
-    }
-
-    // Only batch mode — show standard mic button
+    // Idle, no text — show the mic button
     return IconButton.filled(
       icon: const Icon(Icons.mic),
       onPressed: () =>
@@ -343,98 +283,6 @@ class InputAreaState extends ConsumerState<InputArea> {
   }
 }
 
-/// Shows live transcript text during real-time recording (no waveform).
-class _RealtimeRecordingView extends StatelessWidget {
-  const _RealtimeRecordingView({
-    required this.partialTranscript,
-    required this.onCancel,
-    required this.onStop,
-  });
-
-  final String? partialTranscript;
-  final VoidCallback onCancel;
-  final VoidCallback onStop;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasText = partialTranscript != null && partialTranscript!.isNotEmpty;
-
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.escape): onCancel,
-      },
-      child: Focus(
-        autofocus: true,
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 120),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHigh.withValues(
-                    alpha: 0.85,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: hasText
-                    ? SingleChildScrollView(
-                        reverse: true,
-                        child: Text(
-                          partialTranscript!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                      )
-                    : Row(
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            context.messages.chatInputListening,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            IconButton.outlined(
-              icon: const Icon(Icons.close),
-              tooltip: context.messages.chatInputCancelRealtime,
-              onPressed: onCancel,
-            ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              icon: const Icon(Icons.stop),
-              tooltip: context.messages.chatInputStopRealtime,
-              onPressed: onStop,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Shows streaming transcription progress with the partial text
 class _TranscriptionProgress extends StatelessWidget {
   const _TranscriptionProgress({
     required this.partialTranscript,

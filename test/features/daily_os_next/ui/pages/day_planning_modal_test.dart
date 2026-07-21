@@ -41,8 +41,15 @@ class _FakeCaptureController extends CaptureController {
     amplitudes: [],
   );
 
+  DateTime? lastToggleForDate;
+
   @override
-  Future<void> toggle() async {}
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async {
+    lastToggleForDate = forDate;
+  }
 }
 
 /// Reconcile agent whose parse step throws — drives the error branch.
@@ -129,6 +136,7 @@ class _PendingSubmitAgent extends MockDayAgent {
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    required DateTime dayDate,
     String? audioId,
   }) {
     submitCalls++;
@@ -160,6 +168,7 @@ Future<void> _settle(WidgetTester tester) async {
 Future<void> _openCreate(
   WidgetTester tester, {
   CaptureState capture = const CaptureState.idle(),
+  _FakeCaptureController Function()? captureFactory,
   MockDayAgent? agent,
   List<TimeBlock> actualBlocks = const [],
   Size size = const Size(420, 900),
@@ -181,7 +190,7 @@ Future<void> _openCreate(
       mediaQueryData: MediaQueryData(size: size),
       overrides: [
         captureControllerProvider.overrideWith(
-          () => _FakeCaptureController(capture),
+          captureFactory ?? () => _FakeCaptureController(capture),
         ),
         // Pin the tracked-time projection so the capture step's "Today so
         // far" card is deterministic and never reaches GetIt-backed services.
@@ -328,6 +337,29 @@ void main() {
       expect(find.byKey(DayPlanningThinkingShader.indicatorKey), findsNothing);
     });
 
+    testWidgets('tapping the Done pill stops capture against the planning '
+        'day, not the wall clock', (tester) async {
+      late _FakeCaptureController capture;
+      await _openCreate(
+        tester,
+        captureFactory: () => capture = _FakeCaptureController(
+          const CaptureState(
+            phase: CapturePhase.listening,
+            transcript: '',
+            amplitudes: [],
+          ),
+        ),
+      );
+      final messages = _l10n(tester);
+
+      await tester.tap(
+        find.widgetWithText(DsGlassPill, messages.dailyOsNextCaptureDoneCta),
+      );
+      await tester.pump();
+
+      expect(capture.lastToggleForDate, DateTime(2024, 3, 15));
+    });
+
     testWidgets('transcribing bar lights the thinking shader', (tester) async {
       await _openCreate(
         tester,
@@ -438,37 +470,42 @@ void main() {
   });
 
   group('showDayPlanningModal — create chain', () {
-    testWidgets('first reconcile frame shows one shader and disables build', (
-      tester,
-    ) async {
-      await _openCreate(
+    testWidgets(
+      'first reconcile frame shows one shader and disables build',
+      (
         tester,
-        capture: _captured,
-        agent: _PendingReconcileAgent(),
-      );
-      final messages = _l10n(tester);
-      await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
+      ) async {
+        await _openCreate(
+          tester,
+          capture: _captured,
+          agent: _PendingReconcileAgent(),
+        );
+        final messages = _l10n(tester);
+        await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
 
-      expect(
-        find.byKey(DayPlanningThinkingShader.indicatorKey),
-        findsOneWidget,
-      );
-      expect(
-        find.text(messages.dailyOsNextReconcileProcessing),
-        findsOneWidget,
-      );
-      expect(
-        tester
-            .widget<DsGlassPill>(
-              find.widgetWithText(
-                DsGlassPill,
-                messages.dailyOsNextReconcileBuildDayCta,
-              ),
-            )
-            .enabled,
-        isFalse,
-      );
-    });
+        // Exactly one busy signal: the sticky bar's top-edge shader. The
+        // loading body suppresses its own copy inside the modal.
+        expect(
+          find.byKey(DayPlanningThinkingShader.indicatorKey),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messages.dailyOsNextReconcileProcessing),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<DsGlassPill>(
+                find.widgetWithText(
+                  DsGlassPill,
+                  messages.dailyOsNextReconcileBuildDayCta,
+                ),
+              )
+              .enabled,
+          isFalse,
+        );
+      },
+    );
 
     testWidgets('continue advances Capture → Reconcile', (tester) async {
       await _openCreate(tester, capture: _captured, agent: _fastAgent());

@@ -1161,9 +1161,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAttributionYou => 'Ty';
 
   @override
-  String get aiBatchToggleTooltip => 'Přepnout na standardní nahrávání';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Generování obrázků';
 
   @override
@@ -2035,9 +2032,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (lokální)';
 
   @override
-  String get aiRealtimeToggleTooltip => 'Přepnout na živý přepis';
-
-  @override
   String get aiResponseDeleteCancel => 'Zrušit';
 
   @override
@@ -2447,22 +2441,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Zahodit nahrávku?';
 
   @override
-  String get audioRecordingListening => 'Naslouchám...';
-
-  @override
   String get audioRecordingPause => 'POZASTAVIT';
-
-  @override
-  String get audioRecordingRealtime => 'Živý přepis';
 
   @override
   String get audioRecordingResume => 'POKRAČOVAT';
 
   @override
   String get audioRecordings => 'Audiozáznamy';
-
-  @override
-  String get audioRecordingStandard => 'Standardní';
 
   @override
   String get audioRecordingStop => 'STOP';
@@ -2854,6 +2839,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputListening => 'Naslouchám...';
 
   @override
+  String get chatInputNoAudioRecorded =>
+      'Nebyl nahrán žádný zvuk. Zkus to znovu.';
+
+  @override
   String get chatInputPleaseWait => 'Čekejte prosím...';
 
   @override
@@ -2864,9 +2853,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get chatInputSendTooltip => 'Odeslat zprávu';
-
-  @override
-  String get chatInputStartRealtime => 'Spustit živý přepis';
 
   @override
   String get chatInputStopRealtime => 'Zastavit živý přepis';
@@ -3486,6 +3472,83 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsDayPlan => 'Plán dne';
 
   @override
+  String get dailyOsNextActivityActionFailed =>
+      'Akci se nepodařilo dokončit. Nahrávka je pořád v bezpečí — zkus to znovu.';
+
+  @override
+  String get dailyOsNextActivityDaySummary => 'Shrnutí dne';
+
+  @override
+  String get dailyOsNextActivityDeleteDialogBody =>
+      'Zvuk a jeho čekající přepis budou z tohoto dne odstraněny.';
+
+  @override
+  String get dailyOsNextActivityDeleteDialogTitle => 'Smazat tuto nahrávku?';
+
+  @override
+  String get dailyOsNextActivityDeleteRecording => 'Smazat';
+
+  @override
+  String get dailyOsNextActivityEmpty =>
+      'Zatím tu nejsou žádné nahrávky ani check-iny.';
+
+  @override
+  String get dailyOsNextActivityLoadFailed =>
+      'Tvoje uložená aktivita je pořád v tomto zařízení, ale teď ji nejde načíst.';
+
+  @override
+  String get dailyOsNextActivityMissingAudio =>
+      'Tento záznam zůstal uložený, ale zvukový soubor v tomto zařízení není dostupný. Obnov soubor a pak to zkus znovu.';
+
+  @override
+  String get dailyOsNextActivityNeedsAttention => 'Vyžaduje pozornost';
+
+  @override
+  String get dailyOsNextActivityOpenSetup => 'Otevřít nastavení přepisu';
+
+  @override
+  String get dailyOsNextActivityPlanAvailable =>
+      'Tvůj denní plán je k dispozici.';
+
+  @override
+  String get dailyOsNextActivityPlanCreated => 'Plán vytvořen';
+
+  @override
+  String get dailyOsNextActivityReady => 'Připraveno k použití';
+
+  @override
+  String get dailyOsNextActivityRetry => 'Zkusit přepis znovu';
+
+  @override
+  String get dailyOsNextActivityRetryLoad => 'Zkusit načíst znovu';
+
+  @override
+  String get dailyOsNextActivitySaved => 'Uloženo místně';
+
+  @override
+  String get dailyOsNextActivitySetupRequired =>
+      'Nahrávka je v bezpečí. Nastav model pro přepis zvuku a pak to zkus znovu.';
+
+  @override
+  String get dailyOsNextActivitySubmitted => 'Přidáno ke dni';
+
+  @override
+  String get dailyOsNextActivityTranscribing => 'Přepisuji';
+
+  @override
+  String get dailyOsNextActivityTranscriptPending =>
+      'Nahrávka je uložená. Přepis ještě čeká.';
+
+  @override
+  String get dailyOsNextActivityUseToPlan => 'Použít k vytvoření plánu';
+
+  @override
+  String get dailyOsNextActivityUseToRefine => 'Použít k úpravě';
+
+  @override
+  String get dailyOsNextActivityWaitingForNetwork => 'Čekám na připojení';
+
+  @override
   String get dailyOsNextAgendaCapacityComfortable => 'Pohodové';
 
   @override
@@ -3599,31 +3662,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureDoneCta => 'Hotovo';
 
   @override
-  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Přístup k mikrofonu byl odepřen.';
+  String get dailyOsNextCaptureErrorAudioPersistFailed =>
+      'Nahrávku se nepodařilo uložit.';
 
   @override
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
-      'Žádná aktivní relace v reálném čase.';
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Přístup k mikrofonu byl odepřen.';
 
   @override
   String get dailyOsNextCaptureErrorNoAudioRecorded =>
       'Nebylo nahráno žádné audio.';
 
   @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
-      'Přepis v reálném čase selhal.';
-
-  @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
-      'Přepis v reálném čase se nepodařilo spustit.';
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Nahrávka je uložená. Přepis se nepodařilo dokončit.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Nahrávání se nepodařilo spustit.';
-
-  @override
-  String get dailyOsNextCaptureErrorTranscriptionFailed => 'Přepis selhal.';
 
   @override
   String get dailyOsNextCaptureHeadlineCaptured => 'Sedí to takhle?';
@@ -3675,6 +3731,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Zkontrolovat';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Nahrávka je uložená';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Záznamy';
@@ -3961,6 +4020,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Odpojit';
+
+  @override
+  String get dailyOsNextPlanViewActivity => 'Aktivita';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -9649,6 +9711,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Rozpoznávání řeči';
+
+  @override
+  String get speechNoAudioRecorded => 'Nebyl nahrán žádný zvuk. Zkus to znovu.';
 
   @override
   String get speechSettingsModelDescription => 'Hlasový model v zařízení';

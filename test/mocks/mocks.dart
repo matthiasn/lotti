@@ -87,7 +87,6 @@ import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
-import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
@@ -103,6 +102,9 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_conte
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
+import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
@@ -658,9 +660,6 @@ class MockAudioRecorder extends Mock implements record.AudioRecorder {}
 class MockAudioTranscriptionService extends Mock
     implements AudioTranscriptionService {}
 
-class MockRealtimeTranscriptionService extends Mock
-    implements RealtimeTranscriptionService {}
-
 class MockNavService extends Mock implements NavService {}
 
 class MockWindowService extends Mock implements WindowService {}
@@ -689,7 +688,10 @@ class FakeCaptureController extends CaptureController {
   CaptureState build() => const CaptureState.idle();
 
   @override
-  Future<void> toggle() async => onToggle?.call();
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async => onToggle?.call();
 
   @override
   void startTyping() {
@@ -1232,6 +1234,14 @@ class MockDayAgentWeekContextService extends Mock
     implements DayAgentWeekContextService {}
 
 class MockDayAgentWorkflow extends Mock implements DayAgentWorkflow {}
+
+class MockDayAudioTranscriptWriter extends Mock
+    implements DayAudioTranscriptWriter {}
+
+class MockDayProcessingOutboxRepository extends Mock
+    implements DayProcessingOutboxRepository {}
+
+class MockDayProcessingRuntime extends Mock implements DayProcessingRuntime {}
 
 class MockScheduledWakeManager extends Mock implements ScheduledWakeManager {}
 

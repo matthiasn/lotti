@@ -5,6 +5,43 @@ part of 'database.dart';
 /// range reads (also coalesced), and the vector-clock streams used by
 /// sync backfill.
 mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
+  /// All live Daily OS audio entries for [dayId], served by the denormalized
+  /// `idx_journal_day_audio` index rather than scanning serialized rows.
+  Future<List<JournalAudio>> getDayAudioEntries(String dayId) async {
+    final rows =
+        await (select(journal)
+              ..where(
+                (row) =>
+                    row.type.equals('JournalAudio') &
+                    row.deleted.equals(false) &
+                    row.dayId.equals(dayId),
+              )
+              ..orderBy([
+                (row) => OrderingTerm.asc(row.dateFrom),
+                (row) => OrderingTerm.asc(row.id),
+              ]))
+            .get();
+    return rows.map(fromDbEntity).whereType<JournalAudio>().toList();
+  }
+
+  /// Looks up the sole live audio owner of a durable recording session.
+  Future<JournalAudio?> journalAudioByRecordingSessionId(
+    String recordingSessionId,
+  ) async {
+    final row =
+        await (select(journal)
+              ..where(
+                (entry) =>
+                    entry.type.equals('JournalAudio') &
+                    entry.deleted.equals(false) &
+                    entry.recordingSessionId.equals(recordingSessionId),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    final entity = row == null ? null : fromDbEntity(row);
+    return entity is JournalAudio ? entity : null;
+  }
+
   Future<JournalDbEntity?> entityById(String id) async {
     final res =
         await (select(journal)

@@ -93,6 +93,7 @@ class RecordingDayAgent implements DayAgentInterface {
   String? capturedTranscript;
   String? capturedAudioId;
   DateTime? capturedAt;
+  DateTime? capturedDayDate;
   int submitCount = 0;
 
   DateTime? deletedFor;
@@ -114,11 +115,13 @@ class RecordingDayAgent implements DayAgentInterface {
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    required DateTime dayDate,
     String? audioId,
   }) async {
     capturedTranscript = transcript;
     capturedAudioId = audioId;
     this.capturedAt = capturedAt;
+    capturedDayDate = dayDate;
     submitCount++;
     return submitResult;
   }

@@ -150,6 +150,82 @@ void main() {
     expect(await second.invoke(scopedContext, AppCommandId.save), isTrue);
     expect(saves, 1);
   });
+
+  // Regression: the desktop menu resolves availability against the primary
+  // focus's element, which during warm-up frames can already be deactivated.
+  // The subscribing lookup asserts there; the guarded read must return null
+  // instead of "Looking up a deactivated widget's ancestor is unsafe".
+  testWidgets('maybeReadIn resolves the scope node without subscribing', (
+    tester,
+  ) async {
+    late BuildContext scopedContext;
+    await tester.pumpWidget(
+      _testApp(
+        AppCommandHost(
+          handlers: const {},
+          child: AppCommandScope(
+            handlers: {
+              AppCommandId.save: AppCommandHandler(invoke: (_) {}),
+            },
+            child: Builder(
+              builder: (context) {
+                scopedContext = context;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final node = AppCommandScopeMarker.maybeReadIn(scopedContext);
+    expect(node, isNotNull);
+    expect(node!.resolve(AppCommandId.save), isNotNull);
+  });
+
+  testWidgets('maybeReadIn returns null for a no-longer-active element', (
+    tester,
+  ) async {
+    late StateSetter updateHarness;
+    late BuildContext scopedContext;
+    var showScope = true;
+    await tester.pumpWidget(
+      _testApp(
+        AppCommandHost(
+          handlers: const {},
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              updateHarness = setState;
+              if (!showScope) return const SizedBox.shrink();
+              return AppCommandScope(
+                handlers: {
+                  AppCommandId.save: AppCommandHandler(invoke: (_) {}),
+                },
+                child: Builder(
+                  builder: (context) {
+                    scopedContext = context;
+                    return const SizedBox.shrink();
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    expect(AppCommandScopeMarker.maybeReadIn(scopedContext), isNotNull);
+
+    updateHarness(() => showScope = false);
+    await tester.pump();
+
+    // The retained context now belongs to a removed element; the guarded
+    // read declines the lookup instead of throwing the framework assertion.
+    expect(AppCommandScopeMarker.maybeReadIn(scopedContext), isNull);
+    expect(
+      () => AppCommandScopeMarker.maybeOf(scopedContext),
+      throwsFlutterError,
+    );
+  });
 }
 
 Widget _testApp(Widget child) =>

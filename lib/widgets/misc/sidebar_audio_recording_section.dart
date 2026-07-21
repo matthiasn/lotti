@@ -83,13 +83,8 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
     final linkedId = ref.watch(
       audioRecorderControllerProvider.select((state) => state.linkedId),
     );
-    final body = ref.watch(
-      audioRecorderControllerProvider.select(
-        (state) => (
-          progress: state.progress,
-          isRealtimeMode: state.isRealtimeMode,
-        ),
-      ),
+    final progress = ref.watch(
+      audioRecorderControllerProvider.select((state) => state.progress),
     );
     final tokens = context.designTokens;
     final messages = context.messages;
@@ -101,7 +96,7 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
       linkedEntry: linkedEntry,
       fallback: messages.taskActionBarAudioRecordingActive,
     );
-    final durationText = formatDuration(body.progress);
+    final durationText = formatDuration(progress);
 
     // Red "live" accent card with a static mic glyph plus a gentle pulsing
     // record dot (record convention) — present without the old reactive orb,
@@ -123,9 +118,7 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
         useRootNavigator: false,
       ),
       trailing: _StopAudioRecordingButton(
-        onStop: () => unawaited(
-          _stop(ref, isRealtimeMode: body.isRealtimeMode),
-        ),
+        onStop: () => unawaited(_stop(ref)),
       ),
     );
   }
@@ -144,16 +137,8 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
     return fallback;
   }
 
-  Future<void> _stop(
-    WidgetRef ref, {
-    required bool isRealtimeMode,
-  }) async {
-    final controller = ref.read(audioRecorderControllerProvider.notifier);
-    if (isRealtimeMode) {
-      await controller.stopRealtime();
-    } else {
-      await controller.stop();
-    }
+  Future<void> _stop(WidgetRef ref) async {
+    await ref.read(audioRecorderControllerProvider.notifier).stop();
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -23,10 +24,14 @@ Widget hWrap(
   return ProviderScope(
     overrides: [
       // Single agent-running override (Riverpod forbids overriding a family
-      // twice). Defaults to idle so the Heard column's parsing shader stays
-      // off; pass agentRunning: true for the parse-in-flight case.
+      // twice). Defaults to idle so the Heard column's parsing bars stay
+      // off; pass agentRunning: true for the parse-in-flight case. Only the
+      // planner identity ever runs day wakes, so the running signal answers
+      // true exclusively for that id — a surface keyed by anything else
+      // (e.g. the dayplan-… day id) sees false, exactly like production.
       agentIsRunningProvider.overrideWith(
-        (ref, agentId) => Stream.value(agentRunning),
+        (ref, agentId) =>
+            Stream.value(agentRunning && agentId == dailyOsPlannerAgentId),
       ),
       ...overrides,
     ],

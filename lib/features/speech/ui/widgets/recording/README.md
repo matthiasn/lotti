@@ -36,13 +36,9 @@ The main recording interface presented as a modal bottom sheet.
 - Displays the persisted recording-style choice: analog VU meter or the
   dBFS-reactive energy orb
 - Shows recording duration in H:MM:SS format
-- Standard/Realtime transcription mode toggle (shown when realtime transcription
-  is available and recording has not started)
 - Record/Stop button with recording status indicator
-- Pause/Resume control (standard mode only) that suspends capture mid-recording;
-  the glyph swaps pause ↔ play and, while paused, the elapsed timer and VU meter
-  freeze. Realtime mode streams PCM to a WebSocket and has no pause path, so the
-  control is omitted there.
+- Pause/Resume control that suspends capture mid-recording; the glyph swaps
+  pause ↔ play and, while paused, the elapsed timer and VU meter freeze.
 - Integrates with Riverpod state management via `AudioRecorderController`
 - Automatically pauses any playing audio when recording starts
 - Uses the root navigator by default so the sheet remains stable above nested
@@ -69,7 +65,7 @@ sequenceDiagram
   participant AppNav as NavService
 
   Caller->>Navigator: show Wolt sheet
-  Sheet->>Controller: stop() or stopRealtime()
+  Sheet->>Controller: stop()
   Controller-->>Sheet: created entry ID
   Sheet->>Navigator: pop(created entry ID) once
   Navigator-->>Caller: modal future completes
@@ -80,19 +76,18 @@ sequenceDiagram
 
 **Recording lifecycle (`AudioRecorderStatus`):**
 
-The modal drives `AudioRecorderController` through the states below. `pause` and
-`resume` only apply to standard file recording; the realtime PCM/WebSocket flow
-goes straight from `recording` to `stopped`. While `paused`, the amplitude
-listener drops incoming samples so `progress`, `vu`, and `dBFS` hold their
-pre-pause values (the elapsed timer and VU meter freeze).
+The modal drives `AudioRecorderController` through the states below. While
+`paused`, the amplitude listener drops incoming samples so `progress`, `vu`,
+and `dBFS` hold their pre-pause values (the elapsed timer and VU meter
+freeze).
 
 ```mermaid
 stateDiagram-v2
     [*] --> stopped
-    stopped --> recording: record() / recordRealtime()
-    recording --> paused: pause() (standard only)
+    stopped --> recording: record()
+    recording --> paused: pause()
     paused --> recording: resume()
-    recording --> stopped: stop() / stopRealtime() / cancel()
+    recording --> stopped: stop() / cancel()
     paused --> stopped: stop() / cancel()
     stopped --> [*]
 

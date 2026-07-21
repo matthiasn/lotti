@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
-import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
@@ -74,13 +73,10 @@ class AudioRecordingModal {
 }
 
 /// Body of the recording sheet: the analog VU meter, elapsed-time readout,
-/// optional live transcript, a standard/realtime mode toggle, the
-/// record/stop(/cancel) controls, and the automatic-prompt checkboxes.
+/// the record/stop(/cancel) controls, and the automatic-prompt checkboxes.
 ///
-/// Drives [AudioRecorderController] — `record`/`recordRealtime` to start and
-/// `stop`/`stopRealtime`/`cancelRealtime` to finish — and switches between the
-/// standard file-recording and realtime PCM-streaming flows based on the local
-/// mode toggle (only offered when realtime transcription is available).
+/// Drives [AudioRecorderController] — `record` to start and `stop`/`cancel`
+/// to finish the file-backed recording flow.
 class AudioRecordingModalContent extends ConsumerStatefulWidget {
   const AudioRecordingModalContent({
     super.key,
@@ -101,7 +97,6 @@ class AudioRecordingModalContent extends ConsumerStatefulWidget {
 
 class _AudioRecordingModalContentState
     extends ConsumerState<AudioRecordingModalContent> {
-  bool _useRealtimeMode = false;
   bool _terminalActionInProgress = false;
 
   @override
@@ -125,8 +120,6 @@ class _AudioRecordingModalContentState
     final theme = Theme.of(context);
     final state = ref.watch(audioRecorderControllerProvider);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
-    final realtimeAvailable =
-        ref.watch(realtimeAvailableProvider).value ?? false;
     final recordingStyle = ref.watch(recordingStyleProvider).asData?.value;
 
     return Column(
@@ -146,15 +139,6 @@ class _AudioRecordingModalContentState
                 color: theme.colorScheme.primaryFixedDim,
               ),
             ),
-
-            // Live transcript display (realtime mode only)
-            if (state.isRealtimeMode &&
-                state.status == AudioRecorderStatus.recording)
-              _buildLiveTranscript(state, theme),
-
-            // Mode toggle (only when realtime is available and not recording)
-            if (realtimeAvailable && !_isRecording(state))
-              _buildModeToggle(context, theme),
 
             const SizedBox(height: 20),
 
@@ -227,15 +211,10 @@ class _AudioRecordingModalContentState
 
     setState(() => _terminalActionInProgress = true);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
-    final state = ref.read(audioRecorderControllerProvider);
 
     String? createdId;
     try {
-      if (state.isRealtimeMode) {
-        createdId = await controller.stopRealtime();
-      } else {
-        createdId = await controller.stop();
-      }
+      createdId = await controller.stop();
     } catch (_) {}
 
     if (!mounted) return;
@@ -250,8 +229,7 @@ class _AudioRecordingModalContentState
   ///
   /// Unlike [_stop], no journal entry is created and no transcription / task
   /// summary is triggered — the page returns to exactly how it was before
-  /// recording started. Branches to the realtime or standard cancel path
-  /// depending on the active recording mode.
+  /// recording started.
   Future<void> _cancel() async {
     if (_terminalActionInProgress) return;
 
@@ -260,13 +238,8 @@ class _AudioRecordingModalContentState
 
     setState(() => _terminalActionInProgress = true);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
-    final state = ref.read(audioRecorderControllerProvider);
     try {
-      if (state.isRealtimeMode) {
-        await controller.cancelRealtime();
-      } else {
-        await controller.cancel();
-      }
+      await controller.cancel();
     } finally {
       if (mounted) {
         Navigator.of(context).pop();
@@ -285,101 +258,9 @@ class _AudioRecordingModalContentState
     );
   }
 
-  Widget _buildLiveTranscript(AudioRecorderState state, ThemeData theme) {
-    final text = state.partialTranscript;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 4),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 120),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: text == null || text.isEmpty
-              ? Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.messages.audioRecordingListening,
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontStyle: FontStyle.italic,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                )
-              : SingleChildScrollView(
-                  reverse: true,
-                  child: Text(
-                    text,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModeToggle(BuildContext context, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            context.messages.audioRecordingStandard,
-            style: TextStyle(
-              color: !_useRealtimeMode
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: !_useRealtimeMode
-                  ? FontWeight.w600
-                  : FontWeight.normal,
-            ),
-          ),
-          Switch.adaptive(
-            value: _useRealtimeMode,
-            onChanged: (value) => setState(() => _useRealtimeMode = value),
-          ),
-          Text(
-            context.messages.audioRecordingRealtime,
-            style: TextStyle(
-              color: _useRealtimeMode
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: _useRealtimeMode
-                  ? FontWeight.w600
-                  : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Compact circular X control that discards the recording. Rendered to the
-  /// left of the stop button while recording, in both standard and realtime
-  /// modes. Uses the localized cancel label for accessibility/tooltip.
+  /// left of the stop button while recording. Uses the localized cancel
+  /// label for accessibility/tooltip.
   Widget _buildCancelButton(BuildContext context, ThemeData theme) {
     final tokens = context.designTokens;
     return Tooltip(
@@ -416,7 +297,7 @@ class _AudioRecordingModalContentState
   }
 
   /// Circular pause / resume control shown between the cancel and stop buttons
-  /// while a standard (non-realtime) recording is in progress.
+  /// while a recording is in progress.
   ///
   /// Tapping toggles [AudioRecorderController.pause] and
   /// [AudioRecorderController.resume]; the glyph swaps pause ↔ play and the
@@ -507,16 +388,12 @@ class _AudioRecordingModalContentState
       key: const ValueKey('stop_controls'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Cancel (X) button — discards the whole recording without creating an
-        // entry. Available in both standard and realtime modes.
+        // Cancel (X) button — discards the whole recording without creating
+        // an entry.
         _buildCancelButton(context, theme),
         SizedBox(width: tokens.spacing.step4),
-        // Pause / resume — standard mode only. The realtime flow streams PCM to
-        // a WebSocket and has no pause path, so the control is omitted there.
-        if (!state.isRealtimeMode) ...[
-          _buildPauseResumeButton(context, controller, state, theme),
-          SizedBox(width: tokens.spacing.step4),
-        ],
+        _buildPauseResumeButton(context, controller, state, theme),
+        SizedBox(width: tokens.spacing.step4),
         // Stop button
         GestureDetector(
           onTap: _terminalActionInProgress ? null : _stop,
@@ -576,13 +453,7 @@ class _AudioRecordingModalContentState
   ) {
     return GestureDetector(
       key: const ValueKey('record'),
-      onTap: () {
-        if (_useRealtimeMode) {
-          controller.recordRealtime(linkedId: widget.linkedId);
-        } else {
-          controller.record(linkedId: widget.linkedId);
-        }
-      },
+      onTap: () => controller.record(linkedId: widget.linkedId),
       child: Container(
         width: 120,
         height: 48,

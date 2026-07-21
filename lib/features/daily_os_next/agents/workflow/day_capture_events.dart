@@ -1,5 +1,6 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/utils/string_utils.dart';
 
 /// Lightweight ordering metadata for one capture — enough to fix its position
@@ -7,9 +8,16 @@ import 'package:lotti/utils/string_utils.dart';
 /// agents layer (which produces it) stays free of any Daily OS coupling.
 typedef CaptureEventMeta = ({
   String id,
+  String dayId,
   DateTime createdAt,
   DateTime capturedAt,
 });
+
+/// Resolves the workspace carried by capture metadata, retaining a fallback
+/// for captures written by peers predating the explicit `dayId` field.
+String captureEventDayId(CaptureEventMeta capture) => capture.dayId.isNotEmpty
+    ? capture.dayId
+    : dayAgentIdForDate(capture.capturedAt);
 
 /// Projects submitted Daily OS capture transcripts into **deferred** inline
 /// [InputEvent]s so they share the day agent's memory substrate (ADR 0016/0017):
@@ -45,6 +53,7 @@ List<InputEvent> dayCaptureEvents(Iterable<CaptureEventMeta> captures) {
 /// deferred events without a second query.
 CaptureEventMeta captureEventMeta(CaptureEntity capture) => (
   id: capture.id,
+  dayId: capture.dayId,
   createdAt: capture.createdAt,
   capturedAt: capture.capturedAt,
 );

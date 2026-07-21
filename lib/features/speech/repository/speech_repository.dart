@@ -38,6 +38,7 @@ class SpeechRepository {
         audioFile: audioNote.audioFile,
         dateTo: audioNote.createdAt.add(audioNote.duration),
         dateFrom: audioNote.createdAt,
+        dayContext: audioNote.dayContext,
       );
 
       final dateFrom = audioData.dateFrom;
@@ -53,7 +54,18 @@ class SpeechRepository {
           categoryId: categoryId,
         ),
       );
-      await persistenceLogic.createDbEntity(journalEntity, linkedId: linkedId);
+      final persisted = await persistenceLogic.createDbEntity(
+        journalEntity,
+        linkedId: linkedId,
+      );
+      if (persisted != true) {
+        getIt<DomainLogger>().error(
+          LogDomain.persistence,
+          StateError('Audio journal entry was not inserted'),
+          subDomain: 'createAudioEntry.rejected',
+        );
+        return null;
+      }
 
       return journalEntity;
     } catch (exception, stackTrace) {

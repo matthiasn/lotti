@@ -212,5 +212,61 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
         await customStatement('ANALYZE');
       }();
     }
+    if (from < 45) {
+      await () async {
+        if (!await _tableExists('journal')) return;
+        DevLogger.log(
+          name: 'JournalDb',
+          message:
+              'Adding indexed Daily OS day and recording-session lookup '
+              'columns',
+        );
+        if (!await _columnExists('journal', 'day_id')) {
+          await customStatement('ALTER TABLE journal ADD COLUMN day_id TEXT');
+        }
+        if (!await _columnExists('journal', 'recording_session_id')) {
+          await customStatement(
+            'ALTER TABLE journal ADD COLUMN recording_session_id TEXT',
+          );
+        }
+        await customStatement(r'''
+UPDATE journal
+SET day_id = json_extract(serialized, '$.data.dayContext.dayId'),
+    recording_session_id =
+      json_extract(serialized, '$.data.dayContext.recordingSessionId')
+WHERE type = 'JournalAudio' AND deleted = FALSE
+''');
+        // Preserve one canonical live owner if a pre-release build wrote the
+        // same stable session id into more than one journal row. Clearing the
+        // shadow column on later duplicates keeps every JSON payload intact
+        // while allowing the uniqueness invariant to be installed safely.
+        await customStatement('''
+UPDATE journal SET recording_session_id = NULL
+WHERE recording_session_id IS NOT NULL AND id NOT IN (
+  SELECT MIN(id) FROM journal
+  WHERE type = 'JournalAudio' AND deleted = FALSE
+    AND recording_session_id IS NOT NULL
+  GROUP BY recording_session_id
+)
+''');
+        await customStatement('''
+CREATE INDEX IF NOT EXISTS idx_journal_day_audio ON journal(
+  day_id COLLATE BINARY ASC,
+  date_from COLLATE BINARY ASC,
+  id COLLATE BINARY ASC
+)
+WHERE type = 'JournalAudio' AND deleted = FALSE
+  AND day_id IS NOT NULL
+''');
+        await customStatement('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_journal_recording_session ON journal(
+  recording_session_id COLLATE BINARY ASC
+)
+WHERE type = 'JournalAudio' AND deleted = FALSE
+  AND recording_session_id IS NOT NULL
+''');
+        await customStatement('ANALYZE');
+      }();
+    }
   }
 }

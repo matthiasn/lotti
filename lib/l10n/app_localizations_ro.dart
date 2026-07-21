@@ -1169,9 +1169,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAttributionYou => 'Dvs.';
 
   @override
-  String get aiBatchToggleTooltip => 'Comutare la înregistrare standard';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Generare de imagini';
 
   @override
@@ -2046,9 +2043,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (local)';
 
   @override
-  String get aiRealtimeToggleTooltip => 'Comutare la transcriere în direct';
-
-  @override
   String get aiResponseDeleteCancel => 'Anulați';
 
   @override
@@ -2457,22 +2451,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Renunțați la înregistrare?';
 
   @override
-  String get audioRecordingListening => 'Se ascultă...';
-
-  @override
   String get audioRecordingPause => 'PAUZĂ';
-
-  @override
-  String get audioRecordingRealtime => 'Transcriere în direct';
 
   @override
   String get audioRecordingResume => 'RELUARE';
 
   @override
   String get audioRecordings => 'Înregistrări audio';
-
-  @override
-  String get audioRecordingStandard => 'Standard';
 
   @override
   String get audioRecordingStop => 'OPRIȚI';
@@ -2861,6 +2846,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get chatInputListening => 'Ascultă...';
 
   @override
+  String get chatInputNoAudioRecorded =>
+      'Nu s-a înregistrat niciun sunet. Încercați din nou.';
+
+  @override
   String get chatInputPleaseWait => 'Așteaptă...';
 
   @override
@@ -2871,9 +2860,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get chatInputSendTooltip => 'Trimiteți mesajul';
-
-  @override
-  String get chatInputStartRealtime => 'Porniți transcrierea în timp real';
 
   @override
   String get chatInputStopRealtime => 'Opriți transcrierea în timp real';
@@ -3492,6 +3478,85 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsDayPlan => 'Planul zilei';
 
   @override
+  String get dailyOsNextActivityActionFailed =>
+      'Acțiunea nu s-a finalizat. Înregistrarea dvs. este în continuare în siguranță — încercați din nou.';
+
+  @override
+  String get dailyOsNextActivityDaySummary => 'Rezumatul zilei';
+
+  @override
+  String get dailyOsNextActivityDeleteDialogBody =>
+      'Audio și transcrierea în așteptare sunt eliminate din această zi.';
+
+  @override
+  String get dailyOsNextActivityDeleteDialogTitle =>
+      'Ștergeți această înregistrare?';
+
+  @override
+  String get dailyOsNextActivityDeleteRecording => 'Ștergeți';
+
+  @override
+  String get dailyOsNextActivityEmpty =>
+      'Nu există încă înregistrări sau check-in-uri.';
+
+  @override
+  String get dailyOsNextActivityLoadFailed =>
+      'Activitatea dvs. salvată se află în continuare pe acest dispozitiv, dar nu a putut fi încărcată acum.';
+
+  @override
+  String get dailyOsNextActivityMissingAudio =>
+      'Această intrare este păstrată, dar fișierul audio nu este disponibil pe acest dispozitiv. Restaurați fișierul, apoi încercați din nou.';
+
+  @override
+  String get dailyOsNextActivityNeedsAttention => 'Necesită atenție';
+
+  @override
+  String get dailyOsNextActivityOpenSetup =>
+      'Deschideți configurarea transcrierii';
+
+  @override
+  String get dailyOsNextActivityPlanAvailable =>
+      'Planul dvs. pentru zi este disponibil.';
+
+  @override
+  String get dailyOsNextActivityPlanCreated => 'Plan creat';
+
+  @override
+  String get dailyOsNextActivityReady => 'Gata de utilizare';
+
+  @override
+  String get dailyOsNextActivityRetry => 'Reîncercați transcrierea';
+
+  @override
+  String get dailyOsNextActivityRetryLoad => 'Încărcați din nou';
+
+  @override
+  String get dailyOsNextActivitySaved => 'Salvat local';
+
+  @override
+  String get dailyOsNextActivitySetupRequired =>
+      'Înregistrarea dvs. este în siguranță. Configurați un model de transcriere audio, apoi încercați din nou.';
+
+  @override
+  String get dailyOsNextActivitySubmitted => 'Adăugat la zi';
+
+  @override
+  String get dailyOsNextActivityTranscribing => 'Se transcrie';
+
+  @override
+  String get dailyOsNextActivityTranscriptPending =>
+      'Înregistrarea dvs. este salvată. Transcrierea este încă în așteptare.';
+
+  @override
+  String get dailyOsNextActivityUseToPlan => 'Folosiți pentru a crea planul';
+
+  @override
+  String get dailyOsNextActivityUseToRefine => 'Folosiți pentru ajustare';
+
+  @override
+  String get dailyOsNextActivityWaitingForNetwork => 'Se așteaptă conexiunea';
+
+  @override
   String get dailyOsNextAgendaCapacityComfortable => 'Confortabil';
 
   @override
@@ -3613,32 +3678,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureDoneCta => 'Gata';
 
   @override
-  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Permisiunea pentru microfon a fost refuzată.';
+  String get dailyOsNextCaptureErrorAudioPersistFailed =>
+      'Înregistrarea dvs. nu a putut fi salvată.';
 
   @override
-  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
-      'Nu există nicio sesiune în timp real activă.';
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Permisiunea pentru microfon a fost refuzată.';
 
   @override
   String get dailyOsNextCaptureErrorNoAudioRecorded =>
       'Nu s-a înregistrat niciun audio.';
 
   @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
-      'Transcrierea în timp real a eșuat.';
-
-  @override
-  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
-      'Transcrierea în timp real nu a putut porni.';
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Înregistrarea dvs. este salvată. Transcrierea nu a putut fi finalizată.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Înregistrarea nu a putut porni.';
-
-  @override
-  String get dailyOsNextCaptureErrorTranscriptionFailed =>
-      'Transcrierea a eșuat.';
 
   @override
   String get dailyOsNextCaptureHeadlineCaptured => 'Arată corect?';
@@ -3690,6 +3747,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Verificați';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Înregistrare salvată';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Capturi';
@@ -3977,6 +4037,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Desface legătura';
+
+  @override
+  String get dailyOsNextPlanViewActivity => 'Activitate';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -9698,6 +9761,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Recunoaștere vocală';
+
+  @override
+  String get speechNoAudioRecorded =>
+      'Nu s-a înregistrat niciun sunet. Încercați din nou.';
 
   @override
   String get speechSettingsModelDescription => 'Model de voce pe dispozitiv';

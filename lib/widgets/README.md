@@ -202,7 +202,7 @@ Detailed recording card shown inside the expanded activity disclosure whenever a
 
 - Layout: top row = `Icons.mic_rounded` glyph with a **gentle pulsing record dot** (record convention, reduce-motion aware) + a prominent red tabular HH:MM:SS time + a red 28px circular stop button (the consequential action keeps the destructive red); second row = the linked title (two lines, full title via tooltip). A 3px red accent rail runs the full height.
 - No `AudioRecordingOrb` and no dBFS-reactive frame/shadow in the sidebar — the red accent + pulsing dot carry "recording" without the reactive orb. (The live orb still drives the mobile recording pill and the modal's VU meter.)
-- Interactions: tapping the body reopens `AudioRecordingModal`; tapping the stop button calls `AudioRecorderController.stop()` or `stopRealtime()` based on the active recording mode.
+- Interactions: tapping the body reopens `AudioRecordingModal`; tapping the stop button calls `AudioRecorderController.stop()`.
 - Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
 
 ### TimeRecordingIndicator

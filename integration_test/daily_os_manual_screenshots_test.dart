@@ -258,7 +258,10 @@ class _CapturedController extends CaptureController {
   void reset() => state = const CaptureState.idle();
 
   @override
-  Future<void> toggle() async {}
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async {}
 }
 
 class _PendingParseAgent extends MockDayAgent {
