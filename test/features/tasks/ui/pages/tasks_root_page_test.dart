@@ -121,7 +121,7 @@ void main() {
     expect(find.text('Select a task to view details'), findsOneWidget);
     expect(
       find.byWidgetPredicate(
-        (widget) => widget is SizedBox && widget.width == 540,
+        (widget) => widget is SizedBox && widget.width == 432,
       ),
       findsOneWidget,
     );

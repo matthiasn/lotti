@@ -21,7 +21,6 @@ import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.d
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
-import 'package:lotti/features/agents/ui/task_agent_freshness_strip.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -556,23 +555,22 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       setState(() => _cancelledManually = true);
     }
 
-    // While automatic updates are off, the freshness strip under the report
-    // owns the wake CTA in a slot of constant geometry (out-of-date warning
-    // or a quiet up-to-date confirmation — no jump when freshness flips);
-    // the footer hides its own button so the affordance never appears twice.
-    // Without any report content the strip has nothing to describe, so the
-    // footer keeps the wake button instead.
+    // The freshness state (out of date / up to date) always rides along
+    // with the wake control and switch in the footer's automation cluster —
+    // it never moves to a separate row depending on automaticUpdatesEnabled.
+    // Without any report content there is nothing to be "out of date", so
+    // the footer omits the glyph entirely rather than showing a default.
     final hasReportContent = tldr.isNotEmpty || additionalReport != null;
-    final showFreshnessStrip = !automaticUpdatesEnabled && hasReportContent;
 
     final controlsFooter = TaskAgentControlsFooter(
       automaticUpdatesEnabled: automaticUpdatesEnabled,
       automationBusy: _automaticUpdatesBusyAgentIds.contains(agentId),
       inferenceAvailable: inferenceAvailable,
       isRunning: isRunning,
-      showWakeButton: !showFreshnessStrip,
       showCountdown: showCountdown,
       nextWakeAt: nextWakeAt,
+      hasReportContent: hasReportContent,
+      isStale: reportIsStale,
       onAutomaticUpdatesChanged: (enabled) =>
           unawaited(_updateAutomaticUpdates(enabled: enabled)),
       onRunNow: runNow,
@@ -670,28 +668,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                   tokens.spacing.step3,
                 ),
                 child: reportBody,
-              ),
-            if (showFreshnessStrip)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spacing.cardPadding,
-                  0,
-                  tokens.spacing.cardPadding,
-                  tokens.spacing.step4,
-                ),
-                // Same reading measure as the summary above it: a full-width
-                // strip whose content ends a quarter of the way across reads
-                // lopsided on wide surfaces.
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: TldrBody.maxReadingWidth,
-                  ),
-                  child: TaskAgentFreshnessStrip(
-                    isStale: reportIsStale,
-                    isRunning: isRunning,
-                    onRunNow: runNow,
-                  ),
-                ),
               ),
             // Hidden until the first value to avoid flashing the empty state.
             ?proposalsSection,

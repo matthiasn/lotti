@@ -50,6 +50,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and list thumbnail are unchanged, but the generated image's own entry in
   the task's linked entries now starts collapsed instead of showing the same
   artwork a third time — tap it to expand if you want to see it there too.
+- **The task AI summary card's wake control no longer moves around.**
+  Freshness (out of date / up to date), the wake button or countdown, and
+  the automatic-updates switch now always live together in one row, instead
+  of the wake button appearing in a separate strip above the switch only
+  while automatic updates were off. Model identity is now always its own
+  row below, never squeezed beside that cluster.
 
 ### Fixed
 - **Generate Cover Art now actually shows the generated image.** The task was
