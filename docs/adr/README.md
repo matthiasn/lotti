@@ -28,6 +28,17 @@ Each ADR should contain:
 
 ## Index
 
+### Learning verification decision cluster
+
+| ADR | Status | Decision ownership |
+| --- | --- | --- |
+| [0033: Learning Verification Checkpoint Policy](./0033-learning-verification-checkpoint-policy.md) | Proposed | When quizzes start: manual-first entry from any task, deterministic suggestion triggers/guards/caps, no gating, no spaced-repetition scheduler. |
+| [0034: Hybrid Understanding Evaluation](./0034-hybrid-understanding-evaluation.md) | Proposed | Frozen evidence snapshots, tailored quiz generation, deterministic validation, conversational LLM grading with bounded probes, injection resistance. |
+| [0035: Learning Verification Session Persistence](./0035-learning-verification-session-persistence.md) | Proposed | Quiz events/artifacts/links on the existing agent log, identity and sync convergence, device-local boundaries, plain deletion and export. |
+| [0036: Learning Understanding Rating](./0036-learning-understanding-rating.md) | Proposed | Per-item verdicts, session scores/labels, feedback-first presentation, honesty rules, storage separate from journal ratings. |
+
+### Chronological index
+
 - [`0001-agent-capabilities-runtime-model.md`](./0001-agent-capabilities-runtime-model.md)
 - [`0002-wake-scheduling-and-throttling-policy.md`](./0002-wake-scheduling-and-throttling-policy.md)
 - [`0003-task-agent-linked-task-context-contract.md`](./0003-task-agent-linked-task-context-contract.md)
@@ -60,3 +71,7 @@ Each ADR should contain:
 - [`0030-desktop-keyboard-command-system.md`](./0030-desktop-keyboard-command-system.md)
 - [`0031-batch-first-day-audio-capture.md`](./0031-batch-first-day-audio-capture.md)
 - [`0032-hierarchical-day-agent-coordination.md`](./0032-hierarchical-day-agent-coordination.md)
+- [`0033-learning-verification-checkpoint-policy.md`](./0033-learning-verification-checkpoint-policy.md)
+- [`0034-hybrid-understanding-evaluation.md`](./0034-hybrid-understanding-evaluation.md)
+- [`0035-learning-verification-session-persistence.md`](./0035-learning-verification-session-persistence.md)
+- [`0036-learning-understanding-rating.md`](./0036-learning-understanding-rating.md)
