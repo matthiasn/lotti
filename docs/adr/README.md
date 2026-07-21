@@ -32,10 +32,10 @@ Each ADR should contain:
 
 | ADR | Status | Decision ownership |
 | --- | --- | --- |
-| [0031: Learning Verification Checkpoint Policy](./0031-learning-verification-checkpoint-policy.md) | Proposed | Prompt timing, deterministic admission, burden, and learner control. |
-| [0032: Hybrid Understanding Evaluation](./0032-hybrid-understanding-evaluation.md) | Proposed | Question blueprint, semantic comparison, deterministic validation, and calibration. |
-| [0033: Learning Verification Session Persistence](./0033-learning-verification-session-persistence.md) | Proposed | Causal-log authority, immutable artifacts, sync/local evidence, convergence, and retention. |
-| [0034: Learning Understanding Rating](./0034-learning-understanding-rating.md) | Proposed | Observed dimensions, formative labels, feedback order, and comparability limits. |
+| [0031: Learning Verification Checkpoint Policy](./0031-learning-verification-checkpoint-policy.md) | Proposed | Staged prompt-checkpoint policy, global burden/delivery, immutable source-attempt schedule lineages, registered activity/recovery bindings, trusted schedule-policy activation, and deterministic selection/timing/due folding. |
+| [0032: Hybrid Understanding Evaluation](./0032-hybrid-understanding-evaluation.md) | Proposed | Exact-question full-item admission, response-evaluation inputs/validation, assessment reliability, and separate fail-closed calibration clearance. |
+| [0033: Learning Verification Session Persistence](./0033-learning-verification-session-persistence.md) | Proposed | Signed causal events, key/time/deadline and trusted control-key authority, registered typed links, normalized schedule persistence, convergence, compatibility, and deletion-GC finality. |
+| [0034: Learning Understanding Rating](./0034-learning-understanding-rating.md) | Proposed | Dimensions, rating availability, scores/caps/labels, transfer, feedback, comparability, qualifying activity semantics, and the exact independent promotion/schedule-eligibility contract. |
 
 ### Chronological index
 
