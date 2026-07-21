@@ -35,6 +35,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1058" date="2026-07-22">
+      <description>
+        <p>Accepting AI suggestions no longer bounces the task page: header changes (labels, due date, priority, status, title) confirmed together with checklist items keep the proposals pinned in place instead of shoving the page down and snapping it back mid-batch.</p>
+      </description>
+    </release>
     <release version="0.9.1057" date="2026-07-21">
       <description>
         <p>The agent Stats tab has been removed: Settings &gt; Agents now opens on Templates and keeps four views (Templates, Instances, Souls, and Wake Cycles), with AI usage reporting living in the AI Usage view instead.</p>

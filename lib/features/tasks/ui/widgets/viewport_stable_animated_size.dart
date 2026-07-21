@@ -15,7 +15,8 @@ import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 /// enough to force a range clamp, the position temporarily retains that
 /// trailing extent until the user scrolls back inside the real range. This
 /// avoids both a one-frame displacement and a delayed jump when the hold ends.
-class ViewportStableScrollController extends ScrollController {
+class ViewportStableScrollController extends ScrollController
+    implements CooperativeScrollStabilizer {
   ViewportStableScrollController({
     super.initialScrollOffset,
     super.keepScrollOffset,
@@ -64,6 +65,19 @@ class ViewportStableScrollController extends ScrollController {
 
   void _beginHold() {
     _expectedOffset = positions.length == 1 ? offset : null;
+  }
+
+  @override
+  bool ownsOffset(double offset) {
+    final expectedOffset = _expectedOffset;
+    return expectedOffset != null &&
+        (offset - expectedOffset).abs() <= _tolerance;
+  }
+
+  @override
+  void adoptCorrection(double target) {
+    if (!_isHolding) return;
+    _expectedOffset = target;
   }
 
   void _releaseOnUnexpectedOffsetChange() {

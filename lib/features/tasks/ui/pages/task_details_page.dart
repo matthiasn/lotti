@@ -153,10 +153,12 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
 
   /// Arms both stabilization layers before proposal persistence begins.
   ///
-  /// Checklist rows report their height deltas to [_scrollController], which
-  /// corrects during viewport layout so no displaced frame is painted. The
-  /// post-frame [_suggestionsAnchor] remains a fallback for mutations in other
-  /// task regions above the proposals.
+  /// The task header and checklist report their height deltas to
+  /// [_scrollController], which corrects during viewport layout so no
+  /// displaced frame is painted. The post-frame [_suggestionsAnchor] remains a
+  /// fallback for mutations in other task regions above the proposals. The two
+  /// layers cooperate via [CooperativeScrollStabilizer] so neither mistakes
+  /// the other's correction for a user scroll and disarms mid-batch.
   void _holdSuggestionsStable() {
     _scrollController.hold(_suggestionResolveHold);
     _suggestionsAnchor.hold();

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1058]
+### Fixed
+- **Accepting AI suggestions no longer bounces the task page.** Confirming a
+  batch that mixes header changes (labels, due date, priority, status, title)
+  with checklist items used to shove the page down when the header grew and
+  then snap it back, leaving the rest of the batch uncorrected. The task
+  header now reports its height changes to the same pre-paint scroll
+  stabilizer as the checklist, and the page's two stabilization layers now
+  recognize each other's corrections instead of mistaking them for user
+  scrolls and disarming mid-batch.
+
 ## [0.9.1057]
 ### Removed
 - **The agent Stats tab is gone.** Settings > Agents now opens on Templates

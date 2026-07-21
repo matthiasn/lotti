@@ -253,7 +253,9 @@ subtle frame in light and dark themes.
   added). `AiSummaryCard` therefore signals `TaskDetailsPage` synchronously when
   a resolve gesture begins, before checklist persistence can relayout the page.
   The page arms its `ViewportStableScrollController`, while
-  `ViewportStableSizeReporter` wraps the checklist band and reports every
+  `ViewportStableSizeReporter` wraps the header band (title, label, due-date,
+  priority, and status chips — all of which confirmed proposals can grow) and
+  the checklist band, and reports every
   measured height delta. The custom scroll position consumes those deltas in
   `correctForNewDimensions`, causing Flutter to repeat viewport layout at the
   corrected offset before anything paints. This matters for Confirm all:
@@ -296,7 +298,15 @@ subtle frame in light and dark themes.
   collapse (`checklistCompletionAnimationDuration` +
   `checklistCompletionFadeDuration` + buffer), and repeated resolve starts
   refresh it for bulk actions. Both stabilization paths release immediately on
-  a user scroll so they never fight deliberate navigation.
+  a user scroll so they never fight deliberate navigation. Because both paths
+  detect user scrolls as *unexpected offset changes*, they cooperate through
+  the `CooperativeScrollStabilizer` interface: the `ScrollAnchor` announces its
+  post-frame jumps via `adoptCorrection` before making them, and it asks the
+  controller `ownsOffset` before treating a silent pre-paint `correctPixels`
+  as user input. Without that channel, a mixed Confirm-all batch (say, a label
+  chip growing the header plus checklist inserts) had each layer's first
+  correction disarm the other, leaving the rest of the batch to paint
+  uncorrected — the page visibly bounced down and up.
 
   Source-entry transcripts and image analysis use the same pre-paint controller
   through `ViewportStableAnimatedSize`. That wrapper arms itself only when its
@@ -891,9 +901,9 @@ has two region adapters backed by the same `ViewportStableScrollController`:
 - `ViewportStableAnimatedSize` animates generated entry text and nested AI
   response height, automatically arming only when the region is fully above the
   viewport.
-- `ViewportStableSizeReporter` adds no motion; the checklist band uses it while
-  a suggestion-resolution hold is armed because its rows already own their
-  entrance/completion animations.
+- `ViewportStableSizeReporter` adds no motion; the header and checklist bands
+  use it while a suggestion-resolution hold is armed because their content
+  already owns its entrance/completion animations.
 
 Both adapters feed exact region-height deltas into the viewport's own layout
 cycle, so the content currently being read never paints at an intermediate

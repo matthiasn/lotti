@@ -233,6 +233,75 @@ void main() {
       expect(state.controller.offset, 260);
     });
 
+    testWidgets(
+      'announces its corrections to a cooperating controller before jumping',
+      (tester) async {
+        final controller = _FakeCooperativeController();
+        addTearDown(controller.dispose);
+        final harnessKey = GlobalKey<_AnchorHarnessState>();
+        await tester.pumpWidget(
+          _AnchorHarness(key: harnessKey, controller: controller),
+        );
+        await tester.pump();
+
+        final state = harnessKey.currentState!;
+        state.controller.jumpTo(120);
+        await tester.pump();
+
+        state.anchor.hold();
+        state.grow(300);
+        await tester.pump();
+        await tester.pump();
+
+        // The anchor corrected the drift — and told the controller first, so
+        // a stabilizing controller would not read the jump as a user scroll.
+        expect(state.controller.offset, closeTo(420, 2));
+        expect(controller.adopted, [closeTo(420, 2)]);
+        expect(state.anchor.isHolding, isTrue);
+      },
+    );
+
+    testWidgets(
+      "adopts a cooperating controller's own correction instead of releasing",
+      (tester) async {
+        final controller = _FakeCooperativeController();
+        addTearDown(controller.dispose);
+        final harnessKey = GlobalKey<_AnchorHarnessState>();
+        await tester.pumpWidget(
+          _AnchorHarness(key: harnessKey, controller: controller),
+        );
+        await tester.pump();
+
+        final state = harnessKey.currentState!;
+        state.controller.jumpTo(120);
+        await tester.pump();
+
+        state.anchor.hold();
+        await tester.pump();
+        expect(state.anchor.isHolding, isTrue);
+
+        // Simulate the controller's own pre-paint compensation: content above
+        // grows 140 and the controller corrects the offset by the same amount
+        // in the same frame, marking the new offset as its own.
+        controller.ownedOffsets.add(260);
+        state.grow(140);
+        state.controller.jumpTo(260);
+        await tester.pump();
+
+        // The anchor recognises the correction as the controller's, not the
+        // user's, and keeps holding at the adopted offset.
+        expect(state.anchor.isHolding, isTrue);
+        expect(state.controller.offset, 260);
+
+        // The surviving hold still corrects a later uncompensated shrink.
+        state.grow(-150);
+        await tester.pump();
+        await tester.pump();
+        expect(state.controller.offset, closeTo(110, 2));
+        expect(state.anchor.isHolding, isTrue);
+      },
+    );
+
     testWidgets('does nothing when locate returns null (anchor absent)', (
       tester,
     ) async {
@@ -265,15 +334,34 @@ void main() {
   });
 }
 
+/// Records cooperation calls and lets a test declare which offsets count as
+/// the controller's own corrections.
+class _FakeCooperativeController extends ScrollController
+    implements CooperativeScrollStabilizer {
+  final List<double> adopted = [];
+  final Set<double> ownedOffsets = {};
+
+  @override
+  bool ownsOffset(double offset) => ownedOffsets.contains(offset);
+
+  @override
+  void adoptCorrection(double target) => adopted.add(target);
+}
+
 class _AnchorHarness extends StatefulWidget {
-  const _AnchorHarness({super.key});
+  const _AnchorHarness({this.controller, super.key});
+
+  /// Externally owned controller; the harness creates (and disposes) its own
+  /// when null.
+  final ScrollController? controller;
 
   @override
   State<_AnchorHarness> createState() => _AnchorHarnessState();
 }
 
 class _AnchorHarnessState extends State<_AnchorHarness> {
-  final ScrollController controller = ScrollController();
+  late final ScrollController controller =
+      widget.controller ?? ScrollController();
   final GlobalKey _anchorKey = GlobalKey();
   late final ScrollAnchor anchor = ScrollAnchor(
     controller: controller,
@@ -297,7 +385,7 @@ class _AnchorHarnessState extends State<_AnchorHarness> {
   @override
   void dispose() {
     anchor.dispose();
-    controller.dispose();
+    if (widget.controller == null) controller.dispose();
     super.dispose();
   }
 

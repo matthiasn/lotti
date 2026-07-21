@@ -5,6 +5,25 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
+/// Implemented by scroll controllers that correct their own offset as part of
+/// viewport stabilization (e.g. pre-paint extent-delta compensation in
+/// `ViewportStableScrollController`).
+///
+/// [ScrollAnchor] uses this to cooperate instead of colliding: both mechanisms
+/// bow out when the *user* scrolls, and both detect that via unexpected offset
+/// changes — so without a channel between them, each one's legitimate
+/// correction reads as a user scroll to the other and disarms it mid-batch
+/// (e.g. a confirm-all that mutates both the task header and the checklist).
+abstract interface class CooperativeScrollStabilizer {
+  /// Whether [offset] is one this controller itself established via its own
+  /// stabilization corrections (as opposed to user input).
+  bool ownsOffset(double offset);
+
+  /// Records [target] as an offset an external stabilizer is about to jump
+  /// to, so the resulting change is not mistaken for a user scroll.
+  void adoptCorrection(double target);
+}
+
 /// Returns the global top edge of the viewport containing [renderObject].
 ///
 /// Returns `null` when either object is detached or the viewport is not a
@@ -141,6 +160,14 @@ class ScrollAnchor {
     });
   }
 
+  /// The controller as a cooperating stabilizer, or null when it is a plain
+  /// [ScrollController]. (A pattern match, because the interface is not a
+  /// [ScrollController] subtype and `is` alone would not promote.)
+  CooperativeScrollStabilizer? get _cooperative => switch (controller) {
+    final CooperativeScrollStabilizer stabilizer => stabilizer,
+    _ => null,
+  };
+
   ScrollPosition? _positionForCorrection() {
     final anchorTop = _anchorTop;
     // `positions.length != 1` guards both the no-client case and the
@@ -148,12 +175,18 @@ class ScrollAnchor {
     // controller drives more than one scroll view (possible during route
     // transitions or page-state reuse), which `hasClients` would not catch.
     if (anchorTop == null || controller.positions.length != 1) return null;
-    // The offset moved away from what we set → the user is scrolling. Release
-    // rather than yank them back; the long hold window must never fight input.
+    // The offset moved away from what we set → either the user is scrolling,
+    // or a cooperating stabilizing controller corrected it pre-paint. Adopt
+    // the latter and keep holding; release on the former rather than yank the
+    // user back — the long hold window must never fight input.
     final expected = _expectedOffset;
     if (expected != null && (controller.offset - expected).abs() > tolerance) {
-      _endHold();
-      return null;
+      if (_cooperative?.ownsOffset(controller.offset) ?? false) {
+        _expectedOffset = controller.offset;
+      } else {
+        _endHold();
+        return null;
+      }
     }
     return controller.position;
   }
@@ -173,6 +206,10 @@ class ScrollAnchor {
       tolerance: tolerance,
     );
     if (target != null) {
+      // Announce the jump to a cooperating stabilizing controller first, so
+      // it does not read the offset change as a user scroll and release its
+      // own pre-paint holds mid-batch.
+      _cooperative?.adoptCorrection(target);
       controller.jumpTo(target);
       _expectedOffset = target;
     } else {
