@@ -16,6 +16,7 @@
 library;
 
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,9 +64,19 @@ class _FakeCloudInferenceRepository extends CloudInferenceRepository {
     final data = await rootBundle.load(
       'assets/design_system/manual_task_cover_habitat.webp',
     );
+    // The headless engine can hang indefinitely decoding a resized WebP
+    // (same caveat as ManualDemoWorld's transcodeManualDemoMediaToPng) — a
+    // real desktop run under Xvfb does not hang, but the image silently
+    // never renders either, so no cover appears. Transcode to PNG for a
+    // format the cover-art pipeline reliably decodes and displays.
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    final png = await frame.image.toByteData(format: ui.ImageByteFormat.png);
+    frame.image.dispose();
+    codec.dispose();
     return GeneratedImage(
-      bytes: data.buffer.asUint8List(),
-      mimeType: 'image/webp',
+      bytes: png!.buffer.asUint8List(),
+      mimeType: 'image/png',
     );
   }
 }
@@ -107,6 +118,11 @@ void main() {
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
           statusHistory: const [],
+          // ProfileAutomationResolver.resolveForTask reads task.data.profileId
+          // directly — it does NOT fall back to category.defaultProfileId.
+          // Without this, the skill trigger silently no-ops (no profile
+          // configured) and the progress modal spins forever.
+          profileId: _profileId,
         ),
         entryText: const EntryText(plainText: ''),
         categoryId: harness.world.category.id,
@@ -252,9 +268,10 @@ void main() {
         );
         await driver.pumpUntilFound(generateItem);
         await driver.tapLikeUser(generateItem.hitTestable());
-      });
-
-      await driver.step('generating', () async {
+        // Catch the "generating" state immediately — the mocked generation
+        // is fast enough that this step's own min_duration hold (below)
+        // can otherwise outlast it, so a later poll would only ever see the
+        // completed state.
         await driver.pumpUntilFound(
           find.text(
             localized(
@@ -264,6 +281,9 @@ void main() {
           ),
           timeout: const Duration(seconds: 15),
         );
+      });
+
+      await driver.step('generating', () async {
         await driver.pumpUntil(
           () async {
             final entity = await harness.journalDb.journalEntityById(task.id);
@@ -275,10 +295,14 @@ void main() {
       });
 
       await driver.step('cover_ready', () async {
-        // Dismiss the completion modal via the barrier, then show off the
-        // cover in the header and on the list card.
-        await tester.tapAt(const Offset(180, 540));
-        await tester.pump(const Duration(milliseconds: 600));
+        // Dismiss via the modal's own close button (ModalUtils.showSinglePageModal
+        // uses MaterialLocalizations.closeButtonTooltip) — a barrier tap is
+        // layout-position-dependent and broke when the pane widths changed.
+        final closeButton = find
+            .byTooltip(localized(en: 'Close', de: 'Schließen'))
+            .hitTestable();
+        await driver.pumpUntilFound(closeButton);
+        await driver.tapLikeUser(closeButton.last);
         await driver.pumpUntilFound(
           find.byType(TaskExpandableAppBar),
           timeout: const Duration(seconds: 20),

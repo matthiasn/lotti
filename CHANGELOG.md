@@ -45,6 +45,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while each transcript retains its own attribution. Coding-prompt usage also
   contributes to its parent task's AI-consumption total.
 
+### Fixed
+- **Generate Cover Art now actually shows the generated image.** The task was
+  pointed at the wrong internal id after generation, so the artwork was
+  created successfully but never appeared in the task header or task list.
+- **The record/stop button no longer flashes both states at once.** Starting
+  or stopping a recording briefly showed the record button overlapping the
+  stop/pause/cancel row mid-transition.
+
 ## [0.9.1056]
 ### Added
 - **A recording of your day can no longer get lost.** Stopping a Daily OS

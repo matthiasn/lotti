@@ -43,7 +43,6 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show AiConfigRepository, aiConfigRepositoryProvider;
-import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
@@ -452,12 +451,12 @@ class TutorialAppHarness {
       // (ManualLanguageController) — platformDispatcher test locales are not
       // enough for the real desktop shell.
       settingsDb.saveSettingsItem(manualLanguageSettingsKey, languageCode),
-      // Detail-heavy layout for the camera: narrow sidebar and list panes
-      // so the task detail (agent card, transcript) gets maximum width and
-      // avoids text wrapping.
-      settingsDb.saveSettingsItem(sidebarWidthKey, '$minSidebarWidth'),
-      settingsDb.saveSettingsItem(listPaneWidthKey, '340.0'),
-      settingsDb.saveSettingsItem(journalListPaneWidthKey, '340.0'),
+      // No pane-width override: the app's own defaults (sidebar 320px, list
+      // 540px — see pane_width_controller.dart) are the balanced layout its
+      // designers already tuned for a 1920px canvas. Earlier custom
+      // overrides here (progressively narrower sidebar/list) were an
+      // over-correction that left a large empty gutter beside the detail
+      // pane's content instead.
     ]);
 
     getIt

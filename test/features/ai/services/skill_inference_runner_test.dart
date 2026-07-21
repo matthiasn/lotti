@@ -4207,6 +4207,118 @@ void main() {
       );
 
       test(
+        'sets coverArtId to the imported JournalImage entity id, not the '
+        'internal pre-generation id — regression: createImageEntry derives '
+        'the real entity id from a uuidV5 hash of the encoded ImageData, so '
+        'it never equals the caller-supplied ImageData.imageId used for '
+        'attribution tracking. Using the wrong id here silently breaks '
+        'cover art: the task points at an id nothing is ever stored under',
+        () async {
+          final textEntry = makeTextEntry(
+            id: 'text-img-cover',
+            markdown: 'A lighthouse at dusk',
+            categoryId: 'cat-img',
+          );
+          final taskEntity = makeTaskEntity('task-cover-id');
+
+          when(
+            () => mockAiInputRepo.getEntity('text-img-cover'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-cover-id'),
+          ).thenAnswer((_) async => '{"id": "task-cover-id"}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-cover-id'),
+          ).thenAnswer((_) async => '{"linked": []}');
+          when(
+            () => mockTaskSummaryResolver.resolve('task-cover-id'),
+          ).thenAnswer((_) async => 'Lighthouse brief');
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) async => const GeneratedImage(
+              bytes: [0x89, 0x50, 0x4E, 0x47],
+              mimeType: 'image/png',
+            ),
+          );
+
+          final mockPersistenceLogic = MockPersistenceLogic();
+          getIt
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..unregister<DomainLogger>()
+            ..registerSingleton<DomainLogger>(mockLoggingService);
+
+          // The real entity id, deliberately different from anything the
+          // production code could derive from ImageData.imageId — proves
+          // the fix reads this value back rather than reusing the
+          // pre-generated attribution id.
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => Metadata(
+              id: 'the-real-persisted-image-entity-id',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+              categoryId: 'cat-img',
+            ),
+          );
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+              enqueueSync: any(named: 'enqueueSync'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.getJournalEntityById('task-cover-id'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockPersistenceLogic.updateTask(
+              journalEntityId: any(named: 'journalEntityId'),
+              taskData: any(named: 'taskData'),
+            ),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runImageGeneration(
+            entryId: 'text-img-cover',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-cover-id',
+          );
+
+          final capturedTaskData =
+              verify(
+                    () => mockPersistenceLogic.updateTask(
+                      journalEntityId: 'task-cover-id',
+                      taskData: captureAny(named: 'taskData'),
+                    ),
+                  ).captured.single
+                  as TaskData;
+
+          expect(
+            capturedTaskData.coverArtId,
+            'the-real-persisted-image-entity-id',
+          );
+        },
+      );
+
+      test(
         'overrideModelId routes image generation to the override model + '
         'provider instead of the profile slot — the cover-art picker uses '
         'this seam to generate one cover with a non-default image model',

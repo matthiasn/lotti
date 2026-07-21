@@ -15,8 +15,16 @@ import 'package:path/path.dart' as p;
 /// 4. Call [disposeFileWatcher] in dispose()
 mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
   StreamSubscription<FileSystemEvent>? _fileWatcher;
+  Timer? _pollTimer;
   String? _watchedPath;
   bool _fileExists = false;
+
+  /// Bounded retry budget for the test-environment poll fallback: 20
+  /// attempts at 100ms apart (2s total) — enough for a just-completed write
+  /// (e.g. AI-generated cover art) to land on disk without a real
+  /// [Directory.watch] watcher.
+  static const _testEnvPollInterval = Duration(milliseconds: 100);
+  static const _testEnvMaxPollAttempts = 20;
 
   /// Whether the file exists and is ready to be displayed.
   bool get fileExists => _fileExists;
@@ -26,9 +34,30 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
   ///
   /// If [forceReset] is true, resets the watcher even if path is the same.
   void setupFileWatcher(String path, {bool forceReset = false}) {
-    // In test environment, just check file existence synchronously
+    // In test environment, avoid a real Directory.watch() (unreliable in
+    // some sandboxes); poll synchronously a bounded number of times instead
+    // of a single check. A one-shot check can lose a genuine race — a file
+    // written moments after this widget first mounts (e.g. cover art
+    // generation completing) would otherwise never be picked up, since
+    // nothing else triggers a rebuild once `coverArtId` stops changing.
     if (isTestEnv) {
+      if (!forceReset && _watchedPath == path && _pollTimer != null) return;
+      _watchedPath = path;
+      _pollTimer?.cancel();
       _fileExists = File(path).existsSync();
+      if (_fileExists) return;
+      var attempts = 0;
+      _pollTimer = Timer.periodic(_testEnvPollInterval, (timer) {
+        attempts++;
+        if (File(path).existsSync()) {
+          timer.cancel();
+          _pollTimer = null;
+          if (mounted) setState(() => _fileExists = true);
+        } else if (attempts >= _testEnvMaxPollAttempts) {
+          timer.cancel();
+          _pollTimer = null;
+        }
+      });
       return;
     }
 
@@ -72,6 +101,8 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
   void _disposeWatcher() {
     _fileWatcher?.cancel();
     _fileWatcher = null;
+    _pollTimer?.cancel();
+    _pollTimer = null;
   }
 }
 
