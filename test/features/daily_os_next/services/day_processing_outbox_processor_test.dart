@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart'
+    show AttributedTranscriptionException, TranscriptionEvidenceState;
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
@@ -199,7 +201,33 @@ void main() {
           ).failureClass,
           DayProcessingFailureClass.setupRequired,
         );
+        // Model resolution throws plain exceptions before any HTTP status
+        // exists; they must land on setup, not retry-forever timeout.
+        expect(
+          classifyDayProcessingFailure(Exception(message)).failureClass,
+          DayProcessingFailureClass.setupRequired,
+        );
       }
+
+      // Attribution wraps the provider failure; the cause decides the class.
+      expect(
+        classifyDayProcessingFailure(
+          const AttributedTranscriptionException(
+            cause: SocketException('offline'),
+            evidenceState: TranscriptionEvidenceState.uncertain,
+          ),
+        ).failureClass,
+        DayProcessingFailureClass.network,
+      );
+      expect(
+        classifyDayProcessingFailure(
+          AttributedTranscriptionException(
+            cause: Exception('No audio-capable models configured'),
+            evidenceState: TranscriptionEvidenceState.uncertain,
+          ),
+        ).failureClass,
+        DayProcessingFailureClass.setupRequired,
+      );
     },
   );
 }

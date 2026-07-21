@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart'
+    show AttributedTranscriptionException;
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 
@@ -128,6 +130,10 @@ typedef DayProcessingFailure = ({
 });
 
 DayProcessingFailure classifyDayProcessingFailure(Object error) {
+  // Attribution wraps the real provider failure; classify the cause.
+  if (error is AttributedTranscriptionException) {
+    return classifyDayProcessingFailure(error.cause);
+  }
   if (error is SocketException) {
     return (
       failureClass: DayProcessingFailureClass.network,
@@ -181,15 +187,19 @@ DayProcessingFailure classifyDayProcessingFailure(Object error) {
         retryAfter: null,
       );
     }
-    final lower = error.message.toLowerCase();
-    if (lower.contains('no audio-capable model') ||
-        lower.contains('not configured') ||
-        lower.contains('credential')) {
-      return (
-        failureClass: DayProcessingFailureClass.setupRequired,
-        retryAfter: null,
-      );
-    }
+  }
+  // Model/provider configuration gaps surface as plain exceptions from
+  // model resolution, before any HTTP status exists — waiting for the
+  // network cannot fix them, only Settings can.
+  final lower = error.toString().toLowerCase();
+  if (lower.contains('no audio-capable model') ||
+      lower.contains('provider not found') ||
+      lower.contains('not configured') ||
+      lower.contains('credential')) {
+    return (
+      failureClass: DayProcessingFailureClass.setupRequired,
+      retryAfter: null,
+    );
   }
   return (
     failureClass: DayProcessingFailureClass.timeout,

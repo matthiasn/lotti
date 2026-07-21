@@ -329,10 +329,6 @@ class _ActivityCard extends StatelessWidget {
   }
 
   bool _canRetry(DayActivityEntry entry) {
-    if (entry.processingJob?.lastFailureClass ==
-        DayProcessingFailureClass.setupRequired) {
-      return false;
-    }
     return switch (entry.processingJob?.status) {
       DayProcessingJobStatus.waitingForNetwork ||
       DayProcessingJobStatus.waitingForUser ||

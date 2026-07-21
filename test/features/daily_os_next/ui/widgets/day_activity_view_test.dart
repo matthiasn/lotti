@@ -461,6 +461,9 @@ void main() {
       messages.dailyOsNextActivitySaved,
       messages.dailyOsNextActivityUseToRefine,
       messages.dailyOsNextActivityOpenSetup,
+      // A setup-required job stays manually retryable so the user can
+      // resume it right after configuring a model.
+      messages.dailyOsNextActivityRetry,
     ]) {
       expect(
         find.text(text),
