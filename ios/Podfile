@@ -60,6 +60,18 @@ pre_install do |installer|
 end
 
 post_install do |installer|
+
+  # LAME (bundled by flutter_lame) compiles its per-frame encoder debug
+  # spew when DEBUG is defined, which every pod gets in debug builds.
+  # Undefine it for that one target so dev consoles stay readable;
+  # -U is processed after the -D flags, so it wins.
+  installer.pods_project.targets.each do |target|
+    next unless target.name == 'flutter_lame'
+    target.build_configurations.each do |config|
+      flags = config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
+      config.build_settings['OTHER_CFLAGS'] = "#{flags} -UDEBUG"
+    end
+  end
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
   end
