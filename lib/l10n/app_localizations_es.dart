@@ -3473,9 +3473,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'La acción no terminó. Tu grabación sigue a salvo; inténtalo de nuevo.';
 
   @override
-  String get dailyOsNextActivityAddOrEditText => 'Añadir o editar texto';
-
-  @override
   String get dailyOsNextActivityDaySummary => 'Resumen del día';
 
   @override
@@ -3533,17 +3530,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextActivitySubmitted => 'Añadido al día';
-
-  @override
-  String get dailyOsNextActivityTextDialogTitle => 'Texto de la grabación';
-
-  @override
-  String get dailyOsNextActivityTextHint =>
-      'Escribe lo que querías guardar con esta grabación.';
-
-  @override
-  String get dailyOsNextActivityTextSaveFailed =>
-      'La grabación está a salvo, pero no se pudo guardar el texto. Inténtalo de nuevo.';
 
   @override
   String get dailyOsNextActivityTranscribing => 'Transcribiendo';

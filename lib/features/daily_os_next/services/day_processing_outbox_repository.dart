@@ -25,6 +25,18 @@ class DayProcessingIntentConflict implements Exception {
       'DayProcessingIntentConflict: immutable fields differ for $jobId';
 }
 
+/// Thrown when a claimed job was terminalized by another actor — reviewed
+/// text satisfied it, or its recording was deleted and the job cancelled —
+/// before the claim holder reported back. The durable terminal state wins.
+class DayProcessingClaimRevokedException implements Exception {
+  const DayProcessingClaimRevokedException(this.jobId);
+
+  final String jobId;
+
+  @override
+  String toString() => 'Processing claim no longer owns $jobId';
+}
+
 /// File-backed, per-job processing outbox for Daily OS derived work.
 ///
 /// Each mutation flushes an integrity envelope to a partial file before an
@@ -439,7 +451,7 @@ class DayProcessingOutboxRepository {
     if (job == null) throw StateError('Unknown processing job $jobId');
     if (job.status != DayProcessingJobStatus.running ||
         job.claimToken != claimToken) {
-      throw StateError('Processing claim no longer owns $jobId');
+      throw DayProcessingClaimRevokedException(jobId);
     }
     final updated = update(job, _now());
     await _write(updated);

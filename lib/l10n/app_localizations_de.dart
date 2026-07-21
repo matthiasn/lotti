@@ -3455,10 +3455,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Aktion wurde nicht abgeschlossen. Deine Aufnahme ist weiterhin sicher — versuch es erneut.';
 
   @override
-  String get dailyOsNextActivityAddOrEditText =>
-      'Text hinzufügen oder bearbeiten';
-
-  @override
   String get dailyOsNextActivityDaySummary => 'Tageszusammenfassung';
 
   @override
@@ -3513,17 +3509,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextActivitySubmitted => 'Zum Tag hinzugefügt';
-
-  @override
-  String get dailyOsNextActivityTextDialogTitle => 'Text zur Aufnahme';
-
-  @override
-  String get dailyOsNextActivityTextHint =>
-      'Schreib auf, was du mit der Aufnahme festhalten wolltest.';
-
-  @override
-  String get dailyOsNextActivityTextSaveFailed =>
-      'Die Aufnahme ist sicher, aber der Text konnte nicht gespeichert werden. Versuch es noch einmal.';
 
   @override
   String get dailyOsNextActivityTranscribing => 'Wird transkribiert';

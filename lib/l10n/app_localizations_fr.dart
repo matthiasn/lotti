@@ -3478,9 +3478,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'L’action n’a pas abouti. Ton enregistrement est toujours en sécurité — réessaie.';
 
   @override
-  String get dailyOsNextActivityAddOrEditText => 'Ajouter ou modifier le texte';
-
-  @override
   String get dailyOsNextActivityDaySummary => 'Résumé de la journée';
 
   @override
@@ -3537,17 +3534,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextActivitySubmitted => 'Ajouté à la journée';
-
-  @override
-  String get dailyOsNextActivityTextDialogTitle => 'Texte de l’enregistrement';
-
-  @override
-  String get dailyOsNextActivityTextHint =>
-      'Écris ce que tu voulais garder avec cet enregistrement.';
-
-  @override
-  String get dailyOsNextActivityTextSaveFailed =>
-      'L’enregistrement est en sécurité, mais le texte n’a pas pu être sauvegardé. Réessaie.';
 
   @override
   String get dailyOsNextActivityTranscribing => 'Transcription en cours';

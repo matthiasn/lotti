@@ -4,6 +4,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_audio_context.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
@@ -27,6 +30,7 @@ void main() {
   late Directory root;
   late DayProcessingOutboxRepository outbox;
   late MockJournalDb journalDb;
+  late MockUpdateNotifications updateNotifications;
   late MockPersistenceLogic persistenceLogic;
   late MockVectorClockService vectorClock;
 
@@ -46,6 +50,7 @@ void main() {
       },
     );
     journalDb = mocks.journalDb;
+    updateNotifications = mocks.updateNotifications;
     when(
       () => journalDb.getJournalEntities(
         types: const ['JournalAudio'],
@@ -91,6 +96,84 @@ void main() {
     await runtime.nudge();
     verify(vectorClock.getHost).called(1);
   });
+
+  test(
+    'runtime activation starts the review fence over journal updates',
+    () async {
+      const channel = MethodChannel('dev.fluttercommunity.plus/connectivity');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            channel,
+            (call) async => call.method == 'check' ? ['none'] : null,
+          );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+      final capturedAt = DateTime.utc(2026, 7, 21, 8);
+      final audioFile = File('${root.path}/fence.m4a')
+        ..writeAsBytesSync([1, 2]);
+      await outbox.enqueueTranscription(
+        dayId: 'dayplan-2026-07-21',
+        activityEntryId: 'activity-fence',
+        recordingSessionId: 'session-fence',
+        audioId: 'audio-fence',
+        audioPath: audioFile.path,
+        capturedAt: capturedAt,
+      );
+      when(() => journalDb.journalEntityById('audio-fence')).thenAnswer(
+        (_) async => JournalAudio(
+          meta: Metadata(
+            id: 'audio-fence',
+            createdAt: capturedAt,
+            updatedAt: capturedAt,
+            dateFrom: capturedAt,
+            dateTo: capturedAt.add(const Duration(minutes: 1)),
+          ),
+          data: AudioData(
+            dateFrom: capturedAt,
+            dateTo: capturedAt.add(const Duration(minutes: 1)),
+            audioFile: 'fence.m4a',
+            audioDirectory: '/audio/',
+            duration: const Duration(minutes: 1),
+            dayContext: DayAudioContext(
+              dayId: 'dayplan-2026-07-21',
+              planDate: DateTime.utc(2026, 7, 21),
+              recordingSessionId: 'session-fence',
+              activityEntryId: 'activity-fence',
+              processingJobId: 'transcribe_session-fence',
+              capturedAt: capturedAt,
+              intent: 'dayPlan',
+            ),
+          ),
+          entryText: const EntryText(
+            plainText: 'Reviewed wording',
+            markdown: 'Reviewed wording',
+          ),
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          audioTranscriptionServiceProvider.overrideWithValue(
+            MockAudioTranscriptionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.read(dayProcessingRuntimeProvider);
+      final fence = container.read(dayAudioReviewFenceProvider);
+      // The startup sweep runs unawaited; chaining a sweep through the
+      // serialized tail deterministically waits for it.
+      await fence.checkNow();
+
+      final saved = await outbox.getById('transcribe_session-fence');
+      expect(saved!.status, DayProcessingJobStatus.succeeded);
+      expect(saved.resultTranscript, 'Reviewed wording');
+      // The fence is subscribed to the app-wide journal update stream.
+      verify(() => updateNotifications.updateStream).called(1);
+    },
+  );
 
   test('classifies supported interfaces as online before inference', () async {
     const channel = MethodChannel('dev.fluttercommunity.plus/connectivity');

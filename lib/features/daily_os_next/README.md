@@ -453,11 +453,27 @@ sequenceDiagram
   typed and voice `CaptureEntity` check-ins, and the generated plan. The same surface keeps the day's already-tracked sessions visible in a
   `TimeSpentCard`, including before the first plan exists. It remains available
   offline and keeps the prior list visible during
-  background refresh. A saved recording can be played, retried, given
-  user-reviewed text without inference, or routed into the existing
+  background refresh. A saved recording can be played, retried, deleted
+  (cancel job, then soft-delete the journal entry), edited **in place**
+  through the shared journal editor, or routed into the existing
   Reconcile/Refine flow. A submitted capture remains a
   visible durable continuation handle: reopening it re-enqueues parsing after
   a process restart.
+  Each unsubmitted recording card embeds `EditorWidget` keyed by the
+  recording's journal id — the same Quill editor, toolbar, and save path used
+  everywhere else in the app; there is no separate text dialog. Because that
+  save flows through generic journal persistence, `DayAudioReviewFence`
+  (started with the processing runtime) listens to journal audio update
+  notifications and terminalizes any non-terminal transcription job whose
+  recording now carries user-authored `entryText` via
+  `satisfyWithReviewedText`. "User-authored" is derived, not flagged:
+  non-empty text that no machine transcript on the entity produced
+  (`journalAudioReviewedText`). The transcript writer applies the same
+  invariant, so a late-arriving machine transcript is recorded as a receipt
+  but never overwrites reviewed wording, and a claim revoked mid-attempt
+  (reviewed text or deletion) surfaces as
+  `DayProcessingClaimRevokedException`, which the processor treats as a
+  benign deferral.
   `JournalAudio` writes denormalize `dayContext.dayId` and
   `dayContext.recordingSessionId` into indexed journal columns. Activity and
   outbox repair therefore perform bounded day/session lookups instead of

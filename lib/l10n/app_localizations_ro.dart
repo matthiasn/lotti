@@ -3482,9 +3482,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acțiunea nu s-a finalizat. Înregistrarea dvs. este în continuare în siguranță — încercați din nou.';
 
   @override
-  String get dailyOsNextActivityAddOrEditText => 'Adăugați sau editați textul';
-
-  @override
   String get dailyOsNextActivityDaySummary => 'Rezumatul zilei';
 
   @override
@@ -3542,17 +3539,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextActivitySubmitted => 'Adăugat la zi';
-
-  @override
-  String get dailyOsNextActivityTextDialogTitle => 'Textul înregistrării';
-
-  @override
-  String get dailyOsNextActivityTextHint =>
-      'Scrieți ce ați dorit să păstrați prin această înregistrare.';
-
-  @override
-  String get dailyOsNextActivityTextSaveFailed =>
-      'Înregistrarea este în siguranță, dar textul nu a putut fi salvat. Încercați din nou.';
 
   @override
   String get dailyOsNextActivityTranscribing => 'Se transcrie';

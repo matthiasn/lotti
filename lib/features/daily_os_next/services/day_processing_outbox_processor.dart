@@ -85,14 +85,21 @@ class DayProcessingOutboxProcessor {
       return DayProcessingRunResult.succeeded;
     } catch (error) {
       final failure = classifyDayProcessingFailure(error);
-      await repository.markFailure(
-        jobId: job.id,
-        claimToken: claim.token,
-        failureClass: failure.failureClass,
-        error: error.toString(),
-        retryAfter: failure.retryAfter,
-        retryDelay: _retryDelay(job.attempts),
-      );
+      try {
+        await repository.markFailure(
+          jobId: job.id,
+          claimToken: claim.token,
+          failureClass: failure.failureClass,
+          error: error.toString(),
+          retryAfter: failure.retryAfter,
+          retryDelay: _retryDelay(job.attempts),
+        );
+      } on DayProcessingClaimRevokedException {
+        // User-reviewed text satisfied the job, or the recording was deleted
+        // and the job cancelled, while this attempt ran. The durable terminal
+        // state wins over this attempt's outcome.
+        return DayProcessingRunResult.deferred;
+      }
       return failure.failureClass == DayProcessingFailureClass.deterministic ||
               failure.failureClass == DayProcessingFailureClass.setupRequired ||
               failure.failureClass == DayProcessingFailureClass.missingAsset

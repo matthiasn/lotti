@@ -156,6 +156,32 @@ void main() {
   );
 
   test(
+    'a claim revoked mid-flight defers instead of escaping as an error',
+    () async {
+      final processor = DayProcessingOutboxProcessor(
+        repository: repository,
+        transcribe: (_) async {
+          // Reviewed text satisfied the job while the provider call ran; the
+          // claim token is gone by the time this attempt reports back.
+          await repository.satisfyWithReviewedText(
+            'transcribe_session-1',
+            'User reviewed wording',
+          );
+          throw TimeoutException('slow provider');
+        },
+        attachTranscript: (_, _) async => true,
+      );
+
+      final result = await processor.processNext();
+      final saved = await repository.getById('transcribe_session-1');
+
+      expect(result, DayProcessingRunResult.deferred);
+      expect(saved!.status, DayProcessingJobStatus.succeeded);
+      expect(saved.resultTranscript, 'User reviewed wording');
+    },
+  );
+
+  test(
     'failure classifier separates setup, retryable, and terminal errors',
     () {
       final cases = <(Object, DayProcessingFailureClass)>[

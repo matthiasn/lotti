@@ -193,7 +193,13 @@ void main() {
         jobId: completed.id,
         claimToken: claim.token,
       ),
-      throwsStateError,
+      throwsA(
+        isA<DayProcessingClaimRevokedException>().having(
+          (error) => error.toString(),
+          'message',
+          contains(completed.id),
+        ),
+      ),
     );
   });
 

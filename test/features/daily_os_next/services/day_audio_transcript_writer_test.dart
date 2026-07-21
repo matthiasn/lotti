@@ -144,8 +144,13 @@ void main() {
     verifyNever(() => persistenceLogic.updateDbEntity(any()));
   });
 
-  test('manual text is persisted as a stable reviewed receipt', () async {
-    final source = audio();
+  test('inline-edited entryText survives a later automatic attach', () async {
+    final source = audio().copyWith(
+      entryText: const EntryText(
+        plainText: ' My own wording. ',
+        markdown: 'My own wording.',
+      ),
+    );
     when(
       () => journalDb.journalEntityById('audio-1'),
     ).thenAnswer((_) async => source);
@@ -160,16 +165,68 @@ void main() {
       return true;
     });
 
-    final attached = await writer.attachManual(
-      audioId: 'audio-1',
-      transcript: '  My own reviewed text. ',
+    final attached = await writer.attach(
+      job: job(),
+      transcript: 'Provider guess',
     );
 
     expect(attached, isTrue);
-    expect(persisted!.entryText?.plainText, 'My own reviewed text.');
+    expect(persisted!.entryText?.plainText, ' My own wording. ');
+    expect(persisted!.data.transcripts!.single.transcript, 'Provider guess');
+  });
+
+  test('journalAudioReviewedText derives authorship from machine facts', () {
+    AudioTranscript machineFact(String text) => AudioTranscript(
+      created: now,
+      library: 'daily-os-outbox',
+      model: 'configured-audio-model',
+      detectedLanguage: '-',
+      transcript: text,
+      processingJobId: 'transcribe_session-0',
+    );
+    EntryText entryText(String text) =>
+        EntryText(plainText: text, markdown: text);
+
+    expect(journalAudioReviewedText(audio()), isNull);
     expect(
-      persisted!.data.transcripts!.single.processingJobId,
-      'manual:activity-1',
+      journalAudioReviewedText(audio().copyWith(entryText: entryText('  '))),
+      isNull,
+    );
+    // Text identical to a machine transcript is not a user decision.
+    expect(
+      journalAudioReviewedText(
+        audio(
+          transcripts: [machineFact('Machine words')],
+        ).copyWith(entryText: entryText(' Machine words ')),
+      ),
+      isNull,
+    );
+    expect(
+      journalAudioReviewedText(
+        audio(
+          transcripts: [machineFact('Machine words')],
+        ).copyWith(entryText: entryText('Edited words')),
+      ),
+      'Edited words',
+    );
+    // Legacy manual receipts recorded user edits: matching them still counts
+    // as reviewed text.
+    expect(
+      journalAudioReviewedText(
+        audio(
+          transcripts: [
+            AudioTranscript(
+              created: now,
+              library: 'daily-os-manual',
+              model: 'user-reviewed',
+              detectedLanguage: '-',
+              transcript: 'Reviewed text',
+              processingJobId: 'manual:activity-1',
+            ),
+          ],
+        ).copyWith(entryText: entryText('Reviewed text')),
+      ),
+      'Reviewed text',
     );
   });
 
@@ -210,41 +267,6 @@ void main() {
     expect(attached, isTrue);
     expect(persisted!.entryText?.plainText, 'Reviewed text');
     expect(persisted!.data.transcripts, hasLength(2));
-  });
-
-  test('concurrent manual and automatic writes retain both receipts', () async {
-    final source = audio();
-    var current = source;
-    when(
-      () => journalDb.journalEntityById('audio-1'),
-    ).thenAnswer((_) async => current);
-    when(
-      () => persistenceLogic.updateMetadata(any()),
-    ).thenAnswer(
-      (invocation) async =>
-          (invocation.positionalArguments.single as Metadata).copyWith(
-            updatedAt: now,
-          ),
-    );
-    when(
-      () => persistenceLogic.updateDbEntity(any()),
-    ).thenAnswer((invocation) async {
-      current = invocation.positionalArguments.single as JournalAudio;
-      return true;
-    });
-
-    final results = await Future.wait([
-      writer.attach(job: job(), transcript: 'Provider text'),
-      writer.attachManual(audioId: 'audio-1', transcript: 'Reviewed text'),
-    ]);
-
-    expect(results, everyElement(isTrue));
-    expect(current.data.transcripts, hasLength(2));
-    expect(current.entryText?.plainText, 'Reviewed text');
-    expect(
-      current.data.transcripts!.map((item) => item.processingJobId),
-      containsAll(['transcribe_session-1', 'manual:activity-1']),
-    );
   });
 
   test('propagates a write failure without blocking later writes', () async {

@@ -3442,9 +3442,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'That action didn\'t finish. Your recording is still safe—try again.';
 
   @override
-  String get dailyOsNextActivityAddOrEditText => 'Add or edit text';
-
-  @override
   String get dailyOsNextActivityDaySummary => 'Day summary';
 
   @override
@@ -3498,17 +3495,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextActivitySubmitted => 'Added to day';
-
-  @override
-  String get dailyOsNextActivityTextDialogTitle => 'Recording text';
-
-  @override
-  String get dailyOsNextActivityTextHint =>
-      'Write what you wanted this recording to capture.';
-
-  @override
-  String get dailyOsNextActivityTextSaveFailed =>
-      'The recording is safe, but the text couldn\'t be saved. Try again.';
 
   @override
   String get dailyOsNextActivityTranscribing => 'Transcribing';

@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
+import 'package:lotti/features/daily_os_next/services/day_audio_review_fence.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repair.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dar
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
 final Provider<DayProcessingOutboxRepository>
@@ -59,11 +61,26 @@ final Provider<DayAudioTranscriptWriter> dayAudioTranscriptWriterProvider =
       );
     });
 
+/// Long-lived fence that terminalizes pending transcription jobs once their
+/// recording carries user-reviewed text saved through the inline editor.
+final Provider<DayAudioReviewFence> dayAudioReviewFenceProvider = Provider((
+  ref,
+) {
+  final fence = DayAudioReviewFence(
+    updates: getIt<UpdateNotifications>().updateStream,
+    outbox: ref.watch(dayProcessingOutboxRepositoryProvider),
+    journalDb: getIt(),
+  )..start();
+  ref.onDispose(fence.dispose);
+  return fence;
+});
+
 final Provider<DayProcessingRuntime> dayProcessingRuntimeProvider = Provider((
   ref,
 ) {
   final processor = ref.watch(dayProcessingOutboxProcessorProvider);
   final outbox = ref.watch(dayProcessingOutboxRepositoryProvider);
+  ref.watch(dayAudioReviewFenceProvider);
   final runtime = DayProcessingRuntime(
     repository: outbox,
     drain: processor.drain,

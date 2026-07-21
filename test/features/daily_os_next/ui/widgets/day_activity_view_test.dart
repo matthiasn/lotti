@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -12,12 +13,16 @@ import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -57,18 +62,8 @@ void main() {
     tester,
   ) async {
     DayActivityEntry? used;
-    final transcriptWriter = MockDayAudioTranscriptWriter();
     final outbox = MockDayProcessingOutboxRepository();
     final runtime = MockDayProcessingRuntime();
-    when(
-      () => transcriptWriter.attachManual(
-        audioId: any(named: 'audioId'),
-        transcript: any(named: 'transcript'),
-      ),
-    ).thenAnswer((_) async => true);
-    when(
-      () => outbox.satisfyWithReviewedText(any(), any()),
-    ).thenAnswer((_) async => null);
     when(() => outbox.retryNow(any())).thenAnswer((_) async => null);
     when(runtime.nudge).thenAnswer((_) async {});
     final waiting = DayActivityEntry(
@@ -118,7 +113,6 @@ void main() {
           dayActivityProvider.overrideWith(
             (ref, date) async => [waiting, ready, backedOff],
           ),
-          dayAudioTranscriptWriterProvider.overrideWithValue(transcriptWriter),
           dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
           dayProcessingRuntimeProvider.overrideWithValue(runtime),
         ],
@@ -154,23 +148,8 @@ void main() {
     verify(() => outbox.retryNow('job-waiting')).called(1);
     verify(runtime.nudge).called(1);
 
-    await tester.tap(
-      find.text(messages.dailyOsNextActivityAddOrEditText).at(1),
-    );
-    await tester.pump();
-    expect(
-      find.text(messages.dailyOsNextActivityTextDialogTitle),
-      findsOneWidget,
-    );
-    await tester.enterText(find.byType(TextField), 'My reviewed wording');
-    await tester.tap(find.text(messages.saveButton));
-    await tester.pump();
-    verify(
-      () => transcriptWriter.attachManual(
-        audioId: 'audio-ready',
-        transcript: 'My reviewed wording',
-      ),
-    ).called(1);
+    // Without a persisted journal entity there is nothing to edit in place.
+    expect(find.byType(EditorWidget), findsNothing);
 
     await tester.tap(find.text(messages.dailyOsNextActivityUseToPlan));
     await tester.pump();
@@ -321,22 +300,15 @@ void main() {
     }
   });
 
-  testWidgets('reports retry and reviewed-text persistence failures', (
+  testWidgets('reports a retry failure without leaving the button busy', (
     tester,
   ) async {
     final retryCompleter = Completer<DayProcessingJob?>();
-    final transcriptWriter = MockDayAudioTranscriptWriter();
     final outbox = MockDayProcessingOutboxRepository();
     final runtime = MockDayProcessingRuntime();
     when(
       () => outbox.retryNow('job-waiting'),
     ).thenAnswer((_) => retryCompleter.future);
-    when(
-      () => transcriptWriter.attachManual(
-        audioId: 'audio-waiting',
-        transcript: 'Reviewed but not persisted',
-      ),
-    ).thenAnswer((_) async => false);
     final waiting = DayActivityEntry(
       id: 'waiting',
       kind: DayActivityEntryKind.recording,
@@ -360,7 +332,6 @@ void main() {
         ),
         overrides: [
           dayActivityProvider.overrideWith((ref, date) async => [waiting]),
-          dayAudioTranscriptWriterProvider.overrideWithValue(transcriptWriter),
           dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
           dayProcessingRuntimeProvider.overrideWithValue(runtime),
         ],
@@ -379,28 +350,9 @@ void main() {
       findsOneWidget,
     );
     verifyNever(runtime.nudge);
-    tester
-        .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
-        .clearSnackBars();
-    await tester.pump();
-
-    await tester.tap(find.text(messages.dailyOsNextActivityAddOrEditText));
-    await tester.pump();
-    await tester.enterText(
-      find.byType(TextField),
-      'Reviewed but not persisted',
-    );
-    await tester.tap(find.text(messages.saveButton));
-    await tester.pump();
-
-    expect(
-      find.text(messages.dailyOsNextActivityTextSaveFailed),
-      findsOneWidget,
-    );
-    verifyNever(() => outbox.satisfyWithReviewedText(any(), any()));
   });
 
-  testWidgets('renders submitted, saved, refine, setup, and cancel behavior', (
+  testWidgets('renders submitted, saved, refine, and setup semantics', (
     tester,
   ) async {
     tester.view
@@ -408,7 +360,6 @@ void main() {
       ..devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final transcriptWriter = MockDayAudioTranscriptWriter();
     final routes = <String>[];
     nav_service.beamToNamedOverride = routes.add;
     final submitted =
@@ -471,7 +422,6 @@ void main() {
         ),
         overrides: [
           dayActivityProvider.overrideWith((ref, date) async => entries),
-          dayAudioTranscriptWriterProvider.overrideWithValue(transcriptWriter),
         ],
         mediaQueryData: const MediaQueryData(size: Size(1000, 2000)),
       ),
@@ -497,19 +447,6 @@ void main() {
     }
     await tester.tap(find.text(messages.dailyOsNextActivityOpenSetup));
     expect(routes, ['/settings/ai']);
-
-    await tester.tap(
-      find.text(messages.dailyOsNextActivityAddOrEditText).last,
-    );
-    await tester.pump();
-    await tester.tap(find.text(messages.cancelButton));
-    await tester.pump();
-    verifyNever(
-      () => transcriptWriter.attachManual(
-        audioId: any(named: 'audioId'),
-        transcript: any(named: 'transcript'),
-      ),
-    );
   });
 
   testWidgets('retries a failed local projection and shows an empty day', (
@@ -544,55 +481,162 @@ void main() {
     expect(find.text(messages.dailyOsNextActivityLoadFailed), findsNothing);
   });
 
-  testWidgets('embeds playback when the saved audio asset is local', (
-    tester,
-  ) async {
-    final root = Directory.systemTemp.createTempSync('day-activity-audio-');
-    addTearDown(() => root.deleteSync(recursive: true));
-    final audioFile = File('${root.path}/recording.wav')..writeAsBytesSync([0]);
-    final audio = JournalAudio(
-      meta: Metadata(
-        id: 'audio-local',
-        createdAt: capturedAt,
-        updatedAt: capturedAt,
-        dateFrom: capturedAt,
-        dateTo: capturedAt.add(const Duration(seconds: 1)),
-      ),
-      data: AudioData(
-        dateFrom: capturedAt,
-        dateTo: capturedAt.add(const Duration(seconds: 1)),
-        audioFile: 'recording.wav',
-        audioDirectory: root.path,
-        duration: const Duration(seconds: 1),
-      ),
-    );
-    final entry = DayActivityEntry(
-      id: 'local',
-      kind: DayActivityEntryKind.recording,
-      createdAt: capturedAt,
-      activityEntryId: 'local',
-      audio: audio,
-      audioPath: audioFile.path,
-    );
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        DayActivityView(
-          date: date,
-          hasPlan: false,
-          actualBlocks: const [],
-          onUseEntry: (_) {},
+  testWidgets(
+    'embeds playback and the in-place journal editor for a saved recording',
+    (tester) async {
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<EditorStateService>(
+            MockEditorStateService(),
+          );
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+      final root = Directory.systemTemp.createTempSync('day-activity-audio-');
+      addTearDown(() => root.deleteSync(recursive: true));
+      final audioFile = File('${root.path}/recording.wav')
+        ..writeAsBytesSync([0]);
+      final audio = JournalAudio(
+        meta: Metadata(
+          id: 'audio-local',
+          createdAt: capturedAt,
+          updatedAt: capturedAt,
+          dateFrom: capturedAt,
+          dateTo: capturedAt.add(const Duration(seconds: 1)),
         ),
-        overrides: [
-          dayActivityProvider.overrideWith((ref, date) async => [entry]),
-          audioWaveformProvider.overrideWith((ref, request) async => null),
-        ],
-      ),
-    );
-    await tester.pump();
+        data: AudioData(
+          dateFrom: capturedAt,
+          dateTo: capturedAt.add(const Duration(seconds: 1)),
+          audioFile: 'recording.wav',
+          audioDirectory: root.path,
+          duration: const Duration(seconds: 1),
+        ),
+        entryText: const EntryText(
+          plainText: 'Reviewed wording',
+          markdown: 'Reviewed wording',
+        ),
+      );
+      final entry = DayActivityEntry(
+        id: 'local',
+        kind: DayActivityEntryKind.recording,
+        createdAt: capturedAt,
+        activityEntryId: 'local',
+        audio: audio,
+        audioPath: audioFile.path,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          DayActivityView(
+            date: date,
+            hasPlan: false,
+            actualBlocks: const [],
+            onUseEntry: (_) {},
+          ),
+          overrides: [
+            dayActivityProvider.overrideWith((ref, date) async => [entry]),
+            audioWaveformProvider.overrideWith((ref, request) async => null),
+            createEntryControllerOverride(audio),
+          ],
+        ),
+      );
+      await tester.pump();
 
-    expect(find.byType(AudioPlayerWidget), findsOneWidget);
-    expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
-  });
+      expect(find.byType(AudioPlayerWidget), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      // The saved wording is edited in place through the shared journal
+      // editor, keyed by the recording's journal id; the plain transcript
+      // line disappears in favour of the editable document.
+      final editor = tester.widget<EditorWidget>(find.byType(EditorWidget));
+      expect(editor.entryId, 'audio-local');
+      expect(find.text('Reviewed wording'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'keeps the pending status line and editor for a not-yet-transcribed '
+    'recording, but no editor once submitted',
+    (tester) async {
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<EditorStateService>(
+            MockEditorStateService(),
+          );
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+      final audio = JournalAudio(
+        meta: Metadata(
+          id: 'audio-pending',
+          createdAt: capturedAt,
+          updatedAt: capturedAt,
+          dateFrom: capturedAt,
+          dateTo: capturedAt.add(const Duration(seconds: 1)),
+        ),
+        data: AudioData(
+          dateFrom: capturedAt,
+          dateTo: capturedAt.add(const Duration(seconds: 1)),
+          audioFile: 'missing.wav',
+          audioDirectory: '/nowhere/',
+          duration: const Duration(seconds: 1),
+        ),
+      );
+      final pending = DayActivityEntry(
+        id: 'pending',
+        kind: DayActivityEntryKind.recording,
+        createdAt: capturedAt,
+        activityEntryId: 'pending',
+        audio: audio,
+        audioPath: '/nowhere/missing.wav',
+      );
+      final submitted = DayActivityEntry(
+        id: 'submitted',
+        kind: DayActivityEntryKind.recording,
+        createdAt: capturedAt.add(const Duration(minutes: 1)),
+        activityEntryId: 'submitted',
+        audio: audio,
+        audioPath: '/nowhere/missing.wav',
+        capture:
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: 'planner',
+                  transcript: 'Submitted wording',
+                  capturedAt: capturedAt,
+                  createdAt: capturedAt,
+                  vectorClock: null,
+                  dayId: 'dayplan-2026-07-18',
+                  audioRef: 'audio-pending',
+                )
+                as CaptureEntity,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          DayActivityView(
+            date: date,
+            hasPlan: false,
+            actualBlocks: const [],
+            onUseEntry: (_) {},
+          ),
+          overrides: [
+            dayActivityProvider.overrideWith(
+              (ref, date) async => [pending, submitted],
+            ),
+            createEntryControllerOverride(audio),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayActivityView)).messages;
+      // With no saved text yet, the status line stays while the empty
+      // editor invites typing; the submitted card is read-only.
+      expect(
+        find.text(messages.dailyOsNextActivityTranscriptPending),
+        findsOneWidget,
+      );
+      expect(find.byType(EditorWidget), findsOneWidget);
+      expect(find.text('Submitted wording'), findsOneWidget);
+    },
+  );
 
   testWidgets('deleting a recording cancels its job and soft-deletes the '
       'journal entry', (tester) async {

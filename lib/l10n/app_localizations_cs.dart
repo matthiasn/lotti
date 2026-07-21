@@ -3476,9 +3476,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Akci se nepodařilo dokončit. Nahrávka je pořád v bezpečí — zkus to znovu.';
 
   @override
-  String get dailyOsNextActivityAddOrEditText => 'Přidat nebo upravit text';
-
-  @override
   String get dailyOsNextActivityDaySummary => 'Shrnutí dne';
 
   @override
@@ -3534,17 +3531,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextActivitySubmitted => 'Přidáno ke dni';
-
-  @override
-  String get dailyOsNextActivityTextDialogTitle => 'Text nahrávky';
-
-  @override
-  String get dailyOsNextActivityTextHint =>
-      'Napiš, co jsi chtěl/a v nahrávce zachytit.';
-
-  @override
-  String get dailyOsNextActivityTextSaveFailed =>
-      'Nahrávka je v bezpečí, ale text se nepodařilo uložit. Zkus to znovu.';
 
   @override
   String get dailyOsNextActivityTranscribing => 'Přepisuji';

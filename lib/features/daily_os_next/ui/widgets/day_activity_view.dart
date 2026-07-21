@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
@@ -57,12 +58,6 @@ class DayActivityView extends ConsumerWidget {
                   onRetry: entry.processingJob == null
                       ? null
                       : () => _retry(ref, entry.processingJob!.id),
-                  onEditText:
-                      (entry.audio?.meta.id ?? entry.processingJob?.audioId) ==
-                              null ||
-                          entry.isSubmitted
-                      ? null
-                      : () => _editText(context, ref, entry),
                   onDelete:
                       entry.kind != DayActivityEntryKind.recording ||
                           entry.isSubmitted
@@ -134,61 +129,6 @@ class DayActivityView extends ConsumerWidget {
       await ref.read(journalRepositoryProvider).deleteJournalEntity(audioId);
     }
     ref.invalidate(dayActivityProvider);
-  }
-
-  Future<void> _editText(
-    BuildContext context,
-    WidgetRef ref,
-    DayActivityEntry entry,
-  ) async {
-    final controller = TextEditingController(text: entry.transcript);
-    final transcript = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(dialogContext.messages.dailyOsNextActivityTextDialogTitle),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          minLines: 3,
-          maxLines: 8,
-          decoration: InputDecoration(
-            hintText: dialogContext.messages.dailyOsNextActivityTextHint,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(dialogContext.messages.cancelButton),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
-            child: Text(dialogContext.messages.saveButton),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    if (transcript == null || transcript.trim().isEmpty || !context.mounted) {
-      return;
-    }
-    final saved = await ref
-        .read(dayAudioTranscriptWriterProvider)
-        .attachManual(
-          audioId: entry.audio?.meta.id ?? entry.processingJob!.audioId,
-          transcript: transcript,
-        );
-    if (saved && entry.processingJob != null) {
-      await ref
-          .read(dayProcessingOutboxRepositoryProvider)
-          .satisfyWithReviewedText(entry.processingJob!.id, transcript);
-    }
-    if (!saved && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.dailyOsNextActivityTextSaveFailed),
-        ),
-      );
-    }
   }
 }
 
@@ -262,7 +202,6 @@ class _ActivityCard extends StatelessWidget {
     required this.hasPlan,
     required this.onUse,
     this.onRetry,
-    this.onEditText,
     this.onDelete,
   });
 
@@ -270,7 +209,6 @@ class _ActivityCard extends StatelessWidget {
   final bool hasPlan;
   final VoidCallback onUse;
   final Future<void> Function()? onRetry;
-  final Future<void> Function()? onEditText;
   final Future<void> Function()? onDelete;
 
   @override
@@ -278,6 +216,16 @@ class _ActivityCard extends StatelessWidget {
     final tokens = context.designTokens;
     final transcript = entry.transcript;
     final status = _status(context, entry);
+    // Unsubmitted recordings edit their text in place through the shared
+    // journal editor; the editor renders the saved wording itself, so the
+    // plain transcript line only appears while there is nothing to edit yet.
+    final inlineEditorEntryId =
+        entry.kind == DayActivityEntryKind.recording && !entry.isSubmitted
+        ? entry.audio?.meta.id
+        : null;
+    final editorShowsText =
+        inlineEditorEntryId != null &&
+        (entry.audio?.entryText?.plainText.trim().isNotEmpty ?? false);
     return Container(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
@@ -314,28 +262,30 @@ class _ActivityCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            entry.plan?.data.dayLabel ??
-                entry.summary?.text ??
-                (entry.kind == DayActivityEntryKind.plan
-                    ? context.messages.dailyOsNextActivityPlanAvailable
-                    : entry.processingJob?.lastFailureClass ==
-                          DayProcessingFailureClass.missingAsset
-                    ? context.messages.dailyOsNextActivityMissingAudio
-                    : entry.processingJob?.lastFailureClass ==
-                          DayProcessingFailureClass.setupRequired
-                    ? context.messages.dailyOsNextActivitySetupRequired
-                    : transcript ??
-                          context
-                              .messages
-                              .dailyOsNextActivityTranscriptPending),
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: transcript == null
-                  ? tokens.colors.text.lowEmphasis
-                  : tokens.colors.text.highEmphasis,
+          if (!editorShowsText) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Text(
+              entry.plan?.data.dayLabel ??
+                  entry.summary?.text ??
+                  (entry.kind == DayActivityEntryKind.plan
+                      ? context.messages.dailyOsNextActivityPlanAvailable
+                      : entry.processingJob?.lastFailureClass ==
+                            DayProcessingFailureClass.missingAsset
+                      ? context.messages.dailyOsNextActivityMissingAudio
+                      : entry.processingJob?.lastFailureClass ==
+                            DayProcessingFailureClass.setupRequired
+                      ? context.messages.dailyOsNextActivitySetupRequired
+                      : transcript ??
+                            context
+                                .messages
+                                .dailyOsNextActivityTranscriptPending),
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: transcript == null
+                    ? tokens.colors.text.lowEmphasis
+                    : tokens.colors.text.highEmphasis,
+              ),
             ),
-          ),
+          ],
           if (entry.processingJob case final job?
               when job.lastError != null &&
                   job.status != DayProcessingJobStatus.succeeded) ...[
@@ -354,8 +304,14 @@ class _ActivityCard extends StatelessWidget {
             SizedBox(height: tokens.spacing.step4),
             AudioPlayerWidget(audio),
           ],
-          if (onEditText != null ||
-              onDelete != null ||
+          if (inlineEditorEntryId != null) ...[
+            SizedBox(height: tokens.spacing.step3),
+            EditorWidget(
+              entryId: inlineEditorEntryId,
+              margin: EdgeInsets.zero,
+            ),
+          ],
+          if (onDelete != null ||
               entry.processingJob?.lastFailureClass ==
                   DayProcessingFailureClass.setupRequired ||
               _canRetry(entry) ||
@@ -379,13 +335,6 @@ class _ActivityCard extends StatelessWidget {
                     onPressed: () => nav_service.beamToNamed('/settings/ai'),
                     variant: DesignSystemButtonVariant.secondary,
                     leadingIcon: Icons.settings_rounded,
-                  ),
-                if (onEditText != null)
-                  _AsyncActivityButton(
-                    label: context.messages.dailyOsNextActivityAddOrEditText,
-                    action: onEditText!,
-                    variant: DesignSystemButtonVariant.secondary,
-                    leadingIcon: Icons.edit_note_rounded,
                   ),
                 if (transcript != null)
                   DesignSystemButton(

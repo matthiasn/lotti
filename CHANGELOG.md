@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   AI usage reporting lives in the AI Usage view instead.
 
 ### Added
+- **Edit a day recording's text right on its Activity card.** The separate
+  text dialog is gone — every unsubmitted recording now embeds the same
+  rich-text editor used across the journal, with its familiar toolbar and
+  save shortcut. Text you write or correct there is treated as your final
+  wording: a pending transcription completes instantly with your text, and a
+  transcript that arrives later is kept as a record but never overwrites what
+  you wrote.
 - **AI work now shows its real footprint where it was created.** Coding
   prompts, generated and analyzed images, and audio transcripts carry a
   tappable attribution pill. Its details show the creator, model, request

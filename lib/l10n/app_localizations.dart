@@ -5861,12 +5861,6 @@ abstract class AppLocalizations {
   /// **'That action didn\'t finish. Your recording is still safe—try again.'**
   String get dailyOsNextActivityActionFailed;
 
-  /// No description provided for @dailyOsNextActivityAddOrEditText.
-  ///
-  /// In en, this message translates to:
-  /// **'Add or edit text'**
-  String get dailyOsNextActivityAddOrEditText;
-
   /// No description provided for @dailyOsNextActivityDaySummary.
   ///
   /// In en, this message translates to:
@@ -5968,24 +5962,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Added to day'**
   String get dailyOsNextActivitySubmitted;
-
-  /// No description provided for @dailyOsNextActivityTextDialogTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recording text'**
-  String get dailyOsNextActivityTextDialogTitle;
-
-  /// No description provided for @dailyOsNextActivityTextHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Write what you wanted this recording to capture.'**
-  String get dailyOsNextActivityTextHint;
-
-  /// No description provided for @dailyOsNextActivityTextSaveFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'The recording is safe, but the text couldn\'t be saved. Try again.'**
-  String get dailyOsNextActivityTextSaveFailed;
 
   /// No description provided for @dailyOsNextActivityTranscribing.
   ///

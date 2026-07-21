@@ -136,12 +136,10 @@ class AudioTranscriptionService {
       );
 
       // Get the provider for the selected model
-      provider = providers
-          .whereType<AiConfigInferenceProvider>()
-          .firstWhere(
-            (p) => p.id == model.inferenceProviderId,
-            orElse: () => throw Exception('Provider not found for audio model'),
-          );
+      provider = providers.whereType<AiConfigInferenceProvider>().firstWhere(
+        (p) => p.id == model.inferenceProviderId,
+        orElse: () => throw Exception('Provider not found for audio model'),
+      );
     }
 
     if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
