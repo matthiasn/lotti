@@ -329,7 +329,10 @@ class _ActivityCard extends StatelessWidget {
   }
 
   bool _canRetry(DayActivityEntry entry) {
+    // Queued jobs sit under exponential backoff; the user must always be
+    // able to force the next attempt instead of waiting it out.
     return switch (entry.processingJob?.status) {
+      DayProcessingJobStatus.queued ||
       DayProcessingJobStatus.waitingForNetwork ||
       DayProcessingJobStatus.waitingForUser ||
       DayProcessingJobStatus.failed => true,

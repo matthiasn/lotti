@@ -91,6 +91,17 @@ void main() {
         transcript: 'Protect the afternoon for focused work.',
       ),
     );
+    final backedOff = DayActivityEntry(
+      id: 'backed-off',
+      kind: DayActivityEntryKind.recording,
+      createdAt: capturedAt.add(const Duration(minutes: 7)),
+      activityEntryId: 'backed-off',
+      processingJob: job(
+        id: 'job-backed-off',
+        activityId: 'backed-off',
+        status: DayProcessingJobStatus.queued,
+      ),
+    );
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         DayActivityView(
@@ -101,7 +112,7 @@ void main() {
         ),
         overrides: [
           dayActivityProvider.overrideWith(
-            (ref, date) async => [waiting, ready],
+            (ref, date) async => [waiting, ready, backedOff],
           ),
           dayAudioTranscriptWriterProvider.overrideWithValue(transcriptWriter),
           dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
@@ -118,9 +129,11 @@ void main() {
     );
     expect(
       find.text(messages.dailyOsNextActivityTranscriptPending),
-      findsOneWidget,
+      findsNWidgets(2),
     );
-    expect(find.text(messages.dailyOsNextActivityRetry), findsOneWidget);
+    // Both the waiting and the queued/backed-off recordings stay manually
+    // retryable — backoff must never leave the user without a trigger.
+    expect(find.text(messages.dailyOsNextActivityRetry), findsNWidgets(2));
     expect(
       find.text('Protect the afternoon for focused work.'),
       findsOneWidget,
