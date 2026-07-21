@@ -1,0 +1,78 @@
+# Tutorial scenario: create and configure a category from scratch —
+# name + color on the create page, then favorite/options and AI defaults on
+# the edit page, and see it appear across the app.
+
+scenario: category_setup
+
+title:
+  en: Set up a category
+  de: Eine Kategorie einrichten
+
+dictionary:
+  en:
+    - Iceberg Maintenance
+  de:
+    - Eisberg-Wartung
+
+steps:
+  - id: intro
+    min_duration: 4.0
+    narration:
+      en: >-
+        Categories are how Lotti keeps areas of your life apart — each with
+        its own color, its own defaults, its own AI setup. Let's create one.
+      de: >-
+        Mit Kategorien trennt Lotti deine Lebensbereiche — jede mit eigener
+        Farbe, eigenen Standardwerten, eigenem KI-Setup. Legen wir eine an.
+
+  - id: open_settings
+    min_duration: 3.0
+    narration:
+      en: >-
+        Categories live in the settings — here's the list, with everything
+        we've already got.
+      de: >-
+        Kategorien wohnen in den Einstellungen — hier ist die Liste mit
+        allem, was es schon gibt.
+
+  - id: create_category
+    min_duration: 4.0
+    narration:
+      en: >-
+        Create a new one, give it a name — Iceberg Maintenance — and create
+        it.
+      de: >-
+        Erstelle eine neue, gib ihr einen Namen — Eisberg-Wartung — und leg
+        sie an.
+
+  - id: configure
+    min_duration: 6.0
+    narration:
+      en: >-
+        Right after creating, you land in the full editor: mark it as a
+        favorite, and you could set a default language, an AI profile, even
+        a speech dictionary.
+      de: >-
+        Direkt nach dem Anlegen landest du im vollen Editor: markiere sie
+        als Favorit — und du könntest Standardsprache, KI-Profil und sogar
+        ein Sprachwörterbuch festlegen.
+
+  - id: save_category
+    min_duration: 3.0
+    narration:
+      en: >-
+        Save, and the category is ready — back in the list with its color
+        and its star.
+      de: >-
+        Speichern, und die Kategorie ist fertig — zurück in der Liste, mit
+        Farbe und Stern.
+
+  - id: outro
+    min_duration: 3.0
+    narration:
+      en: >-
+        That's all it takes. From now on, tasks, entries, and even the AI
+        can follow this category's rules.
+      de: >-
+        Mehr braucht es nicht. Ab jetzt können Aufgaben, Einträge und sogar
+        die KI den Regeln dieser Kategorie folgen.

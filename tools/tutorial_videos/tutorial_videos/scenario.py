@@ -37,8 +37,8 @@ class Scenario:
     steps: list[Step]
 
     @property
-    def dictation_step(self) -> Step:
-        return next(step for step in self.steps if step.dictation)
+    def dictation_step(self) -> Step | None:
+        return next((step for step in self.steps if step.dictation), None)
 
     def validate_locale(self, locale: str) -> None:
         """Raise ScenarioError unless ``locale`` is fully buildable."""
@@ -113,8 +113,8 @@ def load_scenario(path: Path) -> Scenario:
     ids = [step.id for step in steps]
     if len(set(ids)) != len(ids):
         raise ScenarioError(f"{path}: duplicate step ids")
-    if sum(step.dictation for step in steps) != 1:
-        raise ScenarioError(f"{path}: exactly one dictation step is required")
+    if sum(step.dictation for step in steps) > 1:
+        raise ScenarioError(f"{path}: at most one dictation step is allowed")
 
     return Scenario(
         name=name,

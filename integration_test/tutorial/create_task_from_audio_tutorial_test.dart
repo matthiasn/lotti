@@ -310,6 +310,21 @@ void main() {
       await driver.step('outro', () async {});
 
       driver.timeline.write();
+
+      // Quiesce before teardown: a post-confirm agent wake may still be in
+      // flight; disposing the ProviderScope mid-wake throws
+      // UnmountedRefException after the test and fails the run.
+      final thinking = find.text(
+        localized(en: 'Thinking…', de: 'Denkt nach …'),
+      );
+      await driver.pumpUntil(
+        () => thinking.evaluate().isEmpty,
+        description: 'agent runtime quiesced (no in-flight wake)',
+        timeout: const Duration(minutes: 2),
+      );
+      await driver.holdUntil(
+        driver.timeline.elapsed + const Duration(seconds: 2),
+      );
     },
     timeout: const Timeout(Duration(minutes: 15)),
   );

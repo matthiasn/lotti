@@ -1,0 +1,94 @@
+# Tutorial scenario: a complex coding task becomes a ready-to-paste coding
+# prompt — the "Generate Coding Prompt" skill assembles task, description,
+# and checklist into a structured prompt for AI coding assistants; the video
+# scrolls through the generated prompt unhurriedly.
+
+scenario: task_coding_prompt
+
+title:
+  en: Turn a coding task into an AI-ready prompt
+  de: Aus einer Coding-Aufgabe ein KI-Prompt machen
+
+dictionary:
+  en:
+    - Project Waddle
+    - telemetry
+  de:
+    - Projekt Waddle
+    - Telemetrie
+
+steps:
+  - id: intro
+    min_duration: 4.0
+    narration:
+      en: >-
+        Complex coding task? Lotti can turn everything you've collected on it
+        into one polished prompt for your AI coding assistant.
+      de: >-
+        Komplexe Coding-Aufgabe? Lotti verwandelt alles, was du dazu
+        gesammelt hast, in einen fertigen Prompt für deinen KI-Coding-
+        Assistenten.
+
+  - id: open_task
+    min_duration: 4.0
+    narration:
+      en: >-
+        Here's a real one: refactoring the penguin habitat's telemetry
+        service — with a description and a checklist full of requirements.
+      de: >-
+        Hier ist eine echte: das Refactoring des Telemetrie-Dienstes im
+        Pinguin-Habitat — mit Beschreibung und einer Checkliste voller
+        Anforderungen.
+
+  - id: generate
+    min_duration: 4.0
+    narration:
+      en: >-
+        Open the generate menu and pick "Generate Coding Prompt" — Lotti
+        reads the whole task context.
+      de: >-
+        Öffne das Generieren-Menü und wähle „Generate Coding Prompt" —
+        Lotti liest den gesamten Aufgabenkontext.
+
+  - id: prompt_ready
+    min_duration: 5.0
+    narration:
+      en: >-
+        A few seconds of thinking — and there it is: a summary up top, and
+        underneath, the full prompt.
+      de: >-
+        Ein paar Sekunden Nachdenken — und da ist er: oben eine
+        Zusammenfassung, darunter der vollständige Prompt.
+
+  - id: scroll_prompt
+    min_duration: 10.0
+    narration:
+      en: >-
+        Take a look at what's in here: the goal, the constraints, every
+        checklist item — everything an AI assistant needs to get it right on
+        the first try.
+      de: >-
+        Sieh dir an, was hier drinsteckt: das Ziel, die Rahmenbedingungen,
+        jeder Checklisten-Punkt — alles, was ein KI-Assistent braucht, um es
+        beim ersten Versuch richtig zu machen.
+
+  - id: copy_prompt
+    min_duration: 4.0
+    narration:
+      en: >-
+        One tap on "Copy Prompt", and it's on your clipboard — ready for
+        Claude Code, Copilot, or wherever you build.
+      de: >-
+        Ein Tipp auf „Prompt kopieren", und er liegt in deiner
+        Zwischenablage — bereit für Claude Code, Copilot oder wo auch immer
+        du entwickelst.
+
+  - id: outro
+    min_duration: 3.0
+    narration:
+      en: >-
+        From scattered notes to a precise prompt in seconds — that's how
+        coding tasks leave Lotti.
+      de: >-
+        Von verstreuten Notizen zum präzisen Prompt in Sekunden — so
+        verlassen Coding-Aufgaben Lotti.

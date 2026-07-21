@@ -1,0 +1,79 @@
+# Tutorial scenario: give a simple task a face — attach an image and set it
+# as the task's cover art, then see it in the header and the task list.
+# The image entry is pre-linked by the harness (native pickers and OS drag
+# sessions cannot be scripted); the visible story is the "Set cover" flow.
+
+scenario: task_cover_art
+
+title:
+  en: Give your task a cover image
+  de: Gib deiner Aufgabe ein Titelbild
+
+dictionary:
+  en:
+    - Project Waddle
+  de:
+    - Projekt Waddle
+
+steps:
+  - id: intro
+    min_duration: 4.0
+    narration:
+      en: >-
+        Tasks don't have to be walls of text. In this tutorial you'll give a
+        task its own cover image — and see it everywhere the task appears.
+      de: >-
+        Aufgaben müssen keine Textwüsten sein. In diesem Tutorial gibst du
+        einer Aufgabe ihr eigenes Titelbild — und siehst es überall, wo die
+        Aufgabe auftaucht.
+
+  - id: open_task
+    min_duration: 3.0
+    narration:
+      en: >-
+        Here's our task — it already has a photo attached, the way any image
+        lands on a task: drop it in or attach it from the action bar.
+      de: >-
+        Hier ist unsere Aufgabe — mit einem angehängten Foto, so wie jedes
+        Bild auf eine Aufgabe kommt: einfach hineinziehen oder über die
+        Aktionsleiste anhängen.
+
+  - id: open_image_menu
+    min_duration: 3.0
+    narration:
+      en: >-
+        Open the photo's menu — this is where an attached image becomes
+        something more.
+      de: >-
+        Öffne das Menü des Fotos — hier wird aus einem angehängten Bild
+        etwas mehr.
+
+  - id: set_cover
+    min_duration: 4.0
+    narration:
+      en: >-
+        One tap on "Set cover" — and the image moves right into the task
+        header.
+      de: >-
+        Ein Tipp auf „Titelbild setzen" — und das Bild wandert direkt in den
+        Kopf der Aufgabe.
+
+  - id: see_in_list
+    min_duration: 4.0
+    narration:
+      en: >-
+        Back in the list, the task now carries its cover — recognizable at a
+        glance between all the others.
+      de: >-
+        Zurück in der Liste trägt die Aufgabe jetzt ihr Titelbild — auf
+        einen Blick erkennbar zwischen allen anderen.
+
+  - id: outro
+    min_duration: 3.0
+    narration:
+      en: >-
+        That's it — one image, and your task has a face. Try it with your
+        own tasks.
+      de: >-
+        Das war's — ein Bild, und deine Aufgabe hat ein Gesicht. Probier es
+        mit deinen eigenen Aufgaben.

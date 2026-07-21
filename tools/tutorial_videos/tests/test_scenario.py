@@ -65,12 +65,26 @@ class ScenarioTest(unittest.TestCase):
         with self.assertRaises(ScenarioError):
             self._load(VALID, name="other")
 
-    def test_exactly_one_dictation_step_required(self):
+    def test_dictation_step_is_optional(self):
         no_dictation = VALID.replace("dictation: true", "dictation: false").replace(
             "    dictation_text: {en: A task, de: Eine Aufgabe}\n", ""
         )
+        scenario = self._load(no_dictation)
+        self.assertIsNone(scenario.dictation_step)
+
+    def test_multiple_dictation_steps_rejected(self):
+        doubled = VALID.replace(
+            """  - id: intro
+    min_duration: 3.0
+    narration: {en: Hello, de: Hallo}""",
+            """  - id: intro
+    min_duration: 3.0
+    dictation: true
+    narration: {en: Hello, de: Hallo}
+    dictation_text: {en: Hi, de: Hallo}""",
+        )
         with self.assertRaises(ScenarioError):
-            self._load(no_dictation)
+            self._load(doubled)
 
     def test_dictation_text_without_flag_rejected(self):
         stray = VALID.replace("dictation: true", "dictation: false")
