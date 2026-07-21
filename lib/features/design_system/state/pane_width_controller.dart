@@ -12,11 +12,17 @@ const journalListPaneWidthKey = 'PANE_WIDTH_JOURNAL_LIST';
 const sidebarCollapsedKey = 'PANE_WIDTH_SIDEBAR_COLLAPSED';
 
 /// Default and constraint values for pane widths.
-const defaultSidebarWidth = 320.0;
+///
+/// Sidebar and list-pane defaults are 20% narrower than their original
+/// 320/540 flat values — on wide windows [scaledPaneWidth] scales both up
+/// simultaneously, and at the original values the combined sidebar + list
+/// pane consumed ~60% of a 1920px-wide window, leaving the detail pane
+/// visibly cramped relative to the other two columns.
+const defaultSidebarWidth = 256.0;
 const minSidebarWidth = 200.0;
 const maxSidebarWidth = 500.0;
 
-const defaultListPaneWidth = 540.0;
+const defaultListPaneWidth = 432.0;
 const minListPaneWidth = 300.0;
 const maxListPaneWidth = 800.0;
 

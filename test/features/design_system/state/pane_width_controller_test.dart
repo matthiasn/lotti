@@ -285,7 +285,7 @@ void main() {
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             sidebarWidthKey,
-            '350.0',
+            '286.0',
           ),
         ).called(1);
       });
@@ -305,7 +305,7 @@ void main() {
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             sidebarWidthKey,
-            '380.0',
+            '316.0',
           ),
         ).called(1);
       });
@@ -382,7 +382,7 @@ void main() {
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             listPaneWidthKey,
-            '600.0',
+            '492.0',
           ),
         ).called(1);
       });
@@ -500,13 +500,13 @@ void main() {
       verify(
         () => getIt<SettingsDb>().saveSettingsItem(
           sidebarWidthKey,
-          '320.0',
+          '256.0',
         ),
       ).called(1);
       verify(
         () => getIt<SettingsDb>().saveSettingsItem(
           listPaneWidthKey,
-          '540.0',
+          '432.0',
         ),
       ).called(1);
       verify(
@@ -532,13 +532,13 @@ void main() {
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             sidebarWidthKey,
-            '320.0',
+            '256.0',
           ),
         ).called(1);
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             listPaneWidthKey,
-            '540.0',
+            '432.0',
           ),
         ).called(1);
       });
