@@ -285,29 +285,6 @@
     }
   },
   "agentObservationsEmpty": "No observations recorded yet.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 wake} other{{count} wakes}} ({reasons})",
-  "@agentPendingWakesActivityHourDetail": {
-    "placeholders": {
-      "hour": {
-        "type": "String"
-      },
-      "count": {
-        "type": "int"
-      },
-      "reasons": {
-        "type": "String"
-      }
-    }
-  },
-  "agentPendingWakesActivityTitle": "Wake Activity (24h)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 total wake} other{{count} total wakes}}",
-  "@agentPendingWakesActivityTotal": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "agentPendingWakesDeleteTooltip": "Remove wake",
   "agentPendingWakesEmptyFiltered": "No wakes match your filters.",
   "agentPendingWakesFilterSectionType": "Type",
@@ -429,60 +406,6 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sleeping until",
   "agentStateWakeCount": "Wake count",
-  "agentStatsAllDayLegend": "All Day",
-  "agentStatsAverageLabel": "Average",
-  "agentStatsByTimeLegend": "Daily by {time}",
-  "@agentStatsByTimeLegend": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsCacheRateLabel": "Cache Rate",
-  "agentStatsDailyUsageHeading": "Daily Usage",
-  "agentStatsInputLabel": "Input",
-  "agentStatsNoUsage": "No token usage recorded in the past 7 days.",
-  "agentStatsOutputLabel": "Output",
-  "agentStatsSourceActiveFor": "Active for {duration}",
-  "@agentStatsSourceActiveFor": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsSourceActivityHeading": "Agent Activity",
-  "agentStatsSourceWakes": "{count, plural, =1{1 wake} other{{count} wakes}}",
-  "@agentStatsSourceWakes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "agentStatsTabTitle": "Stats",
-  "agentStatsThoughtsLabel": "Thoughts",
-  "agentStatsTodayLabel": "Today",
-  "agentStatsTokensPerWakeLabel": "Tokens / Wake",
-  "agentStatsTokensUnit": "tokens",
-  "agentStatsUsageAboveAverage": "You're using more tokens today than you usually do by {time}.",
-  "@agentStatsUsageAboveAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsUsageBelowAverage": "You're using fewer tokens today than you usually do by {time}.",
-  "@agentStatsUsageBelowAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsWakesLabel": "Wakes",
   "agentSuggestionTimeEntryUpdateCurrent": "Current",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."
@@ -4253,7 +4176,6 @@
   "settingsAgentsInstancesSubtitle": "Running agents",
   "settingsAgentsPendingWakesSubtitle": "Scheduled wake timers",
   "settingsAgentsSoulsSubtitle": "Long-lived agent personalities",
-  "settingsAgentsStatsSubtitle": "Token usage and activity",
   "settingsAgentsTemplatesSubtitle": "Shared agent blueprints",
   "settingsAiModelsSubtitle": "Per-provider model rows and capabilities",
   "settingsAiModelsTitle": "Models",

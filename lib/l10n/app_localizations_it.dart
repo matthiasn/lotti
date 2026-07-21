@@ -518,35 +518,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non sono ancora state osservate osservazioni.';
 
   @override
-  String agentPendingWakesActivityHourDetail(
-    String hour,
-    int count,
-    String reasons,
-  ) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count risvegli',
-      one: '1 risveglio',
-    );
-    return '$hour: $_temp0 ($reasons)';
-  }
-
-  @override
-  String get agentPendingWakesActivityTitle => 'Attività di sveglia (24h)';
-
-  @override
-  String agentPendingWakesActivityTotal(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count risvegli totali',
-      one: '1 risveglio totale',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get agentPendingWakesDeleteTooltip => 'Rimuovere la sveglia';
 
   @override
@@ -841,80 +812,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Contesto di sveglia';
-
-  @override
-  String get agentStatsAllDayLegend => 'Tutto il giorno';
-
-  @override
-  String get agentStatsAverageLabel => 'Media';
-
-  @override
-  String agentStatsByTimeLegend(String time) {
-    return 'Quotidiano di $time';
-  }
-
-  @override
-  String get agentStatsCacheRateLabel => 'Tasso di Cache';
-
-  @override
-  String get agentStatsDailyUsageHeading => 'Uso quotidiano';
-
-  @override
-  String get agentStatsInputLabel => 'Dati in ingresso';
-
-  @override
-  String get agentStatsNoUsage =>
-      'Nessun utilizzo di token registrato negli ultimi 7 giorni.';
-
-  @override
-  String get agentStatsOutputLabel => 'Produzione';
-
-  @override
-  String agentStatsSourceActiveFor(String duration) {
-    return 'Attivo per $duration';
-  }
-
-  @override
-  String get agentStatsSourceActivityHeading => 'Attività agente';
-
-  @override
-  String agentStatsSourceWakes(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count risvegli',
-      one: '1 risveglio',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get agentStatsTabTitle => 'Statistiche';
-
-  @override
-  String get agentStatsThoughtsLabel => 'Pensieri';
-
-  @override
-  String get agentStatsTodayLabel => 'Oggi';
-
-  @override
-  String get agentStatsTokensPerWakeLabel => 'Tokens / Sveglia';
-
-  @override
-  String get agentStatsTokensUnit => 'Tokens';
-
-  @override
-  String agentStatsUsageAboveAverage(String time) {
-    return 'Stai usando più gettoni oggi che di solito fai da $time.';
-  }
-
-  @override
-  String agentStatsUsageBelowAverage(String time) {
-    return 'Stai usando meno gettoni oggi che di solito fai da $time.';
-  }
-
-  @override
-  String get agentStatsWakesLabel => 'Sveglia';
 
   @override
   String get agentSuggestionTimeEntryUpdateCurrent => 'Corrente';
@@ -8558,9 +8455,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get settingsAgentsSoulsSubtitle =>
       'Personaggi di agente di lunga durata';
-
-  @override
-  String get settingsAgentsStatsSubtitle => 'Utilizzo e attività di Token';
 
   @override
   String get settingsAgentsTemplatesSubtitle =>

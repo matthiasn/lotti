@@ -348,7 +348,6 @@
       "page": "ai-and-automation/agents",
       "status": "verified",
       "screenshotCases": [
-        "agents/stats",
         "agents/instances",
         "agents/instance-detail",
         "agents/pending-wakes"

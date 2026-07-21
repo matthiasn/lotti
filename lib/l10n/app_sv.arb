@@ -285,29 +285,6 @@
     }
   },
   "agentObservationsEmpty": "Inga observationer har ännu registrerats.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 vakna} other{{count} vakningar}} ({reasons})",
-  "@agentPendingWakesActivityHourDetail": {
-    "placeholders": {
-      "hour": {
-        "type": "String"
-      },
-      "count": {
-        "type": "int"
-      },
-      "reasons": {
-        "type": "String"
-      }
-    }
-  },
-  "agentPendingWakesActivityTitle": "Vakaktivitet (24 timmar)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 total vakna} other{{count} totala vakningar}}",
-  "@agentPendingWakesActivityTotal": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "agentPendingWakesDeleteTooltip": "Ta bort en våg",
   "agentPendingWakesEmptyFiltered": "Inga vaken matchar dina filter.",
   "agentPendingWakesFilterSectionType": "Typ",
@@ -429,60 +406,6 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sov tills",
   "agentStateWakeCount": "Vakenräkning",
-  "agentStatsAllDayLegend": "Hela dagen",
-  "agentStatsAverageLabel": "Genomsnitt",
-  "agentStatsByTimeLegend": "Dagligen av {time}",
-  "@agentStatsByTimeLegend": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsCacheRateLabel": "Cache-hastighet",
-  "agentStatsDailyUsageHeading": "Daglig användning",
-  "agentStatsInputLabel": "Indata",
-  "agentStatsNoUsage": "Ingen tokenanvändning registrerades de senaste 7 dagarna.",
-  "agentStatsOutputLabel": "Produktion",
-  "agentStatsSourceActiveFor": "Aktiv för {duration}",
-  "@agentStatsSourceActiveFor": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsSourceActivityHeading": "Agentaktivitet",
-  "agentStatsSourceWakes": "{count, plural, =1{1 vakna} other{{count} vakningar}}",
-  "@agentStatsSourceWakes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "agentStatsTabTitle": "Statistik",
-  "agentStatsThoughtsLabel": "Tankar",
-  "agentStatsTodayLabel": "Idag",
-  "agentStatsTokensPerWakeLabel": "Tokens / väckning",
-  "agentStatsTokensUnit": "Tokens",
-  "agentStatsUsageAboveAverage": "Du använder fler tokens idag än du brukar göra med {time}.",
-  "@agentStatsUsageAboveAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsUsageBelowAverage": "Du använder färre tokens idag än du brukar göra vid {time}.",
-  "@agentStatsUsageBelowAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsWakesLabel": "Väckningar",
   "agentSuggestionTimeEntryUpdateCurrent": "Nutid",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."
@@ -4154,7 +4077,6 @@
   "settingsAgentsInstancesSubtitle": "Drivande agenter",
   "settingsAgentsPendingWakesSubtitle": "Schemalagda väckningstider",
   "settingsAgentsSoulsSubtitle": "Långlivade agentpersonligheter",
-  "settingsAgentsStatsSubtitle": "Tokenanvändning och aktivitet",
   "settingsAgentsTemplatesSubtitle": "Ritningar för delade agenter",
   "settingsAiModelsSubtitle": "Per-leverantörsmodellrader och kapabiliteter",
   "settingsAiModelsTitle": "Modeller",

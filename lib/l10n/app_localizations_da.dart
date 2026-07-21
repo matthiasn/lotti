@@ -512,35 +512,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen observationer er registreret endnu.';
 
   @override
-  String agentPendingWakesActivityHourDetail(
-    String hour,
-    int count,
-    String reasons,
-  ) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count wakes',
-      one: '1 wake',
-    );
-    return '$hour: $_temp0 ($reasons)';
-  }
-
-  @override
-  String get agentPendingWakesActivityTitle => 'Vågeaktivitet (24 timer)';
-
-  @override
-  String agentPendingWakesActivityTotal(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count samlede våger',
-      one: '1 samlet våge',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get agentPendingWakesDeleteTooltip => 'Fjern bølgen';
 
   @override
@@ -832,80 +803,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Vågenopgørelse';
-
-  @override
-  String get agentStatsAllDayLegend => 'Hele dagen';
-
-  @override
-  String get agentStatsAverageLabel => 'Gennemsnit';
-
-  @override
-  String agentStatsByTimeLegend(String time) {
-    return 'Dagligt af $time';
-  }
-
-  @override
-  String get agentStatsCacheRateLabel => 'Cache-hastighed';
-
-  @override
-  String get agentStatsDailyUsageHeading => 'Daglig brug';
-
-  @override
-  String get agentStatsInputLabel => 'Input';
-
-  @override
-  String get agentStatsNoUsage =>
-      'Der er ikke registreret tokenbrug de seneste 7 dage.';
-
-  @override
-  String get agentStatsOutputLabel => 'Output';
-
-  @override
-  String agentStatsSourceActiveFor(String duration) {
-    return 'Aktiv for $duration';
-  }
-
-  @override
-  String get agentStatsSourceActivityHeading => 'Agentaktivitet';
-
-  @override
-  String agentStatsSourceWakes(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count wakes',
-      one: '1 wake',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get agentStatsTabTitle => 'Statistik';
-
-  @override
-  String get agentStatsThoughtsLabel => 'Tankerne';
-
-  @override
-  String get agentStatsTodayLabel => 'I dag';
-
-  @override
-  String get agentStatsTokensPerWakeLabel => 'Tokens / Wake';
-
-  @override
-  String get agentStatsTokensUnit => 'Tokens';
-
-  @override
-  String agentStatsUsageAboveAverage(String time) {
-    return 'Du bruger flere tokens i dag, end du normalt gør ifølge $time.';
-  }
-
-  @override
-  String agentStatsUsageBelowAverage(String time) {
-    return 'Du bruger færre tokens i dag, end du normalt gør ved $time.';
-  }
-
-  @override
-  String get agentStatsWakesLabel => 'Våger';
 
   @override
   String get agentSuggestionTimeEntryUpdateCurrent => 'Nuværende';
@@ -8453,9 +8350,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsAgentsSoulsSubtitle => 'Langlivede agentpersonligheder';
-
-  @override
-  String get settingsAgentsStatsSubtitle => 'Tokenbrug og aktivitet';
 
   @override
   String get settingsAgentsTemplatesSubtitle => 'Fælles agent-blueprints';

@@ -56,24 +56,6 @@ enum _GeneratedOngoingWakeIdentityShape {
 
 enum _GeneratedOngoingWakeStartSlot { first, second, third, fourth, fifth }
 
-enum _GeneratedWakeRunReasonSlot {
-  subscription,
-  creation,
-  reanalysis,
-  manual,
-}
-
-enum _GeneratedWakeRunHourOffsetSlot {
-  beforeWindow,
-  windowStart,
-  earlyWindow,
-  middleWindow,
-  currentHour,
-  future,
-}
-
-enum _GeneratedWakeRunMinuteSlot { zero, early, middle, late }
-
 typedef _PendingWakeExpectation = ({
   String agentId,
   PendingWakeType type,
@@ -89,8 +71,6 @@ typedef _OngoingWakeExpectation = ({
 
 final _generatedProviderBase = DateTime(2026, 5, 22, 10, 30);
 final _generatedOngoingBase = DateTime(2026, 5, 22, 8);
-final _generatedHourlyNow = DateTime(2026, 5, 22, 14, 45);
-
 String _generatedPendingAgentId(int index) => 'generated-pending-agent-$index';
 
 String _generatedOngoingAgentId(int index) => 'generated-ongoing-agent-$index';
@@ -143,35 +123,6 @@ DateTime _generatedOngoingStartedAt(
 ) => _generatedOngoingBase.add(
   Duration(minutes: _generatedOngoingStartOffset(slot), seconds: index),
 );
-
-String _generatedWakeRunReason(_GeneratedWakeRunReasonSlot slot) {
-  return switch (slot) {
-    _GeneratedWakeRunReasonSlot.subscription => 'subscription',
-    _GeneratedWakeRunReasonSlot.creation => 'creation',
-    _GeneratedWakeRunReasonSlot.reanalysis => 'reanalysis',
-    _GeneratedWakeRunReasonSlot.manual => 'manual',
-  };
-}
-
-int _generatedWakeRunHourOffset(_GeneratedWakeRunHourOffsetSlot slot) {
-  return switch (slot) {
-    _GeneratedWakeRunHourOffsetSlot.beforeWindow => -26,
-    _GeneratedWakeRunHourOffsetSlot.windowStart => -23,
-    _GeneratedWakeRunHourOffsetSlot.earlyWindow => -18,
-    _GeneratedWakeRunHourOffsetSlot.middleWindow => -7,
-    _GeneratedWakeRunHourOffsetSlot.currentHour => 0,
-    _GeneratedWakeRunHourOffsetSlot.future => 2,
-  };
-}
-
-int _generatedWakeRunMinute(_GeneratedWakeRunMinuteSlot slot) {
-  return switch (slot) {
-    _GeneratedWakeRunMinuteSlot.zero => 0,
-    _GeneratedWakeRunMinuteSlot.early => 7,
-    _GeneratedWakeRunMinuteSlot.middle => 31,
-    _GeneratedWakeRunMinuteSlot.late => 58,
-  };
-}
 
 class _GeneratedPendingWakeSpec {
   const _GeneratedPendingWakeSpec({
@@ -447,47 +398,6 @@ class _GeneratedOngoingWakeScenario {
   String toString() => '_GeneratedOngoingWakeScenario(specs: $specs)';
 }
 
-class _GeneratedHourlyWakeRunSpec {
-  const _GeneratedHourlyWakeRunSpec({
-    required this.hourOffset,
-    required this.minuteSlot,
-    required this.reasonSlot,
-  });
-
-  final _GeneratedWakeRunHourOffsetSlot hourOffset;
-  final _GeneratedWakeRunMinuteSlot minuteSlot;
-  final _GeneratedWakeRunReasonSlot reasonSlot;
-
-  DateTime createdAt(DateTime currentHour) {
-    return currentHour.add(
-      Duration(
-        hours: _generatedWakeRunHourOffset(hourOffset),
-        minutes: _generatedWakeRunMinute(minuteSlot),
-      ),
-    );
-  }
-
-  String get reason => _generatedWakeRunReason(reasonSlot);
-
-  @override
-  String toString() {
-    return '_GeneratedHourlyWakeRunSpec('
-        'hourOffset: $hourOffset, minuteSlot: $minuteSlot, '
-        'reasonSlot: $reasonSlot)';
-  }
-}
-
-class _GeneratedHourlyWakeActivityScenario {
-  const _GeneratedHourlyWakeActivityScenario({required this.runs});
-
-  final List<_GeneratedHourlyWakeRunSpec> runs;
-
-  @override
-  String toString() {
-    return '_GeneratedHourlyWakeActivityScenario(runs: $runs)';
-  }
-}
-
 extension _AnyGeneratedAgentPendingWakeProviderScenario on glados.Any {
   glados.Generator<_GeneratedPendingWakeStateShape> get pendingWakeStateShape =>
       glados.AnyUtils(this).choose(_GeneratedPendingWakeStateShape.values);
@@ -560,36 +470,6 @@ extension _AnyGeneratedAgentPendingWakeProviderScenario on glados.Any {
       glados.ListAnys(this)
           .listWithLengthInRange(0, 6, ongoingWakeSpec)
           .map((specs) => _GeneratedOngoingWakeScenario(specs: specs));
-
-  glados.Generator<_GeneratedWakeRunReasonSlot> get wakeRunReasonSlot =>
-      glados.AnyUtils(this).choose(_GeneratedWakeRunReasonSlot.values);
-
-  glados.Generator<_GeneratedWakeRunHourOffsetSlot> get wakeRunHourOffsetSlot =>
-      glados.AnyUtils(this).choose(_GeneratedWakeRunHourOffsetSlot.values);
-
-  glados.Generator<_GeneratedWakeRunMinuteSlot> get wakeRunMinuteSlot =>
-      glados.AnyUtils(this).choose(_GeneratedWakeRunMinuteSlot.values);
-
-  glados.Generator<_GeneratedHourlyWakeRunSpec> get hourlyWakeRunSpec =>
-      glados.CombinableAny(this).combine3(
-        wakeRunHourOffsetSlot,
-        wakeRunMinuteSlot,
-        wakeRunReasonSlot,
-        (
-          _GeneratedWakeRunHourOffsetSlot hourOffset,
-          _GeneratedWakeRunMinuteSlot minuteSlot,
-          _GeneratedWakeRunReasonSlot reasonSlot,
-        ) => _GeneratedHourlyWakeRunSpec(
-          hourOffset: hourOffset,
-          minuteSlot: minuteSlot,
-          reasonSlot: reasonSlot,
-        ),
-      );
-
-  glados.Generator<_GeneratedHourlyWakeActivityScenario>
-  get hourlyWakeActivityScenario => glados.ListAnys(this)
-      .listWithLengthInRange(0, 18, hourlyWakeRunSpec)
-      .map((runs) => _GeneratedHourlyWakeActivityScenario(runs: runs));
 }
 
 void main() {
@@ -1675,193 +1555,5 @@ void main() {
         });
       },
     );
-  });
-
-  group('hourlyWakeActivityProvider', () {
-    glados.Glados(
-      glados.any.hourlyWakeActivityScenario,
-      glados.ExploreConfig(numRuns: 180),
-    ).test('matches generated 24-hour wake activity aggregation', (
-      scenario,
-    ) async {
-      final currentHour = DateTime(
-        _generatedHourlyNow.year,
-        _generatedHourlyNow.month,
-        _generatedHourlyNow.day,
-        _generatedHourlyNow.hour,
-      );
-      final expectedSince = currentHour.subtract(const Duration(hours: 23));
-      final expectedReasonsByHour = {
-        for (var i = 23; i >= 0; i--)
-          currentHour.subtract(Duration(hours: i)): <String, int>{},
-      };
-      final runs = [
-        for (final (index, spec) in scenario.runs.indexed)
-          makeTestWakeRun(
-            runKey: 'generated-hourly-run-$index',
-            reason: spec.reason,
-            createdAt: spec.createdAt(currentHour),
-          ),
-      ];
-
-      for (final spec in scenario.runs) {
-        final created = spec.createdAt(currentHour).toLocal();
-        final hourKey = DateTime(
-          created.year,
-          created.month,
-          created.day,
-          created.hour,
-        );
-        final reasons = expectedReasonsByHour[hourKey];
-        if (reasons != null) {
-          reasons[spec.reason] = (reasons[spec.reason] ?? 0) + 1;
-        }
-      }
-
-      final mockRepository = MockAgentRepository();
-      final notifications = UpdateNotifications();
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-
-      when(
-        () => mockRepository.getWakeRunsInWindow(
-          since: any(named: 'since'),
-          until: any(named: 'until'),
-        ),
-      ).thenAnswer((_) async => runs);
-
-      try {
-        final buckets = await withClock(
-          Clock.fixed(_generatedHourlyNow),
-          () => container.read(hourlyWakeActivityProvider.future),
-        );
-
-        verify(
-          () => mockRepository.getWakeRunsInWindow(
-            since: expectedSince,
-            until: _generatedHourlyNow,
-          ),
-        ).called(1);
-        expect(buckets, hasLength(24), reason: '$scenario');
-        expect(
-          buckets.map((bucket) => bucket.hour).toList(),
-          expectedReasonsByHour.keys.toList(),
-          reason: '$scenario',
-        );
-
-        for (final bucket in buckets) {
-          final expectedReasons = expectedReasonsByHour[bucket.hour]!;
-          final expectedCount = expectedReasons.values.fold<int>(
-            0,
-            (sum, count) => sum + count,
-          );
-          expect(bucket.count, expectedCount, reason: '$scenario');
-          expect(bucket.reasons, expectedReasons, reason: '$scenario');
-        }
-      } finally {
-        container.dispose();
-        await notifications.dispose();
-      }
-    }, tags: 'glados');
-
-    test('groups wake runs by hour with reason breakdown', () async {
-      final now = DateTime(2026, 4, 4, 14);
-      final mockRepository = MockAgentRepository();
-      final notifications = UpdateNotifications();
-
-      when(
-        () => mockRepository.getWakeRunsInWindow(
-          since: any(named: 'since'),
-          until: any(named: 'until'),
-        ),
-      ).thenAnswer(
-        (_) async => [
-          makeTestWakeRun(
-            runKey: 'run-1',
-            createdAt: DateTime(2026, 4, 4, 10, 5),
-          ),
-          makeTestWakeRun(
-            runKey: 'run-2',
-            createdAt: DateTime(2026, 4, 4, 10, 30),
-          ),
-          makeTestWakeRun(
-            runKey: 'run-3',
-            reason: 'creation',
-            createdAt: DateTime(2026, 4, 4, 10, 45),
-          ),
-          makeTestWakeRun(
-            runKey: 'run-4',
-            createdAt: DateTime(2026, 4, 4, 12, 15),
-          ),
-        ],
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(() {
-        notifications.dispose();
-        container.dispose();
-      });
-
-      final buckets = await withClock(
-        Clock.fixed(now),
-        () => container.read(hourlyWakeActivityProvider.future),
-      );
-
-      expect(buckets, hasLength(24));
-
-      final hour10 = buckets.firstWhere(
-        (b) => b.hour == DateTime(2026, 4, 4, 10),
-      );
-      expect(hour10.count, 3);
-      expect(hour10.reasons['subscription'], 2);
-      expect(hour10.reasons['creation'], 1);
-
-      final hour12 = buckets.firstWhere(
-        (b) => b.hour == DateTime(2026, 4, 4, 12),
-      );
-      expect(hour12.count, 1);
-      expect(hour12.reasons['subscription'], 1);
-    });
-
-    test('returns empty buckets when no wake runs exist', () async {
-      final now = DateTime(2026, 4, 4, 14);
-      final mockRepository = MockAgentRepository();
-      final notifications = UpdateNotifications();
-
-      when(
-        () => mockRepository.getWakeRunsInWindow(
-          since: any(named: 'since'),
-          until: any(named: 'until'),
-        ),
-      ).thenAnswer((_) async => []);
-
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(() {
-        notifications.dispose();
-        container.dispose();
-      });
-
-      final buckets = await withClock(
-        Clock.fixed(now),
-        () => container.read(hourlyWakeActivityProvider.future),
-      );
-
-      expect(buckets, hasLength(24));
-      expect(buckets.every((b) => b.count == 0), isTrue);
-    });
   });
 }

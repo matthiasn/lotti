@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1057]
+### Removed
+- **The agent Stats tab is gone.** Settings > Agents now opens on Templates
+  and keeps four views: Templates, Instances, Souls, and Wake Cycles. The
+  token-usage dashboard (daily/per-model charts, per-agent breakdown, and
+  24-hour wake histogram) has been removed along with its sidebar entry —
+  AI usage reporting lives in the AI Usage view instead.
+
 ### Added
 - **AI work now shows its real footprint where it was created.** Coding
   prompts, generated and analyzed images, and audio transcripts carry a

@@ -22,8 +22,6 @@ void main() {
       expect(messages.aiImpactKpiRequests, 'FÖRFRÅGNINGAR');
       expect(messages.aiImpactMetricRequests, 'Förfrågningar');
       expect(messages.aiImpactMetricTokens, 'Tokens');
-      expect(messages.agentStatsTokensPerWakeLabel, 'Tokens / väckning');
-      expect(messages.agentStatsWakesLabel, 'Väckningar');
       expect(messages.aiModelPickerProviderModelCount(2), '2 modeller');
       expect(messages.aiProviderCardStatusConnected(1), 'Ansluten · 1 modell');
     });

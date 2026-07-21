@@ -6,7 +6,6 @@ import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/agent_pending_wakes_page.dart';
 import 'package:lotti/features/agents/ui/souls/agent_souls_page.dart';
 import 'package:lotti/features/agents/ui/templates/agent_templates_page.dart';
-import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/tabs/design_system_tab.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -20,7 +19,6 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 /// so Settings V2 leaf panels (plan step 9) can deep-link into a
 /// specific tab via [AgentSettingsPage.initialTab].
 enum AgentSettingsTab {
-  stats,
   templates,
   instances,
   souls,
@@ -29,9 +27,8 @@ enum AgentSettingsTab {
 
 /// Landing page for Settings > Agents.
 ///
-/// Contains five tabs (mirrored by the `agents/<segment>` leaves in
+/// Contains four tabs (mirrored by the `agents/<segment>` leaves in
 /// the Settings V2 tree):
-/// - **Stats**: token usage and recent activity.
 /// - **Templates**: inline list of agent templates (extracted from
 ///   the former `AgentTemplateListPage`).
 /// - **Instances**: filterable list of agent instances.
@@ -41,8 +38,8 @@ enum AgentSettingsTab {
 class AgentSettingsPage extends ConsumerStatefulWidget {
   const AgentSettingsPage({this.initialTab, super.key});
 
-  /// Tab to pre-select on mount. Defaults to [AgentSettingsTab.stats]
-  /// so the legacy beamer entry-point lands on the overview.
+  /// Tab to pre-select on mount. Defaults to [AgentSettingsTab.templates]
+  /// so the legacy beamer entry-point lands on the template list.
   final AgentSettingsTab? initialTab;
 
   @override
@@ -80,7 +77,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   @override
   void initState() {
     super.initState();
-    _localFallback = widget.initialTab ?? AgentSettingsTab.stats;
+    _localFallback = widget.initialTab ?? AgentSettingsTab.templates;
     if (getIt.isRegistered<NavService>()) {
       _navService = getIt<NavService>();
     }
@@ -95,8 +92,8 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
     // [initialTab] null and the URL drives selection — skip the write
     // so we don't churn `_localFallback` no one is reading.
     if (_isUrlDriven) return;
-    final previous = oldWidget.initialTab ?? AgentSettingsTab.stats;
-    final next = widget.initialTab ?? AgentSettingsTab.stats;
+    final previous = oldWidget.initialTab ?? AgentSettingsTab.templates;
+    final next = widget.initialTab ?? AgentSettingsTab.templates;
     if (previous != next) {
       _localFallback = next;
     }
@@ -119,7 +116,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   /// tab has its own tree leaf and URL under `/settings/agents/`
   /// (see `settingsNodeUrls` and the per-tab patterns in
   /// `SettingsLocation`); the bare `/settings/agents` landing falls
-  /// through to Stats so the parent tree row stays clickable.
+  /// through to Templates so the parent tree row stays clickable.
   AgentSettingsTab _resolveTabFromRoute(DesktopSettingsRoute? route) {
     if (route == null) return _localFallback;
     return _tabFromPath(route.path);
@@ -241,7 +238,6 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
 /// table, so adding or renaming a tab is a one-line change.
 const String _kAgentsRoot = '/settings/agents';
 const Map<AgentSettingsTab, String> _kTabUrlSegments = {
-  AgentSettingsTab.stats: 'stats',
   AgentSettingsTab.templates: 'templates',
   AgentSettingsTab.instances: 'instances',
   AgentSettingsTab.souls: 'souls',
@@ -257,16 +253,16 @@ String _urlForTab(AgentSettingsTab tab) =>
 /// Inverse of [_urlForTab]: matches the first path segment after
 /// `/settings/agents/` against [_kTabUrlSegments]. Bare
 /// `/settings/agents` (or an unknown segment) falls through to
-/// `Stats` so the parent tree row stays a usable landing. Segment-
+/// `Templates` so the parent tree row stays a usable landing. Segment-
 /// aware so a future leaf like `templates-archive` can't accidentally
 /// hijack the Templates tab via prefix-only matching.
 AgentSettingsTab _tabFromPath(String path) {
-  if (!path.startsWith('$_kAgentsRoot/')) return AgentSettingsTab.stats;
+  if (!path.startsWith('$_kAgentsRoot/')) return AgentSettingsTab.templates;
   final segment = path.substring(_kAgentsRoot.length + 1).split('/').first;
   for (final entry in _kTabUrlSegments.entries) {
     if (entry.value == segment) return entry.key;
   }
-  return AgentSettingsTab.stats;
+  return AgentSettingsTab.templates;
 }
 
 class _AgentSettingsTabBar extends StatelessWidget {
@@ -284,11 +280,6 @@ class _AgentSettingsTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final tabs = [
-      (
-        tab: AgentSettingsTab.stats,
-        label: context.messages.agentStatsTabTitle,
-        counter: null as String?,
-      ),
       (
         tab: AgentSettingsTab.templates,
         label: context.messages.agentTemplatesTitle,
@@ -390,7 +381,6 @@ class _AgentSettingsTabBody extends ConsumerWidget {
     return IndexedStack(
       index: selectedTab.index,
       children: const [
-        TokenStatsTab(),
         AgentTemplatesPage(),
         AgentInstancesList(),
         AgentSoulsPage(),

@@ -518,35 +518,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu au fost înregistrate observații încă.';
 
   @override
-  String agentPendingWakesActivityHourDetail(
-    String hour,
-    int count,
-    String reasons,
-  ) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count treziri',
-      one: '1 trezire',
-    );
-    return '$hour: $_temp0 ($reasons)';
-  }
-
-  @override
-  String get agentPendingWakesActivityTitle => 'Activitate treziri (24h)';
-
-  @override
-  String agentPendingWakesActivityTotal(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count treziri în total',
-      one: '1 trezire în total',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get agentPendingWakesDeleteTooltip => 'Eliminați trezirea';
 
   @override
@@ -842,81 +813,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Număr de treziri';
-
-  @override
-  String get agentStatsAllDayLegend => 'Toată ziua';
-
-  @override
-  String get agentStatsAverageLabel => 'Medie';
-
-  @override
-  String agentStatsByTimeLegend(String time) {
-    return 'Zilnic până la $time';
-  }
-
-  @override
-  String get agentStatsCacheRateLabel => 'Rată cache';
-
-  @override
-  String get agentStatsDailyUsageHeading => 'Utilizare zilnică';
-
-  @override
-  String get agentStatsInputLabel => 'Intrare';
-
-  @override
-  String get agentStatsNoUsage =>
-      'Nu s-a înregistrat nicio utilizare de tokenuri în ultimele 7 zile.';
-
-  @override
-  String get agentStatsOutputLabel => 'Ieșire';
-
-  @override
-  String agentStatsSourceActiveFor(String duration) {
-    return 'Activ de $duration';
-  }
-
-  @override
-  String get agentStatsSourceActivityHeading => 'Activitatea agenților';
-
-  @override
-  String agentStatsSourceWakes(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de treziri',
-      few: '$count treziri',
-      one: '1 trezire',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get agentStatsTabTitle => 'Statistici';
-
-  @override
-  String get agentStatsThoughtsLabel => 'Gânduri';
-
-  @override
-  String get agentStatsTodayLabel => 'Astăzi';
-
-  @override
-  String get agentStatsTokensPerWakeLabel => 'Tokenuri / trezire';
-
-  @override
-  String get agentStatsTokensUnit => 'tokenuri';
-
-  @override
-  String agentStatsUsageAboveAverage(String time) {
-    return 'Utilizați mai multe tokenuri astăzi decât de obicei la $time.';
-  }
-
-  @override
-  String agentStatsUsageBelowAverage(String time) {
-    return 'Utilizați mai puține tokenuri astăzi decât de obicei la $time.';
-  }
-
-  @override
-  String get agentStatsWakesLabel => 'Treziri';
 
   @override
   String get agentSuggestionTimeEntryUpdateCurrent => 'Curent';
@@ -8614,10 +8510,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get settingsAgentsSoulsSubtitle =>
       'Personalități durabile ale agenților';
-
-  @override
-  String get settingsAgentsStatsSubtitle =>
-      'Utilizarea tokenilor și activitate';
 
   @override
   String get settingsAgentsTemplatesSubtitle => 'Șabloane de agenți partajate';

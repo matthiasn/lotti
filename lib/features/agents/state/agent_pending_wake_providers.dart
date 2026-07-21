@@ -1,10 +1,8 @@
-import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/hourly_wake_activity.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -322,46 +320,3 @@ Future<OngoingWakeRecord> _resolveOngoingRecord(
     startedAt: startedAt,
   );
 }
-
-/// Rolling 24-hour histogram of wake runs, one [HourlyWakeActivity] bucket per
-/// local hour (oldest first), for the sidebar activity sparkline.
-///
-/// Buckets every wake run in the last 24 hours by its local creation hour and
-/// also breaks each bucket's count down by run `reason`. Always emits exactly
-/// 24 buckets — empty hours contribute a zero-count bucket so the chart keeps a
-/// fixed width. Re-runs on the shared agent update stream.
-final hourlyWakeActivityProvider = FutureProvider<List<HourlyWakeActivity>>((
-  ref,
-) async {
-  ref.watch(agentUpdateStreamProvider(agentNotification));
-
-  final repository = ref.watch(agentRepositoryProvider);
-  final now = clock.now();
-  final currentHour = DateTime(now.year, now.month, now.day, now.hour);
-  final since = currentHour.subtract(const Duration(hours: 23));
-  final runs = await repository.getWakeRunsInWindow(since: since, until: now);
-
-  final buckets = <DateTime, Map<String, int>>{};
-  for (final run in runs) {
-    final created = run.createdAt.toLocal();
-    final hourKey = DateTime(
-      created.year,
-      created.month,
-      created.day,
-      created.hour,
-    );
-    final reasons = buckets.putIfAbsent(hourKey, () => <String, int>{});
-    reasons[run.reason] = (reasons[run.reason] ?? 0) + 1;
-  }
-
-  final result = <HourlyWakeActivity>[];
-  for (var i = 23; i >= 0; i--) {
-    final hourStart = currentHour.subtract(Duration(hours: i));
-    final reasons = buckets[hourStart] ?? const {};
-    final count = reasons.values.fold<int>(0, (sum, c) => sum + c);
-    result.add(
-      HourlyWakeActivity(hour: hourStart, count: count, reasons: reasons),
-    );
-  }
-  return result;
-});

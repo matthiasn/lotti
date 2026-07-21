@@ -319,10 +319,9 @@ flowchart TD
 ## Settings Surfaces
 
 `Settings > Agents` is the operator-facing entry point for the feature. The
-landing page now exposes five runtime views (`Stats` is the default landing
+landing page exposes four runtime views (`Templates` is the default landing
 tab):
 
-- `Stats`: token usage and recent activity
 - `Templates`: reusable agent definitions and version heads
 - `Instances`: persisted agent identities and evolution sessions
 - `Souls`: pluggable personality documents with version history and template
@@ -378,8 +377,7 @@ total/active/dormant/destroyed breakdown line.
 
 ```mermaid
 flowchart LR
-  Settings["Settings > Agents"] --> Stats["Stats tab (default)"]
-  Settings --> Templates["Templates tab"]
+  Settings["Settings > Agents"] --> Templates["Templates tab (default)"]
   Settings --> Instances["Instances tab"]
   Settings --> Souls["Souls tab"]
   Settings --> Pending["Pending Wakes tab"]

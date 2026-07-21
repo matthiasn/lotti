@@ -46,11 +46,6 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
         );
       case 'agents':
         return (title: m.agentSettingsTitle, desc: m.agentSettingsSubtitle);
-      case 'agents/stats':
-        return (
-          title: m.agentStatsTabTitle,
-          desc: m.settingsAgentsStatsSubtitle,
-        );
       case 'agents/templates':
         return (
           title: m.agentTemplatesTitle,

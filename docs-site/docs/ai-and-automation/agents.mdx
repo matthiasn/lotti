@@ -17,28 +17,7 @@ wants to change task data, Lotti presents a proposal for your review. See
 for the per-task approval controls and their narrow initial-title and language
 exceptions.
 
-## Read agent activity before changing it
-
-The **Stats** page combines wake activity and token usage. The first chart
-shows when agents woke during the last 24 hours. The daily section compares
-today with the same time on recent days, then breaks usage down by model and
-source.
-
-<ManualScreenshot
-  caseId="agents/stats"
-  alt="Lotti agent statistics showing Project Waddle wake activity, daily token usage, and model charts"
-  caption="Project Waddle's example fleet is busiest around habitat checks and launch planning; the model and source sections make that activity attributable."
-/>
-
-Use this page to answer three different questions:
-
-- **When did agents run?** Read the 24-hour wake chart.
-- **How much inference did they use?** Compare the daily and per-model charts.
-- **Which responsibility drove it?** Review the template/source breakdown.
-
-A spike is not automatically a fault. A launch-review day should be busier
-than an ordinary colony day. Investigate unexpected activity by opening the
-source template or instance before changing a global concurrency limit.
+Agent token usage is reported together with all other AI work in [Review AI usage and impact](./usage.mdx).
 
 ## Inspect the running instances
 

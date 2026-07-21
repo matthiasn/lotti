@@ -24,7 +24,6 @@ const Map<String, String> settingsNodeUrls = {
   'ai': '/settings/ai',
   'ai/profiles': '/settings/ai/profiles',
   'agents': '/settings/agents',
-  'agents/stats': '/settings/agents/stats',
   'agents/templates': '/settings/agents/templates',
   'agents/souls': '/settings/agents/souls',
   'agents/instances': '/settings/agents/instances',

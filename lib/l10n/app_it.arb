@@ -285,29 +285,6 @@
     }
   },
   "agentObservationsEmpty": "Non sono ancora state osservate osservazioni.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 risveglio} other{{count} risvegli}} ({reasons})",
-  "@agentPendingWakesActivityHourDetail": {
-    "placeholders": {
-      "hour": {
-        "type": "String"
-      },
-      "count": {
-        "type": "int"
-      },
-      "reasons": {
-        "type": "String"
-      }
-    }
-  },
-  "agentPendingWakesActivityTitle": "Attività di sveglia (24h)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 risveglio totale} other{{count} risvegli totali}}",
-  "@agentPendingWakesActivityTotal": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "agentPendingWakesDeleteTooltip": "Rimuovere la sveglia",
   "agentPendingWakesEmptyFiltered": "Nessuna scia corrisponde ai tuoi filtri.",
   "agentPendingWakesFilterSectionType": "Tipologia",
@@ -429,60 +406,6 @@
   "agentStateRevision": "Revisione",
   "agentStateSleepingUntil": "Dormire fino a quando",
   "agentStateWakeCount": "Contesto di sveglia",
-  "agentStatsAllDayLegend": "Tutto il giorno",
-  "agentStatsAverageLabel": "Media",
-  "agentStatsByTimeLegend": "Quotidiano di {time}",
-  "@agentStatsByTimeLegend": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsCacheRateLabel": "Tasso di Cache",
-  "agentStatsDailyUsageHeading": "Uso quotidiano",
-  "agentStatsInputLabel": "Dati in ingresso",
-  "agentStatsNoUsage": "Nessun utilizzo di token registrato negli ultimi 7 giorni.",
-  "agentStatsOutputLabel": "Produzione",
-  "agentStatsSourceActiveFor": "Attivo per {duration}",
-  "@agentStatsSourceActiveFor": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsSourceActivityHeading": "Attività agente",
-  "agentStatsSourceWakes": "{count, plural, =1{1 risveglio} other{{count} risvegli}}",
-  "@agentStatsSourceWakes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "agentStatsTabTitle": "Statistiche",
-  "agentStatsThoughtsLabel": "Pensieri",
-  "agentStatsTodayLabel": "Oggi",
-  "agentStatsTokensPerWakeLabel": "Tokens / Sveglia",
-  "agentStatsTokensUnit": "Tokens",
-  "agentStatsUsageAboveAverage": "Stai usando più gettoni oggi che di solito fai da {time}.",
-  "@agentStatsUsageAboveAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsUsageBelowAverage": "Stai usando meno gettoni oggi che di solito fai da {time}.",
-  "@agentStatsUsageBelowAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsWakesLabel": "Sveglia",
   "agentSuggestionTimeEntryUpdateCurrent": "Corrente",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."
@@ -4154,7 +4077,6 @@
   "settingsAgentsInstancesSubtitle": "Agenti in esecuzione",
   "settingsAgentsPendingWakesSubtitle": "Temporizzatori di veglia programmati",
   "settingsAgentsSoulsSubtitle": "Personaggi di agente di lunga durata",
-  "settingsAgentsStatsSubtitle": "Utilizzo e attività di Token",
   "settingsAgentsTemplatesSubtitle": "Analizzazioni di agente condiviso",
   "settingsAiModelsSubtitle": "Per-provider righe e funzionalità del modello",
   "settingsAiModelsTitle": "Modelli",

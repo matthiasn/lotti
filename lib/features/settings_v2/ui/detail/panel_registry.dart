@@ -207,7 +207,6 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
       'ai-models': SettingsPanelSpec(build: _aiModelsPanel),
       'ai-profiles': SettingsPanelSpec(build: _aiProfilesPanel),
       'ai-usage': SettingsPanelSpec(build: _aiUsagePanel, scrollable: true),
-      'agents-stats': SettingsPanelSpec(build: _agentsStatsPanel),
       'agents-templates': SettingsPanelSpec(build: _agentsTemplatesPanel),
       'agents-instances': SettingsPanelSpec(build: _agentsInstancesPanel),
       'agents-souls': SettingsPanelSpec(build: _agentsSoulsPanel),
@@ -426,14 +425,12 @@ Widget _aiProfilesPanel(BuildContext context) => const AiSettingsBody(
 );
 Widget _agentsPanel(BuildContext context) => const AgentSettingsBody();
 
-// Stats and pending-wakes are read-only views with no detail/create
-// flow, so they reuse `AgentSettingsBody` directly. The body resolves
-// its tab from the URL on desktop, so the explicit `initialTab`
-// argument here is just a fallback for mobile / test contexts where
-// `NavService` isn't desktop-driven.
+// Pending-wakes is a read-only view with no detail/create flow, so
+// it reuses `AgentSettingsBody` directly. The body resolves its tab
+// from the URL on desktop, so the explicit `initialTab` argument here
+// is just a fallback for mobile / test contexts where `NavService`
+// isn't desktop-driven.
 Widget _aiUsagePanel(BuildContext context) => const ImpactAnalysisBody();
-Widget _agentsStatsPanel(BuildContext context) =>
-    const AgentSettingsBody(initialTab: AgentSettingsTab.stats);
 Widget _agentsPendingWakesPanel(BuildContext context) =>
     const AgentSettingsBody(initialTab: AgentSettingsTab.pendingWakes);
 

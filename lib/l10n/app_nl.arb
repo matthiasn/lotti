@@ -284,29 +284,6 @@
     }
   },
   "agentObservationsEmpty": "Nog geen waarnemingen.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 activering} other{{count} activeringen}} ({reasons})",
-  "@agentPendingWakesActivityHourDetail": {
-    "placeholders": {
-      "hour": {
-        "type": "String"
-      },
-      "count": {
-        "type": "int"
-      },
-      "reasons": {
-        "type": "String"
-      }
-    }
-  },
-  "agentPendingWakesActivityTitle": "Wake Activity (24u)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 totale activering} other{{count} totale activeringen}}",
-  "@agentPendingWakesActivityTotal": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "agentPendingWakesDeleteTooltip": "Wakker worden verwijderen",
   "agentPendingWakesEmptyFiltered": "Geen wakes die overeenkomen met je filters.",
   "agentPendingWakesFilterSectionType": "Type",
@@ -428,60 +405,6 @@
   "agentStateRevision": "Herziening",
   "agentStateSleepingUntil": "Slapen tot",
   "agentStateWakeCount": "Wakker worden",
-  "agentStatsAllDayLegend": "De hele dag",
-  "agentStatsAverageLabel": "Gemiddelde",
-  "agentStatsByTimeLegend": "Dagelijks per {time}",
-  "@agentStatsByTimeLegend": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsCacheRateLabel": "Cache rate",
-  "agentStatsDailyUsageHeading": "Dagelijks gebruik",
-  "agentStatsInputLabel": "Invoer",
-  "agentStatsNoUsage": "Geen gebruik van token geregistreerd in de afgelopen 7 dagen.",
-  "agentStatsOutputLabel": "Uitvoer",
-  "agentStatsSourceActiveFor": "Actief voor {duration}",
-  "@agentStatsSourceActiveFor": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsSourceActivityHeading": "Agentactiviteit",
-  "agentStatsSourceWakes": "{count, plural, =1{1 activering} other{{count} activeringen}}",
-  "@agentStatsSourceWakes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "agentStatsTabTitle": "Statistieken",
-  "agentStatsThoughtsLabel": "Gedachten",
-  "agentStatsTodayLabel": "Vandaag",
-  "agentStatsTokensPerWakeLabel": "Tokens / Wake",
-  "agentStatsTokensUnit": "tokens",
-  "agentStatsUsageAboveAverage": "Je gebruikt vandaag meer tokens dan je normaal doet door {time}.",
-  "@agentStatsUsageAboveAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsUsageBelowAverage": "Je gebruikt vandaag minder tokens dan je normaal doet door {time}.",
-  "@agentStatsUsageBelowAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsWakesLabel": "Wakker worden",
   "agentSuggestionTimeEntryUpdateCurrent": "Lopend",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."
@@ -4153,7 +4076,6 @@
   "settingsAgentsInstancesSubtitle": "Werktuig",
   "settingsAgentsPendingWakesSubtitle": "Geplande wektimers",
   "settingsAgentsSoulsSubtitle": "Lange-levende agent persoonlijkheden",
-  "settingsAgentsStatsSubtitle": "Gebruik en activiteit van de token",
   "settingsAgentsTemplatesSubtitle": "Gedeelde agent blauwdrukken",
   "settingsAiModelsSubtitle": "Per provider model rijen en mogelijkheden",
   "settingsAiModelsTitle": "Modellen",
