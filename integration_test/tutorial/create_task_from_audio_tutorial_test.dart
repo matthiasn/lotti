@@ -190,6 +190,9 @@ void main() {
         await driver.tapLikeUser(find.byKey(const ValueKey('record')));
         await tester.pump(const Duration(milliseconds: 500));
 
+        // The narrator dictates in their own voice — wait for the step
+        // narration to finish so they never talk over themselves.
+        await driver.waitForNarration();
         await driver.speakIntoMic(manifest.step('record_dictation').dictation!);
 
         final stopControl = find
@@ -229,12 +232,11 @@ void main() {
           description: 'Voxtral transcript on the linked audio entry',
           timeout: const Duration(minutes: 3),
         );
-        if (transcriptText.hitTestable().evaluate().isEmpty) {
-          await driver.scrollIntoView(
-            transcriptText,
-            scrollable: detailScrollable,
-          );
-        }
+        // Bring the transcript into view on camera.
+        await driver.scrollIntoView(
+          transcriptText,
+          scrollable: detailScrollable,
+        );
       });
       expect(
         transcriptText,
@@ -252,7 +254,16 @@ void main() {
           description: 'agent title/checklist proposals in the change-set card',
           timeout: const Duration(minutes: 4),
         );
-        // Let the entrance animations finish before judging visibility.
+        // Let the entrance animations finish, then bring the proposals into
+        // view on camera. Target the confirm-all LABEL: the rail's SizedBox
+        // never registers as hit-testable even when visible.
+        await driver.holdUntil(
+          driver.timeline.elapsed + const Duration(seconds: 2),
+        );
+        await driver.scrollIntoView(
+          find.text(localized(en: 'Confirm all', de: 'Alle bestätigen')),
+          scrollable: detailScrollable,
+        );
         await driver.holdUntil(
           driver.timeline.elapsed + const Duration(seconds: 2),
         );

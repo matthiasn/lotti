@@ -64,7 +64,7 @@ def compose_video(
     timeline_path: Path,
     manifest: dict,
     output: Path,
-    size: tuple[int, int] = (1280, 720),
+    size: tuple[int, int] = (1920, 1080),
 ) -> Path:
     timeline = json.loads(timeline_path.read_text())
     offset = (timeline["zero_epoch_ms"] - capture_start_epoch_ms) / 1000
@@ -96,6 +96,20 @@ def compose_video(
         }
         for step in timeline["steps"]
     ]
+    # The narrator audibly "speaks into Lotti": mix the dictation clip at the
+    # (warped) moment it played into the virtual microphone.
+    dictation_clips = [
+        step["dictation"]["clip"]
+        for step in manifest["steps"]
+        if "dictation" in step
+    ]
+    for span, clip in zip(timeline.get("dictations", []), dictation_clips):
+        tracks.append(
+            {
+                "path": clip,
+                "start_seconds": output_time(segments, float(span["start"])),
+            }
+        )
     warped_total = total_output(segments)
 
     root = openmontage_root(repo_root)

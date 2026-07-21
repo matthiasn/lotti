@@ -43,6 +43,7 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show AiConfigRepository, aiConfigRepositoryProvider;
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
@@ -79,6 +80,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../../test/helpers/fallbacks.dart';
 import '../../test/helpers/manual_demo_world.dart';
@@ -179,10 +181,22 @@ class TutorialTimeline {
   /// footage speeds up while narration keeps playing at normal speed.
   final List<Map<String, Object>> _waits = [];
 
+  /// Spans where the dictation clip played into the virtual microphone —
+  /// the compositor mixes the same clip into the final audio here, so the
+  /// narrator is audibly "speaking into Lotti" on camera.
+  final List<Map<String, Object>> _dictations = [];
+
   Duration get elapsed => _clock.elapsed;
 
   void addWait({required Duration start, required Duration end}) {
     _waits.add({
+      'start': start.inMilliseconds / 1000,
+      'end': end.inMilliseconds / 1000,
+    });
+  }
+
+  void addDictation({required Duration start, required Duration end}) {
+    _dictations.add({
       'start': start.inMilliseconds / 1000,
       'end': end.inMilliseconds / 1000,
     });
@@ -211,9 +225,43 @@ class TutorialTimeline {
           'zero_epoch_ms': _zeroEpochMs,
           'steps': _entries,
           'waits': _waits,
+          'dictations': _dictations,
         }),
       );
   }
+}
+
+/// Resizes the real app window to fill the virtual display.
+///
+/// Under `flutter drive` the app skips `main()`'s window sizing and opens at
+/// the GTK runner default (1280x720, `my_application.cc`). The Xvfb display
+/// has no window manager, so fullscreen hints are ignored — direct resizes
+/// work, but only once GTK has fully mapped the window; retry until the
+/// Flutter view actually reports the requested size.
+Future<void> fillDisplay(
+  WidgetTester tester, {
+  Size size = const Size(1920, 1080),
+}) async {
+  await windowManager.ensureInitialized();
+  for (var attempt = 0; attempt < 20; attempt++) {
+    await windowManager.setBounds(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+    );
+    for (var frame = 0; frame < 30; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    final view = tester.view;
+    final logical = view.physicalSize / view.devicePixelRatio;
+    if ((logical.width - size.width).abs() < 4 &&
+        (logical.height - size.height).abs() < 4) {
+      return;
+    }
+  }
+  final view = tester.view;
+  throw StateError(
+    'window did not resize to $size '
+    '(is ${view.physicalSize / view.devicePixelRatio})',
+  );
 }
 
 /// Animated on-screen cursor for the recording.
@@ -265,23 +313,40 @@ class TutorialCursorLayer extends StatelessWidget {
                     return Center(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: const Color(0xB3101512),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0x332EE6A8)),
+                          color: const Color(0xE60B120E),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0x882EE6A8),
+                            width: 1.5,
+                          ),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 14,
+                            vertical: 6,
                           ),
-                          child: Text(
-                            '$minutes:${seconds.toString().padLeft(2, '0')}',
-                            style: const TextStyle(
-                              color: Color(0xFFB8EFD9),
-                              fontSize: 13,
-                              fontFamily: 'monospace',
-                              fontFeatures: [FontFeature.tabularFigures()],
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.timer_outlined,
+                                size: 20,
+                                color: Color(0xFF2EE6A8),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '$minutes:${seconds.toString().padLeft(2, '0')}',
+                                style: const TextStyle(
+                                  color: Color(0xFFDFFCEF),
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'monospace',
+                                  fontFeatures: [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -421,6 +486,12 @@ class TutorialAppHarness {
       // (ManualLanguageController) — platformDispatcher test locales are not
       // enough for the real desktop shell.
       settingsDb.saveSettingsItem(manualLanguageSettingsKey, languageCode),
+      // Detail-heavy layout for the camera: narrow sidebar and list panes
+      // so the task detail (agent card, transcript) gets maximum width and
+      // avoids text wrapping.
+      settingsDb.saveSettingsItem(sidebarWidthKey, '$minSidebarWidth'),
+      settingsDb.saveSettingsItem(listPaneWidthKey, '340.0'),
+      settingsDb.saveSettingsItem(journalListPaneWidthKey, '340.0'),
     ]);
 
     getIt
@@ -680,12 +751,29 @@ class TutorialDriver {
     await tester.pump(const Duration(milliseconds: 120));
   }
 
+  TutorialStepPlan? _activePlan;
+  Duration _activeStepStart = Duration.zero;
+
+  /// Holds until the active step's narration has finished (plus a beat) —
+  /// used before the dictation so the narrator never talks over themselves.
+  Future<void> waitForNarration() async {
+    final plan = _activePlan;
+    if (plan == null) return;
+    await holdUntil(
+      _activeStepStart +
+          plan.narration.duration +
+          const Duration(milliseconds: 400),
+    );
+  }
+
   /// Runs [action], then holds the step until both the scenario's
   /// min_duration and the narration clip length (plus a short pad) have
   /// elapsed since the step started.
   Future<void> step(String id, Future<void> Function() action) async {
     final plan = manifest.step(id);
     final start = timeline.elapsed;
+    _activePlan = plan;
+    _activeStepStart = start;
     await action();
     final floor = _longer(
       plan.minDuration,
@@ -716,10 +804,14 @@ class TutorialDriver {
         'virtual microphone before launching the app.',
       );
     }
+    final start = timeline.elapsed;
     final playback = Process.run('paplay', ['--device=$sink', clip.path]);
     await holdUntil(
       timeline.elapsed + clip.duration + const Duration(milliseconds: 400),
     );
+    // Recorded so the compositor mixes the same clip into the final audio —
+    // the narrator audibly speaks into Lotti at exactly this moment.
+    timeline.addDictation(start: start, end: timeline.elapsed);
     final result = await playback;
     if (result.exitCode != 0) {
       throw StateError('paplay failed: ${result.stderr}');

@@ -1,0 +1,348 @@
+/// Tutorial-video driver: "let AI create your task's cover art".
+///
+/// Drives the real app through the scenario in
+/// `tools/tutorial_videos/config/scenarios/task_cover_art.yaml`:
+///
+///  1. open a simple task that carries a voice note describing it,
+///  2. run "Generate Cover Art" from the note's advanced-actions menu,
+///  3. watch the generation progress, then the artwork land as the task's
+///     cover in the header and on the list card.
+///
+/// The image GENERATION is mocked deterministically (the bundled penguin
+/// artwork every run, short realistic latency) by overriding
+/// `cloudInferenceRepositoryProvider` — everything else (skill modal,
+/// progress view, image import, automatic cover assignment) is the real
+/// product pipeline (`SkillInferenceRunner.runImageGeneration`).
+library;
+
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
+import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
+import 'package:lotti/features/tasks/ui/task_expandable_app_bar.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+
+import '../../test/helpers/manual_screenshot_locale.dart';
+import '../manual_screenshot_utils.dart';
+import 'tutorial_harness.dart';
+
+const _providerId = 'tutorial-image-provider';
+const _thinkingModelId = 'tutorial-image-thinking-model';
+const _imageModelId = 'tutorial-image-gen-model';
+const _profileId = 'tutorial-image-profile';
+
+/// Deterministic image "generation": returns the bundled penguin artwork
+/// after a short, realistic delay. Same cover art every run.
+class _FakeCloudInferenceRepository extends CloudInferenceRepository {
+  _FakeCloudInferenceRepository(super.ref);
+
+  @override
+  Future<GeneratedImage> generateImage({
+    required String prompt,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
+    InferenceImpactCollector? impactCollector,
+  }) async {
+    await Future<void>.delayed(const Duration(seconds: 5));
+    final data = await rootBundle.load(
+      'assets/design_system/manual_task_cover_habitat.webp',
+    );
+    return GeneratedImage(
+      bytes: data.buffer.asUint8List(),
+      mimeType: 'image/webp',
+    );
+  }
+}
+
+void main() {
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  final manifest = TutorialManifest.fromEnvironment();
+  final locale = manualScreenshotLocaleFromEnvironment(Platform.environment);
+  String localized({required String en, required String de}) =>
+      manualScreenshotText(en: en, de: de);
+
+  testWidgets(
+    'drives the task-cover-art tutorial flow',
+    (tester) async {
+      tester.platformDispatcher.localeTestValue = locale;
+      addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+
+      final harness = await TutorialAppHarness.setUp(
+        aiConfigs: _imageGenConfigs(),
+        languageCode: locale.languageCode,
+        categoryTransform: (category) =>
+            category.copyWith(defaultProfileId: _profileId),
+      );
+      addTearDown(harness.dispose);
+
+      final taskTitle = localized(
+        en: 'Plan the penguin photo expedition',
+        de: 'Pinguin-Fotoexpedition planen',
+      );
+      final task = await harness.persistenceLogic.createTaskEntry(
+        data: TaskData(
+          title: taskTitle,
+          status: TaskStatus.open(
+            id: 'tutorial-cover-task-status',
+            createdAt: DateTime.now(),
+            utcOffset: DateTime.now().timeZoneOffset.inMinutes,
+          ),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          statusHistory: const [],
+        ),
+        entryText: const EntryText(plainText: ''),
+        categoryId: harness.world.category.id,
+      );
+      expect(task, isNotNull);
+
+      // The voice note whose description feeds the cover-art generation.
+      final noteMeta = await harness.persistenceLogic.createMetadata();
+      final audioNote = JournalEntity.journalAudio(
+        meta: noteMeta.copyWith(categoryId: harness.world.category.id),
+        data: AudioData(
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          audioFile: 'tutorial-note.m4a',
+          audioDirectory: '/audio/tutorial/',
+          duration: const Duration(seconds: 17),
+          transcripts: [
+            AudioTranscript(
+              created: DateTime.now(),
+              library: 'tutorial',
+              model: 'voxtral-small-24b-2507',
+              detectedLanguage: locale.languageCode,
+              transcript: localized(
+                en:
+                    'A colony of emperor penguins on the ice shelf at '
+                    'golden hour, aurora overhead, expedition gear in the '
+                    'foreground — Project Waddle.',
+                de:
+                    'Eine Kolonie Kaiserpinguine auf dem Schelfeis zur '
+                    'goldenen Stunde, Polarlicht am Himmel, '
+                    'Expeditionsausrüstung im Vordergrund — Projekt Waddle.',
+              ),
+            ),
+          ],
+        ),
+      );
+      await harness.persistenceLogic.createDbEntity(
+        audioNote,
+        shouldAddGeolocation: false,
+        enqueueSync: false,
+        linkedId: task!.id,
+      );
+
+      final cursor = TutorialCursorController();
+      final hudClock = ValueNotifier<Duration>(Duration.zero);
+      addTearDown(hudClock.dispose);
+      await tester.pumpWidget(
+        manualScreenshotBoundary(
+          child: TutorialCursorLayer(
+            controller: cursor,
+            elapsed: hudClock,
+            child: ProviderScope(
+              overrides: [
+                ...harness.providerOverrides(),
+                cloudInferenceRepositoryProvider.overrideWith(
+                  _FakeCloudInferenceRepository.new,
+                ),
+              ],
+              child: MyBeamerApp(
+                navService: harness.navService,
+                userActivityService: harness.userActivityService,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await fillDisplay(tester);
+      for (var i = 0; i < 300; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+
+      final driver =
+          TutorialDriver(
+              tester: tester,
+              manifest: manifest,
+              cursor: cursor,
+              hud: hudClock,
+            )
+            ..diagnostics = () {
+              final nav = harness.navService;
+              return 'currentPath=${nav.currentPath} '
+                  'detailStack=${nav.desktopTaskDetailStack.value} '
+                  'moreButtons=${find.byTooltip(localized(en: 'More actions', de: 'Weitere Aktionen')).evaluate().length}';
+            }
+            ..onTimeout = (context) => captureManualScreenshot(
+              binding: binding,
+              tester: tester,
+              name: 'failure_$context',
+            );
+
+      final taskCard = find.descendant(
+        of: find.byType(TasksTabPage),
+        matching: find.byKey(ValueKey(task.id)),
+      );
+      final listScrollable = find.descendant(
+        of: find.byType(TasksTabPage),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Scrollable &&
+              axisDirectionToAxis(widget.axisDirection) == Axis.vertical,
+        ),
+      );
+      final detailScrollable = find.descendant(
+        of: find.byType(TaskDetailsPage),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Scrollable &&
+              axisDirectionToAxis(widget.axisDirection) == Axis.vertical,
+        ),
+      );
+
+      await driver.step('intro', () async {
+        final tasksRailItem = find
+            .text(localized(en: 'Tasks', de: 'Aufgaben'))
+            .hitTestable();
+        await driver.pumpUntilFound(tasksRailItem);
+        await driver.holdUntil(const Duration(seconds: 2));
+        await driver.tapLikeUser(tasksRailItem);
+        await driver.pumpUntilFound(taskCard);
+      });
+
+      await driver.step('open_task', () async {
+        await driver.scrollIntoView(taskCard, scrollable: listScrollable);
+        await driver.tapLikeUser(taskCard.hitTestable());
+        await driver.pumpUntilFound(find.byKey(TaskActionBar.audioKey));
+        // Bring the voice note (with its description) into view.
+        await driver.scrollIntoView(
+          find.textContaining('Waddle'),
+          scrollable: detailScrollable,
+        );
+      });
+
+      await driver.step('generate', () async {
+        final moreActions = find
+            .byTooltip(localized(en: 'More actions', de: 'Weitere Aktionen'))
+            .hitTestable();
+        await driver.pumpUntilFound(moreActions);
+        // The task's own header carries the same tooltip; the note's menu
+        // is the later match in tree order.
+        await driver.tapLikeUser(moreActions.last);
+        final generateItem = find.text(
+          localized(en: 'Generate Cover Art', de: 'Titelbild generieren'),
+        );
+        await driver.pumpUntilFound(generateItem);
+        await driver.tapLikeUser(generateItem.hitTestable());
+      });
+
+      await driver.step('generating', () async {
+        await driver.pumpUntilFound(
+          find.text(
+            localized(
+              en: 'Generating image...',
+              de: 'Bild wird generiert...',
+            ),
+          ),
+          timeout: const Duration(seconds: 15),
+        );
+        await driver.pumpUntil(
+          () async {
+            final entity = await harness.journalDb.journalEntityById(task.id);
+            return entity is Task && entity.data.coverArtId != null;
+          },
+          description: 'generated image assigned as task cover',
+          timeout: const Duration(minutes: 2),
+        );
+      });
+
+      await driver.step('cover_ready', () async {
+        // Dismiss the completion modal via the barrier, then show off the
+        // cover in the header and on the list card.
+        await tester.tapAt(const Offset(180, 540));
+        await tester.pump(const Duration(milliseconds: 600));
+        await driver.pumpUntilFound(
+          find.byType(TaskExpandableAppBar),
+          timeout: const Duration(seconds: 20),
+        );
+        await driver.scrollIntoView(taskCard, scrollable: listScrollable);
+        await driver.pumpUntil(
+          () => find
+              .descendant(of: taskCard, matching: find.byType(Image))
+              .evaluate()
+              .isNotEmpty,
+          description: 'cover art visible on the list card',
+        );
+      });
+
+      await driver.step('outro', () async {});
+
+      driver.timeline.write();
+    },
+    timeout: const Timeout(Duration(minutes: 10)),
+  );
+}
+
+/// Image-generation seed: provider + single image-output model (no picker
+/// modal) + default profile with the image-generation slot set. The fake
+/// repository makes no network calls, but profile resolution requires the
+/// rows to exist.
+List<AiConfig> _imageGenConfigs() {
+  final createdAt = DateTime.now();
+  return [
+    AiConfig.inferenceProvider(
+      id: _providerId,
+      name: 'Tutorial Images',
+      baseUrl: 'https://images.invalid',
+      apiKey: 'tutorial-fake-key',
+      createdAt: createdAt,
+      inferenceProviderType: InferenceProviderType.gemini,
+    ),
+    AiConfig.model(
+      id: _thinkingModelId,
+      name: 'Tutorial Thinking',
+      providerModelId: 'tutorial-thinking',
+      inferenceProviderId: _providerId,
+      createdAt: createdAt,
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.text],
+      isReasoningModel: true,
+    ),
+    AiConfig.model(
+      id: _imageModelId,
+      name: 'Tutorial Cover Artist',
+      providerModelId: 'tutorial-cover-artist',
+      inferenceProviderId: _providerId,
+      createdAt: createdAt,
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.image],
+      isReasoningModel: false,
+    ),
+    AiConfig.inferenceProfile(
+      id: _profileId,
+      name: 'Tutorial Images',
+      thinkingModelId: _thinkingModelId,
+      imageGenerationModelId: _imageModelId,
+      createdAt: createdAt,
+    ),
+  ];
+}

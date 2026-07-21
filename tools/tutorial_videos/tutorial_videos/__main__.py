@@ -85,7 +85,7 @@ def cmd_build(args: argparse.Namespace) -> int:
     capture_path = out_dir / f"{scenario_locale}.capture.mkv"
     video_path = out_dir / f"{scenario_locale}.mp4"
 
-    display, size, sink = ":99", "1280x720", "lotti_tutorial_mic"
+    display, size, sink = ":99", "1920x1080", "lotti_tutorial_mic"
     secrets = _read_env_pairs(["MELIOUS_API_KEY", "MELIOUS_BASE_URL"])
 
     with XvfbDisplay(display=display, size=size), VirtualMic(sink_name=sink):

@@ -19,8 +19,11 @@ streams:
     style:
       en: "Speak as a calm, friendly tutorial narrator:"
       de: "Sprich als ruhige, freundliche Tutorial-Erzählerin:"
+  # Same voice as the narrator: the narrator audibly "speaks into Lotti"
+  # when dictating; the clip is mixed into the final video at the moment it
+  # plays into the virtual microphone.
   user_voice:
-    voice: Puck
+    voice: Kore
     style:
       en: "Speak naturally, as someone dictating a note to their phone:"
       de: "Sprich natürlich, wie jemand, der seinem Telefon eine Notiz diktiert:"

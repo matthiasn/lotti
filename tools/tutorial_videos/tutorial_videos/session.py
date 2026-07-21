@@ -36,7 +36,7 @@ def _run(cmd: list[str]) -> str:
 class XvfbDisplay:
     """``Xvfb :N`` sized to the app window so the capture is exactly the app."""
 
-    def __init__(self, display: str = ":99", size: str = "1280x720") -> None:
+    def __init__(self, display: str = ":99", size: str = "1920x1080") -> None:
         self.display = display
         self.size = size
         self._process: subprocess.Popen[bytes] | None = None

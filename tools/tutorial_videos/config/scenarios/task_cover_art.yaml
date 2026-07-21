@@ -1,13 +1,15 @@
-# Tutorial scenario: give a simple task a face — attach an image and set it
-# as the task's cover art, then see it in the header and the task list.
-# The image entry is pre-linked by the harness (native pickers and OS drag
-# sessions cannot be scripted); the visible story is the "Set cover" flow.
+# Tutorial scenario: let the AI create cover art for a simple task — run
+# "Generate Cover Art" on the task's note and watch the generated image
+# become the task's cover in the header and the list.
+# The image generation itself is mocked deterministically (same penguin
+# artwork every run) so the video is reproducible; the entire UI flow —
+# menu, progress, import, cover assignment — is the real product code.
 
 scenario: task_cover_art
 
 title:
-  en: Give your task a cover image
-  de: Gib deiner Aufgabe ein Titelbild
+  en: Let AI create your task's cover art
+  de: Lass die KI dein Aufgaben-Titelbild gestalten
 
 dictionary:
   en:
@@ -20,60 +22,58 @@ steps:
     min_duration: 4.0
     narration:
       en: >-
-        Tasks don't have to be walls of text. In this tutorial you'll give a
-        task its own cover image — and see it everywhere the task appears.
+        Tasks don't have to be walls of text. In this tutorial, Lotti's AI
+        creates a cover image for a task — straight from its description.
       de: >-
-        Aufgaben müssen keine Textwüsten sein. In diesem Tutorial gibst du
-        einer Aufgabe ihr eigenes Titelbild — und siehst es überall, wo die
-        Aufgabe auftaucht.
+        Aufgaben müssen keine Textwüsten sein. In diesem Tutorial gestaltet
+        Lottis KI ein Titelbild für eine Aufgabe — direkt aus ihrer
+        Beschreibung.
 
   - id: open_task
-    min_duration: 3.0
-    narration:
-      en: >-
-        Here's our task — it already has a photo attached, the way any image
-        lands on a task: drop it in or attach it from the action bar.
-      de: >-
-        Hier ist unsere Aufgabe — mit einem angehängten Foto, so wie jedes
-        Bild auf eine Aufgabe kommt: einfach hineinziehen oder über die
-        Aktionsleiste anhängen.
-
-  - id: open_image_menu
-    min_duration: 3.0
-    narration:
-      en: >-
-        Open the photo's menu — this is where an attached image becomes
-        something more.
-      de: >-
-        Öffne das Menü des Fotos — hier wird aus einem angehängten Bild
-        etwas mehr.
-
-  - id: set_cover
     min_duration: 4.0
     narration:
       en: >-
-        One tap on "Set cover" — and the image moves right into the task
-        header.
+        Here's our task, with a note describing what it's about — that
+        description is all the AI needs.
       de: >-
-        Ein Tipp auf „Titelbild setzen" — und das Bild wandert direkt in den
-        Kopf der Aufgabe.
+        Hier ist unsere Aufgabe, mit einer Notiz, die beschreibt, worum es
+        geht — mehr braucht die KI nicht.
 
-  - id: see_in_list
+  - id: generate
     min_duration: 4.0
     narration:
       en: >-
-        Back in the list, the task now carries its cover — recognizable at a
-        glance between all the others.
+        Open the note's menu and choose "Generate Cover Art" — Lotti reads
+        the description and gets to work.
       de: >-
-        Zurück in der Liste trägt die Aufgabe jetzt ihr Titelbild — auf
-        einen Blick erkennbar zwischen allen anderen.
+        Öffne das Menü der Notiz und wähle „Titelbild generieren" — Lotti
+        liest die Beschreibung und legt los.
+
+  - id: generating
+    min_duration: 5.0
+    narration:
+      en: >-
+        A moment of image generation — you can close this anytime, it keeps
+        running in the background.
+      de: >-
+        Ein Moment Bildgenerierung — du kannst das jederzeit schließen, es
+        läuft im Hintergrund weiter.
+
+  - id: cover_ready
+    min_duration: 5.0
+    narration:
+      en: >-
+        And there it is: the generated artwork lands right in the task
+        header — and on the task's card in the list.
+      de: >-
+        Und da ist es: das generierte Bild landet direkt im Kopf der
+        Aufgabe — und auf ihrer Karte in der Liste.
 
   - id: outro
     min_duration: 3.0
     narration:
       en: >-
-        That's it — one image, and your task has a face. Try it with your
-        own tasks.
+        One tap, one image, instant recognition. Try it on your own tasks.
       de: >-
-        Das war's — ein Bild, und deine Aufgabe hat ein Gesicht. Probier es
-        mit deinen eigenen Aufgaben.
+        Ein Tipp, ein Bild, sofortiger Wiedererkennungswert. Probier es mit
+        deinen eigenen Aufgaben.
