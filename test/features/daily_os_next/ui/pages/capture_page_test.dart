@@ -9,7 +9,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
@@ -466,7 +465,7 @@ void main() {
     });
 
     testWidgets(
-      'transcribing phase shows the inference bars and narrates honestly',
+      'transcribing phase keeps the frozen waveform and narrates honestly',
       (tester) async {
         await tester.pumpWidget(
           _wrap(
@@ -488,8 +487,7 @@ void main() {
 
         final messages = tester.element(find.byType(CapturePage)).messages;
         // No spinner: the headline + caption narrate the state, and the
-        // dancing inference bars take over the reserved waveform slot so
-        // the multi-second batch transcription visibly works.
+        // waveform stays frozen (dimmed) in its slot so nothing jumps.
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(
           find.text(messages.dailyOsNextCaptureHeadlineTranscribing),
@@ -499,8 +497,7 @@ void main() {
           find.text(messages.dailyOsNextCaptureTranscribing),
           findsOneWidget,
         );
-        expect(find.byType(LiveWaveform), findsNothing);
-        expect(find.byType(AiRunningAnimation), findsOneWidget);
+        expect(find.byType(LiveWaveform), findsOneWidget);
       },
     );
 

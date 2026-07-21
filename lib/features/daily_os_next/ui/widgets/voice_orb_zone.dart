@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
@@ -73,6 +72,8 @@ class VoiceOrbZone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final showWaveform =
+        phase == CapturePhase.listening || phase == CapturePhase.transcribing;
 
     final captionStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: captionColor,
@@ -83,24 +84,17 @@ class VoiceOrbZone extends StatelessWidget {
       children: [
         SizedBox(
           height: waveformSlotHeight,
-          child: switch (phase) {
-            CapturePhase.listening => LiveWaveform(
-              amplitudes: amplitudes,
-              width: 220,
-              height: waveformSlotHeight,
-            ),
-            // Batch transcription runs for several seconds with no live
-            // text; the dancing inference bars carry the busy signal in
-            // the exact slot the live waveform occupied, so the zone
-            // geometry never moves between phases.
-            CapturePhase.transcribing => const Center(
-              child: SizedBox(
-                width: 220,
-                child: AiRunningAnimation(height: waveformSlotHeight),
-              ),
-            ),
-            _ => null,
-          },
+          child: showWaveform
+              ? AnimatedOpacity(
+                  opacity: phase == CapturePhase.listening ? 1.0 : 0.4,
+                  duration: const Duration(milliseconds: 200),
+                  child: LiveWaveform(
+                    amplitudes: amplitudes,
+                    width: 220,
+                    height: waveformSlotHeight,
+                  ),
+                )
+              : null,
         ),
         // step5 air on both sides of the orb: the listening shader spills
         // past the button field, so the neighbours need clearance for it

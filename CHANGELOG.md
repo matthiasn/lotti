@@ -13,10 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   AI usage reporting lives in the AI Usage view instead.
 
 ### Added
-- **The wait after a check-in is now visibly busy.** From the moment you stop
-  recording until "Here's what I heard" fills in, the familiar dancing AI
-  bars animate in the waveform slot and in the Heard column — no more
-  seconds of frozen screen while transcription and parsing run.
+- **"Here's what I heard" is now visibly busy while it works.** The familiar
+  dancing AI bars animate on the reconcile screen until parsing fills the
+  Heard column — previously the screen sat frozen for many seconds because
+  the busy indicator was wired to a signal that never fired.
 - **Edit a day recording's text right on its Activity card.** The separate
   text dialog is gone — every unsubmitted recording now embeds the same
   rich-text editor used across the journal, with its familiar toolbar and

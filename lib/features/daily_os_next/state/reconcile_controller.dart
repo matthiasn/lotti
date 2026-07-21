@@ -3,7 +3,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
@@ -99,9 +99,13 @@ class ReconcileController extends AsyncNotifier<ReconcileData> {
     // notification doesn't carry the capture id. Uses `listen` (not `watch`)
     // so the signal's intermediate emissions don't re-run — and abort — the
     // initial parse build.
+    // Keyed by the planner identity that actually executes day wakes —
+    // day-scoped ids (`dayplan-…`) never appear in the wake runner, so a
+    // day-id key would leave this signal permanently false. Revisit when
+    // ADR 0032 introduces per-day agent identities.
     ref
       ..watch(reconcileCaptureUpdateProvider(params.captureId.value))
-      ..listen(agentIsRunningProvider(dayAgentIdForDate(params.dayDate)), (
+      ..listen(agentIsRunningProvider(dailyOsPlannerAgentId), (
         previous,
         next,
       ) {

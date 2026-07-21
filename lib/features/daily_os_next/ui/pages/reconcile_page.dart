@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
@@ -201,11 +201,12 @@ class _HeardColumn extends ConsumerWidget {
     // While the capture-submitted parse wake is still running, the parsed
     // cards haven't landed yet — surface the AI thinking shader above the
     // empty placeholder so the column reads as "working", not "done/empty".
+    // Keyed by the planner identity that actually executes day wakes — a
+    // day-scoped id never appears in the wake runner, so keying by it left
+    // this signal permanently false and the column read as "done/empty"
+    // during the whole parse. Revisit with ADR 0032 per-day identities.
     final isParsing =
-        ref
-            .watch(agentIsRunningProvider(dayAgentIdForDate(params.dayDate)))
-            .value ??
-        false;
+        ref.watch(agentIsRunningProvider(dailyOsPlannerAgentId)).value ?? false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
