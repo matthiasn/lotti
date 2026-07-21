@@ -29,9 +29,11 @@ than the journal content it derives from.
    `LearningQuizEventEnvelope` in `AgentMessageMetadata` with a closed
    union: `quizRequested`, `quizGenerated`, `quizGenerationFailed`,
    `quizStarted`, `itemAnswered`, `itemProbed`, `itemGraded`,
-   `itemGradingFailed`, `quizCompleted`, `quizAbandoned`,
-   `suggestionOffered`, `suggestionDismissed`, `quizDeleted`. Causal order
-   comes from the message DAG; timestamps are ordinary `createdAt` values.
+   `itemGradingFailed`, `itemSkipped`, `itemRevealed`, `quizCompleted`,
+   `quizAbandoned`, `suggestionOffered`, `suggestionDismissed`,
+   `quizDeleted`. A quiz completes when every item is graded, skipped, or
+   revealed. Causal order comes from the message DAG; timestamps are
+   ordinary `createdAt` values.
 3. **Immutable artifacts, referenced by events.**
    `LearningQuizSessionEntity` (per-run anchor, ID equal to its
    `quizRequestId`, task ref, scope, depth choice; no status field —
@@ -40,12 +42,16 @@ than the journal content it derives from.
    (frozen items, keys, citations, generator provenance),
    `LearningQuizAttemptEntity` (answer or probe reply with modality),
    `LearningQuizItemGradeEntity`, and `LearningQuizAssessmentEntity`. Typed
-   links: session → task/snapshot/definition, attempt → item thread,
-   grade → thread, assessment → session.
+   links: session → task/snapshot/definition; attempt, grade, and
+   assessment → session. Items are rows inside the immutable definition
+   artifact, not entities; every attempt and grade identifies its item by
+   definition digest, item ID, and round ordinal in its payload.
 4. **Identity.** `quizRequestId` is minted once per UI action and reused
-   through retries. Content-addressed artifacts are UUID v5 over canonical
-   payload and insert-or-verify-identical on sync; attempts are UUID v4 and
-   never deduplicated. A session with any attempt wins presentation over
+   through retries. Content-addressed artifacts are UUID v5 over the owning
+   `quizRequestId` plus canonical payload — session-scoped, so identical
+   content in two sessions yields distinct artifacts — and
+   insert-or-verify-identical on sync; attempts are UUID v4 and never
+   deduplicated. A session with any attempt wins presentation over
    unengaged siblings; equally unengaged siblings converge on the lowest
    definition digest.
 5. **Device-local boundaries.** Answer drafts and raw audio awaiting
@@ -53,8 +59,10 @@ than the journal content it derives from.
    unless explicitly kept as a journal audio entry.
 6. **Deletion is the app's normal deletion.** `quizDeleted` covers a
    session, task, or category selector; projections hide covered history and
-   devices purge covered payloads on observing it. History is exportable
-   with agent data.
+   devices purge covered payloads on observing it. Because artifact
+   identity is session-scoped, purging a covered lineage can never strand
+   references held by another session. History is exportable with agent
+   data.
 7. **Projections are rebuildable** from the log: session-detail timeline
    (questions, answers, probes, grades, assessment in causal order), open
    sessions, per-task and per-category history.

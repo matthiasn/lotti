@@ -149,14 +149,21 @@ including the full event union and artifact field lists.
 
 - Events (`LearningQuizEventEnvelope`): `quizRequested`, `quizGenerated`,
   `quizGenerationFailed`, `quizStarted`, `itemAnswered`, `itemProbed`,
-  `itemGraded`, `itemGradingFailed`, `quizCompleted`, `quizAbandoned`,
-  `suggestionOffered`, `suggestionDismissed`, `quizDeleted`.
+  `itemGraded`, `itemGradingFailed`, `itemSkipped`, `itemRevealed`,
+  `quizCompleted`, `quizAbandoned`, `suggestionOffered`,
+  `suggestionDismissed`, `quizDeleted`. A quiz completes when every item is
+  graded, skipped, or revealed; skipped and revealed items stay excluded
+  from scoring per ADR 0036.
 - Artifacts: session anchor (ID = `quizRequestId`, linked to the task),
   evidence snapshot, quiz definition, attempts (one per answer or probe
-  reply), item grades, session assessment.
+  reply), item grades, session assessment. Items are rows inside the frozen
+  definition, not entities; attempts and grades identify their item by
+  definition digest, item ID, and round ordinal.
 - Identity: request ID minted once per tap; content-addressed artifacts are
-  UUID v5 insert-or-verify; attempts are never deduplicated; an engaged
-  session wins over unengaged siblings.
+  UUID v5 over the session's request ID plus canonical payload
+  (session-scoped, so deleting one session can never strand another
+  session's references) and insert-or-verify; attempts are never
+  deduplicated; an engaged session wins over unengaged siblings.
 
 ```mermaid
 stateDiagram-v2
@@ -165,7 +172,7 @@ stateDiagram-v2
   generating --> generationFailed: quizGenerationFailed
   generationFailed --> generating: user retry
   ready --> inProgress: quizStarted
-  inProgress --> inProgress: itemAnswered / itemProbed / itemGraded
+  inProgress --> inProgress: item answered / probed / graded / skipped / revealed
   inProgress --> completed: quizCompleted
   ready --> abandoned: quizAbandoned
   inProgress --> abandoned: quizAbandoned
@@ -201,11 +208,15 @@ Ownership: [ADR 0034](../adr/0034-hybrid-understanding-evaluation.md).
 ## 8. Feedback and grades
 
 Ownership: [ADR 0036](../adr/0036-learning-understanding-rating.md).
-Per-item verdicts with gap explanations; session score computed in code
-(multiple-choice weight 1, open weight 2) with labels Solid grasp ≥ 85,
-Getting there 60–84, Needs review < 60; feedback-first presentation;
-hideable numbers; "this grade seems wrong" records disagreement; no
-leaderboards, comparison, or gating; grades never touch `RatingEntry`.
+Per-item verdicts with gap explanations. Multiple choice scores 100 or 0
+against the frozen key; an open item contributes the grader's 0–100 item
+score; the session score is the weighted mean (multiple-choice weight 1,
+open weight 2) of answered items, rounded to the nearest integer, so the
+integer bands are exhaustive: Solid grasp ≥ 85, Getting there 60–84, Needs
+review < 60. Skipped and revealed items are excluded. Feedback-first
+presentation; hideable numbers; "this grade seems wrong" records
+disagreement; no leaderboards, comparison, or gating; grades never touch
+`RatingEntry`.
 
 ## 9. Triggering
 
@@ -219,8 +230,10 @@ week with snooze/disable, running zero inference before acceptance.
 - Quizzing sends captured task content to the category's configured
   inference provider — the same consent surface as existing AI features;
   the entry sheet shows the resolved provider/model.
-- Synced learning artifacts contain only task-derived content the user
-  already syncs; drafts and raw audio stay device-local.
+- Synced learning artifacts add new agent-domain content — snapshot
+  sections, generated questions, answers and probe replies, grades and
+  assessments — carried over the same sync channel and trust model as all
+  other agent data; drafts and raw audio stay device-local.
 - History is private, exportable, and deletable per session, task, or
   category. No telemetry contains questions, answers, or grades.
 

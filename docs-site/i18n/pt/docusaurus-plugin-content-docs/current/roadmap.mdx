@@ -12,13 +12,17 @@ Tudo nesta página é intenção de design, não uma funcionalidade lançada; o
 ## Verifique a sua compreensão, não apenas o resultado
 
 Os questionários de aprendizagem transformam as suas tarefas em verificações
-rápidas de compreensão. A partir de qualquer tarefa poderá tocar em
-**Verificar a minha compreensão** e receber um questionário curto, feito à
-medida do conteúdo dessa tarefa, com perguntas de escolha múltipla e
-perguntas abertas às quais responde por escrito ou por voz. A avaliação é
-conversacional: quando uma resposta é superficial ou ambígua, a IA faz uma
-pergunta de seguimento antes de julgar, e depois explica o que lhe escapou —
-ancorado no conteúdo da tarefa de onde a pergunta veio. Cada questionário
+rápidas de compreensão. A partir de qualquer tarefa com conteúdo adequado a
+um questionário poderá tocar em **Verificar a minha compreensão** e receber
+um questionário curto, feito à medida dessa tarefa, com perguntas de
+escolha múltipla e perguntas abertas às quais responde por escrito ou por
+voz; um questionário requer IA configurada para a categoria da tarefa, e há
+apenas um questionário ativo por tarefa. A avaliação é conversacional:
+quando uma resposta é superficial ou ambígua, a IA faz uma pergunta de
+seguimento — no máximo duas por pergunta — antes de julgar, e pode terminar
+o seguimento, saltar uma pergunta ou revelar a resposta em qualquer
+momento; cada falha é explicada — ancorada no conteúdo da tarefa de onde a
+pergunta veio. Cada questionário
 termina com uma pontuação, um rótulo e uma lista de lacunas, e mantém a sua
 própria cronologia — perguntas, respostas, seguimentos e notas — para que
 possa reabri-lo mais tarde a partir da tarefa. As notas são feedback da IA
@@ -28,8 +32,8 @@ sincronizável e eliminável como os restantes dados de agentes.
 
 A progressão planeada:
 
-1. **Questionário de qualquer tarefa**, a pedido, com escolha entre
-   verificação rápida ou aprofundada e perguntas novas de cada vez.
+1. **Questionário de qualquer tarefa elegível**, a pedido, com escolha
+   entre verificação rápida ou aprofundada e perguntas novas de cada vez.
 2. **Mais superfícies e sugestões discretas** — projetos, dias e relatórios
    de agentes, além de um cartão opcional «Fazer um questionário sobre
    isto?» com limites rigorosos e controlos para desativar.

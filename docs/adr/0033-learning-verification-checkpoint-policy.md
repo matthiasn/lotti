@@ -28,9 +28,12 @@ respectful of the user's attention — not a cross-device scheduling system.
    no open quiz), at most two suggestions per rolling week, and
    snooze/dismiss/disable controls. A suggestion runs zero inference before
    acceptance.
-5. **Suggestion dedup is best-effort.** Deterministic suggestion IDs sync as
-   ordinary agent events; a rare duplicate card across offline devices
-   resolves on sync. No lease or delivery election.
+5. **Suggestion identity is event-scoped and dedup is best-effort.** A
+   suggestion's deterministic ID derives from its triggering event — the
+   task's completion transition or the resolved change set — so each
+   trigger yields at most one suggestion and retries collapse. Suggestion
+   facts sync as ordinary agent events; a rare duplicate card across
+   offline devices resolves on sync. No lease or delivery election.
 6. **Quizzes never gate anything** and never use push notifications.
 7. **Repeat quizzes are user actions.** "Quiz me again" generates fresh
    questions. There is no spaced-repetition scheduler.
@@ -40,7 +43,9 @@ respectful of the user's attention — not a cross-device scheduling system.
 - The policy is a handful of pure functions over projection state and
   settings, unit-testable without simulators.
 - Rare duplicate suggestion cards are accepted in exchange for having no
-  coordination protocol.
+  coordination protocol; the weekly cap is likewise evaluated against
+  locally synced events, so concurrent offline devices can transiently
+  exceed it before converging.
 - Without scheduled reviews, retention relies on the user choosing to
   re-quiz; revisit if usage shows demand for scheduling.
 

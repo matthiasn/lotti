@@ -14,15 +14,18 @@ Lotti's subjective journal ratings (`RatingEntry`), whose semantics differ.
 ## Decision
 
 1. **Per-item results.** Multiple choice is `correct` or `incorrect` by key
-   comparison. Open items get a grader verdict of `correct`, `partial`, or
-   `missed` plus a 0–100 item score, issued after probe rounds conclude.
+   comparison and scores 100 or 0. Open items get a grader verdict of
+   `correct`, `partial`, or `missed` plus a 0–100 item score, issued after
+   probe rounds conclude.
    Every non-correct item gets a "what you missed" explanation citing the
    evidence sections it comes from. `skipped` and `revealed` items are
    excluded from score arithmetic but still explained.
 2. **Session grade in code.** Weighted mean of answered items
-   (multiple-choice weight 1, open weight 2), labeled **Solid grasp**
-   (≥ 85), **Getting there** (60–84), **Needs review** (< 60). Weights and
-   bands are versioned hypotheses stored with the assessment. A session with
+   (multiple-choice weight 1, open weight 2, each item contributing its
+   0–100 score), rounded to the nearest integer so the bands are
+   exhaustive, labeled **Solid grasp** (≥ 85), **Getting there** (60–84),
+   **Needs review** (< 60). Weights, rounding, and bands are versioned
+   hypotheses stored with the assessment. A session with
    nothing answered gets explanations, no score.
 3. **Grading guidance lives in the prompt, not the schema**: judge
    correctness, mechanism, completeness, and boundaries; assess content
