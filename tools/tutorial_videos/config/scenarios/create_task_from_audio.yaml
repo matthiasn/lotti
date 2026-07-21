@@ -1,0 +1,104 @@
+# Tutorial scenario: create a task by voice, watch transcription, check off
+# an item. The demo content is the Intergalactic Penguin Logistics world, the
+# same deterministic fixture the manual screenshots use.
+#
+# Schema (validated by tutorial_videos/scenario.py):
+#   scenario:  machine id, must match the file name
+#   title:     per-locale video title (used for intro card + output naming)
+#   dictionary: per-locale speech-dictionary terms, seeded into the app so
+#              Voxtral gets context bias for the quirky penguin vocabulary
+#   steps:     ordered; each has a unique id and per-locale narration.
+#              min_duration is the floor in seconds — the Dart harness holds
+#              each step for at least max(min_duration, narration length + pad).
+#              `dictation` marks the step where the user_voice clip is played
+#              into the virtual microphone.
+#
+# Locale keys use app locale codes (subset of the 11 manual locales). A locale
+# is buildable only if title, every step narration, any dictation, and the
+# dictionary all have that locale.
+
+scenario: create_task_from_audio
+
+title:
+  en: Create a task with your voice
+  de: Eine Aufgabe per Sprache erstellen
+
+dictionary:
+  en:
+    - Project Waddle
+    - sardine futures
+    - emperor penguin roll call
+  de:
+    - Projekt Waddle
+    - Sardinen-Termingeschäfte
+    - Appell der Kaiserpinguine
+
+steps:
+  - id: intro
+    min_duration: 3.0
+    narration:
+      en: >-
+        In this tutorial you'll create a task just by speaking, let the
+        built-in AI transcribe it, and check off your first item.
+      de: >-
+        In diesem Tutorial erstellst du eine Aufgabe einfach per Sprache,
+        lässt die eingebaute KI sie transkribieren und hakst deinen ersten
+        Punkt ab.
+
+  - id: open_task
+    min_duration: 3.0
+    narration:
+      en: >-
+        We start on a task in the Penguin Operations workspace. The action
+        bar at the bottom holds everything we need.
+      de: >-
+        Wir starten in einer Aufgabe im Bereich Pinguinbetrieb. Die
+        Aktionsleiste unten enthält alles, was wir brauchen.
+
+  - id: record_dictation
+    min_duration: 4.0
+    dictation: true
+    narration:
+      en: >-
+        Tap the record button and describe what needs to be done — just talk,
+        as if you were leaving yourself a voice note.
+      de: >-
+        Tippe auf die Aufnahmetaste und beschreibe, was zu tun ist — sprich
+        einfach, als würdest du dir selbst eine Sprachnotiz hinterlassen.
+    dictation_text:
+      en: >-
+        Schedule the emperor penguin roll call for Project Waddle, and
+        double-check the sardine futures paperwork.
+      de: >-
+        Plane den Appell der Kaiserpinguine für Projekt Waddle und prüfe die
+        Unterlagen für die Sardinen-Termingeschäfte.
+
+  - id: transcription
+    min_duration: 5.0
+    narration:
+      en: >-
+        As soon as you stop recording, the audio is transcribed in the
+        background — watch the text appear on the task.
+      de: >-
+        Sobald du die Aufnahme beendest, wird das Audio im Hintergrund
+        transkribiert — sieh zu, wie der Text an der Aufgabe erscheint.
+
+  - id: check_off
+    min_duration: 3.0
+    narration:
+      en: >-
+        Done with something? Tap the checkbox and the item is checked off —
+        progress you can see.
+      de: >-
+        Etwas erledigt? Tippe auf das Kästchen und der Punkt ist abgehakt —
+        sichtbarer Fortschritt.
+
+  - id: outro
+    min_duration: 3.0
+    narration:
+      en: >-
+        That's it — tasks straight from your voice. Give it a try with your
+        own next to-do.
+      de: >-
+        Das war's — Aufgaben direkt aus deiner Stimme. Probier es gleich mit
+        deinem nächsten To-do aus.
