@@ -99,6 +99,17 @@ void main() {
         await tester.pump(const Duration(milliseconds: 16));
       }
 
+      // Land on Tasks BEFORE the recorded timeline starts — the app's real
+      // default landing tab is the Logbook (Journal), which would
+      // otherwise flash on screen during the intro step's establishing
+      // hold.
+      harness.navService.setIndex(
+        harness.navService.beamerDelegates.indexOf(
+          harness.navService.tasksDelegate,
+        ),
+      );
+      await tester.pump();
+
       final driver =
           TutorialDriver(
               tester: tester,
@@ -153,14 +164,20 @@ void main() {
               )
               .hitTestable(),
         );
-        final categoryOption = find.byKey(
-          ValueKey(
-            'design-system-filter-selection-option-'
-            '${harness.world.category.id}',
-          ),
-        );
+        final categoryOption = find
+            .byKey(
+              ValueKey(
+                'design-system-filter-selection-option-'
+                '${harness.world.category.id}',
+              ),
+            )
+            .hitTestable();
+        // Wait on the hit-testable finder itself, not merely on the
+        // element existing — the selection modal's entrance animation can
+        // add the option to the tree before it is actually hit-testable,
+        // and tapLikeUser's getCenter throws on an empty finder.
         await driver.pumpUntilFound(categoryOption);
-        await driver.tapLikeUser(categoryOption.hitTestable());
+        await driver.tapLikeUser(categoryOption);
         await driver.holdUntil(
           driver.timeline.elapsed + const Duration(milliseconds: 800),
         );
@@ -194,17 +211,17 @@ void main() {
       await driver.step('save_filter', () async {
         await driver.pumpUntilFound(filterIcon);
         await driver.tapLikeUser(filterIcon.first);
-        final saveButton = find.byKey(
-          const ValueKey('design-system-task-filter-save'),
-        );
+        final saveButton = find
+            .byKey(const ValueKey('design-system-task-filter-save'))
+            .hitTestable();
         await driver.pumpUntilFound(saveButton);
-        await driver.tapLikeUser(saveButton.hitTestable());
+        await driver.tapLikeUser(saveButton);
 
-        final nameField = find.byKey(
-          const ValueKey('design-system-filter-save-name-field'),
-        );
+        final nameField = find
+            .byKey(const ValueKey('design-system-filter-save-name-field'))
+            .hitTestable();
         await driver.pumpUntilFound(nameField);
-        await driver.tapLikeUser(nameField.hitTestable());
+        await driver.tapLikeUser(nameField);
         for (var i = 1; i <= filterName.length; i++) {
           await tester.enterText(
             nameField.first,

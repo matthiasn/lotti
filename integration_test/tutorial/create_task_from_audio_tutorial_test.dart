@@ -97,11 +97,22 @@ void main() {
       await tester.pump();
 
       // Let startup settle BEFORE timeline zero: agent seeding and the
-      // Logbook's auto-select navigation run right after boot — trimmed out
-      // of the video entirely (the compositor cuts at timeline zero).
+      // Logbook's auto-select navigation run right after boot.
       for (var i = 0; i < 300; i++) {
         await tester.pump(const Duration(milliseconds: 16));
       }
+
+      // Land on Tasks BEFORE the recorded timeline starts — the app's real
+      // default landing tab is the Logbook (Journal); contrary to what the
+      // comment above once assumed, that page is NOT trimmed by the
+      // compositor and was flashing on screen during the intro step's
+      // establishing hold.
+      harness.navService.setIndex(
+        harness.navService.beamerDelegates.indexOf(
+          harness.navService.tasksDelegate,
+        ),
+      );
+      await tester.pump();
 
       final driver =
           TutorialDriver(
@@ -295,6 +306,39 @@ void main() {
       });
 
       await driver.step('check_off', () async {
+        // Scroll back to the top first: `suggestions`/`confirm` left the
+        // pane scrolled down at "Confirm all", but the point of this beat
+        // is showing the whole confirmed checklist before checking an item
+        // off, not jumping straight to a mid-scroll checkbox.
+        final scrollableElements = detailScrollable.evaluate().toList();
+        ScrollableState? best;
+        for (final element in scrollableElements) {
+          final state = (element as StatefulElement).state as ScrollableState;
+          if (!state.position.hasViewportDimension) continue;
+          if (best == null ||
+              state.position.viewportDimension >
+                  best.position.viewportDimension) {
+            best = state;
+          }
+        }
+        if (best != null) {
+          final position = best.position;
+          while (position.pixels > position.minScrollExtent + 1) {
+            position.jumpTo(
+              (position.pixels - 40).clamp(
+                position.minScrollExtent,
+                position.maxScrollExtent,
+              ),
+            );
+            for (var frame = 0; frame < 6; frame++) {
+              await driver.tick();
+            }
+          }
+          await driver.holdUntil(
+            driver.timeline.elapsed + const Duration(seconds: 1),
+          );
+        }
+
         final itemCheckbox = find
             .descendant(
               of: find.byType(TaskDetailsPage),

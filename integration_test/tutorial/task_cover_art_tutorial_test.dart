@@ -130,9 +130,28 @@ void main() {
       expect(task, isNotNull);
 
       // The voice note whose description feeds the cover-art generation.
+      final noteTranscript = localized(
+        en:
+            'A colony of emperor penguins on the ice shelf at '
+            'golden hour, aurora overhead, expedition gear in the '
+            'foreground — Project Waddle.',
+        de:
+            'Eine Kolonie Kaiserpinguine auf dem Schelfeis zur '
+            'goldenen Stunde, Polarlicht am Himmel, '
+            'Expeditionsausrüstung im Vordergrund — Projekt Waddle.',
+      );
       final noteMeta = await harness.persistenceLogic.createMetadata();
       final audioNote = JournalEntity.journalAudio(
         meta: noteMeta.copyWith(categoryId: harness.world.category.id),
+        // The real recorder writes a finished transcript into BOTH
+        // data.transcripts and entryText (RecorderController's
+        // _saveRealtimeTranscript) — the note's visible card only ever
+        // renders entryText (via the note editor), never
+        // AudioTranscript.transcript directly.
+        entryText: EntryText(
+          plainText: noteTranscript,
+          markdown: noteTranscript,
+        ),
         data: AudioData(
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
@@ -145,16 +164,7 @@ void main() {
               library: 'tutorial',
               model: 'voxtral-small-24b-2507',
               detectedLanguage: locale.languageCode,
-              transcript: localized(
-                en:
-                    'A colony of emperor penguins on the ice shelf at '
-                    'golden hour, aurora overhead, expedition gear in the '
-                    'foreground — Project Waddle.',
-                de:
-                    'Eine Kolonie Kaiserpinguine auf dem Schelfeis zur '
-                    'goldenen Stunde, Polarlicht am Himmel, '
-                    'Expeditionsausrüstung im Vordergrund — Projekt Waddle.',
-              ),
+              transcript: noteTranscript,
             ),
           ],
         ),
@@ -193,6 +203,17 @@ void main() {
       for (var i = 0; i < 300; i++) {
         await tester.pump(const Duration(milliseconds: 16));
       }
+
+      // Land on Tasks BEFORE the recorded timeline starts — the app's real
+      // default landing tab is the Logbook (Journal), which would
+      // otherwise flash on screen during the intro step's establishing
+      // hold.
+      harness.navService.setIndex(
+        harness.navService.beamerDelegates.indexOf(
+          harness.navService.tasksDelegate,
+        ),
+      );
+      await tester.pump();
 
       final driver =
           TutorialDriver(

@@ -98,16 +98,25 @@ void main() {
       });
 
       await driver.step('open_settings', () async {
+        // Categories lives under the "Definitions" settings section
+        // (habits, categories, labels, ...), not as a top-level tile.
+        final definitionsTile = find
+            .text(localized(en: 'Definitions', de: 'Definitionen'))
+            .hitTestable();
+        await driver.pumpUntilFound(definitionsTile);
+        await driver.tapLikeUser(definitionsTile.first);
+
         final categoriesTile = find
             .text(localized(en: 'Categories', de: 'Kategorien'))
             .hitTestable();
         await driver.pumpUntilFound(categoriesTile);
         await driver.tapLikeUser(categoriesTile.first);
-        await driver.pumpUntil(
-          () => harness.navService.currentPath.contains(
-            '/settings/categories',
+        // The nested Settings delegate doesn't update navService.currentPath,
+        // so assert on the loaded page's own content instead of the route.
+        await driver.pumpUntilFound(
+          find.text(
+            localized(en: 'Create category', de: 'Kategorie erstellen'),
           ),
-          description: 'categories list route',
         );
       });
 
@@ -152,15 +161,16 @@ void main() {
       });
 
       await driver.step('configure', () async {
+        // SettingsSwitchRow makes the whole row the tap target (InkWell +
+        // Semantics) and IgnorePointer-wraps its DesignSystemToggle visual
+        // (a custom widget, not Flutter's Switch) so there is no
+        // independently-tappable switch to find — tap the row via its
+        // title text instead, which sits inside the InkWell's hit area.
         final favoriteLabel = find.text(
           localized(en: 'Favorite', de: 'Favorit'),
         );
         await driver.pumpUntilFound(favoriteLabel);
-        // The options block lists Favorite first; its Switch is the first
-        // switch on the page.
-        final favoriteSwitch = find.byType(Switch).hitTestable();
-        await driver.pumpUntilFound(favoriteSwitch);
-        await driver.tapLikeUser(favoriteSwitch.first);
+        await driver.tapLikeUser(favoriteLabel.hitTestable().first);
         await driver.holdUntil(
           driver.timeline.elapsed + const Duration(seconds: 1),
         );

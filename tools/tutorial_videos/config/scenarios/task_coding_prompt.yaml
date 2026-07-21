@@ -40,15 +40,25 @@ steps:
         Pinguin-Habitat — mit Beschreibung und einer Checkliste voller
         Anforderungen.
 
+  - id: review_transcript
+    min_duration: 4.0
+    narration:
+      en: >-
+        It started as a quick voice note about what's actually going on —
+        here's the transcript, linked right to the task.
+      de: >-
+        Alles begann mit einer kurzen Sprachnotiz zur aktuellen Situation —
+        hier ist das Transkript, direkt mit der Aufgabe verknüpft.
+
   - id: generate
     min_duration: 4.0
     narration:
       en: >-
-        Open the generate menu and pick "Generate Coding Prompt" — Lotti
-        reads the whole task context.
+        Open the generate menu on that note and pick "Generate Coding
+        Prompt" — Lotti reads the whole task context.
       de: >-
-        Öffne das Generieren-Menü und wähle „Generate Coding Prompt" —
-        Lotti liest den gesamten Aufgabenkontext.
+        Öffne das Generieren-Menü an dieser Notiz und wähle „Generate Coding
+        Prompt" — Lotti liest den gesamten Aufgabenkontext.
 
   - id: prompt_ready
     min_duration: 5.0

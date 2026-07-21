@@ -14,14 +14,16 @@ engine: gemini
 model: models/gemini-3.1-flash-tts-preview
 
 streams:
+  # Smooth male voice for the off-screen narrator.
   narrator:
-    voice: Kore
+    voice: Charon
     style:
       en: "Speak as a calm, friendly tutorial narrator:"
-      de: "Sprich als ruhige, freundliche Tutorial-Erzählerin:"
-  # Same voice as the narrator: the narrator audibly "speaks into Lotti"
+      de: "Sprich als ruhiger, freundlicher Tutorial-Erzähler:"
+  # Distinct from the narrator (the narrator audibly "speaks into Lotti"
   # when dictating; the clip is mixed into the final video at the moment it
-  # plays into the virtual microphone.
+  # plays into the virtual microphone) — keeps the two streams from ever
+  # being confused for one another.
   user_voice:
     voice: Kore
     style:

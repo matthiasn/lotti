@@ -42,7 +42,7 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
-    show AiConfigRepository, aiConfigRepositoryProvider;
+    hide aiConfigRepositoryProvider;
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
@@ -52,6 +52,8 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -61,6 +63,7 @@ import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/providers/service_providers.dart'
     show
+        aiConfigRepositoryProvider,
         journalDbProvider,
         loggingServiceProvider,
         maintenanceProvider,
@@ -74,6 +77,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:matrix/encryption.dart';
@@ -474,7 +478,13 @@ class TutorialAppHarness {
       ..registerSingleton<SecureStorage>(MockSecureStorage())
       ..registerSingleton<MatrixService>(matrixService)
       ..registerSingleton<OutboxService>(outboxService)
-      ..registerSingleton<AiConfigRepository>(aiConfigRepository);
+      ..registerSingleton<AiConfigRepository>(aiConfigRepository)
+      ..registerSingleton<SavedTaskFiltersRepository>(
+        SavedTaskFiltersRepository(
+          SavedTaskFiltersPersistence(settingsDb),
+          updateNotifications,
+        ),
+      );
 
     await initConfigFlags(journalDb, inMemoryDatabase: true);
 
@@ -499,7 +509,13 @@ class TutorialAppHarness {
       ..registerSingleton<GeolocationService>(geolocationService)
       ..registerSingleton<PersistenceLogic>(PersistenceLogic())
       ..registerSingleton<EditorStateService>(EditorStateService())
-      ..registerSingleton<LinkService>(LinkService());
+      ..registerSingleton<LinkService>(LinkService())
+      // Every createDbEntity call ends with an updateBadge() call; without
+      // this registration it throws (caught, but the caller sees `null`
+      // back where a real entity was expected — createAiResponseEntryImpl's
+      // "Failed to persist" is this exact swallowed failure). Safe as a
+      // plain instance: updateBadge() no-ops on Linux/Windows.
+      ..registerSingleton<NotificationService>(NotificationService());
 
     final persistenceLogic = getIt<PersistenceLogic>();
     final world = ManualDemoWorld.penguinLogistics();
