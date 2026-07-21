@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/task_agent_freshness_strip.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Quiet settings zone pinned to the bottom of the task-agent card.
@@ -20,8 +22,76 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// status and switch cannot share a line. The countdown reserves the width of
 /// its initial label so ticking digits never move adjacent controls.
 ///
+/// The wide/compact choice is content-aware, not a fixed breakpoint: in wide
+/// layout the automation cluster only gets a 6/10 share of the available
+/// width (identity gets the other 4/10, in `wideFooter`), and a longer
+/// locale's wake-control label plus "Automatische Aktualisierungen" (German)
+/// can need more than that share even when English's shorter strings fit
+/// comfortably at the same width. `_countdownNaturalWidth` /
+/// `_thinkingNaturalWidth` / `_wakeButtonNaturalWidth` mirror the exact width
+/// formulas [_CountdownControl] and [_ThinkingStatus] use for their own
+/// sizing, so the parent's compact/wide decision matches what actually gets
+/// rendered instead of drifting out of sync with it.
+///
 /// The wake control is omitted while the freshness strip above owns the CTA
-/// ([showWakeButton] false).
+/// (`showWakeButton` false).
+double _measureTextWidth(BuildContext context, String text, TextStyle style) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  return painter.width;
+}
+
+/// Natural (unconstrained) width of the countdown pill + its separate cancel
+/// target for [seconds] remaining — must match [_CountdownControl]'s own
+/// sizing exactly, since callers use this to decide layout *before* that
+/// widget builds.
+double _countdownNaturalWidth(
+  BuildContext context,
+  DsTokens tokens,
+  int seconds,
+) {
+  final label = context.messages.taskAgentNextUpdateIn(
+    formatCountdown(seconds),
+  );
+  final labelStyle = tokens.typography.styles.others.caption.copyWith(
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
+  return _measureTextWidth(context, label, labelStyle) +
+      tokens.spacing.step4 +
+      tokens.spacing.step2 +
+      (tokens.spacing.step3 * 2) +
+      tokens.spacing.step9;
+}
+
+/// Natural width of the "Thinking…" status row — must match
+/// [_ThinkingStatus]'s own sizing exactly.
+double _thinkingNaturalWidth(BuildContext context, DsTokens tokens) {
+  final label = context.messages.aiSummaryThinkingLabel;
+  final labelStyle = tokens.typography.styles.subtitle.subtitle2;
+  return tokens.spacing.step4 +
+      tokens.spacing.step3 +
+      _measureTextWidth(context, label, labelStyle);
+}
+
+/// Natural width of the "Wake agent" button — mirrors
+/// [DesignSystemButton]'s `small`-size spec (the default, used here):
+/// horizontal padding on both sides + icon + item gap + label.
+double _wakeButtonNaturalWidth(
+  BuildContext context,
+  DsTokens tokens,
+  AppLocalizations messages,
+) {
+  final labelStyle = tokens.typography.styles.subtitle.subtitle2;
+  return (tokens.spacing.step3 * 2) +
+      tokens.typography.lineHeight.subtitle2 +
+      tokens.spacing.step2 +
+      _measureTextWidth(context, messages.taskAgentWakeAgent, labelStyle);
+}
+
 class TaskAgentControlsFooter extends StatelessWidget {
   const TaskAgentControlsFooter({
     required this.automaticUpdatesEnabled,
@@ -118,6 +188,29 @@ class TaskAgentControlsFooter extends StatelessWidget {
         automationLabelPainter.width +
         tokens.spacing.step3 +
         tokens.spacing.step9;
+    // Mirrors the exact widget that will render in `wakeControl` above, so
+    // the compact/wide decision below reflects what actually needs to fit
+    // rather than an assumption that drifts from the real content.
+    final wakeControlNaturalWidth = !hasWakeControl
+        ? 0.0
+        : countdownVisible
+        ? _countdownNaturalWidth(
+            context,
+            tokens,
+            wakeAt.difference(clock.now()).inSeconds.clamp(0, 1 << 30),
+          )
+        : isRunning
+        ? _thinkingNaturalWidth(context, tokens)
+        : _wakeButtonNaturalWidth(context, tokens, messages);
+    // The Wrap's own spacing between wakeControl/automationSetting, plus the
+    // cluster Container's horizontal padding on both sides — see
+    // automationCluster below.
+    final clusterNaturalWidth =
+        (hasWakeControl
+            ? wakeControlNaturalWidth + tokens.spacing.cardItemSpacing
+            : 0.0) +
+        automationSettingWidth +
+        (tokens.spacing.step3 * 2);
     final automationSetting = LayoutBuilder(
       builder: (context, constraints) {
         return SizedBox(
@@ -207,9 +300,28 @@ class TaskAgentControlsFooter extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final textScale = MediaQuery.textScalerOf(context).scale(1);
+              // Wide layout only ever gives the cluster a 6/10 share (see
+              // wideFooter) — when a wake control and the automation
+              // setting are both competing for that share (hasWakeControl),
+              // and their combined natural width wouldn't actually fit in
+              // it, the Wrap would silently break them onto two lines
+              // instead of showing identity beside a comfortably-sized
+              // cluster, so fall back to compact instead. When the
+              // automation setting is the cluster's ONLY content there is
+              // nothing for it to wrap against — Wrap can't break a single
+              // child onto "two lines" of itself — so this check does not
+              // apply; a too-narrow share there is handled by the setting's
+              // own label ellipsis, same as before.
+              final wideModeClusterShare =
+                  ((constraints.maxWidth - tokens.spacing.cardItemSpacing) *
+                          6 /
+                          10)
+                      .clamp(0, double.infinity);
               final compact =
                   constraints.maxWidth < TaskAgentFreshnessStrip.compactWidth ||
-                  textScale > 1.3;
+                  textScale > 1.3 ||
+                  (hasWakeControl &&
+                      wideModeClusterShare < clusterNaturalWidth);
               return compact ? compactFooter() : wideFooter();
             },
           ),
@@ -232,14 +344,7 @@ class _ThinkingStatus extends StatelessWidget {
     final labelStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
       color: ai.accent,
     );
-    final labelPainter = TextPainter(
-      text: TextSpan(text: label, style: labelStyle),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      maxLines: 1,
-    )..layout();
-    final naturalWidth =
-        tokens.spacing.step4 + tokens.spacing.step3 + labelPainter.width;
+    final naturalWidth = _thinkingNaturalWidth(context, tokens);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -342,12 +447,13 @@ class _CountdownControlState extends State<_CountdownControl>
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,
     )..layout();
-    final naturalWidth =
-        widthAnchorPainter.width +
-        tokens.spacing.step4 +
-        tokens.spacing.step2 +
-        (tokens.spacing.step3 * 2) +
-        tokens.spacing.step9;
+    // Same formula the parent footer uses to decide compact/wide layout —
+    // see _countdownNaturalWidth.
+    final naturalWidth = _countdownNaturalWidth(
+      context,
+      tokens,
+      _widthAnchorSeconds,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {

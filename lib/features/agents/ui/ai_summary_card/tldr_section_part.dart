@@ -139,7 +139,12 @@ class TldrBody extends StatelessWidget {
   /// ~75 characters at the bodySmall size. Public so the freshness strip
   /// below the summary can share the same measure instead of stretching the
   /// full card width.
-  static const double maxReadingWidth = 720;
+  ///
+  /// Widened alongside kDetailContentMaxWidth (760 -> 960): at 720, the
+  /// footer's wake status/countdown chip and the "Automatische
+  /// Aktualisierungen" label + switch didn't have room to share one line in
+  /// German, wrapping into an unbalanced two-row layout.
+  static const double maxReadingWidth = 900;
 
   @override
   Widget build(BuildContext context) {

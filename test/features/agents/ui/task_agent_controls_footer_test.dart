@@ -76,8 +76,14 @@ void main() {
       find.text('Qwen 3.5 Plus · Alibaba · via Melious.ai'),
       findsOneWidget,
     );
+    // Compact, not wide: at this viewport's width, wide mode's fixed 6/10
+    // share for the automation cluster (identity gets the other 4/10)
+    // isn't quite enough to fit the wake button and the automation
+    // label+switch side by side — the layout is now content-aware and
+    // falls back to a full-width cluster instead of letting the cluster's
+    // own Wrap silently break onto two lines while nominally "wide".
     expect(
-      find.byKey(const ValueKey('taskAgentFooterWideLayout')),
+      find.byKey(const ValueKey('taskAgentFooterCompactLayout')),
       findsOneWidget,
     );
 
@@ -342,27 +348,26 @@ void main() {
   testWidgets('wide footer keeps identity beside the automation cluster', (
     tester,
   ) async {
-    final now = DateTime(2026, 7, 16, 9);
-    await withClock(Clock.fixed(now), () async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Center(
-            child: SizedBox(
-              width: 730,
-              child: subject(
-                automaticUpdatesEnabled: true,
-                showCountdown: true,
-                nextWakeAt: now.add(
-                  const Duration(minutes: 1, seconds: 30),
-                ),
-                onRunNow: () {},
-              ),
-            ),
+    // No wake control here (showWakeButton: false, no countdown): the
+    // cluster only needs to fit the automation label + switch, which
+    // comfortably fits wide mode's 6/10 share even at a modest width. With
+    // a wake control competing for that same share, the combined content
+    // (e.g. a countdown chip + the switch) needs more room than the
+    // cluster's OWN 900px content cap can ever provide even at 60% of the
+    // widest possible card — content-aware compact fallback (see the
+    // 'falls back to compact...' test below) is the realistic outcome
+    // whenever a wake control is present, by design, not a regression.
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 730,
+            child: subject(showWakeButton: false),
           ),
-          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
         ),
-      );
-    });
+        mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+      ),
+    );
 
     final identity = find.byType(TaskAgentIdentityRegion);
     final cluster = find.byKey(
@@ -378,6 +383,52 @@ void main() {
       lessThan(tester.getCenter(cluster).dx),
     );
   });
+
+  testWidgets(
+    "falls back to compact when wide mode's cluster share is too tight for "
+    'the countdown and switch together',
+    (tester) async {
+      final now = DateTime(2026, 7, 16, 9);
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Center(
+              child: SizedBox(
+                // At 730 the cluster's 6/10 share can't fit "Next update in
+                // 1:30" beside "Automatic updates" + the switch — before
+                // the compact/wide decision became content-aware, this
+                // stayed in wide mode and the cluster's own Wrap silently
+                // broke onto two lines instead.
+                width: 730,
+                child: subject(
+                  automaticUpdatesEnabled: true,
+                  showCountdown: true,
+                  nextWakeAt: now.add(
+                    const Duration(minutes: 1, seconds: 30),
+                  ),
+                  onRunNow: () {},
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+          ),
+        );
+      });
+
+      expect(
+        find.byKey(const ValueKey('taskAgentFooterCompactLayout')),
+        findsOneWidget,
+      );
+      // Full-width cluster in compact mode comfortably fits both on one row.
+      final countdown = find.text('Next update in 1:30');
+      final automation = find.text('Automatic updates');
+      expect(
+        tester.getCenter(countdown).dy,
+        moreOrLessEquals(tester.getCenter(automation).dy, epsilon: 1),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'narrow scheduled cluster wraps countdown and switch without overflow',
