@@ -62,9 +62,12 @@ class AppCommandController extends ChangeNotifier {
 
   AppCommandContextSnapshot capture(BuildContext context) {
     final focusedContext = FocusManager.instance.primaryFocus?.context;
+    // The focused element is foreign to this build and may already be
+    // deactivated (startup warm-up frames); use the guarded non-subscribing
+    // read instead of an inherited dependency.
     final focusedNode = focusedContext == null
         ? null
-        : AppCommandScopeMarker.maybeOf(focusedContext);
+        : AppCommandScopeMarker.maybeReadIn(focusedContext);
     final lastActiveScope = _lastActiveScope?.mounted ?? false
         ? _lastActiveScope
         : null;

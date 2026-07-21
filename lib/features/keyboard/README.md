@@ -58,9 +58,13 @@ stateDiagram-v2
   Disposed --> [*]
 ```
 
-Resolution starts at the nearest scope containing primary focus. When native
-macOS menus temporarily take focus away from Flutter, the dispatcher retains
-the last nearest focused scope. Captured palette snapshots stop resolving as
+Resolution starts at the nearest scope containing primary focus. The focused
+element is foreign to the resolving build, so its scope is read through the
+non-subscribing `AppCommandScopeMarker.maybeReadIn`, which declines the lookup
+while the element is deactivated (startup warm-up frames, mid-frame focus
+churn) instead of tripping the framework's deactivated-ancestor assertion.
+When native macOS menus temporarily take focus away from Flutter, the
+dispatcher retains the last nearest focused scope. Captured palette snapshots stop resolving as
 soon as their scope is detached or disposed. One-shot commands reject
 concurrent re-entry; only catalog commands marked `allowRepeat` accept key
 repeats.
