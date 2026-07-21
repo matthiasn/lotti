@@ -1,4 +1,4 @@
-# ADR 0032: Hybrid Understanding Evaluation
+# ADR 0034: Hybrid Understanding Evaluation
 
 - Status: Proposed
 - Date: 2026-07-21
@@ -35,7 +35,7 @@ way a tutor would.
    items are excluded from scores but still explained.
 5. **The LLM's grade is the grade**, subject only to schema and range checks;
    there is no calibration corpus or cleared-slice gate. Deterministic code
-   computes the session aggregate per ADR 0034.
+   computes the session aggregate per ADR 0036.
 6. **Injection resistance stays**: no tools, network, or write capability;
    snapshot text, answers, and transcripts are delimited untrusted data;
    outputs are schema-constrained and citation-checked; no chain-of-thought
@@ -58,6 +58,6 @@ way a tutor would.
 ## Related
 
 - [Implementation plan](../implementation_plans/2026-07-18_learning_understanding_verification_agent.md)
-- [ADR 0031: Learning Verification Checkpoint Policy](./0031-learning-verification-checkpoint-policy.md)
-- [ADR 0033: Learning Verification Session Persistence](./0033-learning-verification-session-persistence.md)
-- [ADR 0034: Learning Understanding Rating](./0034-learning-understanding-rating.md)
+- [ADR 0033: Learning Verification Checkpoint Policy](./0033-learning-verification-checkpoint-policy.md)
+- [ADR 0035: Learning Verification Session Persistence](./0035-learning-verification-session-persistence.md)
+- [ADR 0036: Learning Understanding Rating](./0036-learning-understanding-rating.md)

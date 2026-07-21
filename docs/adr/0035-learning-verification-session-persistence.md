@@ -1,4 +1,4 @@
-# ADR 0033: Learning Verification Session Persistence
+# ADR 0035: Learning Verification Session Persistence
 
 - Status: Proposed
 - Date: 2026-07-21
@@ -73,6 +73,6 @@ than the journal content it derives from.
 - [Implementation plan](../implementation_plans/2026-07-18_learning_understanding_verification_agent.md)
 - [ADR 0016: Agent-Derived State as a Projection of the Append-Only Log](./0016-agent-state-as-log-projection.md)
 - [ADR 0018: Convergent Multi-Device Execution](./0018-convergent-multi-device-execution.md)
-- [ADR 0031: Learning Verification Checkpoint Policy](./0031-learning-verification-checkpoint-policy.md)
-- [ADR 0032: Hybrid Understanding Evaluation](./0032-hybrid-understanding-evaluation.md)
-- [ADR 0034: Learning Understanding Rating](./0034-learning-understanding-rating.md)
+- [ADR 0033: Learning Verification Checkpoint Policy](./0033-learning-verification-checkpoint-policy.md)
+- [ADR 0034: Hybrid Understanding Evaluation](./0034-hybrid-understanding-evaluation.md)
+- [ADR 0036: Learning Understanding Rating](./0036-learning-understanding-rating.md)

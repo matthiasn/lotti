@@ -1,4 +1,4 @@
-# ADR 0031: Learning Verification Checkpoint Policy
+# ADR 0033: Learning Verification Checkpoint Policy
 
 - Status: Proposed
 - Date: 2026-07-21
@@ -47,6 +47,6 @@ respectful of the user's attention — not a cross-device scheduling system.
 ## Related
 
 - [Implementation plan](../implementation_plans/2026-07-18_learning_understanding_verification_agent.md)
-- [ADR 0032: Hybrid Understanding Evaluation](./0032-hybrid-understanding-evaluation.md)
-- [ADR 0033: Learning Verification Session Persistence](./0033-learning-verification-session-persistence.md)
-- [ADR 0034: Learning Understanding Rating](./0034-learning-understanding-rating.md)
+- [ADR 0034: Hybrid Understanding Evaluation](./0034-hybrid-understanding-evaluation.md)
+- [ADR 0035: Learning Verification Session Persistence](./0035-learning-verification-session-persistence.md)
+- [ADR 0036: Learning Understanding Rating](./0036-learning-understanding-rating.md)

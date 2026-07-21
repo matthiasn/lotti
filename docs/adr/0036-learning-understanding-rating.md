@@ -1,4 +1,4 @@
-# ADR 0034: Learning Understanding Rating
+# ADR 0036: Learning Understanding Rating
 
 - Status: Proposed
 - Date: 2026-07-21
@@ -37,7 +37,7 @@ Lotti's subjective journal ratings (`RatingEntry`), whose semantics differ.
    never a leaderboard, never gates a workflow, never trended across quizzes
    as if equated.
 6. **Separate storage, plain lifecycle.** Grades live in the learning
-   entities (ADR 0033), never in `RatingEntry`; history is private,
+   entities (ADR 0035), never in `RatingEntry`; history is private,
    exportable, and deletable. Neither generator nor grader may emit review
    dates; re-quizzing and reminders are user actions.
 
@@ -54,7 +54,7 @@ Lotti's subjective journal ratings (`RatingEntry`), whose semantics differ.
 ## Related
 
 - [Implementation plan](../implementation_plans/2026-07-18_learning_understanding_verification_agent.md)
-- [ADR 0031: Learning Verification Checkpoint Policy](./0031-learning-verification-checkpoint-policy.md)
-- [ADR 0032: Hybrid Understanding Evaluation](./0032-hybrid-understanding-evaluation.md)
-- [ADR 0033: Learning Verification Session Persistence](./0033-learning-verification-session-persistence.md)
+- [ADR 0033: Learning Verification Checkpoint Policy](./0033-learning-verification-checkpoint-policy.md)
+- [ADR 0034: Hybrid Understanding Evaluation](./0034-hybrid-understanding-evaluation.md)
+- [ADR 0035: Learning Verification Session Persistence](./0035-learning-verification-session-persistence.md)
 - [Flexible rating system plan](../implementation_plans/2026-02-09_flexible_rating_system.md)

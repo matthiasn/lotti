@@ -9,13 +9,13 @@ what was missed.
 
 - This plan owns component boundaries, UX, sequencing, tests, and work
   packages.
-- [ADR 0031](../adr/0031-learning-verification-checkpoint-policy.md) — when
+- [ADR 0033](../adr/0033-learning-verification-checkpoint-policy.md) — when
   quizzes start (manual-first entry, later suggestions, guards, caps).
-- [ADR 0032](../adr/0032-hybrid-understanding-evaluation.md) — evidence
+- [ADR 0034](../adr/0034-hybrid-understanding-evaluation.md) — evidence
   snapshots, generation, conversational grading, model trust boundary.
-- [ADR 0033](../adr/0033-learning-verification-session-persistence.md) —
+- [ADR 0035](../adr/0035-learning-verification-session-persistence.md) —
   events, artifacts, links, identity, sync, deletion.
-- [ADR 0034](../adr/0034-learning-understanding-rating.md) — verdicts,
+- [ADR 0036](../adr/0036-learning-understanding-rating.md) — verdicts,
   session scores/labels, honesty rules.
 - Numeric values (question counts, weights, label bands, caps) are versioned
   hypotheses, not invariants.
@@ -144,7 +144,7 @@ and database layers.
 
 ## 6. Domain and data model
 
-Ownership: [ADR 0033](../adr/0033-learning-verification-session-persistence.md),
+Ownership: [ADR 0035](../adr/0035-learning-verification-session-persistence.md),
 including the full event union and artifact field lists.
 
 - Events (`LearningQuizEventEnvelope`): `quizRequested`, `quizGenerated`,
@@ -179,7 +179,7 @@ per-task history, per-category history.
 
 ## 7. Evidence, generation, and grading
 
-Ownership: [ADR 0032](../adr/0032-hybrid-understanding-evaluation.md).
+Ownership: [ADR 0034](../adr/0034-hybrid-understanding-evaluation.md).
 
 - Phase 1 evidence adapters: task content (title, notes, checklist), linked
   journal entries and transcripts, agent reports when present. A later phase
@@ -200,7 +200,7 @@ Ownership: [ADR 0032](../adr/0032-hybrid-understanding-evaluation.md).
 
 ## 8. Feedback and grades
 
-Ownership: [ADR 0034](../adr/0034-learning-understanding-rating.md).
+Ownership: [ADR 0036](../adr/0036-learning-understanding-rating.md).
 Per-item verdicts with gap explanations; session score computed in code
 (multiple-choice weight 1, open weight 2) with labels Solid grasp ≥ 85,
 Getting there 60–84, Needs review < 60; feedback-first presentation;
@@ -209,7 +209,7 @@ leaderboards, comparison, or gating; grades never touch `RatingEntry`.
 
 ## 9. Triggering
 
-Ownership: [ADR 0031](../adr/0031-learning-verification-checkpoint-policy.md).
+Ownership: [ADR 0033](../adr/0033-learning-verification-checkpoint-policy.md).
 Phase 1 is manual-only on every task. A later feature-flagged phase adds
 non-modal suggestion cards after deterministic triggers, capped at two per
 week with snooze/disable, running zero inference before acceptance.
