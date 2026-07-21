@@ -43,6 +43,7 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     hide aiConfigRepositoryProvider;
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
@@ -83,6 +84,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as path;
 
 import '../../test/helpers/fallbacks.dart';
 import '../../test/helpers/manual_demo_world.dart';
@@ -455,12 +457,11 @@ class TutorialAppHarness {
       // (ManualLanguageController) — platformDispatcher test locales are not
       // enough for the real desktop shell.
       settingsDb.saveSettingsItem(manualLanguageSettingsKey, languageCode),
-      // No pane-width override: the app's own defaults (sidebar 320px, list
-      // 540px — see pane_width_controller.dart) are the balanced layout its
-      // designers already tuned for a 1920px canvas. Earlier custom
-      // overrides here (progressively narrower sidebar/list) were an
-      // over-correction that left a large empty gutter beside the detail
-      // pane's content instead.
+      // No pane-width override: the app's own defaults (see
+      // pane_width_controller.dart) are the balanced layout its designers
+      // already tuned for a 1920px canvas. Earlier custom overrides here
+      // (progressively narrower sidebar/list) were an over-correction that
+      // left a large empty gutter beside the detail pane's content instead.
     ]);
 
     getIt
@@ -479,6 +480,17 @@ class TutorialAppHarness {
       ..registerSingleton<MatrixService>(matrixService)
       ..registerSingleton<OutboxService>(outboxService)
       ..registerSingleton<AiConfigRepository>(aiConfigRepository)
+      // Daily OS's audio-capture processing pipeline resolves this via
+      // getIt directly (day_processing_runtime_provider.dart) rather than a
+      // Riverpod override — MyBeamerApp fails to build at all without it,
+      // even for scenarios that never touch Daily OS.
+      ..registerSingleton<DayProcessingOutboxRepository>(
+        DayProcessingOutboxRepository(
+          rootDirectory: Directory(
+            path.join(documentsDirectory.path, '.day_processing_outbox'),
+          ),
+        ),
+      )
       ..registerSingleton<SavedTaskFiltersRepository>(
         SavedTaskFiltersRepository(
           SavedTaskFiltersPersistence(settingsDb),
