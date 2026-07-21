@@ -70,43 +70,5 @@ Deleting a queued wake removes that timer; it does not delete the agent or its
 linked task. If a wake immediately returns, inspect the agent state or the
 automation that requested it instead of repeatedly deleting the symptom.
 
-## Roadmap: check your understanding, not just your output
-
-The agent roadmap includes learning quizzes generated from your own tasks.
-This feature is planned; it is not available in the app yet.
-
-From any task you will be able to tap **Check my understanding** and get a
-short quiz tailored to that task's content — study notes get comprehension
-and application questions, engineering work gets mechanism and debugging
-questions. Quizzes mix multiple-choice questions with open questions you can
-answer by typing or by voice, with an editable transcript before you submit.
-
-Grading is conversational: when an answer is shallow or ambiguous, the AI asks
-a follow-up before judging, the way a tutor would. Every missed item comes
-with a concrete explanation of what you missed, grounded in the task content
-the question came from, and the session ends with a score, a label, and a gap
-list. Each quiz keeps its own timeline — the questions, your answers, the
-follow-ups, and the grades — so you can reopen it from the task later and
-review what you missed. Grades are clearly presented as AI feedback about one
-quiz — never a credential, ranking, or comparison with other people — and quiz
-history stays private, syncable, and deletable like other agent data.
-
-The planned progression is:
-
-1. **Quiz any task** on demand, with a quick-check or deep-dive depth choice
-   and fresh questions each time.
-2. **More surfaces and gentle suggestions** — projects, days, and agent
-   reports, plus an optional non-modal "Quiz yourself on this?" card after
-   meaningful completions, with strict caps and snooze/disable controls.
-3. **Consented workspace evidence** so engineering quizzes can draw on
-   repository diffs, symbols, and test summaries through a read-only
-   integration.
-4. **History insights** that surface recurring gap themes over time.
-
-The design is evidence-bounded: questions and grades come only from content
-Lotti actually captured, and thin content yields fewer questions rather than
-filler. Suggestions never run AI in the background before you accept, and
-quizzes never block completing a task.
-
 Continue with [Agent templates and souls](./agent-blueprints.mdx) to define
 what current instances do and how they communicate.

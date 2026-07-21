@@ -78,6 +78,7 @@ const sidebars: SidebarsConfig = {
         'reference/manual-maintenance',
       ],
     },
+    'roadmap',
   ],
 };
 
