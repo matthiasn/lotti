@@ -429,3 +429,11 @@ tutorial_videos_all:
 	for locale in $(TUTORIAL_LOCALES); do \
 	  $(MAKE) tutorial_video TUTORIAL_LOCALE=$$locale || exit 1; \
 	done
+
+# Uploads an already-built MP4 to Cloudflare R2 and prints its public URL.
+# Requires .env with R2_ACCOUNT_ID/R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY/
+# R2_BUCKET_NAME/R2_PUBLIC_BASE_URL, and `pip install boto3`.
+.PHONY: tutorial_video_publish
+tutorial_video_publish:
+	cd tools/tutorial_videos && python3 -m tutorial_videos publish \
+	  --scenario $(TUTORIAL_SCENARIO) --locale $(TUTORIAL_LOCALE)

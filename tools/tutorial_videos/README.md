@@ -32,6 +32,44 @@ Requirements:
 - Host packages: `Xvfb`, `ffmpeg`, `pactl`/`paplay` (PipeWire or PulseAudio),
   `x11-utils`. Flutter via `fvm`.
 
+## Publishing to Cloudflare R2
+
+```sh
+make tutorial_video_publish TUTORIAL_SCENARIO=create_task_from_audio TUTORIAL_LOCALE=de
+```
+
+Uploads the already-built `build/tutorial_videos/<scenario>_<locale>.mp4` to
+R2 under `tutorial-videos/<scenario>_<locale>.mp4` and prints its public URL,
+for embedding in the docs site. See `tutorial_videos/publish.py`.
+
+One-time setup:
+
+1. In the Cloudflare dashboard: R2 -> **Manage R2 API Tokens** -> Create API
+   Token, scoped to the target bucket, permission "Object Read & Write".
+   Yields an Access Key ID + Secret Access Key (S3-compatible; shown once).
+2. R2 -> bucket -> Settings -> **Public Access** -> enable the r2.dev
+   development URL (fine for docs embeds; Cloudflare notes it's rate-limited
+   and not meant for high-traffic production — move to a custom domain if
+   that becomes a problem).
+3. Add to `.env` (never committed): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+   `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_BASE_URL` (the r2.dev
+   URL from step 2, e.g. `https://pub-xxxxxxxx.r2.dev`).
+4. `boto3` (plus `pyyaml`, since a fresh venv won't have the system
+   interpreter's packages) — the one exception to this toolchain's
+   otherwise stdlib-only dependency policy: correctly signing authenticated
+   S3 requests by hand is a real source of subtle bugs, unlike the simple
+   API-key calls the TTS adapters make. This host has an externally-managed
+   system Python (PEP 668), so these install into a scoped venv instead of
+   globally:
+   ```sh
+   cd tools/tutorial_videos
+   python3 -m venv .venv
+   .venv/bin/pip install boto3 pyyaml
+   ```
+   Run `publish` through that interpreter (`make` uses plain `python3` on
+   PATH, so either activate the venv first or call
+   `.venv/bin/python -m tutorial_videos publish ...` directly).
+
 ## Architecture
 
 ```mermaid

@@ -5,13 +5,16 @@ Usage (from ``tools/tutorial_videos``)::
     python3 -m tutorial_videos validate --scenario create_task_from_audio --locale de
     python3 -m tutorial_videos tts      --scenario create_task_from_audio --locale de
     python3 -m tutorial_videos build    --scenario create_task_from_audio --locale de
+    python3 -m tutorial_videos publish  --scenario create_task_from_audio --locale de
 
 ``validate`` checks the scenario is buildable for the locale without any
 network access. ``tts`` runs the pre-pass: renders (or reuses cached) clips
 and writes the durations manifest consumed by the Dart harness and the
 compositor. ``build`` runs the full pipeline: TTS pre-pass, then the real
 app under Xvfb driven by `flutter drive` with the virtual microphone and
-screen capture, then OpenMontage composition into the final MP4.
+screen capture, then OpenMontage composition into the final MP4. ``publish``
+uploads an already-built MP4 to Cloudflare R2 (see ``publish.py``) and prints
+its public URL.
 """
 
 from __future__ import annotations
@@ -24,6 +27,7 @@ import sys
 from pathlib import Path
 
 from .compose import ComposeError, compose_video
+from .publish import publish_video
 from .scenario import ScenarioError, load_scenario
 from .session import ScreenCapture, SessionError, VirtualMic, XvfbDisplay
 from .tts.base import load_voices, render_scenario_clips
@@ -141,6 +145,18 @@ def cmd_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_publish(args: argparse.Namespace) -> int:
+    out_dir = Path(args.out_dir)
+    video_path = out_dir / f"{args.scenario}_{args.locale}.mp4"
+    url = publish_video(
+        env_path=REPO_ROOT / ".env",
+        video_path=video_path,
+        key=f"tutorial-videos/{args.scenario}_{args.locale}.mp4",
+    )
+    print(f"OK: {url}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="tutorial_videos")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -148,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
         ("validate", cmd_validate),
         ("tts", cmd_tts),
         ("build", cmd_build),
+        ("publish", cmd_publish),
     ):
         p = sub.add_parser(name)
         p.add_argument("--scenario", required=True)
@@ -157,7 +174,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return args.handler(args)
-    except (ComposeError, ScenarioError, SessionError) as err:
+    except (
+        ComposeError,
+        ScenarioError,
+        SessionError,
+        FileNotFoundError,
+        KeyError,
+    ) as err:
         print(f"ERROR: {err}", file=sys.stderr)
         return 2
 

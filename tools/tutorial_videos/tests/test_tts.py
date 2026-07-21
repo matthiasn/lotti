@@ -129,9 +129,12 @@ class TtsPrePassTest(unittest.TestCase):
         self.assertEqual(engine_name, "gemini")
         self.assertIn("narrator", streams)
         self.assertIn("user_voice", streams)
-        # The narrator dictates in their own voice (user decision): both
-        # streams share the voice, differing only in style prompt.
-        self.assertEqual(streams["narrator"].voice, streams["user_voice"].voice)
+        # Distinct voices (user decision, config/voices.yaml's own doc
+        # comment): the narrator audibly "speaks into Lotti" when dictating,
+        # so a shared voice would confuse the two streams.
+        self.assertNotEqual(
+            streams["narrator"].voice, streams["user_voice"].voice
+        )
         self.assertNotEqual(
             streams["narrator"].style["en"], streams["user_voice"].style["en"]
         )
