@@ -174,7 +174,6 @@ void main() {
         ),
       );
       await tester.pump();
-      await fillDisplay(tester);
       for (var i = 0; i < 300; i++) {
         await tester.pump(const Duration(milliseconds: 16));
       }

@@ -144,7 +144,24 @@ static void my_application_activate(GApplication* application) {
   // Set the icon name for desktop integration fallback
   gtk_window_set_icon_name(window, ICON_THEME_NAME);
 
-  gtk_window_set_default_size(window, 1280, 720);
+  // Window size override for automation (e.g. the tutorial-video workbench
+  // records the app on a WM-less Xvfb display where post-launch resizing is
+  // not honored). Format: "WIDTHxHEIGHT". Defaults stay unchanged for users.
+  int window_width = 1280;
+  int window_height = 720;
+  const gchar* size_override = g_getenv("LOTTI_WINDOW_SIZE");
+  if (size_override != nullptr) {
+    int parsed_width = 0;
+    int parsed_height = 0;
+    if (sscanf(size_override, "%dx%d", &parsed_width, &parsed_height) == 2 &&
+        parsed_width > 0 && parsed_height > 0) {
+      window_width = parsed_width;
+      window_height = parsed_height;
+    } else {
+      g_warning("Ignoring invalid LOTTI_WINDOW_SIZE: %s", size_override);
+    }
+  }
+  gtk_window_set_default_size(window, window_width, window_height);
   gtk_widget_show(GTK_WIDGET(window));
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();

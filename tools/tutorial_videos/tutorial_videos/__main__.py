@@ -103,6 +103,10 @@ def cmd_build(args: argparse.Namespace) -> int:
                 "LOTTI_TUTORIAL_TIMELINE": str(timeline_path),
                 "LOTTI_TUTORIAL_MIC_SINK": sink,
                 "LOTTI_SCREENSHOT_DIR": str(out_dir),
+                # Honored by linux/runner/my_application.cc: sizes the GTK
+                # window at startup (post-launch resizing is not honored on
+                # the WM-less Xvfb display).
+                "LOTTI_WINDOW_SIZE": size,
             }
             drive = subprocess.run(
                 [

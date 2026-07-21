@@ -80,7 +80,6 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:window_manager/window_manager.dart';
 
 import '../../test/helpers/fallbacks.dart';
 import '../../test/helpers/manual_demo_world.dart';
@@ -229,39 +228,6 @@ class TutorialTimeline {
         }),
       );
   }
-}
-
-/// Resizes the real app window to fill the virtual display.
-///
-/// Under `flutter drive` the app skips `main()`'s window sizing and opens at
-/// the GTK runner default (1280x720, `my_application.cc`). The Xvfb display
-/// has no window manager, so fullscreen hints are ignored — direct resizes
-/// work, but only once GTK has fully mapped the window; retry until the
-/// Flutter view actually reports the requested size.
-Future<void> fillDisplay(
-  WidgetTester tester, {
-  Size size = const Size(1920, 1080),
-}) async {
-  await windowManager.ensureInitialized();
-  for (var attempt = 0; attempt < 20; attempt++) {
-    await windowManager.setBounds(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-    );
-    for (var frame = 0; frame < 30; frame++) {
-      await tester.pump(const Duration(milliseconds: 16));
-    }
-    final view = tester.view;
-    final logical = view.physicalSize / view.devicePixelRatio;
-    if ((logical.width - size.width).abs() < 4 &&
-        (logical.height - size.height).abs() < 4) {
-      return;
-    }
-  }
-  final view = tester.view;
-  throw StateError(
-    'window did not resize to $size '
-    '(is ${view.physicalSize / view.devicePixelRatio})',
-  );
 }
 
 /// Animated on-screen cursor for the recording.
