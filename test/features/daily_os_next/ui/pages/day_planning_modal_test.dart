@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
@@ -470,37 +471,37 @@ void main() {
   });
 
   group('showDayPlanningModal — create chain', () {
-    testWidgets('first reconcile frame shows one shader and disables build', (
-      tester,
-    ) async {
-      await _openCreate(
+    testWidgets(
+      'first reconcile frame shows the busy bars and disables build',
+      (
         tester,
-        capture: _captured,
-        agent: _PendingReconcileAgent(),
-      );
-      final messages = _l10n(tester);
-      await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
+      ) async {
+        await _openCreate(
+          tester,
+          capture: _captured,
+          agent: _PendingReconcileAgent(),
+        );
+        final messages = _l10n(tester);
+        await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
 
-      expect(
-        find.byKey(DayPlanningThinkingShader.indicatorKey),
-        findsOneWidget,
-      );
-      expect(
-        find.text(messages.dailyOsNextReconcileProcessing),
-        findsOneWidget,
-      );
-      expect(
-        tester
-            .widget<DsGlassPill>(
-              find.widgetWithText(
-                DsGlassPill,
-                messages.dailyOsNextReconcileBuildDayCta,
-              ),
-            )
-            .enabled,
-        isFalse,
-      );
-    });
+        expect(find.byType(AiRunningAnimation), findsOneWidget);
+        expect(
+          find.text(messages.dailyOsNextReconcileProcessing),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<DsGlassPill>(
+                find.widgetWithText(
+                  DsGlassPill,
+                  messages.dailyOsNextReconcileBuildDayCta,
+                ),
+              )
+              .enabled,
+          isFalse,
+        );
+      },
+    );
 
     testWidgets('continue advances Capture → Reconcile', (tester) async {
       await _openCreate(tester, capture: _captured, agent: _fastAgent());

@@ -2,11 +2,11 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
@@ -114,7 +114,12 @@ class ReconcileLoadingView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const DayPlanningThinkingShader(isThinking: true),
+          // The same dancing inference bars shown while ASR runs elsewhere:
+          // an unmistakable "working on it" signal during the multi-second
+          // transcribe/parse wait before the Heard column populates.
+          const Center(
+            child: SizedBox(width: 220, child: AiRunningAnimation(height: 50)),
+          ),
           SizedBox(height: tokens.spacing.step4),
           Text(
             context.messages.dailyOsNextReconcileProcessing,
@@ -182,8 +187,8 @@ class _ReconcileBody extends ConsumerWidget {
 
 /// Left column of Reconcile: the items the parse wake heard in the capture,
 /// each shown as a [ParsedCard] with a break-link affordance. While the wake
-/// is still running and no items have landed it shows the thinking shader so
-/// the empty column reads as "working", not "nothing found".
+/// is still running and no items have landed it shows the running-inference
+/// bars so the empty column reads as "working", not "nothing found".
 class _HeardColumn extends ConsumerWidget {
   const _HeardColumn({required this.params, required this.items});
 
@@ -211,7 +216,15 @@ class _HeardColumn extends ConsumerWidget {
         SizedBox(height: tokens.spacing.step4),
         if (items.isEmpty) ...[
           if (isParsing) ...[
-            const DayPlanningThinkingShader(isThinking: true),
+            // Same dancing inference bars as running ASR: the parse wake
+            // takes several seconds and the empty column must read as
+            // "working", not "done/empty".
+            const Center(
+              child: SizedBox(
+                width: 220,
+                child: AiRunningAnimation(height: 50),
+              ),
+            ),
             SizedBox(height: tokens.spacing.step3),
           ],
           DsDashedBorder(

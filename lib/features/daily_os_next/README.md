@@ -413,7 +413,11 @@ sequenceDiagram
   Controller lifecycle epochs fence each start boundary: reset, route
   disposal, or a superseding start cannot resurrect an obsolete microphone
   session. There is no streaming/realtime transcription path and no live
-  transcript; the orb caption carries listening/transcribing status.
+  transcript; the orb caption carries listening/transcribing status. While
+  batch transcription runs, the reserved waveform slot above the orb shows
+  the same running-inference bars (`AiRunningAnimation`) as ASR elsewhere,
+  and the Reconcile loading/Heard-column states reuse them, so the
+  multi-second stop→"Here's what I heard" wait is visibly busy end to end.
 
   ```mermaid
   stateDiagram-v2

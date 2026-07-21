@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
@@ -66,11 +67,12 @@ void main() {
     }
   });
 
-  testWidgets('waveform renders only while listening or transcribing', (
+  testWidgets('the waveform slot carries the phase-matched busy signal', (
     tester,
   ) async {
     await pumpZone(tester, amplitudes: const [0.4, 0.6]);
     expect(find.byType(LiveWaveform), findsNothing);
+    expect(find.byType(AiRunningAnimation), findsNothing);
 
     await pumpZone(
       tester,
@@ -78,23 +80,21 @@ void main() {
       amplitudes: const [0.4, 0.6],
     );
     expect(find.byType(LiveWaveform), findsOneWidget);
+    expect(find.byType(AiRunningAnimation), findsNothing);
 
+    // A frozen waveform reads as a hang; batch transcription shows the
+    // dancing inference bars in the same reserved slot instead.
     await pumpZone(
       tester,
       phase: CapturePhase.transcribing,
       amplitudes: const [0.4, 0.6],
     );
-    final dimmed = tester.widget<AnimatedOpacity>(
-      find.ancestor(
-        of: find.byType(LiveWaveform),
-        matching: find.byType(AnimatedOpacity),
-      ),
-    );
-    // Frozen-but-visible during transcription so nothing jumps.
-    expect(dimmed.opacity, lessThan(1));
+    expect(find.byType(LiveWaveform), findsNothing);
+    expect(find.byType(AiRunningAnimation), findsOneWidget);
 
     await pumpZone(tester, phase: CapturePhase.captured);
     expect(find.byType(LiveWaveform), findsNothing);
+    expect(find.byType(AiRunningAnimation), findsNothing);
   });
 
   testWidgets('caption renders with the given color on one line', (
