@@ -139,13 +139,13 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.text(messages.dailyOsNextActivityRetry));
+    await tester.tap(find.text(messages.dailyOsNextActivityRetry).last);
     await tester.pump();
     verify(() => outbox.retryNow('job-waiting')).called(1);
     verify(runtime.nudge).called(1);
 
     await tester.tap(
-      find.text(messages.dailyOsNextActivityAddOrEditText).first,
+      find.text(messages.dailyOsNextActivityAddOrEditText).at(1),
     );
     await tester.pump();
     expect(
