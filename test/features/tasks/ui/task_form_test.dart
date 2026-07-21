@@ -153,6 +153,16 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The header is reported too: confirmed proposals (labels, due date,
+      // priority, status, title) grow it above the AI card, and unreported
+      // growth there would displace the proposals mid-confirm.
+      expect(
+        find.ancestor(
+          of: find.byType(DesktopTaskHeaderConnector),
+          matching: find.byType(ViewportStableSizeReporter),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('agent report shows content when agent has report', (

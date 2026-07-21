@@ -17,9 +17,13 @@ import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.da
 /// [Task], stacks (top to bottom): the [DesktopTaskHeaderConnector] header,
 /// an [EditorWidget] for legacy entries that already contain rich text, the
 /// [ChecklistsWidget], the [LinkedTasksWidget], and the [AiSummaryCard] (whose
-/// proposals can be scrolled into view via [suggestionsFocusKey]). Checklist
-/// geometry is reported to the task page's pre-paint scroll stabilizer.
-/// Renders nothing until the entry loads as a task.
+/// proposals can be scrolled into view via [suggestionsFocusKey]). Header and
+/// checklist geometry are reported to the task page's pre-paint scroll
+/// stabilizer: confirmed agent proposals can grow either region above the AI
+/// card (title/label/due-date/priority/status chips in the header, items in
+/// the checklist), and an unreported change there would displace the
+/// proposals under the user's pointer for a frame before the fallback anchor
+/// snaps them back. Renders nothing until the entry loads as a task.
 class TaskForm extends ConsumerWidget {
   const TaskForm({
     required this.taskId,
@@ -56,7 +60,10 @@ class TaskForm extends ConsumerWidget {
     // leading padding so the staggered entrance cascades evenly.
     return StaggeredEntrance(
       children: [
-        DesktopTaskHeaderConnector(taskId: taskId),
+        ViewportStableSizeReporter(
+          key: ValueKey('header-size-reporter-$taskId'),
+          child: DesktopTaskHeaderConnector(taskId: taskId),
+        ),
         if (hasBody)
           Padding(
             padding: EdgeInsets.only(top: tokens.spacing.sectionGap),

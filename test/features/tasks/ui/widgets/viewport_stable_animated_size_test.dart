@@ -474,6 +474,65 @@ void main() {
     );
   });
 
+  testWidgets('an adopted external correction keeps the hold anchoring', (
+    tester,
+  ) async {
+    final key = GlobalKey<_ReportedSizeHarnessState>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+    );
+    await tester.pump();
+
+    final state = key.currentState!..controller.jumpTo(300);
+    await tester.pump();
+    state.hold();
+
+    // A cooperating post-frame anchor (ScrollAnchor) announces its jump
+    // before making it, so the offset change must not read as a user scroll.
+    expect(state.controller.ownsOffset(300), isTrue);
+    expect(state.controller.ownsOffset(340), isFalse);
+    state.controller
+      ..adoptCorrection(340)
+      ..jumpTo(340);
+    await tester.pump();
+    expect(state.controller.ownsOffset(340), isTrue);
+    final markerTopAfterJump = tester
+        .getTopLeft(find.byKey(_reportedMarkerKey))
+        .dy;
+
+    // A reported grow after the adopted jump is still consumed pre-paint:
+    // the offset compensates and the marker stays put — the hold survived.
+    state.resize(150);
+    await tester.pump();
+
+    expect(state.controller.offset, closeTo(440, 0.1));
+    expect(
+      tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+      closeTo(markerTopAfterJump, 0.1),
+    );
+  });
+
+  testWidgets('adoptCorrection without an active hold does not arm anchoring', (
+    tester,
+  ) async {
+    final key = GlobalKey<_ReportedSizeHarnessState>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+    );
+    await tester.pump();
+
+    final state = key.currentState!..controller.jumpTo(300);
+    await tester.pump();
+
+    state.controller.adoptCorrection(300);
+    expect(state.controller.ownsOffset(300), isFalse);
+
+    state.resize(150);
+    await tester.pump();
+
+    expect(state.controller.offset, 300);
+  });
+
   testWidgets('sub-pixel offset noise does not release the hold', (
     tester,
   ) async {
