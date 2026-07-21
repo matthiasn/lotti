@@ -31,6 +31,36 @@ const maxJournalListPaneWidth = 800.0;
 @visibleForTesting
 const persistDebounce = Duration(milliseconds: 300);
 
+/// Reference window width the flat pane-width defaults above were tuned
+/// for — a common laptop/desktop width. Below this, [scaledPaneWidth]
+/// returns its input unchanged.
+const kPaneWidthReferenceScreenWidth = 1440.0;
+
+/// Scales [width] proportionally with [screenWidth] on windows wider than
+/// [kPaneWidthReferenceScreenWidth], clamped to [minValue]/[maxValue].
+///
+/// Only applies when [width] still equals [flatDefault] — i.e. the sidebar
+/// or list pane has never been persisted/dragged by the user — so a large
+/// window gets a proportionally larger default instead of a fixed pane
+/// leaving the remaining space (typically the detail pane) disproportionately
+/// large, while any explicit user width is always honored verbatim. Callers
+/// pass [width] = the controller's current (possibly still-loading) value
+/// and [screenWidth] = `MediaQuery.sizeOf(context).width` from a widget that
+/// has real layout constraints, since the controller itself has no
+/// `BuildContext` to read them from.
+double scaledPaneWidth({
+  required double width,
+  required double flatDefault,
+  required double minValue,
+  required double maxValue,
+  required double screenWidth,
+}) {
+  if (width != flatDefault) return width;
+  if (screenWidth <= kPaneWidthReferenceScreenWidth) return width;
+  final scaled = flatDefault * screenWidth / kPaneWidthReferenceScreenWidth;
+  return scaled.clamp(minValue, maxValue);
+}
+
 /// State holding the current widths and collapsed flag for the sidebar, plus
 /// the width for the list pane.
 ///

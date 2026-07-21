@@ -77,6 +77,16 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
     final Widget child;
     if (isDesktop) {
       final paneWidths = ref.watch(paneWidthControllerProvider);
+      // Scales the flat default proportionally on large windows — see
+      // scaledPaneWidth's doc comment. A no-op once the user has dragged
+      // the list pane to any other width.
+      final listPaneWidth = scaledPaneWidth(
+        width: paneWidths.listPaneWidth,
+        flatDefault: defaultListPaneWidth,
+        minValue: minListPaneWidth,
+        maxValue: maxListPaneWidth,
+        screenWidth: MediaQuery.sizeOf(context).width,
+      );
       child = DecoratedBox(
         decoration: BoxDecoration(
           color: ShowcasePalette.page(context),
@@ -84,19 +94,24 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
         child: ListDetailFocusTraversal(
           debugLabel: 'projects-split',
           listPane: SizedBox(
-            width: paneWidths.listPaneWidth,
+            width: listPaneWidth,
             child: _ProjectsListScaffold(
               scrollController: _scrollController,
               searchFocusNode: _searchFocusNode,
             ),
           ),
           divider: ResizableDivider(
-            currentValue: paneWidths.listPaneWidth,
+            currentValue: listPaneWidth,
             minValue: minListPaneWidth,
             maxValue: maxListPaneWidth,
+            // Rewritten so the divider always lands on (displayed position +
+            // delta) — see the matching comment in beamer_app.dart for why a
+            // raw delta would desync on the first drag frame after scaling.
             onDrag: (delta) => ref
                 .read(paneWidthControllerProvider.notifier)
-                .updateListPaneWidth(delta),
+                .updateListPaneWidth(
+                  (listPaneWidth + delta) - paneWidths.listPaneWidth,
+                ),
           ),
           detailPane: ValueListenableBuilder<String?>(
             valueListenable: getIt<NavService>().desktopSelectedProjectId,

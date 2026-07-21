@@ -573,4 +573,93 @@ void main() {
       },
     );
   });
+
+  group('scaledPaneWidth', () {
+    test('returns width unchanged at or below the reference screen width', () {
+      expect(
+        scaledPaneWidth(
+          width: defaultSidebarWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: kPaneWidthReferenceScreenWidth,
+        ),
+        defaultSidebarWidth,
+      );
+      expect(
+        scaledPaneWidth(
+          width: defaultSidebarWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: 1280,
+        ),
+        defaultSidebarWidth,
+      );
+    });
+
+    test(
+      'scales proportionally with screen width once above the reference, '
+      'when width still equals the flat default',
+      () {
+        final scaled = scaledPaneWidth(
+          width: defaultSidebarWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: 1920,
+        );
+        expect(
+          scaled,
+          closeTo(
+            defaultSidebarWidth * 1920 / kPaneWidthReferenceScreenWidth,
+            0.001,
+          ),
+        );
+        expect(scaled, greaterThan(defaultSidebarWidth));
+      },
+    );
+
+    test('clamps the scaled result to maxValue on very large screens', () {
+      final scaled = scaledPaneWidth(
+        width: defaultSidebarWidth,
+        flatDefault: defaultSidebarWidth,
+        minValue: minSidebarWidth,
+        maxValue: maxSidebarWidth,
+        screenWidth: 4000,
+      );
+      expect(scaled, maxSidebarWidth);
+    });
+
+    test(
+      'never scales once the width no longer equals the flat default — '
+      'a user-adjusted or already-persisted width is always honored '
+      'verbatim, regardless of screen size',
+      () {
+        const userWidth = 275.0;
+        expect(
+          scaledPaneWidth(
+            width: userWidth,
+            flatDefault: defaultSidebarWidth,
+            minValue: minSidebarWidth,
+            maxValue: maxSidebarWidth,
+            screenWidth: 4000,
+          ),
+          userWidth,
+        );
+      },
+    );
+
+    test('applies the same rules to the list pane constants', () {
+      final scaled = scaledPaneWidth(
+        width: defaultListPaneWidth,
+        flatDefault: defaultListPaneWidth,
+        minValue: minListPaneWidth,
+        maxValue: maxListPaneWidth,
+        screenWidth: 1920,
+      );
+      expect(scaled, greaterThan(defaultListPaneWidth));
+      expect(scaled, lessThanOrEqualTo(maxListPaneWidth));
+    });
+  });
 }
