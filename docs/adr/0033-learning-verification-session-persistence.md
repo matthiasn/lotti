@@ -1,108 +1,72 @@
 # ADR 0033: Learning Verification Session Persistence
 
 - Status: Proposed
-- Date: 2026-07-21 (replaces the 2026-07-18 draft)
+- Date: 2026-07-21
 
 ## Context
 
-A quiz session is interactive and multi-turn: evidence is frozen, questions are
-generated, answers and probe rounds accumulate, grades arrive, and the session
-completes or is abandoned. That history must survive restarts, sync across the
-user's devices, and stay reproducible (which question was asked against which
-content).
-
-Lotti already has the machinery for exactly this: agent state as a projection
-of the append-only `AgentMessageEntity`/`AgentLink` causal log (ADR 0016),
-immutable domain artifacts written atomically with their events through
+A quiz session is interactive and multi-turn: evidence is frozen, questions
+are generated, answers and probe rounds accumulate, grades arrive, and the
+session completes or is abandoned. That history must survive restarts, sync
+across the user's devices, and stay reproducible (which question was asked
+against which content). Lotti's agent framework already provides the needed
+machinery: the append-only `AgentMessageEntity`/`AgentLink` causal log
+(ADR 0016), immutable artifacts written atomically through
 `AgentSyncService`, vector clocks, and convergent multi-device execution
-(ADR 0018). The 2026-07-18 draft layered a second trust system on top —
-Ed25519 author attestations, trusted-control-key registries, signed clock
-anchors, sequence fences, and a deletion-GC protocol with certificates and
-receipts. Lotti's sync already operates among the user's own mutually trusted
-devices; no other synced entity defends against a forging peer, and learning
-history is not more sensitive than the journal itself. The cryptographic layer
-is removed; the full draft is preserved in git history.
+(ADR 0018). Learning data deliberately adds no trust layer of its own — sync
+runs among the user's own devices, and quiz history is no more sensitive
+than the journal content it derives from.
 
 ## Decision
 
-1. **One verifier agent per category.** Add `AgentTemplateKind.learningVerifier`.
-   A deterministic agent identity (UUID v5 over a dedicated namespace plus the
-   scope) exists per Lotti category, owning the quiz sessions for that
-   category's tasks; tasks without a category use a single default scope. The
-   scope selects the inference profile and privacy routing exactly as existing
-   agents do. Every exhaustive `AgentTemplateKind` switch is audited when the
-   kind is added.
-2. **Typed events, ordinary log semantics.** Add a versioned
-   `LearningQuizEventEnvelope` to `AgentMessageMetadata` with a closed union:
-   `quizRequested`, `quizGenerated`, `quizGenerationFailed`, `quizStarted`,
-   `itemAnswered`, `itemProbed`, `itemGraded`, `itemGradingFailed`,
-   `quizCompleted`, `quizAbandoned`, `suggestionOffered`,
-   `suggestionDismissed`, and `quizDeleted`. Causal order
-   comes from the message DAG as in ADR 0016; timestamps are ordinary
-   `createdAt` values with the same best-effort semantics as the rest of the
-   app. There are no signatures, attestations, clock anchors, or fences.
-3. **Immutable artifacts, referenced by events.** New `AgentDomainEntity`
-   variants, all immutable:
-   - `LearningQuizSessionEntity` — the per-run anchor, ID equal to its
-     `quizRequestId`: task ref, scope, depth choice, and creation provenance.
-     It is the entity linked to the task; it has no status field — lifecycle
-     is projected from events;
-   - `LearningEvidenceSnapshotEntity` — bounded bundle of content sections
-     with stable IDs, digests, source refs, and explicit truncation/missing
-     markers;
-   - `LearningQuizDefinitionEntity` — the frozen generated quiz: items with
-     type, prompt, options/key/explanations for multiple choice, expected
-     points for open items, citations, and generator provenance
-     (model/profile/prompt version);
-   - `LearningQuizAttemptEntity` — one answer or probe-round entry: item ID,
-     round ordinal, text, input modality (typed or voice), transcript
-     provenance;
-   - `LearningQuizItemGradeEntity` — per-item verdict, score, what-was-missed
-     feedback, citations;
-   - `LearningQuizAssessmentEntity` — session score, label, strengths, gaps,
-     and the config that produced them (weights/label-band versions).
-   Typed `AgentLink`s connect session → task (journal entity), session →
-   snapshot, session → definition, attempt → item, grade → attempt chain, and
-   assessment → session.
-4. **Deterministic identity where it prevents duplicates.** The UI mints a
-   `quizRequestId` (UUID v4) once per user action and reuses it through
-   retries; the session is keyed by it. Content-addressed artifacts (snapshot,
-   definition, grades, assessment) use UUID v5 over their canonical payload
-   and are insert-or-verify-identical on sync; byte-different same-ID writes
-   are quarantined as elsewhere in the agent database. Attempts are
-   user-authored UUID v4 facts and are never deduplicated away.
-5. **Interactive work is effectively single-device; convergence is simple.**
-   If concurrent devices somehow produce sibling definitions for one request,
-   the session with any recorded attempt wins presentation; equally unengaged
-   siblings converge on the lowest definition digest. User-authored attempts
-   are never discarded by reconciliation.
-6. **Device-local boundaries.** In-progress answer drafts, raw audio awaiting
-   transcription, and any future workspace evidence cache stay in device-local
-   tables and never enter the sync outbox. Raw audio is discarded after the
-   transcript is accepted unless the user explicitly keeps it as a journal
-   audio entry.
-7. **Deletion is the app's normal deletion.** `quizDeleted` covers a session
-   lineage (or all sessions for a task/category); projections hide covered
-   history everywhere and each device purges covered payload rows when it
-   observes the event. Semantics match every other synced Lotti deletion —
-   there is no acknowledgment barrier, completion certificate, or collection
-   receipt. Quiz history is included in agent-data export.
-8. **Projections are rebuildable.** Session list, per-task quiz history, and
-   an open-session view fold from the log and typed links only. Background
-   refresh preserves last-rendered data per the repository's UI rules.
+1. **One verifier agent per category.** Add
+   `AgentTemplateKind.learningVerifier`; a deterministic agent identity
+   (UUID v5 over the scope) per category owns that category's quiz sessions
+   and selects the inference profile and privacy route. Tasks without a
+   category use a single default scope. Audit every exhaustive
+   `AgentTemplateKind` switch.
+2. **Typed events, ordinary log semantics.** A versioned
+   `LearningQuizEventEnvelope` in `AgentMessageMetadata` with a closed
+   union: `quizRequested`, `quizGenerated`, `quizGenerationFailed`,
+   `quizStarted`, `itemAnswered`, `itemProbed`, `itemGraded`,
+   `itemGradingFailed`, `quizCompleted`, `quizAbandoned`,
+   `suggestionOffered`, `suggestionDismissed`, `quizDeleted`. Causal order
+   comes from the message DAG; timestamps are ordinary `createdAt` values.
+3. **Immutable artifacts, referenced by events.**
+   `LearningQuizSessionEntity` (per-run anchor, ID equal to its
+   `quizRequestId`, task ref, scope, depth choice; no status field —
+   lifecycle is projected), `LearningEvidenceSnapshotEntity` (sectioned
+   content with digests and truncation markers), `LearningQuizDefinitionEntity`
+   (frozen items, keys, citations, generator provenance),
+   `LearningQuizAttemptEntity` (answer or probe reply with modality),
+   `LearningQuizItemGradeEntity`, and `LearningQuizAssessmentEntity`. Typed
+   links: session → task/snapshot/definition, attempt → item thread,
+   grade → thread, assessment → session.
+4. **Identity.** `quizRequestId` is minted once per UI action and reused
+   through retries. Content-addressed artifacts are UUID v5 over canonical
+   payload and insert-or-verify-identical on sync; attempts are UUID v4 and
+   never deduplicated. A session with any attempt wins presentation over
+   unengaged siblings; equally unengaged siblings converge on the lowest
+   definition digest.
+5. **Device-local boundaries.** Answer drafts and raw audio awaiting
+   transcription stay local; audio is discarded after transcript acceptance
+   unless explicitly kept as a journal audio entry.
+6. **Deletion is the app's normal deletion.** `quizDeleted` covers a
+   session, task, or category selector; projections hide covered history and
+   devices purge covered payloads on observing it. History is exportable
+   with agent data.
+7. **Projections are rebuildable** from the log: session-detail timeline
+   (questions, answers, probes, grades, assessment in causal order), open
+   sessions, per-task and per-category history.
 
 ## Consequences
 
-- The persistence work is a modest extension of existing agent entities,
-  conversions, and projections — no new infrastructure layer.
-- A hostile or compromised sync peer could forge or replay learning events.
-  That is the same trust boundary as every other synced entity in Lotti and is
-  accepted deliberately here.
-- Multi-turn item threads make attempts/grades a small event chain rather than
-  one row; projections must group by item ordinal, which is straightforward.
-- Without signed time authority, timestamp skew between devices can misorder
-  display of concurrent history; causal links keep per-session order correct,
-  which is what matters.
+- Persistence is a modest extension of existing agent entities — no new
+  infrastructure layer.
+- A hostile sync peer could forge learning events; that is the same accepted
+  trust boundary as every other synced Lotti entity.
+- Clock skew can misorder cross-session display; causal links keep
+  per-session order correct, which is what matters.
 
 ## Related
 

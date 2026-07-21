@@ -1,75 +1,55 @@
 # ADR 0034: Learning Understanding Rating
 
 - Status: Proposed
-- Date: 2026-07-21 (replaces the 2026-07-18 draft)
+- Date: 2026-07-21
 
 ## Context
 
-A grade should tell the learner two things: roughly how well this quiz went,
-and — much more importantly — exactly what they missed. The 2026-07-18 draft
-guarded against overclaiming with a five-dimension rubric lattice, rating
-availability states, calibration-gated aggregates, and independent
-promotion/schedule decisions. The user has explicitly accepted a simpler
-contract: the LLM grades directly, probes with follow-ups before judging, and
-explains the gaps. The full draft is preserved in git history.
-
-What must survive the simplification: grades are session-scoped feedback and
-never become credentials, comparisons, or gates; skipped and revealed items
-must not silently distort scores; and machine grades stay separate from
-Lotti's subjective journal ratings (`RatingEntry`), whose semantics are
-different.
+A grade should tell the learner two things: roughly how the quiz went, and —
+more importantly — exactly what they missed. Grades are direct LLM judgment
+presented as formative AI feedback about one session. Honesty rules keep
+them from reading as credentials, and machine grades stay separate from
+Lotti's subjective journal ratings (`RatingEntry`), whose semantics differ.
 
 ## Decision
 
-1. **Per-item results.** A multiple-choice item is `correct` or `incorrect` by
-   deterministic key comparison. An open item receives a grader verdict of
-   `correct`, `partial`, or `missed` plus an item score 0–100, issued after
-   any probe rounds conclude (ADR 0032). Every non-correct item gets a
-   "what you missed" explanation citing the evidence sections it comes from;
-   correct items may get a brief confirmation of what was right. `skipped` and
-   `revealed` items are recorded as such, still receive explanations, and are
-   excluded from score arithmetic.
-2. **Session grade in code.** Deterministic code computes the session score as
-   the weighted mean of answered items — multiple-choice weight 1, open-item
-   weight 2 — and maps it to a label: **Solid grasp** (≥ 85), **Getting
-   there** (60–84), **Needs review** (< 60). Weights and bands are versioned
-   hypotheses stored with the assessment, not invariants. A session where
-   everything was skipped or revealed has no score, only explanations.
-3. **Grading guidance lives in the prompt, not the schema.** The grader is
-   instructed to judge correctness, causal mechanism, completeness, and
-   boundaries; to assess content rather than grammar, accent, brevity, or
-   jargon; to allow stated uncertainty without penalty; and to probe rather
-   than guess when an answer is ambiguous. These are quality guidelines for
-   one call, not persisted per-dimension ratings.
-4. **Feedback-first presentation.** The session result leads with what went
-   well and the gap list ("here's what you missed"), then the per-item
-   review, then the score and label. Every grade is visibly AI-issued and
-   session-scoped — "in this quiz", never "you are X% competent". Users can
-   hide numeric scores via a synced preference. A "this grade seems wrong"
-   affordance records the disagreement with the session for later review; it
-   does not silently regrade.
-5. **No comparison, no gating, no streaks.** Grades are never compared across
-   users, never surface as leaderboards or streak pressure, never gate any
-   workflow, and are not trended across quizzes as if equated — different
-   quizzes measure different content.
-6. **Separate storage, plain lifecycle.** Machine grades live in the learning
-   entities from ADR 0033, never in journal `RatingEntry`. Per-task and
-   per-category quiz history is private, exportable, and deletable. Neither
-   the generator nor the grader may emit review dates or reminders; "quiz me
-   again" and user-created reminders remain user actions.
+1. **Per-item results.** Multiple choice is `correct` or `incorrect` by key
+   comparison. Open items get a grader verdict of `correct`, `partial`, or
+   `missed` plus a 0–100 item score, issued after probe rounds conclude.
+   Every non-correct item gets a "what you missed" explanation citing the
+   evidence sections it comes from. `skipped` and `revealed` items are
+   excluded from score arithmetic but still explained.
+2. **Session grade in code.** Weighted mean of answered items
+   (multiple-choice weight 1, open weight 2), labeled **Solid grasp**
+   (≥ 85), **Getting there** (60–84), **Needs review** (< 60). Weights and
+   bands are versioned hypotheses stored with the assessment. A session with
+   nothing answered gets explanations, no score.
+3. **Grading guidance lives in the prompt, not the schema**: judge
+   correctness, mechanism, completeness, and boundaries; assess content
+   rather than grammar, accent, brevity, or jargon; allow stated uncertainty
+   without penalty; probe rather than guess.
+4. **Feedback-first presentation.** Strengths, then the gap list, then the
+   per-item review, then score and label. Grades are visibly AI-issued and
+   session-scoped ("in this quiz"); numeric scores can be hidden by
+   preference. **This grade seems wrong** records the disagreement; nothing
+   is silently regraded.
+5. **No comparison, no gating, no streaks.** Never compared across users,
+   never a leaderboard, never gates a workflow, never trended across quizzes
+   as if equated.
+6. **Separate storage, plain lifecycle.** Grades live in the learning
+   entities (ADR 0033), never in `RatingEntry`; history is private,
+   exportable, and deletable. Neither generator nor grader may emit review
+   dates; re-quizzing and reminders are user actions.
 
 ## Consequences
 
-- Learners get a legible outcome (score, label, gap list) with the depth
-  provided by probing, at the cost of psychometric rigor — scores are
-  uncalibrated LLM judgment and are labeled as such.
-- Dropping per-dimension persisted ratings removes the most detailed feedback
-  structure the earlier draft had; the gap explanations carry that weight
-  instead.
-- Simple exclusion rules (skipped/revealed) keep scores meaningful without an
-  assistance-classification taxonomy.
-- If scheduled review returns later, schedule policy must be rebuilt on top of
-  these session facts; nothing in this contract presumes it.
+- Learners get a legible outcome (score, label, gap list) with tutor-style
+  depth from probing, at the cost of psychometric rigor; results are
+  disclosed as AI judgment.
+- Gap explanations carry the detailed-feedback weight instead of a
+  persisted rubric lattice.
+- If scheduled review is ever added, it must be built on these session
+  facts; nothing here presumes it.
 
 ## Related
 
