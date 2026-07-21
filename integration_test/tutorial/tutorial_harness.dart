@@ -26,9 +26,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -37,7 +39,6 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
@@ -173,7 +174,19 @@ class TutorialTimeline {
   final int _zeroEpochMs;
   final List<Map<String, Object>> _entries = [];
 
+  /// Spans where the flow was only waiting on external work (cloud
+  /// transcription / agent roundtrips). The compositor time-warps these:
+  /// footage speeds up while narration keeps playing at normal speed.
+  final List<Map<String, Object>> _waits = [];
+
   Duration get elapsed => _clock.elapsed;
+
+  void addWait({required Duration start, required Duration end}) {
+    _waits.add({
+      'start': start.inMilliseconds / 1000,
+      'end': end.inMilliseconds / 1000,
+    });
+  }
 
   void addStep({
     required String id,
@@ -197,6 +210,7 @@ class TutorialTimeline {
           'total': elapsed.inMilliseconds / 1000,
           'zero_epoch_ms': _zeroEpochMs,
           'steps': _entries,
+          'waits': _waits,
         }),
       );
   }
@@ -217,10 +231,17 @@ class TutorialCursorLayer extends StatelessWidget {
   const TutorialCursorLayer({
     required this.controller,
     required this.child,
+    this.elapsed,
     super.key,
   });
 
   final TutorialCursorController controller;
+
+  /// Real elapsed wall-clock time shown as a HUD chip. Because it displays
+  /// REAL time, it visibly races during time-warped (fast-forwarded) wait
+  /// footage — the honesty cue that the wait actually happened.
+  final ValueListenable<Duration>? elapsed;
+
   final Widget child;
 
   @override
@@ -230,6 +251,45 @@ class TutorialCursorLayer extends StatelessWidget {
       child: Stack(
         children: [
           child,
+          if (elapsed != null)
+            Positioned(
+              top: 8,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                child: ValueListenableBuilder<Duration>(
+                  valueListenable: elapsed!,
+                  builder: (context, value, _) {
+                    final minutes = value.inMinutes;
+                    final seconds = value.inSeconds % 60;
+                    return Center(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: const Color(0xB3101512),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0x332EE6A8)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: Text(
+                            '$minutes:${seconds.toString().padLeft(2, '0')}',
+                            style: const TextStyle(
+                              color: Color(0xFFB8EFD9),
+                              fontSize: 13,
+                              fontFamily: 'monospace',
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
           ValueListenableBuilder<Offset>(
             valueListenable: controller.position,
             builder: (context, position, _) => ValueListenableBuilder<bool>(
@@ -320,6 +380,7 @@ class TutorialAppHarness {
   static Future<TutorialAppHarness> setUp({
     required List<AiConfig> aiConfigs,
     required String languageCode,
+    CategoryDefinition Function(CategoryDefinition category)? categoryTransform,
   }) async {
     await getIt.reset();
 
@@ -406,7 +467,15 @@ class TutorialAppHarness {
 
     final persistenceLogic = getIt<PersistenceLogic>();
     final world = ManualDemoWorld.penguinLogistics();
-    await _seedWorld(world, persistenceLogic, documentsDirectory);
+    final category = categoryTransform == null
+        ? world.category
+        : categoryTransform(world.category);
+    await _seedWorld(
+      world,
+      category,
+      persistenceLogic,
+      documentsDirectory,
+    );
     for (final config in aiConfigs) {
       await aiConfigRepository.saveConfig(config, fromSync: true);
     }
@@ -452,10 +521,11 @@ class TutorialAppHarness {
 
   static Future<void> _seedWorld(
     ManualDemoWorld world,
+    CategoryDefinition category,
     PersistenceLogic persistenceLogic,
     Directory documentsDirectory,
   ) async {
-    await persistenceLogic.upsertEntityDefinition(world.category);
+    await persistenceLogic.upsertEntityDefinition(category);
     for (final label in world.labels) {
       await persistenceLogic.upsertEntityDefinition(label);
     }
@@ -477,7 +547,9 @@ class TutorialAppHarness {
   }
 
   List<Override> providerOverrides() => [
-    agentInitializationProvider.overrideWith((ref) async {}),
+    // agentInitializationProvider is intentionally NOT overridden: the real
+    // agent runtime (templates, wake orchestrator, subscriptions) must run
+    // so the task agent proposes a title + checklist after transcription.
     aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
     journalDbProvider.overrideWithValue(journalDb),
     loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
@@ -565,6 +637,7 @@ class TutorialDriver {
     required this.tester,
     required this.manifest,
     required this.cursor,
+    this.hud,
   }) : timeline = TutorialTimeline();
 
   static const _postNarrationPad = Duration(milliseconds: 600);
@@ -572,7 +645,20 @@ class TutorialDriver {
   final WidgetTester tester;
   final TutorialManifest manifest;
   final TutorialCursorController cursor;
+
+  /// Elapsed-time HUD notifier (see [TutorialCursorLayer.elapsed]); updated
+  /// on every [tick] so the on-screen clock tracks real wall time.
+  final ValueNotifier<Duration>? hud;
+
   final TutorialTimeline timeline;
+
+  /// Renders one frame and refreshes the HUD clock. All driver-internal
+  /// waiting goes through this so the recording stays smooth (~60 fps) and
+  /// the clock never stalls.
+  Future<void> tick() async {
+    hud?.value = timeline.elapsed;
+    await tester.pump(const Duration(milliseconds: 16));
+  }
 
   /// Glides the overlay cursor to [finder]'s center, pulses a press, and
   /// performs the actual (synthetic) tap.
@@ -584,7 +670,7 @@ class TutorialDriver {
       final t = i / steps;
       final eased = Curves.easeInOut.transform(t);
       cursor.position.value = Offset.lerp(start, target, eased)!;
-      await tester.pump(const Duration(milliseconds: 16));
+      await tick();
     }
     await tester.pump(const Duration(milliseconds: 150));
     cursor.pressed.value = true;
@@ -610,9 +696,13 @@ class TutorialDriver {
   }
 
   /// Live-pumps frames until the harness wall clock reaches [deadline].
+  ///
+  /// 16 ms cadence: the capture records real frames, so page/modal
+  /// animations must be pumped at display rate — sparse pumping renders
+  /// them at ~10 fps, which reads as mushy cross-fades on video.
   Future<void> holdUntil(Duration deadline) async {
     while (timeline.elapsed < deadline) {
-      await tester.pump(const Duration(milliseconds: 100));
+      await tick();
     }
   }
 
@@ -666,38 +756,68 @@ class TutorialDriver {
           'Timed out waiting for $finder',
         );
       }
-      await tester.pump(const Duration(milliseconds: 100));
+      await tick();
     }
   }
 
-  /// Scrolls [scrollable] until [target] is hit-testable.
+  /// Scrolls until [target] is hit-testable by driving the scroll position
+  /// of the largest matching [scrollable] directly.
   ///
-  /// Works with virtualized lists (where off-screen rows are unmounted, so
-  /// `scrollUntilVisible` cannot resolve the target widget): sweeps the
-  /// viewport in steps, checking after each one.
+  /// Synthetic drags proved unreliable (inner scrollables swallow them, and
+  /// virtualized lists unmount off-screen rows), so this animates the
+  /// ScrollableState's position itself: down through the full extent, then
+  /// back up, checking after every step.
   Future<void> scrollIntoView(
     Finder target, {
     required Finder scrollable,
     double step = 250,
-    int maxSteps = 30,
   }) async {
-    for (var i = 0; i < maxSteps; i++) {
-      if (target.hitTestable().evaluate().isNotEmpty) return;
-      // NOTE: [scrollable] must be a plain (non-`.first`) finder — `.first`
-      // finders throw on evaluate() when empty instead of returning [].
-      if (scrollable.evaluate().isEmpty) {
-        await _failWithContext(
-          'scroll_no_scrollable',
-          'No scrollable found while scrolling to $target',
-        );
-      }
-      await tester.drag(
-        scrollable.first,
-        Offset(0, -step),
-        warnIfMissed: false,
+    // NOTE: [scrollable] must be a plain (non-`.first`) finder — `.first`
+    // finders throw on evaluate() when empty instead of returning [].
+    if (scrollable.evaluate().isEmpty) {
+      await _failWithContext(
+        'scroll_no_scrollable',
+        'No scrollable found while scrolling to $target',
       );
-      await tester.pump(const Duration(milliseconds: 250));
     }
+    // Prefer the scrollable with the tallest viewport — inner cards nest
+    // their own scrollables that would otherwise win by traversal order.
+    ScrollableState? best;
+    for (final element in scrollable.evaluate()) {
+      final state = (element as StatefulElement).state as ScrollableState;
+      if (!state.position.hasViewportDimension) continue;
+      if (best == null ||
+          state.position.viewportDimension > best.position.viewportDimension) {
+        best = state;
+      }
+    }
+    if (best == null) {
+      await _failWithContext(
+        'scroll_no_scrollable',
+        'No laid-out scrollable found while scrolling to $target',
+      );
+    }
+    final position = best.position;
+
+    Future<bool> sweepTo(double destination) async {
+      final direction = destination >= position.pixels ? 1 : -1;
+      while ((destination - position.pixels) * direction > 1) {
+        if (target.hitTestable().evaluate().isNotEmpty) return true;
+        position.jumpTo(
+          (position.pixels + step * direction).clamp(
+            position.minScrollExtent,
+            position.maxScrollExtent,
+          ),
+        );
+        for (var frame = 0; frame < 8; frame++) {
+          await tick();
+        }
+      }
+      return target.hitTestable().evaluate().isNotEmpty;
+    }
+
+    if (await sweepTo(position.maxScrollExtent)) return;
+    if (await sweepTo(position.minScrollExtent)) return;
     await _failWithContext(
       'scroll_exhausted',
       'Could not scroll $target into view',
@@ -705,12 +825,17 @@ class TutorialDriver {
   }
 
   /// Live-pumps until [condition] returns true, failing after [timeout].
+  ///
+  /// Waits longer than [_waitSpanThreshold] are recorded in the timeline so
+  /// the compositor can time-warp them (footage fast-forwards while the
+  /// narration keeps playing at normal speed).
   Future<void> pumpUntil(
     FutureOr<bool> Function() condition, {
     required String description,
     Duration timeout = const Duration(seconds: 60),
   }) async {
-    final deadline = timeline.elapsed + timeout;
+    final start = timeline.elapsed;
+    final deadline = start + timeout;
     while (!await condition()) {
       if (timeline.elapsed > deadline) {
         await _failWithContext(
@@ -718,9 +843,15 @@ class TutorialDriver {
           'Timed out waiting for $description',
         );
       }
-      await tester.pump(const Duration(milliseconds: 200));
+      await tick();
+    }
+    final end = timeline.elapsed;
+    if (end - start > _waitSpanThreshold) {
+      timeline.addWait(start: start, end: end);
     }
   }
+
+  static const _waitSpanThreshold = Duration(seconds: 3);
 
   static Duration _longer(Duration a, Duration b) => a > b ? a : b;
 }

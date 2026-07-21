@@ -1,10 +1,15 @@
 """Composition stage: capture + TTS clips + timeline -> final MP4.
 
 Thin host-side wrapper around the pinned OpenMontage checkout (an external
-AGPLv3 dev tool, sibling directory like `lotti-docs`). All OpenMontage API
-usage lives in `om_compose_driver.py`, executed with OpenMontage's own venv
-python from its repo root; this module only assembles the job (timeline
-offset math) and validates the result with ffprobe.
+AGPLv3 dev tool, sibling directory like `lotti-docs`). This module:
+
+1. plans and applies the TIME WARP (see `timewarp.py`): pure-wait footage
+   (cloud transcription / agent roundtrips) fast-forwards while the on-screen
+   real-time HUD races — narration timestamps are remapped so the narrator
+   keeps talking at normal speed over the sped-up footage;
+2. hands the warped capture + remapped narration to OpenMontage
+   (`om_compose_driver.py`, executed with OpenMontage's own venv python);
+3. validates the result with ffprobe.
 """
 
 from __future__ import annotations
@@ -13,6 +18,8 @@ import json
 import os
 import subprocess
 from pathlib import Path
+
+from .timewarp import Segment, output_time, plan_segments, total_output
 
 TOOL_ROOT = Path(__file__).resolve().parents[1]
 DRIVER = Path(__file__).resolve().parent / "om_compose_driver.py"
@@ -69,21 +76,35 @@ def compose_video(
     narration_by_id = {
         step["id"]: step["narration"] for step in manifest["steps"]
     }
+    segments = plan_segments(
+        timeline,
+        {
+            step_id: narration["duration"]
+            for step_id, narration in narration_by_id.items()
+        },
+    )
+    warped = _warp_capture(
+        capture=capture,
+        offset=offset,
+        segments=segments,
+        out_path=output.with_suffix(".warped.mkv"),
+    )
     tracks = [
         {
             "path": narration_by_id[step["id"]]["clip"],
-            "start_seconds": round(step["start"], 3),
+            "start_seconds": output_time(segments, float(step["start"])),
         }
         for step in timeline["steps"]
     ]
+    warped_total = total_output(segments)
 
     root = openmontage_root(repo_root)
     job = {
         "tracks": tracks,
         "capture": {
-            "path": str(capture),
-            "in_seconds": round(offset, 3),
-            "out_seconds": round(offset + timeline["total"], 3),
+            "path": str(warped),
+            "in_seconds": 0,
+            "out_seconds": warped_total,
         },
         "size": {"width": size[0], "height": size[1]},
         "mixed_out": str(output.with_suffix(".narration.wav")),
@@ -102,8 +123,49 @@ def compose_video(
             f"OpenMontage compose failed:\n{result.stdout}\n{result.stderr}"
         )
 
-    _validate(output, expected_duration=timeline["total"], size=size)
+    _validate(output, expected_duration=warped_total, size=size)
     return output
+
+
+def _warp_capture(
+    *,
+    capture: Path,
+    offset: float,
+    segments: list[Segment],
+    out_path: Path,
+) -> Path:
+    """Render the piecewise-speed edit of the capture (video only)."""
+    parts = []
+    labels = []
+    for i, segment in enumerate(segments):
+        start = offset + segment.start
+        end = offset + segment.end
+        parts.append(
+            f"[0:v]trim=start={start:.3f}:end={end:.3f},"
+            f"setpts=(PTS-STARTPTS)/{segment.speed:.4f}[v{i}]"
+        )
+        labels.append(f"[v{i}]")
+    graph = (
+        ";".join(parts)
+        + f";{''.join(labels)}concat=n={len(segments)}:v=1:a=0,fps=30[v]"
+    )
+    result = subprocess.run(
+        [
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+            "-i", str(capture),
+            "-filter_complex", graph,
+            "-map", "[v]",
+            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "18",
+            "-pix_fmt", "yuv420p", "-an",
+            str(out_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise ComposeError(f"time-warp render failed: {result.stderr}")
+    return out_path
 
 
 def _validate(output: Path, *, expected_duration: float, size: tuple[int, int]) -> None:
