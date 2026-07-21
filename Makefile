@@ -410,3 +410,22 @@ fd_snapshot:
 	} | tee "$$OUT"; \
 	echo ""; \
 	echo "Saved to $$OUT"
+
+# --- Tutorial videos (tools/tutorial_videos) --------------------------------
+# Full pipeline for one locale: TTS pre-pass -> real app under Xvfb driven by
+# flutter drive (virtual mic + screen capture) -> OpenMontage composition.
+# Requires: .env with GEMINI_API_KEY/MELIOUS_API_KEY/MELIOUS_BASE_URL, and a
+# pinned ../OpenMontage checkout (see tools/tutorial_videos/config/openmontage.pin).
+TUTORIAL_SCENARIO ?= create_task_from_audio
+TUTORIAL_LOCALES ?= en de
+
+.PHONY: tutorial_video
+tutorial_video:
+	cd tools/tutorial_videos && python3 -m tutorial_videos build \
+	  --scenario $(TUTORIAL_SCENARIO) --locale $(TUTORIAL_LOCALE)
+
+.PHONY: tutorial_videos_all
+tutorial_videos_all:
+	for locale in $(TUTORIAL_LOCALES); do \
+	  $(MAKE) tutorial_video TUTORIAL_LOCALE=$$locale || exit 1; \
+	done

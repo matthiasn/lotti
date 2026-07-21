@@ -161,9 +161,16 @@ class TutorialManifest {
 
 /// Records actual wall-clock step boundaries and writes `timeline.json`.
 class TutorialTimeline {
-  TutorialTimeline() : _clock = Stopwatch()..start();
+  TutorialTimeline()
+    : _clock = Stopwatch()..start(),
+      _zeroEpochMs = DateTime.now().millisecondsSinceEpoch;
 
   final Stopwatch _clock;
+
+  /// Absolute epoch of timeline zero — the compositor subtracts the host's
+  /// capture-start epoch from this to trim the recording head (app build/boot
+  /// happens before the tutorial flow starts).
+  final int _zeroEpochMs;
   final List<Map<String, Object>> _entries = [];
 
   Duration get elapsed => _clock.elapsed;
@@ -188,6 +195,7 @@ class TutorialTimeline {
       ..writeAsStringSync(
         const JsonEncoder.withIndent('  ').convert({
           'total': elapsed.inMilliseconds / 1000,
+          'zero_epoch_ms': _zeroEpochMs,
           'steps': _entries,
         }),
       );
