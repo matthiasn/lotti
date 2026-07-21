@@ -111,41 +111,46 @@ void main() {
       );
       final checklistItemId = checklist.createdItems.single.id;
 
+      final cursor = TutorialCursorController();
       await tester.pumpWidget(
         manualScreenshotBoundary(
-          child: ProviderScope(
-            overrides: harness.providerOverrides(),
-            child: MyBeamerApp(
-              navService: harness.navService,
-              userActivityService: harness.userActivityService,
+          child: TutorialCursorLayer(
+            controller: cursor,
+            child: ProviderScope(
+              overrides: harness.providerOverrides(),
+              child: MyBeamerApp(
+                navService: harness.navService,
+                userActivityService: harness.userActivityService,
+              ),
             ),
           ),
         ),
       );
       await tester.pump();
 
-      final driver = TutorialDriver(tester: tester, manifest: manifest)
-        ..diagnostics = () {
-          final nav = harness.navService;
-          final types = tester.allWidgets
-              .map((widget) => widget.runtimeType.toString())
-              .toSet();
-          bool has(String type) => types.contains(type);
-          return 'currentPath=${nav.currentPath} '
-              'isDesktopMode=${nav.isDesktopMode} '
-              'detailStack=${nav.desktopTaskDetailStack.value} '
-              'surface=${tester.view.physicalSize}@${tester.view.devicePixelRatio} '
-              'TasksRootPage=${has('TasksRootPage')} '
-              'TasksTabPage=${has('TasksTabPage')} '
-              'TaskDetailsPage=${has('TaskDetailsPage')} '
-              'TaskActionBar=${has('TaskActionBar')} '
-              'scrollables=${find.byType(Scrollable).evaluate().length}';
-        }
-        ..onTimeout = (context) => captureManualScreenshot(
-          binding: binding,
-          tester: tester,
-          name: 'failure_$context',
-        );
+      final driver =
+          TutorialDriver(tester: tester, manifest: manifest, cursor: cursor)
+            ..diagnostics = () {
+              final nav = harness.navService;
+              final types = tester.allWidgets
+                  .map((widget) => widget.runtimeType.toString())
+                  .toSet();
+              bool has(String type) => types.contains(type);
+              return 'currentPath=${nav.currentPath} '
+                  'isDesktopMode=${nav.isDesktopMode} '
+                  'detailStack=${nav.desktopTaskDetailStack.value} '
+                  'surface=${tester.view.physicalSize}@${tester.view.devicePixelRatio} '
+                  'TasksRootPage=${has('TasksRootPage')} '
+                  'TasksTabPage=${has('TasksTabPage')} '
+                  'TaskDetailsPage=${has('TaskDetailsPage')} '
+                  'TaskActionBar=${has('TaskActionBar')} '
+                  'scrollables=${find.byType(Scrollable).evaluate().length}';
+            }
+            ..onTimeout = (context) => captureManualScreenshot(
+              binding: binding,
+              tester: tester,
+              name: 'failure_$context',
+            );
 
       // The tasks list keys each row with the task's UUID
       // (KeyedSubtree(key: ValueKey(task.id)) around TaskBrowseListItem).
@@ -168,7 +173,7 @@ void main() {
             .text(localized(en: 'Tasks', de: 'Aufgaben'))
             .hitTestable();
         await driver.pumpUntilFound(tasksRailItem);
-        await tester.tap(tasksRailItem.first);
+        await driver.tapLikeUser(tasksRailItem);
         await driver.pumpUntilFound(taskCard);
       });
 
@@ -180,14 +185,14 @@ void main() {
             matching: find.byType(Scrollable),
           ),
         );
-        await tester.tap(taskCard.hitTestable().first);
+        await driver.tapLikeUser(taskCard.hitTestable());
         await driver.pumpUntilFound(find.byKey(TaskActionBar.audioKey));
       });
 
       await driver.step('record_dictation', () async {
-        await tester.tap(find.byKey(TaskActionBar.audioKey));
+        await driver.tapLikeUser(find.byKey(TaskActionBar.audioKey));
         await driver.pumpUntilFound(find.byKey(const ValueKey('record')));
-        await tester.tap(find.byKey(const ValueKey('record')));
+        await driver.tapLikeUser(find.byKey(const ValueKey('record')));
         await tester.pump(const Duration(milliseconds: 500));
 
         await driver.speakIntoMic(manifest.step('record_dictation').dictation!);
@@ -199,7 +204,7 @@ void main() {
             .text(localized(en: 'STOP', de: 'STOPP'))
             .hitTestable();
         await driver.pumpUntilFound(stopControl);
-        await tester.tap(stopControl.first);
+        await driver.tapLikeUser(stopControl);
         await tester.pump(const Duration(milliseconds: 500));
       });
 
@@ -230,7 +235,7 @@ void main() {
         );
         await driver.pumpUntilFound(find.text(checklistItemTitle));
         await driver.pumpUntilFound(itemCheckbox);
-        await tester.tap(itemCheckbox.first);
+        await driver.tapLikeUser(itemCheckbox);
         await driver.pumpUntil(
           () => _checklistItemChecked(harness, checklistItemId),
           description: 'checklist item persisted as checked',

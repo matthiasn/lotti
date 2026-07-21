@@ -202,6 +202,95 @@ class TutorialTimeline {
   }
 }
 
+/// Animated on-screen cursor for the recording.
+///
+/// Synthetic `tester.tap` calls never move the real X pointer, so recordings
+/// show controls activating themselves. This overlay draws its own pointer
+/// (WidgetTester drives it via [TutorialDriver.tapLikeUser]) and the capture
+/// hides the real cursor (`x11grab -draw_mouse 0`).
+class TutorialCursorController {
+  final ValueNotifier<Offset> position = ValueNotifier(const Offset(640, 500));
+  final ValueNotifier<bool> pressed = ValueNotifier(false);
+}
+
+class TutorialCursorLayer extends StatelessWidget {
+  const TutorialCursorLayer({
+    required this.controller,
+    required this.child,
+    super.key,
+  });
+
+  final TutorialCursorController controller;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Stack(
+        children: [
+          child,
+          ValueListenableBuilder<Offset>(
+            valueListenable: controller.position,
+            builder: (context, position, _) => ValueListenableBuilder<bool>(
+              valueListenable: controller.pressed,
+              builder: (context, pressed, _) => Positioned(
+                left: position.dx - 6,
+                top: position.dy - 4,
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    size: const Size(24, 28),
+                    painter: _CursorPainter(pressed: pressed),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CursorPainter extends CustomPainter {
+  _CursorPainter({required this.pressed});
+
+  final bool pressed;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (pressed) {
+      canvas.drawCircle(
+        const Offset(6, 4),
+        16,
+        Paint()..color = const Color(0x552EE6A8),
+      );
+    }
+    final arrow = Path()
+      ..moveTo(0, 0)
+      ..lineTo(0, 20)
+      ..lineTo(4.6, 15.4)
+      ..lineTo(7.8, 22.6)
+      ..lineTo(11.2, 21.1)
+      ..lineTo(8, 14)
+      ..lineTo(14, 14)
+      ..close();
+    canvas
+      ..drawPath(
+        arrow,
+        Paint()
+          ..color = const Color(0xFF1A1A1A)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3,
+      )
+      ..drawPath(arrow, Paint()..color = const Color(0xFFFFFFFF));
+  }
+
+  @override
+  bool shouldRepaint(_CursorPainter oldDelegate) =>
+      oldDelegate.pressed != pressed;
+}
+
 /// Real-service in-memory app harness (fork of the legacy full-shell
 /// screenshot harness, minus the recorder stub: the tutorial exercises the
 /// REAL audio recorder against the virtual microphone).
@@ -475,13 +564,35 @@ class TutorialDriver {
   TutorialDriver({
     required this.tester,
     required this.manifest,
+    required this.cursor,
   }) : timeline = TutorialTimeline();
 
   static const _postNarrationPad = Duration(milliseconds: 600);
 
   final WidgetTester tester;
   final TutorialManifest manifest;
+  final TutorialCursorController cursor;
   final TutorialTimeline timeline;
+
+  /// Glides the overlay cursor to [finder]'s center, pulses a press, and
+  /// performs the actual (synthetic) tap.
+  Future<void> tapLikeUser(Finder finder) async {
+    final target = tester.getCenter(finder.first);
+    final start = cursor.position.value;
+    const steps = 22;
+    for (var i = 1; i <= steps; i++) {
+      final t = i / steps;
+      final eased = Curves.easeInOut.transform(t);
+      cursor.position.value = Offset.lerp(start, target, eased)!;
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await tester.pump(const Duration(milliseconds: 150));
+    cursor.pressed.value = true;
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.tap(finder.first, warnIfMissed: false);
+    cursor.pressed.value = false;
+    await tester.pump(const Duration(milliseconds: 120));
+  }
 
   /// Runs [action], then holds the step until both the scenario's
   /// min_duration and the narration clip length (plus a short pad) have

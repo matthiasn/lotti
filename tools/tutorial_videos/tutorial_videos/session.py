@@ -125,6 +125,7 @@ class ScreenCapture:
             [
                 "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
                 "-f", "x11grab",
+                "-draw_mouse", "0",
                 "-framerate", str(self.framerate),
                 "-video_size", self.size,
                 "-i", self.display,
