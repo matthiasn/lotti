@@ -95,7 +95,6 @@ void main() {
       'ai-models',
       'ai-profiles',
       'ai-usage',
-      'agents-stats',
       'agents-templates',
       'agents-instances',
       'agents-souls',
@@ -328,18 +327,11 @@ void main() {
         expect(agentsRoot, isA<AgentSettingsBody>());
         expect((agentsRoot as AgentSettingsBody).initialTab, isNull);
 
-        // Stats and Pending Wakes are read-only views: no detail/
-        // create flow, so they reuse `AgentSettingsBody` directly
-        // with the matching `initialTab` as the mobile/test fallback.
-        // On desktop the URL drives the tab regardless.
+        // Pending Wakes is a read-only view: no detail/create flow,
+        // so it reuses `AgentSettingsBody` directly with the matching
+        // `initialTab` as the mobile/test fallback. On desktop the
+        // URL drives the tab regardless.
         expect(build('ai-usage'), isA<ImpactAnalysisBody>());
-
-        final stats = build('agents-stats');
-        expect(stats, isA<AgentSettingsBody>());
-        expect(
-          (stats as AgentSettingsBody).initialTab,
-          AgentSettingsTab.stats,
-        );
 
         final pendingWakes = build('agents-pending-wakes');
         expect(pendingWakes, isA<AgentSettingsBody>());

@@ -245,13 +245,12 @@ void main() {
 
   group('buildSettingsTree — agents branch', () {
     test('children mirror the tab order in AgentSettingsBody', () {
-      // Stats / Templates / Instances / Souls / Pending Wakes — same
-      // order as the in-page TabBar, so the tree shape matches the
-      // right-pane tab strip when the user lands on Agents.
+      // Templates / Instances / Souls / Pending Wakes — same order as
+      // the in-page TabBar, so the tree shape matches the right-pane
+      // tab strip when the user lands on Agents.
       final agents = _tree().firstWhere((n) => n.id == 'agents');
       expect(agents.hasChildren, isTrue);
       expect(agents.children!.map((n) => n.id).toList(), [
-        'agents/stats',
         'agents/templates',
         'agents/instances',
         'agents/souls',
@@ -424,7 +423,6 @@ void main() {
         'ai/models': 'ai-models',
         'ai/profiles': 'ai-profiles',
         'ai/usage': 'ai-usage',
-        'agents/stats': 'agents-stats',
         'agents/templates': 'agents-templates',
         'agents/instances': 'agents-instances',
         'agents/souls': 'agents-souls',

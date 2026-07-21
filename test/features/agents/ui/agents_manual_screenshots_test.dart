@@ -27,8 +27,6 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
-import 'package:lotti/features/agents/model/daily_token_usage.dart';
-import 'package:lotti/features/agents/model/hourly_wake_activity.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
@@ -38,7 +36,6 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
-import 'package:lotti/features/agents/state/token_stats_providers.dart';
 import 'package:lotti/features/agents/state/wake_run_chart_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
@@ -72,8 +69,6 @@ import '../test_utils.dart';
 
 const String _subdir = 'agents';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
-AppLocalizations _messages(WidgetTester tester) =>
-    AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
 const String _habitatTemplateId = 'template-habitat-sentinel';
 const String _dayPlannerTemplateId = 'template-waddle-day-planner';
 const String _cargoTemplateId = 'template-sardine-cargo-watch';
@@ -86,7 +81,6 @@ const String _dayPlannerAgentId = 'agent-project-waddle-planner';
 const String _cargoAgentId = 'agent-sardine-cargo-coordinator';
 
 enum _AgentSurface {
-  stats,
   templates,
   instances,
   souls,
@@ -479,39 +473,6 @@ final List<PendingWakeRecord> _pendingWakes = [
   ),
 ];
 
-final List<DailyTokenUsage> _dailyUsage = [
-  for (var index = 6; index >= 0; index--)
-    DailyTokenUsage(
-      date: DateTime(2026, 7, 17 - index),
-      totalTokens: 12200 + (6 - index) * 2300,
-      tokensByTimeOfDay: 8100 + (6 - index) * 1700,
-      isToday: index == 0,
-      inputTokens: 7600 + (6 - index) * 1200,
-      outputTokens: 3100 + (6 - index) * 700,
-      thoughtsTokens: 1500 + (6 - index) * 400,
-    ),
-];
-
-final List<HourlyWakeActivity> _hourlyActivity = [
-  for (var hour = 0; hour < 24; hour++)
-    HourlyWakeActivity(
-      hour: DateTime(2026, 7, 16, 11).add(Duration(hours: hour)),
-      count: switch (hour) {
-        2 || 7 || 13 || 20 => 3,
-        4 || 9 || 15 || 22 => 2,
-        0 || 5 || 11 || 17 => 1,
-        _ => 0,
-      },
-      reasons: switch (hour) {
-        2 || 13 => const {'scheduled': 2, 'subscription': 1},
-        7 || 20 => const {'manual': 1, 'subscription': 2},
-        4 || 9 || 15 || 22 => const {'scheduled': 2},
-        0 || 5 || 11 || 17 => const {'subscription': 1},
-        _ => const {},
-      },
-    ),
-];
-
 final RitualSummaryMetrics _ritualMetrics = RitualSummaryMetrics(
   lifetimeWakeCount: 184,
   wakesSinceLastSession: 37,
@@ -629,9 +590,6 @@ Widget _app({
 }
 
 Widget _directPage(_AgentSurface surface) => switch (surface) {
-  _AgentSurface.stats => const AgentSettingsPage(
-    initialTab: AgentSettingsTab.stats,
-  ),
   _AgentSurface.templates => const AgentSettingsPage(
     initialTab: AgentSettingsTab.templates,
   ),
@@ -662,7 +620,6 @@ Widget _directPage(_AgentSurface surface) => switch (surface) {
 };
 
 bool _usesSettingsShell(_AgentSurface surface) => switch (surface) {
-  _AgentSurface.stats ||
   _AgentSurface.templates ||
   _AgentSurface.instances ||
   _AgentSurface.souls ||
@@ -686,13 +643,6 @@ Future<void> _selectDesktopSurface(
     ..syncFromUrl('/settings/agents');
 
   switch (surface) {
-    case _AgentSurface.stats:
-      tree.onNodeTap('agents/stats', depth: 1, hasChildren: false);
-      route.value = (
-        path: '/settings/agents/stats',
-        pathParameters: const <String, String>{},
-        queryParameters: const <String, String>{},
-      );
     case _AgentSurface.templates:
       tree.onNodeTap('agents/templates', depth: 1, hasChildren: false);
       route.value = (
@@ -962,69 +912,6 @@ void main() {
       wakeCountdownTickerProvider.overrideWith(
         (ref) => Stream.value(manualDemoNow),
       ),
-      hourlyWakeActivityProvider.overrideWith((ref) async => _hourlyActivity),
-      dailyTokenUsageProvider.overrideWith((ref, days) async => _dailyUsage),
-      tokenUsageComparisonProvider.overrideWith(
-        (ref, days) async => const TokenUsageComparison(
-          averageTokensByTimeOfDay: 14800,
-          todayTokens: 26000,
-        ),
-      ),
-      dailyTokenUsageByModelProvider.overrideWith(
-        (ref, days) async => {
-          _t('Waddle Command 70B', 'Watschelkommando 70B'): _dailyUsage,
-          _t('Emperor Reasoning XL', 'Kaiserpinguin-Denken XL'): [
-            for (final item in _dailyUsage)
-              DailyTokenUsage(
-                date: item.date,
-                totalTokens: item.totalTokens ~/ 3,
-                tokensByTimeOfDay: item.tokensByTimeOfDay ~/ 3,
-                isToday: item.isToday,
-                wakeCount: item.wakeCount ~/ 2,
-              ),
-          ],
-        },
-      ),
-      tokenSourceBreakdownProvider.overrideWith(
-        (ref) async => [
-          TokenSourceBreakdown(
-            templateId: _habitatTemplateId,
-            displayName: _t(
-              'Orbital Habitat Sentinel',
-              'Wächter des Orbital-Habitats',
-            ),
-            totalTokens: 14300,
-            percentage: 55,
-            wakeCount: 7,
-            totalDuration: const Duration(minutes: 38),
-            isHighUsage: false,
-          ),
-          TokenSourceBreakdown(
-            templateId: _dayPlannerTemplateId,
-            displayName: _t(
-              'Project Waddle Day Planner',
-              'Project-Waddle-Tagesplaner',
-            ),
-            totalTokens: 7800,
-            percentage: 30,
-            wakeCount: 4,
-            totalDuration: const Duration(minutes: 21),
-            isHighUsage: false,
-          ),
-          TokenSourceBreakdown(
-            templateId: _cargoTemplateId,
-            displayName: _t(
-              'Sardine Supply Watch',
-              'Sardinen-Vorratswache',
-            ),
-            totalTokens: 3900,
-            percentage: 15,
-            wakeCount: 3,
-            totalDuration: const Duration(minutes: 12),
-            isHighUsage: false,
-          ),
-        ],
-      ),
       templateTokenUsageSummariesProvider.overrideWith(
         (ref, id) async => const <AgentTokenUsageSummary>[],
       ),
@@ -1120,30 +1007,6 @@ void main() {
     final viewport = device.isPhone ? 'mobile' : 'desktop';
     for (final brightness in [Brightness.light, Brightness.dark]) {
       final theme = brightness.name;
-
-      testWidgets('$viewport agent statistics — $theme', (tester) async {
-        await _withDevicePlatform(device, () async {
-          await withClock(Clock.fixed(manualDemoNow), () async {
-            await pumpSurface(
-              tester,
-              surface: _AgentSurface.stats,
-              device: device,
-              brightness: brightness,
-            );
-            final messages = _messages(tester);
-            expect(
-              find.text(messages.agentStatsUsageAboveAverage('10:30')),
-              findsOneWidget,
-            );
-            expect(find.text('26K'), findsWidgets);
-            await captureScreenshot(
-              tester,
-              'agents_stats_${viewport}_$theme',
-              subdir: _subdir,
-            );
-          });
-        });
-      });
 
       testWidgets('$viewport agent templates — $theme', (tester) async {
         await _withDevicePlatform(device, () async {

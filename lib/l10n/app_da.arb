@@ -285,29 +285,6 @@
     }
   },
   "agentObservationsEmpty": "Ingen observationer er registreret endnu.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 wake} other{{count} wakes}} ({reasons})",
-  "@agentPendingWakesActivityHourDetail": {
-    "placeholders": {
-      "hour": {
-        "type": "String"
-      },
-      "count": {
-        "type": "int"
-      },
-      "reasons": {
-        "type": "String"
-      }
-    }
-  },
-  "agentPendingWakesActivityTitle": "Vågeaktivitet (24 timer)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 samlet våge} other{{count} samlede våger}}",
-  "@agentPendingWakesActivityTotal": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "agentPendingWakesDeleteTooltip": "Fjern bølgen",
   "agentPendingWakesEmptyFiltered": "Ingen bølger matcher dine filtre.",
   "agentPendingWakesFilterSectionType": "Type",
@@ -429,60 +406,6 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sover indtil",
   "agentStateWakeCount": "Vågenopgørelse",
-  "agentStatsAllDayLegend": "Hele dagen",
-  "agentStatsAverageLabel": "Gennemsnit",
-  "agentStatsByTimeLegend": "Dagligt af {time}",
-  "@agentStatsByTimeLegend": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsCacheRateLabel": "Cache-hastighed",
-  "agentStatsDailyUsageHeading": "Daglig brug",
-  "agentStatsInputLabel": "Input",
-  "agentStatsNoUsage": "Der er ikke registreret tokenbrug de seneste 7 dage.",
-  "agentStatsOutputLabel": "Output",
-  "agentStatsSourceActiveFor": "Aktiv for {duration}",
-  "@agentStatsSourceActiveFor": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsSourceActivityHeading": "Agentaktivitet",
-  "agentStatsSourceWakes": "{count, plural, =1{1 wake} other{{count} wakes}}",
-  "@agentStatsSourceWakes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "agentStatsTabTitle": "Statistik",
-  "agentStatsThoughtsLabel": "Tankerne",
-  "agentStatsTodayLabel": "I dag",
-  "agentStatsTokensPerWakeLabel": "Tokens / Wake",
-  "agentStatsTokensUnit": "Tokens",
-  "agentStatsUsageAboveAverage": "Du bruger flere tokens i dag, end du normalt gør ifølge {time}.",
-  "@agentStatsUsageAboveAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsUsageBelowAverage": "Du bruger færre tokens i dag, end du normalt gør ved {time}.",
-  "@agentStatsUsageBelowAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsWakesLabel": "Våger",
   "agentSuggestionTimeEntryUpdateCurrent": "Nuværende",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."
@@ -4154,7 +4077,6 @@
   "settingsAgentsInstancesSubtitle": "Kørende agenter",
   "settingsAgentsPendingWakesSubtitle": "Planlagte vågetimere",
   "settingsAgentsSoulsSubtitle": "Langlivede agentpersonligheder",
-  "settingsAgentsStatsSubtitle": "Tokenbrug og aktivitet",
   "settingsAgentsTemplatesSubtitle": "Fælles agent-blueprints",
   "settingsAiModelsSubtitle": "Per-leverandør modelrækker og kapabiliteter",
   "settingsAiModelsTitle": "Modeller",

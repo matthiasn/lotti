@@ -1876,7 +1876,6 @@ void main() {
           'hide', () {
         expectHides([
           '/settings/agents',
-          '/settings/agents/stats',
           '/settings/agents/templates',
           '/settings/agents/instances',
           '/settings/agents/souls',

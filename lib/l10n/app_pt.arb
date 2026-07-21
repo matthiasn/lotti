@@ -284,29 +284,6 @@
     }
   },
   "agentObservationsEmpty": "Nenhuma observação registrada ainda.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 wake} other{{count} wakes}} ({reasons})",
-  "@agentPendingWakesActivityHourDetail": {
-    "placeholders": {
-      "hour": {
-        "type": "String"
-      },
-      "count": {
-        "type": "int"
-      },
-      "reasons": {
-        "type": "String"
-      }
-    }
-  },
-  "agentPendingWakesActivityTitle": "Atividade de Despertar (24h)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 total de despertares} other{{count} total de despertares}}",
-  "@agentPendingWakesActivityTotal": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "agentPendingWakesDeleteTooltip": "Remover despertar",
   "agentPendingWakesEmptyFiltered": "Nenhuma ativação corresponde aos seus filtros.",
   "agentPendingWakesFilterSectionType": "Tipo",
@@ -428,60 +405,6 @@
   "agentStateRevision": "Revisão",
   "agentStateSleepingUntil": "Dormindo até",
   "agentStateWakeCount": "Contagem de despertares",
-  "agentStatsAllDayLegend": "O dia todo",
-  "agentStatsAverageLabel": "Média",
-  "agentStatsByTimeLegend": "Diariamente às {time}",
-  "@agentStatsByTimeLegend": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsCacheRateLabel": "Taxa de cache",
-  "agentStatsDailyUsageHeading": "Uso Diário",
-  "agentStatsInputLabel": "Entrada",
-  "agentStatsNoUsage": "Nenhum uso de token registrado nos últimos 7 dias.",
-  "agentStatsOutputLabel": "Saída",
-  "agentStatsSourceActiveFor": "Ativo por {duration}",
-  "@agentStatsSourceActiveFor": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsSourceActivityHeading": "Atividade do agente",
-  "agentStatsSourceWakes": "{count, plural, =1{1 wake} other{{count} wakes}}",
-  "@agentStatsSourceWakes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "agentStatsTabTitle": "Estatísticas",
-  "agentStatsThoughtsLabel": "Pensamentos",
-  "agentStatsTodayLabel": "Hoje",
-  "agentStatsTokensPerWakeLabel": "Tokens / Despertar",
-  "agentStatsTokensUnit": "fichas",
-  "agentStatsUsageAboveAverage": "Você está usando mais tokens hoje do que normalmente usa até {time}.",
-  "@agentStatsUsageAboveAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsUsageBelowAverage": "Você está usando menos tokens hoje do que normalmente usa até {time}.",
-  "@agentStatsUsageBelowAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsWakesLabel": "Acorda",
   "agentSuggestionTimeEntryUpdateCurrent": "Atual",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."
@@ -4153,7 +4076,6 @@
   "settingsAgentsInstancesSubtitle": "Agentes em execução",
   "settingsAgentsPendingWakesSubtitle": "Despertadores programados",
   "settingsAgentsSoulsSubtitle": "Personalidades de agentes de longa vida",
-  "settingsAgentsStatsSubtitle": "Uso e atividade de token",
   "settingsAgentsTemplatesSubtitle": "Projetos de agente compartilhado",
   "settingsAiModelsSubtitle": "Linhas e recursos do modelo por provedor",
   "settingsAiModelsTitle": "Modelos",

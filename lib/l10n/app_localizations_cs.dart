@@ -514,35 +514,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentObservationsEmpty => 'Zatím žádná zaznamenaná pozorování.';
 
   @override
-  String agentPendingWakesActivityHourDetail(
-    String hour,
-    int count,
-    String reasons,
-  ) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count probuzení',
-      one: '1 probuzení',
-    );
-    return '$hour: $_temp0 ($reasons)';
-  }
-
-  @override
-  String get agentPendingWakesActivityTitle => 'Aktivita probuzení (24h)';
-
-  @override
-  String agentPendingWakesActivityTotal(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count probuzení celkem',
-      one: '1 probuzení celkem',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get agentPendingWakesDeleteTooltip => 'Odstranit probuzení';
 
   @override
@@ -834,81 +805,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Počet probuzení';
-
-  @override
-  String get agentStatsAllDayLegend => 'Celý den';
-
-  @override
-  String get agentStatsAverageLabel => 'Průměr';
-
-  @override
-  String agentStatsByTimeLegend(String time) {
-    return 'Denně do $time';
-  }
-
-  @override
-  String get agentStatsCacheRateLabel => 'Míra cache';
-
-  @override
-  String get agentStatsDailyUsageHeading => 'Denní využití';
-
-  @override
-  String get agentStatsInputLabel => 'Vstup';
-
-  @override
-  String get agentStatsNoUsage =>
-      'Za posledních 7 dní nebyla zaznamenána žádná spotřeba tokenů.';
-
-  @override
-  String get agentStatsOutputLabel => 'Výstup';
-
-  @override
-  String agentStatsSourceActiveFor(String duration) {
-    return 'Aktivní po dobu $duration';
-  }
-
-  @override
-  String get agentStatsSourceActivityHeading => 'Aktivita agentů';
-
-  @override
-  String agentStatsSourceWakes(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count probuzení',
-      few: '$count probuzení',
-      one: '1 probuzení',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get agentStatsTabTitle => 'Statistiky';
-
-  @override
-  String get agentStatsThoughtsLabel => 'Myšlenky';
-
-  @override
-  String get agentStatsTodayLabel => 'Dnes';
-
-  @override
-  String get agentStatsTokensPerWakeLabel => 'Tokeny / probuzení';
-
-  @override
-  String get agentStatsTokensUnit => 'tokeny';
-
-  @override
-  String agentStatsUsageAboveAverage(String time) {
-    return 'Dnes používáš více tokenů, než je obvyklé v $time.';
-  }
-
-  @override
-  String agentStatsUsageBelowAverage(String time) {
-    return 'Dnes používáš méně tokenů, než je obvyklé v $time.';
-  }
-
-  @override
-  String get agentStatsWakesLabel => 'Probuzení';
 
   @override
   String get agentSuggestionTimeEntryUpdateCurrent => 'Aktuální';
@@ -8576,9 +8472,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsAgentsSoulsSubtitle => 'Dlouhodobé osobnosti agentů';
-
-  @override
-  String get settingsAgentsStatsSubtitle => 'Spotřeba tokenů a aktivita';
 
   @override
   String get settingsAgentsTemplatesSubtitle => 'Sdílené šablony agentů';

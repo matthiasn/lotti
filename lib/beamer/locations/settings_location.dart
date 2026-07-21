@@ -105,7 +105,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
     // user switches tabs on desktop. Listing them as explicit
     // patterns makes Beamer accept them without falling back to a
     // parent location.
-    '/settings/agents/stats',
     '/settings/agents/templates',
     '/settings/agents/instances',
     '/settings/agents/souls',

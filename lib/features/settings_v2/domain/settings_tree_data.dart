@@ -113,14 +113,9 @@ List<SettingsNode> buildSettingsTree({
       Icons.smart_toy_outlined,
       panel: 'agents',
       // Children mirror the tab order inside `AgentSettingsBody`
-      // (stats, templates, instances, souls, pending-wakes) so the
-      // tree shape matches what the right pane shows under Agents.
+      // (templates, instances, souls, pending-wakes) so the tree
+      // shape matches what the right pane shows under Agents.
       children: [
-        leaf(
-          'agents/stats',
-          Icons.insights_rounded,
-          panel: 'agents-stats',
-        ),
         leaf(
           'agents/templates',
           Icons.article_outlined,

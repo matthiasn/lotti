@@ -4,20 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/daily_token_usage.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
-import 'package:lotti/features/agents/state/token_stats_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/agent_pending_wakes_page.dart';
-import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/get_it.dart';
@@ -134,22 +131,6 @@ void main() {
       pendingWakeTargetTitleProvider.overrideWith(
         (ref, String? entryId) async => subjectTitles[entryId],
       ),
-      hourlyWakeActivityProvider.overrideWith((ref) async => const []),
-      dailyTokenUsageProvider.overrideWith(
-        (ref, days) async => const <DailyTokenUsage>[],
-      ),
-      tokenUsageComparisonProvider.overrideWith(
-        (ref, days) async => const TokenUsageComparison(
-          averageTokensByTimeOfDay: 0,
-          todayTokens: 0,
-        ),
-      ),
-      dailyTokenUsageByModelProvider.overrideWith(
-        (ref, days) async => const <String, List<DailyTokenUsage>>{},
-      ),
-      tokenSourceBreakdownProvider.overrideWith(
-        (ref) async => const <TokenSourceBreakdown>[],
-      ),
       ...extraOverrides,
     ];
   }
@@ -179,22 +160,20 @@ void main() {
   }
 
   group('AgentSettingsPage', () {
-    testWidgets('shows Stats tab by default', (tester) async {
+    testWidgets('shows Templates tab by default', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
+      // The Templates empty-state copy is unique to the Templates tab
+      // content — the active-tab signal, on-stage only.
       expect(
-        find.text(context.messages.agentStatsTabTitle),
+        find.text(context.messages.agentTemplatesEmptyFiltered),
         findsOneWidget,
       );
-      // TokenStatsTab must be on-stage (active), not just mounted offstage.
-      expect(find.byType(TokenStatsTab), findsOneWidget);
-      // The daily usage heading is unique to the Stats tab content.
-      expect(
-        find.text(context.messages.agentStatsDailyUsageHeading),
-        findsOneWidget,
-      );
+      // Sibling-tab bodies must not be on-stage.
+      expect(find.byType(AgentInstancesList), findsNothing);
+      expect(find.byType(AgentPendingWakesPage), findsNothing);
     });
 
     testWidgets(
@@ -210,7 +189,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(AgentSettingsPage));
-        // Stats tab → generic "Agents" title.
+        // Templates tab (default) → generic "Agents" title.
         expect(find.text(context.messages.agentSettingsTitle), findsOneWidget);
         expect(
           find.text(context.messages.agentInstancesPageTitle),
@@ -498,24 +477,6 @@ void main() {
             pendingWakeRecordsProvider.overrideWith(
               (ref) async => const <PendingWakeRecord>[],
             ),
-            hourlyWakeActivityProvider.overrideWith(
-              (ref) async => const [],
-            ),
-            dailyTokenUsageProvider.overrideWith(
-              (ref, days) async => const <DailyTokenUsage>[],
-            ),
-            tokenUsageComparisonProvider.overrideWith(
-              (ref, days) async => const TokenUsageComparison(
-                averageTokensByTimeOfDay: 0,
-                todayTokens: 0,
-              ),
-            ),
-            dailyTokenUsageByModelProvider.overrideWith(
-              (ref, days) async => const <String, List<DailyTokenUsage>>{},
-            ),
-            tokenSourceBreakdownProvider.overrideWith(
-              (ref) async => const <TokenSourceBreakdown>[],
-            ),
           ],
         ),
       );
@@ -569,24 +530,6 @@ void main() {
             ),
             pendingWakeRecordsProvider.overrideWith(
               (ref) async => const <PendingWakeRecord>[],
-            ),
-            hourlyWakeActivityProvider.overrideWith(
-              (ref) async => const [],
-            ),
-            dailyTokenUsageProvider.overrideWith(
-              (ref, days) async => const <DailyTokenUsage>[],
-            ),
-            tokenUsageComparisonProvider.overrideWith(
-              (ref, days) async => const TokenUsageComparison(
-                averageTokensByTimeOfDay: 0,
-                todayTokens: 0,
-              ),
-            ),
-            dailyTokenUsageByModelProvider.overrideWith(
-              (ref, days) async => const <String, List<DailyTokenUsage>>{},
-            ),
-            tokenSourceBreakdownProvider.overrideWith(
-              (ref) async => const <TokenSourceBreakdown>[],
             ),
           ],
         ),
@@ -830,24 +773,6 @@ void main() {
             pendingWakeRecordsProvider.overrideWith(
               (ref) async => const <PendingWakeRecord>[],
             ),
-            hourlyWakeActivityProvider.overrideWith(
-              (ref) async => const [],
-            ),
-            dailyTokenUsageProvider.overrideWith(
-              (ref, days) async => const <DailyTokenUsage>[],
-            ),
-            tokenUsageComparisonProvider.overrideWith(
-              (ref, days) async => const TokenUsageComparison(
-                averageTokensByTimeOfDay: 0,
-                todayTokens: 0,
-              ),
-            ),
-            dailyTokenUsageByModelProvider.overrideWith(
-              (ref, days) async => const <String, List<DailyTokenUsage>>{},
-            ),
-            tokenSourceBreakdownProvider.overrideWith(
-              (ref) async => const <TokenSourceBreakdown>[],
-            ),
           ],
         ),
       );
@@ -929,7 +854,6 @@ void main() {
             findsOneWidget,
           );
           // Sibling-tab bodies must not be on-stage.
-          expect(find.byType(TokenStatsTab), findsNothing);
           expect(find.byType(AgentInstancesList), findsNothing);
           expect(find.byType(AgentPendingWakesPage), findsNothing);
         },
@@ -943,7 +867,6 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
 
           expect(find.byType(AgentPendingWakesPage), findsOneWidget);
-          expect(find.byType(TokenStatsTab), findsNothing);
           expect(find.byType(AgentInstancesList), findsNothing);
         },
       );
@@ -1003,36 +926,48 @@ void main() {
             find.text(context.messages.agentPendingWakesTitle),
             findsNothing,
           );
-          expect(find.text(context.messages.agentStatsTabTitle), findsNothing);
         },
       );
 
       testWidgets(
-        'bare /settings/agents falls through to Stats (parent landing)',
+        'bare /settings/agents falls through to Templates (parent landing)',
         (tester) async {
           routeNotifier.value = routeFor('/settings/agents');
           await tester.pumpWidget(buildSubject());
           await tester.pump(const Duration(milliseconds: 100));
 
-          // Stats tab content is on stage when the URL has no
+          // Templates tab content is on stage when the URL has no
           // per-tab segment, so the parent tree row stays a usable
           // landing.
-          expect(find.byType(TokenStatsTab), findsOneWidget);
+          final context = tester.element(find.byType(AgentSettingsPage));
+          expect(
+            find.text(context.messages.agentTemplatesEmptyFiltered),
+            findsOneWidget,
+          );
         },
       );
 
       testWidgets(
-        'unknown sibling segment falls through to Stats — segment-aware '
-        "match doesn't let `templates-archive` hijack the Templates tab",
+        'unknown sibling segment falls through to Templates — segment-aware '
+        "match doesn't let `souls-archive` hijack the Souls tab",
         (tester) async {
           // Hypothetical future leaf whose name shares a prefix with
           // an existing tab. The segment-aware resolver must NOT
-          // promote this to Templates via prefix-only matching.
-          routeNotifier.value = routeFor('/settings/agents/templates-archive');
+          // promote this to Souls via prefix-only matching; it falls
+          // through to the Templates landing instead.
+          routeNotifier.value = routeFor('/settings/agents/souls-archive');
           await tester.pumpWidget(buildSubject());
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(find.byType(TokenStatsTab), findsOneWidget);
+          final context = tester.element(find.byType(AgentSettingsPage));
+          expect(
+            find.text(context.messages.agentTemplatesEmptyFiltered),
+            findsOneWidget,
+          );
+          expect(
+            find.text(context.messages.agentSoulsEmptyFiltered),
+            findsNothing,
+          );
         },
       );
     });
@@ -1077,24 +1012,6 @@ void main() {
               ),
               pendingWakeTargetTitleProvider.overrideWith(
                 (ref, String? entryId) async => null,
-              ),
-              hourlyWakeActivityProvider.overrideWith(
-                (ref) async => const [],
-              ),
-              dailyTokenUsageProvider.overrideWith(
-                (ref, days) async => const <DailyTokenUsage>[],
-              ),
-              tokenUsageComparisonProvider.overrideWith(
-                (ref, days) async => const TokenUsageComparison(
-                  averageTokensByTimeOfDay: 0,
-                  todayTokens: 0,
-                ),
-              ),
-              dailyTokenUsageByModelProvider.overrideWith(
-                (ref, days) async => const <String, List<DailyTokenUsage>>{},
-              ),
-              tokenSourceBreakdownProvider.overrideWith(
-                (ref) async => const <TokenSourceBreakdown>[],
               ),
             ],
           ),
@@ -1183,7 +1100,10 @@ void main() {
           find.text(context.messages.agentSoulsEmptyFiltered),
           findsOneWidget,
         );
-        expect(find.byType(TokenStatsTab), findsNothing);
+        expect(
+          find.text(context.messages.agentTemplatesEmptyFiltered),
+          findsNothing,
+        );
       },
     );
 
@@ -1234,7 +1154,7 @@ void main() {
       'tab bar distributes extra width evenly when tabs do not fill the '
       'available width (wide layout)',
       (tester) async {
-        // On a wide surface the five tabs do not fill the row, so
+        // On a wide surface the four tabs do not fill the row, so
         // _segmentWidths takes the extra-per-tab distribution branch.
         // Each rendered tab is then wider than its natural width, and
         // together they span the full available width.
@@ -1261,7 +1181,7 @@ void main() {
         // sized by the SingleChildScrollView's viewport (its own width).
         final availableWidth = tester.getSize(scrollFinder.first).width;
 
-        // On the extra-per-tab branch the five cells are stretched to
+        // On the extra-per-tab branch the four cells are stretched to
         // exactly fill the available width, so the inner Row spans the
         // whole viewport (no horizontal overflow / scroll). On the
         // natural-width branch the Row would be wider and scroll instead.

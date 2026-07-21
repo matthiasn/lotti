@@ -1236,17 +1236,6 @@
       }
     },
     {
-      "id": "agents/stats",
-      "title": "Agent statistics",
-      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
-      "variants": {
-        "mobile-light": "agents_stats_mobile_light.png",
-        "mobile-dark": "agents_stats_mobile_dark.png",
-        "desktop-light": "agents_stats_desktop_light.png",
-        "desktop-dark": "agents_stats_desktop_dark.png"
-      }
-    },
-    {
       "id": "agents/templates",
       "title": "Agent templates",
       "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
