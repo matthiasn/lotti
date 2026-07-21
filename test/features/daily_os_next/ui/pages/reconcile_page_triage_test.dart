@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import 'reconcile_page_test_helpers.dart';
@@ -276,7 +276,7 @@ void main() {
     });
 
     testWidgets(
-      'Heard column shows the inference bars while the parse wake runs, '
+      'Heard column shows the thinking shader while the parse wake runs, '
       'with the pending column already populated',
       (tester) async {
         hSetWideSurface(tester);
@@ -307,9 +307,11 @@ void main() {
 
         // Pending decisions render immediately while parsing continues.
         expect(find.text(hKPendingTitle), findsOneWidget);
-        // The Heard column surfaces the running-inference bars (parse in
-        // flight) — the same busy signal as running ASR.
-        expect(find.byType(AiRunningAnimation), findsOneWidget);
+        // The Heard column surfaces the AI thinking shader (parse in flight).
+        expect(
+          find.byKey(DayPlanningThinkingShader.indicatorKey),
+          findsOneWidget,
+        );
       },
     );
 
@@ -343,7 +345,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text(hKPendingTitle), findsOneWidget);
-      expect(find.byType(AiRunningAnimation), findsNothing);
+      expect(
+        find.byKey(DayPlanningThinkingShader.indicatorKey),
+        findsNothing,
+      );
     });
   });
 }

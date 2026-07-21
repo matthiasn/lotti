@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
-import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
@@ -36,9 +36,11 @@ void main() {
       await tester.pump();
 
       final messages = tester.element(find.byType(ReconcilePage)).messages;
-      // The same dancing inference bars as running ASR — an unmistakable
-      // busy signal while transcribe/parse fills the Heard column.
-      expect(find.byType(AiRunningAnimation), findsOneWidget);
+      expect(find.byType(DayPlanningThinkingShader), findsOneWidget);
+      expect(
+        find.byKey(DayPlanningThinkingShader.indicatorKey),
+        findsOneWidget,
+      );
       expect(
         find.text(messages.dailyOsNextReconcileProcessing),
         findsOneWidget,
@@ -126,9 +128,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
         // Wake still running, parse hasn't produced items yet: the empty
-        // Heard column shows the running-inference bars, not "done/empty".
+        // Heard column shows the thinking shader, not "done/empty".
         expect(find.byType(ParsedCard), findsNothing);
-        expect(find.byType(AiRunningAnimation), findsOneWidget);
+        expect(
+          find.byKey(DayPlanningThinkingShader.indicatorKey),
+          findsOneWidget,
+        );
 
         // Wake completes and the parsed items are now available.
         agent.ready = true;
@@ -136,7 +141,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
         expect(find.byType(ParsedCard), findsOneWidget);
-        expect(find.byType(AiRunningAnimation), findsNothing);
+        expect(
+          find.byKey(DayPlanningThinkingShader.indicatorKey),
+          findsNothing,
+        );
       },
     );
 

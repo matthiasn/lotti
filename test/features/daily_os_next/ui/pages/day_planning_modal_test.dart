@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
-import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
@@ -472,7 +471,7 @@ void main() {
 
   group('showDayPlanningModal — create chain', () {
     testWidgets(
-      'first reconcile frame shows the busy bars and disables build',
+      'first reconcile frame shows one shader and disables build',
       (
         tester,
       ) async {
@@ -484,7 +483,12 @@ void main() {
         final messages = _l10n(tester);
         await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
 
-        expect(find.byType(AiRunningAnimation), findsOneWidget);
+        // Exactly one busy signal: the sticky bar's top-edge shader. The
+        // loading body suppresses its own copy inside the modal.
+        expect(
+          find.byKey(DayPlanningThinkingShader.indicatorKey),
+          findsOneWidget,
+        );
         expect(
           find.text(messages.dailyOsNextReconcileProcessing),
           findsOneWidget,

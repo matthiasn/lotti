@@ -416,9 +416,12 @@ sequenceDiagram
   transcript; the orb caption carries listening/transcribing status, and the
   waveform freezes dimmed in its slot (deliberately no inference-bars
   animation on the recorder surface). The Reconcile step is where the wait
-  is made visible: its loading view and the empty Heard column show the same
-  running-inference bars (`AiRunningAnimation`) as ASR elsewhere, keyed by
-  the planner identity that actually executes the parse wake.
+  is made visible: the sticky action bar's top-edge `DayPlanningThinkingShader`
+  runs while the initial snapshot loads or the parse wake executes — keyed by
+  the planner identity that actually runs day wakes (`dailyOsPlannerAgentId`),
+  not the `dayplan-…` day id — and the empty Heard column carries the same
+  shader strip; the standalone page's loading view keeps its own copy since
+  it has no glass bar.
 
   ```mermaid
   stateDiagram-v2
