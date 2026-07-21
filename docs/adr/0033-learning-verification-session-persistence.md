@@ -43,6 +43,10 @@ is removed; the full draft is preserved in git history.
    app. There are no signatures, attestations, clock anchors, or fences.
 3. **Immutable artifacts, referenced by events.** New `AgentDomainEntity`
    variants, all immutable:
+   - `LearningQuizSessionEntity` — the per-run anchor, ID equal to its
+     `quizRequestId`: task ref, scope, depth choice, and creation provenance.
+     It is the entity linked to the task; it has no status field — lifecycle
+     is projected from events;
    - `LearningEvidenceSnapshotEntity` — bounded bundle of content sections
      with stable IDs, digests, source refs, and explicit truncation/missing
      markers;

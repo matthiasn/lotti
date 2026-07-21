@@ -290,6 +290,9 @@ Causal order comes from the message DAG; timestamps are ordinary best-effort
 
 Immutable `AgentDomainEntity` variants (full field lists in ADR 0033):
 
+- `LearningQuizSessionEntity` — the per-run anchor linked to the task, ID
+  equal to its `quizRequestId`; carries task ref, scope, and depth choice.
+  No status field — lifecycle is projected from events.
 - `LearningEvidenceSnapshotEntity` — sectioned content bundle with IDs,
   digests, source refs, truncation and missing-source markers.
 - `LearningQuizDefinitionEntity` — items (type, prompt, MC options + key +
@@ -337,6 +340,9 @@ history and devices purge covered payloads on observing the event.
 
 ### Projections
 
+- Session detail — each session renders as its own timeline in causal order:
+  questions, answers and probe rounds, per-item verdicts with explanations,
+  and the final assessment. Completed sessions replay this thread read-only.
 - Open-session view (resume an in-progress quiz).
 - Per-task quiz history (sessions, scores, gap lists) shown on the task.
 - Per-category history for the verifier agent's detail view.
