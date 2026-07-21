@@ -43,8 +43,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show AiConfigRepository, aiConfigRepositoryProvider;
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
-import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
+import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
