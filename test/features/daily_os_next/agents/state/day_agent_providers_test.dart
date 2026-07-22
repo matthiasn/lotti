@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -165,6 +166,9 @@ void main() {
       final domainLogger = MockDomainLogger();
       final taskAgentService = MockTaskAgentService();
       final notifications = MockUpdateNotifications();
+      final outbox = MockDayProcessingOutboxRepository();
+      final runtime = MockDayProcessingRuntime();
+      when(runtime.nudge).thenAnswer((_) async {});
 
       // Fts5Db is resolved through getIt rather than a Riverpod provider.
       await setUpTestGetIt(
@@ -183,6 +187,8 @@ void main() {
         domainLoggerProvider.overrideWithValue(domainLogger),
         taskAgentServiceProvider.overrideWithValue(taskAgentService),
         updateNotificationsProvider.overrideWithValue(notifications),
+        dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+        dayProcessingRuntimeProvider.overrideWithValue(runtime),
       ]);
 
       final service = container.read(dayAgentCaptureServiceProvider);
@@ -192,9 +198,14 @@ void main() {
       expect(service.journalDb, same(journalDb));
       expect(service.journalRepository, same(journalRepository));
       expect(service.fts5Db, same(fts5Db));
-      expect(service.orchestrator, same(orchestrator));
+      expect(service.outbox, same(outbox));
       expect(service.domainLogger, same(domainLogger));
       expect(service.taskAgentService, same(taskAgentService));
+
+      // The nudge closure defers the runtime read (provider-cycle guard);
+      // invoking it must poke the runtime's drain.
+      service.nudgeProcessing!();
+      verify(runtime.nudge).called(1);
 
       expectPersistedStateNotification(
         callback: service.onPersistedStateChanged,
@@ -216,6 +227,7 @@ void main() {
         final taskAgentService = MockTaskAgentService();
         final notifications = MockUpdateNotifications();
         final persistenceLogic = MockPersistenceLogic();
+        final outbox = MockDayProcessingOutboxRepository();
 
         await setUpTestGetIt(
           additionalSetup: () {
@@ -295,6 +307,7 @@ void main() {
           domainLoggerProvider.overrideWithValue(domainLogger),
           taskAgentServiceProvider.overrideWithValue(taskAgentService),
           updateNotificationsProvider.overrideWithValue(notifications),
+          dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
         ]);
 
         final result = await container

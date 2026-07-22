@@ -210,18 +210,19 @@ class DayAgentPipelineHarness {
       journalDb: journalDb,
       domainLogger: domainLogger,
     );
+    final outbox = DayProcessingOutboxRepository(rootDirectory: root);
+    // Deferred: the runtime is built after the capture service (its executor
+    // depends on it), mirroring the deferred-read wiring in production.
+    DayProcessingRuntime? runtimeRef;
     final captureService = DayAgentCaptureService(
       agentRepository: agentRepository,
       syncService: syncService,
       journalDb: journalDb,
       journalRepository: journalRepository,
       fts5Db: fts5Db,
-      orchestrator: WakeOrchestrator(
-        repository: agentRepository,
-        queue: wakeQueue,
-        runner: wakeRunner,
-      ),
+      outbox: outbox,
       domainLogger: domainLogger,
+      nudgeProcessing: () => unawaited(runtimeRef?.nudge()),
     );
 
     final dayWorkflow = DayAgentWorkflow(
@@ -274,8 +275,6 @@ class DayAgentPipelineHarness {
       domainLogger: domainLogger,
     );
 
-    final outbox = DayProcessingOutboxRepository(rootDirectory: root);
-
     final executor = buildDayAgentJobExecutor(
       dayAgentService: dayAgentService,
       planService: planService,
@@ -294,6 +293,7 @@ class DayAgentPipelineHarness {
       repository: outbox,
       drain: () => processor.drain(kinds: dayAgentJobKinds),
     )..start();
+    runtimeRef = runtime;
 
     final realDayAgent = RealDayAgent(
       captureService: captureService,

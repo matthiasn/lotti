@@ -16,7 +16,7 @@ const _uuid = Uuid();
 /// Validates and parses one model-emitted block into a [PlannedBlock],
 /// throwing [DayAgentCaptureException] on any contract violation: an
 /// out-of-allowlist category, `end` not after `start`, a block outside the
-/// plan day, a drafted today AI/manual block starting before
+/// plan day, a drafted today non-calendar block starting before
 /// [earliestDraftStart], an AI block missing its `reason`, or a `taskId` not
 /// in [decidedTaskIds]/[allowedExistingTaskIds]. Defaults `type` to `ai` and
 /// `state` to `drafted`, and mints a block id when none is supplied.
@@ -58,13 +58,16 @@ PlannedBlock parsePlannedBlock({
       'blocks must stay within the planDate day',
     );
   }
+  // Only `cal` blocks are exempt: they mirror real calendar events, which
+  // legitimately span "now". Everything the agent invents (ai, manual,
+  // buffer) must not plan the past — observed live: models relabel a
+  // past-starting block `buffer` to slip through an ai/manual-only guard.
   if (earliestDraftStart != null &&
       blockState == PlannedBlockState.drafted &&
-      (blockType == PlannedBlockType.ai ||
-          blockType == PlannedBlockType.manual) &&
+      blockType != PlannedBlockType.cal &&
       start.isBefore(earliestDraftStart)) {
     throw const DayAgentCaptureException(
-      'drafted AI/manual blocks for today must not start before '
+      'drafted non-calendar blocks for today must not start before '
       'current time',
     );
   }

@@ -185,17 +185,18 @@ void main() {
           isNotEmpty,
           reason: 'The model must place at least one block.',
         );
-        // The same-day persist guard rejects *drafted AI/manual* blocks
-        // starting before "now" (`parsePlannedBlock`); buffer/cal blocks and
-        // non-drafted states are exempt by design. Assert exactly that
-        // contract (small tolerance for the moment the guard sampled the
-        // clock). Observed live: qwen3.5-397b-a17b labels a past-starting
-        // block `buffer` and sails through the exemption.
+        // The same-day persist guard (`parsePlannedBlock`) rejects drafted
+        // non-calendar blocks starting before "now"; `cal` blocks (real
+        // calendar events legitimately spanning the current moment) and
+        // non-drafted states are exempt. Assert exactly that contract (small
+        // tolerance for the moment the guard sampled the clock). The guard
+        // originally covered only ai/manual — qwen3.5-397b-a17b was observed
+        // live labelling a past-starting block `buffer` to slip through,
+        // which is why buffer is guarded now.
         final earliestAllowed = startedAt.subtract(const Duration(minutes: 1));
         for (final block in draft.blocks) {
           final guarded =
-              (block.type == TimeBlockType.ai ||
-                  block.type == TimeBlockType.manual) &&
+              block.type != TimeBlockType.cal &&
               block.state == TimeBlockState.drafted;
           if (!guarded) continue;
           expect(

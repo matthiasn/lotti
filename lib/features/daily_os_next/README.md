@@ -282,9 +282,13 @@ sequenceDiagram
   with a fresh `requestedAt`/payload, or attaches to an already-`running` job
   as-is. `refine_<dayId>_<suffix>` jobs are **never coalesced** — each refine
   carries distinct user input and produces its own ChangeSet. `parseJobId(captureId)`
-  is deterministic and accumulates (one job per capture, matching the
-  existing `supersede: false` wake semantics) — built and tested, but capture
-  submit does not yet enqueue through it (see the ADR's Amendments section).
+  is deterministic (one job per capture): a queued/running job attaches, and
+  a stuck (`failed`/`waitingForUser`/`waitingForNetwork`) or terminal job is
+  re-armed with fresh attempts. `DayAgentCaptureService.submitCapture` and
+  `retryCapture` enqueue through it (`outbox.enqueueParseCapture` + a
+  deferred runtime nudge) instead of firing a volatile wake directly — the
+  executor enqueues the actual wake when the job runs, so a process kill
+  between capture submit and parse no longer loses the parse.
 - **`RealDayAgent._awaitJobTerminal`** subscribes to the outbox's `changes`
   stream (event-driven, not a poll) and races only a periodic
   cancellation/soft-cap check (1 s tick, 10 min soft cap) against it — never a

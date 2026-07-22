@@ -247,8 +247,13 @@ class DayProcessingOutboxRepository {
 
   /// Enqueues the durable parse intent for one submitted capture.
   ///
-  /// Deterministic per capture and never re-armed: a capture is parsed once,
-  /// and repeat submissions of the same capture id return the existing job.
+  /// Deterministic per capture: a queued or running job attaches (repeat
+  /// submissions of the same capture id return the existing job). A job in
+  /// any other state — stuck (`failed`, `waitingForUser`,
+  /// `waitingForNetwork`) or terminal (`succeeded`, `cancelled`) — is
+  /// re-armed with fresh attempts, which is what `retryCapture` relies on:
+  /// the capture is the durable user intent, and asking again means "parse
+  /// it (again)".
   Future<DayProcessingJob> enqueueParseCapture({
     required String dayId,
     required String captureId,
@@ -269,13 +274,34 @@ class DayProcessingOutboxRepository {
       generation: 0,
     );
     final existing = await _readJobOrNull(id);
-    if (existing != null) {
-      _validateImmutableIntent(existing, requested);
+    if (existing == null) {
+      await _write(requested);
+      _notify();
+      return requested;
+    }
+    _validateImmutableIntent(existing, requested);
+    if (existing.status == DayProcessingJobStatus.queued ||
+        existing.status == DayProcessingJobStatus.running) {
       return existing;
     }
-    await _write(requested);
+    final rearmed = existing.copyWith(
+      status: DayProcessingJobStatus.queued,
+      updatedAt: now,
+      requestedAt: now,
+      nextAttemptAt: now,
+      attempts: 0,
+      generation: existing.generation + 1,
+      clearClaimToken: true,
+      clearLeaseUntil: true,
+      clearRetryNotBefore: true,
+      clearLastError: true,
+      clearLastFailureClass: true,
+      clearResultEntityId: true,
+      clearCompletedAt: true,
+    );
+    await _write(rearmed);
     _notify();
-    return requested;
+    return rearmed;
   });
 
   /// Enqueues a durable refine intent for the day.

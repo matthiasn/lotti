@@ -194,4 +194,13 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'is for forward-looking learnings only, never day recaps. On '
         'contradiction the deterministic facts line wins over your note.',
   ),
+  SeedDirectiveChange(
+    date: '2026-07-22',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        'Same-day past-start guard tightened: when drafting today, new '
+        'drafted `buffer` blocks must not start before `currentLocalTime` '
+        'either — the exemption is now `cal` blocks only, since they mirror '
+        'real calendar events that legitimately span the current moment.',
+  ),
 ];
