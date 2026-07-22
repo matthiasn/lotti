@@ -341,6 +341,148 @@ void main() {
     });
   });
 
+  group('executeTool raise_day_status', () {
+    const perDayAgent = 'day_agent:$dayId';
+
+    Future<DayAgentDirectToolResult> executeRaise(
+      Map<String, dynamic> args, {
+      String agentId = perDayAgent,
+      String? wakeDayId = dayId,
+      String? runKey,
+    }) {
+      return withClock(
+        Clock.fixed(now),
+        () => service.executeTool(
+          agentId: agentId,
+          toolName: DayAgentToolNames.raiseDayStatus,
+          args: args,
+          wakeDayId: wakeDayId,
+          runKey: runKey,
+        ),
+      );
+    }
+
+    test(
+      'persists an append-only event under the raising agent and notifies',
+      () async {
+        final result = await executeRaise({
+          'dayId': dayId,
+          'status': 'attentionNeeded',
+          'reasons': ['overCommitted', 'directiveUnsatisfiable'],
+          'note': 'Two commitments no longer fit after the 14:00 meeting.',
+        });
+
+        expect(result.success, isTrue, reason: result.output);
+        final event = upserted.single as DayStatusEventEntity;
+        expect(event.id, startsWith('day_status:$dayId:'));
+        expect(event.agentId, perDayAgent);
+        expect(event.status, DayStatusKind.attentionNeeded);
+        expect(event.reasons, [
+          DayStatusReason.overCommitted,
+          DayStatusReason.directiveUnsatisfiable,
+        ]);
+        expect(event.raisedAt, now);
+        expect(notifications, containsAll([dayId, event.id]));
+      },
+    );
+
+    test('the coordinator may raise for a pre-cutover day it owns', () async {
+      final result = await executeRaise(
+        {'dayId': dayId, 'status': 'dayClosed'},
+        agentId: dailyOsPlannerAgentId,
+      );
+
+      expect(result.success, isTrue, reason: result.output);
+      final event = upserted.single as DayStatusEventEntity;
+      expect(event.agentId, dailyOsPlannerAgentId);
+      expect(event.status, DayStatusKind.dayClosed);
+      expect(event.reasons, isEmpty);
+    });
+
+    test("rejects raising for another agent's day", () async {
+      final result = await executeRaise(
+        {'dayId': 'dayplan-2026-07-24', 'status': 'onTrack'},
+      );
+
+      expect(result.success, isFalse);
+      expect(result.output, contains("wake's own day"));
+      expect(upserted, isEmpty);
+    });
+
+    test('rejects an unknown status and malformed dayId', () async {
+      final badStatus = await executeRaise({
+        'dayId': dayId,
+        'status': 'panicking',
+      });
+      expect(badStatus.success, isFalse);
+      expect(badStatus.output, contains('status must be'));
+
+      final badDay = await executeRaise(
+        {'dayId': 'not-a-day', 'status': 'onTrack'},
+        wakeDayId: null,
+      );
+      expect(badDay.success, isFalse);
+      expect(badDay.output, contains('dayplan-YYYY-MM-DD'));
+    });
+
+    test('enforces the reasons/status pairing rules', () async {
+      final missingReasons = await executeRaise({
+        'dayId': dayId,
+        'status': 'attentionNeeded',
+      });
+      expect(missingReasons.success, isFalse);
+      expect(missingReasons.output, contains('at least one typed reason'));
+
+      final strayReasons = await executeRaise({
+        'dayId': dayId,
+        'status': 'onTrack',
+        'reasons': ['overCommitted'],
+      });
+      expect(strayReasons.success, isFalse);
+      expect(strayReasons.output, contains('only valid with attentionNeeded'));
+
+      final unknownReason = await executeRaise({
+        'dayId': dayId,
+        'status': 'attentionNeeded',
+        'reasons': ['vibes'],
+      });
+      expect(unknownReason.success, isFalse);
+      expect(unknownReason.output, contains('reasons must be'));
+    });
+
+    test('bounds the note length', () async {
+      final result = await executeRaise({
+        'dayId': dayId,
+        'status': 'onTrack',
+        'note': 'n' * 501,
+      });
+
+      expect(result.success, isFalse);
+      expect(result.output, contains('500'));
+    });
+
+    test('caps status events at one per wake run key', () async {
+      final first = await executeRaise(
+        {'dayId': dayId, 'status': 'dayClosed'},
+        runKey: 'run-1',
+      );
+      final second = await executeRaise(
+        {'dayId': dayId, 'status': 'dayClosed'},
+        runKey: 'run-1',
+      );
+      final freshWake = await executeRaise(
+        {'dayId': dayId, 'status': 'dayClosed'},
+        runKey: 'run-2',
+      );
+
+      expect(first.success, isTrue);
+      expect(second.success, isFalse);
+      expect(second.output, contains('one per wake'));
+      expect(freshWake.success, isTrue);
+      expect(upserted, hasLength(2));
+    });
+  });
+
   group('directiveForDay', () {
     test('returns the live directive and hides deleted/missing ones', () async {
       final live = makeTestDayDirective(dayId: dayId);

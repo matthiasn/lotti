@@ -52,6 +52,10 @@ abstract final class DayAgentToolNames {
   /// (ADR 0032 phase 3). Coordinator-only.
   static const issueDayDirective = 'issue_day_directive';
 
+  /// Raises a typed day-status event — the upward channel the coordinator
+  /// scans at digest time (ADR 0032 phase 3).
+  static const raiseDayStatus = 'raise_day_status';
+
   /// Foundation tools implemented by the day-agent workflow itself.
   static const foundationHandlerTools = <String>{
     setNextWake,
@@ -72,13 +76,14 @@ abstract final class DayAgentToolNames {
     writeDaySummary,
   };
 
-  /// Directive tools delegated to the directive service (ADR 0032 phase 3).
-  ///
-  /// Offered to the coordinator only; the service re-enforces that at
-  /// execution time. Must be folded into [workflowHandlerTools] (see the
-  /// [weekContextTools] warning).
+  /// Directive-protocol tools delegated to the directive service
+  /// (ADR 0032 phase 3). `issue_day_directive` is offered to the coordinator
+  /// only (the service re-enforces authorship at execution time);
+  /// `raise_day_status` is offered to every day owner. Must be folded into
+  /// [workflowHandlerTools] (see the [weekContextTools] warning).
   static const directiveTools = <String>{
     issueDayDirective,
+    raiseDayStatus,
   };
 
   /// Capture/reconcile tools delegated to the capture service.

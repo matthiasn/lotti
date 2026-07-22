@@ -56,6 +56,12 @@ class DayAgentDirectiveService {
 
   static const _uuid = Uuid();
 
+  /// Run keys that already raised a status event — at most one per wake, so
+  /// a looping model cannot spam the coordinator's digest. In-memory only:
+  /// a process restart resets the guard, which is harmless (the wake it
+  /// guarded is gone too).
+  final _statusRaisedRunKeys = <String>{};
+
   /// Bounded-list caps: a directive is distilled facts, not a dump. The
   /// coordinator must prioritize before issuing.
   static const int maxCommitments = 12;
@@ -69,15 +75,30 @@ class DayAgentDirectiveService {
   /// Character bound for each freeform constraint/note/reason string.
   static const int maxNoteLength = 280;
 
-  /// Executes a directive tool emitted by the agent.
+  /// Character bound for a status event's note (mirrors day summaries).
+  static const int maxStatusNoteLength = 500;
+
+  /// Executes a directive-protocol tool emitted by the agent.
+  ///
+  /// [wakeDayId] is the wake's workspace day — `raise_day_status` may only
+  /// target it (an agent cannot speak for another day). [runKey] scopes the
+  /// one-status-event-per-wake cap.
   Future<DayAgentDirectToolResult> executeTool({
     required String agentId,
     required String toolName,
     required Map<String, dynamic> args,
+    String? wakeDayId,
+    String? runKey,
   }) async {
     try {
       final data = switch (toolName) {
         DayAgentToolNames.issueDayDirective => await _issueTool(agentId, args),
+        DayAgentToolNames.raiseDayStatus => await _raiseTool(
+          agentId,
+          args,
+          wakeDayId: wakeDayId,
+          runKey: runKey,
+        ),
         _ => throw DayAgentDirectiveException('unknown tool "$toolName"'),
       };
       return DayAgentDirectToolResult.success(data);
@@ -200,6 +221,118 @@ class DayAgentDirectiveService {
       ?..call(dayId)
       ..call(directive.id);
     return directive;
+  }
+
+  Future<Map<String, Object?>> _raiseTool(
+    String agentId,
+    Map<String, dynamic> args, {
+    String? wakeDayId,
+    String? runKey,
+  }) async {
+    final dayId = requiredStringArg(args, 'dayId');
+    if (dateFromDayId(dayId) == null) {
+      throw const DayAgentDirectiveException(
+        'dayId must be of the form dayplan-YYYY-MM-DD',
+      );
+    }
+    // Status speaks for the wake's own day only: unlike issue_day_directive
+    // (deliberately exempt from the workspace guard so a digest can write
+    // tomorrow's directive), an agent cannot report on another day's state.
+    if (wakeDayId != null && dayId != wakeDayId) {
+      throw DayAgentDirectiveException(
+        'raise_day_status may only target the wake\'s own day "$wakeDayId"',
+      );
+    }
+
+    final statusName = requiredStringArg(args, 'status');
+    final status = optionalEnumArg(DayStatusKind.values, statusName);
+    if (status == null) {
+      throw const DayAgentDirectiveException(
+        'status must be onTrack, attentionNeeded, or dayClosed',
+      );
+    }
+    final reasons = _parseReasons(args['reasons'], status);
+    final note = optionalStringArg(args['note']) ?? '';
+    if (note.length > maxStatusNoteLength) {
+      throw const DayAgentDirectiveException(
+        'note must be at most $maxStatusNoteLength characters',
+      );
+    }
+
+    if (runKey != null && !_statusRaisedRunKeys.add(runKey)) {
+      throw const DayAgentDirectiveException(
+        'already raised a status event this wake — one per wake',
+      );
+    }
+
+    final event = await raise(
+      agentId: agentId,
+      dayId: dayId,
+      status: status,
+      reasons: reasons,
+      note: note,
+    );
+    return {
+      'id': event.id,
+      'status': event.status.name,
+    };
+  }
+
+  /// Persists one append-only status event under the raising agent's id.
+  Future<DayStatusEventEntity> raise({
+    required String agentId,
+    required String dayId,
+    required DayStatusKind status,
+    List<DayStatusReason> reasons = const [],
+    String note = '',
+  }) async {
+    final now = clock.now();
+    final event =
+        AgentDomainEntity.dayStatusEvent(
+              id: dayStatusEventId(dayId, _uuid.v4()),
+              agentId: agentId,
+              dayId: dayId,
+              status: status,
+              reasons: reasons,
+              note: note,
+              raisedAt: now,
+              createdAt: now,
+              vectorClock: null,
+            )
+            as DayStatusEventEntity;
+    await syncService.runInTransaction(() async {
+      await syncService.upsertEntity(event);
+    });
+    onPersistedStateChanged
+      ?..call(dayId)
+      ..call(event.id);
+    return event;
+  }
+
+  List<DayStatusReason> _parseReasons(Object? raw, DayStatusKind status) {
+    final names = stringListArg(raw);
+    final reasons = <DayStatusReason>[];
+    for (final name in names) {
+      final reason = optionalEnumArg(DayStatusReason.values, name);
+      if (reason == null) {
+        throw const DayAgentDirectiveException(
+          'reasons must be overCommitted, directiveUnsatisfiable, '
+          'userDivergence, or processingBlocked',
+        );
+      }
+      reasons.add(reason);
+    }
+    if (status == DayStatusKind.attentionNeeded && reasons.isEmpty) {
+      throw const DayAgentDirectiveException(
+        'attentionNeeded requires at least one typed reason',
+      );
+    }
+    if (status != DayStatusKind.attentionNeeded && reasons.isNotEmpty) {
+      throw const DayAgentDirectiveException(
+        'reasons are only valid with attentionNeeded',
+      );
+    }
+    return reasons;
   }
 
   List<DayDirectiveCommitment> _parseCommitments(

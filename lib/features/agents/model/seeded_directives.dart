@@ -212,7 +212,10 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'capacity budget, carry-over, constraints, attention notes). When a '
         'wake carries a `<day_directive>` section it is binding — each '
         'commitment must be placed, explicitly traded away in a diff naming '
-        'the collision, or called out as unsatisfiable; requested minutes '
-        'must be reconciled against the capacity budget before drafting.',
+        'the collision, or escalated via `raise_day_status`; requested '
+        'minutes must be reconciled against the capacity budget before '
+        'drafting. `raise_day_status` is the upward channel: typed reasons '
+        'for attentionNeeded, at most one event per wake, silence means '
+        'on-track.',
   ),
 ];

@@ -635,6 +635,52 @@ const dayAgentTools = <AgentToolDefinition>[
     },
   ),
   AgentToolDefinition(
+    name: DayAgentToolNames.raiseDayStatus,
+    description:
+        "Raise a typed status event for this wake's day — the upward channel "
+        'the coordinator reads at its next digest. Raise `attentionNeeded` '
+        'only for the typed reasons (never for routine progress); raise '
+        '`onTrack` only when explicitly asked — silence already means fine. '
+        '`dayClosed` marks the day done. At most one event per wake.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'dayId': {
+          'type': 'string',
+          'description':
+              "This wake's day (dayplan-YYYY-MM-DD) — you cannot raise "
+              "status for another agent's day.",
+        },
+        'status': {
+          'type': 'string',
+          'enum': ['onTrack', 'attentionNeeded', 'dayClosed'],
+        },
+        'reasons': {
+          'type': 'array',
+          'items': {
+            'type': 'string',
+            'enum': [
+              'overCommitted',
+              'directiveUnsatisfiable',
+              'userDivergence',
+              'processingBlocked',
+            ],
+          },
+          'description':
+              'Required (non-empty) for attentionNeeded; omit otherwise.',
+        },
+        'note': {
+          'type': 'string',
+          'maxLength': 500,
+          'description':
+              'Short context for the coordinator (max 500 characters).',
+        },
+      },
+      'required': ['dayId', 'status'],
+      'additionalProperties': false,
+    },
+  ),
+  AgentToolDefinition(
     name: DayAgentToolNames.writeDaySummary,
     description:
         'Write your contemporaneous summary of a day, in your own words, for '

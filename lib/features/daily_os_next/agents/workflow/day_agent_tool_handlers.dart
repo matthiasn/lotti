@@ -37,10 +37,12 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
       );
     }
 
-    // Directive tools are also dispatched BEFORE the workspace-day guard:
-    // the coordinator issues directives for days other than its wake's
-    // workspace (a digest wake writes today's and tomorrow's directives).
-    // The service enforces coordinator-only authorship itself.
+    // Directive-protocol tools are also dispatched BEFORE the blanket
+    // workspace-day guard: the coordinator issues directives for days other
+    // than its wake's workspace (a digest wake writes today's and
+    // tomorrow's directives). The service enforces coordinator-only
+    // authorship for issue and re-applies the own-day rule for
+    // raise_day_status via [wakeDayId].
     if (DayAgentToolNames.isDirectiveTool(toolName)) {
       final service = directiveService;
       if (service == null) {
@@ -53,6 +55,8 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         agentId: agentId,
         toolName: toolName,
         args: args,
+        wakeDayId: dayId,
+        runKey: runKey,
       );
       return DayAgentToolResult(
         success: result.success,

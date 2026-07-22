@@ -1767,6 +1767,14 @@ void main() {
             isNot(contains(DayAgentToolNames.issueDayDirective)),
             reason: 'A per-day agent must not even see the tool.',
           );
+          expect(
+            [
+              for (final tool in conversationRepository.lastTools)
+                tool.function.name,
+            ],
+            contains(DayAgentToolNames.raiseDayStatus),
+            reason: 'Every day owner may raise status upward.',
+          );
 
           await executeAsCoordinator(
             workflow(directiveService: directiveService),
@@ -1797,6 +1805,8 @@ void main() {
               agentId: dailyOsPlannerAgentId,
               toolName: DayAgentToolNames.issueDayDirective,
               args: any(named: 'args'),
+              wakeDayId: any(named: 'wakeDayId'),
+              runKey: any(named: 'runKey'),
             ),
           ).thenAnswer(
             (_) async => DayAgentDirectToolResult.success(
@@ -1824,6 +1834,56 @@ void main() {
               agentId: dailyOsPlannerAgentId,
               toolName: DayAgentToolNames.issueDayDirective,
               args: {'dayId': 'dayplan-2026-05-26'},
+              // The wake's workspace day and run key travel with the call so
+              // the service can enforce raise_day_status's own-day rule and
+              // the per-wake status cap.
+              wakeDayId: dayId,
+              runKey: runKey,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'dispatches raise_day_status with the wake day for own-day '
+        'enforcement',
+        () async {
+          when(
+            () => directiveService.directiveForDay(dayId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => directiveService.executeTool(
+              agentId: agentId,
+              toolName: DayAgentToolNames.raiseDayStatus,
+              args: any(named: 'args'),
+              wakeDayId: any(named: 'wakeDayId'),
+              runKey: any(named: 'runKey'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(
+              const {'id': 'day_status:$dayId:event-1'},
+            ),
+          );
+          conversationRepository.toolCalls = [
+            _toolCall(
+              id: 'status-call',
+              name: DayAgentToolNames.raiseDayStatus,
+              args: {'dayId': dayId, 'status': 'dayClosed'},
+            ),
+          ];
+
+          final result = await execute(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => directiveService.executeTool(
+              agentId: agentId,
+              toolName: DayAgentToolNames.raiseDayStatus,
+              args: {'dayId': dayId, 'status': 'dayClosed'},
+              wakeDayId: dayId,
+              runKey: runKey,
             ),
           ).called(1);
         },

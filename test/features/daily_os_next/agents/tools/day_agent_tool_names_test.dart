@@ -21,6 +21,7 @@ void main() {
       DayAgentToolNames.proposeKnowledge,
       DayAgentToolNames.writeDaySummary,
       DayAgentToolNames.issueDayDirective,
+      DayAgentToolNames.raiseDayStatus,
     ];
 
     test('uses the wire names expected by the day-agent prompt', () {
@@ -42,6 +43,7 @@ void main() {
         'propose_knowledge',
         'write_day_summary',
         'issue_day_directive',
+        'raise_day_status',
       ]);
     });
 
@@ -100,7 +102,10 @@ void main() {
       );
       expect(
         DayAgentToolNames.directiveTools,
-        {DayAgentToolNames.issueDayDirective},
+        {
+          DayAgentToolNames.issueDayDirective,
+          DayAgentToolNames.raiseDayStatus,
+        },
       );
       expect(
         DayAgentToolNames.workflowHandlerTools,

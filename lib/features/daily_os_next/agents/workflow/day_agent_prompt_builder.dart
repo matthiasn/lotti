@@ -30,6 +30,11 @@ extension DayAgentPromptBuilder on DayAgentWorkflow {
         'for one day — commitments, capacity budget, carry-over, '
         'constraints, attention notes. Bounded facts only; never '
         'transcripts.';
+    const statusToolLines =
+        "- `raise_day_status`: raise a typed status event for this wake's "
+        'day (the coordinator reads it at its next digest). '
+        '`attentionNeeded` needs typed reasons; silence already means fine. '
+        'At most one event per wake.';
     final toolLines = <String>[
       '- `record_observations`: private memory for learnings and uncertainty.',
       '- `set_next_wake`: schedule the next useful pre-warm wake.',
@@ -40,6 +45,7 @@ extension DayAgentPromptBuilder on DayAgentWorkflow {
       if (weekContextService != null) weekContextToolLines,
       if (directiveService != null && agentId == dailyOsPlannerAgentId)
         directiveToolLines,
+      if (directiveService != null) statusToolLines,
     ];
     final scaffold =
         '''
@@ -77,8 +83,9 @@ Drafting rules:
 - A `<day_directive>` section, when present, is the coordinator's distilled
   ledger for this day and is BINDING, not a hint. Every commitment in it must
   be (a) represented in the drafted plan, (b) explicitly traded away in a
-  proposed diff whose `reason` names the colliding commitment, or (c) called
-  out as unsatisfiable in your final message. Never silently drop one.
+  proposed diff whose `reason` names the colliding commitment, or (c)
+  escalated via `raise_day_status` with status `attentionNeeded` and reason
+  `directiveUnsatisfiable`. Never silently drop one.
 - Before drafting or refining, reconcile the requested minutes against the
   directive's `capacityBudget.availableMinutes` minus
   `alreadyScheduledMinutes`. If the request does not fit, surface the
@@ -210,11 +217,15 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     if (DayAgentToolNames.isWeekContextTool(toolName)) {
       return weekContextService != null;
     }
-    if (DayAgentToolNames.isDirectiveTool(toolName)) {
+    if (toolName == DayAgentToolNames.issueDayDirective) {
       // Coordinator-only (ADR 0032 §2): a per-day agent must not even see
       // `issue_day_directive` — the service re-enforces this at execution
       // time, but offering it would invite doomed calls.
       return directiveService != null && agentId == dailyOsPlannerAgentId;
+    }
+    if (toolName == DayAgentToolNames.raiseDayStatus) {
+      // Every day owner may raise status upward.
+      return directiveService != null;
     }
     return true;
   }
