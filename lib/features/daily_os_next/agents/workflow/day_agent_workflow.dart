@@ -314,6 +314,12 @@ class DayAgentWorkflow {
     );
     final attentionPlanning = await _attentionPlanningContext(dayDate);
     final directive = await _directiveContext(resolvedDayId);
+    final digestContext = await _digestContext(
+      agentId: agentId,
+      wakeContext: wakeContext,
+      dayDate: dayDate,
+      now: now,
+    );
     final knowledge = await _knowledgeContext(
       agentIdentity: agentIdentity,
       touchedScopes: _touchedScopes(
@@ -340,6 +346,7 @@ class DayAgentWorkflow {
       refineContext: refineContext,
       attentionPlanning: attentionPlanning,
       directive: directive,
+      digestContext: digestContext,
       knowledge: knowledge,
       weekContext: weekContext,
       dayAudioEntries: dayAudioEntries,
@@ -514,6 +521,39 @@ class DayAgentWorkflow {
           threadId: threadId,
           runKey: runKey,
         );
+        if (wakeContext.isDigestWake && agentId == dailyOsPlannerAgentId) {
+          // The digest watermark: `getDayStatusEventsSince` at the next
+          // digest reads events newer than this marker.
+          await syncService.appendMilestone(
+            agentId: agentId,
+            milestone: AgentMilestone.dailyWakeCompleted,
+            createdAt: now,
+            threadId: threadId,
+            runKey: runKey,
+          );
+          // Deterministic re-arm: the next morning digest is scheduled by
+          // code, not by the model, so a digest that forgets set_next_wake
+          // cannot break the cadence. LWW on the deterministic record id.
+          final next = nextDigestTime(now);
+          await syncService.upsertEntity(
+            AgentDomainEntity.scheduledWake(
+              id: scheduledWakeRecordId(
+                agentId,
+                workspaceKey: coordinatorDigestWorkspaceKey,
+              ),
+              agentId: agentId,
+              scheduledAt: next,
+              status: ScheduledWakeStatus.pending,
+              reason: dayAgentDigestReason,
+              updatedAt: now,
+              vectorClock: null,
+              triggerTokens: [
+                dayAgentDigestToken(dayAgentIdForDate(next)),
+              ],
+              workspaceKey: coordinatorDigestWorkspaceKey,
+            ),
+          );
+        }
       });
       onPersistedStateChanged
         ?..call(agentId)

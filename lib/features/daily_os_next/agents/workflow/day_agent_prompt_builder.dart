@@ -122,7 +122,21 @@ Refine rules:
   your own. After the user commits, the plan is in shepherding mode and
   further edits require an explicit refine.
 - Shutdown and agenda mutation tools are not available yet. Do not claim you
-  shut down a day.${weekContextService == null ? '' : '''
+  shut down a day.${directiveService != null && agentId == dailyOsPlannerAgentId ? '''
+
+
+Digest rules (`<digest>` present — your coordinator ritual, ADR 0032):
+- Review `<digest>.statusEvents` (escalations since your last digest) together
+  with `<recent_days>`. React by revising directives, not by drafting plans.
+- Issue or revise directives for `todayDayId` and `tomorrowDayId` via
+  `issue_day_directive`, distilled from `<digest>.attentionWindow`, committed
+  blocks, and your durable knowledge. Bounded facts only.
+- Do NOT draft or refine plans on a digest wake — the day's own agent plans;
+  you set its brief.
+- If yesterday's `write_day_summary` is missing, write it. Promote durable
+  learnings via `propose_knowledge`; record the rest as observations.
+- The next digest is scheduled automatically — use `set_next_wake` only for
+  additional day-scoped pre-warms.''' : ''}${weekContextService == null ? '' : '''
 
 
 Week context (`<recent_days>` / `<week_ahead>`):

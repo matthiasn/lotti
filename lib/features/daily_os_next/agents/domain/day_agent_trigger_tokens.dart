@@ -52,6 +52,19 @@ const dayAgentRefinePrefix = 'refine:';
 /// Wake scheduling reason used when a refine is requested.
 const dayAgentRefineReason = 'refine';
 
+/// Wake trigger token prefix that marks a coordinator digest wake
+/// (ADR 0032 phase 3). Carries the digest's target day (today) so day
+/// resolution and week context anchor to the current day.
+const dayAgentDigestPrefix = 'digest:';
+
+/// Wake scheduling reason used for coordinator digest wakes.
+const dayAgentDigestReason = 'digest';
+
+/// Wake-queue workspace key for coordinator digest wakes: a single
+/// coordinator-scoped lane, deliberately NOT a `day:<dayId>` workspace so a
+/// digest never coalesces with (or supersedes) a day's plan work.
+const coordinatorDigestWorkspaceKey = 'coordinator:digest';
+
 /// Wake trigger token prefix used to advertise a task the UI considers
 /// "decided" (one the user said yes to and wants placed in the day plan).
 const dayAgentDecidedTaskPrefix = 'decided_task:';
@@ -78,6 +91,11 @@ String dayAgentDraftingToken(String dayId) {
 /// Creates the refine wake trigger token for [dayId].
 String dayAgentRefineToken(String dayId) {
   return '$dayAgentRefinePrefix$dayId';
+}
+
+/// Creates the digest wake trigger token anchored to [dayId] (today).
+String dayAgentDigestToken(String dayId) {
+  return '$dayAgentDigestPrefix$dayId';
 }
 
 /// Creates the decided-task trigger token for [taskId].
@@ -170,15 +188,16 @@ class PlannerWakeDayResolution {
 /// Resolves the day workspace claimed by [triggerTokens].
 ///
 /// Considers the day-carrying token families: `planning_day:`, `drafting:`,
-/// and `refine:`. Capture tokens carry capture IDs, not day IDs, so a
-/// capture-only wake resolves no candidate here; the caller falls back to
-/// the capture's own day scope (or, pre-cutover, the legacy
+/// `refine:`, and `digest:`. Capture tokens carry capture IDs, not day IDs,
+/// so a capture-only wake resolves no candidate here; the caller falls back
+/// to the capture's own day scope (or, pre-cutover, the legacy
 /// `activeDayId` slot).
 PlannerWakeDayResolution resolvePlannerWakeDay(Set<String> triggerTokens) {
   const dayPrefixes = [
     dayAgentPlanningDayPrefix,
     dayAgentDraftingPrefix,
     dayAgentRefinePrefix,
+    dayAgentDigestPrefix,
   ];
   final candidates = <String>{};
   for (final token in triggerTokens) {

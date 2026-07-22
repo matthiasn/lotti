@@ -16,6 +16,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required AttentionPlanningInputs attentionPlanning,
     required KnowledgeContext knowledge,
     DayDirectiveEntity? directive,
+    Map<String, Object?>? digestContext,
     WeekContext? weekContext,
     List<DayAudioEntryContext> dayAudioEntries = const [],
     String? compactedLog,
@@ -99,6 +100,9 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         DayAgentPromptTags.refine,
         refineContext?.toJson(),
       )
+      // Coordinator digest inputs (ADR 0032 phase 3): present only on
+      // digest wakes, per-wake stable like the other mode blocks.
+      ..addJson(DayAgentPromptTags.digest, digestContext)
       // Pre-compaction fallback listing: superseded by the day log once the
       // read flips, so only rendered while there is no compacted log.
       ..addJson(
@@ -290,6 +294,96 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     if (directive.attentionNotes.isNotEmpty)
       'attentionNotes': directive.attentionNotes,
   };
+
+  /// Assembles the `<digest>` inputs for a coordinator digest wake
+  /// (ADR 0032 phase 3): status events raised since the last digest, the
+  /// current directives for today and tomorrow, and the two-day attention
+  /// window. Null for every other wake. Fail-soft: a load error degrades to
+  /// no digest section rather than killing the wake.
+  Future<Map<String, Object?>?> _digestContext({
+    required String agentId,
+    required DailyOsPlannerWakeContext wakeContext,
+    required DateTime dayDate,
+    required DateTime now,
+  }) async {
+    if (!wakeContext.isDigestWake ||
+        agentId != dailyOsPlannerAgentId ||
+        directiveService == null) {
+      return null;
+    }
+    try {
+      final since = await _lastDigestAt(agentId, now);
+      final tomorrowId = dayAgentIdForDate(
+        DateTime(dayDate.year, dayDate.month, dayDate.day + 1),
+      );
+      final statusEvents = await agentRepository.getDayStatusEventsSince(
+        since,
+        limit: 50,
+      );
+      final todayDirective = await directiveService!.directiveForDay(
+        wakeContext.dayId,
+      );
+      final tomorrowDirective = await directiveService!.directiveForDay(
+        tomorrowId,
+      );
+      final dayStart = DateTime(dayDate.year, dayDate.month, dayDate.day);
+      final attentionWindow = await agentRepository
+          .getAttentionPlanningInputsForWindow(
+            start: dayStart,
+            // Two local days (see _attentionPlanningContext on DST-safe
+            // day arithmetic): the digest issues today's AND tomorrow's
+            // directives.
+            end: DateTime(dayStart.year, dayStart.month, dayStart.day + 2),
+          );
+      return {
+        'since': since.toIso8601String(),
+        'todayDayId': wakeContext.dayId,
+        'tomorrowDayId': tomorrowId,
+        'statusEvents': [
+          for (final event in statusEvents)
+            {
+              'dayId': event.dayId,
+              'agentId': event.agentId,
+              'status': event.status.name,
+              if (event.reasons.isNotEmpty)
+                'reasons': [for (final reason in event.reasons) reason.name],
+              if (event.note.isNotEmpty) 'note': event.note,
+              'raisedAt': event.raisedAt.toIso8601String(),
+            },
+        ],
+        'directives': {
+          'today': todayDirective == null
+              ? null
+              : _directiveToJson(todayDirective),
+          'tomorrow': tomorrowDirective == null
+              ? null
+              : _directiveToJson(tomorrowDirective),
+        },
+        if (!attentionWindow.isEmpty)
+          'attentionWindow': _attentionPlanningToJson(attentionWindow),
+      };
+    } catch (e, s) {
+      _logError('failed to load digest context', error: e, stackTrace: s);
+      return null;
+    }
+  }
+
+  /// The newest digest watermark: the coordinator's most recent
+  /// `dailyWakeCompleted` milestone, falling back to 48h ago for the first
+  /// digest so a fresh install does not scan unbounded history.
+  Future<DateTime> _lastDigestAt(String agentId, DateTime now) async {
+    final markers = await agentRepository.getMessagesByKind(
+      agentId,
+      AgentMessageKind.system,
+      limit: 200,
+    );
+    for (final marker in markers) {
+      if (marker.metadata.milestone == AgentMilestone.dailyWakeCompleted) {
+        return marker.createdAt;
+      }
+    }
+    return now.subtract(const Duration(hours: 48));
+  }
 
   Future<AttentionPlanningInputs> _attentionPlanningContext(
     DateTime planDate,

@@ -210,6 +210,67 @@ void main() {
     );
   }
 
+  /// Stubs the reads a coordinator-identity wake performs (the shared
+  /// setUp keys everything by the per-day [agentId]).
+  void stubCoordinatorReads() {
+    when(
+      () => repository.getAgentState(dailyOsPlannerAgentId),
+    ).thenAnswer(
+      (_) async => makeTestState(
+        id: 'state-$dailyOsPlannerAgentId',
+        agentId: dailyOsPlannerAgentId,
+        slots: const AgentSlots(activeDayId: dayId),
+        updatedAt: now,
+      ),
+    );
+    when(
+      () => repository.getMessagesByKind(
+        dailyOsPlannerAgentId,
+        AgentMessageKind.observation,
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getEntitiesByAgentId(
+        dailyOsPlannerAgentId,
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => const <AgentDomainEntity>[]);
+    when(
+      () => repository.getCaptureEventMetaByAgentId(dailyOsPlannerAgentId),
+    ).thenAnswer((_) async => const []);
+    when(
+      () => templateService.getTemplateForAgent(dailyOsPlannerAgentId),
+    ).thenAnswer((_) async => template());
+  }
+
+  Future<WakeResult> executeAsCoordinator(
+    DayAgentWorkflow sut, {
+    Set<String>? triggerTokens,
+  }) {
+    stubCoordinatorReads();
+    return withClock(
+      Clock.fixed(now),
+      () => sut.execute(
+        agentIdentity: makeTestIdentity(
+          id: dailyOsPlannerAgentId,
+          agentId: dailyOsPlannerAgentId,
+          kind: AgentKinds.dayAgent,
+          displayName: 'Shepherd',
+          currentStateId: 'state-$dailyOsPlannerAgentId',
+          config: const AgentConfig(
+            profileId: 'profile-day',
+            maxTurnsPerWake: 5,
+          ),
+          createdAt: now,
+          updatedAt: now,
+        ),
+        runKey: runKey,
+        triggerTokens: triggerTokens ?? {dayAgentPlanningDayToken(dayId)},
+        threadId: threadId,
+      ),
+    );
+  }
+
   /// Stubs the drafting-context lookups: the baseline plan (default none)
   /// and the decided-tasks hydration (default empty).
   void stubDraftingPlanContext(
@@ -1607,64 +1668,6 @@ void main() {
         directiveService = MockDayAgentDirectiveService();
       });
 
-      /// Stubs the reads a coordinator-identity wake performs (the shared
-      /// setUp keys everything by the per-day [agentId]).
-      void stubCoordinatorReads() {
-        when(
-          () => repository.getAgentState(dailyOsPlannerAgentId),
-        ).thenAnswer(
-          (_) async => makeTestState(
-            id: 'state-$dailyOsPlannerAgentId',
-            agentId: dailyOsPlannerAgentId,
-            slots: const AgentSlots(activeDayId: dayId),
-            updatedAt: now,
-          ),
-        );
-        when(
-          () => repository.getMessagesByKind(
-            dailyOsPlannerAgentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => repository.getEntitiesByAgentId(
-            dailyOsPlannerAgentId,
-            type: any(named: 'type'),
-          ),
-        ).thenAnswer((_) async => const <AgentDomainEntity>[]);
-        when(
-          () => repository.getCaptureEventMetaByAgentId(dailyOsPlannerAgentId),
-        ).thenAnswer((_) async => const []);
-        when(
-          () => templateService.getTemplateForAgent(dailyOsPlannerAgentId),
-        ).thenAnswer((_) async => template());
-      }
-
-      Future<WakeResult> executeAsCoordinator(DayAgentWorkflow sut) {
-        stubCoordinatorReads();
-        return withClock(
-          Clock.fixed(now),
-          () => sut.execute(
-            agentIdentity: makeTestIdentity(
-              id: dailyOsPlannerAgentId,
-              agentId: dailyOsPlannerAgentId,
-              kind: AgentKinds.dayAgent,
-              displayName: 'Shepherd',
-              currentStateId: 'state-$dailyOsPlannerAgentId',
-              config: const AgentConfig(
-                profileId: 'profile-day',
-                maxTurnsPerWake: 5,
-              ),
-              createdAt: now,
-              updatedAt: now,
-            ),
-            runKey: runKey,
-            triggerTokens: {dayAgentPlanningDayToken(dayId)},
-            threadId: threadId,
-          ),
-        );
-      }
-
       test(
         'renders <day_directive> ahead of the volatile tail when one exists',
         () async {
@@ -1909,6 +1912,205 @@ void main() {
           );
         },
       );
+    });
+
+    group('coordinator digest wake (ADR 0032 phase 3)', () {
+      late MockDayAgentDirectiveService directiveService;
+
+      setUp(() {
+        directiveService = MockDayAgentDirectiveService();
+        when(
+          () => directiveService.directiveForDay(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => repository.getDayStatusEventsSince(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => const []);
+      });
+
+      Future<WakeResult> executeDigest(DayAgentWorkflow sut) {
+        return executeAsCoordinator(
+          sut,
+          triggerTokens: {dayAgentDigestToken(dayId)},
+        );
+      }
+
+      test(
+        'renders <digest> with status events, directives, and the digest '
+        'rules, then re-arms the next digest',
+        () async {
+          // Watermark: the newest dailyWakeCompleted milestone.
+          final lastDigestAt = now.subtract(const Duration(hours: 24));
+          when(
+            () => repository.getMessagesByKind(
+              dailyOsPlannerAgentId,
+              AgentMessageKind.system,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              makeTestMessage(
+                id: 'digest-marker',
+                agentId: dailyOsPlannerAgentId,
+                kind: AgentMessageKind.system,
+                createdAt: lastDigestAt,
+                metadata: const AgentMessageMetadata(
+                  milestone: AgentMilestone.dailyWakeCompleted,
+                ),
+              ),
+            ],
+          );
+          when(
+            () => repository.getDayStatusEventsSince(
+              lastDigestAt,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              makeTestDayStatusEvent(
+                id: 'day_status:$dayId:event-1',
+                raisedAt: now.subtract(const Duration(hours: 2)),
+                createdAt: now.subtract(const Duration(hours: 2)),
+              ),
+            ],
+          );
+          when(
+            () => directiveService.directiveForDay(dayId),
+          ).thenAnswer(
+            (_) async => makeTestDayDirective(directiveRevisionId: 'rev-t'),
+          );
+
+          final result = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          final digest = sentPrompt().json('digest')! as Map;
+          expect(digest['todayDayId'], dayId);
+          expect(digest['tomorrowDayId'], 'dayplan-2026-05-26');
+          expect(digest['since'], lastDigestAt.toIso8601String());
+          final events = digest['statusEvents'] as List;
+          expect((events.single as Map)['status'], 'attentionNeeded');
+          expect((events.single as Map)['reasons'], ['overCommitted']);
+          final directives = digest['directives'] as Map;
+          expect(
+            (directives['today'] as Map)['directiveRevisionId'],
+            'rev-t',
+          );
+          expect(directives['tomorrow'], isNull);
+          expect(
+            conversationRepository.lastSystemMessage,
+            contains('Digest rules'),
+          );
+
+          // Completion: the digest watermark milestone plus the
+          // deterministic re-arm of tomorrow's digest record.
+          verify(
+            () => syncService.appendMilestone(
+              agentId: dailyOsPlannerAgentId,
+              milestone: AgentMilestone.dailyWakeCompleted,
+              createdAt: any(named: 'createdAt'),
+              threadId: threadId,
+              runKey: runKey,
+            ),
+          ).called(1);
+          final rearmed = upsertedEntities
+              .whereType<ScheduledWakeEntity>()
+              .single;
+          expect(rearmed.workspaceKey, coordinatorDigestWorkspaceKey);
+          expect(rearmed.status, ScheduledWakeStatus.pending);
+          // now = 08:00, past the 06:00 digest hour, so the next digest is
+          // tomorrow morning.
+          expect(rearmed.scheduledAt, DateTime(2026, 5, 26, 6));
+          expect(
+            rearmed.triggerTokens,
+            [dayAgentDigestToken('dayplan-2026-05-26')],
+          );
+        },
+      );
+
+      test(
+        'falls back to a 48h watermark for the first digest',
+        () async {
+          when(
+            () => repository.getMessagesByKind(
+              dailyOsPlannerAgentId,
+              AgentMessageKind.system,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          final result = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          final digest = sentPrompt().json('digest')! as Map;
+          expect(
+            digest['since'],
+            now.subtract(const Duration(hours: 48)).toIso8601String(),
+          );
+          verify(
+            () => repository.getDayStatusEventsSince(
+              now.subtract(const Duration(hours: 48)),
+              limit: any(named: 'limit'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a digest token on a per-day agent renders no digest section and '
+        'writes no digest milestone',
+        () async {
+          final result = await execute(
+            workflow(directiveService: directiveService),
+            triggerTokens: {dayAgentDigestToken(dayId)},
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          expect(sentPrompt().has('digest'), isFalse);
+          expect(
+            conversationRepository.lastSystemMessage,
+            isNot(contains('Digest rules')),
+          );
+          verifyNever(
+            () => syncService.appendMilestone(
+              agentId: any(named: 'agentId'),
+              milestone: AgentMilestone.dailyWakeCompleted,
+              createdAt: any(named: 'createdAt'),
+              threadId: any(named: 'threadId'),
+              runKey: any(named: 'runKey'),
+            ),
+          );
+          expect(upsertedEntities.whereType<ScheduledWakeEntity>(), isEmpty);
+        },
+      );
+
+      test('absorbs a digest context load failure', () async {
+        when(
+          () => repository.getMessagesByKind(
+            dailyOsPlannerAgentId,
+            AgentMessageKind.system,
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getDayStatusEventsSince(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(StateError('status scan unavailable'));
+
+        final result = await executeDigest(
+          workflow(directiveService: directiveService),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        expect(sentPrompt().has('digest'), isFalse);
+      });
     });
 
     test(

@@ -75,6 +75,10 @@ class DailyOsPlannerWakeContext {
   /// Whether the wake requests a refine for this context's day workspace.
   bool get isRefineWake => hasRefineTokenForDay(triggerTokens, dayId);
 
+  /// Whether this is a coordinator digest wake anchored to this context's
+  /// day (ADR 0032 phase 3).
+  bool get isDigestWake => triggerTokens.contains(dayAgentDigestToken(dayId));
+
   /// Validates that a tool call targeting [toolDayId] stays inside this
   /// wake's workspace.
   ///

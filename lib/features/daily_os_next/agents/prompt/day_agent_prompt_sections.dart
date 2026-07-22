@@ -66,6 +66,11 @@ abstract final class DayAgentPromptTags {
   /// Refine baseline plan (JSON).
   static const refine = 'refine';
 
+  /// Coordinator digest inputs (ADR 0032 phase 3, JSON): status events since
+  /// the last digest, current directives, and the near-window attention
+  /// ledger. Present only on coordinator digest wakes.
+  static const digest = 'digest';
+
   /// Pre-compaction fallback listing of recent observations (JSON).
   static const recentObservations = 'recent_observations';
 
@@ -90,6 +95,7 @@ abstract final class DayAgentPromptTags {
     capture,
     drafting,
     refine,
+    digest,
     recentObservations,
     triggerTokens,
     currentLocalTime,

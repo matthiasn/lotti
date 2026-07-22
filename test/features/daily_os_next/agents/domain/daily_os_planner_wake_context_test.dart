@@ -44,6 +44,20 @@ void main() {
     expect(ctx.isDraftingWake, isFalse);
   });
 
+  test('classifies a digest wake for its own day only (ADR 0032)', () {
+    final ctx = build({dayAgentDigestToken(dayId)});
+    expect(ctx.isDigestWake, isTrue);
+    expect(ctx.isDraftingWake, isFalse);
+    expect(ctx.isRefineWake, isFalse);
+
+    // A digest token for a different day must not flip this wake's mode.
+    final foreign = build({
+      dayAgentPlanningDayToken(dayId),
+      dayAgentDigestToken('dayplan-2026-05-26'),
+    });
+    expect(foreign.isDigestWake, isFalse);
+  });
+
   group('allowsToolDayId', () {
     final ctx = build({dayAgentPlanningDayToken(dayId)});
 

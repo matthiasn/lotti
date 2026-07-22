@@ -91,6 +91,11 @@ abstract final class AgentAuthors {
 /// daily digest wake is scheduled for.
 abstract final class AgentSchedules {
   static const projectDailyDigestHour = 6;
+
+  /// Local hour-of-day (24h) the Daily OS coordinator's digest wake is
+  /// scheduled for (ADR 0032 phase 3): consume status events + summaries,
+  /// then issue the day's directives before the user's typical check-in.
+  static const dayAgentDigestHour = 6;
 }
 
 /// Format a [DateTime] as YYYY-MM-DD. Returns `null` for a `null` input.
