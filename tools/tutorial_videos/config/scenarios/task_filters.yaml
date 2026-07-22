@@ -7,12 +7,39 @@ scenario: task_filters
 title:
   en: Filter tasks and save your views
   de: Aufgaben filtern und Ansichten speichern
+  fr: Filtrer les tâches et enregistrer tes vues
+  it: Filtra le attività e salva le tue viste
+  es: Filtra las tareas y guarda tus vistas
+  cs: Filtruj úkoly a ukládej si pohledy
+  nl: Taken filteren en je weergaven opslaan
+  ro: Filtrați sarcinile și salvați-vă vizualizările
+  pt: Filtre tarefas e salve suas visualizações
+  da: Filtrer opgaver og gem dine visninger
+  sv: Filtrera uppgifter och spara dina vyer
 
 dictionary:
   en:
     - Penguin Operations
   de:
     - Pinguinbetrieb
+  fr:
+    - Opérations Pingouins
+  it:
+    - Operazioni Pinguino
+  es:
+    - Operaciones de pingüinos
+  cs:
+    - Tučňáčí provoz
+  nl:
+    - Pinguïnoperaties
+  ro:
+    - Operațiuni cu pinguini
+  pt:
+    - Operações Penguin
+  da:
+    - Pingvinoperationer
+  sv:
+    - Pingvinoperationer
 
 steps:
   - id: intro
@@ -26,6 +53,41 @@ steps:
         Je mehr Aufgaben, desto wichtiger die Filter. In diesem Tutorial
         engst du die Liste nach Kategorie ein — und speicherst dir diese
         Ansicht für das nächste Mal.
+      fr: >-
+        Plus tu as de tâches, plus les filtres comptent. Dans ce tutoriel,
+        tu vas restreindre la liste par catégorie — et enregistrer cette
+        vue pour la prochaine fois.
+      it: >-
+        Più attività hai, più contano i filtri. In questo tutorial
+        restringi l'elenco per categoria — e salvi quella vista per la
+        prossima volta.
+      es: >-
+        Cuantas más tareas tengas, más importan los filtros. En este
+        tutorial vas a acotar la lista por categoría — y guardar esa vista
+        para la próxima vez.
+      cs: >-
+        Čím víc úkolů máš, tím víc záleží na filtrech. V tomto tutoriálu
+        zúžíš seznam podle kategorie — a tento pohled si uložíš na příště.
+      nl: >-
+        Hoe meer taken je hebt, hoe belangrijker filters worden. In deze
+        tutorial beperk je de lijst tot een categorie — en sla je die
+        weergave op voor de volgende keer.
+      ro: >-
+        Cu cât aveți mai multe sarcini, cu atât contează mai mult filtrele.
+        În acest tutorial veți restrânge lista după categorie — și veți
+        salva acea vizualizare pentru data viitoare.
+      pt: >-
+        Quanto mais tarefas você tem, mais os filtros importam. Neste
+        tutorial, você vai restringir a lista por categoria — e salvar
+        essa visualização para a próxima vez.
+      da: >-
+        Jo flere opgaver du har, desto mere betyder filtrene. I denne
+        tutorial indsnævrer du listen efter kategori — og gemmer den
+        visning til næste gang.
+      sv: >-
+        Ju fler uppgifter du har, desto mer spelar filtren roll. I den här
+        handledningen begränsar du listan efter kategori — och sparar den
+        vyn till nästa gång.
 
   - id: open_filters
     min_duration: 3.0
@@ -36,6 +98,33 @@ steps:
       de: >-
         Neben der Suche sitzt der Filter-Button — die Kommandozentrale für
         deine Aufgabenliste.
+      fr: >-
+        À côté de la recherche se trouve le bouton de filtre — le centre
+        de contrôle de ta liste de tâches.
+      it: >-
+        Accanto alla ricerca c'è il pulsante dei filtri — è il centro di
+        controllo della tua lista di attività.
+      es: >-
+        Junto a la búsqueda está el botón de filtros — el centro de
+        control de tu lista de tareas.
+      cs: >-
+        Vedle vyhledávání je tlačítko filtru — řídicí centrum tvého
+        seznamu úkolů.
+      nl: >-
+        Naast het zoekveld staat de filterknop — het commandocentrum van
+        je takenlijst.
+      ro: >-
+        Lângă căutare se află butonul de filtrare — centrul de comandă al
+        listei dvs. de sarcini.
+      pt: >-
+        Ao lado da busca fica o botão de filtro — o centro de controle da
+        sua lista de tarefas.
+      da: >-
+        Ved siden af søgningen sidder filterknappen — kommandocentralen
+        for din opgaveliste.
+      sv: >-
+        Bredvid sökningen sitter filterknappen — kommandocentralen för din
+        uppgiftslista.
 
   - id: pick_category
     min_duration: 5.0
@@ -46,6 +135,33 @@ steps:
       de: >-
         Öffne den Kategorie-Bereich und wähle Pinguinbetrieb — du kannst
         beliebig viele Kategorien kombinieren.
+      fr: >-
+        Ouvre la section catégories et choisis Opérations Pingouins — tu
+        peux combiner autant de catégories que tu veux.
+      it: >-
+        Apri la sezione categorie e scegli Operazioni Pinguino — puoi
+        combinare tutte le categorie che vuoi.
+      es: >-
+        Abre la sección de categorías y elige Operaciones de pingüinos —
+        puedes combinar tantas categorías como quieras.
+      cs: >-
+        Otevři sekci kategorií a vyber Tučňáčí provoz — kategorie můžeš
+        libovolně kombinovat.
+      nl: >-
+        Open het categorie-gedeelte en kies Pinguïnoperaties — je kunt
+        zoveel categorieën combineren als je wilt.
+      ro: >-
+        Deschideți secțiunea de categorii și alegeți Operațiuni cu
+        pinguini — puteți combina oricâte categorii doriți.
+      pt: >-
+        Abra a seção de categorias e escolha Operações Penguin — você pode
+        combinar quantas categorias quiser.
+      da: >-
+        Åbn kategoriafsnittet, og vælg Pingvinoperationer — du kan
+        kombinere lige så mange kategorier, du vil.
+      sv: >-
+        Öppna kategoriavsnittet och välj Pingvinoperationer — du kan
+        kombinera hur många kategorier du vill.
 
   - id: apply_filter
     min_duration: 4.0
@@ -56,6 +172,33 @@ steps:
       de: >-
         Anwenden — und die Liste zeigt genau diese Kategorie, mit einem Chip
         für den aktiven Filter.
+      fr: >-
+        Applique — et la liste se limite exactement à cette catégorie,
+        avec une puce qui indique le filtre actif.
+      it: >-
+        Applica — e l'elenco si restringe esattamente a questa categoria,
+        con un chip che mostra cosa è attivo.
+      es: >-
+        Aplica — y la lista se reduce exactamente a esta categoría, con un
+        chip que muestra el filtro activo.
+      cs: >-
+        Použij filtr — a seznam se zúží přesně na tuto kategorii, se
+        štítkem, který ukazuje aktivní filtr.
+      nl: >-
+        Toepassen — en de lijst wordt beperkt tot precies deze categorie,
+        met een chip die laat zien wat actief is.
+      ro: >-
+        Aplicați — iar lista se restrânge exact la această categorie, cu
+        un chip care arată filtrul activ.
+      pt: >-
+        Aplique — e a lista se restringe exatamente a essa categoria, com
+        um chip mostrando o que está ativo.
+      da: >-
+        Anvend — og listen indsnævres til præcis denne kategori, med et
+        chip der viser, hvad der er aktivt.
+      sv: >-
+        Använd filtret — och listan begränsas till exakt den här
+        kategorin, med en chip som visar vad som är aktivt.
 
   - id: save_filter
     min_duration: 5.0
@@ -66,6 +209,35 @@ steps:
       de: >-
         Jetzt mach es dauerhaft: speichere den Filter, gib ihm einen Namen —
         und er wird zur Ansicht, zu der du jederzeit zurückspringen kannst.
+      fr: >-
+        Maintenant, rends-le permanent : enregistre le filtre, donne-lui
+        un nom, et il devient une vue à laquelle tu peux revenir à tout
+        moment.
+      it: >-
+        Ora rendilo permanente: salva il filtro, dagli un nome, e diventa
+        una vista a cui puoi tornare quando vuoi.
+      es: >-
+        Ahora hazlo permanente: guarda el filtro, dale un nombre, y se
+        convierte en una vista a la que puedes volver cuando quieras.
+      cs: >-
+        Teď to zafixuj natrvalo: ulož filtr, pojmenuj ho, a stane se z něj
+        pohled, ke kterému se kdykoli vrátíš.
+      nl: >-
+        Maak het nu permanent: sla het filter op, geef het een naam, en
+        het wordt een weergave waar je altijd naar terug kunt springen.
+      ro: >-
+        Acum faceți-l permanent: salvați filtrul, dați-i un nume, și
+        devine o vizualizare la care vă puteți întoarce oricând.
+      pt: >-
+        Agora torne isso permanente: salve o filtro, dê um nome a ele, e
+        ele se torna uma visualização para a qual você pode voltar a
+        qualquer momento.
+      da: >-
+        Gør det nu permanent: gem filteret, giv det et navn, og det bliver
+        en visning, du altid kan springe tilbage til.
+      sv: >-
+        Gör det nu permanent: spara filtret, ge det ett namn, och det blir
+        en vy du alltid kan hoppa tillbaka till.
 
   - id: outro
     min_duration: 3.0
@@ -76,3 +248,30 @@ steps:
       de: >-
         Filter plus gespeicherte Ansichten — deine Aufgabenliste, genau der
         Ausschnitt, den du gerade brauchst.
+      fr: >-
+        Filtres et vues enregistrées — ta liste de tâches, exactement la
+        tranche dont tu as besoin maintenant.
+      it: >-
+        Filtri più viste salvate — la tua lista di attività, esattamente
+        la porzione di cui hai bisogno adesso.
+      es: >-
+        Filtros más vistas guardadas — tu lista de tareas, exactamente el
+        fragmento que necesitas ahora mismo.
+      cs: >-
+        Filtry plus uložené pohledy — tvůj seznam úkolů, přesně ten
+        výřez, který právě potřebuješ.
+      nl: >-
+        Filters plus opgeslagen weergaven — jouw takenlijst, precies het
+        stukje dat je nu nodig hebt.
+      ro: >-
+        Filtre plus vizualizări salvate — lista dvs. de sarcini, exact
+        porțiunea de care aveți nevoie chiar acum.
+      pt: >-
+        Filtros mais visualizações salvas — sua lista de tarefas,
+        exatamente o recorte de que você precisa agora.
+      da: >-
+        Filtre plus gemte visninger — din opgaveliste, præcis det udsnit
+        du har brug for lige nu.
+      sv: >-
+        Filter plus sparade vyer — din uppgiftslista, exakt den skiva du
+        behöver just nu.

@@ -20,6 +20,15 @@ streams:
     style:
       en: "Speak as a calm, friendly tutorial narrator:"
       de: "Sprich als ruhiger, freundlicher Tutorial-Erzähler:"
+      fr: "Parle comme un narrateur de tutoriel calme et amical :"
+      it: "Parla come un narratore di tutorial calmo e amichevole:"
+      es: "Habla como un narrador de tutoriales tranquilo y amigable:"
+      cs: "Mluv jako klidný a přátelský vypravěč tutoriálu:"
+      nl: "Spreek als een rustige, vriendelijke tutorial-verteller:"
+      ro: "Vorbiți ca un narator de tutorial calm și prietenos:"
+      pt: "Fale como um narrador de tutorial calmo e amigável:"
+      da: "Tal som en rolig, venlig tutorial-fortæller:"
+      sv: "Tala som en lugn och vänlig berättare i en handledning:"
   # Distinct from the narrator (the narrator audibly "speaks into Lotti"
   # when dictating; the clip is mixed into the final video at the moment it
   # plays into the virtual microphone) — keeps the two streams from ever
@@ -29,3 +38,12 @@ streams:
     style:
       en: "Speak naturally, as someone dictating a note to their phone:"
       de: "Sprich natürlich, wie jemand, der seinem Telefon eine Notiz diktiert:"
+      fr: "Parle naturellement, comme quelqu'un qui dicte une note à son téléphone :"
+      it: "Parla in modo naturale, come qualcuno che detta una nota al proprio telefono:"
+      es: "Habla con naturalidad, como alguien que le dicta una nota a su teléfono:"
+      cs: "Mluv přirozeně, jako někdo, kdo diktuje poznámku do telefonu:"
+      nl: "Spreek natuurlijk, alsof je een notitie inspreekt op je telefoon:"
+      ro: "Vorbiți natural, ca cineva care dictează o notă pe telefon:"
+      pt: "Fale naturalmente, como alguém ditando uma nota no celular:"
+      da: "Tal naturligt, som en der dikterer en note til sin telefon:"
+      sv: "Tala naturligt, som någon som dikterar en anteckning till sin telefon:"
