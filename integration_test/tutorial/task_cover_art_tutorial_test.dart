@@ -91,8 +91,31 @@ void main() {
 
   final manifest = TutorialManifest.fromEnvironment();
   final locale = manualScreenshotLocaleFromEnvironment(Platform.environment);
-  String localized({required String en, required String de}) =>
-      manualScreenshotText(en: en, de: de);
+  String localized({
+    required String en,
+    required String de,
+    String? fr,
+    String? it,
+    String? es,
+    String? cs,
+    String? nl,
+    String? ro,
+    String? pt,
+    String? da,
+    String? sv,
+  }) => manualScreenshotText(
+    en: en,
+    de: de,
+    fr: fr,
+    it: it,
+    es: es,
+    cs: cs,
+    nl: nl,
+    ro: ro,
+    pt: pt,
+    da: da,
+    sv: sv,
+  );
 
   testWidgets(
     'drives the task-cover-art tutorial flow',
@@ -111,6 +134,15 @@ void main() {
       final taskTitle = localized(
         en: 'Plan the penguin photo expedition',
         de: 'Pinguin-Fotoexpedition planen',
+        fr: "Planifier l'expédition photo des pingouins",
+        it: 'Pianifica la spedizione fotografica dei pinguini',
+        es: 'Planifica la expedición fotográfica de pingüinos',
+        cs: 'Naplánuj fotoexpedici za tučňáky',
+        nl: 'Plan de pinguïn-fotoexpeditie',
+        ro: 'Planificați expediția foto cu pinguini',
+        pt: 'Planeje a expedição fotográfica dos pinguins',
+        da: 'Planlæg pingvinfotoekspeditionen',
+        sv: 'Planera pingvinfotoexpeditionen',
       );
       final task = await harness.persistenceLogic.createTaskEntry(
         data: TaskData(
@@ -144,6 +176,42 @@ void main() {
             'Eine Kolonie Kaiserpinguine auf dem Schelfeis zur '
             'goldenen Stunde, Polarlicht am Himmel, '
             'Expeditionsausrüstung im Vordergrund — Projekt Waddle.',
+        fr:
+            'Une colonie de manchots empereurs sur la banquise à '
+            "l'heure dorée, aurore boréale au-dessus, matériel "
+            "d'expédition au premier plan — Projet Waddle.",
+        it:
+            'Una colonia di pinguini imperatore sulla piattaforma di '
+            "ghiaccio all'ora dorata, aurora boreale sopra, "
+            'attrezzatura da spedizione in primo piano — Progetto Waddle.',
+        es:
+            'Una colonia de pingüinos emperador en la plataforma de '
+            'hielo a la hora dorada, aurora boreal en el cielo, '
+            'equipo de expedición en primer plano — Proyecto Waddle.',
+        cs:
+            'Kolonie tučňáků císařských na ledovém šelfu za zlaté '
+            'hodiny, polární záře na obloze, expediční vybavení '
+            'v popředí — Projekt Waddle.',
+        nl:
+            'Een kolonie keizerspinguïns op de ijsplaat tijdens het '
+            'gouden uur, een aurora aan de hemel, expeditieuitrusting '
+            'op de voorgrond — Project Waddle.',
+        ro:
+            'O colonie de pinguini imperiali pe platforma de gheață în '
+            'timpul orei aurii, aurora boreală deasupra, echipament de '
+            'expediție în prim-plan — Proiect Waddle.',
+        pt:
+            'Uma colônia de pinguins-imperadores na plataforma de gelo '
+            'durante a hora dourada, aurora no céu, equipamento de '
+            'expedição em primeiro plano — Projeto Waddle.',
+        da:
+            'En koloni af kejserpingviner på iskappen i den gyldne '
+            'time, nordlys i himlen, ekspeditionsudstyr i '
+            'forgrunden — Projekt Waddle.',
+        sv:
+            'En koloni kejsarpingviner på isplattformen under den '
+            'gyllene timmen, norrsken i himlen, expeditionsutrustning '
+            'i förgrunden — Projekt Waddle.',
       );
       final noteMeta = await harness.persistenceLogic.createMetadata();
       final audioNote = JournalEntity.journalAudio(
@@ -245,7 +313,19 @@ void main() {
               final nav = harness.navService;
               return 'currentPath=${nav.currentPath} '
                   'detailStack=${nav.desktopTaskDetailStack.value} '
-                  'moreButtons=${find.byTooltip(localized(en: 'More actions', de: 'Weitere Aktionen')).evaluate().length}';
+                  'moreButtons=${find.byTooltip(localized(
+                    en: 'More actions',
+                    de: 'Weitere Aktionen',
+                    fr: "Plus d'actions",
+                    it: 'Altre azioni',
+                    es: 'Más acciones',
+                    cs: 'Další akce',
+                    nl: 'Meer acties',
+                    ro: 'Mai multe acțiuni',
+                    pt: 'Mais ações',
+                    da: 'Flere aktioner',
+                    sv: 'Fler åtgärder',
+                  )).evaluate().length}';
             }
             ..onTimeout = (context) => captureManualScreenshot(
               binding: binding,
@@ -276,7 +356,21 @@ void main() {
 
       await driver.step('intro', () async {
         final tasksRailItem = find
-            .text(localized(en: 'Tasks', de: 'Aufgaben'))
+            .text(
+              localized(
+                en: 'Tasks',
+                de: 'Aufgaben',
+                fr: 'Tâches',
+                it: 'Compiti',
+                es: 'Tareas',
+                cs: 'Úkoly',
+                nl: 'Taken',
+                ro: 'Sarcini',
+                pt: 'Tarefas',
+                da: 'Opgaver',
+                sv: 'Uppgifter',
+              ),
+            )
             .hitTestable();
         await driver.pumpUntilFound(tasksRailItem);
         await driver.holdUntil(const Duration(seconds: 2));
@@ -326,7 +420,19 @@ void main() {
             .descendant(
               of: find.byType(TaskDetailsPage),
               matching: find.byTooltip(
-                localized(en: 'Generate…', de: 'Generieren…'),
+                localized(
+                  en: 'Generate…',
+                  de: 'Generieren…',
+                  fr: 'Générer…',
+                  it: 'Genera...',
+                  es: 'Generar…',
+                  cs: 'Generovat…',
+                  nl: 'Genereren...',
+                  ro: 'Generează…',
+                  pt: 'Gerar…',
+                  da: 'Generer...',
+                  sv: 'Generera...',
+                ),
               ),
             )
             .hitTestable();
@@ -367,6 +473,15 @@ void main() {
             localized(
               en: 'Generating image...',
               de: 'Bild wird generiert...',
+              fr: "Génération de l'image...",
+              it: "Generando l'immagine...",
+              es: 'Generando imagen...',
+              cs: 'Generování obrázku...',
+              nl: 'Afbeelding aanmaken...',
+              ro: 'Se generează imaginea...',
+              pt: 'Gerando imagem...',
+              da: 'Genererer billede...',
+              sv: 'Genererar bild...',
             ),
           ),
           timeout: const Duration(seconds: 15),
@@ -389,7 +504,21 @@ void main() {
         // uses MaterialLocalizations.closeButtonTooltip) — a barrier tap is
         // layout-position-dependent and broke when the pane widths changed.
         final closeButton = find
-            .byTooltip(localized(en: 'Close', de: 'Schließen'))
+            .byTooltip(
+              localized(
+                en: 'Close',
+                de: 'Schließen',
+                fr: 'Fermer',
+                it: 'Chiudi',
+                es: 'Cerrar',
+                cs: 'Zavřít',
+                nl: 'Sluiten',
+                ro: 'Închideți',
+                pt: 'Fechar',
+                da: 'Luk',
+                sv: 'Stäng',
+              ),
+            )
             .hitTestable();
         await driver.pumpUntilFound(closeButton);
         await driver.tapLikeUser(closeButton.last);

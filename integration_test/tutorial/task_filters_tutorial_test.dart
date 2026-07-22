@@ -35,8 +35,31 @@ void main() {
 
   final manifest = TutorialManifest.fromEnvironment();
   final locale = manualScreenshotLocaleFromEnvironment(Platform.environment);
-  String localized({required String en, required String de}) =>
-      manualScreenshotText(en: en, de: de);
+  String localized({
+    required String en,
+    required String de,
+    String? fr,
+    String? it,
+    String? es,
+    String? cs,
+    String? nl,
+    String? ro,
+    String? pt,
+    String? da,
+    String? sv,
+  }) => manualScreenshotText(
+    en: en,
+    de: de,
+    fr: fr,
+    it: it,
+    es: es,
+    cs: cs,
+    nl: nl,
+    ro: ro,
+    pt: pt,
+    da: da,
+    sv: sv,
+  );
 
   testWidgets(
     'drives the task-filters tutorial flow',
@@ -53,7 +76,19 @@ void main() {
       // A second category + task so filtering visibly narrows the list.
       final otherCategory = harness.world.category.copyWith(
         id: 'tutorial-other-category',
-        name: localized(en: 'Human Maintenance', de: 'Menschenpflege'),
+        name: localized(
+          en: 'Human Maintenance',
+          de: 'Menschenpflege',
+          fr: 'Maintenance humaine',
+          it: 'Manutenzione umana',
+          es: 'Mantenimiento humano',
+          cs: 'Péče o posádku',
+          nl: 'Menselijk onderhoud',
+          ro: 'Întreținerea oamenilor',
+          pt: 'Manutenção Humana',
+          da: 'Menneskelig vedligeholdelse',
+          sv: 'Mänskligt underhåll',
+        ),
         favorite: false,
       );
       await harness.persistenceLogic.upsertEntityDefinition(otherCategory);
@@ -62,6 +97,15 @@ void main() {
           title: localized(
             en: 'Refill the coffee supplies',
             de: 'Kaffeevorräte auffüllen',
+            fr: 'Réapprovisionner le café',
+            it: 'Rifornire le scorte di caffè',
+            es: 'Reponer las provisiones de café',
+            cs: 'Doplnit zásoby kávy',
+            nl: 'Koffievoorraad aanvullen',
+            ro: 'Reaprovizionați cu cafea',
+            pt: 'Reabastecer o estoque de café',
+            da: 'Genopfyld kaffelagre',
+            sv: 'Fylla på kaffeförrådet',
           ),
           status: TaskStatus.open(
             id: 'tutorial-other-task-status',
@@ -129,14 +173,54 @@ void main() {
               name: 'failure_$context',
             );
 
-      final filterName = localized(en: 'Penguin focus', de: 'Pinguin-Fokus');
+      final filterName = localized(
+        en: 'Penguin focus',
+        de: 'Pinguin-Fokus',
+        fr: 'Focus pingouins',
+        it: 'Focus pinguini',
+        es: 'Enfoque pingüinos',
+        cs: 'Zaměření na tučňáky',
+        nl: 'Pinguïnfocus',
+        ro: 'Focalizare pinguini',
+        pt: 'Foco em pinguins',
+        da: 'Pingvinfokus',
+        sv: 'Pingvinfokus',
+      );
       final filterIcon = find
-          .byTooltip(localized(en: 'Filter tasks', de: 'Aufgaben filtern'))
+          .byTooltip(
+            localized(
+              en: 'Filter tasks',
+              de: 'Aufgaben filtern',
+              fr: 'Filtrer les tâches',
+              it: 'Filtra le attività',
+              es: 'Filtrar tareas',
+              cs: 'Filtrovat úkoly',
+              nl: 'Filtertaken',
+              ro: 'Filtrați sarcinile',
+              pt: 'Filtrar tarefas',
+              da: 'Filteropgaver',
+              sv: 'Filtrera uppgifter',
+            ),
+          )
           .hitTestable();
 
       await driver.step('intro', () async {
         final tasksRailItem = find
-            .text(localized(en: 'Tasks', de: 'Aufgaben'))
+            .text(
+              localized(
+                en: 'Tasks',
+                de: 'Aufgaben',
+                fr: 'Tâches',
+                it: 'Compiti',
+                es: 'Tareas',
+                cs: 'Úkoly',
+                nl: 'Taken',
+                ro: 'Sarcini',
+                pt: 'Tarefas',
+                da: 'Opgaver',
+                sv: 'Uppgifter',
+              ),
+            )
             .hitTestable();
         await driver.pumpUntilFound(tasksRailItem);
         await driver.holdUntil(const Duration(seconds: 2));
