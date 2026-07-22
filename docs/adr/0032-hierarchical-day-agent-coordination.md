@@ -2,9 +2,9 @@
 
 ## Status
 
-Accepted (phases 1–3 implemented; phases 4–6 remain proposed). See
-Amendments below for where the implementation diverged from this ADR's
-original text.
+Accepted (phases 1–5 implemented; phase 6 — coordinator slimming, gated on
+measured token stats — remains proposed). See Amendments below for where the
+implementation diverged from this ADR's original text.
 
 ## Date
 
@@ -483,6 +483,21 @@ Decision section in place.
   that forgets to self-schedule cannot break the cadence. The
   `attentionNeeded` same-day subscription (open question 1) is deferred:
   phase 3 ships digest-cadence consumption only.
+- **Phase 4 shipped thinner than proposed.** The Day page's "Inspect agent"
+  menu entry and Settings > Agents Type-based instance filtering/grouping
+  already existed before this phase. Net-new: the day-header status chip
+  (`DayAgentStatusChip`) surfacing the persona state with the per-day token
+  spend in its tooltip (per-day identities only — a coordinator-owned day
+  shows no spend, since the coordinator's lifetime aggregate would
+  misattribute other days), tappable straight into the agent internals.
+- **Phase 5 is a mapping, not a scheduler or renderer.** Pre-warm is the
+  deterministic digest re-arm plus the per-day agent's self-scheduled
+  `set_next_wake` (both existed after phase 3); no separate pre-warm
+  scheduler was added. Persona is `dayAgentPersonaStateProvider`, deriving
+  §7's states (idle | working | attention | celebrating) from runtime facts
+  (running wake, newest `DayStatusEventEntity`); the `character` feature has
+  no Daily OS consumer yet, so the provider is the contract the animation
+  binds to when it lands. Distinct visual personas stay out of scope.
 - **No dormancy automation.** §1 described bounded-not-ephemeral per-day
   agents going `dormant` after day close. No day-close lifecycle exists yet
   (shutdown/reflection tools are still mocked in `RealDayAgent`), so per-day

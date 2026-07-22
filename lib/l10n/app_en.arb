@@ -2094,6 +2094,27 @@
   "dailyOsNextCommitSubCaption": "You can still talk to me afterward — but the bones stay put.",
   "dailyOsNextCommitTitle": "Lock it in",
   "dailyOsNextCommitTodayIsYours": "Today is yours.",
+  "dailyOsNextDayAgentStatusAttention": "Needs attention",
+  "@dailyOsNextDayAgentStatusAttention": {
+    "description": "Day-header chip when the day agent raised attentionNeeded."
+  },
+  "dailyOsNextDayAgentStatusDayClosed": "Day closed",
+  "@dailyOsNextDayAgentStatusDayClosed": {
+    "description": "Day-header chip when the day agent closed the day."
+  },
+  "dailyOsNextDayAgentStatusWorking": "Planning…",
+  "@dailyOsNextDayAgentStatusWorking": {
+    "description": "Day-header chip while a wake for this day is executing."
+  },
+  "dailyOsNextDayAgentTokensToday": "{tokens} tokens spent planning this day",
+  "@dailyOsNextDayAgentTokensToday": {
+    "description": "Tooltip line with the day agent's total token spend.",
+    "placeholders": {
+      "tokens": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextDayBack": "Back",
   "dailyOsNextDayCheckInCta": "Speak a check-in",
   "dailyOsNextDayDeleteDialogBody": "The drafted blocks for this day will be removed. Captures and their audio recordings stay in your journal.",

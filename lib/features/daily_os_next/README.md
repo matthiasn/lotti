@@ -360,6 +360,20 @@ sequenceDiagram
   `propose_knowledge` is coordinator-keyed even on per-day wakes, so durable
   learnings land in the coordinator's confirm loop directly.
 
+**Visibility + persona (phases 4–5).** The Day page header shows a
+`DayAgentStatusChip` when the day's agent has something to say: `working`
+(a wake for this day is executing), `attention` (newest status event is
+`attentionNeeded`), or `celebrating` (`dayClosed`) — idle renders nothing.
+The chip's tooltip adds the per-day token spend for per-day identities
+(coordinator-owned days show none: the coordinator's lifetime aggregate
+would misattribute other days), and tapping it opens the agent internals —
+same destination as the header menu's existing "Inspect agent" entry. Both
+facts come from `state/day_agent_persona_provider.dart`:
+`dayAgentPersonaStateProvider` (the ADR §7 persona contract the character
+animation binds to when it lands) and `dayAgentTokenSpendProvider`
+(`getTokenUsageForAgent` by agent id — no new storage). Settings › Agents
+already filters/groups day agents via the Type axis.
+
 ### Week Context & Day Summaries (ADR 0028)
 
 - **Facts vs testimony.** `<recent_days>` renders one paragraph per day over a

@@ -3846,6 +3846,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCommitTodayIsYours => 'Ziua este a dvs.';
 
   @override
+  String get dailyOsNextDayAgentStatusAttention => 'Necesită atenție';
+
+  @override
+  String get dailyOsNextDayAgentStatusDayClosed => 'Zi încheiată';
+
+  @override
+  String get dailyOsNextDayAgentStatusWorking => 'Se planifică…';
+
+  @override
+  String dailyOsNextDayAgentTokensToday(int tokens) {
+    return '$tokens tokenuri folosite pentru planificarea acestei zile';
+  }
+
+  @override
   String get dailyOsNextDayBack => 'Înapoi';
 
   @override
