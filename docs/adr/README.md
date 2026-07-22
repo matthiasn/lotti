@@ -28,6 +28,16 @@ Each ADR should contain:
 
 ## Index
 
+### Relationship management decision cluster
+
+| ADR | Status | Decision ownership |
+| --- | --- | --- |
+| [0037: Relationship Data Stays On-Device](./0037-relationship-on-device-storage-and-privacy.md) | Proposed | Local-only storage, opt-in E2E sync, zero external retention, explicit cloud-AI consent, deletion cascade, GDPR framing. |
+| [0038: Relationship Domain Model](./0038-relationship-domain-model.md) | Proposed | `relationship`/`checkIn` journal subtypes, embedded person identity, status union, `RelationshipLink` task/timeline linking, no schema change. |
+| [0039: Relationship Check-In Reminders](./0039-relationship-check-in-reminders.md) | Proposed | Importance-gated cadence rule, event-driven scheduling on the synced notification inbox, startup reconcile, platform limits. |
+| [0040: Relationship Executive Briefing](./0040-relationship-executive-briefing.md) | Proposed | Relationship agent + report contract, health band, strict context boundary, privacy-weighted model routing, honesty rules. |
+| [0041: Relationship Contact Linking](./0041-relationship-contact-linking.md) | Proposed | Selective per-relationship contact linking (no bulk import), channel snapshots, call/message actions from the briefing, post-interaction check-in prompt. |
+
 ### Learning verification decision cluster
 
 | ADR | Status | Decision ownership |
@@ -75,3 +85,8 @@ Each ADR should contain:
 - [`0034-hybrid-understanding-evaluation.md`](./0034-hybrid-understanding-evaluation.md)
 - [`0035-learning-verification-session-persistence.md`](./0035-learning-verification-session-persistence.md)
 - [`0036-learning-understanding-rating.md`](./0036-learning-understanding-rating.md)
+- [`0037-relationship-on-device-storage-and-privacy.md`](./0037-relationship-on-device-storage-and-privacy.md)
+- [`0038-relationship-domain-model.md`](./0038-relationship-domain-model.md)
+- [`0039-relationship-check-in-reminders.md`](./0039-relationship-check-in-reminders.md)
+- [`0040-relationship-executive-briefing.md`](./0040-relationship-executive-briefing.md)
+- [`0041-relationship-contact-linking.md`](./0041-relationship-contact-linking.md)
