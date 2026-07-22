@@ -43,14 +43,17 @@ data, and any cloud AI use must be an explicit, user-configured choice.
    the existing payload-agnostic Matrix sync between the user's own devices.
    No server ever sees plaintext; users who never configure sync keep the
    data on a single device.
-3. **Zero retention outside the user's devices.** No telemetry, analytics,
+3. **No Lotti-side retention anywhere.** No telemetry, analytics,
    or crash payloads ever include relationship data. Executive briefings
    (ADR 0040) default to local inference; a cloud provider is used only when
    the user has explicitly configured one and selected it via an inference
    profile, requests are transient, and the UI states which provider will
    see the data before the user triggers a briefing. Retention at a cloud
    provider is governed by the user's own account with that provider — Lotti
-   adds no storage of its own.
+   adds no storage of its own. Provider-setup guidance steers users toward
+   GDPR-compliant providers with zero-data-retention terms, under which a
+   cloud briefing is transient processing and nothing is stored outside the
+   user's devices.
 4. **The `private` flag applies.** Relationships and check-ins honor the
    existing `Metadata.private` semantics, so they can be excluded from
    surfaces that respect the private filter.

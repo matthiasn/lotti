@@ -12,8 +12,9 @@
 
 Relationships as a first-class, long-running concept: one entity per person
 with a timeline, structured check-ins, importance-gated reminders, and an
-AI executive briefing before the next interaction. Entirely on-device
-(ADR 0037); pre-1.0 roadmap item.
+AI executive briefing before the next interaction. Local-first per
+ADR 0037: on-device storage, opt-in end-to-end encrypted sync, cloud AI
+only by explicit choice. Pre-1.0 roadmap item.
 
 ## Data model summary
 

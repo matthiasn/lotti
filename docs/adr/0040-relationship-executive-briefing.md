@@ -56,8 +56,11 @@ inference profiles can pin capability slots to local models.
 6. **Privacy-weighted model routing.** The profile is resolved from
    `RelationshipData.profileId`, falling back to the category default.
    Local-model profiles are the recommended default for this data class;
-   when the resolved profile routes to a cloud provider, the trigger surface
-   names the provider before running (ADR 0037). No inference ever runs
+   cloud providers are an equally legitimate route when they are
+   GDPR-compliant with zero-data-retention terms — then inference is
+   transient processing and nothing is stored outside the user's devices.
+   Either way, the trigger surface names the provider before running
+   (ADR 0037). No inference ever runs
    without an explicit user-facing trigger or the post-check-in refresh the
    user enabled by using the feature.
 7. **Honesty rules in the template.** The briefing may only reference
