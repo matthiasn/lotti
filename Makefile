@@ -419,11 +419,17 @@ fd_snapshot:
 TUTORIAL_SCENARIO ?= create_task_from_audio
 TUTORIAL_LOCALE ?= en
 TUTORIAL_LOCALES ?= en de
+# desktop (1920x1080, unsuffixed output — the original variant) or mobile
+# (phone-shaped window under the app's 960px desktop breakpoint, `_mobile`
+# suffixed output). See tools/tutorial_videos/tutorial_videos/__main__.py's
+# DEVICE_SIZES.
+TUTORIAL_DEVICE ?= desktop
 
 .PHONY: tutorial_video
 tutorial_video:
 	cd tools/tutorial_videos && python3 -m tutorial_videos build \
-	  --scenario $(TUTORIAL_SCENARIO) --locale $(TUTORIAL_LOCALE)
+	  --scenario $(TUTORIAL_SCENARIO) --locale $(TUTORIAL_LOCALE) \
+	  --device $(TUTORIAL_DEVICE)
 
 .PHONY: tutorial_videos_all
 tutorial_videos_all:
@@ -437,4 +443,5 @@ tutorial_videos_all:
 .PHONY: tutorial_video_publish
 tutorial_video_publish:
 	cd tools/tutorial_videos && python3 -m tutorial_videos publish \
-	  --scenario $(TUTORIAL_SCENARIO) --locale $(TUTORIAL_LOCALE)
+	  --scenario $(TUTORIAL_SCENARIO) --locale $(TUTORIAL_LOCALE) \
+	  --device $(TUTORIAL_DEVICE)

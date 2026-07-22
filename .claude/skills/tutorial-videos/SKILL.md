@@ -12,9 +12,14 @@ it first. This skill is the operational runbook.
 ## Build videos
 
 ```sh
-make tutorial_video TUTORIAL_LOCALE=de     # one locale (~5-8 min)
-make tutorial_videos_all                   # all TUTORIAL_LOCALES
+make tutorial_video TUTORIAL_LOCALE=de                       # one locale (~5-8 min)
+make tutorial_video TUTORIAL_LOCALE=de TUTORIAL_DEVICE=mobile # phone-shaped window, `_mobile`-suffixed output
+make tutorial_videos_all                                     # all TUTORIAL_LOCALES
 ```
+
+`TUTORIAL_DEVICE` (`desktop`|`mobile`, default `desktop`) picks the capture
+window size — see the README's "Desktop vs. mobile" section for the
+breakpoint rationale and the `tutorialDeviceIsMobile()` test hook.
 
 Preconditions (fail fast if missing):
 - `.env` at repo root with `GEMINI_API_KEY`, `MELIOUS_API_KEY`,

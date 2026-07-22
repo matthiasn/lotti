@@ -49,3 +49,36 @@ test('caption URLs match the video URL with a .vtt extension', () => {
     'https://media.example/tutorial-videos/create_task_from_audio_de.vtt',
   );
 });
+
+test('the desktop viewport keeps the unsuffixed, backward-compatible URL', () => {
+  assert.equal(
+    tutorialVideoSource({
+      scenario: 'create_task_from_audio',
+      locale: 'de',
+      videoBaseUrl: 'https://media.example/tutorial-videos/',
+      viewport: 'desktop',
+    }),
+    'https://media.example/tutorial-videos/create_task_from_audio_de.mp4',
+  );
+});
+
+test('the mobile viewport gets a _mobile suffix on both video and captions', () => {
+  assert.equal(
+    tutorialVideoSource({
+      scenario: 'create_task_from_audio',
+      locale: 'de',
+      videoBaseUrl: 'https://media.example/tutorial-videos/',
+      viewport: 'mobile',
+    }),
+    'https://media.example/tutorial-videos/create_task_from_audio_de_mobile.mp4',
+  );
+  assert.equal(
+    tutorialCaptionsSource({
+      scenario: 'create_task_from_audio',
+      locale: 'de',
+      videoBaseUrl: 'https://media.example/tutorial-videos/',
+      viewport: 'mobile',
+    }),
+    'https://media.example/tutorial-videos/create_task_from_audio_de_mobile.vtt',
+  );
+});

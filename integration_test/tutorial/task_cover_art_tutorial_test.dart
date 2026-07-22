@@ -41,6 +41,7 @@ import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/task_expandable_app_bar.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 
 import '../../test/helpers/manual_screenshot_locale.dart';
 import '../manual_screenshot_utils.dart';
@@ -502,6 +503,17 @@ void main() {
           find.byType(TaskExpandableAppBar),
           timeout: const Duration(seconds: 20),
         );
+        // Desktop's split view keeps TasksTabPage and TaskDetailsPage on
+        // screen together, so the list card is already in the tree. Mobile
+        // pushes the detail page over the list in a single-screen stack —
+        // pop back first, or `taskCard`/`listScrollable` (both scoped
+        // `descendant(of: TasksTabPage)`) match nothing.
+        if (tutorialDeviceIsMobile()) {
+          final backButton = find.byType(GlassBackButton).hitTestable();
+          await driver.pumpUntilFound(backButton);
+          await driver.tapLikeUser(backButton.first);
+          await driver.pumpUntilFound(find.byType(TasksTabPage));
+        }
         await driver.scrollIntoView(taskCard, scrollable: listScrollable);
         await driver.pumpUntil(
           () => find

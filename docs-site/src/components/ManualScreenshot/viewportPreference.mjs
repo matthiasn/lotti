@@ -1,4 +1,7 @@
 const storageKey = 'lotti-manual-screenshot-viewport';
+// Mirrors kDesktopBreakpoint in lib/features/design_system/theme/breakpoints.dart —
+// the same width the app itself switches from bottom-nav to sidebar at.
+const desktopBreakpointPx = 960;
 
 function isViewport(value) {
   return value === 'mobile' || value === 'desktop';
@@ -20,11 +23,29 @@ export function createScreenshotViewportStore(
     }
   }
 
+  function detectViewport(window) {
+    if (typeof window.matchMedia === 'function') {
+      return window.matchMedia(`(max-width: ${desktopBreakpointPx - 1}px)`)
+        .matches
+        ? 'mobile'
+        : 'desktop';
+    }
+    if (typeof window.innerWidth === 'number') {
+      return window.innerWidth < desktopBreakpointPx ? 'mobile' : 'desktop';
+    }
+    return 'mobile';
+  }
+
   function initialize() {
     if (initialized) return;
     initialized = true;
-    const storedViewport = browserWindow()?.localStorage.getItem(storageKey);
-    if (isViewport(storedViewport)) viewport = storedViewport;
+    const window = browserWindow();
+    const storedViewport = window?.localStorage.getItem(storageKey);
+    if (isViewport(storedViewport)) {
+      viewport = storedViewport;
+    } else if (window) {
+      viewport = detectViewport(window);
+    }
   }
 
   function notify() {
