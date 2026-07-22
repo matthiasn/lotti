@@ -159,6 +159,58 @@ void main() {
       const c = DraftPlanPayload(decidedTaskIds: ['t1']);
       expect(a, b);
       expect(a, isNot(c));
+      expect(a.hashCode, b.hashCode);
+      expect(a.hashCode, isNot(c.hashCode));
     });
+  });
+
+  group('payload equality and hashCode', () {
+    test('TranscribeAudioPayload compares and hashes by every field', () {
+      const a = TranscribeAudioPayload(
+        activityEntryId: 'entry-1',
+        recordingSessionId: 'session-1',
+        audioId: 'audio-1',
+        audioPath: '/tmp/a.m4a',
+      );
+      const b = TranscribeAudioPayload(
+        activityEntryId: 'entry-1',
+        recordingSessionId: 'session-1',
+        audioId: 'audio-1',
+        audioPath: '/tmp/a.m4a',
+      );
+      const differentPath = TranscribeAudioPayload(
+        activityEntryId: 'entry-1',
+        recordingSessionId: 'session-1',
+        audioId: 'audio-1',
+        audioPath: '/tmp/b.m4a',
+      );
+      expect(a, b);
+      expect(a, isNot(differentPath));
+      expect(a.hashCode, b.hashCode);
+      expect(a.hashCode, isNot(differentPath.hashCode));
+    });
+
+    test('ParseCapturePayload compares and hashes by captureId', () {
+      const a = ParseCapturePayload(captureId: 'cap-1');
+      const b = ParseCapturePayload(captureId: 'cap-1');
+      const c = ParseCapturePayload(captureId: 'cap-2');
+      expect(a, b);
+      expect(a, isNot(c));
+      expect(a.hashCode, b.hashCode);
+      expect(a.hashCode, isNot(c.hashCode));
+    });
+
+    test(
+      'RefinePlanPayload compares and hashes by transcriptCaptureId',
+      () {
+        const a = RefinePlanPayload(transcriptCaptureId: 'cap-1');
+        const b = RefinePlanPayload(transcriptCaptureId: 'cap-1');
+        const c = RefinePlanPayload(transcriptCaptureId: 'cap-2');
+        expect(a, b);
+        expect(a, isNot(c));
+        expect(a.hashCode, b.hashCode);
+        expect(a.hashCode, isNot(c.hashCode));
+      },
+    );
   });
 }

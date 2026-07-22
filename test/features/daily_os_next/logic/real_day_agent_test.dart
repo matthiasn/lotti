@@ -625,6 +625,80 @@ void main() {
     );
 
     test(
+      'throws when the job succeeds but no day agent exists for the date '
+      'afterwards',
+      () async {
+        final dayId = dayAgentIdForDate(_asOf);
+        when(
+          () => bench.dayAgentService.getDayAgentForDate(any()),
+        ).thenAnswer((_) async => null);
+
+        final future = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
+        );
+        await pumpEventQueue();
+        await bench.completeJob(
+          DayProcessingOutboxRepository.draftJobId(dayId),
+        );
+
+        await expectLater(
+          future,
+          throwsA(
+            isA<DayAgentInteractionException>().having(
+              (e) => e.message,
+              'message',
+              contains('No day agent exists for $dayId'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'throws when drafting completed but the day has no drafted plan',
+      () async {
+        const agentId = 'day-agent-no-plan';
+        final dayId = dayAgentIdForDate(_asOf);
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => bench.planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => null);
+
+        final future = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
+        );
+        await pumpEventQueue();
+        await bench.completeJob(
+          DayProcessingOutboxRepository.draftJobId(dayId),
+        );
+
+        await expectLater(
+          future,
+          throwsA(
+            isA<DayAgentInteractionException>().having(
+              (e) => e.message,
+              'message',
+              contains('Drafting completed but $dayId has no drafted plan'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
       'cancellation via isCancelled leaves the durable job running and '
       'throws without touching the outbox',
       () {
@@ -2027,6 +2101,61 @@ void main() {
           (c) => c.kind == PlanDiffChangeKind.dropped,
         );
         expect(dropped.affectedBlockId, 'block-existing');
+      },
+    );
+
+    test(
+      'throws when refining completed but no pending diff matches the '
+      'job result',
+      () async {
+        const agentId = 'agent-prop-no-diff';
+        final dayId = dayAgentIdForDate(_asOf);
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => bench.planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => buildDayPlan(agentId: agentId, dayId: dayId));
+        when(
+          () => bench.dayAgentService.persistRefineCapture(
+            agentId: agentId,
+            dayId: dayId,
+            transcript: 'reshape the morning',
+          ),
+        ).thenAnswer((_) async => 'refine_capture:cap-y');
+        when(
+          () => bench.planService.pendingPlanDiffsForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => const []);
+
+        final future = bench.adapter.proposePlanDiff(
+          currentPlan: buildCurrentPlan(),
+          voiceTranscript: 'reshape the morning',
+        );
+        await pumpEventQueue();
+
+        final jobs = await bench.outbox.getAll();
+        await bench.completeJob(jobs.single.id, resultEntityId: 'diff-missing');
+
+        await expectLater(
+          future,
+          throwsA(
+            isA<DayAgentInteractionException>().having(
+              (e) => e.message,
+              'message',
+              contains('Refining completed but $dayId has no pending diff'),
+            ),
+          ),
+        );
       },
     );
 

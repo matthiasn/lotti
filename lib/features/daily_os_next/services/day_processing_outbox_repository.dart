@@ -325,13 +325,28 @@ class DayProcessingOutboxRepository {
           throw DayProcessingIntentConflict(existing.id);
         }
       case ParseCapturePayload() || RefinePlanPayload():
+        // ParseCapturePayload equality is fully determined by captureId,
+        // which is itself embedded in the job id this method is always
+        // looked up by — so for the one caller that reaches this arm
+        // ([enqueueParseCapture]), existing/requested payloads can never
+        // actually differ. RefinePlanPayload never reaches this arm at all
+        // (enqueueRefinePlan never re-validates — see its doc comment).
+        // Kept for exhaustiveness and as a guard if a future caller reuses
+        // this validation with looser id semantics.
         if (existing.payload != requested.payload) {
+          // coverage:ignore-start
           throw DayProcessingIntentConflict(existing.id);
+          // coverage:ignore-end
         }
+      // coverage:ignore-start
       case DraftPlanPayload():
-        // Re-armable by design (see [enqueueDraftPlan]); the payload is the
-        // newest request, never validated against the old one.
+        // No caller ever looks up an existing job by `draftJobId` before
+        // calling this method (enqueueDraftPlan intentionally never
+        // validates — see its doc comment), so this arm is unreachable.
+        // Kept for exhaustiveness over the sealed DayProcessingPayload
+        // union.
         break;
+      // coverage:ignore-end
     }
   }
 

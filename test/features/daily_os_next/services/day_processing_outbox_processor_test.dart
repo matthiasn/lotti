@@ -381,6 +381,64 @@ void main() {
       },
     );
 
+    test(
+      'an agent executor that throws (not a claim-revoked error) marks the '
+      'job failed via the classified failure class',
+      () async {
+        final finished = <DayProcessingJob>[];
+        final processor = DayProcessingOutboxProcessor(
+          repository: repository,
+          transcribe: (_) async => 'unused',
+          attachTranscript: (_, _) async => true,
+          onJobFinished: finished.add,
+          agentJobExecutor: (job) async =>
+              throw StateError('ambiguous day resolution'),
+        );
+        await enqueueParse();
+
+        final result = await processor.processNext(
+          kinds: const {DayProcessingJobKind.parseCapture},
+        );
+
+        // classifyDayAgentJobFailure maps "ambiguous" to `deterministic`,
+        // which _processAgentJob's catch handler turns into `failed`.
+        expect(result, DayProcessingRunResult.failed);
+        final saved = await repository.getById('parse_cap-1');
+        expect(saved!.status, DayProcessingJobStatus.failed);
+        expect(saved.lastError, contains('ambiguous day resolution'));
+        // `failed` is not one of DayProcessingJob.isTerminal's two statuses
+        // (succeeded/cancelled), so _finished's onJobFinished gate stays
+        // closed here — this only proves _finished(failed) was reached.
+        expect(finished, isEmpty);
+      },
+    );
+
+    test(
+      'a thrown setupRequired-classified error also fails (not just '
+      'deterministic)',
+      () async {
+        final processor = DayProcessingOutboxProcessor(
+          repository: repository,
+          transcribe: (_) async => 'unused',
+          attachTranscript: (_, _) async => true,
+          agentJobExecutor: (job) async =>
+              throw StateError('provider not configured'),
+        );
+        await enqueueParse();
+
+        final result = await processor.processNext(
+          kinds: const {DayProcessingJobKind.parseCapture},
+        );
+
+        expect(result, DayProcessingRunResult.failed);
+        final saved = await repository.getById('parse_cap-1');
+        expect(
+          saved!.lastFailureClass,
+          DayProcessingFailureClass.setupRequired,
+        );
+      },
+    );
+
     test('onJobFinished fires only for terminal outcomes', () async {
       final finished = <DayProcessingJob>[];
       final processor = DayProcessingOutboxProcessor(

@@ -38,6 +38,24 @@ void main() {
     generation: 0,
   );
 
+  DayProcessingJob transcribeJob() => DayProcessingJob(
+    id: 'transcribe_rec-1',
+    status: DayProcessingJobStatus.queued,
+    dayId: dayId,
+    payload: const TranscribeAudioPayload(
+      activityEntryId: 'entry-1',
+      recordingSessionId: 'rec-1',
+      audioId: 'audio-1',
+      audioPath: '/tmp/rec-1.m4a',
+    ),
+    createdAt: requestedAt,
+    updatedAt: requestedAt,
+    requestedAt: requestedAt,
+    nextAttemptAt: requestedAt,
+    attempts: 0,
+    generation: 0,
+  );
+
   DayProcessingJob refineJob() => DayProcessingJob(
     id: 'refine_${dayId}_abc',
     status: DayProcessingJobStatus.queued,
@@ -275,6 +293,35 @@ void main() {
       );
 
       final outcome = await executor.execute(parseJob());
+
+      expect(outcome, isA<DayAgentJobFailed>());
+      expect(
+        (outcome as DayAgentJobFailed).failureClass,
+        DayProcessingFailureClass.local,
+      );
+    },
+  );
+
+  test(
+    'a transcribeAudio-shaped job (never actually claimed by this executor '
+    'in production) never short-circuits the artifact pre-check',
+    () async {
+      final completions = StreamController<WakeRunCompletion>.broadcast();
+      addTearDown(completions.close);
+      final executor = buildExecutor(runCompletions: completions.stream);
+      unawaited(
+        Future<void>.delayed(Duration.zero, () {
+          completions.add(
+            const WakeRunCompletion(
+              runKey: 'run-key-1',
+              agentId: agentId,
+              status: WakeRunStatus.completed,
+            ),
+          );
+        }),
+      );
+
+      final outcome = await executor.execute(transcribeJob());
 
       expect(outcome, isA<DayAgentJobFailed>());
       expect(

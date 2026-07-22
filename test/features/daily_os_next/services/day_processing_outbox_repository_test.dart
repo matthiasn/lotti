@@ -83,6 +83,26 @@ void main() {
     },
   );
 
+  test(
+    'same dayId and kind but a differing payload also rejects as a '
+    'conflicting immutable intent',
+    () async {
+      await enqueue();
+
+      final conflict = repository.enqueueTranscription(
+        dayId: 'dayplan-2026-07-18',
+        activityEntryId: 'activity-1',
+        recordingSessionId: 'session-1',
+        audioId: 'audio-1',
+        audioPath: path.join(root.path, 'a-different-file.wav'),
+        capturedAt: DateTime.utc(2026, 7, 18, 7, 40),
+      );
+
+      await expectLater(conflict, throwsA(isA<DayProcessingIntentConflict>()));
+      expect((await repository.getAll()).single.dayId, 'dayplan-2026-07-18');
+    },
+  );
+
   test('default claim tokens are UUIDs', () async {
     await repository.dispose();
     repository = DayProcessingOutboxRepository(

@@ -547,10 +547,17 @@ class RealDayAgent implements DayAgentInterface {
 
     subscription = outbox.changes.listen((_) => unawaited(checkTerminal()));
     ticker = Timer.periodic(_cancelCheckInterval, (timer) {
+      // Dart's event loop always drains the microtask queue — including
+      // `whenComplete`'s `ticker?.cancel()` below — before the next Timer
+      // callback runs, so this tick can never observe `isCompleted` true
+      // through legitimate single-threaded scheduling. Kept as a genuine
+      // belt-and-suspenders guard against relying on that guarantee.
+      // coverage:ignore-start
       if (completer.isCompleted) {
         timer.cancel();
         return;
       }
+      // coverage:ignore-end
       if (isCancelled?.call() ?? false) {
         completer.completeError(
           const DayAgentInteractionException('cancelled by caller'),
