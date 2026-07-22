@@ -104,7 +104,7 @@ class SidebarLiveCard extends StatelessWidget {
                               glyph: glyph,
                               pulse: pulse,
                             ),
-                            SizedBox(width: tokens.spacing.step3),
+                            SizedBox(width: tokens.spacing.step2),
                             Expanded(
                               child: Text(
                                 statusLabel,
@@ -118,7 +118,7 @@ class SidebarLiveCard extends StatelessWidget {
                                     ),
                               ),
                             ),
-                            SizedBox(width: tokens.spacing.step3),
+                            SizedBox(width: tokens.spacing.step2),
                             Text(
                               timeText,
                               style: tokens.typography.styles.subtitle.subtitle1
@@ -127,7 +127,7 @@ class SidebarLiveCard extends StatelessWidget {
                                     fontFeatures: numericBadgeFontFeatures,
                                   ),
                             ),
-                            SizedBox(width: tokens.spacing.step3),
+                            SizedBox(width: tokens.spacing.step2),
                             trailing,
                           ],
                         ),

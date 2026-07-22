@@ -1123,7 +1123,7 @@ void main() {
         // surface, with the entry body carded on top of it.
         expect(scaffold.backgroundColor, dsPageSurface(context));
 
-        // Content is centered under the 760px measure so wide split panes do
+        // Content is centered under the 960px measure so wide split panes do
         // not produce unreadably long lines (same cap as the tasks detail).
         final constrained = tester.widget<ConstrainedBox>(
           find
@@ -1133,7 +1133,7 @@ void main() {
               )
               .first,
         );
-        expect(constrained.constraints.maxWidth, 760);
+        expect(constrained.constraints.maxWidth, 960);
       },
     );
 
