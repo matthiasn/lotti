@@ -404,17 +404,21 @@ class _CursorPainter extends CustomPainter {
 /// confirms the rebuild still lands correctly on the next frame — this is
 /// `IntegrationTestWidgetsFlutterBinding` treating a caught-but-harmless
 /// `FlutterError` as fatal, not an actually broken UI (every step after it
-/// keeps completing normally). Matches narrowly so any other `FlutterError`
-/// still fails the test as usual, and restores the previous handler once
-/// the test ends.
+/// keeps completing normally). Only installed for mobile runs (the only
+/// device where this race has been observed) and matches the full captured
+/// signature narrowly, so any other `FlutterError` — on mobile or desktop —
+/// still fails the test as usual; restores the previous handler once the
+/// test ends.
 void _ignoreBenignOverlayRebuildRace() {
+  if (!tutorialDeviceIsMobile()) return;
   final previousOnError = FlutterError.onError;
   FlutterError.onError = (details) {
     final message = details.exceptionAsString();
     if (message.contains(
           'setState() or markNeedsBuild() called during build',
         ) &&
-        message.contains('UncontrolledProviderScope')) {
+        message.contains('UncontrolledProviderScope') &&
+        message.contains('_OverlayEntryWidget')) {
       return;
     }
     previousOnError?.call(details);

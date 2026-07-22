@@ -38,7 +38,7 @@
     <release version="0.9.1060" date="2026-07-22">
       <description>
         <p>The Manual's five walkthrough videos are now available in every language Lotti supports (previously English and German only): French, Italian, Spanish, Czech, Dutch, Romanian, Portuguese, Danish, and Swedish.</p>
-        <p>Manual videos now have a mobile-view variant, matching the existing screenshot toggle. The same mobile/desktop switch that already controlled screenshots now also switches the walkthrough videos, and visiting the Manual from a phone or narrow window defaults both to mobile view automatically.</p>
+        <p>Manual videos now have a mobile-view variant, matching the existing screenshot toggle. The same mobile/desktop switch that already controlled screenshots now also switches the walkthrough videos, and first-time visits from a phone or narrow window default both to mobile view automatically; saved viewport preferences continue to take precedence.</p>
         <p>Voice captures now survive the app closing before they're parsed: submitting or retrying a Daily OS capture queues its parsing durably, so backgrounding or killing the app between recording and parsing no longer loses the parse — it runs when the app reopens.</p>
         <p>Fixed: same-day plans can no longer schedule new blocks in the past. The drafting guard now covers buffer blocks too; only imported calendar events — which legitimately span the current moment — are exempt.</p>
         <p>Fixed: the Settings destination is readable again in Italian and Swedish. Several Settings-related labels showed "Impostazioni delle impostazioni" in Italian and "Miljöer" in Swedish instead of "Settings" — now "Impostazioni" and "Inställningar".</p>
