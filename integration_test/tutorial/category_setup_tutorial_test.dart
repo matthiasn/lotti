@@ -27,31 +27,7 @@ void main() {
 
   final manifest = TutorialManifest.fromEnvironment();
   final locale = manualScreenshotLocaleFromEnvironment(Platform.environment);
-  String localized({
-    required String en,
-    required String de,
-    String? fr,
-    String? it,
-    String? es,
-    String? cs,
-    String? nl,
-    String? ro,
-    String? pt,
-    String? da,
-    String? sv,
-  }) => manualScreenshotText(
-    en: en,
-    de: de,
-    fr: fr,
-    it: it,
-    es: es,
-    cs: cs,
-    nl: nl,
-    ro: ro,
-    pt: pt,
-    da: da,
-    sv: sv,
-  );
+  const localized = manualScreenshotText;
 
   testWidgets(
     'drives the category-setup tutorial flow',
