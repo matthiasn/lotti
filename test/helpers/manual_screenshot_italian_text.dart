@@ -269,7 +269,7 @@ const _copy = <String, String>{
   "Human Maintenance": "Manutenzione umana",
   "Tasks": "Compiti",
   "Logbook": "Regime di registro",
-  "Settings": "Impostazioni delle impostazioni",
+  "Settings": "Impostazioni",
   "Manual": "Manuale",
   "Opens in your browser": "Si apre nel tuo browser",
   "Calendar": "Calendario",

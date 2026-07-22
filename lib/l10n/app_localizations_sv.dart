@@ -757,7 +757,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentSoulsEmptyFiltered => 'Inga själar matchar dina filter.';
 
   @override
-  String get agentSoulSettingsTab => 'Miljöer';
+  String get agentSoulSettingsTab => 'Inställningar';
 
   @override
   String get agentSoulsSearchPlaceholder => 'Sök själar...';
@@ -942,7 +942,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTemplatesEmptyFiltered => 'Inga mallar matchar dina filter.';
 
   @override
-  String get agentTemplateSettingsTab => 'Miljöer';
+  String get agentTemplateSettingsTab => 'Inställningar';
 
   @override
   String get agentTemplatesFilterSectionKind => 'Typ';
@@ -6623,7 +6623,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get loggingDomainScreenshots => 'Skärmdumpar';
 
   @override
-  String get loggingDomainSettings => 'Miljöer';
+  String get loggingDomainSettings => 'Inställningar';
 
   @override
   String get loggingDomainSpeech => 'Tal och ljud';
@@ -7139,7 +7139,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navTabTitleProjects => 'Projekt';
 
   @override
-  String get navTabTitleSettings => 'Miljöer';
+  String get navTabTitleSettings => 'Inställningar';
 
   @override
   String get navTabTitleTasks => 'Uppgifter';
@@ -9460,7 +9460,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Välj en underinställning till vänster.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Miljöer';
+  String get settingsV2DetailRootCrumb => 'Inställningar';
 
   @override
   String get settingsV2EmptyStateBody =>

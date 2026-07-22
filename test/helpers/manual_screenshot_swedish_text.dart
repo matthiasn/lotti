@@ -264,7 +264,7 @@ const _copy = <String, String>{
   "Human Maintenance": "Mänskligt underhåll",
   "Tasks": "Uppgifter",
   "Logbook": "Loggbok",
-  "Settings": "Miljöer",
+  "Settings": "Inställningar",
   "Manual": "Manuell",
   "Opens in your browser": "Öppnas i din webbläsare",
   "Calendar": "Kalender",

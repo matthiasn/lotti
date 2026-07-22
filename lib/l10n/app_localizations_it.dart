@@ -762,7 +762,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessuna anima corrisponde ai tuoi filtri.';
 
   @override
-  String get agentSoulSettingsTab => 'Impostazioni delle impostazioni';
+  String get agentSoulSettingsTab => 'Impostazioni';
 
   @override
   String get agentSoulsSearchPlaceholder => 'Cerca anime...';
@@ -948,7 +948,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessun modello corrisponde ai tuoi filtri.';
 
   @override
-  String get agentTemplateSettingsTab => 'Impostazioni delle impostazioni';
+  String get agentTemplateSettingsTab => 'Impostazioni';
 
   @override
   String get agentTemplatesFilterSectionKind => 'Tipo...';
@@ -6705,7 +6705,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get loggingDomainScreenshots => 'Proiezioni';
 
   @override
-  String get loggingDomainSettings => 'Impostazioni delle impostazioni';
+  String get loggingDomainSettings => 'Impostazioni';
 
   @override
   String get loggingDomainSpeech => 'Discorso e audio';
@@ -7234,7 +7234,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get navTabTitleProjects => 'Progetti';
 
   @override
-  String get navTabTitleSettings => 'Impostazioni delle impostazioni';
+  String get navTabTitleSettings => 'Impostazioni';
 
   @override
   String get navTabTitleTasks => 'Compiti';
@@ -9588,7 +9588,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsV2CategoryEmptyBody => 'Scegli un sub-setting a sinistra.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Impostazioni delle impostazioni';
+  String get settingsV2DetailRootCrumb => 'Impostazioni';
 
   @override
   String get settingsV2EmptyStateBody =>

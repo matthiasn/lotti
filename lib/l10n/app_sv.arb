@@ -376,7 +376,7 @@
   },
   "agentSoulSelectTitle": "Välj själ",
   "agentSoulsEmptyFiltered": "Inga själar matchar dina filter.",
-  "agentSoulSettingsTab": "Miljöer",
+  "agentSoulSettingsTab": "Inställningar",
   "agentSoulsSearchPlaceholder": "Sök själar...",
   "agentSoulsTitle": "Själar",
   "agentSoulToneBoundsLabel": "Tongränser",
@@ -550,7 +550,7 @@
     "description": "Title for the template selection dialog when creating an agent."
   },
   "agentTemplatesEmptyFiltered": "Inga mallar matchar dina filter.",
-  "agentTemplateSettingsTab": "Miljöer",
+  "agentTemplateSettingsTab": "Inställningar",
   "@agentTemplateSettingsTab": {
     "description": "Tab label for the settings tab in agent template detail."
   },
@@ -3229,7 +3229,7 @@
   "loggingDomainPersistence": "Beständighet",
   "loggingDomainRatings": "Tittarsiffror",
   "loggingDomainScreenshots": "Skärmdumpar",
-  "loggingDomainSettings": "Miljöer",
+  "loggingDomainSettings": "Inställningar",
   "loggingDomainSpeech": "Tal och ljud",
   "loggingDomainSync": "Synk",
   "loggingDomainTasks": "Uppgifter och checklistor",
@@ -3465,7 +3465,7 @@
   "navTabTitleJournal": "Loggbok",
   "navTabTitleMore": "Mer",
   "navTabTitleProjects": "Projekt",
-  "navTabTitleSettings": "Miljöer",
+  "navTabTitleSettings": "Inställningar",
   "navTabTitleTasks": "Uppgifter",
   "nestedAiResponsesTitle": "{count} AI-respons{count, plural, =1{} other{s}}",
   "@nestedAiResponsesTitle": {
@@ -4477,7 +4477,7 @@
   "settingsThemingSubtitle": "Anpassa appens utseende och teman",
   "settingsThemingTitle": "Tematisering",
   "settingsV2CategoryEmptyBody": "Välj en underinställning till vänster.",
-  "settingsV2DetailRootCrumb": "Miljöer",
+  "settingsV2DetailRootCrumb": "Inställningar",
   "settingsV2EmptyStateBody": "Välj en sektion till vänster för att börja.",
   "settingsV2ResizeHandleLabel": "Ändra storleksinställningsträd",
   "settingsV2UnimplementedTitle": "Panelen har ännu inte implementerats",

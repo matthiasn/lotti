@@ -119,14 +119,14 @@ void main() {
                 en: 'Settings',
                 de: 'Einstellungen',
                 fr: 'Paramètres',
-                it: 'Impostazioni delle impostazioni',
+                it: 'Impostazioni',
                 es: 'Ajustes',
                 cs: 'Nastavení',
                 nl: 'Instellingen',
                 ro: 'Setări',
                 pt: 'Configurações',
                 da: 'Indstillinger',
-                sv: 'Miljöer',
+                sv: 'Inställningar',
               ),
             )
             .hitTestable();
