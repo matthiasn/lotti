@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed (draft for review; no implementation has begun)
+Accepted (phases 1–2 implemented; phases 3–6 remain proposed). See
+Amendments below for where the implementation diverged from this ADR's
+original text.
 
 ## Date
 
@@ -432,6 +434,62 @@ code it is scheduled to replace.
 6. **Coordinator slimming + migration cleanup** — remove per-day sections
    from the coordinator prompt, verify its log growth is distilled-only,
    and measure token spend before/after via template token stats.
+
+## Amendments (phases 1–2 implementation)
+
+Recorded where the shipped implementation diverged from this ADR's original
+text, discovered while implementing rather than corrected by rewriting the
+Decision section in place.
+
+- **No `globalObservations` / `dayCaptures(dayId)` checkpoint scopes exist.**
+  §"What already exists" claimed scoped compaction checkpoints as reusable
+  substrate; the codebase only ever had one checkpoint chain per `agentId`
+  plus a runtime day-filter over `CaptureEntity` rows. There was nothing to
+  seed a new per-day agent's log *from* — see the next point.
+- **Migration is day-forward cutover, not seeding.** §8 proposed seeding a
+  new per-day agent's log from existing checkpoints/capture events for
+  recent/open days. Since no such checkpoints exist, and re-parenting
+  captures/observations onto a new identity is itself risky, the shipped
+  rule is simpler: `DayAgentService.getOrCreateDayAgentForDate` creates a
+  fresh `day_agent:<dayId>` identity only for days the coordinator does not
+  already own (no existing plan or capture under the coordinator for that
+  day). Every day the coordinator already touched — all history up to the
+  cutover — stays under the coordinator's identity permanently. No data
+  migrates.
+- **`day_agent` kind is shared, not new.** §"What already exists" undersold
+  this: `AgentKinds.dayAgent` was already the *only* kind the monolithic
+  planner ran under. Per-day agents reuse the identical kind and workflow
+  (`DayAgentWorkflow`); the coordinator and per-day agents are distinguished
+  by id shape (`daily_os_planner` vs. `day_agent:<dayId>`, see
+  `day_agent_identity.dart`), not by kind.
+- **Knowledge stays coordinator-keyed, always.** §4 said the per-day prompt's
+  knowledge index is "coordinator-published"; implemented literally: durable
+  knowledge is read under `dailyOsPlannerAgentId` on every wake (coordinator
+  or per-day), and a per-day agent's `propose_knowledge` tool calls persist
+  under the coordinator's id too — there is no per-day knowledge store.
+- **Directive/status protocol (phase 3: `DayDirectiveEntity`,
+  `DayStatusEvent`) is not implemented.** The coordinator does not yet issue
+  directives or receive per-day status events; a per-day agent currently has
+  no commitments/capacity input beyond what its own day's captures and the
+  coordinator's knowledge provide. Pushback (§3) is not yet grounded in a
+  structured ledger.
+- **No dormancy automation.** §1 described bounded-not-ephemeral per-day
+  agents going `dormant` after day close. No day-close lifecycle exists yet
+  (shutdown/reflection tools are still mocked in `RealDayAgent`), so per-day
+  agents simply stay `active` indefinitely once created — an accepted
+  follow-up, not a regression, since nothing today would trigger dormancy
+  correctly.
+- **Phase 1 durable jobs cover `draftPlan`/`refinePlan`, not
+  `parseCapture`.** The `DayProcessingJobKind.parseCapture` job kind,
+  `DayProcessingOutboxRepository.enqueueParseCapture`, and the executor's
+  dispatch for it are implemented and tested, but `DayAgentCaptureService`'s
+  capture-submit path was not rewired to use them in this slice — it still
+  enqueues a wake directly via `WakeOrchestrator.enqueueManualWake`. Capture
+  intent itself is durable (the `CaptureEntity` is persisted before any
+  wake); only the *wake* that parses it is volatile, same as before phase 1.
+  Wiring `submitCapture`/`retryCapture` onto the durable `parseCapture` job
+  is a scoped, low-risk follow-up using infrastructure that already exists
+  and is tested.
 
 ## Related
 

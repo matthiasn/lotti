@@ -285,6 +285,25 @@ All tests in this codebase must use **deterministic time control** instead of re
 4. **Exception**: Tests validating real I/O (network, file system, OS integration) may use real time when necessary
 5. **Exception**: `integration_test/tutorial/` is a video driver, not a CI verification suite — it paces the real app at human speed for screen recording (see `tools/tutorial_videos/README.md`) and intentionally uses wall-clock `Stopwatch` + live pumps. These files are tagged `tutorial-video` (see `dart_test.yaml`) and `make integration_test` runs with `--exclude-tags tutorial-video`, so they never run under plain `flutter test` (no window, and they require `LOTTI_TUTORIAL_MANIFEST`/`LOTTI_TUTORIAL_TIMELINE` env vars). They run only via `fvm flutter drive`, driven by the `tools/tutorial_videos` workbench or the `tutorial-videos` skill.
 
+### `fakeAsync` does not fake real file I/O
+
+`fakeAsync` only intercepts `Timer` and the synchronous microtask queue — it
+does **not** fake `dart:io` callbacks (file reads/writes go through the real
+event loop). A test that drives cancellation/timeout timers via
+`async.elapse()`/`async.flushMicrotasks()` while depending on a real
+file-backed repository (e.g. `DayProcessingOutboxRepository` constructed with
+a real `rootDirectory`) will hang or silently never observe the file I/O's
+result, because the real I/O never gets a chance to complete inside the fake
+clock's synchronous world. If a class under test needs both fakeAsync-driven
+timers *and* a normally file-backed collaborator, mock the collaborator (its
+methods resolve via plain `Future`s/microtasks, which fakeAsync handles fine)
+instead of wiring the real implementation — see
+`test/features/daily_os_next/logic/real_day_agent_test.dart`'s
+`_FakeOutboxState` (a `MockDayProcessingOutboxRepository` backed by an
+in-memory map) for the pattern. Real-repository integration behavior (enqueue
+coalescing, claim/lease, retry backoff) still belongs in that repository's own
+test file, exercised with plain `async`/`await`, not fakeAsync.
+
 ## Retry & Timeout Testing
 
 ### Helpers
