@@ -8,6 +8,15 @@ scenario: task_coding_prompt
 title:
   en: Turn a coding task into an AI-ready prompt
   de: Aus einer Coding-Aufgabe ein KI-Prompt machen
+  fr: Transformer une tâche de code en prompt prêt pour l'IA
+  it: Trasforma un'attività di coding in un prompt pronto per l'IA
+  es: Convierte una tarea de programación en un prompt listo para la IA
+  cs: Z programátorského úkolu hotový prompt pro AI
+  nl: Van een codeertaak naar een kant-en-klare AI-prompt
+  ro: Transformați o sarcină de codare într-un prompt gata pentru AI
+  pt: Transforme uma tarefa de código em um prompt pronto para IA
+  da: Gør en kodeopgave til en AI-klar prompt
+  sv: Gör en kodningsuppgift till en AI-klar prompt
 
 dictionary:
   en:
@@ -16,6 +25,33 @@ dictionary:
   de:
     - Projekt Waddle
     - Telemetrie
+  fr:
+    - Projet Waddle
+    - télémétrie
+  it:
+    - Progetto Waddle
+    - telemetria
+  es:
+    - Proyecto Waddle
+    - telemetría
+  cs:
+    - Projekt Waddle
+    - telemetrie
+  nl:
+    - Project Waddle
+    - telemetrie
+  ro:
+    - Proiect Waddle
+    - telemetrie
+  pt:
+    - Projeto Waddle
+    - telemetria
+  da:
+    - Projekt Waddle
+    - telemetri
+  sv:
+    - Projekt Waddle
+    - telemetri
 
 steps:
   - id: intro
@@ -28,6 +64,40 @@ steps:
         Komplexe Coding-Aufgabe? Lotti verwandelt alles, was du dazu
         gesammelt hast, in einen fertigen Prompt für deinen KI-Coding-
         Assistenten.
+      fr: >-
+        Une tâche de code complexe ? Lotti transforme tout ce que tu as
+        rassemblé à son sujet en un prompt soigné pour ton assistant de
+        codage IA.
+      it: >-
+        Un'attività di coding complessa? Lotti trasforma tutto quello che
+        hai raccolto in un prompt curato per il tuo assistente di coding
+        IA.
+      es: >-
+        ¿Una tarea de programación complicada? Lotti convierte todo lo que
+        has reunido sobre ella en un prompt pulido para tu asistente de
+        programación con IA.
+      cs: >-
+        Složitý programátorský úkol? Lotti promění vše, co jsi k němu
+        shromáždil, v jeden hotový prompt pro tvého AI asistenta pro
+        programování.
+      nl: >-
+        Een complexe codeertaak? Lotti verandert alles wat je erover hebt
+        verzameld in één verzorgde prompt voor je AI-codeerassistent.
+      ro: >-
+        O sarcină de codare complexă? Lotti transformă tot ce ați adunat
+        despre ea într-un prompt bine pus la punct pentru asistentul dvs.
+        de codare cu AI.
+      pt: >-
+        Uma tarefa de código complexa? A Lotti transforma tudo o que você
+        reuniu sobre ela em um prompt caprichado para o seu assistente de
+        codificação com IA.
+      da: >-
+        Et komplekst kodeprojekt? Lotti forvandler alt, hvad du har samlet
+        om det, til én velpudset prompt til din AI-kodeassistent.
+      sv: >-
+        En komplicerad kodningsuppgift? Lotti förvandlar allt du har
+        samlat om den till en genomarbetad prompt till din
+        AI-kodningsassistent.
 
   - id: open_task
     min_duration: 4.0
@@ -39,6 +109,41 @@ steps:
         Hier ist eine echte: das Refactoring des Telemetrie-Dienstes im
         Pinguin-Habitat — mit Beschreibung und einer Checkliste voller
         Anforderungen.
+      fr: >-
+        En voici une vraie : le refactoring du service de télémétrie de
+        l'habitat des pingouins — avec une description et une checklist
+        pleine d'exigences.
+      it: >-
+        Eccone una vera: il refactoring del servizio di telemetria
+        dell'habitat dei pinguini — con una descrizione e una checklist
+        piena di requisiti.
+      es: >-
+        Aquí tienes una de verdad: la refactorización del servicio de
+        telemetría del hábitat de los pingüinos — con una descripción y
+        una lista de comprobación llena de requisitos.
+      cs: >-
+        Tady je jeden skutečný: refaktoring telemetrické služby v
+        tučňáčím výběhu — s popisem a checklistem plným požadavků.
+      nl: >-
+        Hier is een echte: het refactoren van de telemetrieservice van
+        het pinguïnverblijf — met een beschrijving en een checklist vol
+        vereisten.
+      ro: >-
+        Iată una reală: refactorizarea serviciului de telemetrie din
+        habitatul pinguinilor — cu o descriere și o listă de verificare
+        plină de cerințe.
+      pt: >-
+        Aqui vai uma de verdade: a refatoração do serviço de telemetria
+        do habitat dos pinguins — com uma descrição e uma checklist cheia
+        de requisitos.
+      da: >-
+        Her er en rigtig en: refaktorering af telemetri-tjenesten i
+        pingvinindhegningen — med en beskrivelse og en tjekliste fuld af
+        krav.
+      sv: >-
+        Här är en riktig: refaktoreringen av telemetritjänsten i
+        pingvinhägnet — med en beskrivning och en checklista full av
+        krav.
 
   - id: review_transcript
     min_duration: 4.0
@@ -49,6 +154,38 @@ steps:
       de: >-
         Alles begann mit einer kurzen Sprachnotiz zur aktuellen Situation —
         hier ist das Transkript, direkt mit der Aufgabe verknüpft.
+      fr: >-
+        Tout a commencé par une petite note vocale sur ce qui se passait
+        vraiment — voici la transcription, reliée directement à la
+        tâche.
+      it: >-
+        È iniziato tutto con un breve appunto vocale su cosa stava
+        succedendo davvero — ecco la trascrizione, collegata direttamente
+        all'attività.
+      es: >-
+        Todo empezó con una nota de voz rápida sobre lo que realmente
+        estaba pasando — aquí está la transcripción, vinculada
+        directamente a la tarea.
+      cs: >-
+        Vše začalo krátkou hlasovou poznámkou o tom, co se vlastně děje —
+        tady je přepis, propojený přímo s úkolem.
+      nl: >-
+        Het begon met een korte spraaknotitie over wat er eigenlijk aan
+        de hand was — hier is het transcript, rechtstreeks gekoppeld aan
+        de taak.
+      ro: >-
+        Totul a început cu o scurtă notă vocală despre ce se întâmplă de
+        fapt — iată transcrierea, conectată direct la sarcină.
+      pt: >-
+        Tudo começou com uma nota de voz rápida sobre o que estava
+        rolando de verdade — aqui está a transcrição, ligada direto à
+        tarefa.
+      da: >-
+        Det hele startede med en hurtig talebesked om, hvad der egentlig
+        foregik — her er transskriptionen, koblet direkte til opgaven.
+      sv: >-
+        Allt började med en snabb röstanteckning om vad som egentligen
+        pågick — här är transkriptionen, kopplad direkt till uppgiften.
 
   - id: generate
     min_duration: 4.0
@@ -59,6 +196,34 @@ steps:
       de: >-
         Öffne das Generieren-Menü an dieser Notiz und wähle „Generate Coding
         Prompt" — Lotti liest den gesamten Aufgabenkontext.
+      fr: >-
+        Ouvre le menu de génération sur cette note et choisis « Generate
+        Coding Prompt » — Lotti lit tout le contexte de la tâche.
+      it: >-
+        Apri il menu genera su quella nota e scegli "Generate Coding
+        Prompt" — Lotti legge l'intero contesto dell'attività.
+      es: >-
+        Abre el menú de generación en esa nota y elige "Generate Coding
+        Prompt" — Lotti lee todo el contexto de la tarea.
+      cs: >-
+        Otevři nabídku generování u této poznámky a vyber „Generate
+        Coding Prompt" — Lotti si přečte celý kontext úkolu.
+      nl: >-
+        Open het genereer-menu bij die notitie en kies "Generate Coding
+        Prompt" — Lotti leest de hele taakcontext.
+      ro: >-
+        Deschideți meniul de generare pentru această notă și alegeți
+        „Generate Coding Prompt" — Lotti citește întregul context al
+        sarcinii.
+      pt: >-
+        Abra o menu de geração nessa nota e escolha "Generate Coding
+        Prompt" — a Lotti lê todo o contexto da tarefa.
+      da: >-
+        Åbn generér-menuen på den note, og vælg "Generate Coding Prompt"
+        — Lotti læser hele opgavens kontekst.
+      sv: >-
+        Öppna generera-menyn på den anteckningen och välj "Generate
+        Coding Prompt" — Lotti läser hela uppgiftens sammanhang.
 
   - id: prompt_ready
     min_duration: 5.0
@@ -69,6 +234,33 @@ steps:
       de: >-
         Ein paar Sekunden Nachdenken — und da ist er: oben eine
         Zusammenfassung, darunter der vollständige Prompt.
+      fr: >-
+        Quelques secondes de réflexion — et le voilà : un résumé en
+        haut, et en dessous, le prompt complet.
+      it: >-
+        Qualche secondo di riflessione — ed eccolo: un riepilogo in alto
+        e sotto, il prompt completo.
+      es: >-
+        Unos segundos pensando — y ahí está: un resumen arriba y debajo,
+        el prompt completo.
+      cs: >-
+        Pár vteřin přemýšlení — a je tu: nahoře shrnutí, pod ním celý
+        prompt.
+      nl: >-
+        Een paar seconden nadenken — en daar is hij: bovenaan een
+        samenvatting, daaronder de volledige prompt.
+      ro: >-
+        Câteva secunde de gândire — și iată-l: sus un rezumat, dedesubt
+        promptul complet.
+      pt: >-
+        Alguns segundos pensando — e aí está: um resumo em cima e,
+        embaixo, o prompt completo.
+      da: >-
+        Et par sekunders eftertanke — og der er den: et resumé øverst,
+        og nedenunder den fulde prompt.
+      sv: >-
+        Några sekunders eftertanke — och där är den: en sammanfattning
+        högst upp, och därunder hela prompten.
 
   - id: scroll_prompt
     min_duration: 10.0
@@ -81,6 +273,42 @@ steps:
         Sieh dir an, was hier drinsteckt: das Ziel, die Rahmenbedingungen,
         jeder Checklisten-Punkt — alles, was ein KI-Assistent braucht, um es
         beim ersten Versuch richtig zu machen.
+      fr: >-
+        Regarde ce qu'il y a dedans : l'objectif, les contraintes, chaque
+        point de la checklist — tout ce dont un assistant IA a besoin
+        pour réussir du premier coup.
+      it: >-
+        Guarda cosa c'è dentro: l'obiettivo, i vincoli, ogni voce della
+        checklist — tutto ciò di cui un assistente IA ha bisogno per
+        farcela al primo tentativo.
+      es: >-
+        Echa un vistazo a lo que hay aquí: el objetivo, las
+        restricciones, cada punto de la lista — todo lo que un asistente
+        de IA necesita para acertar a la primera.
+      cs: >-
+        Podívej se, co se v něm skrývá: cíl, omezení, každá položka
+        checklistu — vše, co AI asistent potřebuje, aby to napoprvé
+        udělal správně.
+      nl: >-
+        Kijk eens wat hier allemaal in zit: het doel, de
+        randvoorwaarden, elk punt van de checklist — alles wat een
+        AI-assistent nodig heeft om het in één keer goed te doen.
+      ro: >-
+        Uitați-vă ce conține: obiectivul, constrângerile, fiecare element
+        din listă — tot ce are nevoie un asistent AI ca să reușească din
+        prima încercare.
+      pt: >-
+        Dá uma olhada no que tem aqui: o objetivo, as restrições, cada
+        item da checklist — tudo o que um assistente de IA precisa para
+        acertar de primeira.
+      da: >-
+        Se, hvad der gemmer sig heri: målet, rammerne, hvert punkt på
+        tjeklisten — alt, hvad en AI-assistent skal bruge for at få det
+        rigtigt første gang.
+      sv: >-
+        Ta en titt på vad som finns här: målet, ramarna, varje punkt i
+        checklistan — allt en AI-assistent behöver för att lyckas på
+        första försöket.
 
   - id: copy_prompt
     min_duration: 4.0
@@ -92,6 +320,35 @@ steps:
         Ein Tipp auf „Prompt kopieren", und er liegt in deiner
         Zwischenablage — bereit für Claude Code, Copilot oder wo auch immer
         du entwickelst.
+      fr: >-
+        Un tap sur « Copier le prompt », et il est dans ton
+        presse-papiers — prêt pour Claude Code, Copilot, ou où que tu
+        développes.
+      it: >-
+        Un tocco su "Copia prompt" e finisce negli appunti — pronto per
+        Claude Code, Copilot o dovunque tu sviluppi.
+      es: >-
+        Un toque en "Copiar prompt" y ya está en tu portapapeles — listo
+        para Claude Code, Copilot o donde sea que programes.
+      cs: >-
+        Jeden klep na „Kopírovat prompt" a je v tvé schránce — připravený
+        pro Claude Code, Copilot nebo kdekoli programuješ.
+      nl: >-
+        Eén tik op "Prompt kopiëren" en hij staat op je klembord — klaar
+        voor Claude Code, Copilot of waar je ook bouwt.
+      ro: >-
+        O atingere pe „Copiază promptul" și acesta ajunge în clipboard —
+        gata pentru Claude Code, Copilot sau oriunde dezvoltați.
+      pt: >-
+        Um toque em "Copiar prompt" e ele já está na sua área de
+        transferência — pronto para o Claude Code, o Copilot ou onde
+        você programar.
+      da: >-
+        Et tryk på "Kopiér prompt", og den ligger på din udklipsholder —
+        klar til Claude Code, Copilot eller hvor du end bygger.
+      sv: >-
+        Ett tryck på "Kopiera prompt" så ligger den i ditt urklipp —
+        redo för Claude Code, Copilot eller var du än kodar.
 
   - id: outro
     min_duration: 3.0
@@ -102,3 +359,30 @@ steps:
       de: >-
         Von verstreuten Notizen zum präzisen Prompt in Sekunden — so
         verlassen Coding-Aufgaben Lotti.
+      fr: >-
+        De notes éparpillées à un prompt précis en quelques secondes —
+        voilà comment les tâches de code quittent Lotti.
+      it: >-
+        Da appunti sparsi a un prompt preciso in pochi secondi — così le
+        attività di coding lasciano Lotti.
+      es: >-
+        De notas dispersas a un prompt preciso en segundos — así es como
+        las tareas de programación salen de Lotti.
+      cs: >-
+        Od roztroušených poznámek k přesnému promptu během pár vteřin —
+        tak opouštějí programátorské úkoly Lotti.
+      nl: >-
+        Van verspreide notities naar een precieze prompt in seconden —
+        zo verlaten codeertaken Lotti.
+      ro: >-
+        De la notițe împrăștiate la un prompt precis în câteva secunde —
+        așa ies sarcinile de codare din Lotti.
+      pt: >-
+        De anotações espalhadas a um prompt preciso em segundos — é
+        assim que as tarefas de código saem da Lotti.
+      da: >-
+        Fra spredte noter til en præcis prompt på få sekunder — sådan
+        forlader kodeopgaver Lotti.
+      sv: >-
+        Från spridda anteckningar till en exakt prompt på några
+        sekunder — så lämnar kodningsuppgifter Lotti.

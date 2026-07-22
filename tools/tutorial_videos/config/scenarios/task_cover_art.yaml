@@ -10,11 +10,38 @@ scenario: task_cover_art
 title:
   en: Let AI create your task's cover art
   de: Lass die KI dein Aufgaben-Titelbild gestalten
+  fr: Laisse l'IA créer la couverture de ta tâche
+  it: Lascia che l'IA crei la copertina della tua attività
+  es: Deja que la IA cree la portada de tu tarea
+  cs: Nech AI vytvořit titulní obrázek tvého úkolu
+  nl: Laat AI de cover van je taak maken
+  ro: Lăsați AI să creeze coperta sarcinii dvs.
+  pt: Deixe a IA criar a capa da sua tarefa
+  da: Lad AI skabe coverbilledet til din opgave
+  sv: Låt AI skapa omslagsbilden till din uppgift
 
 dictionary:
   en:
     - Project Waddle
   de:
+    - Projekt Waddle
+  fr:
+    - Projet Waddle
+  it:
+    - Progetto Waddle
+  es:
+    - Proyecto Waddle
+  cs:
+    - Projekt Waddle
+  nl:
+    - Project Waddle
+  ro:
+    - Proiect Waddle
+  pt:
+    - Projeto Waddle
+  da:
+    - Projekt Waddle
+  sv:
     - Projekt Waddle
 
 steps:
@@ -28,6 +55,41 @@ steps:
         Aufgaben müssen keine Textwüsten sein. In diesem Tutorial gestaltet
         Lottis KI ein Titelbild für eine Aufgabe — direkt aus ihrer
         Beschreibung.
+      fr: >-
+        Les tâches n'ont pas besoin d'être des murs de texte. Dans ce
+        tutoriel, l'IA de Lotti crée une image de couverture pour une
+        tâche — directement à partir de sa description.
+      it: >-
+        Le attività non devono per forza essere muri di testo. In questo
+        tutorial, l'IA di Lotti crea un'immagine di copertina per
+        un'attività — direttamente dalla sua descrizione.
+      es: >-
+        Las tareas no tienen por qué ser muros de texto. En este tutorial,
+        la IA de Lotti crea una imagen de portada para una tarea —
+        directamente a partir de su descripción.
+      cs: >-
+        Úkoly nemusí být jen zdi textu. V tomto tutoriálu vytvoří Lottina
+        AI titulní obrázek úkolu — přímo z jeho popisu.
+      nl: >-
+        Taken hoeven geen muren van tekst te zijn. In deze tutorial maakt
+        Lotti's AI een cover-afbeelding voor een taak — rechtstreeks uit
+        de beschrijving.
+      ro: >-
+        Sarcinile nu trebuie să fie ziduri de text. În acest tutorial,
+        AI-ul Lotti creează o imagine de copertă pentru o sarcină — direct
+        din descrierea acesteia.
+      pt: >-
+        Tarefas não precisam ser paredes de texto. Neste tutorial, a IA da
+        Lotti cria uma imagem de capa para uma tarefa — direto da sua
+        descrição.
+      da: >-
+        Opgaver behøver ikke være tekstmure. I denne tutorial skaber
+        Lottis AI et coverbillede til en opgave — direkte ud fra dens
+        beskrivelse.
+      sv: >-
+        Uppgifter behöver inte vara textväggar. I den här handledningen
+        skapar Lottis AI en omslagsbild till en uppgift — direkt utifrån
+        dess beskrivning.
 
   - id: open_task
     min_duration: 4.0
@@ -38,6 +100,33 @@ steps:
       de: >-
         Hier ist unsere Aufgabe, mit einer Notiz, die beschreibt, worum es
         geht — mehr braucht die KI nicht.
+      fr: >-
+        Voici notre tâche, avec une note qui décrit de quoi il s'agit —
+        cette description est tout ce dont l'IA a besoin.
+      it: >-
+        Ecco la nostra attività, con una nota che descrive di cosa si
+        tratta — questa descrizione è tutto ciò di cui l'IA ha bisogno.
+      es: >-
+        Aquí está nuestra tarea, con una nota que describe de qué se
+        trata — esa descripción es todo lo que la IA necesita.
+      cs: >-
+        Tady je náš úkol s poznámkou, která popisuje, o co jde — víc AI
+        nepotřebuje.
+      nl: >-
+        Hier is onze taak, met een notitie die beschrijft waar het om
+        gaat — die beschrijving is alles wat de AI nodig heeft.
+      ro: >-
+        Iată sarcina noastră, cu o notă care descrie despre ce este
+        vorba — această descriere este tot ce are nevoie AI-ul.
+      pt: >-
+        Aqui está nossa tarefa, com uma nota descrevendo do que se
+        trata — essa descrição é tudo o que a IA precisa.
+      da: >-
+        Her er vores opgave med en note, der beskriver, hvad den handler
+        om — den beskrivelse er alt, AI'en har brug for.
+      sv: >-
+        Här är vår uppgift, med en anteckning som beskriver vad den
+        handlar om — den beskrivningen är allt AI:n behöver.
 
   - id: generate
     min_duration: 4.0
@@ -48,6 +137,33 @@ steps:
       de: >-
         Öffne das Menü der Notiz und wähle „Titelbild generieren" — Lotti
         liest die Beschreibung und legt los.
+      fr: >-
+        Ouvre le menu de la note et choisis « Générer une couverture » —
+        Lotti lit la description et se met au travail.
+      it: >-
+        Apri il menu della nota e scegli "Generare l'arte della
+        copertura" — Lotti legge la descrizione e si mette al lavoro.
+      es: >-
+        Abre el menú de la nota y elige "Generar portada" — Lotti lee la
+        descripción y se pone manos a la obra.
+      cs: >-
+        Otevři menu poznámky a vyber „Vytvořit obálku" — Lotti si přečte
+        popis a dá se do práce.
+      nl: >-
+        Open het menu van de notitie en kies "Omslagkunst genereren" —
+        Lotti leest de beschrijving en gaat aan de slag.
+      ro: >-
+        Deschideți meniul notei și alegeți „Generează copertă" — Lotti
+        citește descrierea și se apucă de treabă.
+      pt: >-
+        Abra o menu da nota e escolha "Gerar capa" — a Lotti lê a
+        descrição e começa a trabalhar.
+      da: >-
+        Åbn notens menu, og vælg "Generer coverkunst" — Lotti læser
+        beskrivelsen og går i gang.
+      sv: >-
+        Öppna anteckningens meny och välj "Generera omslagskonst" — Lotti
+        läser beskrivningen och sätter igång.
 
   - id: generating
     min_duration: 5.0
@@ -58,6 +174,33 @@ steps:
       de: >-
         Ein Moment Bildgenerierung — du kannst das jederzeit schließen, es
         läuft im Hintergrund weiter.
+      fr: >-
+        Un instant de génération d'image — tu peux fermer ceci à tout
+        moment, ça continue en arrière-plan.
+      it: >-
+        Un momento di generazione dell'immagine — puoi chiudere questa
+        schermata quando vuoi, continua in background.
+      es: >-
+        Un momento de generación de imagen — puedes cerrar esto cuando
+        quieras, sigue funcionando en segundo plano.
+      cs: >-
+        Chvilka generování obrázku — můžeš to kdykoli zavřít, poběží dál
+        na pozadí.
+      nl: >-
+        Een moment van beeldgeneratie — je kunt dit altijd sluiten, het
+        blijft op de achtergrond doorlopen.
+      ro: >-
+        Un moment de generare a imaginii — puteți închide acest ecran
+        oricând, continuă în fundal.
+      pt: >-
+        Um momento de geração de imagem — você pode fechar isto a
+        qualquer momento, ela continua em segundo plano.
+      da: >-
+        Et øjeblik med billedgenerering — du kan lukke dette når som
+        helst, det kører videre i baggrunden.
+      sv: >-
+        En stund av bildgenerering — du kan stänga det här när som helst,
+        det fortsätter i bakgrunden.
 
   - id: cover_ready
     min_duration: 5.0
@@ -68,6 +211,33 @@ steps:
       de: >-
         Und da ist es: das generierte Bild landet direkt im Kopf der
         Aufgabe — und auf ihrer Karte in der Liste.
+      fr: >-
+        Et voilà : l'image générée atterrit directement dans l'en-tête de
+        la tâche — et sur sa carte dans la liste.
+      it: >-
+        Ed eccola: l'immagine generata arriva direttamente
+        nell'intestazione dell'attività — e sulla sua scheda nell'elenco.
+      es: >-
+        Y ahí está: la imagen generada aparece directamente en el
+        encabezado de la tarea — y en su tarjeta de la lista.
+      cs: >-
+        A je to tady: vygenerovaný obrázek se objeví přímo v záhlaví
+        úkolu — a na jeho kartě v seznamu.
+      nl: >-
+        En daar is het: de gegenereerde afbeelding verschijnt meteen
+        boven in de taak — en op de kaart van de taak in de lijst.
+      ro: >-
+        Și iat-o: imaginea generată apare direct în antetul sarcinii — și
+        pe cardul sarcinii din listă.
+      pt: >-
+        E aí está: a imagem gerada aparece direto no cabeçalho da
+        tarefa — e no cartão da tarefa na lista.
+      da: >-
+        Og der er det: det genererede billede lander direkte i opgavens
+        header — og på opgavens kort i listen.
+      sv: >-
+        Och där är den: den genererade bilden hamnar direkt i uppgiftens
+        header — och på uppgiftens kort i listan.
 
   - id: outro
     min_duration: 3.0
@@ -77,3 +247,30 @@ steps:
       de: >-
         Ein Tipp, ein Bild, sofortiger Wiedererkennungswert. Probier es mit
         deinen eigenen Aufgaben.
+      fr: >-
+        Un appui, une image, une reconnaissance immédiate. Essaie-le sur
+        tes propres tâches.
+      it: >-
+        Un tocco, un'immagine, riconoscimento immediato. Provalo sulle tue
+        attività.
+      es: >-
+        Un toque, una imagen, reconocimiento instantáneo. Pruébalo con
+        tus propias tareas.
+      cs: >-
+        Jedno ťuknutí, jeden obrázek, okamžité rozpoznání. Vyzkoušej to na
+        svých vlastních úkolech.
+      nl: >-
+        Eén tik, één afbeelding, meteen herkenbaar. Probeer het met je
+        eigen taken.
+      ro: >-
+        O singură atingere, o imagine, recunoaștere instantanee. Încercați
+        cu propriile dvs. sarcini.
+      pt: >-
+        Um toque, uma imagem, reconhecimento instantâneo. Experimente nas
+        suas próprias tarefas.
+      da: >-
+        Ét tryk, ét billede, øjeblikkelig genkendelse. Prøv det med dine
+        egne opgaver.
+      sv: >-
+        Ett tryck, en bild, omedelbar igenkänning. Prova det på dina egna
+        uppgifter.

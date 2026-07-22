@@ -54,8 +54,7 @@ void main() {
 
   final manifest = TutorialManifest.fromEnvironment();
   final locale = manualScreenshotLocaleFromEnvironment(Platform.environment);
-  String localized({required String en, required String de}) =>
-      manualScreenshotText(en: en, de: de);
+  const localized = manualScreenshotText;
 
   testWidgets(
     'drives the create-task-from-audio tutorial flow',
@@ -154,7 +153,21 @@ void main() {
 
       await driver.step('intro', () async {
         final tasksRailItem = find
-            .text(localized(en: 'Tasks', de: 'Aufgaben'))
+            .text(
+              localized(
+                en: 'Tasks',
+                de: 'Aufgaben',
+                fr: 'Tâches',
+                it: 'Compiti',
+                es: 'Tareas',
+                cs: 'Úkoly',
+                nl: 'Taken',
+                ro: 'Sarcini',
+                pt: 'Tarefas',
+                da: 'Opgaver',
+                sv: 'Uppgifter',
+              ),
+            )
             .hitTestable();
         await driver.pumpUntilFound(tasksRailItem);
         await driver.holdUntil(const Duration(seconds: 2));
@@ -217,7 +230,21 @@ void main() {
         await driver.speakIntoMic(manifest.step('record_dictation').dictation!);
 
         final stopControl = find
-            .text(localized(en: 'STOP', de: 'STOPP'))
+            .text(
+              localized(
+                en: 'STOP',
+                de: 'STOPP',
+                fr: 'ARRÊTER',
+                it: 'ARRESTA',
+                es: 'PARAR',
+                cs: 'STOP',
+                nl: 'Stoppen',
+                ro: 'OPRIȚI',
+                pt: 'PARAR',
+                da: 'STOP',
+                sv: 'STOPP',
+              ),
+            )
             .hitTestable();
         await driver.pumpUntilFound(stopControl);
         await driver.tapLikeUser(stopControl);
@@ -305,7 +332,21 @@ void main() {
           driver.timeline.elapsed + const Duration(seconds: 2),
         );
         await driver.scrollIntoView(
-          find.text(localized(en: 'Confirm all', de: 'Alle bestätigen')),
+          find.text(
+            localized(
+              en: 'Confirm all',
+              de: 'Alle bestätigen',
+              fr: 'Tout confirmer',
+              it: 'Confermare tutto',
+              es: 'Confirmar todos',
+              cs: 'Potvrdit vše',
+              nl: 'Alles bevestigen',
+              ro: 'Confirmați toate',
+              pt: 'Confirme tudo',
+              da: 'Bekræft alt',
+              sv: 'Bekräfta allt',
+            ),
+          ),
           scrollable: detailScrollable,
         );
         await driver.holdUntil(
@@ -315,7 +356,19 @@ void main() {
 
       await driver.step('confirm', () async {
         final confirmAll = find.text(
-          localized(en: 'Confirm all', de: 'Alle bestätigen'),
+          localized(
+            en: 'Confirm all',
+            de: 'Alle bestätigen',
+            fr: 'Tout confirmer',
+            it: 'Confermare tutto',
+            es: 'Confirmar todos',
+            cs: 'Potvrdit vše',
+            nl: 'Alles bevestigen',
+            ro: 'Confirmați toate',
+            pt: 'Confirme tudo',
+            da: 'Bekræft alt',
+            sv: 'Bekräfta allt',
+          ),
         );
         await driver.pumpUntilFound(confirmAll);
         if (confirmAll.hitTestable().evaluate().isEmpty) {
@@ -376,7 +429,19 @@ void main() {
       // flight; disposing the ProviderScope mid-wake throws
       // UnmountedRefException after the test and fails the run.
       final thinking = find.text(
-        localized(en: 'Thinking…', de: 'Denkt nach …'),
+        localized(
+          en: 'Thinking…',
+          de: 'Denkt nach …',
+          fr: 'Réflexion…',
+          it: 'Pensando...',
+          es: 'Pensando…',
+          cs: 'Přemýšlí…',
+          nl: 'Denken...',
+          ro: 'Se gândește…',
+          pt: 'Pensando…',
+          da: 'Tænker...',
+          sv: 'Tänker...',
+        ),
       );
       await driver.pumpUntil(
         () => thinking.evaluate().isEmpty,

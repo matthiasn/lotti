@@ -7,12 +7,39 @@ scenario: category_setup
 title:
   en: Set up a category
   de: Eine Kategorie einrichten
+  fr: Configurer une catégorie
+  it: Configura una categoria
+  es: Configura una categoría
+  cs: Nastavit kategorii
+  nl: Een categorie instellen
+  ro: Configurați o categorie
+  pt: Configure uma categoria
+  da: Sæt en kategori op
+  sv: Ställ in en kategori
 
 dictionary:
   en:
     - Iceberg Maintenance
   de:
     - Eisberg-Wartung
+  fr:
+    - Entretien de l'Iceberg
+  it:
+    - Manutenzione dell'Iceberg
+  es:
+    - Mantenimiento del Iceberg
+  cs:
+    - Údržba ledovce
+  nl:
+    - IJsbergonderhoud
+  ro:
+    - Întreținerea Aisbergului
+  pt:
+    - Manutenção do Iceberg
+  da:
+    - Isbjergvedligeholdelse
+  sv:
+    - Isbergsunderhåll
 
 steps:
   - id: intro
@@ -24,6 +51,42 @@ steps:
       de: >-
         Mit Kategorien trennt Lotti deine Lebensbereiche — jede mit eigener
         Farbe, eigenen Standardwerten, eigenem KI-Setup. Legen wir eine an.
+      fr: >-
+        Les catégories permettent à Lotti de séparer les domaines de ta vie —
+        chacune avec sa couleur, ses réglages par défaut, sa propre
+        configuration IA. Créons-en une.
+      it: >-
+        Le categorie sono il modo in cui Lotti separa le aree della tua
+        vita — ognuna con il suo colore, le sue impostazioni predefinite, la
+        sua configurazione IA. Creiamone una.
+      es: >-
+        Las categorías son la forma en que Lotti separa las áreas de tu
+        vida — cada una con su propio color, sus valores predeterminados, su
+        propia configuración de IA. Vamos a crear una.
+      cs: >-
+        Kategorie umožňují Lotti oddělit oblasti tvého života — každá s
+        vlastní barvou, vlastními výchozími hodnotami, vlastním nastavením
+        AI. Pojďme jednu vytvořit.
+      nl: >-
+        Met categorieën houdt Lotti de gebieden van je leven uit elkaar — elk
+        met een eigen kleur, eigen standaardwaarden, eigen AI-setup. Laten we
+        er een aanmaken.
+      ro: >-
+        Categoriile sunt modul în care Lotti separă ariile din viața dvs. —
+        fiecare cu propria culoare, propriile valori implicite, propria
+        configurație AI. Haideți să creăm una.
+      pt: >-
+        Categorias são a forma como o Lotti separa as áreas da sua vida —
+        cada uma com sua própria cor, seus padrões, sua própria configuração
+        de IA. Vamos criar uma.
+      da: >-
+        Kategorier er Lottis måde at holde dine livsområder adskilt på —
+        hver med sin egen farve, sine egne standardværdier, sit eget
+        AI-setup. Lad os oprette en.
+      sv: >-
+        Kategorier är Lottis sätt att hålla dina livsområden isär — var och
+        en med sin egen färg, sina egna standardvärden, sin egen
+        AI-konfiguration. Nu skapar vi en.
 
   - id: open_settings
     min_duration: 3.0
@@ -34,6 +97,31 @@ steps:
       de: >-
         Kategorien wohnen in den Einstellungen — hier ist die Liste mit
         allem, was es schon gibt.
+      fr: >-
+        Les catégories se trouvent dans les réglages — voici la liste, avec
+        tout ce qu'on a déjà.
+      it: >-
+        Le categorie si trovano nelle impostazioni — ecco l'elenco, con
+        tutto quello che abbiamo già.
+      es: >-
+        Las categorías viven en los ajustes — aquí está la lista, con todo
+        lo que ya tenemos.
+      cs: >-
+        Kategorie najdeš v nastavení — tady je seznam se vším, co už máme.
+      nl: >-
+        Categorieën vind je in de instellingen — hier is de lijst met alles
+        wat we al hebben.
+      ro: >-
+        Categoriile se află în setări — iată lista, cu tot ce aveți deja.
+      pt: >-
+        As categorias ficam nas configurações — aqui está a lista, com tudo
+        o que já temos.
+      da: >-
+        Kategorier bor i indstillingerne — her er listen med alt, hvad vi
+        allerede har.
+      sv: >-
+        Kategorier bor i inställningarna — här är listan med allt vi redan
+        har.
 
   - id: create_category
     min_duration: 4.0
@@ -44,6 +132,30 @@ steps:
       de: >-
         Erstelle eine neue, gib ihr einen Namen — Eisberg-Wartung — und leg
         sie an.
+      fr: >-
+        Crée-en une nouvelle, donne-lui un nom — Entretien de l'Iceberg — et
+        valide.
+      it: >-
+        Creane una nuova, dalle un nome — Manutenzione dell'Iceberg — e
+        creala.
+      es: >-
+        Crea una nueva, dale un nombre — Mantenimiento del Iceberg — y
+        créala.
+      cs: >-
+        Vytvoř novou, dej jí jméno — Údržba ledovce — a vytvoř ji.
+      nl: >-
+        Maak een nieuwe aan, geef hem een naam — IJsbergonderhoud — en maak
+        hem aan.
+      ro: >-
+        Creați una nouă, dați-i un nume — Întreținerea Aisbergului — și
+        creați-o.
+      pt: >-
+        Crie uma nova, dê um nome a ela — Manutenção do Iceberg — e crie-a.
+      da: >-
+        Opret en ny, giv den et navn — Isbjergvedligeholdelse — og opret
+        den.
+      sv: >-
+        Skapa en ny, ge den ett namn — Isbergsunderhåll — och skapa den.
 
   - id: configure
     min_duration: 6.0
@@ -56,6 +168,42 @@ steps:
         Direkt nach dem Anlegen landest du im vollen Editor: markiere sie
         als Favorit — und du könntest Standardsprache, KI-Profil und sogar
         ein Sprachwörterbuch festlegen.
+      fr: >-
+        Juste après la création, tu arrives dans l'éditeur complet :
+        marque-la comme favorite — et tu pourrais définir une langue par
+        défaut, un profil IA, voire un dictionnaire vocal.
+      it: >-
+        Subito dopo la creazione, arrivi nell'editor completo: contrassegnala
+        come preferita — e potresti impostare una lingua predefinita, un
+        profilo IA, persino un dizionario vocale.
+      es: >-
+        Justo después de crearla, llegas al editor completo: márcala como
+        favorita — y podrías configurar un idioma predeterminado, un perfil
+        de IA, incluso un diccionario de voz.
+      cs: >-
+        Hned po vytvoření se ocitneš v plném editoru: označ ji jako
+        oblíbenou — a mohl bys nastavit výchozí jazyk, profil AI, dokonce i
+        hlasový slovník.
+      nl: >-
+        Meteen na het aanmaken kom je in de volledige editor terecht:
+        markeer hem als favoriet — en je zou een standaardtaal, een
+        AI-profiel, zelfs een spraakwoordenboek kunnen instellen.
+      ro: >-
+        Imediat după creare, ajungeți în editorul complet: marcați-o ca
+        favorită — și ați putea seta o limbă implicită, un profil AI, chiar
+        și un dicționar vocal.
+      pt: >-
+        Logo após criar, você chega ao editor completo: marque-a como
+        favorita — e você poderia definir um idioma padrão, um perfil de
+        IA, até um dicionário de fala.
+      da: >-
+        Lige efter oprettelsen lander du i den fulde editor: markér den som
+        favorit — og du kunne indstille et standardsprog, en AI-profil,
+        endda en taleordbog.
+      sv: >-
+        Direkt efter skapandet hamnar du i den fullständiga redigeraren:
+        markera den som favorit — och du skulle kunna ställa in ett
+        standardspråk, en AI-profil, till och med en talordbok.
 
   - id: save_category
     min_duration: 3.0
@@ -66,6 +214,33 @@ steps:
       de: >-
         Speichern, und die Kategorie ist fertig — zurück in der Liste, mit
         Farbe und Stern.
+      fr: >-
+        Enregistre, et la catégorie est prête — de retour dans la liste,
+        avec sa couleur et son étoile.
+      it: >-
+        Salva, e la categoria è pronta — di nuovo nell'elenco, con il suo
+        colore e la sua stella.
+      es: >-
+        Guarda, y la categoría está lista — de vuelta en la lista, con su
+        color y su estrella.
+      cs: >-
+        Ulož, a kategorie je hotová — zpátky v seznamu, se svou barvou a
+        hvězdičkou.
+      nl: >-
+        Opslaan, en de categorie is klaar — terug in de lijst, met zijn
+        kleur en zijn ster.
+      ro: >-
+        Salvați, și categoria este gata — înapoi în listă, cu culoarea și
+        steaua ei.
+      pt: >-
+        Salve, e a categoria está pronta — de volta à lista, com sua cor e
+        sua estrela.
+      da: >-
+        Gem, og kategorien er klar — tilbage på listen med sin farve og sin
+        stjerne.
+      sv: >-
+        Spara, och kategorin är klar — tillbaka i listan med sin färg och
+        sin stjärna.
 
   - id: outro
     min_duration: 3.0
@@ -76,3 +251,31 @@ steps:
       de: >-
         Mehr braucht es nicht. Ab jetzt können Aufgaben, Einträge und sogar
         die KI den Regeln dieser Kategorie folgen.
+      fr: >-
+        C'est tout ce qu'il faut. À partir de maintenant, les tâches, les
+        entrées, et même l'IA peuvent suivre les règles de cette catégorie.
+      it: >-
+        Non serve altro. Da ora in poi, le attività, le voci, e persino
+        l'IA possono seguire le regole di questa categoria.
+      es: >-
+        Eso es todo lo que hace falta. A partir de ahora, las tareas, las
+        entradas, e incluso la IA pueden seguir las reglas de esta
+        categoría.
+      cs: >-
+        Víc není potřeba. Od teď se úkoly, záznamy, a dokonce i AI mohou
+        řídit pravidly této kategorie.
+      nl: >-
+        Meer is er niet voor nodig. Vanaf nu kunnen taken, items, en zelfs
+        de AI de regels van deze categorie volgen.
+      ro: >-
+        Asta e tot ce trebuie. De acum, sarcinile, intrările și chiar și
+        AI-ul pot urma regulile acestei categorii.
+      pt: >-
+        É só isso que é preciso. A partir de agora, tarefas, entradas, e
+        até a IA podem seguir as regras dessa categoria.
+      da: >-
+        Det er alt, hvad der skal til. Fra nu af kan opgaver, indlæg, og
+        selv AI'en følge denne kategoris regler.
+      sv: >-
+        Mer krävs inte. Från och med nu kan uppgifter, anteckningar, och
+        till och med AI:n följa den här kategorins regler.

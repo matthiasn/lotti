@@ -27,8 +27,7 @@ void main() {
 
   final manifest = TutorialManifest.fromEnvironment();
   final locale = manualScreenshotLocaleFromEnvironment(Platform.environment);
-  String localized({required String en, required String de}) =>
-      manualScreenshotText(en: en, de: de);
+  const localized = manualScreenshotText;
 
   testWidgets(
     'drives the category-setup tutorial flow',
@@ -91,7 +90,21 @@ void main() {
 
       await driver.step('intro', () async {
         final settingsRailItem = find
-            .text(localized(en: 'Settings', de: 'Einstellungen'))
+            .text(
+              localized(
+                en: 'Settings',
+                de: 'Einstellungen',
+                fr: 'Paramètres',
+                it: 'Impostazioni',
+                es: 'Ajustes',
+                cs: 'Nastavení',
+                nl: 'Instellingen',
+                ro: 'Setări',
+                pt: 'Configurações',
+                da: 'Indstillinger',
+                sv: 'Inställningar',
+              ),
+            )
             .hitTestable();
         await driver.pumpUntilFound(settingsRailItem);
         await driver.holdUntil(const Duration(seconds: 2));
@@ -102,13 +115,41 @@ void main() {
         // Categories lives under the "Definitions" settings section
         // (habits, categories, labels, ...), not as a top-level tile.
         final definitionsTile = find
-            .text(localized(en: 'Definitions', de: 'Definitionen'))
+            .text(
+              localized(
+                en: 'Definitions',
+                de: 'Definitionen',
+                fr: 'Définitions',
+                it: 'Definizioni',
+                es: 'Definiciones',
+                cs: 'Definice',
+                nl: 'Definities',
+                ro: 'Definiții',
+                pt: 'Definições',
+                da: 'Definitioner',
+                sv: 'Definitioner',
+              ),
+            )
             .hitTestable();
         await driver.pumpUntilFound(definitionsTile);
         await driver.tapLikeUser(definitionsTile.first);
 
         final categoriesTile = find
-            .text(localized(en: 'Categories', de: 'Kategorien'))
+            .text(
+              localized(
+                en: 'Categories',
+                de: 'Kategorien',
+                fr: 'Catégories',
+                it: 'Categorie',
+                es: 'Categorías',
+                cs: 'Kategorie',
+                nl: 'Categorieën',
+                ro: 'Categorii',
+                pt: 'Categorias',
+                da: 'Kategorier',
+                sv: 'Kategorier',
+              ),
+            )
             .hitTestable();
         await driver.pumpUntilFound(categoriesTile);
         await driver.tapLikeUser(categoriesTile.first);
@@ -116,7 +157,19 @@ void main() {
         // so assert on the loaded page's own content instead of the route.
         await driver.pumpUntilFound(
           find.text(
-            localized(en: 'Create category', de: 'Kategorie erstellen'),
+            localized(
+              en: 'Create category',
+              de: 'Kategorie erstellen',
+              fr: 'Créer une catégorie',
+              it: 'Creare una categoria',
+              es: 'Crear categoría',
+              cs: 'Vytvořit kategorii',
+              nl: 'Categorie aanmaken',
+              ro: 'Creare categorie',
+              pt: 'Criar categoria',
+              da: 'Opret kategori',
+              sv: 'Skapa kategori',
+            ),
           ),
         );
       });
@@ -124,7 +177,19 @@ void main() {
       await driver.step('create_category', () async {
         final createButton = find
             .text(
-              localized(en: 'Create category', de: 'Kategorie erstellen'),
+              localized(
+                en: 'Create category',
+                de: 'Kategorie erstellen',
+                fr: 'Créer une catégorie',
+                it: 'Creare una categoria',
+                es: 'Crear categoría',
+                cs: 'Vytvořit kategorii',
+                nl: 'Categorie aanmaken',
+                ro: 'Creare categorie',
+                pt: 'Criar categoria',
+                da: 'Opret kategori',
+                sv: 'Skapa kategori',
+              ),
             )
             .hitTestable();
         await driver.pumpUntilFound(createButton);
@@ -146,7 +211,21 @@ void main() {
         );
 
         final createConfirm = find
-            .text(localized(en: 'Create', de: 'Erstellen'))
+            .text(
+              localized(
+                en: 'Create',
+                de: 'Erstellen',
+                fr: 'Créer',
+                it: 'Creare',
+                es: 'Crear',
+                cs: 'Vytvořit',
+                nl: 'Aanmaken',
+                ro: 'Creați',
+                pt: 'Criar',
+                da: 'Opret',
+                sv: 'Skapa',
+              ),
+            )
             .hitTestable();
         await driver.pumpUntilFound(createConfirm);
         await driver.tapLikeUser(createConfirm.first);
@@ -168,7 +247,19 @@ void main() {
         // independently-tappable switch to find — tap the row via its
         // title text instead, which sits inside the InkWell's hit area.
         final favoriteLabel = find.text(
-          localized(en: 'Favorite', de: 'Favorit'),
+          localized(
+            en: 'Favorite',
+            de: 'Favorit',
+            fr: 'Favori',
+            it: 'Preferito',
+            es: 'Favorito',
+            cs: 'Oblíbené',
+            nl: 'Favoriet',
+            ro: 'Favorit',
+            pt: 'Favorito',
+            da: 'Favorit',
+            sv: 'Favorit',
+          ),
         );
         await driver.pumpUntilFound(favoriteLabel);
         await driver.tapLikeUser(favoriteLabel.hitTestable().first);
@@ -179,7 +270,21 @@ void main() {
 
       await driver.step('save_category', () async {
         final saveButton = find
-            .text(localized(en: 'Save', de: 'Speichern'))
+            .text(
+              localized(
+                en: 'Save',
+                de: 'Speichern',
+                fr: 'Enregistrer',
+                it: 'Salva',
+                es: 'Guardar',
+                cs: 'Uložit',
+                nl: 'Opslaan',
+                ro: 'Salvați',
+                pt: 'Salvar',
+                da: 'Gem',
+                sv: 'Spara',
+              ),
+            )
             .hitTestable();
         await driver.pumpUntilFound(saveButton);
         await driver.tapLikeUser(saveButton.first);

@@ -5705,7 +5705,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Afbeeldingsprompt gekopieerd naar klembord';
 
   @override
-  String get imagePromptGenerationCopyButton => 'Waarschuwing kopiëren';
+  String get imagePromptGenerationCopyButton => 'Prompt kopiëren';
 
   @override
   String get imagePromptGenerationCopyTooltip =>
@@ -8016,7 +8016,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get promptGenerationCopiedSnackbar => 'Naar klembord gekopieerd';
 
   @override
-  String get promptGenerationCopyButton => 'Waarschuwing kopiëren';
+  String get promptGenerationCopyButton => 'Prompt kopiëren';
 
   @override
   String get promptGenerationCopyTooltip => 'Prompt naar klembord kopiëren';

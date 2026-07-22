@@ -376,7 +376,7 @@
   },
   "agentSoulSelectTitle": "Selezionare l'anima",
   "agentSoulsEmptyFiltered": "Nessuna anima corrisponde ai tuoi filtri.",
-  "agentSoulSettingsTab": "Impostazioni delle impostazioni",
+  "agentSoulSettingsTab": "Impostazioni",
   "agentSoulsSearchPlaceholder": "Cerca anime...",
   "agentSoulsTitle": "Le anime",
   "agentSoulToneBoundsLabel": "Bordi di tono",
@@ -550,7 +550,7 @@
     "description": "Title for the template selection dialog when creating an agent."
   },
   "agentTemplatesEmptyFiltered": "Nessun modello corrisponde ai tuoi filtri.",
-  "agentTemplateSettingsTab": "Impostazioni delle impostazioni",
+  "agentTemplateSettingsTab": "Impostazioni",
   "@agentTemplateSettingsTab": {
     "description": "Tab label for the settings tab in agent template detail."
   },
@@ -3229,7 +3229,7 @@
   "loggingDomainPersistence": "Persistenza",
   "loggingDomainRatings": "Valutazioni",
   "loggingDomainScreenshots": "Proiezioni",
-  "loggingDomainSettings": "Impostazioni delle impostazioni",
+  "loggingDomainSettings": "Impostazioni",
   "loggingDomainSpeech": "Discorso e audio",
   "loggingDomainSync": "Traduzione:",
   "loggingDomainTasks": "Compiti e liste di controllo",
@@ -3465,7 +3465,7 @@
   "navTabTitleJournal": "Regime di registro",
   "navTabTitleMore": "Altro",
   "navTabTitleProjects": "Progetti",
-  "navTabTitleSettings": "Impostazioni delle impostazioni",
+  "navTabTitleSettings": "Impostazioni",
   "navTabTitleTasks": "Compiti",
   "nestedAiResponsesTitle": "{count} rispost{count, plural, =1{a} other{e}} IA",
   "@nestedAiResponsesTitle": {
@@ -4477,7 +4477,7 @@
   "settingsThemingSubtitle": "Personalizza l'aspetto dell'app e i temi",
   "settingsThemingTitle": "Il nome",
   "settingsV2CategoryEmptyBody": "Scegli un sub-setting a sinistra.",
-  "settingsV2DetailRootCrumb": "Impostazioni delle impostazioni",
+  "settingsV2DetailRootCrumb": "Impostazioni",
   "settingsV2EmptyStateBody": "Scegli una sezione a sinistra per iniziare.",
   "settingsV2ResizeHandleLabel": "Ridimensionare l'albero impostazioni",
   "settingsV2UnimplementedTitle": "Pannello non ancora implementato",

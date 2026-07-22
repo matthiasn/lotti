@@ -35,6 +35,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1060" date="2026-07-22">
+      <description>
+        <p>The Manual's five walkthrough videos are now available in every language Lotti supports (previously English and German only): French, Italian, Spanish, Czech, Dutch, Romanian, Portuguese, Danish, and Swedish.</p>
+        <p>Fixed: the Settings destination is readable again in Italian and Swedish. Several Settings-related labels showed "Impostazioni delle impostazioni" in Italian and "Miljöer" in Swedish instead of "Settings" — now "Impostazioni" and "Inställningar".</p>
+        <p>Fixed: the coding-prompt "Copy Prompt" button is correctly labeled in Dutch — it previously read "Waarschuwing kopiëren" ("Copy warning"); now "Prompt kopiëren".</p>
+      </description>
+    </release>
     <release version="0.9.1059" date="2026-07-22">
       <description>
         <p>Five narrated walkthrough videos are now embedded in the Manual, in English and German: creating a task with your voice, generating cover art, turning a coding task into an AI-ready prompt, filtering and saving task views, and setting up a category.</p>

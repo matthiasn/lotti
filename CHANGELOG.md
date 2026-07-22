@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1060]
+### Added
+- **The Manual's five walkthrough videos are now available in every
+  language Lotti supports** (previously English and German only): French,
+  Italian, Spanish, Czech, Dutch, Romanian, Portuguese, Danish, and Swedish.
+
+### Fixed
+- **The Settings destination is readable again in Italian and Swedish.**
+  Several Settings-related labels (the main navigation destination, agent
+  editor tabs, the logging screen, and the Settings breadcrumb) showed
+  "Impostazioni delle impostazioni" in Italian and "Miljöer" in Swedish
+  instead of "Settings" — now "Impostazioni" and "Inställningar".
+- **The coding-prompt "Copy Prompt" button is correctly labeled in Dutch.**
+  It previously read "Waarschuwing kopiëren" ("Copy warning"); now "Prompt
+  kopiëren".
+
 ## [0.9.1059]
 ### Added
 - **Five narrated walkthrough videos are now embedded in the Manual, in

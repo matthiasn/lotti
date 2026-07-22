@@ -20,6 +20,15 @@ scenario: create_task_from_audio
 title:
   en: Create a task with your voice
   de: Eine Aufgabe per Sprache erstellen
+  fr: Créer une tâche à la voix
+  it: Crea un'attività con la voce
+  es: Crea una tarea con tu voz
+  cs: Vytvoř úkol hlasem
+  nl: Maak een taak met je stem
+  ro: Creați o sarcină cu vocea
+  pt: Crie uma tarefa com a sua voz
+  da: Opret en opgave med din stemme
+  sv: Skapa en uppgift med din röst
 
 dictionary:
   en:
@@ -32,6 +41,51 @@ dictionary:
     - Sardinenrationen
     - Appell der Kaiserpinguine
     - Schwerelosigkeits-Futterautomat
+  fr:
+    - Projet Waddle
+    - rations de sardines
+    - appel des manchots empereurs
+    - distributeur de nourriture en apesanteur
+  it:
+    - Progetto Waddle
+    - razioni di sardine
+    - appello dei pinguini imperatore
+    - distributore di cibo a gravità zero
+  es:
+    - Proyecto Waddle
+    - raciones de sardinas
+    - pase de lista de los pingüinos emperador
+    - comedero de gravedad cero
+  cs:
+    - Projekt Waddle
+    - dávky sardinek
+    - nástup císařských tučňáků
+    - beztížné krmítko
+  nl:
+    - Project Waddle
+    - sardientjesrantsoenen
+    - appel van de keizerspinguïns
+    - zwaartekrachtloze voederautomaat
+  ro:
+    - Proiect Waddle
+    - rațiile de sardine
+    - apelul pinguinilor imperiali
+    - hrănitorul cu gravitație zero
+  pt:
+    - Projeto Waddle
+    - rações de sardinha
+    - chamada dos pinguins-imperadores
+    - alimentador de gravidade zero
+  da:
+    - Projekt Waddle
+    - sardinrationer
+    - kejserpingvinernes navneopråb
+    - vægtløs foderautomat
+  sv:
+    - Projekt Waddle
+    - sardinransoner
+    - kejsarpingvinernas upprop
+    - viktlös matningsautomat
 
 steps:
   - id: intro
@@ -45,6 +99,41 @@ steps:
         In diesem Tutorial erstellst du eine Aufgabe einfach per Sprache —
         und siehst zu, wie Lotti deine Worte in eine strukturierte Aufgabe
         mit Titel und Checkliste verwandelt.
+      fr: >-
+        Dans ce tutoriel, tu vas créer une tâche juste en parlant — et voir
+        Lotti transformer tes mots en une tâche structurée avec un titre et
+        une liste de choses à faire.
+      it: >-
+        In questo tutorial creerai un'attività semplicemente parlando — e
+        vedrai Lotti trasformare le tue parole in un'attività strutturata
+        con un titolo e una checklist.
+      es: >-
+        En este tutorial vas a crear una tarea con solo hablar — y verás
+        cómo Lotti convierte tus palabras en una tarea estructurada con un
+        título y una lista de tareas.
+      cs: >-
+        V tomto tutoriálu vytvoříš úkol jen mluvením — a uvidíš, jak Lotti
+        promění tvá slova ve strukturovaný úkol s názvem a seznamem úkolů.
+      nl: >-
+        In deze tutorial maak je een taak door simpelweg te praten — en zie
+        je hoe Lotti jouw woorden omzet in een gestructureerde taak met een
+        titel en een checklist.
+      ro: >-
+        În acest tutorial veți crea o sarcină doar vorbind — și veți vedea
+        cum Lotti transformă cuvintele dvs. într-o sarcină structurată, cu
+        titlu și listă de verificare.
+      pt: >-
+        Neste tutorial você vai criar uma tarefa só de falar — e vai ver o
+        Lotti transformar suas palavras em uma tarefa estruturada com título
+        e checklist.
+      da: >-
+        I denne tutorial opretter du en opgave bare ved at tale — og ser
+        Lotti forvandle dine ord til en struktureret opgave med en titel og
+        en tjekliste.
+      sv: >-
+        I den här handledningen skapar du en uppgift bara genom att prata —
+        och ser hur Lotti förvandlar dina ord till en strukturerad uppgift
+        med en titel och en checklista.
 
   - id: create_task
     min_duration: 3.0
@@ -55,6 +144,33 @@ steps:
       de: >-
         Starte mit einer ganz neuen Aufgabe: ein Tipp auf das Plus, und eine
         leere Aufgabe öffnet sich — ganz ohne Tippen auf der Tastatur.
+      fr: >-
+        Commence par une toute nouvelle tâche : un tap sur le bouton plus,
+        et une tâche vide s'ouvre — sans avoir à taper le moindre mot.
+      it: >-
+        Parti da un'attività nuova di zecca: un tocco sul pulsante più, e si
+        apre un'attività vuota — senza dover scrivere nulla.
+      es: >-
+        Empieza con una tarea totalmente nueva: un toque en el botón más, y
+        se abre una tarea vacía — sin necesidad de escribir nada.
+      cs: >-
+        Začni úplně novým úkolem: jedno klepnutí na tlačítko plus a otevře
+        se prázdný úkol — bez psaní na klávesnici.
+      nl: >-
+        Begin met een gloednieuwe taak: één tik op de plusknop, en er opent
+        zich een lege taak — zonder typen.
+      ro: >-
+        Începeți cu o sarcină complet nouă: o atingere pe butonul plus, iar
+        o sarcină goală se deschide — fără să tastați nimic.
+      pt: >-
+        Comece com uma tarefa totalmente nova: um toque no botão de mais, e
+        uma tarefa vazia se abre — sem precisar digitar nada.
+      da: >-
+        Start med en helt ny opgave: ét tryk på plusknappen, og en tom
+        opgave åbner — helt uden at skulle skrive.
+      sv: >-
+        Börja med en helt ny uppgift: ett tryck på plusknappen, och en tom
+        uppgift öppnas — helt utan att skriva.
 
   - id: record_dictation
     min_duration: 4.0
@@ -66,6 +182,34 @@ steps:
       de: >-
         Tippe jetzt auf das Mikrofon und sprich einfach — beschreibe, was zu
         tun ist, als würdest du dir selbst eine Sprachnotiz hinterlassen.
+      fr: >-
+        Tape maintenant sur le micro et parle simplement — décris ce qu'il
+        faut faire, comme si tu te laissais un mémo vocal.
+      it: >-
+        Ora tocca il microfono e parla semplicemente — descrivi cosa c'è da
+        fare, come se ti stessi lasciando una nota vocale.
+      es: >-
+        Ahora toca el micrófono y simplemente habla — describe lo que hay
+        que hacer, como si te dejaras una nota de voz a ti mismo.
+      cs: >-
+        Teď klepni na mikrofon a prostě mluv — popiš, co je potřeba udělat,
+        jako bys nahrával sám sobě hlasovou poznámku.
+      nl: >-
+        Tik nu op de microfoon en praat gewoon — beschrijf wat er moet
+        gebeuren, alsof je jezelf een spraakbericht achterlaat.
+      ro: >-
+        Atingeți acum microfonul și vorbiți pur și simplu — descrieți ce
+        trebuie făcut, ca și cum v-ați lăsa o notă vocală.
+      pt: >-
+        Agora toque no microfone e simplesmente fale — descreva o que
+        precisa ser feito, como se estivesse deixando uma nota de voz para
+        você mesmo.
+      da: >-
+        Tryk nu på mikrofonen og tal bare løs — beskriv, hvad der skal
+        gøres, som om du efterlader dig selv en talebesked.
+      sv: >-
+        Tryck nu på mikrofonen och prata bara — beskriv vad som behöver
+        göras, som om du lämnade dig själv ett röstmeddelande.
     dictation_text:
       en: >-
         We need to prepare the emperor penguin roll call for Project Waddle.
@@ -76,6 +220,48 @@ steps:
         vorbereiten. Bestätige die Sardinenrationen, teste den
         Schwerelosigkeits-Futterautomaten und reiche die Startcheckliste bei
         der Missionszentrale ein.
+      fr: >-
+        Il faut préparer l'appel des manchots empereurs pour le Projet
+        Waddle. Confirme les rations de sardines, teste le distributeur de
+        nourriture en apesanteur, et transmets la checklist de lancement au
+        centre de contrôle.
+      it: >-
+        Dobbiamo preparare l'appello dei pinguini imperatore per il
+        Progetto Waddle. Conferma le razioni di sardine, prova il
+        distributore di cibo a gravità zero e invia la checklist di
+        lancio al centro di controllo.
+      es: >-
+        Tenemos que preparar el pase de lista de los pingüinos emperador
+        para el Proyecto Waddle. Confirma las raciones de sardinas, prueba
+        el comedero de gravedad cero y entrega la checklist de lanzamiento
+        al centro de control.
+      cs: >-
+        Musíme připravit nástup císařských tučňáků pro Projekt Waddle.
+        Potvrď dávky sardinek, vyzkoušej beztížné krmítko a odešli
+        startovní seznam řídicímu středisku.
+      nl: >-
+        We moeten het appel van de keizerspinguïns voorbereiden voor
+        Project Waddle. Bevestig de sardientjesrantsoenen, test de
+        zwaartekrachtloze voederautomaat en dien de lanceerchecklist in bij
+        het missiecentrum.
+      ro: >-
+        Trebuie să pregătim apelul pinguinilor imperiali pentru Proiect
+        Waddle. Confirmați rațiile de sardine, testați hrănitorul cu
+        gravitație zero și trimiteți lista de lansare centrului de control
+        al misiunii.
+      pt: >-
+        Precisamos preparar a chamada dos pinguins-imperadores para o
+        Projeto Waddle. Confirme as rações de sardinha, teste o alimentador
+        de gravidade zero e envie a checklist de lançamento para o centro
+        de controle.
+      da: >-
+        Vi skal forberede kejserpingvinernes navneopråb til Projekt Waddle.
+        Bekræft sardinrationerne, test den vægtløse foderautomat, og
+        indsend startchecklisten til kontrolcentret.
+      sv: >-
+        Vi måste förbereda kejsarpingvinernas upprop för Projekt Waddle.
+        Bekräfta sardinransonerna, testa den viktlösa matningsautomaten och
+        skicka in startchecklistan till kontrollcentralen.
 
   - id: transcription
     min_duration: 6.0
@@ -86,6 +272,33 @@ steps:
       de: >-
         Sobald du stoppst, wird die Aufnahme im Hintergrund transkribiert —
         und hier erscheint das Transkript, direkt an der Aufgabe.
+      fr: >-
+        Dès que tu t'arrêtes, l'enregistrement est transcrit en arrière-plan
+        — et voici la transcription, directement sur la tâche.
+      it: >-
+        Appena ti fermi, la registrazione viene trascritta in background —
+        ed ecco la trascrizione, direttamente sull'attività.
+      es: >-
+        En cuanto paras, la grabación se transcribe en segundo plano — y
+        aquí aparece la transcripción, directamente en la tarea.
+      cs: >-
+        Jakmile přestaneš mluvit, nahrávka se na pozadí přepíše — a tady se
+        objeví přepis, přímo u úkolu.
+      nl: >-
+        Zodra je stopt, wordt de opname op de achtergrond getranscribeerd —
+        en hier verschijnt het transcript, direct bij de taak.
+      ro: >-
+        De îndată ce vă opriți, înregistrarea este transcrisă în fundal —
+        iar transcrierea apare aici, direct pe sarcină.
+      pt: >-
+        Assim que você para, a gravação é transcrita em segundo plano — e
+        aqui aparece a transcrição, direto na tarefa.
+      da: >-
+        Så snart du stopper, transskriberes optagelsen i baggrunden — og
+        her dukker transskriptionen op, direkte på opgaven.
+      sv: >-
+        Så fort du slutar transkriberas inspelningen i bakgrunden — och här
+        dyker transkriptionen upp, direkt på uppgiften.
 
   - id: suggestions
     min_duration: 6.0
@@ -96,6 +309,34 @@ steps:
       de: >-
         Und jetzt die Magie: Lotti liest das Transkript und schlägt einen
         Titel sowie Checklisten-Punkte für alles vor, was du erwähnt hast.
+      fr: >-
+        Et maintenant la magie : Lotti lit la transcription et propose un
+        titre ainsi que des éléments de liste pour tout ce que tu as
+        mentionné.
+      it: >-
+        E ora la magia: Lotti legge la trascrizione e propone un titolo e
+        voci per la checklist per tutto ciò che hai menzionato.
+      es: >-
+        Y ahora la magia: Lotti lee la transcripción y propone un título y
+        elementos de checklist para todo lo que mencionaste.
+      cs: >-
+        A teď kouzlo: Lotti přečte přepis a navrhne název i položky
+        seznamu pro všechno, co jsi zmínil.
+      nl: >-
+        En dan de magie: Lotti leest het transcript en stelt een titel en
+        checklist-items voor, voor alles wat je noemde.
+      ro: >-
+        Și acum magia: Lotti citește transcrierea și propune un titlu și
+        elemente de listă pentru tot ce ați menționat.
+      pt: >-
+        E agora a mágica: o Lotti lê a transcrição e propõe um título e
+        itens de checklist para tudo o que você mencionou.
+      da: >-
+        Og nu det magiske: Lotti læser transskriptionen og foreslår en
+        titel og punkter til tjeklisten for alt, du nævnte.
+      sv: >-
+        Och nu magin: Lotti läser transkriptionen och föreslår en titel och
+        checklistpunkter för allt du nämnde.
 
   - id: confirm
     min_duration: 4.0
@@ -106,6 +347,33 @@ steps:
       de: >-
         Ein Tipp auf Bestätigen, und aus den Vorschlägen wird Realität: die
         Aufgabe bekommt ihren Titel und eine fertige Checkliste.
+      fr: >-
+        Un tap sur Confirmer, et les suggestions deviennent réalité : la
+        tâche reçoit son titre et une liste toute prête.
+      it: >-
+        Un tocco su Conferma, e i suggerimenti diventano realtà: l'attività
+        riceve il suo titolo e una checklist già pronta.
+      es: >-
+        Un toque en Confirmar, y las sugerencias se hacen realidad: la
+        tarea recibe su título y una checklist ya lista.
+      cs: >-
+        Jedno klepnutí na Potvrdit, a z návrhů je realita: úkol dostane
+        svůj název a hotový seznam.
+      nl: >-
+        Eén tik op Bevestigen, en de suggesties worden werkelijkheid: de
+        taak krijgt zijn titel en een kant-en-klare checklist.
+      ro: >-
+        O atingere pe Confirmați, iar sugestiile devin realitate: sarcina
+        primește titlul și o listă de verificare gata făcută.
+      pt: >-
+        Um toque em Confirmar, e as sugestões viram realidade: a tarefa
+        recebe seu título e uma checklist pronta.
+      da: >-
+        Ét tryk på Bekræft, og forslagene bliver til virkelighed: opgaven
+        får sin titel og en færdig tjekliste.
+      sv: >-
+        Ett tryck på Bekräfta, och förslagen blir verklighet: uppgiften får
+        sin titel och en färdig checklista.
 
   - id: check_off
     min_duration: 3.0
@@ -116,6 +384,33 @@ steps:
       de: >-
         Etwas erledigt? Tippe auf das Kästchen und der Punkt ist abgehakt —
         sichtbarer Fortschritt.
+      fr: >-
+        Quelque chose est fait ? Tape sur la case et c'est coché — une
+        progression que tu peux voir.
+      it: >-
+        Hai finito qualcosa? Tocca la casella e viene spuntata — un
+        progresso che puoi vedere.
+      es: >-
+        ¿Terminaste algo? Toca la casilla y queda marcado — un progreso
+        que puedes ver.
+      cs: >-
+        Něco hotové? Klepni na políčko a je odškrtnuto — pokrok, který
+        vidíš.
+      nl: >-
+        Iets klaar? Tik op het vakje en het wordt afgevinkt — voortgang
+        die je kunt zien.
+      ro: >-
+        Ați terminat ceva? Atingeți caseta și este bifat — un progres pe
+        care îl puteți vedea.
+      pt: >-
+        Terminou alguma coisa? Toque na caixinha e ela é marcada — um
+        progresso que você pode ver.
+      da: >-
+        Færdig med noget? Tryk på afkrydsningsfeltet, så er det markeret —
+        fremskridt, du kan se.
+      sv: >-
+        Klar med något? Tryck på kryssrutan så bockas det av — framsteg du
+        kan se.
 
   - id: outro
     min_duration: 3.0
@@ -126,3 +421,31 @@ steps:
       de: >-
         Das war's — vom gesprochenen Gedanken zur strukturierten Aufgabe in
         unter einer Minute. Probier es mit deinem nächsten To-do aus.
+      fr: >-
+        Voilà — d'une pensée exprimée à voix haute à une tâche structurée
+        en moins d'une minute. Essaie avec ta prochaine tâche.
+      it: >-
+        Ecco fatto — da un pensiero pronunciato a voce a un'attività
+        strutturata in meno di un minuto. Provalo con il tuo prossimo
+        promemoria.
+      es: >-
+        Eso es todo — de un pensamiento hablado a una tarea estructurada en
+        menos de un minuto. Pruébalo con tu próximo pendiente.
+      cs: >-
+        A je to — od vysloveného nápadu ke strukturovanému úkolu za
+        necelou minutu. Vyzkoušej to s dalším vlastním úkolem.
+      nl: >-
+        Dat is het — van een uitgesproken gedachte naar een gestructureerde
+        taak in minder dan een minuut. Probeer het met je volgende taak.
+      ro: >-
+        Asta a fost — de la un gând rostit la o sarcină structurată în mai
+        puțin de un minut. Încercați cu următoarea dvs. sarcină.
+      pt: >-
+        Pronto — de um pensamento falado a uma tarefa estruturada em menos
+        de um minuto. Experimente com sua próxima tarefa.
+      da: >-
+        Sådan — fra en talt tanke til en struktureret opgave på under et
+        minut. Prøv det med din næste opgave.
+      sv: >-
+        Så där — från en uttalad tanke till en strukturerad uppgift på
+        under en minut. Prova med din nästa att-göra-uppgift.
