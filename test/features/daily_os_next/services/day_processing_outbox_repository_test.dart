@@ -539,6 +539,83 @@ void main() {
     });
 
     test(
+      'enqueueParseCapture attaches to a running job without re-arming',
+      () async {
+        await repository.enqueueParseCapture(
+          dayId: 'dayplan-2026-07-18',
+          captureId: 'cap-1',
+        );
+        final claim = await repository.claimById('parse_cap-1');
+        expect(claim!.job.status, DayProcessingJobStatus.running);
+
+        final attached = await repository.enqueueParseCapture(
+          dayId: 'dayplan-2026-07-18',
+          captureId: 'cap-1',
+        );
+
+        expect(attached.status, DayProcessingJobStatus.running);
+        expect(attached.generation, claim.job.generation);
+      },
+    );
+
+    test(
+      'enqueueParseCapture re-arms a stuck (failed) job with fresh attempts',
+      () async {
+        await repository.enqueueParseCapture(
+          dayId: 'dayplan-2026-07-18',
+          captureId: 'cap-1',
+        );
+        final claim = await repository.claimById('parse_cap-1');
+        final failed = await repository.markFailure(
+          jobId: 'parse_cap-1',
+          claimToken: claim!.token,
+          failureClass: DayProcessingFailureClass.deterministic,
+          error: 'model refused to parse',
+        );
+        expect(failed.status, DayProcessingJobStatus.failed);
+        expect(failed.attempts, 1);
+
+        final rearmed = await repository.enqueueParseCapture(
+          dayId: 'dayplan-2026-07-18',
+          captureId: 'cap-1',
+        );
+
+        expect(rearmed.status, DayProcessingJobStatus.queued);
+        expect(rearmed.attempts, 0);
+        expect(rearmed.generation, failed.generation + 1);
+        expect(rearmed.lastError, isNull);
+        expect(rearmed.lastFailureClass, isNull);
+      },
+    );
+
+    test(
+      'enqueueParseCapture re-arms a succeeded job (explicit re-parse)',
+      () async {
+        await repository.enqueueParseCapture(
+          dayId: 'dayplan-2026-07-18',
+          captureId: 'cap-1',
+        );
+        final claim = await repository.claimById('parse_cap-1');
+        final succeeded = await repository.markSucceeded(
+          jobId: 'parse_cap-1',
+          claimToken: claim!.token,
+          resultEntityId: 'parsed-1',
+        );
+        expect(succeeded.status, DayProcessingJobStatus.succeeded);
+
+        final rearmed = await repository.enqueueParseCapture(
+          dayId: 'dayplan-2026-07-18',
+          captureId: 'cap-1',
+        );
+
+        expect(rearmed.status, DayProcessingJobStatus.queued);
+        expect(rearmed.attempts, 0);
+        expect(rearmed.resultEntityId, isNull);
+        expect(rearmed.completedAt, isNull);
+      },
+    );
+
+    test(
       'enqueueParseCapture rejects a re-request for a different day',
       () async {
         await repository.enqueueParseCapture(

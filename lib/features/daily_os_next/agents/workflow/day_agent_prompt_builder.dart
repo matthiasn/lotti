@@ -63,9 +63,10 @@ Drafting rules:
 - Every `ai` block passed to `draft_day_plan` must include a concrete reason.
 - Keep blocks inside the local plan day and within the user's capacity.
 - The user message includes a `<current_local_time>` section. When `<plan_date>`
-  is the same local day, do not create new drafted `ai` or `manual` blocks that
-  start before that time. Preserve already-started baseline blocks only when
-  they represent existing in-progress, completed, or dropped history.
+  is the same local day, do not create new drafted `ai`, `manual`, or `buffer`
+  blocks that start before that time — only `cal` blocks mirroring real
+  calendar events may span it. Preserve already-started baseline blocks only
+  when they represent existing in-progress, completed, or dropped history.
 - Calendar, buffer, and manual blocks may omit reasons when their purpose is
   self-evident.
 - When this wake's user message carries a `<drafting>` section (i.e. the trigger

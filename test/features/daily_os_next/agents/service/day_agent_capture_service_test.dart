@@ -11,9 +11,9 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -132,7 +132,8 @@ void main() {
   late MockJournalDb journalDb;
   late MockJournalRepository journalRepository;
   late MockFts5Db fts5Db;
-  late MockWakeOrchestrator orchestrator;
+  late MockDayProcessingOutboxRepository outbox;
+  late int nudgeCount;
   late MockDomainLogger domainLogger;
   late MockTaskAgentService taskAgentService;
   late Map<String, AgentDomainEntity> agentEntities;
@@ -150,11 +151,12 @@ void main() {
       journalDb: journalDb,
       journalRepository: journalRepository,
       fts5Db: fts5Db,
-      orchestrator: orchestrator,
+      outbox: outbox,
       domainLogger: domainLogger,
       taskFactory: _makeTaskFactory(journalEntities, createdTaskRequests),
       taskAgentService: taskAgentService,
       onPersistedStateChanged: notifications.add,
+      nudgeProcessing: () => nudgeCount++,
     );
   }
 
@@ -164,7 +166,8 @@ void main() {
     journalDb = MockJournalDb();
     journalRepository = MockJournalRepository();
     fts5Db = MockFts5Db();
-    orchestrator = MockWakeOrchestrator();
+    outbox = MockDayProcessingOutboxRepository();
+    nudgeCount = 0;
     domainLogger = MockDomainLogger();
     taskAgentService = MockTaskAgentService();
     agentEntities = {
@@ -215,18 +218,29 @@ void main() {
       return journalEntities[invocation.positionalArguments.single as String];
     });
     when(() => journalDb.getCategoryById(any())).thenAnswer((_) async => null);
-    // Default run-key stub so unstubbed enqueueManualWake calls (this file
-    // mostly asserts via `verify`/`verifyNever`) don't throw on the
-    // now-non-void return type.
+    // Default stub so submit/retry paths (this file mostly asserts via
+    // `verify`/`verifyNever`) get a well-formed durable job back.
     when(
-      () => orchestrator.enqueueManualWake(
-        agentId: any(named: 'agentId'),
-        reason: any(named: 'reason'),
-        triggerTokens: any(named: 'triggerTokens'),
-        workspaceKey: any(named: 'workspaceKey'),
-        supersede: any(named: 'supersede'),
+      () => outbox.enqueueParseCapture(
+        dayId: any(named: 'dayId'),
+        captureId: any(named: 'captureId'),
       ),
-    ).thenReturn('run-key-stub');
+    ).thenAnswer((invocation) async {
+      final captureId = invocation.namedArguments[#captureId] as String;
+      final dayId = invocation.namedArguments[#dayId] as String;
+      return DayProcessingJob(
+        id: 'parse_$captureId',
+        status: DayProcessingJobStatus.queued,
+        dayId: dayId,
+        payload: ParseCapturePayload(captureId: captureId),
+        createdAt: _now,
+        updatedAt: _now,
+        requestedAt: _now,
+        nextAttemptAt: _now,
+        attempts: 0,
+        generation: 0,
+      );
+    });
     when(
       () => journalDb.getOpenTasksForDayAgentCorpus(
         categoryIds: any(named: 'categoryIds'),
@@ -268,40 +282,39 @@ void main() {
   });
 
   group('DayAgentCaptureService', () {
-    test('submitCapture writes a capture and enqueues a parse wake', () async {
-      final service = createService();
+    test(
+      'submitCapture writes a capture and enqueues a durable parse job',
+      () async {
+        final service = createService();
 
-      await withClock(Clock.fixed(_now), () async {
-        final capture = await service.submitCapture(
-          agentId: _agentId,
-          transcript: '  buy milk and prep demo  ',
-          capturedAt: DateTime(2026, 5, 25, 8, 45),
-          dayId: 'dayplan-2026-05-25',
-        );
+        await withClock(Clock.fixed(_now), () async {
+          final capture = await service.submitCapture(
+            agentId: _agentId,
+            transcript: '  buy milk and prep demo  ',
+            capturedAt: DateTime(2026, 5, 25, 8, 45),
+            dayId: 'dayplan-2026-05-25',
+          );
 
-        expect(capture.id, startsWith('capture_'));
-        expect(capture.transcript, 'buy milk and prep demo');
-        // The caller supplies the selected day workspace independently of the
-        // source recording timestamp (ADR 0022).
-        expect(capture.dayId, 'dayplan-2026-05-25');
-        expect(upsertedEntities.single, isA<CaptureEntity>());
-        expect(notifications, containsAll([_agentId, capture.id]));
-        final captured =
-            verify(
-                  () => orchestrator.enqueueManualWake(
-                    agentId: _agentId,
-                    reason: 'capture_submitted',
-                    workspaceKey: 'day:dayplan-2026-05-25',
-                    triggerTokens: captureAny(named: 'triggerTokens'),
-                    // Captures accumulate rather than supersede, so a second
-                    // same-day capture can't drop this one's still-queued parse.
-                    supersede: false,
-                  ),
-                ).captured.single
-                as Set<String>;
-        expect(captured, {dayAgentCaptureSubmittedToken(capture.id)});
-      });
-    });
+          expect(capture.id, startsWith('capture_'));
+          expect(capture.transcript, 'buy milk and prep demo');
+          // The caller supplies the selected day workspace independently of
+          // the source recording timestamp (ADR 0022).
+          expect(capture.dayId, 'dayplan-2026-05-25');
+          expect(upsertedEntities.single, isA<CaptureEntity>());
+          expect(notifications, containsAll([_agentId, capture.id]));
+          // ADR 0032 phase 1: parse intent is a durable outbox job (the
+          // executor enqueues the actual wake when the job runs), and the
+          // runtime is nudged to drain it immediately.
+          verify(
+            () => outbox.enqueueParseCapture(
+              dayId: 'dayplan-2026-05-25',
+              captureId: capture.id,
+            ),
+          ).called(1);
+          expect(nudgeCount, 1);
+        });
+      },
+    );
 
     test('submitCapture rejects empty transcripts', () async {
       await expectLater(
@@ -334,15 +347,15 @@ void main() {
         final retried = await createService().retryCapture(capture.id);
 
         expect(retried, isTrue);
+        // enqueueParseCapture attaches to a queued/running job and re-arms a
+        // stuck or terminal one, so one call covers both retry semantics.
         verify(
-          () => orchestrator.enqueueManualWake(
-            agentId: _agentId,
-            reason: 'capture_submitted',
-            workspaceKey: 'day:dayplan-2026-05-25',
-            triggerTokens: {dayAgentCaptureSubmittedToken(capture.id)},
-            supersede: false,
+          () => outbox.enqueueParseCapture(
+            dayId: 'dayplan-2026-05-25',
+            captureId: capture.id,
           ),
         ).called(1);
+        expect(nudgeCount, 1);
       },
     );
 
@@ -389,14 +402,12 @@ void main() {
 
       expect(await createService().retryCapture(capture.id), isTrue);
       verifyNever(
-        () => orchestrator.enqueueManualWake(
-          agentId: any(named: 'agentId'),
-          reason: any(named: 'reason'),
-          triggerTokens: any(named: 'triggerTokens'),
-          workspaceKey: any(named: 'workspaceKey'),
-          supersede: any(named: 'supersede'),
+        () => outbox.enqueueParseCapture(
+          dayId: any(named: 'dayId'),
+          captureId: any(named: 'captureId'),
         ),
       );
+      expect(nudgeCount, 0);
     });
 
     test(
@@ -2303,7 +2314,7 @@ void main() {
           journalDb: journalDb,
           journalRepository: journalRepository,
           fts5Db: fts5Db,
-          orchestrator: orchestrator,
+          outbox: outbox,
           domainLogger: domainLogger,
           taskFactory:
               ({
@@ -2381,7 +2392,7 @@ void main() {
           journalDb: journalDb,
           journalRepository: journalRepository,
           fts5Db: fts5Db,
-          orchestrator: orchestrator,
+          outbox: outbox,
           domainLogger: domainLogger,
           onPersistedStateChanged: notifications.add,
         );

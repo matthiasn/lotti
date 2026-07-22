@@ -17,6 +17,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
+import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -61,8 +62,12 @@ void main() {
       final domainLogger = MockDomainLogger();
       final wakeOrchestrator = MockWakeOrchestrator();
       final notifications = MockUpdateNotifications();
+      final dayProcessingOutbox = MockDayProcessingOutboxRepository();
       final container = ProviderContainer(
         overrides: [
+          dayProcessingOutboxRepositoryProvider.overrideWithValue(
+            dayProcessingOutbox,
+          ),
           agentRepositoryProvider.overrideWithValue(repository),
           conversationRepositoryProvider.overrideWith(
             ConversationRepository.new,
@@ -95,7 +100,7 @@ void main() {
         workflow.captureService?.journalRepository,
         same(journalRepository),
       );
-      expect(workflow.captureService?.orchestrator, same(wakeOrchestrator));
+      expect(workflow.captureService?.outbox, same(dayProcessingOutbox));
       expect(workflow.captureService?.domainLogger, same(domainLogger));
       expect(workflow.planService?.agentRepository, same(repository));
       expect(workflow.planService?.syncService, same(syncService));

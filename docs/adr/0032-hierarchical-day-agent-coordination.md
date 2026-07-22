@@ -479,17 +479,17 @@ Decision section in place.
   agents simply stay `active` indefinitely once created — an accepted
   follow-up, not a regression, since nothing today would trigger dormancy
   correctly.
-- **Phase 1 durable jobs cover `draftPlan`/`refinePlan`, not
+- **Phase 1 durable jobs initially covered `draftPlan`/`refinePlan`, not
   `parseCapture`.** The `DayProcessingJobKind.parseCapture` job kind,
   `DayProcessingOutboxRepository.enqueueParseCapture`, and the executor's
-  dispatch for it are implemented and tested, but `DayAgentCaptureService`'s
-  capture-submit path was not rewired to use them in this slice — it still
-  enqueues a wake directly via `WakeOrchestrator.enqueueManualWake`. Capture
-  intent itself is durable (the `CaptureEntity` is persisted before any
-  wake); only the *wake* that parses it is volatile, same as before phase 1.
-  Wiring `submitCapture`/`retryCapture` onto the durable `parseCapture` job
-  is a scoped, low-risk follow-up using infrastructure that already exists
-  and is tested.
+  dispatch for it shipped implemented and tested in the first slice, but
+  `DayAgentCaptureService`'s capture-submit path still enqueued a volatile
+  wake directly via `WakeOrchestrator.enqueueManualWake`. This was closed in
+  the follow-up slice: `submitCapture` and `retryCapture` now enqueue the
+  durable `parseCapture` job (plus a deferred runtime nudge), and
+  `enqueueParseCapture` re-arms a stuck or terminal job with fresh attempts
+  while attaching to a queued/running one — which is what makes
+  `retryCapture` restart-safe without a separate retry API.
 
 ## Related
 

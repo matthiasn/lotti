@@ -9,8 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The Manual's five walkthrough videos are now available in every
   language Lotti supports** (previously English and German only): French,
   Italian, Spanish, Czech, Dutch, Romanian, Portuguese, Danish, and Swedish.
+- **Voice captures now survive the app closing before they're parsed.**
+  Submitting or retrying a Daily OS capture queues its parsing durably (the
+  same restart-safe queue drafting already uses), so backgrounding or killing
+  the app between recording and parsing no longer loses the parse — it runs
+  when the app reopens.
 
 ### Fixed
+- **Same-day plans can no longer schedule new blocks in the past.** The
+  drafting guard that kept AI and manual blocks from starting before the
+  current time now covers buffer blocks too; only imported calendar events —
+  which legitimately span the current moment — are exempt.
 - **The Settings destination is readable again in Italian and Swedish.**
   Several Settings-related labels (the main navigation destination, agent
   editor tabs, the logging screen, and the Settings breadcrumb) showed

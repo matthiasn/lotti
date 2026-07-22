@@ -91,6 +91,61 @@ void main() {
       );
     });
 
+    group('earliestDraftStart guard', () {
+      final earliest = DateTime(2026, 3, 16, 14);
+
+      test('rejects past-starting drafted ai, manual, and buffer blocks', () {
+        // Every agent-invented type is guarded — models were observed live
+        // relabelling a past-starting block `buffer` to slip through an
+        // ai/manual-only guard.
+        for (final type in ['ai', 'manual', 'buffer']) {
+          expect(
+            () => parse(
+              rawBlock(type: type),
+              earliestDraftStart: earliest,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('must not start before current time'),
+              ),
+            ),
+            reason: 'type=$type must be rejected',
+          );
+        }
+      });
+
+      test('exempts cal blocks and non-drafted states from the guard', () {
+        final cal = parse(
+          rawBlock(type: 'cal'),
+          earliestDraftStart: earliest,
+        );
+        expect(cal.type, PlannedBlockType.cal);
+        expect(cal.startTime, DateTime(2026, 3, 16, 9));
+
+        final inProgress = parse(
+          rawBlock()..['state'] = 'inProgress',
+          earliestDraftStart: earliest,
+        );
+        expect(inProgress.state, PlannedBlockState.inProgress);
+      });
+
+      test('accepts drafted blocks starting at or after the boundary', () {
+        final atBoundary = parse(
+          rawBlock(startHour: 14, endHour: 15, type: 'buffer'),
+          earliestDraftStart: earliest,
+        );
+        expect(atBoundary.startTime, earliest);
+
+        final after = parse(
+          rawBlock(startHour: 15, endHour: 16),
+          earliestDraftStart: earliest,
+        );
+        expect(after.startTime, DateTime(2026, 3, 16, 15));
+      });
+    });
+
     test('rejects task ids that are neither decided nor existing', () {
       expect(
         () => parse(rawBlock(taskId: 'task-x')),

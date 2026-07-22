@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -11,6 +13,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
+import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -46,10 +49,15 @@ DayAgentCaptureService dayAgentCaptureService(Ref ref) {
     journalDb: ref.watch(journalDbProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
     fts5Db: getIt<Fts5Db>(),
-    orchestrator: ref.watch(wakeOrchestratorProvider),
+    outbox: ref.watch(dayProcessingOutboxRepositoryProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     taskAgentService: ref.watch(taskAgentServiceProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+    // Deferred read: the runtime's executor depends on this service, so
+    // resolving the runtime eagerly here would create a provider cycle.
+    nudgeProcessing: () => unawaited(
+      ref.read(dayProcessingRuntimeProvider).nudge(),
+    ),
   );
 }
 

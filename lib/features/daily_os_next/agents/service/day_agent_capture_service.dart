@@ -14,15 +14,14 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_corpus_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_triage_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/task_agent_assignment.dart';
@@ -61,11 +60,12 @@ class DayAgentCaptureService {
     required this.journalDb,
     required this.journalRepository,
     required this.fts5Db,
-    required this.orchestrator,
+    required this.outbox,
     required this.domainLogger,
     DayAgentTaskFactory? taskFactory,
     this.taskAgentService,
     this.onPersistedStateChanged,
+    this.nudgeProcessing,
   }) : _taskFactory = taskFactory ?? _defaultTaskFactory,
        _reads = DayAgentCaptureReads(agentRepository: agentRepository) {
     _corpus = DayAgentCorpusService(
@@ -96,11 +96,19 @@ class DayAgentCaptureService {
   /// FTS index used by `match_to_corpus`.
   final Fts5Db fts5Db;
 
-  /// Wake orchestrator used to enqueue capture parsing.
-  final WakeOrchestrator orchestrator;
+  /// Durable job outbox capture parsing is enqueued on (ADR 0032 phase 1):
+  /// the `parseCapture` job survives restarts, and its executor enqueues the
+  /// actual wake when the job runs.
+  final DayProcessingOutboxRepository outbox;
 
   /// Structured logger.
   final DomainLogger domainLogger;
+
+  /// Pokes the day-processing runtime to drain newly enqueued jobs
+  /// immediately instead of waiting for its next scheduled pass. Deferred
+  /// (not the runtime itself) to keep construction acyclic — the runtime's
+  /// executor depends on this service.
+  final void Function()? nudgeProcessing;
 
   final DayAgentTaskFactory _taskFactory;
 
@@ -163,7 +171,7 @@ class DayAgentCaptureService {
     }
   }
 
-  /// Writes a submitted capture and enqueues a parse wake.
+  /// Writes a submitted capture and enqueues its durable parse job.
   ///
   /// [dayId] is the selected planning workspace. It is intentionally
   /// independent of [capturedAt], because Activity may reuse a retained
@@ -210,19 +218,16 @@ class DayAgentCaptureService {
       ..call(captureDayId(capture))
       ..call(capture.id);
 
-    orchestrator.enqueueManualWake(
-      agentId: agentId,
-      reason: dayAgentCaptureSubmittedReason,
-      triggerTokens: {dayAgentCaptureSubmittedToken(capture.id)},
-      // Partition the parse wake by the capture's day workspace (ADR 0022) so
-      // it never supersedes or merges with another day's queued work under one
-      // planner.
-      workspaceKey: dayAgentWorkspaceKey(captureDayId(capture)),
-      // Each capture carries its own transcript to parse; a second capture for
-      // the same day must not drop the first's still-queued parse. Accumulate
-      // instead of superseding so every submission is parsed.
-      supersede: false,
+    // Durable parse intent (ADR 0032 phase 1): the job survives restarts;
+    // when it runs, the executor resolves the owning agent and enqueues the
+    // actual wake, partitioned by the capture's day workspace. One job per
+    // capture, so a second capture for the same day never drops the first's
+    // still-pending parse.
+    await outbox.enqueueParseCapture(
+      dayId: captureDayId(capture),
+      captureId: capture.id,
     );
+    nudgeProcessing?.call();
 
     return capture;
   }
@@ -236,19 +241,18 @@ class DayAgentCaptureService {
   /// Re-enqueues parsing for an already durable capture.
   ///
   /// This is the restart-safe manual continuation path used by Activity: the
-  /// capture remains the durable user intent even if the original in-memory
-  /// wake disappeared with the process.
+  /// capture remains the durable user intent even if the process died. A
+  /// still-queued/running parse job attaches; a stuck or terminal one is
+  /// re-armed by [DayProcessingOutboxRepository.enqueueParseCapture].
   Future<bool> retryCapture(String captureId) async {
     final entity = await agentRepository.getEntity(captureId);
     if (entity is! CaptureEntity || entity.deletedAt != null) return false;
     if ((await parsedItemsForCapture(captureId)).isNotEmpty) return true;
-    orchestrator.enqueueManualWake(
-      agentId: entity.agentId,
-      reason: dayAgentCaptureSubmittedReason,
-      triggerTokens: {dayAgentCaptureSubmittedToken(entity.id)},
-      workspaceKey: dayAgentWorkspaceKey(captureDayId(entity)),
-      supersede: false,
+    await outbox.enqueueParseCapture(
+      dayId: captureDayId(entity),
+      captureId: entity.id,
     );
+    nudgeProcessing?.call();
     return true;
   }
 
