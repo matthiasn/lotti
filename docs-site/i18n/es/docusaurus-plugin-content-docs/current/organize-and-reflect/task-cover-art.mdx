@@ -1,0 +1,31 @@
+---
+title: Genera una ilustración de portada a partir de imágenes reales de la tarea
+description: Deja que una habilidad de generación de imágenes configurada convierta el contexto de una tarea e imágenes de referencia en una portada.
+---
+
+# Genera una ilustración de portada a partir de imágenes reales de la tarea
+
+<TutorialVideo
+  scenario="task_cover_art"
+  title="Deja que la IA cree la portada de tu tarea"
+  caption="Recorrido narrado: generar la portada a partir del contexto de la tarea e imágenes de referencia."
+/>
+
+Si hay configurada una habilidad de generación de imágenes, abre el menú de generación de la tarea y elige su acción de ilustración de portada. Lotti muestra primero las imágenes que ya están adjuntas a la tarea, además de las portadas disponibles de tareas vinculadas. Selecciona hasta cinco referencias para guiar el resultado o continúa sin ninguna referencia.
+
+La portada generada se crea en Lotti a partir del contexto de la tarea y de las referencias que selecciones. Es una ayuda visual, no un campo obligatorio: úsala cuando una imagen distintiva haga que el trabajo sea más fácil o agradable de reconocer. La ruta actual de generación de imágenes usa el proveedor configurado, así que trata el prompt de generación y las referencias elegidas como datos que envías deliberadamente a ese proveedor; una ruta local de razonamiento o transcripción no hace que la generación de portadas sea local.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Hoja Generar ilustración de portada que muestra cinco imágenes de referencia distintas de Project Waddle procedentes del contexto de la tarea"
+  caption="El selector usa las mismas imágenes de tareas que se ven en toda la demostración de Project Waddle."
+/>
+
+Después de continuar, la generación de imágenes se ejecuta en segundo plano. La vista de progreso usa el visualizador de razonamiento de producción de Lotti y puedes cerrarla sin cancelar el trabajo.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Generación de ilustración de portada de tarea en curso con el visualizador de shaders de producción de Lotti"
+/>
+
+La imagen generada pasa a ser la portada de la tarea y la acompaña en las vistas de lista, detalle, proyecto y Daily OS. Una buena portada debe seguir siendo reconocible cuando la imagen fuente panorámica se recorta en una miniatura de tarea compacta. Puede ser una prueba literal, una metáfora sobria o tan extraña como el trabajo lo merezca; la única prueba útil es si luego reconoces la tarea más rápido.

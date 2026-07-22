@@ -25,53 +25,7 @@ Una misma tarea puede contener una descripción, categoría, etiquetas, fecha de
 
 ## Asigna un agente de tarea
 
-Una tarea puede tener un agente de tarea. Al asignarlo, esa tarea obtiene un asistente de IA persistente con su propia configuración de inferencia, informe, estado de activación e historial de propuestas. El agente lee la tarea y su contexto vinculado, sintetiza la situación actual en un informe breve y puede mostrar cambios propuestos para la tarea o la lista de verificación que puedes confirmar o rechazar.
-
-El agente asignado aparece debajo de las listas de verificación y las tareas vinculadas. Su tarjeta contraída mantiene visibles el último resumen, el control de actualizaciones automáticas, la acción **Ejecutar agente** y la ruta de modelo activa, sin convertir la página de tareas en una consola de IA.
-
-<ManualScreenshot
-  caseId="tasks/agent-card"
-  alt="Agente de tarea Vigilante del hábitat asignado a la tarea del hábitat orbital de pingüinos, con su resumen actual, actualizaciones automáticas, acción para ejecutarlo y ruta de modelo de Project Waddle"
-  caption="Vigilante del hábitat está asignado a esta tarea; la asignación y las actualizaciones automáticas son decisiones independientes."
-/>
-
-Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tarjeta ampliada mantiene la tarea a la vista, añade la evaluación que sustenta el informe y el siguiente paso recomendado, y ofrece **Abrir detalles internos del agente** cuando necesitas informes, conversaciones, observaciones o detalles de ejecución.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-expanded"
-  alt="Tarjeta ampliada del agente de tarea Vigilante del hábitat con la evaluación completa del hábitat de Project Waddle y el siguiente paso recomendado"
-  caption="El informe completo se amplía dentro de la tarea, sin enviarte a otra página."
-/>
-
-### Revisa los cambios propuestos
-
-Una ejecución terminada puede actualizar el informe y añadir cambios propuestos. Las actualizaciones automáticas deciden *cuándo se ejecuta el agente*; no le conceden permiso para editar la tarea. Las propuestas siguen pendientes hasta que actúes sobre ellas.
-
-<ManualScreenshot
-  caseId="tasks/agent-suggestions"
-  alt="Tarjeta del agente Vigilante del hábitat con dos propuestas pendientes de Project Waddle, acciones individuales para descartar y confirmar, y una acción Confirmar todo"
-  caption="El agente propone un elemento de lista de verificación para probar el comedero y una estimación revisada; todavía no se ha aplicado ninguno de los dos cambios."
-/>
-
-Usa la cruz para **Descartar** una propuesta o la marca de verificación para **Confirmarla** y aplicarla. También puedes deslizar una propuesta a la izquierda para descartarla o a la derecha para confirmarla. Cuando hay varias propuestas pendientes, **Confirmar todo** aplica juntas las modificaciones que se muestran. Revisa las propuestas en bloque con cuidado, sobre todo los cambios de estado, fecha y lista de verificación.
-
-Abre **Historial** para volver a consultar resultados recientes. Distingue los cambios confirmados de los descartados. Una entrada descartada puede representar tu decisión o una propuesta que el agente retiró porque un contexto más reciente de la tarea la dejó obsoleta.
-
-La acción manual **Ejecutar agente** puede generar los mismos tipos de informe y propuestas que una ejecución automática. Desactivar las actualizaciones automáticas detiene futuras ejecuciones en segundo plano; no aplica, descarta ni resuelve de ningún otro modo las propuestas que ya esperan tu decisión.
-
-### Elige actualizaciones automáticas o manuales
-
-Los nuevos agentes de tarea empiezan con **Actualizaciones automáticas desactivadas**. La asignación por sí sola no consume tokens en segundo plano. Mientras están desactivadas, Lotti sigue detectando cambios relevantes en la tarea y sus entradas vinculadas, marca un resumen anterior como desactualizado y espera a que elijas **Ejecutar agente**. La ejecución manual sigue disponible siempre que el agente tenga una configuración de IA funcional.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-manual"
-  alt="Tarjeta del agente Vigilante del hábitat con las actualizaciones automáticas desactivadas, un aviso de informe desactualizado y una acción manual Ejecutar agente"
-  caption="El modo manual observa los cambios e informa de que el resumen está desactualizado sin iniciar una inferencia."
-/>
-
-Cuando las **Actualizaciones automáticas** están activadas, Lotti agrupa los cambios coincidentes de la tarea durante unos dos minutos antes de programar una actualización. Esta agrupación evita ejecutar al agente por cada pequeña edición. **Ejecutar agente** sigue disponible para una actualización inmediata solicitada por ti.
-
-Desactivar las actualizaciones automáticas borra su cuenta atrás pendiente y las actualizaciones automáticas en cola, pero no cancela una ejecución que hayas solicitado explícitamente. Al volver a activarlas, se aplican a cambios futuros; no reproducen los cambios que llegaron mientras la automatización estaba desactivada.
+Una tarea puede tener un agente de tarea: un asistente de IA persistente con su propia configuración de inferencia, informe e historial de propuestas — consulta [Asigna un agente de tarea](./task-agents.mdx).
 
 ## Prioridad
 
@@ -120,30 +74,7 @@ Consulta [Añadir entradas y contexto](../plan-and-capture/entries.mdx) para sab
 
 ## Genera una ilustración de portada a partir de imágenes reales de la tarea
 
-<TutorialVideo
-  scenario="task_cover_art"
-  title="Deja que la IA cree la portada de tu tarea"
-  caption="Recorrido narrado: generar la portada a partir del contexto de la tarea e imágenes de referencia."
-/>
-
-Si hay configurada una habilidad de generación de imágenes, abre el menú de generación de la tarea y elige su acción de ilustración de portada. Lotti muestra primero las imágenes que ya están adjuntas a la tarea, además de las portadas disponibles de tareas vinculadas. Selecciona hasta cinco referencias para guiar el resultado o continúa sin ninguna referencia.
-
-La portada generada se crea en Lotti a partir del contexto de la tarea y de las referencias que selecciones. Es una ayuda visual, no un campo obligatorio: úsala cuando una imagen distintiva haga que el trabajo sea más fácil o agradable de reconocer. La ruta actual de generación de imágenes usa el proveedor configurado, así que trata el prompt de generación y las referencias elegidas como datos que envías deliberadamente a ese proveedor; una ruta local de razonamiento o transcripción no hace que la generación de portadas sea local.
-
-<ManualScreenshot
-  caseId="tasks/cover-references"
-  alt="Hoja Generar ilustración de portada que muestra cinco imágenes de referencia distintas de Project Waddle procedentes del contexto de la tarea"
-  caption="El selector usa las mismas imágenes de tareas que se ven en toda la demostración de Project Waddle."
-/>
-
-Después de continuar, la generación de imágenes se ejecuta en segundo plano. La vista de progreso usa el visualizador de razonamiento de producción de Lotti y puedes cerrarla sin cancelar el trabajo.
-
-<ManualScreenshot
-  caseId="tasks/cover-generating"
-  alt="Generación de ilustración de portada de tarea en curso con el visualizador de shaders de producción de Lotti"
-/>
-
-La imagen generada pasa a ser la portada de la tarea y la acompaña en las vistas de lista, detalle, proyecto y Daily OS. Una buena portada debe seguir siendo reconocible cuando la imagen fuente panorámica se recorta en una miniatura de tarea compacta. Puede ser una prueba literal, una metáfora sobria o tan extraña como el trabajo lo merezca; la única prueba útil es si luego reconoces la tarea más rápido.
+Si hay una habilidad de generación de imágenes configurada, Lotti puede convertir el contexto de una tarea e imágenes de referencia en una portada — consulta [Genera una ilustración de portada a partir de imágenes reales de la tarea](./task-cover-art.mdx).
 
 ## Vincula tareas relacionadas
 

@@ -25,53 +25,7 @@ Une même tâche peut contenir une description, une catégorie, des étiquettes,
 
 ## Affecter un agent de tâche
 
-Une tâche peut avoir un agent de tâche. Lui en affecter un donne à cette tâche un assistant IA persistant, avec sa propre configuration d’inférence, son rapport, son état de réveil et son historique de propositions. L’agent lit la tâche et son contexte lié, distille la situation actuelle dans un bref rapport et peut faire apparaître des modifications proposées de la tâche ou de sa liste de contrôle, que tu confirmes ou refuses.
-
-L’agent affecté apparaît sous les listes de contrôle et les tâches liées. Sa carte repliée garde visible le dernier résumé, le contrôle des mises à jour automatiques, l’action **Réveiller l’agent** et la route de modèle active, sans transformer la page de tâche en console IA.
-
-<ManualScreenshot
-  caseId="tasks/agent-card"
-  alt="Agent de tâche Habitat Watcher affecté à la tâche d’habitat orbital des manchots, avec son résumé actuel, les mises à jour automatiques, l’action de réveil et la route de modèle Projet Waddle"
-  caption="Habitat Watcher est affecté à cette tâche ; l’affectation et les mises à jour automatiques sont deux choix distincts."
-/>
-
-Choisis **Lire la suite** pour développer le rapport complet sur place. La carte développée conserve la tâche visible, ajoute l’évaluation étayant le rapport et l’étape suivante recommandée, et propose **Ouvrir les détails internes de l’agent** lorsque tu as besoin des rapports, conversations, observations ou détails d’exécution.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-expanded"
-  alt="Carte développée de l’agent de tâche Habitat Watcher avec l’évaluation complète de l’habitat de Project Waddle et l’étape suivante recommandée"
-  caption="Le rapport complet se développe dans la tâche plutôt que de t’envoyer sur une page séparée."
-/>
-
-### Examiner les modifications proposées
-
-Un réveil terminé peut mettre à jour le rapport et ajouter des modifications proposées. Les mises à jour automatiques décident *quand l’agent se réveille* ; elles ne lui donnent pas le droit de modifier la tâche. Les propositions restent en attente jusqu’à ton intervention.
-
-<ManualScreenshot
-  caseId="tasks/agent-suggestions"
-  alt="Carte de l’agent Habitat Watcher avec deux propositions de Project Waddle en attente, des actions individuelles Ignorer et Confirmer, et une action Tout confirmer"
-  caption="L’agent propose une étape de liste de contrôle pour tester le distributeur et une estimation révisée ; aucune des deux modifications n’a encore été appliquée."
-/>
-
-Utilise la croix pour **Ignorer** une proposition ou la coche pour **Confirmer** et l’appliquer. Tu peux aussi balayer une proposition vers la gauche pour l’ignorer ou vers la droite pour la confirmer. Lorsque plusieurs propositions sont en attente, **Tout confirmer** applique ensemble les modifications actuellement listées. Examine attentivement les propositions groupées, surtout les modifications d’état, de date et de liste de contrôle.
-
-Ouvre **Historique** pour revoir les résultats récents. Il distingue les modifications confirmées de celles qui ont été ignorées. Une entrée ignorée peut représenter ta décision ou une proposition que l’agent a retirée après qu’un contexte de tâche plus récent l’a rendue obsolète.
-
-Un **Réveiller l’agent** manuel peut produire les mêmes types de rapport et de propositions qu’un réveil automatique. Désactiver les mises à jour automatiques arrête les futurs réveils en arrière-plan ; cela n’applique, ne rejette ni ne résout autrement les propositions qui attendent déjà ta décision.
-
-### Choisir les mises à jour automatiques ou manuelles
-
-Les nouveaux agents de tâche commencent avec les **mises à jour automatiques désactivées**. L’affectation seule ne consomme aucun jeton en arrière-plan. Lorsque les mises à jour sont désactivées, Lotti continue de repérer les changements pertinents de la tâche et de ses entrées liées, indique qu’un résumé plus ancien n’est plus à jour et attend que tu choisisses **Réveiller l’agent**. Un réveil manuel reste disponible dès que l’agent possède une configuration IA fonctionnelle.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-manual"
-  alt="Carte de l’agent Habitat Watcher avec mises à jour automatiques désactivées, avertissement de rapport obsolète et action manuelle Réveiller l’agent"
-  caption="Le mode manuel observe les changements et signale l’obsolescence sans lancer d’inférence."
-/>
-
-Lorsque les **mises à jour automatiques** sont activées, Lotti regroupe les changements de tâche correspondants pendant environ deux minutes avant de programmer une actualisation. Ce regroupement évite un réveil d’agent à chaque petite modification. **Réveiller l’agent** reste disponible pour une actualisation immédiate que tu demandes.
-
-Désactiver les mises à jour automatiques efface son compte à rebours en attente et les actualisations automatiques en file d’attente, mais n’annule pas un réveil que tu as explicitement demandé. Les réactiver s’applique aux changements futurs ; cela ne rejoue pas les changements arrivés lorsque l’automatisation était désactivée.
+Une tâche peut avoir un agent de tâche : un assistant IA permanent avec sa propre configuration d'inférence, son rapport et son historique de propositions — voir [Affecter un agent de tâche](./task-agents.mdx).
 
 ## Priorité
 
@@ -120,30 +74,7 @@ Consulte [Ajouter des entrées et du contexte](../plan-and-capture/entries.mdx) 
 
 ## Générer une illustration de couverture à partir d’images réelles de la tâche
 
-<TutorialVideo
-  scenario="task_cover_art"
-  title="Laisse l'IA créer la couverture de ta tâche"
-  caption="Vidéo commentée : générer une illustration de couverture à partir du contexte de la tâche et d'images de référence."
-/>
-
-Si une compétence de génération d’images est configurée, ouvre le menu de génération de la tâche et choisis son action d’illustration de couverture. Lotti affiche d’abord les images déjà jointes à la tâche ainsi que les images de couverture disponibles dans les tâches liées. Sélectionne jusqu’à cinq références pour guider le résultat, ou continue sans référence.
-
-La couverture générée est créée dans Lotti à partir du contexte de la tâche et des références que tu sélectionnes. C’est une aide visuelle, pas un champ obligatoire : utilise-la lorsqu’une image distinctive rend le travail plus facile ou plus agréable à reconnaître. La route de génération d’images actuelle utilise le fournisseur configuré ; considère donc l’invite de génération et les références sélectionnées comme des données que tu envoies intentionnellement à ce fournisseur. Une route locale de réflexion ou de transcription ne rend pas la génération de couverture locale.
-
-<ManualScreenshot
-  caseId="tasks/cover-references"
-  alt="Feuille Générer une illustration de couverture présentant cinq images de référence distinctes de Project Waddle tirées du contexte de la tâche"
-  caption="Le sélecteur utilise les mêmes images de tâche visibles dans toute la démonstration de Project Waddle."
-/>
-
-Après avoir continué, la génération d’image s’exécute en arrière-plan. La vue de progression utilise le visualiseur de réflexion de production de Lotti et peut être fermée sans annuler la tâche.
-
-<ManualScreenshot
-  caseId="tasks/cover-generating"
-  alt="Génération d’illustration de couverture de tâche en cours avec le visualiseur de shader de production de Lotti"
-/>
-
-L’image générée devient la couverture de la tâche et suit celle-ci dans les vues liste, détail, projet et Daily OS. Une couverture efficace reste reconnaissable lorsque l’image source large est recadrée en vignette compacte. Elle peut être une preuve littérale, une métaphore sobre ou aussi étrange que le mérite le travail ; le seul test utile est de savoir si tu reconnaîtras la tâche plus vite ensuite.
+Si une compétence de génération d'images est configurée, Lotti peut transformer le contexte d'une tâche et des images de référence en illustration de couverture — voir [Générer une illustration de couverture à partir d'images réelles de la tâche](./task-cover-art.mdx).
 
 ## Relier des tâches apparentées
 

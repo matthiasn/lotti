@@ -25,53 +25,7 @@ Aceeași sarcină poate conține descriere, categorie, etichete, termen, înregi
 
 ## Atribuiți un agent sarcinii
 
-O sarcină poate avea un singur agent. Atribuirea îi oferă un asistent AI persistent, cu propria configurare de inferență, raport, stare de activare și istoric al propunerilor. Agentul citește sarcina și contextul legat, distilează situația curentă într-un raport scurt și poate afișa modificări propuse ale sarcinii sau listei de verificare, pe care dvs. le confirmați sau le respingeți.
-
-Agentul atribuit apare sub listele de verificare și sarcinile legate. Cardul restrâns păstrează vizibile cel mai recent rezumat, controlul de actualizare automată, acțiunea **Activați agentul** și ruta modelului activ, fără să transforme pagina sarcinii într-o consolă AI.
-
-<ManualScreenshot
-  caseId="tasks/agent-card"
-  alt="Agentul de sarcină Habitat Watcher atribuit sarcinii habitatului orbital al pinguinilor, cu rezumat curent, actualizări automate, acțiunea de activare și ruta modelului Project Waddle"
-  caption="Habitat Watcher este atribuit acestei sarcini; atribuirea și actualizările automate sunt alegeri separate."
-/>
-
-Alegeți **Citiți mai mult** pentru a extinde raportul complet în același loc. Cardul extins păstrează sarcina vizibilă, adaugă evaluarea de sprijin și următorul pas recomandat și oferă **Deschideți componentele interne ale agentului** pentru rapoarte, conversații, observații și detalii de execuție.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-expanded"
-  alt="Cardul extins al agentului Habitat Watcher, cu evaluarea completă a habitatului Project Waddle și următorul pas recomandat"
-  caption="Raportul complet se extinde în sarcină, în loc să vă trimită pe o pagină separată."
-/>
-
-### Revizuiți modificările propuse
-
-O activare finalizată poate actualiza raportul și poate adăuga propuneri. Actualizările automate decid *când se activează agentul*; nu îi dau agentului permisiunea de a edita sarcina. Propunerile rămân în așteptare până când luați o decizie în privința lor.
-
-<ManualScreenshot
-  caseId="tasks/agent-suggestions"
-  alt="Cardul agentului Habitat Watcher cu două propuneri Project Waddle în așteptare, acțiuni individuale de respingere și confirmare și acțiunea Confirmați-le pe toate"
-  caption="Agentul propune un element pentru lista de verificare a testului alimentatorului și o estimare revizuită; niciuna dintre modificări nu a fost aplicată încă."
-/>
-
-Folosiți crucea pentru a **Respinge** o propunere sau bifa pentru a o **Confirma** și aplica. Puteți, de asemenea, glisa propunerea spre stânga pentru respingere sau spre dreapta pentru confirmare. Când sunt în așteptare mai multe propuneri, **Confirmați-le pe toate** aplică împreună modificările afișate. Revizuiți cu atenție propunerile în bloc, mai ales modificările de stare, dată și listă de verificare.
-
-Deschideți **Istoric** pentru a revedea rezultate recente. Acesta distinge modificările confirmate de cele respinse. O intrare respinsă poate reprezenta decizia dvs. sau o propunere retrasă de agent după ce un context mai nou a făcut-o depășită.
-
-O acțiune manuală **Activați agentul** poate produce același tip de raport și propuneri ca o activare automată. Dezactivarea actualizărilor automate oprește activările viitoare din fundal; nu aplică, nu respinge și nu rezolvă în alt fel propunerile care așteaptă deja decizia dvs.
-
-### Alegeți actualizări automate sau manuale
-
-Agenții noi ai sarcinilor pornesc cu **Actualizări automate dezactivate**. Simplul fapt că ați atribuit agentul nu consumă tokenuri în fundal. Cât timp actualizările sunt oprite, Lotti observă schimbările relevante ale sarcinii și înregistrărilor legate, marchează un rezumat mai vechi ca depășit și așteaptă să alegeți **Activați agentul**. Activarea manuală rămâne disponibilă oricând agentul are o configurare AI funcțională.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-manual"
-  alt="Cardul agentului Habitat Watcher cu actualizările automate oprite, o notificare privind raportul depășit și acțiunea manuală Activați agentul"
-  caption="Modul manual observă schimbările și semnalează raportul depășit fără a porni inferența."
-/>
-
-Când **Actualizări automate** sunt active, Lotti grupează schimbările potrivite ale sarcinii timp de aproximativ două minute înainte de a programa reîmprospătarea. Această grupare evită câte o activare pentru fiecare editare mică. **Activați agentul** rămâne disponibil pentru o reîmprospătare imediată solicitată de dvs.
-
-Dezactivarea actualizărilor automate șterge numărătoarea inversă și reîmprospătările automate din coadă, dar nu anulează o activare solicitată explicit. Activarea lor din nou se aplică schimbărilor viitoare; nu reprocesează schimbările sosite cât timp automatizarea a fost oprită.
+O sarcină poate avea un agent de sarcină: un asistent AI permanent cu propria configurație de inferență, raport și istoric de propuneri — consultați [Atribuiți un agent sarcinii](./task-agents.mdx).
 
 ## Prioritate
 
@@ -120,30 +74,7 @@ Consultați [Adăugați înregistrări și context](../plan-and-capture/entries.
 
 ## Generați copertă din imagini reale ale sarcinii
 
-<TutorialVideo
-  scenario="task_cover_art"
-  title="Lăsați AI să creeze coperta sarcinii dvs."
-  caption="Prezentare comentată: generarea copertei din contextul sarcinii și imagini de referință."
-/>
-
-Dacă este configurată o abilitate de generare a imaginilor, deschideți meniul de generare al sarcinii și alegeți acțiunea pentru copertă. Lotti arată mai întâi imaginile atașate deja sarcinii, împreună cu imaginile de copertă disponibile din sarcinile legate. Selectați până la cinci referințe care să ghideze rezultatul sau continuați fără referință.
-
-Imaginea generată este creată în Lotti pe baza contextului sarcinii și a referințelor selectate. Este un ajutor vizual, nu un câmp obligatoriu: folosiți-o când o imagine distinctă face munca mai ușor sau mai plăcut de recunoscut. Ruta curentă de generare folosește furnizorul configurat, așadar tratați promptul și referințele selectate drept date pe care decideți intenționat să le trimiteți acelui furnizor; o rută locală de raționament sau transcriere nu înseamnă automat că generarea copertei rulează local.
-
-<ManualScreenshot
-  caseId="tasks/cover-references"
-  alt="Foaia Generați copertă care arată cinci imagini de referință Project Waddle distincte din contextul sarcinii"
-  caption="Selectorul folosește aceleași imagini de sarcini vizibile în întregul demo Project Waddle."
-/>
-
-După ce continuați, generarea imaginii rulează în fundal. Vizualizarea progresului folosește vizualizatorul de raționament din producție al Lotti și poate fi închisă fără a anula sarcina.
-
-<ManualScreenshot
-  caseId="tasks/cover-generating"
-  alt="Generarea în curs a copertei sarcinii, cu vizualizatorul shader din producție al Lotti"
-/>
-
-Imaginea generată devine coperta sarcinii și o urmează în perspectivele de listă, detaliu, proiect și Daily OS. O copertă bună trebuie să rămână recognoscibilă când imaginea sursă lată este decupată într-o miniatură compactă. Poate fi dovadă literală, o metaforă discretă sau ceva la fel de ciudat ca munca; singurul test util este dacă recunoașteți mai repede sarcina mai târziu.
+Dacă este configurată o abilitate de generare a imaginilor, Lotti poate transforma contextul unei sarcini și imagini de referință într-o copertă — consultați [Generați copertă din imagini reale ale sarcinii](./task-cover-art.mdx).
 
 ## Legați sarcini înrudite
 

@@ -1,0 +1,93 @@
+---
+title: Atribuir um agente de tarefa
+description: Dê a uma tarefa um assistente de IA persistente, escolha sua configuração de inferência e revise as alterações que ele propõe.
+---
+
+# Atribuir um agente de tarefa
+
+Uma tarefa pode ter um agente de tarefa. Atribuir um dá à tarefa um assistente
+de IA persistente, com configuração de inferência, relatório, estado de
+despertar e histórico de propostas próprios. O agente lê a tarefa e seu
+contexto vinculado, destila a situação atual em um relatório curto e pode
+apresentar propostas de alterações na tarefa ou na lista de verificação para
+você confirmar ou rejeitar.
+
+O agente atribuído aparece abaixo das listas de verificação e das tarefas
+vinculadas da tarefa. Seu cartão recolhido mantém visíveis o resumo mais
+recente, o controle de atualização automática, a ação **Ativar agente** e a
+rota do modelo ativo, sem fazer a página da tarefa parecer um console de IA.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Agente de tarefa Habitat Watcher atribuído à tarefa do habitat orbital dos pinguins, mostrando seu resumo atual, atualizações automáticas, ação de despertar e rota do modelo do Project Waddle"
+  caption="O Habitat Watcher está atribuído a esta tarefa; a atribuição e as atualizações automáticas são escolhas separadas."
+/>
+
+Escolha **Leia mais** para expandir o relatório completo ali mesmo. O cartão
+expandido mantém a tarefa visível, adiciona a avaliação de apoio do relatório e
+a próxima etapa recomendada, e oferece **Abrir detalhes internos do agente**
+quando você precisar de relatórios, conversas, observações ou detalhes de
+execução.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Cartão expandido do agente de tarefa Habitat Watcher com a avaliação completa do habitat do Project Waddle e a próxima etapa recomendada"
+  caption="O relatório completo se expande dentro da tarefa em vez de enviar você para uma página separada."
+/>
+
+## Revise as alterações propostas
+
+Um despertar concluído pode atualizar o relatório e adicionar alterações
+propostas. As atualizações automáticas decidem *quando o agente acorda*; elas
+não dão ao agente permissão para editar a tarefa. As propostas permanecem
+pendentes até você agir sobre elas.
+
+<ManualScreenshot
+  caseId="tasks/agent-suggestions"
+  alt="Cartão do agente de tarefa Habitat Watcher com duas propostas pendentes do Project Waddle, ações individuais de rejeitar e confirmar e uma ação Confirmar todas"
+  caption="O agente propõe um item de lista de verificação para o teste do alimentador e uma estimativa revisada; nenhuma das alterações foi aplicada ainda."
+/>
+
+Use o X para **Rejeitar** uma proposta ou a marca de confirmação para
+**Confirmar** e aplicá-la. Você também pode deslizar uma proposta para a
+esquerda para rejeitar ou para a direita para confirmar. Quando várias
+propostas estão pendentes, **Confirme todas** aplica de uma vez as alterações
+listadas no momento. Revise propostas em massa com cuidado, especialmente
+alterações de status, data e lista de verificação.
+
+Abra o **Histórico** para revisitar os resultados recentes. Ele distingue as
+alterações confirmadas das rejeitadas. Uma entrada rejeitada pode representar
+tanto uma decisão sua quanto uma proposta que o agente retirou depois que um
+contexto mais novo da tarefa a tornou obsoleta.
+
+Um **Ativar agente** manual pode produzir os mesmos tipos de relatório e
+propostas que um despertar automático. Desativar as atualizações automáticas
+interrompe os despertares futuros em segundo plano; isso não aplica, descarta
+nem resolve de outra forma as propostas que já aguardam sua decisão.
+
+## Escolha atualizações automáticas ou manuais
+
+Novos agentes de tarefa começam com **Atualizações automáticas desativadas**. A
+atribuição por si só não gasta tokens em segundo plano. Enquanto as
+atualizações estão desativadas, a Lotti continua percebendo alterações
+relevantes na tarefa e em suas entradas vinculadas, marca um resumo mais antigo
+como desatualizado e espera você escolher **Ativar agente**. Um despertar
+manual continua disponível sempre que o agente tiver uma configuração de IA
+funcional.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Cartão do agente de tarefa Habitat Watcher com atualizações automáticas desativadas, um aviso de relatório desatualizado e uma ação manual Ativar agente"
+  caption="O modo manual observa alterações e relata a desatualização sem iniciar a inferência."
+/>
+
+Quando as **Atualizações automáticas** estão ativadas, a Lotti agrupa as
+alterações correspondentes da tarefa por cerca de dois minutos antes de agendar
+uma atualização. Esse agrupamento evita um despertar do agente a cada pequena
+edição. **Ativar agente** continua disponível para uma atualização imediata
+solicitada por você.
+
+Desativar as atualizações automáticas limpa a contagem regressiva pendente e as
+atualizações automáticas na fila, mas não cancela um despertar que você
+solicitou explicitamente. Reativá-las vale para alterações futuras; isso não
+reexecuta alterações que chegaram enquanto a automação estava desligada.

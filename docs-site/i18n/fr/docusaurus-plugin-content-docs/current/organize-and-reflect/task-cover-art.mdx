@@ -1,0 +1,31 @@
+---
+title: Générer une illustration de couverture à partir d’images réelles de la tâche
+description: Laisse une compétence de génération d'images configurée transformer le contexte d'une tâche et des images de référence en illustration de couverture.
+---
+
+# Générer une illustration de couverture à partir d’images réelles de la tâche
+
+<TutorialVideo
+  scenario="task_cover_art"
+  title="Laisse l'IA créer la couverture de ta tâche"
+  caption="Vidéo commentée : générer une illustration de couverture à partir du contexte de la tâche et d'images de référence."
+/>
+
+Si une compétence de génération d’images est configurée, ouvre le menu de génération de la tâche et choisis son action d’illustration de couverture. Lotti affiche d’abord les images déjà jointes à la tâche ainsi que les images de couverture disponibles dans les tâches liées. Sélectionne jusqu’à cinq références pour guider le résultat, ou continue sans référence.
+
+La couverture générée est créée dans Lotti à partir du contexte de la tâche et des références que tu sélectionnes. C’est une aide visuelle, pas un champ obligatoire : utilise-la lorsqu’une image distinctive rend le travail plus facile ou plus agréable à reconnaître. La route de génération d’images actuelle utilise le fournisseur configuré ; considère donc l’invite de génération et les références sélectionnées comme des données que tu envoies intentionnellement à ce fournisseur. Une route locale de réflexion ou de transcription ne rend pas la génération de couverture locale.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Feuille Générer une illustration de couverture présentant cinq images de référence distinctes de Project Waddle tirées du contexte de la tâche"
+  caption="Le sélecteur utilise les mêmes images de tâche visibles dans toute la démonstration de Project Waddle."
+/>
+
+Après avoir continué, la génération d’image s’exécute en arrière-plan. La vue de progression utilise le visualiseur de réflexion de production de Lotti et peut être fermée sans annuler la tâche.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Génération d’illustration de couverture de tâche en cours avec le visualiseur de shader de production de Lotti"
+/>
+
+L’image générée devient la couverture de la tâche et suit celle-ci dans les vues liste, détail, projet et Daily OS. Une couverture efficace reste reconnaissable lorsque l’image source large est recadrée en vignette compacte. Elle peut être une preuve littérale, une métaphore sobre ou aussi étrange que le mérite le travail ; le seul test utile est de savoir si tu reconnaîtras la tâche plus vite ensuite.
