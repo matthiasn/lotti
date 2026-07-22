@@ -59,6 +59,23 @@ DEFAULT_OUT = REPO_ROOT / "build" / "tutorial_videos"
 # renders the real mobile bottom-nav UI, not a shrunk desktop layout.
 DEVICE_SIZES = {"desktop": "1920x1080", "mobile": "804x1748"}
 
+# GTK/GDK scale factor per device (GDK_SCALE env var). Xvfb + ffmpeg always
+# capture at DEVICE_SIZES' full physical resolution — but `gtk_window_set_
+# default_size` (linux/runner/my_application.cc's LOTTI_WINDOW_SIZE) takes
+# GTK "application pixels", i.e. the LOGICAL size *before* GDK_SCALE is
+# applied. Without a scale override, mobile's physical 804x1748 window is
+# also its logical size, so Flutter's MediaQuery.sizeOf(context).width is
+# 804 — comfortably past width-based phone breakpoints narrower than
+# `kDesktopBreakpoint` (e.g. bottom sheets vs. centered dialogs below
+# 560px), so those render in their desktop/tablet shape even though the
+# bottom nav (which only checks the 960px breakpoint) looks right. Setting
+# GDK_SCALE=2 alongside a HALVED LOTTI_WINDOW_SIZE keeps the physical/
+# captured resolution at 804x1748 while Flutter sees the real phone logical
+# size (402x874, matching `proDevice`) — the same trick real HiDPI phones
+# use, and the reason `proDevice` itself pairs a 402x874 logical size with
+# devicePixelRatio 3 for its screenshots.
+DEVICE_SCALE = {"desktop": 1, "mobile": 2}
+
 
 def _load(args: argparse.Namespace):
     scenario = load_scenario(
@@ -122,6 +139,9 @@ def cmd_build(args: argparse.Namespace) -> int:
 
     device = getattr(args, "device", "desktop")
     size = DEVICE_SIZES[device]
+    scale = DEVICE_SCALE[device]
+    capture_width, capture_height = (int(part) for part in size.split("x"))
+    window_size = f"{capture_width // scale}x{capture_height // scale}"
     display, sink = ":99", "lotti_tutorial_mic"
     secrets = _read_env_pairs(["MELIOUS_API_KEY", "MELIOUS_BASE_URL"])
 
@@ -135,6 +155,10 @@ def cmd_build(args: argparse.Namespace) -> int:
                 "DISPLAY": display,
                 "GDK_BACKEND": "x11",
                 "WAYLAND_DISPLAY": "",
+                # See DEVICE_SCALE's comment: makes Flutter's MediaQuery see
+                # the real phone logical width while Xvfb/ffmpeg still
+                # capture at the full physical resolution.
+                "GDK_SCALE": str(scale),
                 "LOTTI_MANUAL_LOCALE": args.locale,
                 "LOTTI_TUTORIAL_MANIFEST": str(manifest_path),
                 "LOTTI_TUTORIAL_TIMELINE": str(timeline_path),
@@ -142,8 +166,11 @@ def cmd_build(args: argparse.Namespace) -> int:
                 "LOTTI_SCREENSHOT_DIR": str(out_dir),
                 # Honored by linux/runner/my_application.cc: sizes the GTK
                 # window at startup (post-launch resizing is not honored on
-                # the WM-less Xvfb display).
-                "LOTTI_WINDOW_SIZE": size,
+                # the WM-less Xvfb display). GTK's `gtk_window_set_default_
+                # size` takes application (logical) pixels, so this is the
+                # LOGICAL size — physical capture resolution is `size`,
+                # scaled up by GDK_SCALE.
+                "LOTTI_WINDOW_SIZE": window_size,
                 # Read by tutorial_harness.dart's tutorialDeviceIsMobile() so
                 # scenario tests can branch where the real mobile layout
                 # genuinely diverges from desktop (not just window size).
@@ -170,7 +197,6 @@ def cmd_build(args: argparse.Namespace) -> int:
         return 1
 
     manifest = json.loads(manifest_path.read_text())
-    width, height = (int(part) for part in size.split("x"))
     compose_video(
         repo_root=REPO_ROOT,
         capture=capture_path,
@@ -178,7 +204,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         timeline_path=timeline_path,
         manifest=manifest,
         output=video_path,
-        size=(width, height),
+        size=(capture_width, capture_height),
     )
 
     vtt_path = out_dir / f"{scenario_locale}.vtt"
