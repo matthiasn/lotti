@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (phases 1–2 implemented; phases 3–6 remain proposed). See
+Accepted (phases 1–3 implemented; phases 4–6 remain proposed). See
 Amendments below for where the implementation diverged from this ADR's
 original text.
 
@@ -467,12 +467,22 @@ Decision section in place.
   knowledge is read under `dailyOsPlannerAgentId` on every wake (coordinator
   or per-day), and a per-day agent's `propose_knowledge` tool calls persist
   under the coordinator's id too — there is no per-day knowledge store.
-- **Directive/status protocol (phase 3: `DayDirectiveEntity`,
-  `DayStatusEvent`) is not implemented.** The coordinator does not yet issue
-  directives or receive per-day status events; a per-day agent currently has
-  no commitments/capacity input beyond what its own day's captures and the
-  coordinator's knowledge provide. Pushback (§3) is not yet grounded in a
-  structured ledger.
+- **Directive/status protocol (phase 3) shipped with four deviations from
+  this ADR's text.** (1) Upward channel 1 is day summaries, not
+  `agentReportHead`: day agents never wrote `AgentReportEntity`, and the
+  coordinator's `<recent_days>` week context already consumes
+  `DaySummaryEntity` per day — a parallel report chain would duplicate that
+  artifact. (2) Upward channel 3 (`promotionCandidate` observations) was
+  unnecessary: `propose_knowledge` is coordinator-keyed even on per-day
+  wakes, so promotion-with-user-throttle already exists. (3)
+  `DayDirectiveEntity` needs no indexed projection — `day_directive:<dayId>`
+  is a deterministic PK read like `DayPlanEntity`; only `DayStatusEventEntity`
+  gets a query (`getDayStatusEventsSince`, served by an existing index).
+  (4) The digest cadence is re-armed deterministically by code (completion
+  re-arm + startup bootstrap), not by the model's `set_next_wake` — a digest
+  that forgets to self-schedule cannot break the cadence. The
+  `attentionNeeded` same-day subscription (open question 1) is deferred:
+  phase 3 ships digest-cadence consumption only.
 - **No dormancy automation.** §1 described bounded-not-ephemeral per-day
   agents going `dormant` after day close. No day-close lifecycle exists yet
   (shutdown/reflection tools are still mocked in `RealDayAgent`), so per-day

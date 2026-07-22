@@ -20,6 +20,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   same restart-safe queue drafting already uses), so backgrounding or killing
   the app between recording and parsing no longer loses the parse — it runs
   when the app reopens.
+- **The Daily OS coordinator now briefs each day's planning agent.** Every
+  morning a coordinator digest reviews escalations and recent days, then
+  issues a distilled directive per day — your commitments, the day's
+  capacity budget, carry-overs, and cross-day context — which that day's
+  agent must honor when drafting: every commitment is placed, explicitly
+  traded away with the collision named, or escalated back. Day agents can
+  raise typed status events (over-committed, directive unsatisfiable, plans
+  diverging, processing blocked) that the coordinator picks up at its next
+  digest, so week-level plans and learnings persist while each day keeps a
+  small, fast context of its own.
 
 ### Fixed
 - **Same-day plans can no longer schedule new blocks in the past.** The

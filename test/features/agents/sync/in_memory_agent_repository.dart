@@ -88,6 +88,25 @@ class InMemoryAgentRepository extends MockAgentRepository {
           .toList();
 
   @override
+  Future<List<DayStatusEventEntity>> getDayStatusEventsSince(
+    DateTime since, {
+    int? limit,
+  }) async {
+    // Mirror the real query: cross-agent, oldest first, strictly after the
+    // watermark, soft-deleted excluded.
+    final matching =
+        entities
+            .whereType<DayStatusEventEntity>()
+            .where((e) => e.deletedAt == null && e.createdAt.isAfter(since))
+            .toList()
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    if (limit != null && limit >= 0 && matching.length > limit) {
+      return matching.sublist(0, limit);
+    }
+    return matching;
+  }
+
+  @override
   Future<List<AgentMessageEntity>> getMessagesByKind(
     String agentId,
     AgentMessageKind kind, {

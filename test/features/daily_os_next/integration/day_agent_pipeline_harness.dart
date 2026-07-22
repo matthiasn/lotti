@@ -65,6 +65,7 @@ class DayAgentPipelineHarness {
     required this.outbox,
     required this.runtime,
     required this.realDayAgent,
+    required this.dayAgentService,
   });
 
   /// Builds the full pipeline. [now] seeds template timestamps; [profile],
@@ -324,6 +325,7 @@ class DayAgentPipelineHarness {
       outbox: outbox,
       runtime: runtime,
       realDayAgent: realDayAgent,
+      dayAgentService: dayAgentService,
     );
   }
 
@@ -338,6 +340,7 @@ class DayAgentPipelineHarness {
   final DayProcessingOutboxRepository outbox;
   final DayProcessingRuntime runtime;
   final RealDayAgent realDayAgent;
+  final DayAgentService dayAgentService;
 
   /// Stops the runtime/orchestrator, closes the outbox, and deletes the
   /// temp directory backing it.
