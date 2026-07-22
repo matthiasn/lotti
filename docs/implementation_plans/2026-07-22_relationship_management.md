@@ -122,8 +122,9 @@ tests cover list/detail/capture; analyzer clean.
 1. `NotificationEntity.relationshipCheckIn` variant + exhaustive-switch
    updates in the notifications feature and sync event processor.
 2. `RelationshipReminderService`: eligibility rule (important + active +
-   cadence elapsed), producer hooks on check-in save and relationship save,
-   stable ids per ADR 0039 §4.
+   cadence elapsed; baseline is the relationship's `meta.dateFrom` until
+   the first check-in exists), producer hooks on check-in save and
+   relationship save, stable ids per ADR 0039 §4.
 3. Wire `NotificationScheduler.reconcile()` into app startup; tests for
    restart re-arming (fake time, no real timers per `test/README.md`).
 4. Inbox rendering + tap-through to the relationship detail page;
@@ -167,7 +168,7 @@ tests; health band renders; no inference without a trigger.
 2. `PRIVACY.md`: relationship-data section per ADR 0037 §6.
 3. Feature README kept current throughout; CHANGELOG entry under the
    then-current version when the feature ships.
-4. Flip ADRs 0037–0040 to Accepted as their phases land.
+4. Flip ADRs 0037–0041 to Accepted as their phases land.
 
 ## Testing and quality gates (every phase)
 

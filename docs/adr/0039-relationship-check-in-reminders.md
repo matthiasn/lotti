@@ -36,9 +36,14 @@ notification, rather than a periodic job.
 2. **Deterministic, local eligibility rule.** A reminder is due for a
    relationship iff `important == true`, status is `active`, and
    `now - lastCheckInDate >= checkInCadenceDays` (default 30 when unset).
-   The last check-in date is the newest linked check-in's `meta.dateFrom`.
-   Relationships that are not important never produce reminders — the flag
-   is the single consent switch for proactive behavior.
+   The last check-in date is the newest linked check-in's `meta.dateFrom`;
+   for a relationship with no linked check-ins yet, the baseline is the
+   relationship's own `meta.dateFrom`, so the first reminder fires one
+   cadence after tracking starts — marking someone important is itself the
+   request to be nudged, so reminders are never suppressed waiting for a
+   first check-in. Relationships that are not important never produce
+   reminders — the flag is the single consent switch for proactive
+   behavior.
 3. **Event-driven producer, no background scheduler.** A
    `RelationshipReminderService` recomputes the next due date and
    (re)schedules via `NotificationScheduler`:
