@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     hide dayAgentProvider;
@@ -15,6 +16,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -38,6 +40,8 @@ void main() {
         final planService = MockDayAgentPlanService();
         final dayAgentService = MockDayAgentService();
         final journalDb = MockJournalDb();
+        final outbox = MockDayProcessingOutboxRepository();
+        final runtime = MockDayProcessingRuntime();
 
         final container = ProviderContainer(
           overrides: [
@@ -45,6 +49,8 @@ void main() {
             dayAgentPlanServiceProvider.overrideWithValue(planService),
             dayAgentServiceProvider.overrideWithValue(dayAgentService),
             journalDbProvider.overrideWithValue(journalDb),
+            dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+            dayProcessingRuntimeProvider.overrideWithValue(runtime),
             silenceAgentUpdates,
           ],
         );
@@ -58,36 +64,46 @@ void main() {
         expect(real.dayAgentService, same(dayAgentService));
         expect(real.journalDb, same(journalDb));
         expect(real.mockFallback, isA<MockDayAgent>());
+        expect(real.outbox, same(outbox));
       },
     );
 
-    test('passes UpdateNotifications.updateStream to the RealDayAgent', () {
-      final captureService = MockDayAgentCaptureService();
-      final planService = MockDayAgentPlanService();
-      final dayAgentService = MockDayAgentService();
-      final journalDb = MockJournalDb();
-      final updates = StreamController<Set<String>>.broadcast();
-      addTearDown(updates.close);
-      final updateStream = updates.stream;
-      final notifications = MockUpdateNotifications();
-      when(() => notifications.updateStream).thenAnswer((_) => updateStream);
+    test(
+      'wires the durable outbox and nudges the processing runtime '
+      '(ADR 0032 phase 1)',
+      () {
+        final captureService = MockDayAgentCaptureService();
+        final planService = MockDayAgentPlanService();
+        final dayAgentService = MockDayAgentService();
+        final journalDb = MockJournalDb();
+        final outbox = MockDayProcessingOutboxRepository();
+        final runtime = MockDayProcessingRuntime();
+        // ignore: unnecessary_lambdas
+        when(() => runtime.nudge()).thenAnswer((_) async {});
 
-      final container = ProviderContainer(
-        overrides: [
-          dayAgentCaptureServiceProvider.overrideWithValue(captureService),
-          dayAgentPlanServiceProvider.overrideWithValue(planService),
-          dayAgentServiceProvider.overrideWithValue(dayAgentService),
-          journalDbProvider.overrideWithValue(journalDb),
-          maybeUpdateNotificationsProvider.overrideWithValue(notifications),
-          silenceAgentUpdates,
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            dayAgentCaptureServiceProvider.overrideWithValue(captureService),
+            dayAgentPlanServiceProvider.overrideWithValue(planService),
+            dayAgentServiceProvider.overrideWithValue(dayAgentService),
+            journalDbProvider.overrideWithValue(journalDb),
+            dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+            dayProcessingRuntimeProvider.overrideWithValue(runtime),
+            silenceAgentUpdates,
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final agent = container.read(dayAgentProvider);
-      expect(agent, isA<RealDayAgent>());
-      expect((agent as RealDayAgent).updateStream, same(updateStream));
-    });
+        final agent = container.read(dayAgentProvider);
+        expect(agent, isA<RealDayAgent>());
+        final real = agent as RealDayAgent;
+        expect(real.outbox, same(outbox));
+
+        real.nudgeProcessing();
+        // ignore: unnecessary_lambdas
+        verify(() => runtime.nudge()).called(1);
+      },
+    );
   });
 
   group('currentDraftPlanProvider', () {
@@ -233,6 +249,15 @@ void main() {
       dayAgentService = MockDayAgentService();
       agentRepository = MockAgentRepository();
       journalDb = MockJournalDb();
+      // The provider unions the resolved owner with the coordinator
+      // (ADR 0032); default the coordinator leg to empty so owner-focused
+      // tests stay unchanged. Specific stubs registered later win.
+      when(
+        () => agentRepository.getEntitiesByAgentId(
+          any(),
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => const <AgentDomainEntity>[]);
     });
 
     ProviderContainer makeContainer() {
@@ -411,6 +436,55 @@ void main() {
     );
 
     test(
+      'unions coordinator captures with the per-day owner and dedupes by id '
+      '(ADR 0032)',
+      () async {
+        // A per-day agent owns the day, but a pre-cutover capture synced in
+        // under the coordinator — both must surface, shared ids only once.
+        final ownerId = perDayAgentId('dayplan-2026-05-25');
+        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: ownerId,
+            agentId: ownerId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        final ownCapture = makeCapture(id: 'cap-own', agentId: ownerId);
+        final sharedOwn = makeCapture(id: 'cap-shared', agentId: ownerId);
+        final plannerCapture = makeCapture(
+          id: 'cap-planner',
+          agentId: dailyOsPlannerAgentId,
+        );
+        final sharedPlanner = makeCapture(
+          id: 'cap-shared',
+          agentId: dailyOsPlannerAgentId,
+        );
+        when(
+          () => agentRepository.getEntitiesByAgentId(
+            ownerId,
+            type: AgentEntityTypes.capture,
+          ),
+        ).thenAnswer((_) async => [ownCapture, sharedOwn]);
+        when(
+          () => agentRepository.getEntitiesByAgentId(
+            dailyOsPlannerAgentId,
+            type: AgentEntityTypes.capture,
+          ),
+        ).thenAnswer((_) async => [plannerCapture, sharedPlanner]);
+
+        final rows = await makeContainer().read(
+          capturesForDateProvider(forDate).future,
+        );
+
+        expect(
+          rows.map((r) => r.capture.id).toSet(),
+          {'cap-own', 'cap-shared', 'cap-planner'},
+        );
+        expect(rows, hasLength(3));
+      },
+    );
+
+    test(
       'leaves audio null when the capture has no audioRef',
       () async {
         const agentId = 'day-agent-003';
@@ -517,6 +591,54 @@ void main() {
         expect(rows.single.audio, isNull);
       },
     );
+  });
+
+  group('dayAgentIsRunningProvider', () {
+    final date = DateTime(2026, 5, 25, 9);
+
+    ProviderContainer runningContainer(Set<String> runningIds) {
+      final container = ProviderContainer(
+        overrides: [
+          agentIsRunningProvider.overrideWith(
+            (ref, agentId) => Stream.value(runningIds.contains(agentId)),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    Future<bool> read(ProviderContainer container) async {
+      container.listen(dayAgentIsRunningProvider(date), (_, _) {});
+      // Let the underlying agentIsRunningProvider streams emit.
+      await pumpEventQueue();
+      return container.read(dayAgentIsRunningProvider(date));
+    }
+
+    test('true while the per-day agent for the date is running', () async {
+      final container = runningContainer({perDayAgentIdForDate(date)});
+      expect(await read(container), isTrue);
+    });
+
+    test('true while the coordinator is running (pre-cutover days)', () async {
+      final container = runningContainer({dailyOsPlannerAgentId});
+      expect(await read(container), isTrue);
+    });
+
+    test(
+      "false when only a different day's agent is running",
+      () async {
+        final container = runningContainer({
+          perDayAgentIdForDate(DateTime(2026, 5, 26)),
+        });
+        expect(await read(container), isFalse);
+      },
+    );
+
+    test('false when nothing is running', () async {
+      final container = runningContainer(const {});
+      expect(await read(container), isFalse);
+    });
   });
 }
 

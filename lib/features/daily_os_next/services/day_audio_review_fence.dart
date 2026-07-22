@@ -57,7 +57,9 @@ class DayAudioReviewFence {
     final jobs = await outbox.getAll();
     for (final job in jobs) {
       if (job.isTerminal) continue;
-      final entity = await journalDb.journalEntityById(job.audioId);
+      final audioId = job.audioId;
+      if (audioId == null) continue;
+      final entity = await journalDb.journalEntityById(audioId);
       if (entity is! JournalAudio || entity.meta.deletedAt != null) continue;
       final context = entity.data.dayContext;
       if (context == null || context.processingJobId != job.id) continue;

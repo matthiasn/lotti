@@ -54,7 +54,9 @@ class DayAudioTranscriptWriter {
     required DayProcessingJob job,
     required String transcript,
   }) => _serialize(() async {
-    final entity = await journalDb.journalEntityById(job.audioId);
+    final audioId = job.audioId;
+    if (audioId == null) return false;
+    final entity = await journalDb.journalEntityById(audioId);
     if (entity is! JournalAudio || entity.meta.deletedAt != null) return false;
     final context = entity.data.dayContext;
     if (context == null ||

@@ -3440,6 +3440,114 @@ void main() {
       });
     });
 
+    group('runCompletions (ADR 0032 phase 1)', () {
+      test(
+        'enqueueManualWake returns the run key that a completed wake reports '
+        'back on',
+        () {
+          fakeAsync((async) {
+            orchestrator = WakeOrchestrator(
+              repository: mockRepository,
+              queue: queue,
+              runner: runner,
+              wakeExecutor: noOpExecutor,
+            );
+            WakeRunCompletion? received;
+            orchestrator.runCompletions.listen((event) => received = event);
+
+            final runKey = orchestrator.enqueueManualWake(
+              agentId: 'agent-1',
+              reason: 'creation',
+              triggerTokens: {'task-1'},
+            );
+            async.flushMicrotasks();
+
+            expect(received, isNotNull);
+            expect(received!.runKey, runKey);
+            expect(received!.agentId, 'agent-1');
+            expect(received!.status, WakeRunStatus.completed);
+            expect(received!.error, isNull);
+          });
+        },
+      );
+
+      test('a throwing executor emits a failed completion with the error', () {
+        fakeAsync((async) {
+          final thrown = StateError('boom');
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            wakeExecutor: (agentId, runKey, triggers, threadId) async =>
+                throw thrown,
+          );
+          WakeRunCompletion? received;
+          orchestrator.runCompletions.listen((event) => received = event);
+
+          orchestrator.enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'creation',
+          );
+          async.flushMicrotasks();
+
+          expect(received!.status, WakeRunStatus.failed);
+          expect(received!.error, thrown);
+        });
+      });
+
+      test('an aborted wake emits an aborted completion', () {
+        fakeAsync((async) {
+          final gate = Completer<Map<String, VectorClock>?>();
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            wakeExecutor: (agentId, runKey, triggers, threadId) => gate.future,
+          );
+          WakeRunCompletion? received;
+          orchestrator.runCompletions.listen((event) => received = event);
+
+          queue.enqueue(makeJob());
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+
+          orchestrator.abortRunningWake('agent-1');
+          async.flushMicrotasks();
+
+          expect(received!.status, WakeRunStatus.aborted);
+          gate.complete(const {});
+          async.flushMicrotasks();
+        });
+      });
+
+      test('no executor registered emits a failed completion', () {
+        fakeAsync((async) {
+          WakeRunCompletion? received;
+          orchestrator.runCompletions.listen((event) => received = event);
+
+          orchestrator.enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'creation',
+          );
+          async.flushMicrotasks();
+
+          expect(received!.status, WakeRunStatus.failed);
+        });
+      });
+
+      test('stop() closes the stream so late listeners see it end', () {
+        fakeAsync((async) {
+          var done = false;
+          orchestrator.runCompletions.listen(null, onDone: () => done = true);
+
+          unawaited(orchestrator.stop());
+          async.flushMicrotasks();
+
+          expect(done, isTrue);
+        });
+      });
+    });
+
     group('monotonic wake counter', () {
       test('identical notifications produce different run keys', () {
         fakeAsync((async) {

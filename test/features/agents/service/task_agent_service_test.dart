@@ -338,7 +338,7 @@ void main() {
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
           ),
-        ).thenReturn(null);
+        ).thenReturn('run-key-stub');
         when(
           () => generatedOrchestrator.disableAutomaticUpdatesRuntime(any()),
         ).thenReturn(null);
@@ -649,7 +649,7 @@ void main() {
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
           ),
-        ).thenReturn(null);
+        ).thenReturn('run-key-stub');
 
         final result = await service.createTaskAgent(
           taskId: 'task-1',
@@ -732,7 +732,7 @@ void main() {
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
           ),
-        ).thenReturn(null);
+        ).thenReturn('run-key-stub');
 
         await service.createTaskAgent(
           taskId: 'task-2',
@@ -929,7 +929,7 @@ void main() {
               reason: any(named: 'reason'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
-          ).thenReturn(null);
+          ).thenReturn('run-key-stub');
           when(
             () => mockOrchestrator.setAwaitingContent(
               any(),
@@ -978,7 +978,7 @@ void main() {
               reason: any(named: 'reason'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
-          ).thenReturn(null);
+          ).thenReturn('run-key-stub');
           when(
             () => mockOrchestrator.setAwaitingContent(
               any(),
@@ -1072,8 +1072,9 @@ void main() {
             agentId: any(named: 'agentId'),
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
+            initiator: any(named: 'initiator'),
           ),
-        ).thenReturn(null);
+        ).thenReturn('run-key-stub');
 
         service.triggerReanalysis('agent-1');
 
@@ -1462,7 +1463,7 @@ void main() {
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
           ),
-        ).thenReturn(null);
+        ).thenReturn('run-key-stub');
 
         await service.createTaskAgent(
           taskId: 'task-sync',
@@ -1511,7 +1512,7 @@ void main() {
               reason: any(named: 'reason'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
-          ).thenReturn(null);
+          ).thenReturn('run-key-stub');
 
           final result = await service.createTaskAgent(
             taskId: 'task-dt',
@@ -1575,7 +1576,7 @@ void main() {
               reason: any(named: 'reason'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
-          ).thenReturn(null);
+          ).thenReturn('run-key-stub');
 
           final result = await service.createTaskAgent(
             taskId: 'task-laura',

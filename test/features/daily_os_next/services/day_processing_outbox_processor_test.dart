@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart'
     show AttributedTranscriptionException, TranscriptionEvidenceState;
+import 'package:lotti/features/daily_os_next/services/day_agent_job_executor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
@@ -256,4 +257,186 @@ void main() {
       );
     },
   );
+
+  group('agent-job dispatch (ADR 0032 phase 1)', () {
+    Future<DayProcessingJob> enqueueParse() => repository.enqueueParseCapture(
+      dayId: 'dayplan-2026-07-18',
+      captureId: 'cap-1',
+    );
+
+    test('a successful agent job marks the outbox row succeeded', () async {
+      DayProcessingJob? seen;
+      final processor = DayProcessingOutboxProcessor(
+        repository: repository,
+        transcribe: (_) async => 'unused',
+        attachTranscript: (_, _) async => true,
+        agentJobExecutor: (job) async {
+          seen = job;
+          return const DayAgentJobSucceeded(resultEntityId: 'parsed-1');
+        },
+      );
+      await enqueueParse();
+
+      final result = await processor.processNext(
+        kinds: const {DayProcessingJobKind.parseCapture},
+      );
+      final saved = await repository.getById('parse_cap-1');
+
+      expect(result, DayProcessingRunResult.succeeded);
+      expect(seen!.kind, DayProcessingJobKind.parseCapture);
+      expect(saved!.status, DayProcessingJobStatus.succeeded);
+      expect(saved.resultEntityId, 'parsed-1');
+    });
+
+    test(
+      'a deterministic agent-job failure surfaces as failed, not deferred',
+      () async {
+        final processor = DayProcessingOutboxProcessor(
+          repository: repository,
+          transcribe: (_) async => 'unused',
+          attachTranscript: (_, _) async => true,
+          agentJobExecutor: (job) async => const DayAgentJobFailed(
+            failureClass: DayProcessingFailureClass.deterministic,
+            error: 'ambiguous day resolution',
+          ),
+        );
+        await enqueueParse();
+
+        final result = await processor.processNext(
+          kinds: const {DayProcessingJobKind.parseCapture},
+        );
+        final saved = await repository.getById('parse_cap-1');
+
+        expect(result, DayProcessingRunResult.failed);
+        expect(saved!.status, DayProcessingJobStatus.failed);
+        expect(saved.lastError, 'ambiguous day resolution');
+      },
+    );
+
+    test(
+      'a retryable agent-job failure defers and preserves attempts',
+      () async {
+        final processor = DayProcessingOutboxProcessor(
+          repository: repository,
+          transcribe: (_) async => 'unused',
+          attachTranscript: (_, _) async => true,
+          agentJobExecutor: (job) async => const DayAgentJobFailed(
+            failureClass: DayProcessingFailureClass.providerBusy,
+            error: 'missing tool call',
+          ),
+        );
+        await enqueueParse();
+
+        final result = await processor.processNext(
+          kinds: const {DayProcessingJobKind.parseCapture},
+        );
+        final saved = await repository.getById('parse_cap-1');
+
+        expect(result, DayProcessingRunResult.deferred);
+        expect(saved!.status, DayProcessingJobStatus.queued);
+      },
+    );
+
+    test(
+      'no registered executor fails the job instead of hanging silently',
+      () async {
+        final processor = DayProcessingOutboxProcessor(
+          repository: repository,
+          transcribe: (_) async => 'unused',
+          attachTranscript: (_, _) async => true,
+        );
+        await enqueueParse();
+
+        final result = await processor.processNext(
+          kinds: const {DayProcessingJobKind.parseCapture},
+        );
+        final saved = await repository.getById('parse_cap-1');
+
+        expect(result, DayProcessingRunResult.failed);
+        expect(saved!.lastError, contains('No agent-job executor'));
+      },
+    );
+
+    test(
+      'a claim revoked mid-flight defers the agent job like transcription',
+      () async {
+        final processor = DayProcessingOutboxProcessor(
+          repository: repository,
+          transcribe: (_) async => 'unused',
+          attachTranscript: (_, _) async => true,
+          agentJobExecutor: (job) async {
+            // Simulate the job being terminalized by another actor before
+            // this attempt reports back.
+            await repository.cancel(job.id);
+            throw StateError('unexpected');
+          },
+        );
+        await enqueueParse();
+
+        final result = await processor.processNext(
+          kinds: const {DayProcessingJobKind.parseCapture},
+        );
+
+        expect(result, DayProcessingRunResult.deferred);
+      },
+    );
+
+    test('onJobFinished fires only for terminal outcomes', () async {
+      final finished = <DayProcessingJob>[];
+      final processor = DayProcessingOutboxProcessor(
+        repository: repository,
+        transcribe: (_) async => 'unused',
+        attachTranscript: (_, _) async => true,
+        onJobFinished: finished.add,
+        agentJobExecutor: (job) async => const DayAgentJobFailed(
+          failureClass: DayProcessingFailureClass.providerBusy,
+          error: 'retryable',
+        ),
+      );
+      await enqueueParse();
+
+      await processor.processNext(
+        kinds: const {DayProcessingJobKind.parseCapture},
+      );
+
+      // A deferred (non-terminal) outcome must not fire onJobFinished.
+      expect(finished, isEmpty);
+    });
+
+    test(
+      'two independent kind lanes drain without one blocking the other',
+      () async {
+        final agentCalls = <String>[];
+        final processor = DayProcessingOutboxProcessor(
+          repository: repository,
+          transcribe: (_) async => 'Gym first, then the proposal.',
+          attachTranscript: (_, _) async => true,
+          agentJobExecutor: (job) async {
+            agentCalls.add(job.id);
+            return const DayAgentJobSucceeded();
+          },
+        );
+        await enqueueParse();
+
+        final counts = await Future.wait([
+          processor.drain(
+            kinds: const {DayProcessingJobKind.transcribeAudio},
+          ),
+          processor.drain(kinds: const {DayProcessingJobKind.parseCapture}),
+        ]);
+
+        expect(counts[0], 1);
+        expect(counts[1], 1);
+        expect(agentCalls, ['parse_cap-1']);
+        expect(
+          (await repository.getById('transcribe_session-1'))!.status,
+          DayProcessingJobStatus.succeeded,
+        );
+        expect(
+          (await repository.getById('parse_cap-1'))!.status,
+          DayProcessingJobStatus.succeeded,
+        );
+      },
+    );
+  });
 }

@@ -4,12 +4,14 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
+import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
@@ -28,14 +30,14 @@ import 'package:lotti/services/db_notification.dart';
 /// [MockDayAgent] so they stay deterministic + don't touch the
 /// agent layer).
 final dayAgentProvider = Provider<DayAgentInterface>((ref) {
-  final notifications = ref.watch(maybeUpdateNotificationsProvider);
   return RealDayAgent(
     captureService: ref.watch(dayAgentCaptureServiceProvider),
     planService: ref.watch(dayAgentPlanServiceProvider),
     dayAgentService: ref.watch(dayAgentServiceProvider),
     journalDb: ref.watch(journalDbProvider),
     mockFallback: MockDayAgent(),
-    updateStream: notifications?.updateStream,
+    outbox: ref.watch(dayProcessingOutboxRepositoryProvider),
+    nudgeProcessing: () => ref.read(dayProcessingRuntimeProvider).nudge(),
   );
 });
 
@@ -86,6 +88,26 @@ final dailyOsPlanDaysProvider = FutureProvider.autoDispose
       };
     });
 
+/// Whether the agent working the given date's workspace is currently
+/// executing a wake (ADR 0032).
+///
+/// True when either the per-day agent (`day_agent:<dayId>`) or the
+/// coordinator is running: post-cutover days wake under their per-day
+/// identity, pre-cutover days still wake under the coordinator, and both ids
+/// are deterministic, so the check needs no identity lookup.
+// ignore: specify_nonobvious_property_types
+final dayAgentIsRunningProvider = Provider.autoDispose.family<bool, DateTime>((
+  ref,
+  date,
+) {
+  final perDayRunning =
+      ref.watch(agentIsRunningProvider(perDayAgentIdForDate(date))).value ??
+      false;
+  final coordinatorRunning =
+      ref.watch(agentIsRunningProvider(dailyOsPlannerAgentId)).value ?? false;
+  return perDayRunning || coordinatorRunning;
+});
+
 /// One row in the Captures panel — a persisted capture paired with the
 /// `JournalAudio` it references (if any). Audio may be `null` when the
 /// capture was typed instead of spoken or when the journal entry has
@@ -114,16 +136,29 @@ final capturesForDateProvider = FutureProvider.autoDispose
       final agent = await dayAgentService.getDayAgentForDate(date);
       if (agent == null) return const <CaptureWithAudio>[];
       final dayId = dayAgentIdForDate(date);
-      final rows = await agentRepository.getEntitiesByAgentId(
-        agent.agentId,
-        type: AgentEntityTypes.capture,
-      );
-      // Day-scope the list (ADR 0022): under one planner owning many days the
-      // agent owns every day's captures, so filter to this date's workspace.
+      // Union the resolved owner with the coordinator (ADR 0032): a
+      // pre-cutover capture can sync in from an old-build peer after the
+      // per-day agent exists, and must stay visible. Dedupe by id.
+      final agentIds = <String>{agent.agentId, dailyOsPlannerAgentId};
+      final rows = <AgentDomainEntity>[
+        for (final agentId in agentIds)
+          ...await agentRepository.getEntitiesByAgentId(
+            agentId,
+            type: AgentEntityTypes.capture,
+          ),
+      ];
+      // Day-scope the list: an owner can hold many days' captures (the
+      // coordinator always does), so filter to this date's workspace.
       // captureDayId derives the day for legacy captures with no dayId.
+      final seenIds = <String>{};
       final captures = rows
           .whereType<CaptureEntity>()
-          .where((c) => c.deletedAt == null && captureDayId(c) == dayId)
+          .where(
+            (c) =>
+                c.deletedAt == null &&
+                captureDayId(c) == dayId &&
+                seenIds.add(c.id),
+          )
           .toList();
       final out = <CaptureWithAudio>[];
       for (final capture in captures) {

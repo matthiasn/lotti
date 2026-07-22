@@ -108,7 +108,7 @@ void main() {
         reason: any(named: 'reason'),
         triggerTokens: any(named: 'triggerTokens'),
       ),
-    ).thenReturn(null);
+    ).thenReturn('run-key-stub');
     when(
       () => mockOrchestrator.restorePendingWake(
         agentId: any(named: 'agentId'),

@@ -29,6 +29,7 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -460,4 +461,10 @@ void registerAllFallbackValues() {
   registerFallbackValue(
     const CreateSurface(surfaceId: 'fallback-surface', catalogId: 'fallback'),
   );
+
+  // Day processing outbox payload fallbacks (ADR 0032 phase 1; needed when
+  // MockDayProcessingOutboxRepository.enqueueDraftPlan/enqueueRefinePlan are
+  // stubbed with any()).
+  registerFallbackValue(const DraftPlanPayload());
+  registerFallbackValue(const RefinePlanPayload());
 }

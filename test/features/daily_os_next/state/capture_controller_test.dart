@@ -799,15 +799,17 @@ void main() {
         final outbox = MockDayProcessingOutboxRepository();
         final job = DayProcessingJob(
           id: DayProcessingOutboxRepository.transcriptionJobId(_sessionId),
-          kind: DayProcessingJobKind.transcribeAudio,
           status: DayProcessingJobStatus.running,
           dayId: 'dayplan-2026-07-20',
-          activityEntryId: audioActivityEntryIdForSession(_sessionId),
-          recordingSessionId: _sessionId,
-          audioId: 'audio_001',
-          audioPath: '/tmp/capture.m4a',
+          payload: TranscribeAudioPayload(
+            activityEntryId: audioActivityEntryIdForSession(_sessionId),
+            recordingSessionId: _sessionId,
+            audioId: 'audio_001',
+            audioPath: '/tmp/capture.m4a',
+          ),
           createdAt: _now,
           updatedAt: _now,
+          requestedAt: _now,
           nextAttemptAt: _now,
           attempts: 0,
           generation: 1,

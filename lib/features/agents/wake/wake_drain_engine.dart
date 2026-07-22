@@ -318,6 +318,7 @@ extension WakeDrainEngine on WakeOrchestrator {
           error: e,
           stackTrace: s,
         );
+        _emitRunCompletion(job, WakeRunStatus.failed, error: e);
         return;
       }
 
@@ -328,6 +329,11 @@ extension WakeDrainEngine on WakeOrchestrator {
           job.runKey,
           WakeRunStatus.failed.name,
           errorMessage: 'No wake executor registered',
+        );
+        _emitRunCompletion(
+          job,
+          WakeRunStatus.failed,
+          error: StateError('No wake executor registered'),
         );
         return;
       }
@@ -444,6 +450,11 @@ extension WakeDrainEngine on WakeOrchestrator {
             completedAt: clock.now(),
             errorMessage: timedOut ? 'timeout' : 'cancelled',
           );
+          _emitRunCompletion(
+            job,
+            WakeRunStatus.aborted,
+            error: TimeoutException(timedOut ? 'timeout' : 'cancelled'),
+          );
           // Aborted wakes do not arm the throttle deadline — re-allowing
           // the agent to wake on the next notification keeps the system
           // responsive after an unstuck cycle.
@@ -475,6 +486,7 @@ extension WakeDrainEngine on WakeOrchestrator {
           WakeRunStatus.completed.name,
           completedAt: clock.now(),
         );
+        _emitRunCompletion(job, WakeRunStatus.completed);
 
         await _markReportFresh(job.agentId, refreshStartedAt: startTime);
 
@@ -520,6 +532,7 @@ extension WakeDrainEngine on WakeOrchestrator {
           WakeRunStatus.failed.name,
           errorMessage: 'Wake failed (${e.runtimeType})',
         );
+        _emitRunCompletion(job, WakeRunStatus.failed, error: e);
       } finally {
         timeoutTimer?.cancel();
       }
