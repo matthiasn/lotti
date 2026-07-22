@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -25,13 +25,16 @@ Widget hWrap(
     overrides: [
       // Single agent-running override (Riverpod forbids overriding a family
       // twice). Defaults to idle so the Heard column's parsing bars stay
-      // off; pass agentRunning: true for the parse-in-flight case. Only the
-      // planner identity ever runs day wakes, so the running signal answers
-      // true exclusively for that id — a surface keyed by anything else
-      // (e.g. the dayplan-… day id) sees false, exactly like production.
+      // off; pass agentRunning: true for the parse-in-flight case. Post-
+      // cutover day wakes run under the per-day identity (ADR 0032), so the
+      // running signal answers true exclusively for the test day's
+      // `day_agent:` id — a surface keyed by anything else (the coordinator,
+      // the bare dayplan-… day id) sees false, exactly like production.
       agentIsRunningProvider.overrideWith(
-        (ref, agentId) =>
-            Stream.value(agentRunning && agentId == dailyOsPlannerAgentId),
+        (ref, agentId) => Stream.value(
+          agentRunning &&
+              agentId == perDayAgentIdForDate(DateTime(2026, 5, 25)),
+        ),
       ),
       ...overrides,
     ],

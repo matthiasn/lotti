@@ -15,17 +15,14 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
-/// Deterministic identity id of the single Daily OS planner (ADR 0022).
-///
-/// Constant across devices on purpose: concurrent `getOrCreatePlannerAgent`
-/// calls on offline peers create entities with identical ids, so sync merges
-/// them via LWW instead of diverging into one planner per device.
-const dailyOsPlannerAgentId = 'daily_os_planner';
+export 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart'
+    show dailyOsPlannerAgentId;
 
 /// Daily OS day-agent lifecycle management.
 class DayAgentService {
@@ -69,16 +66,152 @@ class DayAgentService {
   /// flooding sync for long-time experimental users.
   static const _migrationLookback = Duration(days: 14);
 
-  /// Resolve the Daily OS planner that owns [date]'s workspace, if it exists.
+  /// Resolve the agent that owns [date]'s workspace, if one exists.
   ///
-  /// ADR 0022: there is exactly one long-lived planner identity owning every
-  /// day, so [date] no longer selects the identity — day scope is carried by
-  /// wake tokens and entity `dayId`. This is a pure lookup: it returns `null`
-  /// when the planner has not been created yet (no Daily OS activity), so
-  /// read-only callers stay side-effect free. Write paths call
-  /// [getOrCreatePlannerAgent] to create it lazily.
-  Future<AgentIdentityEntity?> getDayAgentForDate(DateTime date) {
+  /// ADR 0032: a per-day identity (`day_agent:<dayId>`) owns the day when it
+  /// exists; otherwise ownership falls back to the coordinator
+  /// ([dailyOsPlannerAgentId]), which covers every day predating the per-day
+  /// cutover. This is a pure lookup: it returns `null` when neither identity
+  /// has been created yet (no Daily OS activity), so read-only callers stay
+  /// side-effect free. Write paths call [getOrCreateDayAgentForDate] to create
+  /// the day's agent lazily.
+  Future<AgentIdentityEntity?> getDayAgentForDate(DateTime date) async {
+    final perDay = await agentService.getAgent(perDayAgentIdForDate(date));
+    if (perDay != null) return perDay;
     return agentService.getAgent(dailyOsPlannerAgentId);
+  }
+
+  /// Get or create the per-day agent that executes [date]'s capture parsing,
+  /// drafting, and refinement (ADR 0032).
+  ///
+  /// Day-forward cutover: when the coordinator already owns artifacts for the
+  /// day — a non-deleted plan it wrote, or any capture on the day — the
+  /// coordinator is returned and no per-day identity is created, so
+  /// pre-cutover days stay under the monolith's history permanently. Clean
+  /// days get a lazily created `day_agent:<dayId>` identity sharing the
+  /// coordinator's template (and therefore its soul/persona, ADR 0032 §7) and
+  /// `allowedCategoryIds`.
+  ///
+  /// Config inheritance: per-day agents snapshot the day-agent template at
+  /// creation time. Template-level default changes
+  /// ([updateDefaultInferenceProfile]) therefore affect future day agents,
+  /// while coordinator-instance overrides ([updatePlannerProfileOverride],
+  /// [updatePlannerThinkingModelOverride]) affect only the coordinator.
+  ///
+  /// Idempotent and convergent: the deterministic id means concurrent lazy
+  /// creation on offline peers merges via LWW. This is also the single agent
+  /// resolution seam for durable processing jobs, which resolve their target
+  /// agent at execution time rather than persisting an agent id.
+  Future<AgentIdentityEntity> getOrCreateDayAgentForDate(DateTime date) async {
+    final dayId = dayAgentIdForDate(date);
+    final agentId = perDayAgentId(dayId);
+    final existing = await agentService.getAgent(agentId);
+    if (existing != null) return existing;
+
+    // Ensures the coordinator (and its learning substrate) exists and gives
+    // the cutover check + category inheritance a resolved identity.
+    final planner = await getOrCreatePlannerAgent();
+    if (await _plannerOwnsDay(planner: planner, dayId: dayId)) {
+      return planner;
+    }
+
+    var created = false;
+    final identity = await syncService.runInTransaction(() async {
+      final duplicate = await agentService.getAgent(agentId);
+      if (duplicate != null) return duplicate;
+
+      // Re-checked inside the transaction: the outer check above can race a
+      // concurrent write that makes the coordinator start owning this day
+      // between that read and this one, so only this check-and-write pair
+      // being atomic actually prevents split ownership.
+      if (await _plannerOwnsDay(planner: planner, dayId: dayId)) {
+        return planner;
+      }
+
+      final templateEntity = await repository.getEntity(dayAgentTemplateId);
+      if (templateEntity is! AgentTemplateEntity ||
+          templateEntity.deletedAt != null ||
+          templateEntity.kind != AgentTemplateKind.dayAgent) {
+        throw StateError(
+          'Template $dayAgentTemplateId is not an active day-agent template.',
+        );
+      }
+
+      final profileId = templateEntity.profileId;
+      final createdIdentity = await agentService.createAgent(
+        agentId: agentId,
+        kind: _agentKind,
+        // Locale-neutral ISO suffix keeps day agents distinguishable and
+        // sortable in the Instances list without touching l10n.
+        displayName: '${planner.displayName} · ${_dayLabel(dayId)}',
+        config: AgentConfig(
+          modelId: templateEntity.modelId,
+          profileId: profileId,
+          inferenceSetup: profileId == null
+              ? null
+              : AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.templateSnapshot,
+                  baseProfileId: profileId,
+                  originEntityId: dayAgentTemplateId,
+                ),
+        ),
+        allowedCategoryIds: planner.allowedCategoryIds,
+      );
+
+      await syncService.upsertLink(
+        AgentLink.templateAssignment(
+          id: '$agentId:template-assignment',
+          fromId: dayAgentTemplateId,
+          toId: createdIdentity.agentId,
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
+          vectorClock: null,
+        ),
+      );
+
+      created = true;
+      return createdIdentity;
+    });
+
+    if (created) {
+      // Notify with both ids: agent-keyed listeners (internals, running
+      // state) and day-keyed listeners (day page providers watch the dayId
+      // token).
+      onPersistedStateChanged
+        ?..call(identity.agentId)
+        ..call(dayId);
+      domainLogger.log(
+        LogDomain.agentRuntime,
+        'created per-day agent ${DomainLogger.sanitizeId(identity.agentId)}',
+        subDomain: 'lifecycle',
+      );
+    }
+    return identity;
+  }
+
+  /// Whether the coordinator already owns [dayId]'s artifacts (day-forward
+  /// cutover rule): a non-deleted plan it wrote, or any capture on the day.
+  Future<bool> _plannerOwnsDay({
+    required AgentIdentityEntity planner,
+    required String dayId,
+  }) async {
+    final plan = await repository.getEntity(dayAgentPlanEntityId(dayId));
+    if (plan is DayPlanEntity &&
+        plan.deletedAt == null &&
+        plan.agentId == planner.agentId) {
+      return true;
+    }
+    final metas = await repository.getCaptureEventMetaByAgentId(
+      planner.agentId,
+    );
+    return metas.any((meta) => captureEventDayId(meta) == dayId);
+  }
+
+  /// `YYYY-MM-DD` portion of a `dayplan-YYYY-MM-DD` day id.
+  static String _dayLabel(String dayId) {
+    const prefix = 'dayplan-';
+    return dayId.startsWith(prefix) ? dayId.substring(prefix.length) : dayId;
   }
 
   /// Get or create the single long-lived Daily OS planner identity
@@ -379,7 +512,14 @@ class DayAgentService {
         lifecycle: AgentLifecycle.active,
       );
       final legacy = agents
-          .where((a) => a.kind == _agentKind && a.agentId != planner.agentId)
+          .where(
+            (a) =>
+                a.kind == _agentKind &&
+                a.agentId != planner.agentId &&
+                // ADR 0032 per-day agents share the kind but are not legacy —
+                // only bare pre-ADR-0022 `dayplan-…` identities get archived.
+                !isPerDayAgentId(a.agentId),
+          )
           .toList();
       if (legacy.isEmpty) return;
 
@@ -492,156 +632,38 @@ class DayAgentService {
     );
   }
 
-  /// Enqueue a drafting wake for the day agent that owns [dayDate].
+  /// Persists a refine transcript as a `CaptureEntity` (id prefixed
+  /// `refine_capture:`), or does nothing when [transcript] is blank.
   ///
-  /// When [captureId] is provided, the source capture is included as a
-  /// `capture_submitted:<captureId>` trigger token so the workflow loads its
-  /// transcript and parsed items into the drafting prompt.
-  ///
-  /// When [decidedTaskIds] is non-empty, each task id is advertised as a
-  /// `decided_task:<taskId>` trigger token. The workflow hydrates these
-  /// alongside any capture-derived matches and surfaces the merged set in
-  /// the drafting prompt so the model can attach `taskId` on the blocks it
-  /// places. Blank/whitespace task ids are silently skipped to mirror the
-  /// [captureId] guard. Duplicates dedupe via the trigger-token set.
-  ///
-  /// When [decidedCaptureItemIds] is non-empty, each parsed item id is
-  /// advertised as a `decided_capture_item:<parsedItemId>` trigger token.
-  /// These represent approved capture items that do not have a persisted task
-  /// yet; drafting carries their parsed details so the model can create a task
-  /// before placing it.
-  ///
-  /// Returns `false` when the planner does not exist yet. Callers are expected
-  /// to either call [getOrCreatePlannerAgent] first or surface the
-  /// missing-agent state in the UI.
-  Future<bool> enqueueDraftingWake({
-    required DateTime dayDate,
-    String? captureId,
-    List<String> decidedTaskIds = const [],
-    List<String> decidedCaptureItemIds = const [],
-  }) async {
-    final agent = await getDayAgentForDate(dayDate);
-    if (agent == null) {
-      domainLogger.log(
-        LogDomain.agentRuntime,
-        'no day agent for '
-        '${DomainLogger.sanitizeId(dayAgentIdForDate(dayDate))}; '
-        'drafting wake not enqueued',
-        subDomain: 'drafting',
-      );
-      return false;
-    }
-    final dayId = dayAgentIdForDate(dayDate);
-    final triggerTokens = <String>{
-      dayAgentPlanningDayToken(dayId),
-      dayAgentDraftingToken(dayId),
-      if (captureId != null && captureId.trim().isNotEmpty)
-        dayAgentCaptureSubmittedToken(captureId.trim()),
-      for (final taskId in decidedTaskIds)
-        if (taskId.trim().isNotEmpty) dayAgentDecidedTaskToken(taskId.trim()),
-      for (final parsedItemId in decidedCaptureItemIds)
-        if (parsedItemId.trim().isNotEmpty)
-          dayAgentDecidedCaptureItemToken(parsedItemId.trim()),
-    };
-    domainLogger.log(
-      LogDomain.agentRuntime,
-      'drafting wake enqueued for '
-      '${DomainLogger.sanitizeId(agent.agentId)} / '
-      '${DomainLogger.sanitizeId(dayId)}',
-      subDomain: 'drafting',
-    );
-    orchestrator.enqueueManualWake(
-      agentId: agent.agentId,
-      reason: dayAgentDraftingReason,
-      triggerTokens: triggerTokens,
-      workspaceKey: dayAgentWorkspaceKey(dayId),
-    );
-    return true;
-  }
-
-  /// Enqueue a refine wake for the day agent that owns [dayDate].
-  ///
-  /// When [transcript] is non-blank, the text is persisted as a new
-  /// `CaptureEntity` (id prefixed `refine_capture:`) and advertised to the
-  /// workflow via a `capture_submitted:<captureId>` trigger token alongside
-  /// `refine:<dayId>`. Blank/whitespace transcripts skip the capture write
-  /// — the wake still fires with only the refine token, and the model
-  /// operates on the baseline plan + recent observations alone.
-  ///
-  /// Pre-checks that a non-deleted plan exists for the day; returns `false`
-  /// (and no wake) when none is found, mirroring the missing-agent guard.
-  /// The agent identity, captures, and any prior change sets are left
-  /// untouched. Explicit user refine is allowed after commit/agreement; the
-  /// amendment is tracked as a pending plan diff rather than applied directly.
-  Future<bool> enqueueRefineWake({
-    required DateTime dayDate,
+  /// Returns the persisted capture's id, or `null` for a blank transcript.
+  /// Called once at enqueue time for the durable `refinePlan` outbox job
+  /// (ADR 0032 phase 1) — the same capture id is then referenced by the
+  /// job's payload, so a crash-and-retry re-runs against the original
+  /// wording instead of
+  /// writing a duplicate.
+  Future<String?> persistRefineCapture({
+    required String agentId,
+    required String dayId,
     required String transcript,
   }) async {
-    final agent = await getDayAgentForDate(dayDate);
-    if (agent == null) {
-      domainLogger.log(
-        LogDomain.agentRuntime,
-        'no day agent for '
-        '${DomainLogger.sanitizeId(dayAgentIdForDate(dayDate))}; '
-        'refine wake not enqueued',
-        subDomain: 'refine',
-      );
-      return false;
-    }
-    final dayId = dayAgentIdForDate(dayDate);
-    final plan = await repository.getEntity(dayAgentPlanEntityId(dayId));
-    if (plan is! DayPlanEntity ||
-        plan.deletedAt != null ||
-        plan.agentId != agent.agentId) {
-      domainLogger.log(
-        LogDomain.agentRuntime,
-        'no editable plan for '
-        '${DomainLogger.sanitizeId(dayId)}; refine wake not enqueued',
-        subDomain: 'refine',
-      );
-      return false;
-    }
-
-    final trimmedTranscript = transcript.trim();
-    final triggerTokens = <String>{
-      dayAgentPlanningDayToken(dayId),
-      dayAgentRefineToken(dayId),
-    };
+    final trimmed = transcript.trim();
+    if (trimmed.isEmpty) return null;
     final now = clock.now();
-    String? captureId;
-    if (trimmedTranscript.isNotEmpty) {
-      captureId = 'refine_capture:${_uuid.v4()}';
-      final capture =
-          AgentDomainEntity.capture(
-                id: captureId,
-                agentId: agent.agentId,
-                transcript: trimmedTranscript,
-                capturedAt: now,
-                createdAt: now,
-                vectorClock: null,
-                dayId: dayId,
-              )
-              as CaptureEntity;
-      await syncService.upsertEntity(capture);
-      triggerTokens.add(dayAgentCaptureSubmittedToken(captureId));
-      onPersistedStateChanged?.call(captureId);
-    }
-
-    domainLogger.log(
-      LogDomain.agentRuntime,
-      'refine wake enqueued for '
-      '${DomainLogger.sanitizeId(agent.agentId)} / '
-      '${DomainLogger.sanitizeId(dayId)}'
-      '${captureId == null ? ' (no transcript)' : ''}',
-      subDomain: 'refine',
-    );
-    orchestrator.enqueueManualWake(
-      agentId: agent.agentId,
-      reason: dayAgentRefineReason,
-      triggerTokens: triggerTokens,
-      workspaceKey: dayAgentWorkspaceKey(dayId),
-    );
-    return true;
+    final captureId = 'refine_capture:${_uuid.v4()}';
+    final capture =
+        AgentDomainEntity.capture(
+              id: captureId,
+              agentId: agentId,
+              transcript: trimmed,
+              capturedAt: now,
+              createdAt: now,
+              vectorClock: null,
+              dayId: dayId,
+            )
+            as CaptureEntity;
+    await syncService.upsertEntity(capture);
+    onPersistedStateChanged?.call(captureId);
+    return captureId;
   }
 
   /// Trigger a manual wake for [agentId].
@@ -684,12 +706,15 @@ class DayAgentService {
     var count = 0;
     for (final agent in activeAgents) {
       if (agent.kind != _agentKind) continue;
-      // Post-ADR-0022 the only legitimate active `day_agent` is the long-lived
-      // planner. A stray legacy per-day identity (e.g. one synced from a peer
-      // still on the old build after this device migrated) carries no
-      // restorable day context, so restoring its wake would only produce a
-      // failing "no resolvable day" wake — skip it.
-      if (agent.agentId != dailyOsPlannerAgentId) continue;
+      // Legitimate active `day_agent` identities are the coordinator and
+      // ADR 0032 per-day agents. A stray bare legacy id (e.g. one synced from
+      // a peer still on the pre-ADR-0022 build) carries no restorable day
+      // context, so restoring its wake would only produce a failing
+      // "no resolvable day" wake — skip it.
+      if (agent.agentId != dailyOsPlannerAgentId &&
+          !isPerDayAgentId(agent.agentId)) {
+        continue;
+      }
       try {
         await _hydrateThrottleDeadline(agent.agentId);
         count++;

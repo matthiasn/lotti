@@ -3,12 +3,15 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
@@ -23,6 +26,25 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+
+/// Overrides for the agent-service providers `dayProcessingOutboxProcessorProvider`
+/// pulls in to build its `DayAgentJobExecutor` (ADR 0032 phase 1). None of
+/// this file's tests execute an agent job — they exercise the transcription
+/// lane only — so plain unstubbed mocks are enough to satisfy construction.
+List<Override> _agentJobExecutorOverrides() {
+  final orchestrator = MockWakeOrchestrator();
+  when(
+    () => orchestrator.runCompletions,
+  ).thenAnswer((_) => const Stream.empty());
+  return [
+    dayAgentServiceProvider.overrideWithValue(MockDayAgentService()),
+    dayAgentPlanServiceProvider.overrideWithValue(MockDayAgentPlanService()),
+    dayAgentCaptureServiceProvider.overrideWithValue(
+      MockDayAgentCaptureService(),
+    ),
+    wakeOrchestratorProvider.overrideWithValue(orchestrator),
+  ];
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -74,6 +96,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         audioTranscriptionServiceProvider.overrideWithValue(transcriber),
+        ..._agentJobExecutorOverrides(),
       ],
     );
     addTearDown(container.dispose);
@@ -157,6 +180,7 @@ void main() {
           audioTranscriptionServiceProvider.overrideWithValue(
             MockAudioTranscriptionService(),
           ),
+          ..._agentJobExecutorOverrides(),
         ],
       );
       addTearDown(container.dispose);
@@ -200,6 +224,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         audioTranscriptionServiceProvider.overrideWithValue(transcriber),
+        ..._agentJobExecutorOverrides(),
       ],
     );
     addTearDown(container.dispose);
@@ -289,6 +314,7 @@ void main() {
           dailyOsTranscriptionTargetProvider.overrideWith(
             (ref) async => (provider: provider, model: model),
           ),
+          ..._agentJobExecutorOverrides(),
         ],
       );
       addTearDown(container.dispose);

@@ -4,8 +4,6 @@ import 'dart:math' as math;
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/state/agent_query_providers.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
@@ -493,9 +491,8 @@ class _ReconcileStepBarState extends ConsumerState<_ReconcileStepBar> {
     final canBuild = state.hasValue && !_pushing;
     // Same busy signal placement as the Capture step: the thinking shader
     // rides the bar's top edge while the initial snapshot loads or the
-    // capture-parse wake (keyed by the executing planner identity) runs.
-    final isParsing =
-        ref.watch(agentIsRunningProvider(dailyOsPlannerAgentId)).value ?? false;
+    // capture-parse wake (keyed by the day's workspace, ADR 0032) runs.
+    final isParsing = ref.watch(dayAgentIsRunningProvider(widget.day));
     final isWorking = (!state.hasValue && !state.hasError) || isParsing;
 
     return DayPlanningGlassActionBar(

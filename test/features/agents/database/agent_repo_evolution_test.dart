@@ -265,4 +265,57 @@ void main() {
       expect(count, 1);
     });
   });
+
+  group('countEntitiesByType', () {
+    test(
+      'counts across all agents, including tombstones, scoped to the type',
+      () async {
+        // ADR 0032: day plans are written by whichever identity owns the day,
+        // so "has EVER planned" gates count owner-agnostically.
+        await core.upsertEntity(
+          makeTestDayPlan(
+            id: 'day_agent_plan:coordinator-day',
+            agentId: 'daily_os_planner',
+            dayId: 'coordinator-day',
+          ),
+        );
+        await core.upsertEntity(
+          makeTestDayPlan(
+            id: 'day_agent_plan:per-day',
+            agentId: 'day_agent:dayplan-2026-07-22',
+            dayId: 'per-day',
+          ),
+        );
+        await core.upsertEntity(
+          makeTestDayPlan(
+            id: 'day_agent_plan:deleted',
+            agentId: 'day_agent:dayplan-2026-07-21',
+            dayId: 'deleted',
+          ).copyWith(deletedAt: DateTime(2026, 3, 16)),
+        );
+        // A different entity type must not leak into the count.
+        await core.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'evo-session-type-scope',
+            templateId: 'daily_os_planner',
+            agentId: 'daily_os_planner',
+          ),
+        );
+
+        final count = await evolution.countEntitiesByType(
+          type: AgentEntityTypes.dayPlan,
+        );
+
+        expect(count, 3);
+      },
+    );
+
+    test('returns 0 when no entity of the type exists', () async {
+      final count = await evolution.countEntitiesByType(
+        type: AgentEntityTypes.dayPlan,
+      );
+
+      expect(count, 0);
+    });
+  });
 }

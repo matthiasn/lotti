@@ -12,15 +12,18 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../agents/test_data/entity_factories.dart';
@@ -88,28 +91,134 @@ PlanDiff buildDiff({String id = 'diff-001'}) => PlanDiff(
   ),
 );
 
+/// Minimal in-memory fake behind a [MockDayProcessingOutboxRepository]:
+/// real enqueue/coalesce/claim semantics are already covered end-to-end in
+/// `day_processing_outbox_repository_test.dart`, and the real,
+/// file-backed repository's I/O does not resolve under `fakeAsync` (which
+/// only fakes Timers and the microtask queue, not real dart:io callbacks —
+/// see the fake_async package docs). A mock resolving via plain `Future`s
+/// keeps the cancellation/soft-cap tests exercising [RealDayAgent] itself
+/// fakeAsync-compatible while still exercising the real
+/// [DayProcessingOutboxRepository] enqueue methods' *call shape* via
+/// mocktail verification.
+class _FakeOutboxState {
+  _FakeOutboxState(this.mock) {
+    when(() => mock.changes).thenAnswer((_) => _changes.stream);
+    when(() => mock.getById(any())).thenAnswer(
+      (inv) async => _jobs[inv.positionalArguments[0] as String],
+    );
+    // ignore: unnecessary_lambdas
+    when(() => mock.getAll()).thenAnswer((_) async => all);
+    when(
+      () => mock.enqueueDraftPlan(
+        dayId: any(named: 'dayId'),
+        payload: any(named: 'payload'),
+      ),
+    ).thenAnswer((inv) async {
+      final dayId = inv.namedArguments[#dayId] as String;
+      final payload = inv.namedArguments[#payload] as DraftPlanPayload;
+      final id = DayProcessingOutboxRepository.draftJobId(dayId);
+      final job = DayProcessingJob(
+        id: id,
+        status: DayProcessingJobStatus.queued,
+        dayId: dayId,
+        payload: payload,
+        createdAt: now,
+        updatedAt: now,
+        requestedAt: now,
+        nextAttemptAt: now,
+        attempts: 0,
+        generation: (_jobs[id]?.generation ?? -1) + 1,
+      );
+      _jobs[id] = job;
+      _changes.add(null);
+      return job;
+    });
+    when(
+      () => mock.enqueueRefinePlan(
+        dayId: any(named: 'dayId'),
+        transcriptCaptureId: any(named: 'transcriptCaptureId'),
+      ),
+    ).thenAnswer((inv) async {
+      final dayId = inv.namedArguments[#dayId] as String;
+      final transcriptCaptureId =
+          inv.namedArguments[#transcriptCaptureId] as String?;
+      final id = 'refine_${dayId}_${_jobs.length}';
+      final job = DayProcessingJob(
+        id: id,
+        status: DayProcessingJobStatus.queued,
+        dayId: dayId,
+        payload: RefinePlanPayload(transcriptCaptureId: transcriptCaptureId),
+        createdAt: now,
+        updatedAt: now,
+        requestedAt: now,
+        nextAttemptAt: now,
+        attempts: 0,
+        generation: 0,
+      );
+      _jobs[id] = job;
+      _changes.add(null);
+      return job;
+    });
+  }
+
+  final MockDayProcessingOutboxRepository mock;
+  final Map<String, DayProcessingJob> _jobs = {};
+  final _changes = StreamController<void>.broadcast();
+  DateTime now = _asOf;
+
+  void completeJob(String jobId, {String? resultEntityId}) {
+    final job = _jobs[jobId]!;
+    _jobs[jobId] = job.copyWith(
+      status: DayProcessingJobStatus.succeeded,
+      resultEntityId: resultEntityId,
+      completedAt: now,
+    );
+    _changes.add(null);
+  }
+
+  void failJob(
+    String jobId, {
+    required DayProcessingFailureClass failureClass,
+    String error = 'wake failed',
+  }) {
+    final job = _jobs[jobId]!;
+    final status = failureClass == DayProcessingFailureClass.setupRequired
+        ? DayProcessingJobStatus.waitingForUser
+        : DayProcessingJobStatus.failed;
+    _jobs[jobId] = job.copyWith(
+      status: status,
+      lastFailureClass: failureClass,
+      lastError: error,
+    );
+    _changes.add(null);
+  }
+
+  List<DayProcessingJob> get all => _jobs.values.toList(growable: false);
+}
+
 /// Shared five-mock + adapter scaffolding used by every group in this file.
 class _TestBench {
-  _TestBench._({required this.fallback, this.updateStream})
+  _TestBench._({required this.fallback})
     : captureService = MockDayAgentCaptureService(),
       planService = MockDayAgentPlanService(),
       dayAgentService = MockDayAgentService(),
-      journalDb = MockJournalDb();
+      journalDb = MockJournalDb(),
+      outbox = MockDayProcessingOutboxRepository() {
+    fakeOutbox = _FakeOutboxState(outbox);
+  }
 
-  factory _TestBench.create({
-    MockDayAgent? fallback,
-    Stream<Set<String>>? updateStream,
-  }) => _TestBench._(
-    fallback: fallback ?? MockDayAgent(),
-    updateStream: updateStream,
-  );
+  factory _TestBench.create({MockDayAgent? fallback}) =>
+      _TestBench._(fallback: fallback ?? MockDayAgent());
 
   final MockDayAgentCaptureService captureService;
   final MockDayAgentPlanService planService;
   final MockDayAgentService dayAgentService;
   final MockJournalDb journalDb;
   final MockDayAgent fallback;
-  final Stream<Set<String>>? updateStream;
+  final MockDayProcessingOutboxRepository outbox;
+  late final _FakeOutboxState fakeOutbox;
+  int nudgeCalls = 0;
 
   late final RealDayAgent adapter = RealDayAgent(
     captureService: captureService,
@@ -117,8 +226,25 @@ class _TestBench {
     dayAgentService: dayAgentService,
     journalDb: journalDb,
     mockFallback: fallback,
-    updateStream: updateStream,
+    outbox: outbox,
+    nudgeProcessing: () => nudgeCalls++,
   );
+
+  /// Simulates the processor completing a `draftPlan`/`refinePlan` job.
+  /// Fires the fake outbox's `changes` stream, which is what wakes
+  /// [RealDayAgent]'s awaiter.
+  Future<void> completeJob(String jobId, {String? resultEntityId}) async {
+    fakeOutbox.completeJob(jobId, resultEntityId: resultEntityId);
+  }
+
+  /// Simulates a terminal processor failure for [jobId].
+  Future<void> failJob(
+    String jobId, {
+    required DayProcessingFailureClass failureClass,
+    String error = 'wake failed',
+  }) async {
+    fakeOutbox.failJob(jobId, failureClass: failureClass, error: error);
+  }
 }
 
 /// Records the arguments handed to the two void mocked tools so the
@@ -162,6 +288,8 @@ class _RecordingFallbackAgent extends MockDayAgent {
 }
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('RealDayAgent.summarizeRecentPatterns', () {
     late _TestBench bench;
 
@@ -287,13 +415,11 @@ void main() {
     setUp(() => bench = _TestBench.create());
 
     test(
-      'enqueues the drafting wake, awaits the persisted plan, '
-      'and projects it onto DraftPlan',
-      () {
+      'enqueues a durable draft job, awaits its completion via the outbox, '
+      'and projects the persisted plan onto DraftPlan',
+      () async {
         const agentId = 'day-agent-001';
         final dayId = dayAgentIdForDate(_asOf);
-        final freshlyDraftedAt = _asOf.add(const Duration(seconds: 5));
-        var draftPlanCalls = 0;
 
         when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
@@ -304,18 +430,13 @@ void main() {
         );
         when(
           () => bench.planService.draftPlanForDay(
-            agentId: any(named: 'agentId'),
-            dayId: any(named: 'dayId'),
-          ),
-        ).thenAnswer((_) async {
-          draftPlanCalls++;
-          // First call is the baseline read before the wake fires.
-          // Subsequent reads return the freshly drafted plan.
-          if (draftPlanCalls == 1) return null;
-          return buildDayPlan(
             agentId: agentId,
             dayId: dayId,
-            updatedAt: freshlyDraftedAt,
+          ),
+        ).thenAnswer(
+          (_) async => buildDayPlan(
+            agentId: agentId,
+            dayId: dayId,
             blocks: [
               PlannedBlock(
                 id: 'block_1',
@@ -326,41 +447,35 @@ void main() {
                 reason: 'High-energy window',
               ),
             ],
-          );
-        });
-        when(
-          () => bench.dayAgentService.enqueueDraftingWake(
-            dayDate: any(named: 'dayDate'),
-            captureId: any(named: 'captureId'),
-            decidedTaskIds: any(named: 'decidedTaskIds'),
-            decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
           ),
-        ).thenAnswer((_) async => true);
+        );
         when(
           () => bench.journalDb.getCategoryById(any()),
         ).thenAnswer((_) async => null);
 
-        // Drive the 500 ms poll loop with fake time so the test takes
-        // microseconds instead of a real poll interval (fake-time policy).
-        late DraftPlan result;
-        fakeAsync((async) {
-          withClock(async.getClock(_asOf), () {
-            bench.adapter
-                .draftDayPlan(
-                  captureId: const CaptureId('cap_1'),
-                  decidedTaskIds: const ['t_1'],
-                  decidedCaptureItemIds: const ['parsed_1'],
-                  dayDate: _asOf,
-                )
-                .then((plan) => result = plan);
-          });
-          // Flush up to the first poll delay, elapse it, then let the
-          // second draftPlanForDay read observe the fresh plan.
-          async
-            ..flushMicrotasks()
-            ..elapse(const Duration(milliseconds: 500))
-            ..flushMicrotasks();
-        });
+        final future = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const ['t_1'],
+          decidedCaptureItemIds: const ['parsed_1'],
+          dayDate: _asOf,
+        );
+        await pumpEventQueue();
+
+        final jobId = DayProcessingOutboxRepository.draftJobId(dayId);
+        final job = await bench.outbox.getById(jobId);
+        expect(job, isNotNull);
+        expect(
+          (job!.payload as DraftPlanPayload).decidedTaskIds,
+          ['t_1'],
+        );
+        expect(
+          (job.payload as DraftPlanPayload).decidedCaptureItemIds,
+          ['parsed_1'],
+        );
+        expect(bench.nudgeCalls, greaterThanOrEqualTo(1));
+
+        await bench.completeJob(jobId);
+        final result = await future;
 
         expect(result.blocks, hasLength(1));
         expect(result.blocks.single.title, 'Demo prep');
@@ -376,29 +491,15 @@ void main() {
         expect(result.agendaItems.single.title, 'Demo prep');
         expect(result.agendaItems.single.linkedBlockIds, ['block_1']);
         expect(result.agendaItems.single.taskId, isNull);
-
-        verify(
-          () => bench.dayAgentService.enqueueDraftingWake(
-            dayDate: _asOf,
-            captureId: 'cap_1',
-            decidedTaskIds: ['t_1'],
-            decidedCaptureItemIds: ['parsed_1'],
-          ),
-        ).called(1);
       },
     );
 
     test(
-      'wakes immediately from persisted-state notifications before '
-      'the fallback poll interval',
+      'a repeated request for the same day coalesces onto the same durable '
+      'job instead of enqueueing a second one',
       () async {
-        const agentId = 'day-agent-001';
-        final updates = StreamController<Set<String>>.broadcast();
-        addTearDown(updates.close);
-        final bench = _TestBench.create(updateStream: updates.stream);
+        const agentId = 'day-agent-coalesce';
         final dayId = dayAgentIdForDate(_asOf);
-        var draftPlanCalls = 0;
-
         when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
@@ -408,87 +509,204 @@ void main() {
         );
         when(
           () => bench.planService.draftPlanForDay(
-            agentId: any(named: 'agentId'),
-            dayId: any(named: 'dayId'),
-          ),
-        ).thenAnswer((_) async {
-          draftPlanCalls++;
-          if (draftPlanCalls == 1) return null;
-          return buildDayPlan(
             agentId: agentId,
             dayId: dayId,
-            updatedAt: _asOf.add(const Duration(seconds: 1)),
-            blocks: [
-              PlannedBlock(
-                id: 'block_notified',
-                categoryId: 'work',
-                startTime: _asOf.add(const Duration(hours: 1)),
-                endTime: _asOf.add(const Duration(hours: 2)),
-                title: 'Notified draft',
-                reason: 'Notification woke the adapter.',
-              ),
-            ],
-          );
-        });
-        when(
-          () => bench.dayAgentService.enqueueDraftingWake(
-            dayDate: any(named: 'dayDate'),
-            captureId: any(named: 'captureId'),
-            decidedTaskIds: any(named: 'decidedTaskIds'),
-            decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer(
+          (_) async => buildDayPlan(agentId: agentId, dayId: dayId),
+        );
+        when(
+          () => bench.journalDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
+
+        final firstFuture = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
+        );
+        await pumpEventQueue();
+        final secondFuture = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_2'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
+        );
+        await pumpEventQueue();
+
+        final jobId = DayProcessingOutboxRepository.draftJobId(dayId);
+        expect((await bench.outbox.getAll()).map((j) => j.id), [jobId]);
+
+        await bench.completeJob(jobId);
+        final results = await Future.wait([firstFuture, secondFuture]);
+
+        // Both callers observe the same completed plan.
+        expect(results[0].state, DayState.drafted);
+        expect(results[1].state, DayState.drafted);
+      },
+    );
+
+    test(
+      'two overlapping outbox change events for the same terminal job do '
+      'not throw "Future already completed"',
+      () async {
+        const agentId = 'day-agent-race';
+        final dayId = dayAgentIdForDate(_asOf);
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => bench.planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer(
+          (_) async => buildDayPlan(agentId: agentId, dayId: dayId),
+        );
         when(
           () => bench.journalDb.getCategoryById(any()),
         ).thenAnswer((_) async => null);
 
         final future = bench.adapter.draftDayPlan(
           captureId: const CaptureId('cap_1'),
-          decidedTaskIds: const ['t_1'],
+          decidedTaskIds: const [],
           dayDate: _asOf,
         );
         await pumpEventQueue();
 
-        updates.add({dayAgentPlanEntityId(dayId)});
-        final result = await future;
+        final jobId = DayProcessingOutboxRepository.draftJobId(dayId);
+        // Two change events fired back to back — both listener callbacks
+        // race to `await outbox.getById(jobId)` before either resolves, so
+        // both can observe the job as terminal. Without the re-check
+        // immediately before `completer.complete`, the second one throws.
+        bench.fakeOutbox
+          ..completeJob(jobId)
+          ..completeJob(jobId);
 
-        expect(result.blocks.single.title, 'Notified draft');
-        expect(draftPlanCalls, 2);
+        final result = await future;
+        expect(result.state, DayState.drafted);
       },
     );
 
     test(
-      'throws DayAgentInteractionException when no day-agent exists for '
-      'the date',
+      'throws DayAgentInteractionException when the job reaches a terminal '
+      'failure',
       () async {
+        const agentId = 'day-agent-fail';
+        final dayId = dayAgentIdForDate(_asOf);
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+
+        final future = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
+        );
+        await pumpEventQueue();
+        await bench.failJob(
+          DayProcessingOutboxRepository.draftJobId(dayId),
+          failureClass: DayProcessingFailureClass.deterministic,
+          error: 'ambiguous day resolution',
+        );
+
+        await expectLater(
+          future,
+          throwsA(
+            isA<DayAgentInteractionException>().having(
+              (e) => e.message,
+              'message',
+              contains('ambiguous day resolution'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'a setup-required failure surfaces a Settings-pointing message',
+      () async {
+        const agentId = 'day-agent-setup';
+        final dayId = dayAgentIdForDate(_asOf);
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+
+        final future = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
+        );
+        await pumpEventQueue();
+        await bench.failJob(
+          DayProcessingOutboxRepository.draftJobId(dayId),
+          failureClass: DayProcessingFailureClass.setupRequired,
+          error: 'no template configured',
+        );
+
+        await expectLater(
+          future,
+          throwsA(
+            isA<DayAgentInteractionException>().having(
+              (e) => e.message,
+              'message',
+              allOf(
+                contains('Setup required'),
+                contains('no template configured'),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'throws when the job succeeds but no day agent exists for the date '
+      'afterwards',
+      () async {
+        final dayId = dayAgentIdForDate(_asOf);
         when(
           () => bench.dayAgentService.getDayAgentForDate(any()),
         ).thenAnswer((_) async => null);
 
-        await expectLater(
-          bench.adapter.draftDayPlan(
-            captureId: const CaptureId('cap_1'),
-            decidedTaskIds: const [],
-            dayDate: _asOf,
-          ),
-          throwsA(isA<DayAgentInteractionException>()),
+        final future = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
         );
-        verifyNever(
-          () => bench.dayAgentService.enqueueDraftingWake(
-            dayDate: any(named: 'dayDate'),
-            captureId: any(named: 'captureId'),
-            decidedTaskIds: any(named: 'decidedTaskIds'),
-            decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
+        await pumpEventQueue();
+        await bench.completeJob(
+          DayProcessingOutboxRepository.draftJobId(dayId),
+        );
+
+        await expectLater(
+          future,
+          throwsA(
+            isA<DayAgentInteractionException>().having(
+              (e) => e.message,
+              'message',
+              contains('No day agent exists for $dayId'),
+            ),
           ),
         );
       },
     );
 
     test(
-      'throws DayAgentInteractionException when enqueueDraftingWake reports '
-      'no agent',
+      'throws when drafting completed but the day has no drafted plan',
       () async {
-        const agentId = 'day-agent-001';
+        const agentId = 'day-agent-no-plan';
+        final dayId = dayAgentIdForDate(_asOf);
         when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
@@ -498,26 +716,115 @@ void main() {
         );
         when(
           () => bench.planService.draftPlanForDay(
-            agentId: any(named: 'agentId'),
-            dayId: any(named: 'dayId'),
+            agentId: agentId,
+            dayId: dayId,
           ),
         ).thenAnswer((_) async => null);
-        when(
-          () => bench.dayAgentService.enqueueDraftingWake(
-            dayDate: any(named: 'dayDate'),
-            captureId: any(named: 'captureId'),
-            decidedTaskIds: any(named: 'decidedTaskIds'),
-            decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
-          ),
-        ).thenAnswer((_) async => false);
+
+        final future = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
+        );
+        await pumpEventQueue();
+        await bench.completeJob(
+          DayProcessingOutboxRepository.draftJobId(dayId),
+        );
 
         await expectLater(
-          bench.adapter.draftDayPlan(
-            captureId: const CaptureId('cap_1'),
-            decidedTaskIds: const [],
-            dayDate: _asOf,
+          future,
+          throwsA(
+            isA<DayAgentInteractionException>().having(
+              (e) => e.message,
+              'message',
+              contains('Drafting completed but $dayId has no drafted plan'),
+            ),
           ),
-          throwsA(isA<DayAgentInteractionException>()),
+        );
+      },
+    );
+
+    test(
+      'cancellation via isCancelled leaves the durable job running and '
+      'throws without touching the outbox',
+      () {
+        const agentId = 'day-agent-cancel';
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+
+        Object? caught;
+        fakeAsync((async) {
+          withClock(async.getClock(_asOf), () {
+            unawaited(() async {
+              try {
+                await bench.adapter.draftDayPlan(
+                  captureId: const CaptureId('cap_1'),
+                  decidedTaskIds: const [],
+                  dayDate: _asOf,
+                  isCancelled: () => true,
+                );
+              } catch (e) {
+                caught = e;
+              }
+            }());
+          });
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(seconds: 1))
+            ..flushMicrotasks();
+        });
+
+        expect(caught, isA<DayAgentInteractionException>());
+        expect(
+          (caught! as DayAgentInteractionException).message,
+          contains('cancelled by caller'),
+        );
+      },
+    );
+
+    test(
+      'a soft-cap timeout surfaces a background-progress message without '
+      'cancelling the job',
+      () {
+        const agentId = 'day-agent-softcap';
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+
+        Object? caught;
+        fakeAsync((async) {
+          withClock(async.getClock(_asOf), () {
+            unawaited(() async {
+              try {
+                await bench.adapter.draftDayPlan(
+                  captureId: const CaptureId('cap_1'),
+                  decidedTaskIds: const [],
+                  dayDate: _asOf,
+                );
+              } catch (e) {
+                caught = e;
+              }
+            }());
+          });
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(minutes: 11))
+            ..flushMicrotasks();
+        });
+
+        expect(caught, isA<DayAgentInteractionException>());
+        expect(
+          (caught! as DayAgentInteractionException).message,
+          contains('Activity timeline'),
         );
       },
     );
@@ -989,13 +1296,16 @@ void main() {
     }
 
     test(
-      'resolves the planner and forwards transcript + audioId',
+      'resolves the day owner and forwards transcript + audioId',
       () async {
-        // ADR 0022: submitCapture lazily resolves the single planner via
-        // getOrCreatePlannerAgent (which creates it on first use) and forwards
-        // the capture to it.
-        const agentId = dailyOsPlannerAgentId;
-        when(() => bench.dayAgentService.getOrCreatePlannerAgent()).thenAnswer(
+        // ADR 0032: submitCapture lazily resolves the day's owning agent via
+        // getOrCreateDayAgentForDate (which creates the per-day identity on
+        // first activity for a clean day) and forwards the capture to it.
+        final agentId = perDayAgentId('dayplan-2026-05-28');
+        final dayDate = DateTime(2026, 5, 28);
+        when(
+          () => bench.dayAgentService.getOrCreateDayAgentForDate(dayDate),
+        ).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -1015,12 +1325,14 @@ void main() {
         final captureId = await bench.adapter.submitCapture(
           transcript: 'hello world',
           capturedAt: _asOf,
-          dayDate: DateTime(2026, 5, 28),
+          dayDate: dayDate,
           audioId: 'audio-1',
         );
 
         expect(captureId.value, 'cap-1');
-        verify(() => bench.dayAgentService.getOrCreatePlannerAgent()).called(1);
+        verify(
+          () => bench.dayAgentService.getOrCreateDayAgentForDate(dayDate),
+        ).called(1);
         verify(
           () => bench.captureService.submitCapture(
             agentId: agentId,
@@ -1652,62 +1964,6 @@ void main() {
     },
   );
 
-  group('RealDayAgent.draftDayPlan poll timeout', () {
-    late _TestBench bench;
-
-    setUp(() => bench = _TestBench.create());
-
-    test(
-      'throws DayAgentInteractionException when no new plan appears before '
-      'the deadline',
-      () async {
-        const agentId = 'agent-timeout';
-        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
-          (_) async => makeTestIdentity(
-            id: agentId,
-            agentId: agentId,
-            kind: AgentKinds.dayAgent,
-          ),
-        );
-        when(
-          () => bench.planService.draftPlanForDay(
-            agentId: any(named: 'agentId'),
-            dayId: any(named: 'dayId'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => bench.dayAgentService.enqueueDraftingWake(
-            dayDate: any(named: 'dayDate'),
-            captureId: any(named: 'captureId'),
-            decidedTaskIds: any(named: 'decidedTaskIds'),
-            decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        // Fake clock that jumps past the 60-second deadline on the first
-        // post-enqueue check so the polling loop bails out without taking
-        // real wall-clock time.
-        var ticks = 0;
-        final clock = Clock(() {
-          ticks += 1;
-          return ticks == 1 ? _asOf : _asOf.add(const Duration(seconds: 61));
-        });
-
-        await expectLater(
-          withClock(
-            clock,
-            () => bench.adapter.draftDayPlan(
-              captureId: const CaptureId('cap'),
-              decidedTaskIds: const [],
-              dayDate: _asOf,
-            ),
-          ),
-          throwsA(isA<DayAgentInteractionException>()),
-        );
-      },
-    );
-  });
-
   group('RealDayAgent.proposePlanDiff', () {
     late _TestBench bench;
 
@@ -1751,16 +2007,11 @@ void main() {
           ),
           throwsA(isA<DayAgentInteractionException>()),
         );
-        verifyNever(
-          () => bench.dayAgentService.enqueueRefineWake(
-            dayDate: any(named: 'dayDate'),
-            transcript: any(named: 'transcript'),
-          ),
-        );
+        expect(await bench.outbox.getAll(), isEmpty);
       },
     );
 
-    test('throws when enqueueRefineWake reports no agent', () async {
+    test('throws when no plan exists yet for the day', () async {
       const agentId = 'agent-prop-1';
       when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
         (_) async => makeTestIdentity(
@@ -1770,17 +2021,11 @@ void main() {
         ),
       );
       when(
-        () => bench.planService.pendingPlanDiffsForDay(
-          agentId: any(named: 'agentId'),
-          dayId: any(named: 'dayId'),
+        () => bench.planService.draftPlanForDay(
+          agentId: agentId,
+          dayId: dayAgentIdForDate(_asOf),
         ),
-      ).thenAnswer((_) async => const <ChangeSetEntity>[]);
-      when(
-        () => bench.dayAgentService.enqueueRefineWake(
-          dayDate: any(named: 'dayDate'),
-          transcript: any(named: 'transcript'),
-        ),
-      ).thenAnswer((_) async => false);
+      ).thenAnswer((_) async => null);
 
       await expectLater(
         bench.adapter.proposePlanDiff(
@@ -1789,12 +2034,15 @@ void main() {
         ),
         throwsA(isA<DayAgentInteractionException>()),
       );
+      expect(await bench.outbox.getAll(), isEmpty);
     });
 
     test(
-      'returns a projected PlanDiff for the first new change set after enqueue',
-      () {
+      'persists the transcript capture, enqueues a durable refine job, and '
+      'projects the resulting diff once it completes',
+      () async {
         const agentId = 'agent-prop-2';
+        final dayId = dayAgentIdForDate(_asOf);
         when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
@@ -1803,11 +2051,22 @@ void main() {
           ),
         );
         when(
+          () => bench.planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => buildDayPlan(agentId: agentId, dayId: dayId));
+        when(
           () => bench.journalDb.getCategoryById(any()),
         ).thenAnswer((_) async => null);
-        // First call (baseline) returns no diffs, subsequent calls return
-        // a fresh diff.
-        var calls = 0;
+        when(
+          () => bench.dayAgentService.persistRefineCapture(
+            agentId: agentId,
+            dayId: dayId,
+            transcript: 'reshape the morning',
+          ),
+        ).thenAnswer((_) async => 'refine_capture:cap-x');
+
         final newDiff = buildChangeSet(
           agentId: agentId,
           items: [
@@ -1847,40 +2106,27 @@ void main() {
         );
         when(
           () => bench.planService.pendingPlanDiffsForDay(
-            agentId: any(named: 'agentId'),
-            dayId: any(named: 'dayId'),
+            agentId: agentId,
+            dayId: dayId,
           ),
-        ).thenAnswer((_) async {
-          calls += 1;
-          return calls == 1 ? const <ChangeSetEntity>[] : [newDiff];
-        });
-        when(
-          () => bench.dayAgentService.enqueueRefineWake(
-            dayDate: any(named: 'dayDate'),
-            transcript: any(named: 'transcript'),
-          ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => [newDiff]);
 
-        // Drive the 500 ms refine poll loop with fake time so the test
-        // takes microseconds instead of a real poll interval (fake-time
-        // policy).
-        late PlanDiff diff;
-        fakeAsync((async) {
-          withClock(async.getClock(_asOf), () {
-            bench.adapter
-                .proposePlanDiff(
-                  currentPlan: buildCurrentPlan(),
-                  voiceTranscript: 'reshape the morning',
-                )
-                .then((d) => diff = d);
-          });
-          // Flush up to the first poll delay, elapse it, then let the
-          // second pendingPlanDiffsForDay read observe the fresh diff.
-          async
-            ..flushMicrotasks()
-            ..elapse(const Duration(milliseconds: 500))
-            ..flushMicrotasks();
-        });
+        final future = bench.adapter.proposePlanDiff(
+          currentPlan: buildCurrentPlan(),
+          voiceTranscript: 'reshape the morning',
+        );
+        await pumpEventQueue();
+
+        final jobs = await bench.outbox.getAll();
+        expect(jobs, hasLength(1));
+        expect(jobs.single.kind, DayProcessingJobKind.refinePlan);
+        expect(
+          (jobs.single.payload as RefinePlanPayload).transcriptCaptureId,
+          'refine_capture:cap-x',
+        );
+
+        await bench.completeJob(jobs.single.id, resultEntityId: newDiff.id);
+        final diff = await future;
 
         expect(diff.id, newDiff.id);
         expect(diff.transcript, 'reshape the morning');
@@ -1905,9 +2151,11 @@ void main() {
     );
 
     test(
-      'throws on timeout when no new diff appears',
+      'throws when refining completed but no pending diff matches the '
+      'job result',
       () async {
-        const agentId = 'agent-prop-timeout';
+        const agentId = 'agent-prop-no-diff';
+        final dayId = dayAgentIdForDate(_asOf);
         when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
@@ -1916,32 +2164,137 @@ void main() {
           ),
         );
         when(
-          () => bench.planService.pendingPlanDiffsForDay(
-            agentId: any(named: 'agentId'),
-            dayId: any(named: 'dayId'),
+          () => bench.planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
           ),
-        ).thenAnswer((_) async => const <ChangeSetEntity>[]);
+        ).thenAnswer((_) async => buildDayPlan(agentId: agentId, dayId: dayId));
         when(
-          () => bench.dayAgentService.enqueueRefineWake(
-            dayDate: any(named: 'dayDate'),
-            transcript: any(named: 'transcript'),
+          () => bench.dayAgentService.persistRefineCapture(
+            agentId: agentId,
+            dayId: dayId,
+            transcript: 'reshape the morning',
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => 'refine_capture:cap-y');
+        when(
+          () => bench.planService.pendingPlanDiffsForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => const []);
 
-        var ticks = 0;
-        final clock = Clock(() {
-          ticks += 1;
-          return ticks == 1 ? _asOf : _asOf.add(const Duration(seconds: 61));
-        });
+        final future = bench.adapter.proposePlanDiff(
+          currentPlan: buildCurrentPlan(),
+          voiceTranscript: 'reshape the morning',
+        );
+        await pumpEventQueue();
+
+        final jobs = await bench.outbox.getAll();
+        await bench.completeJob(jobs.single.id, resultEntityId: 'diff-missing');
 
         await expectLater(
-          withClock(
-            clock,
-            () => bench.adapter.proposePlanDiff(
-              currentPlan: buildCurrentPlan(),
-              voiceTranscript: 'no change comes',
+          future,
+          throwsA(
+            isA<DayAgentInteractionException>().having(
+              (e) => e.message,
+              'message',
+              contains('Refining completed but $dayId has no pending diff'),
             ),
           ),
+        );
+      },
+    );
+
+    test(
+      'a blank transcript enqueues the refine job without a capture id',
+      () async {
+        const agentId = 'agent-prop-blank';
+        final dayId = dayAgentIdForDate(_asOf);
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => bench.planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => buildDayPlan(agentId: agentId, dayId: dayId));
+        when(
+          () => bench.dayAgentService.persistRefineCapture(
+            agentId: agentId,
+            dayId: dayId,
+            transcript: '',
+          ),
+        ).thenAnswer((_) async => null);
+
+        final future = bench.adapter.proposePlanDiff(
+          currentPlan: buildCurrentPlan(),
+          voiceTranscript: '',
+        );
+        await pumpEventQueue();
+
+        final jobs = await bench.outbox.getAll();
+        expect(
+          (jobs.single.payload as RefinePlanPayload).transcriptCaptureId,
+          isNull,
+        );
+
+        // Settle the awaiter's Timer so it doesn't leak past the test.
+        await bench.failJob(
+          jobs.single.id,
+          failureClass: DayProcessingFailureClass.deterministic,
+        );
+        await expectLater(
+          future,
+          throwsA(isA<DayAgentInteractionException>()),
+        );
+      },
+    );
+
+    test(
+      'throws DayAgentInteractionException when the job reaches a terminal '
+      'failure',
+      () async {
+        const agentId = 'agent-prop-timeout';
+        final dayId = dayAgentIdForDate(_asOf);
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => bench.planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => buildDayPlan(agentId: agentId, dayId: dayId));
+        when(
+          () => bench.dayAgentService.persistRefineCapture(
+            agentId: agentId,
+            dayId: dayId,
+            transcript: 'no change comes',
+          ),
+        ).thenAnswer((_) async => 'refine_capture:cap-y');
+
+        final future = bench.adapter.proposePlanDiff(
+          currentPlan: buildCurrentPlan(),
+          voiceTranscript: 'no change comes',
+        );
+        await pumpEventQueue();
+        final jobs = await bench.outbox.getAll();
+        await bench.failJob(
+          jobs.single.id,
+          failureClass: DayProcessingFailureClass.timeout,
+        );
+
+        await expectLater(
+          future,
           throwsA(isA<DayAgentInteractionException>()),
         );
       },
@@ -2418,377 +2771,78 @@ void main() {
     });
   });
 
-  group('RealDayAgent.draftDayPlan cancellation + baseline supersede', () {
+  group('RealDayAgent.draftDayPlan re-attach after cancellation', () {
     late _TestBench bench;
 
     setUp(() => bench = _TestBench.create());
 
-    void stubIdentity(String agentId) {
-      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
-        (_) async => makeTestIdentity(
-          id: agentId,
-          agentId: agentId,
-          kind: AgentKinds.dayAgent,
-        ),
-      );
-    }
-
-    void stubEnqueueOk() {
-      when(
-        () => bench.dayAgentService.enqueueDraftingWake(
-          dayDate: any(named: 'dayDate'),
-          captureId: any(named: 'captureId'),
-          decidedTaskIds: any(named: 'decidedTaskIds'),
-          decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
-        ),
-      ).thenAnswer((_) async => true);
-    }
-
     test(
-      'throws immediately when isCancelled is true on the first poll check '
-      'before any delay',
-      () {
-        const agentId = 'agent-cancel-1';
-        stubIdentity(agentId);
-        stubEnqueueOk();
-        // Baseline read returns null; the loop should never reach a second
-        // draftPlanForDay read because cancellation fires first.
-        when(
-          () => bench.planService.draftPlanForDay(
-            agentId: any(named: 'agentId'),
-            dayId: any(named: 'dayId'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        Object? caught;
-        fakeAsync((async) {
-          final fakeClock = async.getClock(_asOf);
-          withClock(fakeClock, () {
-            unawaited(() async {
-              try {
-                await bench.adapter.draftDayPlan(
-                  captureId: const CaptureId('cap'),
-                  decidedTaskIds: const [],
-                  dayDate: _asOf,
-                  isCancelled: () => true,
-                );
-              } catch (e) {
-                caught = e;
-              }
-            }());
-          });
-          async.flushMicrotasks();
-        });
-
-        expect(caught, isA<DayAgentInteractionException>());
-        expect(
-          (caught! as DayAgentInteractionException).message,
-          contains('cancelled by caller'),
-        );
-        // Only the baseline read happened — cancellation short-circuited the
-        // loop before the post-delay read.
-        verify(
-          () => bench.planService.draftPlanForDay(
-            agentId: agentId,
-            dayId: dayAgentIdForDate(_asOf),
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'throws on the second poll check after the delay when cancellation '
-      'arrives mid-poll',
-      () {
-        const agentId = 'agent-cancel-2';
-        stubIdentity(agentId);
-        stubEnqueueOk();
-        when(
-          () => bench.planService.draftPlanForDay(
-            agentId: any(named: 'agentId'),
-            dayId: any(named: 'dayId'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        var checks = 0;
-        Object? caught;
-        fakeAsync((async) {
-          final fakeClock = async.getClock(_asOf);
-          withClock(fakeClock, () {
-            unawaited(() async {
-              try {
-                await bench.adapter.draftDayPlan(
-                  captureId: const CaptureId('cap'),
-                  decidedTaskIds: const [],
-                  dayDate: _asOf,
-                  // false on the first (pre-delay) check, true on the second
-                  // (post-delay) check.
-                  isCancelled: () {
-                    checks += 1;
-                    return checks >= 2;
-                  },
-                );
-              } catch (e) {
-                caught = e;
-              }
-            }());
-          });
-          // Drive the 500ms poll delay so the second cancel check runs.
-          async
-            ..elapse(const Duration(milliseconds: 500))
-            ..flushMicrotasks();
-        });
-
-        expect(checks, 2);
-        expect(caught, isA<DayAgentInteractionException>());
-        expect(
-          (caught! as DayAgentInteractionException).message,
-          contains('cancelled by caller'),
-        );
-      },
-    );
-
-    test(
-      'returns the freshly drafted plan once a baseline is superseded by a '
-      'newer updatedAt',
-      () {
-        const agentId = 'agent-baseline';
+      'a caller that gave up leaves the durable job running; a fresh '
+      'request for the same day attaches to and observes its completion',
+      () async {
+        const agentId = 'agent-reattach';
         final dayId = dayAgentIdForDate(_asOf);
-        final baselineAt = _asOf;
-        final supersededAt = _asOf.add(const Duration(seconds: 30));
-        stubIdentity(agentId);
-        stubEnqueueOk();
-        when(
-          () => bench.journalDb.getCategoryById(any()),
-        ).thenAnswer((_) async => null);
-
-        var reads = 0;
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
         when(
           () => bench.planService.draftPlanForDay(
-            agentId: any(named: 'agentId'),
-            dayId: any(named: 'dayId'),
-          ),
-        ).thenAnswer((_) async {
-          reads += 1;
-          // First read is the (non-null) baseline; later reads return a plan
-          // with a strictly newer updatedAt so the supersede branch fires.
-          return buildDayPlan(
             agentId: agentId,
             dayId: dayId,
-            updatedAt: reads == 1 ? baselineAt : supersededAt,
-            blocks: reads == 1
-                ? const <PlannedBlock>[]
-                : [
-                    PlannedBlock(
-                      id: 'block_fresh',
-                      categoryId: 'work',
-                      startTime: _asOf.add(const Duration(hours: 1)),
-                      endTime: _asOf.add(const Duration(hours: 2)),
-                      title: 'Fresh block',
-                    ),
-                  ],
-          );
-        });
-
-        DraftPlan? result;
-        fakeAsync((async) {
-          final fakeClock = async.getClock(_asOf);
-          withClock(fakeClock, () {
-            bench.adapter
-                .draftDayPlan(
-                  captureId: const CaptureId('cap'),
-                  decidedTaskIds: const [],
-                  dayDate: _asOf,
-                )
-                .then((plan) => result = plan);
-          });
-          // One poll interval is enough to read the superseded plan.
-          async
-            ..elapse(const Duration(milliseconds: 500))
-            ..flushMicrotasks();
-        });
-
-        expect(result, isNotNull);
-        expect(result!.blocks, hasLength(1));
-        expect(result!.blocks.single.title, 'Fresh block');
-        // Baseline read + at least one post-delay read.
-        expect(reads, greaterThanOrEqualTo(2));
-      },
-    );
-
-    test(
-      'a plan whose updatedAt equals the baseline does not supersede and '
-      'the poll times out',
-      () {
-        const agentId = 'agent-equal-ts';
-        final dayId = dayAgentIdForDate(_asOf);
-        final baselineAt = _asOf;
-        stubIdentity(agentId);
-        stubEnqueueOk();
-        when(
-          () => bench.journalDb.getCategoryById(any()),
-        ).thenAnswer((_) async => null);
-
-        // Every read (baseline and all polls) returns the same updatedAt —
-        // the guard is `isAfter`, so an equal timestamp must never satisfy
-        // the supersede branch.
-        when(
-          () => bench.planService.draftPlanForDay(
-            agentId: any(named: 'agentId'),
-            dayId: any(named: 'dayId'),
           ),
         ).thenAnswer(
-          (_) async => buildDayPlan(
-            agentId: agentId,
-            dayId: dayId,
-            updatedAt: baselineAt,
-          ),
+          (_) async => buildDayPlan(agentId: agentId, dayId: dayId),
         );
+        when(
+          () => bench.journalDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
 
-        Object? error;
+        Object? firstError;
+        var cancelled = false;
         fakeAsync((async) {
-          final fakeClock = async.getClock(_asOf);
-          withClock(fakeClock, () {
-            bench.adapter
-                .draftDayPlan(
-                  captureId: const CaptureId('cap'),
-                  decidedTaskIds: const [],
-                  dayDate: _asOf,
-                )
-                .catchError((Object e) {
-                  error = e;
-                  return DraftPlan(
+          withClock(async.getClock(_asOf), () {
+            unawaited(
+              bench.adapter
+                  .draftDayPlan(
+                    captureId: const CaptureId('cap'),
+                    decidedTaskIds: const [],
                     dayDate: _asOf,
-                    blocks: const [],
-                    bands: const [],
-                    capacityMinutes: 0,
-                    scheduledMinutes: 0,
-                  );
-                });
+                    isCancelled: () => cancelled,
+                  )
+                  .catchError((Object e) {
+                    firstError = e;
+                    return DraftPlan.emptyForDay(_asOf);
+                  }),
+            );
           });
-          // Run past the 60s draft timeout.
+          async.flushMicrotasks();
+          cancelled = true;
           async
-            ..elapse(const Duration(seconds: 61))
+            ..elapse(const Duration(seconds: 1))
             ..flushMicrotasks();
         });
 
-        expect(error, isA<DayAgentInteractionException>());
-        expect(
-          (error! as DayAgentInteractionException).message,
-          contains('Timed out'),
+        expect(firstError, isA<DayAgentInteractionException>());
+        final jobId = DayProcessingOutboxRepository.draftJobId(dayId);
+        final job = await bench.outbox.getById(jobId);
+        expect(job!.isTerminal, isFalse);
+
+        final secondFuture = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
         );
+        await pumpEventQueue();
+        await bench.completeJob(jobId);
+        final result = await secondFuture;
+
+        expect(result.state, DayState.drafted);
       },
     );
-  });
-
-  group('RealDayAgent.proposePlanDiff cancellation', () {
-    late _TestBench bench;
-
-    setUp(() => bench = _TestBench.create());
-
-    DraftPlan buildCurrentPlan() => DraftPlan(
-      dayDate: _asOf,
-      blocks: const [],
-      bands: const [],
-      capacityMinutes: 480,
-      scheduledMinutes: 0,
-    );
-
-    void stubReady(String agentId) {
-      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
-        (_) async => makeTestIdentity(
-          id: agentId,
-          agentId: agentId,
-          kind: AgentKinds.dayAgent,
-        ),
-      );
-      when(
-        () => bench.planService.pendingPlanDiffsForDay(
-          agentId: any(named: 'agentId'),
-          dayId: any(named: 'dayId'),
-        ),
-      ).thenAnswer((_) async => const <ChangeSetEntity>[]);
-      when(
-        () => bench.dayAgentService.enqueueRefineWake(
-          dayDate: any(named: 'dayDate'),
-          transcript: any(named: 'transcript'),
-        ),
-      ).thenAnswer((_) async => true);
-    }
-
-    test('throws on the first poll check when isCancelled is true', () {
-      const agentId = 'agent-prop-cancel-1';
-      stubReady(agentId);
-
-      Object? caught;
-      fakeAsync((async) {
-        final fakeClock = async.getClock(_asOf);
-        withClock(fakeClock, () {
-          unawaited(() async {
-            try {
-              await bench.adapter.proposePlanDiff(
-                currentPlan: buildCurrentPlan(),
-                voiceTranscript: 'move it',
-                isCancelled: () => true,
-              );
-            } catch (e) {
-              caught = e;
-            }
-          }());
-        });
-        async.flushMicrotasks();
-      });
-
-      expect(caught, isA<DayAgentInteractionException>());
-      expect(
-        (caught! as DayAgentInteractionException).message,
-        contains('cancelled by caller'),
-      );
-      // Only the baseline diff read happened before cancellation.
-      verify(
-        () => bench.planService.pendingPlanDiffsForDay(
-          agentId: agentId,
-          dayId: dayAgentIdForDate(_asOf),
-        ),
-      ).called(1);
-    });
-
-    test('throws on the second poll check after the delay', () {
-      const agentId = 'agent-prop-cancel-2';
-      stubReady(agentId);
-
-      var checks = 0;
-      Object? caught;
-      fakeAsync((async) {
-        final fakeClock = async.getClock(_asOf);
-        withClock(fakeClock, () {
-          unawaited(() async {
-            try {
-              await bench.adapter.proposePlanDiff(
-                currentPlan: buildCurrentPlan(),
-                voiceTranscript: 'move it',
-                isCancelled: () {
-                  checks += 1;
-                  return checks >= 2;
-                },
-              );
-            } catch (e) {
-              caught = e;
-            }
-          }());
-        });
-        async
-          ..elapse(const Duration(milliseconds: 500))
-          ..flushMicrotasks();
-      });
-
-      expect(checks, 2);
-      expect(caught, isA<DayAgentInteractionException>());
-      expect(
-        (caught! as DayAgentInteractionException).message,
-        contains('cancelled by caller'),
-      );
-    });
   });
 
   group('debugAgendaFor — agenda state fold', () {

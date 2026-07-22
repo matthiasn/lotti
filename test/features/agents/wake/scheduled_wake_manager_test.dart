@@ -257,6 +257,19 @@ void main() {
     when(
       () => repository.getEntity(any()),
     ).thenAnswer((_) async => makeTestIdentity());
+    // Default run-key stub so unstubbed enqueueManualWake calls (this test
+    // file mostly asserts via `verify`, not `when`) don't throw on the
+    // now-non-void return type.
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+        supersede: any(named: 'supersede'),
+        initiator: any(named: 'initiator'),
+      ),
+    ).thenReturn('run-key-stub');
   });
 
   ScheduledWakeManager createAndStart({
@@ -723,6 +736,7 @@ void main() {
                 if (invocation.namedArguments[#agentId] == 'agent-fail') {
                   throw StateError('enqueue blew up');
                 }
+                return 'run-key-stub';
               });
               when(
                 () => syncService.upsertEntity(any()),

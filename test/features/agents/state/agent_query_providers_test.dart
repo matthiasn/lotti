@@ -1334,6 +1334,162 @@ void main() {
       });
     });
 
+    group('agentIsRunningInWorkspaceProvider', () {
+      test('yields initial false when agent is not running', () async {
+        final runner = WakeRunner();
+        addTearDown(runner.dispose);
+
+        final container = ProviderContainer(
+          overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(
+          agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        await pumpEventQueue();
+
+        final value = container.read(
+          agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+        );
+        expect(value.value, isFalse);
+      });
+
+      test(
+        'yields true after the agent acquires the matching workspace',
+        () async {
+          final runner = WakeRunner();
+          addTearDown(runner.dispose);
+
+          final container = ProviderContainer(
+            overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+          );
+          addTearDown(container.dispose);
+
+          final sub = container.listen(
+            agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+            (_, _) {},
+          );
+          addTearDown(sub.close);
+
+          await pumpEventQueue();
+
+          await runner.tryAcquire(kTestAgentId, workspaceKey: 'day:one');
+          await pumpEventQueue();
+
+          final value = container.read(
+            agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+          );
+          expect(value.value, isTrue);
+        },
+      );
+
+      test(
+        'stays false while the agent runs a different workspace — a shared '
+        'agent busy with one workspace must not report as running for '
+        'another',
+        () async {
+          final runner = WakeRunner();
+          addTearDown(runner.dispose);
+
+          final container = ProviderContainer(
+            overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+          );
+          addTearDown(container.dispose);
+
+          final sub = container.listen(
+            agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+            (_, _) {},
+          );
+          addTearDown(sub.close);
+
+          await pumpEventQueue();
+
+          await runner.tryAcquire(kTestAgentId, workspaceKey: 'day:two');
+          await pumpEventQueue();
+
+          final value = container.read(
+            agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+          );
+          expect(value.value, isFalse);
+        },
+      );
+
+      test('yields false again after the agent is released', () async {
+        final runner = WakeRunner();
+        addTearDown(runner.dispose);
+
+        final container = ProviderContainer(
+          overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(
+          agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        await pumpEventQueue();
+
+        await runner.tryAcquire(kTestAgentId, workspaceKey: 'day:one');
+        await pumpEventQueue();
+        expect(
+          container
+              .read(
+                agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+              )
+              .value,
+          isTrue,
+        );
+
+        runner.release(kTestAgentId);
+        await pumpEventQueue();
+        expect(
+          container
+              .read(
+                agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+              )
+              .value,
+          isFalse,
+        );
+      });
+
+      test(
+        'yields initial true when the agent already holds the matching '
+        'workspace',
+        () async {
+          final runner = WakeRunner();
+          addTearDown(runner.dispose);
+
+          await runner.tryAcquire(kTestAgentId, workspaceKey: 'day:one');
+
+          final container = ProviderContainer(
+            overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+          );
+          addTearDown(container.dispose);
+
+          final sub = container.listen(
+            agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+            (_, _) {},
+          );
+          addTearDown(sub.close);
+
+          await pumpEventQueue();
+
+          final value = container.read(
+            agentIsRunningInWorkspaceProvider((kTestAgentId, 'day:one')),
+          );
+          expect(value.value, isTrue);
+
+          runner.release(kTestAgentId);
+        },
+      );
+    });
+
     group('agentUpdateStreamProvider', () {
       test(
         'emits when UpdateNotifications fires with matching agent ID',

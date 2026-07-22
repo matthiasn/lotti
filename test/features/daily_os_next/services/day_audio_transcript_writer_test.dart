@@ -17,15 +17,17 @@ void main() {
 
   DayProcessingJob job() => DayProcessingJob(
     id: 'transcribe_session-1',
-    kind: DayProcessingJobKind.transcribeAudio,
     status: DayProcessingJobStatus.running,
     dayId: 'dayplan-2026-07-18',
-    activityEntryId: 'activity-1',
-    recordingSessionId: 'session-1',
-    audioId: 'audio-1',
-    audioPath: '/audio/one.wav',
+    payload: const TranscribeAudioPayload(
+      activityEntryId: 'activity-1',
+      recordingSessionId: 'session-1',
+      audioId: 'audio-1',
+      audioPath: '/audio/one.wav',
+    ),
     createdAt: now,
     updatedAt: now,
+    requestedAt: now,
     nextAttemptAt: now,
     attempts: 1,
     generation: 1,

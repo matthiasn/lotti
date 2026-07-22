@@ -61,6 +61,14 @@ class DayProcessingOutboxRepository {
   static String transcriptionJobId(String recordingSessionId) =>
       'transcribe_$recordingSessionId';
 
+  /// Deterministic parse-job id: one durable parse intent per capture,
+  /// mirroring the accumulate-per-capture wake semantics (`supersede: false`).
+  static String parseJobId(String captureId) => 'parse_$captureId';
+
+  /// Deterministic draft-job id: one durable draft intent per day. Repeated
+  /// "draft my day" requests coalesce onto (or re-arm) this job.
+  static String draftJobId(String dayId) => 'draft_$dayId';
+
   Future<DayProcessingJob> enqueueTranscription({
     required String dayId,
     required String activityEntryId,
@@ -179,19 +187,166 @@ class DayProcessingOutboxRepository {
     return _claimUnsafe(job, now: now, lease: lease);
   });
 
+  /// Enqueues (or coalesces onto) the day's durable draft-plan intent.
+  ///
+  /// One deterministic job per day: a fresh request re-arms a terminal or
+  /// pending job with the newest selections in [payload] and a fresh
+  /// `requestedAt` baseline; a currently `running` job is returned as-is so
+  /// the caller attaches to the in-flight attempt instead of restarting it.
+  Future<DayProcessingJob> enqueueDraftPlan({
+    required String dayId,
+    required DraftPlanPayload payload,
+  }) => _serialize(() async {
+    await _ensureRoot();
+    final id = draftJobId(dayId);
+    final now = _now();
+    final existing = await _readJobOrNull(id);
+    if (existing == null) {
+      final job = DayProcessingJob(
+        id: id,
+        status: DayProcessingJobStatus.queued,
+        dayId: dayId,
+        payload: payload,
+        createdAt: now,
+        updatedAt: now,
+        requestedAt: now,
+        nextAttemptAt: now,
+        attempts: 0,
+        generation: 0,
+      );
+      await _write(job);
+      _notify();
+      return job;
+    }
+    if (existing.status == DayProcessingJobStatus.running) {
+      // The in-flight attempt keeps its payload; injecting newer selections
+      // mid-wake is not possible, and the caller's await attaches to this
+      // job's terminal state either way.
+      return existing;
+    }
+    final rearmed = existing.copyWith(
+      status: DayProcessingJobStatus.queued,
+      payload: payload,
+      updatedAt: now,
+      requestedAt: now,
+      nextAttemptAt: now,
+      attempts: 0,
+      generation: existing.generation + 1,
+      clearClaimToken: true,
+      clearLeaseUntil: true,
+      clearRetryNotBefore: true,
+      clearLastError: true,
+      clearLastFailureClass: true,
+      clearResultEntityId: true,
+      clearCompletedAt: true,
+    );
+    await _write(rearmed);
+    _notify();
+    return rearmed;
+  });
+
+  /// Enqueues the durable parse intent for one submitted capture.
+  ///
+  /// Deterministic per capture and never re-armed: a capture is parsed once,
+  /// and repeat submissions of the same capture id return the existing job.
+  Future<DayProcessingJob> enqueueParseCapture({
+    required String dayId,
+    required String captureId,
+  }) => _serialize(() async {
+    await _ensureRoot();
+    final id = parseJobId(captureId);
+    final now = _now();
+    final requested = DayProcessingJob(
+      id: id,
+      status: DayProcessingJobStatus.queued,
+      dayId: dayId,
+      payload: ParseCapturePayload(captureId: captureId),
+      createdAt: now,
+      updatedAt: now,
+      requestedAt: now,
+      nextAttemptAt: now,
+      attempts: 0,
+      generation: 0,
+    );
+    final existing = await _readJobOrNull(id);
+    if (existing != null) {
+      _validateImmutableIntent(existing, requested);
+      return existing;
+    }
+    await _write(requested);
+    _notify();
+    return requested;
+  });
+
+  /// Enqueues a durable refine intent for the day.
+  ///
+  /// Never coalesced: each refine carries distinct user input (its own
+  /// transcript capture) and produces its own ChangeSet, so every call
+  /// creates a new uniquely-suffixed job.
+  Future<DayProcessingJob> enqueueRefinePlan({
+    required String dayId,
+    String? transcriptCaptureId,
+  }) => _serialize(() async {
+    await _ensureRoot();
+    final now = _now();
+    final raw = _tokenFactory().replaceAll('-', '');
+    final suffix = raw.length > 8 ? raw.substring(0, 8) : raw;
+    final id = 'refine_${dayId}_$suffix';
+    final job = DayProcessingJob(
+      id: id,
+      status: DayProcessingJobStatus.queued,
+      dayId: dayId,
+      payload: RefinePlanPayload(transcriptCaptureId: transcriptCaptureId),
+      createdAt: now,
+      updatedAt: now,
+      requestedAt: now,
+      nextAttemptAt: now,
+      attempts: 0,
+      generation: 0,
+    );
+    await _write(job);
+    _notify();
+    return job;
+  });
+
   void _validateImmutableIntent(
     DayProcessingJob existing,
     DayProcessingJob requested,
   ) {
-    if (existing.kind != requested.kind ||
-        existing.dayId != requested.dayId ||
-        existing.activityEntryId != requested.activityEntryId ||
-        existing.recordingSessionId != requested.recordingSessionId ||
-        existing.audioId != requested.audioId ||
-        path.normalize(existing.audioPath) !=
-            path.normalize(requested.audioPath) ||
-        existing.createdAt != requested.createdAt) {
+    if (existing.kind != requested.kind || existing.dayId != requested.dayId) {
       throw DayProcessingIntentConflict(existing.id);
+    }
+    switch (existing.payload) {
+      case TranscribeAudioPayload():
+        // Transcription intent is fully immutable, including its capture
+        // time (createdAt = capturedAt, derived from durable provenance).
+        if (existing.payload != requested.payload ||
+            existing.createdAt != requested.createdAt) {
+          throw DayProcessingIntentConflict(existing.id);
+        }
+      case ParseCapturePayload() || RefinePlanPayload():
+        // ParseCapturePayload equality is fully determined by captureId,
+        // which is itself embedded in the job id this method is always
+        // looked up by — so for the one caller that reaches this arm
+        // ([enqueueParseCapture]), existing/requested payloads can never
+        // actually differ. RefinePlanPayload never reaches this arm at all
+        // (enqueueRefinePlan never re-validates — see its doc comment).
+        // Kept for exhaustiveness and as a guard if a future caller reuses
+        // this validation with looser id semantics.
+        if (existing.payload != requested.payload) {
+          // coverage:ignore-start
+          throw DayProcessingIntentConflict(existing.id);
+          // coverage:ignore-end
+        }
+      // coverage:ignore-start
+      case DraftPlanPayload():
+        // No caller ever looks up an existing job by `draftJobId` before
+        // calling this method (enqueueDraftPlan intentionally never
+        // validates — see its doc comment), so this arm is unreachable.
+        // Kept for exhaustiveness over the sealed DayProcessingPayload
+        // union.
+        break;
+      // coverage:ignore-end
     }
   }
 
@@ -205,15 +360,17 @@ class DayProcessingOutboxRepository {
     required DateTime now,
   }) => DayProcessingJob(
     id: transcriptionJobId(recordingSessionId),
-    kind: DayProcessingJobKind.transcribeAudio,
     status: DayProcessingJobStatus.queued,
     dayId: dayId,
-    activityEntryId: activityEntryId,
-    recordingSessionId: recordingSessionId,
-    audioId: audioId,
-    audioPath: path.normalize(File(audioPath).absolute.path),
+    payload: TranscribeAudioPayload(
+      activityEntryId: activityEntryId,
+      recordingSessionId: recordingSessionId,
+      audioId: audioId,
+      audioPath: path.normalize(File(audioPath).absolute.path),
+    ),
     createdAt: capturedAt,
     updatedAt: now,
+    requestedAt: capturedAt,
     nextAttemptAt: now,
     attempts: 0,
     generation: 0,
@@ -241,12 +398,21 @@ class DayProcessingOutboxRepository {
   Future<DayProcessingJob?> getById(String id) =>
       _serialize(() => _readJobOrNull(id));
 
+  /// Claims the next due job, optionally restricted to [kinds] so callers
+  /// can drain kind families independently (a slow agent wake must not block
+  /// the transcription lane and vice versa).
   Future<DayProcessingClaim?> claimNext({
     Duration lease = const Duration(minutes: 3),
+    Set<DayProcessingJobKind>? kinds,
   }) => _serialize(() async {
     final now = _now();
     final jobs = await _readAllUnsafe();
-    final due = jobs.where((job) => job.isDue(now)).firstOrNull;
+    final due = jobs
+        .where(
+          (job) =>
+              job.isDue(now) && (kinds == null || kinds.contains(job.kind)),
+        )
+        .firstOrNull;
     if (due == null) return null;
     return _claimUnsafe(due, now: now, lease: lease);
   });
@@ -285,12 +451,14 @@ class DayProcessingOutboxRepository {
   Future<DayProcessingJob> markSucceeded({
     required String jobId,
     required String claimToken,
+    String? resultEntityId,
   }) => _updateClaimed(jobId, claimToken, (job, now) {
     return job.copyWith(
       status: DayProcessingJobStatus.succeeded,
       updatedAt: now,
       generation: job.generation + 1,
       completedAt: now,
+      resultEntityId: resultEntityId,
       clearClaimToken: true,
       clearLeaseUntil: true,
       clearLastError: true,

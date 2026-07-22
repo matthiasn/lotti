@@ -272,6 +272,12 @@ countAgentEntitiesInInterval: SELECT COUNT(*) AS cnt FROM agent_entities WHERE u
 -- user whose only plan was later deleted) need tombstones counted too.
 countAgentEntitiesByAgentAndType: SELECT COUNT(*) AS cnt FROM agent_entities WHERE agent_id = :agentId AND type = :type;
 
+-- Same tombstone-inclusive semantics as above, without the agent filter:
+-- under ADR 0032 day plans are written by whichever identity owns the day
+-- (coordinator pre-cutover, per-day agent after), so "has EVER planned"
+-- gates must count across all agents.
+countAgentEntitiesByType: SELECT COUNT(*) AS cnt FROM agent_entities WHERE type = :type;
+
 getAllAgentLinks: SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC;
 
 getAgentLinksInInterval: SELECT * FROM agent_links WHERE updated_at >= :start AND updated_at < :end ORDER BY updated_at ASC, id ASC LIMIT :limit OFFSET :offset;

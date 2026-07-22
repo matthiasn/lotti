@@ -83,9 +83,14 @@ class DayActivityRepository {
     };
 
     final jobs = await outbox.getAll();
+    // Only transcription jobs join to a recording card by activityEntryId;
+    // agent jobs (parseCapture/draftPlan/refinePlan, ADR 0032 phase 1) carry
+    // no activityEntryId and are not surfaced by this repository yet.
     final jobsByActivity = <String, DayProcessingJob>{
-      for (final job in jobs.where((job) => job.dayId == dayId))
-        job.activityEntryId: job,
+      for (final job in jobs.where(
+        (job) => job.dayId == dayId && job.activityEntryId != null,
+      ))
+        job.activityEntryId!: job,
     };
     final capturesByAudio = <String, CaptureEntity>{};
     final standaloneCaptures = <CaptureEntity>[];

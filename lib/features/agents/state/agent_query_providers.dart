@@ -26,6 +26,33 @@ Stream<bool> agentIsRunning(Ref ref, String agentId) async* {
   yield* runner.runningAgentIds.map((ids) => ids.contains(agentId)).distinct();
 }
 
+/// Whether `agentId` is currently running a wake for the specific
+/// `(agentId, workspaceKey)` pair.
+///
+/// Unlike [agentIsRunningProvider], this scopes activity to one workspace —
+/// needed for shared agents like the Daily OS coordinator (ADR 0022), which
+/// runs one wake at a time but may be doing so for any day it still owns.
+/// Watching only [agentIsRunningProvider] for such an agent would report
+/// "running" for every workspace whenever it is busy with any one of them.
+final StreamProviderFamily<bool, (String, String?)>
+agentIsRunningInWorkspaceProvider = StreamProvider.autoDispose
+    .family<bool, (String, String?)>(
+      agentIsRunningInWorkspace,
+      name: 'agentIsRunningInWorkspaceProvider',
+    );
+Stream<bool> agentIsRunningInWorkspace(
+  Ref ref,
+  (String, String?) key,
+) async* {
+  final runner = ref.watch(wakeRunnerProvider);
+  final (agentId, workspaceKey) = key;
+  bool matches() =>
+      runner.isRunning(agentId) &&
+      runner.workspaceKeyFor(agentId) == workspaceKey;
+  yield matches();
+  yield* runner.runningAgentIds.map((_) => matches()).distinct();
+}
+
 /// Stream that emits when a specific agent's data changes (from sync or local
 /// wake). Detail providers watch this to self-invalidate.
 ///

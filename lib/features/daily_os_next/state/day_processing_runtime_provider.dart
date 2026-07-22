@@ -1,13 +1,17 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_review_fence.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repair.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
+import 'package:lotti/features/daily_os_next/state/day_agent_job_wiring.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -22,6 +26,12 @@ final Provider<DayProcessingOutboxProcessor>
 dayProcessingOutboxProcessorProvider = Provider((ref) {
   final transcriber = ref.watch(audioTranscriptionServiceProvider);
   final writer = ref.watch(dayAudioTranscriptWriterProvider);
+  final executor = buildDayAgentJobExecutor(
+    dayAgentService: ref.watch(dayAgentServiceProvider),
+    planService: ref.watch(dayAgentPlanServiceProvider),
+    captureService: ref.watch(dayAgentCaptureServiceProvider),
+    orchestrator: ref.watch(wakeOrchestratorProvider),
+  );
   return DayProcessingOutboxProcessor(
     repository: ref.watch(dayProcessingOutboxRepositoryProvider),
     // Resolve the planner profile's transcription slot per attempt so a
@@ -40,6 +50,7 @@ dayProcessingOutboxProcessorProvider = Provider((ref) {
     },
     attachTranscript: (job, transcript) =>
         writer.attach(job: job, transcript: transcript),
+    agentJobExecutor: executor.execute,
     isOnline: () async {
       final results = await Connectivity().checkConnectivity();
       return results.any(
@@ -83,7 +94,16 @@ final Provider<DayProcessingRuntime> dayProcessingRuntimeProvider = Provider((
   ref.watch(dayAudioReviewFenceProvider);
   final runtime = DayProcessingRuntime(
     repository: outbox,
-    drain: processor.drain,
+    // Two independent lanes: a slow agent wake (drafting/refining can take
+    // tens of seconds) must never block the transcription lane, and vice
+    // versa. Each lane drains serially within itself.
+    drain: () async {
+      final counts = await Future.wait([
+        processor.drain(kinds: const {DayProcessingJobKind.transcribeAudio}),
+        processor.drain(kinds: dayAgentJobKinds),
+      ]);
+      return counts[0] + counts[1];
+    },
     repair: () async {
       final currentHostId = await getIt<VectorClockService>().getHost();
       return DayProcessingOutboxRepair(

@@ -959,6 +959,14 @@ stateDiagram-v2
 - persists and restores deferred subscription wake deadlines through
   `AgentStateEntity.nextWakeAt`, rebuilding the in-memory queue job after
   restart
+- emits `runCompletions` (`Stream<WakeRunCompletion>`), a broadcast stream of
+  one event per finished wake (`completed`/`failed`/`aborted`, with the error
+  object for failures), keyed by the run key `enqueueManualWake` returns.
+  In-process only, never persisted — callers that enqueued a wake and need
+  its precise outcome without polling (e.g. the Daily OS durable
+  `draftPlan`/`refinePlan` job executor, ADR 0032 phase 1) subscribe before
+  enqueueing and filter on the returned run key. The durable record of the
+  same outcome is still the `wake_run_log` row.
 
 The persisted wake reasons are:
 

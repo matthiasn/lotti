@@ -215,6 +215,18 @@ void main() {
       return journalEntities[invocation.positionalArguments.single as String];
     });
     when(() => journalDb.getCategoryById(any())).thenAnswer((_) async => null);
+    // Default run-key stub so unstubbed enqueueManualWake calls (this file
+    // mostly asserts via `verify`/`verifyNever`) don't throw on the
+    // now-non-void return type.
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+        supersede: any(named: 'supersede'),
+      ),
+    ).thenReturn('run-key-stub');
     when(
       () => journalDb.getOpenTasksForDayAgentCorpus(
         categoryIds: any(named: 'categoryIds'),

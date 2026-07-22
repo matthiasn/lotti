@@ -12,6 +12,7 @@ import 'package:clock/clock.dart';
 class WakeRunner {
   final _activeLocks = <String, Completer<void>>{};
   final _activeStartedAt = <String, DateTime>{};
+  final _activeWorkspaceKey = <String, String?>{};
   final _abortSignals = <String, Completer<void>>{};
   late final UnmodifiableMapView<String, DateTime> _activeStartedAtView =
       UnmodifiableMapView(_activeStartedAt);
@@ -26,12 +27,18 @@ class WakeRunner {
   /// Attempt to acquire the single-flight lock for [agentId].
   ///
   /// Returns `true` and installs the lock when no run is active.  Returns
-  /// `false` immediately when the agent is already running.
-  Future<bool> tryAcquire(String agentId) async {
+  /// `false` immediately when the agent is already running. [workspaceKey]
+  /// records which workspace this run is executing in (e.g. `day:<dayId>`
+  /// for the Daily OS coordinator, ADR 0022) so callers can scope
+  /// "is this agent running" checks to a specific workspace via
+  /// [workspaceKeyFor] instead of treating any run of a shared agent as
+  /// relevant to every workspace it might touch.
+  Future<bool> tryAcquire(String agentId, {String? workspaceKey}) async {
     if (_activeLocks.containsKey(agentId)) return false;
     _activeLocks[agentId] = Completer<void>();
     _abortSignals[agentId] = Completer<void>();
     _activeStartedAt[agentId] = clock.now();
+    _activeWorkspaceKey[agentId] = workspaceKey;
     _runningController.add(activeAgentIds);
     return true;
   }
@@ -46,6 +53,7 @@ class WakeRunner {
 
     lock.complete();
     _activeStartedAt.remove(agentId);
+    _activeWorkspaceKey.remove(agentId);
     final abort = _abortSignals.remove(agentId);
     if (abort != null && !abort.isCompleted) abort.complete();
     _runningController.add(activeAgentIds);
@@ -97,6 +105,12 @@ class WakeRunner {
   /// `clock.now()`, so tests that override `clock` see deterministic
   /// values.
   DateTime? startedAt(String agentId) => _activeStartedAt[agentId];
+
+  /// The workspace key passed to [tryAcquire] for [agentId]'s currently
+  /// active run, or `null` when [agentId] is not running (or is running
+  /// without a workspace key). Callers that need to distinguish those two
+  /// cases must check [isRunning] first.
+  String? workspaceKeyFor(String agentId) => _activeWorkspaceKey[agentId];
 
   /// Live read-only view of agent IDs to their wake start timestamps.
   /// Reflects subsequent acquire/release calls without allocating —

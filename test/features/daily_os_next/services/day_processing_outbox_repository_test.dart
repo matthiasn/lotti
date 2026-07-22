@@ -83,6 +83,26 @@ void main() {
     },
   );
 
+  test(
+    'same dayId and kind but a differing payload also rejects as a '
+    'conflicting immutable intent',
+    () async {
+      await enqueue();
+
+      final conflict = repository.enqueueTranscription(
+        dayId: 'dayplan-2026-07-18',
+        activityEntryId: 'activity-1',
+        recordingSessionId: 'session-1',
+        audioId: 'audio-1',
+        audioPath: path.join(root.path, 'a-different-file.wav'),
+        capturedAt: DateTime.utc(2026, 7, 18, 7, 40),
+      );
+
+      await expectLater(conflict, throwsA(isA<DayProcessingIntentConflict>()));
+      expect((await repository.getAll()).single.dayId, 'dayplan-2026-07-18');
+    },
+  );
+
   test('default claim tokens are UUIDs', () async {
     await repository.dispose();
     repository = DayProcessingOutboxRepository(
@@ -496,4 +516,184 @@ void main() {
       expect(quarantinedEnvelope['payload'], corruptPayload);
     },
   );
+
+  group('durable agent jobs (ADR 0032 phase 1)', () {
+    test('enqueueParseCapture is deterministic and accumulates', () async {
+      final first = await repository.enqueueParseCapture(
+        dayId: 'dayplan-2026-07-18',
+        captureId: 'cap-1',
+      );
+      final second = await repository.enqueueParseCapture(
+        dayId: 'dayplan-2026-07-18',
+        captureId: 'cap-2',
+      );
+      final duplicate = await repository.enqueueParseCapture(
+        dayId: 'dayplan-2026-07-18',
+        captureId: 'cap-1',
+      );
+
+      expect(first.id, 'parse_cap-1');
+      expect(second.id, 'parse_cap-2');
+      expect(duplicate.id, first.id);
+      expect(await repository.getAll(), hasLength(2));
+    });
+
+    test(
+      'enqueueParseCapture rejects a re-request for a different day',
+      () async {
+        await repository.enqueueParseCapture(
+          dayId: 'dayplan-2026-07-18',
+          captureId: 'cap-1',
+        );
+
+        await expectLater(
+          repository.enqueueParseCapture(
+            dayId: 'dayplan-2026-07-19',
+            captureId: 'cap-1',
+          ),
+          throwsA(isA<DayProcessingIntentConflict>()),
+        );
+      },
+    );
+
+    test(
+      'enqueueDraftPlan coalesces a queued job onto the newest payload',
+      () async {
+        final first = await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(decidedTaskIds: ['t1']),
+        );
+        now = now.add(const Duration(seconds: 1));
+        final rearmed = await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(decidedTaskIds: ['t1', 't2']),
+        );
+
+        expect(rearmed.id, first.id);
+        expect(
+          (rearmed.payload as DraftPlanPayload).decidedTaskIds,
+          ['t1', 't2'],
+        );
+        expect(rearmed.requestedAt, now);
+        expect(rearmed.generation, first.generation + 1);
+        expect(await repository.getAll(), hasLength(1));
+      },
+    );
+
+    test(
+      'enqueueDraftPlan re-arms a terminal job with a fresh requestedAt',
+      () async {
+        final first = await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(),
+        );
+        final claim = await repository.claimNext(
+          kinds: const {DayProcessingJobKind.draftPlan},
+        );
+        await repository.markSucceeded(
+          jobId: claim!.job.id,
+          claimToken: claim.token,
+          resultEntityId: 'day_agent_plan:dayplan-2026-07-18',
+        );
+        now = now.add(const Duration(minutes: 5));
+
+        final rearmed = await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(decidedTaskIds: ['t9']),
+        );
+
+        expect(rearmed.id, first.id);
+        expect(rearmed.status, DayProcessingJobStatus.queued);
+        expect(rearmed.requestedAt, now);
+        expect(rearmed.resultEntityId, isNull);
+        expect(rearmed.completedAt, isNull);
+      },
+    );
+
+    test(
+      'enqueueDraftPlan returns the running job as-is instead of re-arming',
+      () async {
+        await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(decidedTaskIds: ['t1']),
+        );
+        final claim = await repository.claimNext(
+          kinds: const {DayProcessingJobKind.draftPlan},
+        );
+
+        final attached = await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(decidedTaskIds: ['t2']),
+        );
+
+        expect(attached.status, DayProcessingJobStatus.running);
+        expect(
+          (attached.payload as DraftPlanPayload).decidedTaskIds,
+          ['t1'],
+        );
+        expect(attached.claimToken, claim!.token);
+      },
+    );
+
+    test(
+      'enqueueRefinePlan never coalesces — each call is a new job',
+      () async {
+        final first = await repository.enqueueRefinePlan(
+          dayId: 'dayplan-2026-07-18',
+          transcriptCaptureId: 'cap-a',
+        );
+        final second = await repository.enqueueRefinePlan(
+          dayId: 'dayplan-2026-07-18',
+          transcriptCaptureId: 'cap-b',
+        );
+
+        expect(first.id, isNot(second.id));
+        expect(first.dayId, 'dayplan-2026-07-18');
+        expect(
+          (first.payload as RefinePlanPayload).transcriptCaptureId,
+          'cap-a',
+        );
+        expect(await repository.getAll(), hasLength(2));
+      },
+    );
+
+    test('claimNext(kinds:) restricts drain to one lane', () async {
+      await enqueue();
+      await repository.enqueueParseCapture(
+        dayId: 'dayplan-2026-07-18',
+        captureId: 'cap-1',
+      );
+
+      final agentClaim = await repository.claimNext(
+        kinds: const {DayProcessingJobKind.parseCapture},
+      );
+      final transcriptionClaim = await repository.claimNext(
+        kinds: const {DayProcessingJobKind.transcribeAudio},
+      );
+
+      expect(agentClaim!.job.kind, DayProcessingJobKind.parseCapture);
+      expect(
+        transcriptionClaim!.job.kind,
+        DayProcessingJobKind.transcribeAudio,
+      );
+    });
+
+    test('markSucceeded persists resultEntityId for agent jobs', () async {
+      await repository.enqueueParseCapture(
+        dayId: 'dayplan-2026-07-18',
+        captureId: 'cap-1',
+      );
+      final claim = await repository.claimNext(
+        kinds: const {DayProcessingJobKind.parseCapture},
+      );
+
+      final succeeded = await repository.markSucceeded(
+        jobId: claim!.job.id,
+        claimToken: claim.token,
+        resultEntityId: 'parsed-item-1',
+      );
+
+      expect(succeeded.resultEntityId, 'parsed-item-1');
+    });
+  });
 }

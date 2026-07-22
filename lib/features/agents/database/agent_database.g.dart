@@ -4785,6 +4785,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
+  Selectable<int> countAgentEntitiesByType(String type) {
+    return customSelect(
+      'SELECT COUNT(*) AS cnt FROM agent_entities WHERE type = ?1',
+      variables: [Variable<String>(type)],
+      readsFrom: {agentEntities},
+    ).map((QueryRow row) => row.read<int>('cnt'));
+  }
+
   Selectable<AgentLink> getAllAgentLinks() {
     return customSelect(
       'SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC',

@@ -26,6 +26,7 @@ import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake_context.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
@@ -316,7 +317,7 @@ class DayAgentWorkflow {
       now: now,
     );
     final weekContext = isDayTokenWake
-        ? await _weekContext(agentId: agentId, planDate: dayDate, now: now)
+        ? await _weekContext(planDate: dayDate, now: now)
         : null;
     final dayAudioEntries = await _dayAudioEntries(resolvedDayId);
     final systemPrompt = _buildSystemPrompt(templateCtx);

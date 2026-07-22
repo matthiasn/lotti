@@ -1,11 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -29,12 +28,15 @@ final dayActivityProvider = FutureProvider.autoDispose
       final planEntity = await ref.watch(
         draftedPlanForDateProvider(date).future,
       );
-      final summaries = await ref
+      // Summary ids are deterministic per day, so resolve by id instead of by
+      // writing agent — the writer changes across the ADR 0032 cutover
+      // (coordinator pre-cutover, per-day agent after) while the id does not.
+      final summaryEntities = await ref
           .watch(agentRepositoryProvider)
-          .getEntitiesByAgentId(
-            dailyOsPlannerAgentId,
-            type: AgentEntityTypes.daySummary,
-          );
+          .getEntitiesByIds([dayAgentSummaryEntityId(dayAgentIdForDate(date))]);
+      final summaries = summaryEntities.values
+          .whereType<DaySummaryEntity>()
+          .where((s) => s.deletedAt == null && isDailyOsDayOwner(s.agentId));
       return DayActivityRepository(
         journalDb: getIt(),
         outbox: ref.watch(dayProcessingOutboxRepositoryProvider),

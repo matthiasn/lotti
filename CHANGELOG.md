@@ -40,6 +40,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scrolls and disarming mid-batch.
 
 ## [0.9.1057]
+### Added
+- **Drafting or refining a day's plan now survives the app closing mid-request.**
+  The request is queued durably instead of held only in memory, so if the app
+  is backgrounded or killed while a plan is being drafted or refined, the work
+  finishes in the background and the result is there when you come back —
+  instead of the request silently vanishing.
+- **Each day now gets its own planning agent.** The Daily OS assistant used to
+  run every day's planning through one shared identity; going forward, a new
+  day gets a dedicated agent the first time you use it, so its wake history,
+  token spend, and conversation log (Settings > Agents > Inspect agent) show
+  that day on its own instead of mixed into one long-running timeline. Past
+  days you've already planned are unaffected.
+
 ### Removed
 - **The agent Stats tab is gone.** Settings > Agents now opens on Templates
   and keeps four views: Templates, Instances, Souls, and Wake Cycles. The

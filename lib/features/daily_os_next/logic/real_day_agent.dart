@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -15,8 +16,9 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_servi
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/util/day_arithmetic.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:meta/meta.dart';
 
 part 'real_day_agent_projection.dart';
@@ -50,7 +52,8 @@ class RealDayAgent implements DayAgentInterface {
     required this.dayAgentService,
     required this.journalDb,
     required this.mockFallback,
-    this.updateStream,
+    required this.outbox,
+    required this.nudgeProcessing,
   });
 
   final DayAgentCaptureService captureService;
@@ -58,7 +61,16 @@ class RealDayAgent implements DayAgentInterface {
   final DayAgentService dayAgentService;
   final JournalDb journalDb;
   final DayAgentInterface mockFallback;
-  final Stream<Set<String>>? updateStream;
+
+  /// Durable processing outbox (ADR 0032 phase 1): draft/refine requests are
+  /// enqueued as jobs here instead of firing a wake directly, so the intent
+  /// survives a process kill and completion is observed via its `changes`
+  /// stream instead of polling.
+  final DayProcessingOutboxRepository outbox;
+
+  /// Nudges the processing runtime to drain immediately after an enqueue,
+  /// rather than waiting for its next scheduled tick.
+  final void Function() nudgeProcessing;
 
   /// In-memory cache so the adapter does not hit the categories
   /// table once per parsed item / pending item. Cleared on adapter
@@ -83,9 +95,10 @@ class RealDayAgent implements DayAgentInterface {
     required DateTime dayDate,
     String? audioId,
   }) async {
-    // One long-lived planner owns every day (ADR 0022); create it lazily on
-    // the first capture.
-    final identity = await dayAgentService.getOrCreatePlannerAgent();
+    // ADR 0032: the per-day agent owns the day's captures; the first capture
+    // for a clean day creates it lazily (pre-cutover days resolve to the
+    // coordinator).
+    final identity = await dayAgentService.getOrCreateDayAgentForDate(dayDate);
     final capture = await captureService.submitCapture(
       agentId: identity.agentId,
       transcript: transcript,
@@ -159,6 +172,9 @@ class RealDayAgent implements DayAgentInterface {
     required TriageAction action,
     DateTime? deferTo,
   }) async {
+    // Deliberately coordinator-resolved: the interface carries no date, and
+    // the agent id is only used for category scoping, which per-day agents
+    // inherit from the coordinator at creation anyway (ADR 0032 phase 2).
     final identity = await dayAgentService.getOrCreatePlannerAgent();
     await captureService.applyTriage(
       agentId: identity.agentId,
@@ -187,16 +203,6 @@ class RealDayAgent implements DayAgentInterface {
     return _projectParsedItem(updated);
   }
 
-  /// How often to re-check `draftPlanForDay` while waiting for the
-  /// drafting wake to produce a new `DayPlanEntity`.
-  static const _draftPollInterval = Duration(milliseconds: 500);
-
-  /// Upper bound on how long [draftDayPlan] waits for the wake to
-  /// produce a plan before surfacing a failure. Long enough for a
-  /// typical model round-trip, short enough that the UI does not
-  /// look stuck.
-  static const _draftTimeout = Duration(seconds: 60);
-
   @override
   Future<DraftPlan> draftDayPlan({
     required CaptureId captureId,
@@ -206,74 +212,41 @@ class RealDayAgent implements DayAgentInterface {
     List<TimeBlock> calendarBlocks = const [],
     bool Function()? isCancelled,
   }) async {
-    final identity = await dayAgentService.getDayAgentForDate(dayDate);
-    if (identity is! AgentIdentityEntity) {
-      throw DayAgentInteractionException(
-        'No day agent exists for ${dayAgentIdForDate(dayDate)}. '
-        'Submit a capture first so the day-agent is created.',
-      );
-    }
     final dayId = dayAgentIdForDate(dayDate);
-    final baseline = await planService.draftPlanForDay(
-      agentId: identity.agentId,
+    // PR #3212: the workflow turns these into `decided_task:<id>` trigger
+    // tokens and surfaces the hydrated tasks in the drafting prompt so the
+    // model can attach `taskId` to each placed block.
+    final job = await outbox.enqueueDraftPlan(
       dayId: dayId,
+      payload: DraftPlanPayload(
+        captureId: captureId.value,
+        decidedTaskIds: decidedTaskIds,
+        decidedCaptureItemIds: decidedCaptureItemIds,
+      ),
     );
-    final baselineUpdatedAt = baseline?.updatedAt;
+    nudgeProcessing();
 
-    final enqueued = await dayAgentService.enqueueDraftingWake(
-      dayDate: dayDate,
-      captureId: captureId.value,
-      // PR #3212: the workflow turns these into `decided_task:<id>`
-      // trigger tokens and surfaces the hydrated tasks in the drafting
-      // prompt so the model can attach `taskId` to each placed block.
-      decidedTaskIds: decidedTaskIds,
-      decidedCaptureItemIds: decidedCaptureItemIds,
-    );
-    if (!enqueued) {
-      throw const DayAgentInteractionException(
-        'Failed to enqueue the drafting wake — no day-agent was found '
-        'for this date.',
-      );
-    }
-
-    final deadline = clock.now().add(_draftTimeout);
-    while (clock.now().isBefore(deadline)) {
-      if (isCancelled?.call() ?? false) {
-        throw const DayAgentInteractionException(
-          'draftDayPlan poll cancelled by caller',
+    final terminal = await _awaitJobTerminal(job.id, isCancelled: isCancelled);
+    if (terminal.status == DayProcessingJobStatus.succeeded) {
+      final identity = await dayAgentService.getDayAgentForDate(dayDate);
+      if (identity is! AgentIdentityEntity) {
+        throw DayAgentInteractionException(
+          'No day agent exists for $dayId after drafting completed.',
         );
       }
-      await _waitForRelevantUpdate(
-        fallbackDelay: _draftPollInterval,
-        deadline: deadline,
-        relevantIds: {
-          identity.agentId,
-          dailyOsPlannerAgentId,
-          agentNotification,
-          dayId,
-          dayAgentPlanEntityId(dayId),
-        },
-      );
-      if (isCancelled?.call() ?? false) {
-        throw const DayAgentInteractionException(
-          'draftDayPlan poll cancelled by caller',
-        );
-      }
-      final current = await planService.draftPlanForDay(
+      final plan = await planService.draftPlanForDay(
         agentId: identity.agentId,
         dayId: dayId,
       );
-      if (current == null) continue;
-      if (baselineUpdatedAt == null ||
-          current.updatedAt.isAfter(baselineUpdatedAt)) {
-        return _projectDayPlan(current, dayDate);
+      if (plan == null) {
+        throw DayAgentInteractionException(
+          'Drafting completed but $dayId has no drafted plan.',
+        );
       }
+      return _projectDayPlan(plan, dayDate);
     }
 
-    throw const DayAgentInteractionException(
-      'Timed out waiting for the day-agent to produce a plan. Check '
-      '"Inspect agent" for the wake log and retry.',
-    );
+    throw DayAgentInteractionException(_jobFailureMessage(terminal));
   }
 
   // ───────────────────────────── Mocked methods ──
@@ -293,12 +266,6 @@ class RealDayAgent implements DayAgentInterface {
     return [for (final card in cards) _projectLearningCard(card)];
   }
 
-  /// Polling cadence + ceiling for the refine wake. Same shape as the
-  /// drafting poller — dumb-and-reliable, easy to swap to a stream
-  /// later.
-  static const _refinePollInterval = Duration(milliseconds: 500);
-  static const _refineTimeout = Duration(seconds: 60);
-
   @override
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
@@ -314,63 +281,52 @@ class RealDayAgent implements DayAgentInterface {
       );
     }
     final dayId = dayAgentIdForDate(currentPlan.dayDate);
-    final baselineDiffs = await planService.pendingPlanDiffsForDay(
+    final plan = await planService.draftPlanForDay(
       agentId: identity.agentId,
       dayId: dayId,
     );
-    final baselineIds = baselineDiffs.map((d) => d.id).toSet();
-
-    final enqueued = await dayAgentService.enqueueRefineWake(
-      dayDate: currentPlan.dayDate,
-      transcript: voiceTranscript,
-    );
-    if (!enqueued) {
+    if (plan == null) {
       throw const DayAgentInteractionException(
-        'Failed to enqueue the refine wake. The plan may have been '
-        'deleted — refresh and try again.',
+        'No plan to refine — it may have been deleted. '
+        'Refresh and try again.',
       );
     }
 
-    final deadline = clock.now().add(_refineTimeout);
-    while (clock.now().isBefore(deadline)) {
-      if (isCancelled?.call() ?? false) {
-        throw const DayAgentInteractionException(
-          'proposePlanDiff poll cancelled by caller',
-        );
-      }
-      await _waitForRelevantUpdate(
-        fallbackDelay: _refinePollInterval,
-        deadline: deadline,
-        relevantIds: {
-          identity.agentId,
-          dailyOsPlannerAgentId,
-          agentNotification,
-          dayId,
-          dayAgentPlanEntityId(dayId),
-        },
-      );
-      if (isCancelled?.call() ?? false) {
-        throw const DayAgentInteractionException(
-          'proposePlanDiff poll cancelled by caller',
-        );
-      }
+    // Persisted once up front so a crash-and-retry of the durable job
+    // re-runs against this exact wording instead of writing a duplicate.
+    final transcriptCaptureId = await dayAgentService.persistRefineCapture(
+      agentId: identity.agentId,
+      dayId: dayId,
+      transcript: voiceTranscript,
+    );
+    final job = await outbox.enqueueRefinePlan(
+      dayId: dayId,
+      transcriptCaptureId: transcriptCaptureId,
+    );
+    nudgeProcessing();
+
+    final terminal = await _awaitJobTerminal(job.id, isCancelled: isCancelled);
+    if (terminal.status == DayProcessingJobStatus.succeeded) {
       final diffs = await planService.pendingPlanDiffsForDay(
         agentId: identity.agentId,
         dayId: dayId,
       );
-      for (final diff in diffs) {
-        if (baselineIds.contains(diff.id)) continue;
-        return _projectPlanDiff(
-          changeSet: diff,
-          currentPlan: currentPlan,
-          transcript: voiceTranscript,
+      final diff = diffs
+          .where((d) => d.id == terminal.resultEntityId)
+          .firstOrNull;
+      if (diff == null) {
+        throw DayAgentInteractionException(
+          'Refining completed but $dayId has no pending diff.',
         );
       }
+      return _projectPlanDiff(
+        changeSet: diff,
+        currentPlan: currentPlan,
+        transcript: voiceTranscript,
+      );
     }
-    throw const DayAgentInteractionException(
-      'Timed out waiting for the day-agent to produce a refine proposal. '
-      'Check "Inspect agent" for the wake log and retry.',
-    );
+
+    throw DayAgentInteractionException(_jobFailureMessage(terminal));
   }
 
   @override
@@ -553,29 +509,112 @@ class RealDayAgent implements DayAgentInterface {
 
   // ───────────────────────────── Helpers ──
 
-  Future<void> _waitForRelevantUpdate({
-    required Duration fallbackDelay,
-    required DateTime deadline,
-    required Set<String> relevantIds,
-  }) async {
-    final remaining = deadline.difference(clock.now());
-    if (remaining <= Duration.zero) return;
-    final waitFor = remaining < fallbackDelay ? remaining : fallbackDelay;
-    final stream = updateStream;
-    if (stream == null) {
-      await Future<void>.delayed(waitFor);
-      return;
+  /// How often [_awaitJobTerminal] re-checks its cancellation callback
+  /// between outbox change events. Not a poll of job state — the job is
+  /// only ever re-read on an actual change notification or this tick.
+  static const _cancelCheckInterval = Duration(seconds: 1);
+
+  /// Soft cap on how long a caller awaits a durable job. The job itself
+  /// keeps running in the background past this point — the durable outbox
+  /// is what makes that safe — this only bounds how long the UI call sits
+  /// waiting before surfacing a "check the Activity timeline" message.
+  static const _jobAwaitSoftCap = Duration(minutes: 10);
+
+  /// Awaits [jobId] reaching a terminal status via outbox change events,
+  /// falling back only to a periodic [isCancelled] check and the soft cap
+  /// — never to polling job state on a timer.
+  ///
+  /// On [isCancelled] firing, the durable job is left running: the caller
+  /// gave up on this await, not on the underlying work. A later re-open of
+  /// the same request re-enqueues, which coalesces (draft) or attaches
+  /// (refine/parse) onto the still-live job.
+  Future<DayProcessingJob> _awaitJobTerminal(
+    String jobId, {
+    bool Function()? isCancelled,
+  }) {
+    final completer = Completer<DayProcessingJob>();
+    final deadline = clock.now().add(_jobAwaitSoftCap);
+    late final StreamSubscription<void> subscription;
+    Timer? ticker;
+
+    Future<void> checkTerminal() async {
+      if (completer.isCompleted) return;
+      final job = await outbox.getById(jobId);
+      // Re-checked after the `await` above: two overlapping invocations
+      // (e.g. the initial call plus a `changes` event, or two rapid
+      // `changes` events) can both pass the guard at the top of this
+      // function before either reaches `getById`, so without this second
+      // check both could observe a terminal job and both call `complete`,
+      // throwing "Bad state: Future already completed".
+      if (!completer.isCompleted && job != null && _isAwaitDone(job)) {
+        completer.complete(job);
+      }
     }
 
-    try {
-      await stream
-          .where((ids) => ids.any(relevantIds.contains))
-          .timeout(waitFor)
-          .first;
-    } on Object {
-      // Ignore timeouts and stream errors; the caller will fall back to
-      // polling until the deadline expires.
-    }
+    subscription = outbox.changes.listen((_) => unawaited(checkTerminal()));
+    ticker = Timer.periodic(_cancelCheckInterval, (timer) {
+      // Dart's event loop always drains the microtask queue — including
+      // `whenComplete`'s `ticker?.cancel()` below — before the next Timer
+      // callback runs, so this tick can never observe `isCompleted` true
+      // through legitimate single-threaded scheduling. Kept as a genuine
+      // belt-and-suspenders guard against relying on that guarantee.
+      // coverage:ignore-start
+      if (completer.isCompleted) {
+        timer.cancel();
+        return;
+      }
+      // coverage:ignore-end
+      if (isCancelled?.call() ?? false) {
+        completer.completeError(
+          const DayAgentInteractionException('cancelled by caller'),
+        );
+        timer.cancel();
+        return;
+      }
+      if (!clock.now().isBefore(deadline)) {
+        completer.completeError(
+          const DayAgentInteractionException(
+            "Still working in background — check the day's Activity "
+            'timeline for progress.',
+          ),
+        );
+        timer.cancel();
+      }
+    });
+
+    unawaited(checkTerminal());
+
+    return completer.future.whenComplete(() {
+      unawaited(subscription.cancel());
+      ticker?.cancel();
+    });
+  }
+
+  /// Whether [job] has settled into a status [_awaitJobTerminal] should stop
+  /// waiting on. Broader than [DayProcessingJob.isTerminal] (which the
+  /// outbox/repair layer uses to mean "never claim this again"): `failed`
+  /// and `waitingForUser` need explicit user action (Settings, or a retry
+  /// from the Activity timeline) to make further progress, so a live caller
+  /// must give up and surface them rather than wait indefinitely.
+  /// `waitingForNetwork` is left waiting through — the outbox retries it
+  /// automatically once its backoff elapses or connectivity returns.
+  static bool _isAwaitDone(DayProcessingJob job) =>
+      job.isTerminal ||
+      job.status == DayProcessingJobStatus.failed ||
+      job.status == DayProcessingJobStatus.waitingForUser;
+
+  String _jobFailureMessage(DayProcessingJob job) {
+    final base = switch (job.status) {
+      DayProcessingJobStatus.waitingForUser =>
+        'Setup required before this can continue. Open Settings to fix the '
+            "day agent's model/profile, then retry.",
+      DayProcessingJobStatus.cancelled => 'Cancelled.',
+      _ =>
+        'The day agent could not complete this. Check "Inspect agent" '
+            'for the wake log and retry.',
+    };
+    final detail = job.lastError;
+    return detail == null || detail.isEmpty ? base : '$base ($detail)';
   }
 }
 

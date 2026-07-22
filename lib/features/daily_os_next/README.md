@@ -21,12 +21,23 @@ separate.
 
 ### One long-lived planner, explicit day workspaces (ADR 0022)
 
-The runtime has **one durable planner identity** —
-`daily_os_planner` (`dailyOsPlannerAgentId`) — not one identity per calendar
-day. The planner learns across days; each day is an explicit **workspace**, not
-a separate mind. This is the model defined by ADR 0022 (Accepted) and replaces
-the earlier per-day `day_agent` identity (the `kind` string stays `day_agent`
-for storage compatibility, but only one such identity now exists).
+This section covers the coordinator's own lifecycle (creation, migration,
+inference-setup inheritance) — unchanged and still current. For day
+*resolution* specifically (which identity a given date wakes/reads under),
+this section describes the pre-ADR-0032 model; see "Per-day agents and
+durable draft/refine jobs (ADR 0032)" below for the resolver actually in
+effect today, which supersedes the "resolves the same planner regardless of
+date" claim further down in this section.
+
+The runtime has **one durable coordinator identity** —
+`daily_os_planner` (`dailyOsPlannerAgentId`) — that owns cross-day learning
+and every day predating the ADR 0032 per-day cutover (see next section). The
+planner learns across days; a day it owns is an explicit **workspace**, not a
+separate mind. This is the model defined by ADR 0022 (Accepted) and replaced
+the pre-0022 per-day `day_agent` identity model (the `kind` string stays
+`day_agent` for storage compatibility). ADR 0032 amends this again for new
+days: the coordinator stays the sole learning substrate, but new days each get
+their own `day_agent:<dayId>` identity sharing the same kind and workflow.
 
 ```mermaid
 flowchart TD
@@ -60,8 +71,9 @@ Runtime behavior:
   `daily_os_planner` (via `AgentService.createAgent(agentId: ...)`), so two
   devices that independently create it converge through LWW instead of
   diverging into two identities. It is idempotent — a second call returns the
-  existing planner. `getDayAgentForDate(date)` resolves the same planner
-  regardless of date (it does not key on any day slot).
+  existing planner. Under ADR 0022 alone, `getDayAgentForDate(date)` resolved
+  the same planner regardless of date (it did not key on any day slot); ADR
+  0032 changed this for day resolution specifically — see below.
 - The planner pins **no** `activeDayId` slot and writes **no** per-day
   `agent_day` link. A wake's day is carried explicitly by its trigger tokens
   (`planning_day:<dayId>`, plus the mode tokens `drafting:` / `refine:` and
@@ -157,6 +169,131 @@ preferred-name prompt when inference is ready but personalization is missing.
   `set_next_wake`, `search_memory`, the knowledge tool (`propose_knowledge`),
   Capture/Reconcile tools, draft plan tools, refine tools, and the week-context
   tool (`write_day_summary`) through the workflow handler.
+
+### Per-day agents and durable draft/refine jobs (ADR 0032)
+
+ADR 0032 splits the single planner into a **coordinator** (`daily_os_planner`,
+unchanged: cross-day learning, durable knowledge, weekly evolution) and one
+**per-day agent** (`day_agent:<dayId>`) per day going forward. Both roles run
+under the identical `AgentKinds.dayAgent` kind and `DayAgentWorkflow`; they are
+distinguished only by id shape (`lib/features/daily_os_next/agents/domain/day_agent_identity.dart`:
+`perDayAgentId`, `isPerDayAgentId`, `isDailyOsDayOwner`).
+
+```mermaid
+flowchart TD
+  Coordinator["daily_os_planner (coordinator)\nknowledge, weekly evolution"]
+  DayA["day_agent:dayplan-2026-07-20"]
+  DayB["day_agent:dayplan-2026-07-21"]
+  Coordinator -. coordinator-keyed knowledge .-> DayA
+  Coordinator -. coordinator-keyed knowledge .-> DayB
+  DayA -->|wake, single-flight per agentId| WorkflowA["DayAgentWorkflow"]
+  DayB -->|wake, single-flight per agentId| WorkflowB["DayAgentWorkflow"]
+```
+
+- **Day-forward cutover, no migration.** `DayAgentService.getOrCreateDayAgentForDate(date)`
+  creates a `day_agent:<dayId>` identity lazily on the first write for a day
+  (capture submit, draft, refine) — but only when the coordinator does not
+  already own that day. Ownership is a cheap probe: a non-deleted
+  `day_agent_plan:<dayId>` written by the coordinator, or any coordinator
+  capture whose `dayId` matches. If either is true, the coordinator keeps the
+  day permanently — there is no seeding/re-parenting of old data onto the new
+  identity. `getDayAgentForDate(date)` is the read-only counterpart: per-day
+  identity if one exists, else the coordinator, else `null`.
+- **Two concurrent wakes, for free.** `WakeRunner` is single-flight *per
+  agentId*; distinct day-agent ids therefore run concurrent wakes under the
+  orchestrator's existing bounded drain (device concurrency 1–8) with no new
+  code. The per-day agent's log is native-scoped — its `CaptureEntity`/
+  observation history is exactly that day's, so ADR 0016's projection fold
+  never grows with app age the way the coordinator's used to.
+- **Knowledge stays coordinator-keyed.** A per-day wake reads durable
+  knowledge (`knowledge_index`/`knowledge_statements`) under
+  `dailyOsPlannerAgentId`, not its own id — "coordinator-published," per the
+  ADR — and any `propose_knowledge` tool call from a per-day wake persists
+  under the coordinator id too, so proposals land in the coordinator's weekly
+  confirm loop instead of being stranded per-day.
+- **Week lookback spans owners.** `DayAgentWeekContextService.buildForDay`
+  accepts `<recent_days>`/`<week_ahead>` plan and summary rows from any
+  `isDailyOsDayOwner` agent (coordinator or per-day), since neighboring days
+  in the same week can be owned by different identities across the cutover.
+- **UI keying.** `dayAgentIsRunningProvider(date)` (state/day_agent_provider.dart)
+  is true while either the per-day agent for that date or the coordinator is
+  running — covers both post-cutover days (per-day wakes) and pre-cutover
+  days (still under the coordinator) with one provider. Reconcile's running
+  indicator, the drafting/refine action-bar shader, and `capturesForDateProvider`
+  (which unions captures from the resolved owner and the coordinator, deduped
+  by id, to stay correct across an offline peer syncing in a pre-cutover
+  capture after the day-agent exists) all key off this.
+- **Not yet implemented:** the `DayDirectiveEntity`/`DayStatusEvent`
+  coordinator↔day-agent protocol (ADR 0032 phase 3) and dormancy for closed
+  days (no day-close lifecycle exists yet). See the ADR's Amendments section
+  for the full list of where implementation diverged from the original text.
+
+**Durable `draftPlan`/`refinePlan` jobs replace in-memory polling (phase 1).**
+`RealDayAgent.draftDayPlan`/`proposePlanDiff` used to poll `draftPlanForDay`/
+`pendingPlanDiffsForDay` on a timer after firing a wake directly — a process
+kill between enqueue and drain lost the request outright, and the UI's only
+progress signal was silence until a 60 s timeout. Both now go through the same
+device-local processing outbox that transcription uses (`services/day_processing_job.dart`,
+`day_processing_outbox_repository.dart`): `DayProcessingJobKind` gained
+`parseCapture` / `draftPlan` / `refinePlan` alongside `transcribeAudio`, behind
+a sealed `DayProcessingPayload` per kind (`TranscribeAudioPayload`,
+`ParseCapturePayload`, `DraftPlanPayload`, `RefinePlanPayload`).
+
+```mermaid
+sequenceDiagram
+  participant UI as RealDayAgent
+  participant Outbox as DayProcessingOutboxRepository
+  participant Runtime as DayProcessingRuntime
+  participant Executor as DayAgentJobExecutor
+  participant Wake as WakeOrchestrator
+
+  UI->>Outbox: enqueueDraftPlan(dayId, payload) / enqueueRefinePlan(...)
+  UI->>Runtime: nudge()
+  Runtime->>Executor: drain agent-job lane -> claim job
+  Executor->>Executor: artifact pre-check (idempotent re-claim)
+  Executor->>Wake: enqueueManualWake(resolved agentId, tokens)
+  Wake-->>Executor: runCompletions event (completed/failed/aborted)
+  Executor->>Outbox: markSucceeded(resultEntityId) / markFailure(class)
+  Outbox-->>UI: changes stream fires
+  UI->>UI: _awaitJobTerminal resolves; project plan/diff
+```
+
+- **`DayAgentJobExecutor`** (`services/day_agent_job_executor.dart`) resolves
+  the target agent at *execution* time (never persisted on the job, so
+  ownership can change between enqueue and drain without breaking anything),
+  runs an artifact pre-check before spending any tokens (idempotency: a
+  re-claim after a crash sees the already-written plan/diff and succeeds
+  without re-inferring), enqueues the wake, and awaits
+  `WakeOrchestrator.runCompletions` — a new broadcast stream of
+  `WakeRunCompletion { runKey, agentId, status, error }` emitted at every wake
+  finalization point (completed/failed/aborted/no-executor). A refine job
+  behind an in-flight draft defers with a short retry rather than racing it.
+  `classifyDayAgentJobFailure` maps the workflow's forced-tool-retry
+  exceptions to `providerBusy` (worth one more attempt) and caps retries
+  (`maxAttempts`, default 5) by downgrading to `deterministic` — unlike
+  transcription's free backoff, every agent retry spends model tokens.
+- **Two independent drain lanes.** `DayProcessingRuntime`'s composed `drain`
+  runs `processor.drain(kinds: {transcribeAudio})` and
+  `processor.drain(kinds: dayAgentJobKinds)` concurrently
+  (`state/day_processing_runtime_provider.dart`), so a slow agent wake never
+  blocks the transcription lane or vice versa.
+- **Coalescing differs per kind.** `draftJobId(dayId)` is deterministic and
+  **re-armable**: a repeated "draft my day" request re-arms a terminal job
+  with a fresh `requestedAt`/payload, or attaches to an already-`running` job
+  as-is. `refine_<dayId>_<suffix>` jobs are **never coalesced** — each refine
+  carries distinct user input and produces its own ChangeSet. `parseJobId(captureId)`
+  is deterministic and accumulates (one job per capture, matching the
+  existing `supersede: false` wake semantics) — built and tested, but capture
+  submit does not yet enqueue through it (see the ADR's Amendments section).
+- **`RealDayAgent._awaitJobTerminal`** subscribes to the outbox's `changes`
+  stream (event-driven, not a poll) and races only a periodic
+  cancellation/soft-cap check (1 s tick, 10 min soft cap) against it — never a
+  fixed-interval re-read of job state. A caller's `isCancelled` firing (e.g.
+  the controller disposes) leaves the durable job running; a fresh request
+  for the same day re-enqueues, which coalesces onto (draft) or attaches to
+  (refine) the still-live job, so the eventual result is not lost. `failed`
+  and `waitingForUser` end the wait (need explicit user action); `waitingForNetwork`
+  is left waiting through, since the outbox retries it automatically.
 
 ### Week Context & Day Summaries (ADR 0028)
 
@@ -418,10 +555,11 @@ sequenceDiagram
   animation on the recorder surface). The Reconcile step is where the wait
   is made visible: the sticky action bar's top-edge `DayPlanningThinkingShader`
   runs while the initial snapshot loads or the parse wake executes — keyed by
-  the planner identity that actually runs day wakes (`dailyOsPlannerAgentId`),
-  not the `dayplan-…` day id — and the empty Heard column carries the same
-  shader strip; the standalone page's loading view keeps its own copy since
-  it has no glass bar.
+  `dayAgentIsRunningProvider(date)` (ADR 0032: true while either the day's
+  per-day agent or the coordinator is running, covering both sides of the
+  cutover) — and the empty Heard column carries the same shader strip; the
+  standalone page's loading view keeps its own copy since it has no glass
+  bar.
 
   ```mermaid
   stateDiagram-v2

@@ -258,7 +258,7 @@ void main() {
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
           ),
-        ).thenReturn(null);
+        ).thenReturn('run-key-stub');
         when(
           () => generatedRepository.getLinksTo(
             projectId,
@@ -468,7 +468,7 @@ void main() {
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
           ),
-        ).thenReturn(null);
+        ).thenReturn('run-key-stub');
 
         final result = await service.createProjectAgent(
           projectId: 'project-1',
@@ -554,7 +554,7 @@ void main() {
               reason: any(named: 'reason'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
-          ).thenReturn(null);
+          ).thenReturn('run-key-stub');
 
           await withClock(Clock.fixed(testDate), () async {
             await service.createProjectAgent(
@@ -607,7 +607,7 @@ void main() {
               reason: any(named: 'reason'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
-          ).thenReturn(null);
+          ).thenReturn('run-key-stub');
 
           await service.createProjectAgent(
             projectId: 'project-tpl',
@@ -662,7 +662,7 @@ void main() {
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
           ),
-        ).thenReturn(null);
+        ).thenReturn('run-key-stub');
 
         await service.createProjectAgent(
           projectId: 'project-2',
@@ -895,7 +895,7 @@ void main() {
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
           ),
-        ).thenReturn(null);
+        ).thenReturn('run-key-stub');
 
         service.triggerReanalysis('agent-1');
 

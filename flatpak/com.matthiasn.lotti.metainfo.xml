@@ -54,6 +54,8 @@
     </release>
     <release version="0.9.1057" date="2026-07-21">
       <description>
+        <p>Drafting or refining a day's plan now survives the app closing mid-request: the request is queued durably instead of held only in memory, so backgrounding or killing the app no longer loses the work — it finishes and the result is there when the app is reopened.</p>
+        <p>Each day now gets its own planning agent instead of sharing one long-running identity, so its wake history, token spend, and conversation log (Settings &gt; Agents &gt; Inspect agent) show that day on its own going forward. Past days already planned are unaffected.</p>
         <p>The agent Stats tab has been removed: Settings &gt; Agents now opens on Templates and keeps four views (Templates, Instances, Souls, and Wake Cycles), with AI usage reporting living in the AI Usage view instead.</p>
         <p>The "Here's what I heard" screen now animates the thinking shader on its action bar, matching the other planning steps, until parsing fills the Heard column, instead of sitting frozen for many seconds.</p>
         <p>A day recording's text is now edited right on its Activity card with the same rich-text editor used across the journal; the separate text dialog is gone. Text written or corrected there counts as the final wording: a pending transcription completes instantly with that text, and a transcript that arrives later is kept as a record without overwriting it.</p>

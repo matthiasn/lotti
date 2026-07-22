@@ -4,9 +4,15 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 
-/// Rebuilds missing device-local processing intents from synced/persisted
-/// JournalAudio provenance after a crash or receipt arriving from another
-/// device.
+/// Rebuilds missing device-local **transcription** processing intents from
+/// synced/persisted JournalAudio provenance after a crash or receipt
+/// arriving from another device.
+///
+/// Deliberately transcription-only: `parseCapture`/`draftPlan`/`refinePlan`
+/// jobs (ADR 0032 phase 1) have no journal provenance to rebuild from — they
+/// *are* the durable record. A non-terminal agent-job file left on disk is
+/// simply re-driven by the runtime's normal due-job drain; nothing here
+/// needs to reconstruct it.
 class DayProcessingOutboxRepair {
   DayProcessingOutboxRepair({
     required this.repository,

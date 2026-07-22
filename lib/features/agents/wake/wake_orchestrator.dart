@@ -95,6 +95,38 @@ typedef WakeExecutor =
 /// Returns the current global limit for simultaneously executing wake cycles.
 typedef MaxConcurrentWakes = int Function();
 
+/// Terminal outcome of one wake run, emitted on
+/// [WakeOrchestrator.runCompletions].
+///
+/// In-process only (never persisted): precise completion signal for callers
+/// that enqueued a wake and need to react to its outcome without polling —
+/// e.g. the durable day-processing job executor (ADR 0032 phase 1). The
+/// durable record of the same outcome is the `wake_run_log` row keyed by
+/// [runKey].
+class WakeRunCompletion {
+  const WakeRunCompletion({
+    required this.runKey,
+    required this.agentId,
+    required this.status,
+    this.error,
+  });
+
+  /// Deterministic run key of the finished wake (matches the value returned
+  /// by [WakeOrchestrator.enqueueManualWake]).
+  final String runKey;
+
+  /// The agent the wake ran under.
+  final String agentId;
+
+  /// Terminal status: [WakeRunStatus.completed], [WakeRunStatus.failed], or
+  /// [WakeRunStatus.aborted].
+  final WakeRunStatus status;
+
+  /// The error object for failed runs, when one was caught. Carried so
+  /// listeners can classify the failure without re-parsing log strings.
+  final Object? error;
+}
+
 int _defaultMaxConcurrentWakes() => defaultAgentWakeConcurrency;
 
 /// Notification-driven wake orchestrator.
@@ -178,6 +210,31 @@ class WakeOrchestrator {
   final _subscriptions = <AgentSubscription>[];
   final _suppression = WakeSuppressionTracker();
   late final WakeThrottleCoordinator _throttle;
+
+  final _runCompletions = StreamController<WakeRunCompletion>.broadcast();
+
+  /// Broadcast stream of terminal wake outcomes, one event per executed run.
+  ///
+  /// Emitted after the wake-run row reaches its terminal status. Subscribe
+  /// **before** calling [enqueueManualWake] and filter on the returned run
+  /// key to await a specific wake without polling.
+  Stream<WakeRunCompletion> get runCompletions => _runCompletions.stream;
+
+  void _emitRunCompletion(
+    WakeJob job,
+    WakeRunStatus status, {
+    Object? error,
+  }) {
+    if (_runCompletions.isClosed) return;
+    _runCompletions.add(
+      WakeRunCompletion(
+        runKey: job.runKey,
+        agentId: job.agentId,
+        status: status,
+        error: error,
+      ),
+    );
+  }
 
   /// In-memory mirror of the persisted `awaitingContent` flag for each agent.
   ///
@@ -521,12 +578,19 @@ class WakeOrchestrator {
   }
 
   /// Stop listening, cancel the subscription, and clean up timers.
+  ///
+  /// Terminal: also closes [runCompletions] (like the throttle coordinator,
+  /// the orchestrator is not restartable after [stop]). The close is
+  /// fire-and-forget — a broadcast controller's `close()` future only
+  /// settles once every active listener's cancellation round-trips, which
+  /// callers stopping the orchestrator have no reason to wait on.
   Future<void> stop() async {
     _safetyNetTimer?.cancel();
     _safetyNetTimer = null;
     _throttle.dispose();
     await _notificationSub?.cancel();
     _notificationSub = null;
+    unawaited(_runCompletions.close());
   }
 
   /// Starts a periodic safety-net timer that ensures the queue is eventually
@@ -554,7 +618,10 @@ class WakeOrchestrator {
   /// Unlike notification-driven wakes, this bypasses subscription matching and
   /// self-notification suppression.  Used for initial creation wakes and
   /// manual re-analysis triggers.
-  void enqueueManualWake({
+  ///
+  /// Returns the wake's deterministic run key so callers can correlate the
+  /// enqueued job with its [runCompletions] event.
+  String enqueueManualWake({
     required String agentId,
     required String reason,
     Set<String> triggerTokens = const {},
@@ -599,6 +666,7 @@ class WakeOrchestrator {
 
     queue.enqueue(job);
     unawaited(processNext());
+    return runKey;
   }
 
   /// Wake [agentId] for externally produced content (e.g. a completed audio

@@ -8,17 +8,20 @@ void main() {
     DayProcessingJobStatus status = DayProcessingJobStatus.queued,
     DateTime? leaseUntil,
     DateTime? retryNotBefore,
+    DayProcessingPayload payload = const TranscribeAudioPayload(
+      activityEntryId: 'activity-1',
+      recordingSessionId: 'session-1',
+      audioId: 'audio-1',
+      audioPath: '/audio/one.wav',
+    ),
   }) => DayProcessingJob(
     id: 'transcribe_session-1',
-    kind: DayProcessingJobKind.transcribeAudio,
     status: status,
     dayId: 'dayplan-2026-07-18',
-    activityEntryId: 'activity-1',
-    recordingSessionId: 'session-1',
-    audioId: 'audio-1',
-    audioPath: '/audio/one.wav',
+    payload: payload,
     createdAt: createdAt,
     updatedAt: createdAt,
+    requestedAt: createdAt,
     nextAttemptAt: createdAt,
     attempts: 0,
     generation: 0,
@@ -64,5 +67,150 @@ void main() {
 
     expect(busy.isDue(createdAt.add(const Duration(minutes: 4))), isFalse);
     expect(busy.isDue(createdAt.add(const Duration(minutes: 5))), isTrue);
+  });
+
+  group('schema v1 → v2 tolerant parsing', () {
+    test('a v1 transcription file (no payload envelope) parses correctly', () {
+      final v1Json = <String, Object?>{
+        'schemaVersion': 1,
+        'id': 'transcribe_legacy',
+        'kind': 'transcribeAudio',
+        'status': 'succeeded',
+        'dayId': 'dayplan-2026-07-10',
+        'activityEntryId': 'activity-legacy',
+        'recordingSessionId': 'session-legacy',
+        'audioId': 'audio-legacy',
+        'audioPath': '/audio/legacy.wav',
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': createdAt.toIso8601String(),
+        'nextAttemptAt': createdAt.toIso8601String(),
+        'attempts': 1,
+        'generation': 2,
+        'resultTranscript': 'Legacy note.',
+      };
+
+      final restored = DayProcessingJob.fromJson(v1Json);
+
+      expect(restored.kind, DayProcessingJobKind.transcribeAudio);
+      expect(restored.activityEntryId, 'activity-legacy');
+      expect(restored.recordingSessionId, 'session-legacy');
+      expect(restored.audioId, 'audio-legacy');
+      expect(restored.audioPath, '/audio/legacy.wav');
+      // v1 files carry no requestedAt; it falls back to createdAt.
+      expect(restored.requestedAt, restored.createdAt);
+      expect(restored.resultTranscript, 'Legacy note.');
+    });
+
+    test('a v2 file with a nested payload round-trips per kind', () {
+      final parse = job(
+        payload: const ParseCapturePayload(captureId: 'cap-1'),
+      );
+      final draft = job(
+        payload: const DraftPlanPayload(
+          captureId: 'cap-2',
+          decidedTaskIds: ['task-1'],
+          decidedCaptureItemIds: ['parsed-1'],
+        ),
+      );
+      final refine = job(
+        payload: const RefinePlanPayload(transcriptCaptureId: 'cap-3'),
+      );
+
+      for (final original in [parse, draft, refine]) {
+        final restored = DayProcessingJob.fromJson(original.toJson());
+        expect(restored.kind, original.kind);
+        expect(restored.payload, original.payload);
+      }
+    });
+
+    test('an unknown kind throws instead of silently misreading', () {
+      final json = <String, Object?>{
+        'schemaVersion': 2,
+        'id': 'unknown-1',
+        'kind': 'somethingElse',
+        'status': 'queued',
+        'dayId': 'dayplan-2026-07-18',
+        'payload': <String, Object?>{},
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': createdAt.toIso8601String(),
+        'nextAttemptAt': createdAt.toIso8601String(),
+        'attempts': 0,
+        'generation': 0,
+      };
+
+      expect(() => DayProcessingJob.fromJson(json), throwsArgumentError);
+    });
+  });
+
+  group('kind-specific convenience getters', () {
+    test('audio fields are null for non-transcription payloads', () {
+      final parse = job(payload: const ParseCapturePayload(captureId: 'c1'));
+      expect(parse.activityEntryId, isNull);
+      expect(parse.recordingSessionId, isNull);
+      expect(parse.audioId, isNull);
+      expect(parse.audioPath, isNull);
+    });
+  });
+
+  group('DraftPlanPayload re-arm equality', () {
+    test('payload equality reflects field-by-field comparison', () {
+      const a = DraftPlanPayload(decidedTaskIds: ['t1', 't2']);
+      const b = DraftPlanPayload(decidedTaskIds: ['t1', 't2']);
+      const c = DraftPlanPayload(decidedTaskIds: ['t1']);
+      expect(a, b);
+      expect(a, isNot(c));
+      expect(a.hashCode, b.hashCode);
+      expect(a.hashCode, isNot(c.hashCode));
+    });
+  });
+
+  group('payload equality and hashCode', () {
+    test('TranscribeAudioPayload compares and hashes by every field', () {
+      const a = TranscribeAudioPayload(
+        activityEntryId: 'entry-1',
+        recordingSessionId: 'session-1',
+        audioId: 'audio-1',
+        audioPath: '/tmp/a.m4a',
+      );
+      const b = TranscribeAudioPayload(
+        activityEntryId: 'entry-1',
+        recordingSessionId: 'session-1',
+        audioId: 'audio-1',
+        audioPath: '/tmp/a.m4a',
+      );
+      const differentPath = TranscribeAudioPayload(
+        activityEntryId: 'entry-1',
+        recordingSessionId: 'session-1',
+        audioId: 'audio-1',
+        audioPath: '/tmp/b.m4a',
+      );
+      expect(a, b);
+      expect(a, isNot(differentPath));
+      expect(a.hashCode, b.hashCode);
+      expect(a.hashCode, isNot(differentPath.hashCode));
+    });
+
+    test('ParseCapturePayload compares and hashes by captureId', () {
+      const a = ParseCapturePayload(captureId: 'cap-1');
+      const b = ParseCapturePayload(captureId: 'cap-1');
+      const c = ParseCapturePayload(captureId: 'cap-2');
+      expect(a, b);
+      expect(a, isNot(c));
+      expect(a.hashCode, b.hashCode);
+      expect(a.hashCode, isNot(c.hashCode));
+    });
+
+    test(
+      'RefinePlanPayload compares and hashes by transcriptCaptureId',
+      () {
+        const a = RefinePlanPayload(transcriptCaptureId: 'cap-1');
+        const b = RefinePlanPayload(transcriptCaptureId: 'cap-1');
+        const c = RefinePlanPayload(transcriptCaptureId: 'cap-2');
+        expect(a, b);
+        expect(a, isNot(c));
+        expect(a.hashCode, b.hashCode);
+        expect(a.hashCode, isNot(c.hashCode));
+      },
+    );
   });
 }
