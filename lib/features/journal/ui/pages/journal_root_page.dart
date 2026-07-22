@@ -43,6 +43,16 @@ class JournalRootPage extends ConsumerWidget {
     }
 
     final paneWidths = ref.watch(paneWidthControllerProvider);
+    // Scales the flat default proportionally on large windows — see
+    // scaledPaneWidth's doc comment. A no-op once the user has dragged the
+    // list pane to any other width.
+    final journalListPaneWidth = scaledPaneWidth(
+      width: paneWidths.journalListPaneWidth,
+      flatDefault: defaultJournalListPaneWidth,
+      minValue: minJournalListPaneWidth,
+      maxValue: maxJournalListPaneWidth,
+      screenWidth: MediaQuery.sizeOf(context).width,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(color: dsPageSurface(context)),
@@ -50,13 +60,19 @@ class JournalRootPage extends ConsumerWidget {
         child: ListDetailFocusTraversal(
           debugLabel: 'journal-split',
           listPane: SizedBox(
-            width: paneWidths.journalListPaneWidth,
+            width: journalListPaneWidth,
             child: const InfiniteJournalPage(),
           ),
           divider: ResizableDivider(
+            // Rewritten so the divider always lands on (displayed position +
+            // delta) — see the matching comment in beamer_app.dart for why a
+            // raw delta would desync on the first drag frame after scaling.
             onDrag: (delta) => ref
                 .read(paneWidthControllerProvider.notifier)
-                .updateJournalListPaneWidth(delta),
+                .updateJournalListPaneWidth(
+                  (journalListPaneWidth + delta) -
+                      paneWidths.journalListPaneWidth,
+                ),
           ),
           // One unified canvas across both panes — the empty state and the
           // details sit on the same surface as the list column, so the pane

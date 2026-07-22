@@ -77,6 +77,20 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
     final Widget child;
     if (isDesktop) {
       final paneWidths = ref.watch(paneWidthControllerProvider);
+      // Scales the flat default proportionally on large windows — see
+      // scaledPaneWidth's doc comment. A no-op once the user has dragged
+      // the list pane to any other width.
+      final resolvedListPane = resolvedPaneWidth(
+        storedWidth: paneWidths.listPaneWidth,
+        flatDefault: defaultListPaneWidth,
+        minValue: minListPaneWidth,
+        maxValue: maxListPaneWidth,
+        screenWidth: MediaQuery.sizeOf(context).width,
+        onDelta: ref
+            .read(paneWidthControllerProvider.notifier)
+            .updateListPaneWidth,
+      );
+      final listPaneWidth = resolvedListPane.width;
       child = DecoratedBox(
         decoration: BoxDecoration(
           color: ShowcasePalette.page(context),
@@ -84,19 +98,17 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
         child: ListDetailFocusTraversal(
           debugLabel: 'projects-split',
           listPane: SizedBox(
-            width: paneWidths.listPaneWidth,
+            width: listPaneWidth,
             child: _ProjectsListScaffold(
               scrollController: _scrollController,
               searchFocusNode: _searchFocusNode,
             ),
           ),
           divider: ResizableDivider(
-            currentValue: paneWidths.listPaneWidth,
+            currentValue: listPaneWidth,
             minValue: minListPaneWidth,
             maxValue: maxListPaneWidth,
-            onDrag: (delta) => ref
-                .read(paneWidthControllerProvider.notifier)
-                .updateListPaneWidth(delta),
+            onDrag: resolvedListPane.onDrag,
           ),
           detailPane: ValueListenableBuilder<String?>(
             valueListenable: getIt<NavService>().desktopSelectedProjectId,

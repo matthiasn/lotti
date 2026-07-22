@@ -283,6 +283,7 @@ All tests in this codebase must use **deterministic time control** instead of re
    - `sleep()` in tests
    - Real `Timer` instances in tests
 4. **Exception**: Tests validating real I/O (network, file system, OS integration) may use real time when necessary
+5. **Exception**: `integration_test/tutorial/` is a video driver, not a CI verification suite — it paces the real app at human speed for screen recording (see `tools/tutorial_videos/README.md`) and intentionally uses wall-clock `Stopwatch` + live pumps. These files are tagged `tutorial-video` (see `dart_test.yaml`) and `make integration_test` runs with `--exclude-tags tutorial-video`, so they never run under plain `flutter test` (no window, and they require `LOTTI_TUTORIAL_MANIFEST`/`LOTTI_TUTORIAL_TIMELINE` env vars). They run only via `fvm flutter drive`, driven by the `tools/tutorial_videos` workbench or the `tutorial-videos` skill.
 
 ## Retry & Timeout Testing
 

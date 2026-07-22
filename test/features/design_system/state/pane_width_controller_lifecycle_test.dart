@@ -323,7 +323,7 @@ void main() {
     test('collapseSidebar persists the flag and current width', () {
       fakeAsync((async) {
         container.read(paneWidthControllerProvider.notifier)
-          ..updateSidebarWidth(30) // 350
+          ..updateSidebarWidth(30) // 286
           ..collapseSidebar();
         async
           ..flushMicrotasks()
@@ -338,7 +338,7 @@ void main() {
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             sidebarWidthKey,
-            '350.0',
+            '286.0',
           ),
         ).called(1);
       });
@@ -368,7 +368,7 @@ void main() {
       () {
         fakeAsync((async) {
           container.read(paneWidthControllerProvider.notifier)
-            ..updateSidebarWidth(30) // 350, flushed by collapse below
+            ..updateSidebarWidth(30) // 286, flushed by collapse below
             ..collapseSidebar();
           async
             ..flushMicrotasks()
@@ -394,7 +394,7 @@ void main() {
     test('collapse flushes pending sidebar-width synchronously', () {
       fakeAsync((async) {
         container.read(paneWidthControllerProvider.notifier)
-          ..updateSidebarWidth(30) // 350, debounce pending
+          ..updateSidebarWidth(30) // 286, debounce pending
           ..collapseSidebar();
         async
           ..flushMicrotasks()
@@ -406,7 +406,7 @@ void main() {
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             sidebarWidthKey,
-            '350.0',
+            '286.0',
           ),
         ).called(1);
       });

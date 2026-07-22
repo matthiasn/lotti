@@ -104,20 +104,32 @@ class _DashboardsListPageState extends ConsumerState<DashboardsListPage> {
     }
 
     final paneWidths = ref.watch(paneWidthControllerProvider);
+    // Scales the flat default proportionally on large windows — see
+    // scaledPaneWidth's doc comment. A no-op once the user has dragged the
+    // list pane to any other width.
+    final resolvedListPane = resolvedPaneWidth(
+      storedWidth: paneWidths.listPaneWidth,
+      flatDefault: defaultListPaneWidth,
+      minValue: minListPaneWidth,
+      maxValue: maxListPaneWidth,
+      screenWidth: MediaQuery.sizeOf(context).width,
+      onDelta: ref
+          .read(paneWidthControllerProvider.notifier)
+          .updateListPaneWidth,
+    );
+    final listPaneWidth = resolvedListPane.width;
 
     return Row(
       children: [
         SizedBox(
-          width: paneWidths.listPaneWidth,
+          width: listPaneWidth,
           child: listScaffold,
         ),
         ResizableDivider(
-          currentValue: paneWidths.listPaneWidth,
+          currentValue: listPaneWidth,
           minValue: minListPaneWidth,
           maxValue: maxListPaneWidth,
-          onDrag: (delta) => ref
-              .read(paneWidthControllerProvider.notifier)
-              .updateListPaneWidth(delta),
+          onDrag: resolvedListPane.onDrag,
         ),
         Expanded(
           child: ValueListenableBuilder<String?>(

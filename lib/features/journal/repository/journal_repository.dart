@@ -258,11 +258,13 @@ class JournalRepository {
   /// - [categoryId]: Optional category ID for the image
   /// - [onCreated]: Optional callback invoked after the image entry is created
   ///   (used for automatic image analysis triggering)
+  /// - [linkCollapsed]: Whether the created link to [linkedId] starts collapsed
   static Future<JournalEntity?> createImageEntry(
     ImageData imageData, {
     String? linkedId,
     String? categoryId,
     void Function(JournalEntity)? onCreated,
+    bool linkCollapsed = false,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
@@ -282,6 +284,7 @@ class JournalRepository {
         journalEntity,
         linkedId: linkedId,
         shouldAddGeolocation: false,
+        linkCollapsed: linkCollapsed,
       );
 
       // Invoke callback after successful creation

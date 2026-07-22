@@ -1,0 +1,15 @@
+# OpenMontage pin for the tutorial-video workbench.
+#
+# OpenMontage is an external AGPLv3 dev tool, cloned as a SIBLING checkout
+# (like lotti-docs), never vendored into or linked against the app:
+#
+#   git clone https://github.com/calesthio/OpenMontage.git ../OpenMontage
+#   git -C ../OpenMontage checkout "$(grep ^commit= openmontage.pin | cut -d= -f2)"
+#   make -C ../OpenMontage setup
+#
+# The workbench's compose step calls its Python tools headlessly (no agent,
+# no approval gates). Bump this pin deliberately: re-run the Phase-3
+# determinism validation (render the same inputs twice, compare) after any
+# update.
+commit=db91727598d08d40919d7d68a47864a5467bd448
+cloned=2026-07-21

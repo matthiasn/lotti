@@ -35,6 +35,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1059" date="2026-07-22">
+      <description>
+        <p>Five narrated walkthrough videos are now embedded in the Manual, in English and German: creating a task with your voice, generating cover art, turning a coding task into an AI-ready prompt, filtering and saving task views, and setting up a category.</p>
+      </description>
+    </release>
     <release version="0.9.1058" date="2026-07-22">
       <description>
         <p>Accepting AI suggestions no longer bounces the task page: header changes (labels, due date, priority, status, title) confirmed together with checklist items keep the proposals pinned in place instead of shoving the page down and snapping it back mid-batch.</p>
@@ -46,6 +51,10 @@
         <p>The "Here's what I heard" screen now animates the thinking shader on its action bar, matching the other planning steps, until parsing fills the Heard column, instead of sitting frozen for many seconds.</p>
         <p>A day recording's text is now edited right on its Activity card with the same rich-text editor used across the journal; the separate text dialog is gone. Text written or corrected there counts as the final wording: a pending transcription completes instantly with that text, and a transcript that arrives later is kept as a record without overwriting it.</p>
         <p>AI work now shows its real footprint where it was created. Coding prompts, generated and analyzed images, and audio transcripts carry a tappable attribution pill. Its details show the creator, model, request evidence, available input/output/cached/reasoning tokens, and the provider's actual cost. When Melious reports it, the same view also shows energy, CO₂e, and water use. Audio entries show the total across all their transcripts, while each transcript retains its own attribution. Coding-prompt usage also contributes to its parent task's AI-consumption total.</p>
+        <p>Generated cover art no longer clutters the task's timeline. The banner and list thumbnail are unchanged, but the generated image's own entry in the task's linked entries now starts collapsed instead of showing the same artwork a third time.</p>
+        <p>The task AI summary card's wake control no longer moves around. Freshness, the wake button or countdown, and the automatic-updates switch always live together in one row; model identity is always its own row below.</p>
+        <p>Fixed: Generate Cover Art now actually shows the generated image. The task was pointed at the wrong internal id after generation, so the artwork was created successfully but never appeared in the task header or task list.</p>
+        <p>Fixed: the record/stop button no longer flashes both states at once. Starting or stopping a recording briefly showed the record button overlapping the stop/pause/cancel row mid-transition.</p>
       </description>
     </release>
     <release version="0.9.1056" date="2026-07-20">

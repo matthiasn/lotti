@@ -941,7 +941,18 @@ class SkillInferenceRunner {
         await _finalizeAttribution(attributionEnvelope);
 
         // 8. Set the image as cover art on the task.
-        final updatedData = taskEntity.data.copyWith(coverArtId: imageId);
+        //
+        // Uses `importedImageId` (the JournalImage entity's real id), NOT
+        // `imageId` (the pre-generated id passed into `ImageData.imageId`
+        // for attribution purposes). `createImageEntry` derives the actual
+        // entity id from a uuidV5 hash of the encoded `ImageData` — it does
+        // NOT reuse `imageData.imageId` as the entity id — so the two
+        // values are different. Setting `coverArtId` to `imageId` silently
+        // pointed the task at an id nothing was ever stored under: the
+        // cover art generated successfully but never rendered anywhere.
+        final updatedData = taskEntity.data.copyWith(
+          coverArtId: importedImageId,
+        );
         final didUpdate = await getIt<PersistenceLogic>().updateTask(
           journalEntityId: linkedTaskId,
           taskData: updatedData,
@@ -955,7 +966,7 @@ class SkillInferenceRunner {
         _loggingService.log(
           LogDomain.ai,
           'Skill-based image generation completed for task $linkedTaskId '
-          '(imageId: $imageId)',
+          '(imageId: $importedImageId)',
           subDomain: 'runImageGeneration',
         );
 
@@ -965,7 +976,7 @@ class SkillInferenceRunner {
           _ref
               .read(automaticImageAnalysisTriggerProvider)
               .triggerAutomaticImageAnalysis(
-                imageEntryId: imageId,
+                imageEntryId: importedImageId,
                 linkedTaskId: linkedTaskId,
               ),
         );

@@ -146,9 +146,14 @@ class _AudioRecordingModalContentState
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Record/Stop button
+                // Record/Stop button. No cross-fade here: AnimatedSwitcher
+                // centers and stacks both children for the whole transition,
+                // and the two states have very different footprints (one
+                // button vs. a three-button row) — any nonzero duration
+                // shows the record button overlapping the stop/pause/cancel
+                // row mid-fade, which reads as broken rather than smooth.
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
+                  duration: Duration.zero,
                   child: _isRecording(state)
                       ? _buildStopButton(context, theme, state, controller)
                       : _buildRecordButton(context, controller, theme),

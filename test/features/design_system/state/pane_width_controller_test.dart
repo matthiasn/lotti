@@ -285,7 +285,7 @@ void main() {
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             sidebarWidthKey,
-            '350.0',
+            '286.0',
           ),
         ).called(1);
       });
@@ -305,7 +305,7 @@ void main() {
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             sidebarWidthKey,
-            '380.0',
+            '316.0',
           ),
         ).called(1);
       });
@@ -382,7 +382,7 @@ void main() {
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             listPaneWidthKey,
-            '600.0',
+            '492.0',
           ),
         ).called(1);
       });
@@ -500,13 +500,13 @@ void main() {
       verify(
         () => getIt<SettingsDb>().saveSettingsItem(
           sidebarWidthKey,
-          '320.0',
+          '256.0',
         ),
       ).called(1);
       verify(
         () => getIt<SettingsDb>().saveSettingsItem(
           listPaneWidthKey,
-          '540.0',
+          '432.0',
         ),
       ).called(1);
       verify(
@@ -532,13 +532,13 @@ void main() {
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             sidebarWidthKey,
-            '320.0',
+            '256.0',
           ),
         ).called(1);
         verify(
           () => getIt<SettingsDb>().saveSettingsItem(
             listPaneWidthKey,
-            '540.0',
+            '432.0',
           ),
         ).called(1);
       });
@@ -570,6 +570,164 @@ void main() {
             ),
           ).called(1);
         });
+      },
+    );
+  });
+
+  group('scaledPaneWidth', () {
+    test('returns width unchanged at or below the reference screen width', () {
+      expect(
+        scaledPaneWidth(
+          width: defaultSidebarWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: kPaneWidthReferenceScreenWidth,
+        ),
+        defaultSidebarWidth,
+      );
+      expect(
+        scaledPaneWidth(
+          width: defaultSidebarWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: 1280,
+        ),
+        defaultSidebarWidth,
+      );
+    });
+
+    test(
+      'scales proportionally with screen width once above the reference, '
+      'when width still equals the flat default',
+      () {
+        final scaled = scaledPaneWidth(
+          width: defaultSidebarWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: 1920,
+        );
+        expect(
+          scaled,
+          closeTo(
+            defaultSidebarWidth * 1920 / kPaneWidthReferenceScreenWidth,
+            0.001,
+          ),
+        );
+        expect(scaled, greaterThan(defaultSidebarWidth));
+      },
+    );
+
+    test('clamps the scaled result to maxValue on very large screens', () {
+      final scaled = scaledPaneWidth(
+        width: defaultSidebarWidth,
+        flatDefault: defaultSidebarWidth,
+        minValue: minSidebarWidth,
+        maxValue: maxSidebarWidth,
+        screenWidth: 4000,
+      );
+      expect(scaled, maxSidebarWidth);
+    });
+
+    test(
+      'never scales once the width no longer equals the flat default — '
+      'a user-adjusted or already-persisted width is always honored '
+      'verbatim, regardless of screen size',
+      () {
+        const userWidth = 275.0;
+        expect(
+          scaledPaneWidth(
+            width: userWidth,
+            flatDefault: defaultSidebarWidth,
+            minValue: minSidebarWidth,
+            maxValue: maxSidebarWidth,
+            screenWidth: 4000,
+          ),
+          userWidth,
+        );
+      },
+    );
+
+    test('applies the same rules to the list pane constants', () {
+      final scaled = scaledPaneWidth(
+        width: defaultListPaneWidth,
+        flatDefault: defaultListPaneWidth,
+        minValue: minListPaneWidth,
+        maxValue: maxListPaneWidth,
+        screenWidth: 1920,
+      );
+      expect(scaled, greaterThan(defaultListPaneWidth));
+      expect(scaled, lessThanOrEqualTo(maxListPaneWidth));
+    });
+  });
+
+  group('resolvedPaneWidth', () {
+    test(
+      'below the reference screen width, onDrag forwards the raw delta '
+      'unchanged — displayed width equals the stored width, so no '
+      'adjustment is needed',
+      () {
+        double? forwarded;
+        final resolved = resolvedPaneWidth(
+          storedWidth: defaultSidebarWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: 1280,
+          onDelta: (delta) => forwarded = delta,
+        );
+
+        expect(resolved.width, defaultSidebarWidth);
+        resolved.onDrag(12);
+        expect(forwarded, 12);
+      },
+    );
+
+    test(
+      'above the reference screen width, onDrag adjusts the raw delta by '
+      '(displayed - stored) so the divider never desyncs from the pointer '
+      'on the first drag frame after large-screen scaling',
+      () {
+        double? forwarded;
+        final resolved = resolvedPaneWidth(
+          storedWidth: defaultSidebarWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: 1920,
+          onDelta: (delta) => forwarded = delta,
+        );
+
+        expect(resolved.width, greaterThan(defaultSidebarWidth));
+        resolved.onDrag(10);
+        expect(
+          forwarded,
+          closeTo(resolved.width + 10 - defaultSidebarWidth, 0.001),
+        );
+      },
+    );
+
+    test(
+      'once the stored width has been user-adjusted, onDrag forwards the '
+      'raw delta unchanged — scaledPaneWidth no longer scales, so displayed '
+      'and stored are identical regardless of screen size',
+      () {
+        const userWidth = 275.0;
+        double? forwarded;
+        final resolved = resolvedPaneWidth(
+          storedWidth: userWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: 4000,
+          onDelta: (delta) => forwarded = delta,
+        );
+
+        expect(resolved.width, userWidth);
+        resolved.onDrag(-5);
+        expect(forwarded, -5);
       },
     );
   });

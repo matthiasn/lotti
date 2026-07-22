@@ -420,7 +420,7 @@ void main() {
     expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
     expect(
       find.byWidgetPredicate(
-        (widget) => widget is SizedBox && widget.width == 540,
+        (widget) => widget is SizedBox && widget.width == 432,
       ),
       findsOneWidget,
     );

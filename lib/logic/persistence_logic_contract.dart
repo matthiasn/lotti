@@ -45,6 +45,7 @@ abstract class PersistenceLogicContract {
     bool shouldAddGeolocation = true,
     bool enqueueSync = true,
     String? linkedId,
+    bool linkCollapsed = false,
   });
 
   Future<bool?> updateDbEntity(

@@ -31,6 +31,21 @@ class TasksRootPage extends ConsumerWidget {
     }
 
     final paneWidths = ref.watch(paneWidthControllerProvider);
+    // Scales the flat default proportionally on large windows so the list
+    // pane doesn't stay pinned to a laptop-tuned width while the detail
+    // pane grows unbounded — see scaledPaneWidth's doc comment. A no-op once
+    // the user has dragged the list pane to any other width.
+    final resolvedListPane = resolvedPaneWidth(
+      storedWidth: paneWidths.listPaneWidth,
+      flatDefault: defaultListPaneWidth,
+      minValue: minListPaneWidth,
+      maxValue: maxListPaneWidth,
+      screenWidth: MediaQuery.sizeOf(context).width,
+      onDelta: ref
+          .read(paneWidthControllerProvider.notifier)
+          .updateListPaneWidth,
+    );
+    final listPaneWidth = resolvedListPane.width;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -39,16 +54,14 @@ class TasksRootPage extends ConsumerWidget {
       child: ListDetailFocusTraversal(
         debugLabel: 'tasks-split',
         listPane: SizedBox(
-          width: paneWidths.listPaneWidth,
+          width: listPaneWidth,
           child: const TasksTabPage(),
         ),
         divider: ResizableDivider(
-          currentValue: paneWidths.listPaneWidth,
+          currentValue: listPaneWidth,
           minValue: minListPaneWidth,
           maxValue: maxListPaneWidth,
-          onDrag: (delta) => ref
-              .read(paneWidthControllerProvider.notifier)
-              .updateListPaneWidth(delta),
+          onDrag: resolvedListPane.onDrag,
         ),
         detailPane: ValueListenableBuilder<List<String>>(
           valueListenable: getIt<NavService>().desktopTaskDetailStack,

@@ -1,0 +1,128 @@
+# Tutorial scenario: create a task from scratch by voice and watch Lotti turn
+# it into a structured task — the transcript appears, then the agent proposes
+# a title and checklist items, which get confirmed and one checked off.
+# Demo content: the Intergalactic Penguin Logistics world (same deterministic
+# fixture as the manual screenshots).
+#
+# Schema (validated by tutorial_videos/scenario.py):
+#   scenario:  machine id, must match the file name
+#   title:     per-locale video title
+#   dictionary: per-locale speech-dictionary terms (seeded on the category so
+#              Voxtral gets context bias for the quirky penguin vocabulary)
+#   steps:     ordered; unique ids; per-locale narration; min_duration is the
+#              floor in seconds (the harness holds each step for at least
+#              max(min_duration, narration length + pad); waits inside a step
+#              can extend it further). `dictation: true` marks the step whose
+#              user_voice clip is played into the virtual microphone.
+
+scenario: create_task_from_audio
+
+title:
+  en: Create a task with your voice
+  de: Eine Aufgabe per Sprache erstellen
+
+dictionary:
+  en:
+    - Project Waddle
+    - sardine rations
+    - emperor penguin roll call
+    - zero-gravity feeder
+  de:
+    - Projekt Waddle
+    - Sardinenrationen
+    - Appell der Kaiserpinguine
+    - Schwerelosigkeits-Futterautomat
+
+steps:
+  - id: intro
+    min_duration: 4.0
+    narration:
+      en: >-
+        In this tutorial you'll create a task just by speaking — and watch
+        Lotti turn your words into a structured task with a title and a
+        checklist.
+      de: >-
+        In diesem Tutorial erstellst du eine Aufgabe einfach per Sprache —
+        und siehst zu, wie Lotti deine Worte in eine strukturierte Aufgabe
+        mit Titel und Checkliste verwandelt.
+
+  - id: create_task
+    min_duration: 3.0
+    narration:
+      en: >-
+        Start with a brand-new task: one tap on the plus button, and an empty
+        task opens — no typing needed.
+      de: >-
+        Starte mit einer ganz neuen Aufgabe: ein Tipp auf das Plus, und eine
+        leere Aufgabe öffnet sich — ganz ohne Tippen auf der Tastatur.
+
+  - id: record_dictation
+    min_duration: 4.0
+    dictation: true
+    narration:
+      en: >-
+        Now tap the microphone and just talk — describe what needs to be
+        done, as if you were leaving yourself a voice note.
+      de: >-
+        Tippe jetzt auf das Mikrofon und sprich einfach — beschreibe, was zu
+        tun ist, als würdest du dir selbst eine Sprachnotiz hinterlassen.
+    dictation_text:
+      en: >-
+        We need to prepare the emperor penguin roll call for Project Waddle.
+        Confirm the sardine rations, test the zero-gravity feeder, and file
+        the launch checklist with mission control.
+      de: >-
+        Wir müssen den Appell der Kaiserpinguine für Projekt Waddle
+        vorbereiten. Bestätige die Sardinenrationen, teste den
+        Schwerelosigkeits-Futterautomaten und reiche die Startcheckliste bei
+        der Missionszentrale ein.
+
+  - id: transcription
+    min_duration: 6.0
+    narration:
+      en: >-
+        As soon as you stop, the recording is transcribed in the background —
+        here comes the transcript, right on the task.
+      de: >-
+        Sobald du stoppst, wird die Aufnahme im Hintergrund transkribiert —
+        und hier erscheint das Transkript, direkt an der Aufgabe.
+
+  - id: suggestions
+    min_duration: 6.0
+    narration:
+      en: >-
+        And now the magic: Lotti reads the transcript and proposes a title
+        and checklist items for everything you mentioned.
+      de: >-
+        Und jetzt die Magie: Lotti liest das Transkript und schlägt einen
+        Titel sowie Checklisten-Punkte für alles vor, was du erwähnt hast.
+
+  - id: confirm
+    min_duration: 4.0
+    narration:
+      en: >-
+        One tap on confirm, and the suggestions become real: the task gets
+        its title and a ready-made checklist.
+      de: >-
+        Ein Tipp auf Bestätigen, und aus den Vorschlägen wird Realität: die
+        Aufgabe bekommt ihren Titel und eine fertige Checkliste.
+
+  - id: check_off
+    min_duration: 3.0
+    narration:
+      en: >-
+        Done with something? Tap the checkbox and it's checked off —
+        progress you can see.
+      de: >-
+        Etwas erledigt? Tippe auf das Kästchen und der Punkt ist abgehakt —
+        sichtbarer Fortschritt.
+
+  - id: outro
+    min_duration: 3.0
+    narration:
+      en: >-
+        That's it — from a spoken thought to a structured task in under a
+        minute. Try it with your own next to-do.
+      de: >-
+        Das war's — vom gesprochenen Gedanken zur strukturierten Aufgabe in
+        unter einer Minute. Probier es mit deinem nächsten To-do aus.

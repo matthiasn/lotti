@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
-import 'package:lotti/features/agents/ui/task_agent_freshness_strip.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
@@ -13,24 +12,31 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Quiet settings zone pinned to the bottom of the task-agent card.
 ///
-/// Wake status and automatic updates form one bounded automation cluster so
-/// the countdown, spinner, and switch read as one system. Wide cards place
-/// that cluster beside model identity. Narrow cards place the cluster first
-/// and wrap identity below it; the cluster itself also wraps when its wake
-/// status and switch cannot share a line. The countdown reserves the width of
-/// its initial label so ticking digits never move adjacent controls.
+/// Two rows, always in the same place regardless of state — the wake
+/// affordance never jumps to a different part of the card depending on
+/// whether automatic updates are on:
 ///
-/// The wake control is omitted while the freshness strip above owns the CTA
-/// ([showWakeButton] false).
+///  1. the automation cluster: a freshness glyph (only when there is report
+///     content to describe), wake status (button, countdown, or a running
+///     spinner), and the automatic-updates switch, all read as one bounded
+///     system;
+///  2. model identity, on its own row below — never mixed into the cluster
+///     above, so the update controls and the "what's answering" info stay
+///     visually distinct.
+///
+/// The cluster wraps onto two lines if its content doesn't fit one — the
+/// countdown reserves the width of its initial label so ticking digits never
+/// move adjacent controls.
 class TaskAgentControlsFooter extends StatelessWidget {
   const TaskAgentControlsFooter({
     required this.automaticUpdatesEnabled,
     required this.automationBusy,
     required this.inferenceAvailable,
     required this.isRunning,
-    required this.showWakeButton,
     required this.showCountdown,
     required this.nextWakeAt,
+    required this.hasReportContent,
+    required this.isStale,
     required this.onAutomaticUpdatesChanged,
     required this.onRunNow,
     required this.onCancelTimer,
@@ -44,9 +50,17 @@ class TaskAgentControlsFooter extends StatelessWidget {
   final bool automationBusy;
   final bool inferenceAvailable;
   final bool isRunning;
-  final bool showWakeButton;
   final bool showCountdown;
   final DateTime? nextWakeAt;
+
+  /// Whether the card has a summary to describe freshness for — a blank
+  /// task has nothing to be "out of date", so the glyph is omitted rather
+  /// than shown in some default state.
+  final bool hasReportContent;
+
+  /// Whether the current report is stale (out of date). Only meaningful
+  /// when [hasReportContent] is true.
+  final bool isStale;
   final ValueChanged<bool> onAutomaticUpdatesChanged;
   final VoidCallback? onRunNow;
   final VoidCallback onCancelTimer;
@@ -61,7 +75,6 @@ class TaskAgentControlsFooter extends StatelessWidget {
     final messages = context.messages;
     final wakeAt = nextWakeAt;
     final countdownVisible = showCountdown && wakeAt != null;
-    final hasWakeControl = showWakeButton || countdownVisible;
 
     final automationToggle = ConstrainedBox(
       key: const ValueKey('taskAgentAutomaticUpdatesTarget'),
@@ -141,6 +154,31 @@ class TaskAgentControlsFooter extends StatelessWidget {
       },
     );
 
+    // Compact glyph replacing the old separate freshness strip — a full
+    // sentence ("This summary is out of date") never fit next to the wake
+    // control and switch in the same row, so the state now rides on icon +
+    // color + tooltip instead, the same compact-affordance pattern already
+    // used for the disabled-toggle explanation above.
+    final freshnessIndicator = hasReportContent
+        ? Tooltip(
+            message: isStale
+                ? messages.taskAgentReportOutdatedTitle
+                : messages.taskAgentReportUpToDate,
+            child: Icon(
+              key: ValueKey(
+                isStale ? 'taskAgentStaleGlyph' : 'taskAgentFreshGlyph',
+              ),
+              isStale
+                  ? Icons.warning_amber_rounded
+                  : Icons.check_circle_outline_rounded,
+              size: tokens.spacing.step5,
+              color: isStale
+                  ? tokens.colors.alert.warning.defaultColor
+                  : ai.accent,
+            ),
+          )
+        : null;
+
     final automationCluster = Container(
       key: const ValueKey('taskAgentAutomationCluster'),
       constraints: BoxConstraints(minHeight: tokens.spacing.step9),
@@ -152,41 +190,17 @@ class TaskAgentControlsFooter extends StatelessWidget {
       ),
       child: Wrap(
         key: const ValueKey('taskAgentAutomationWrap'),
-        alignment: hasWakeControl
-            ? WrapAlignment.spaceBetween
-            : WrapAlignment.end,
+        alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: tokens.spacing.cardItemSpacing,
         runSpacing: tokens.spacing.step1,
         children: [
-          if (hasWakeControl) wakeControl,
+          ?freshnessIndicator,
+          wakeControl,
           automationSetting,
         ],
       ),
     );
-
-    Widget wideFooter() {
-      return Row(
-        key: const ValueKey('taskAgentFooterWideLayout'),
-        children: [
-          Expanded(flex: 4, child: identity),
-          SizedBox(width: tokens.spacing.cardItemSpacing),
-          Expanded(flex: 6, child: automationCluster),
-        ],
-      );
-    }
-
-    Widget compactFooter() {
-      return Column(
-        key: const ValueKey('taskAgentFooterCompactLayout'),
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          automationCluster,
-          SizedBox(height: tokens.spacing.step1),
-          identity,
-        ],
-      );
-    }
 
     return Container(
       key: const ValueKey('taskAgentControlsFooter'),
@@ -204,14 +218,14 @@ class TaskAgentControlsFooter extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: TldrBody.maxReadingWidth),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final textScale = MediaQuery.textScalerOf(context).scale(1);
-              final compact =
-                  constraints.maxWidth < TaskAgentFreshnessStrip.compactWidth ||
-                  textScale > 1.3;
-              return compact ? compactFooter() : wideFooter();
-            },
+          child: Column(
+            key: const ValueKey('taskAgentFooterLayout'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              automationCluster,
+              SizedBox(height: tokens.spacing.step1),
+              identity,
+            ],
           ),
         ),
       ),

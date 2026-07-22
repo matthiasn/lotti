@@ -173,6 +173,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
   Future<bool> createLink({
     required String fromId,
     required String toId,
+    bool collapsed = false,
   }) async {
     // Invariant: once the link upsert hits disk, the VC counter is claimed on
     // disk and MUST commit. If the upsert reports "no row changed", the
@@ -188,6 +189,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
           createdAt: now,
           updatedAt: now,
           hidden: false,
+          collapsed: collapsed,
           vectorClock: await vectorClockService.getNextVectorClock(),
         );
 
@@ -234,6 +236,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     bool shouldAddGeolocation = true,
     bool enqueueSync = true,
     String? linkedId,
+    bool linkCollapsed = false,
   }) async {
     try {
       JournalEntity? linked;
@@ -325,6 +328,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
         await createLink(
           fromId: linkedEntity.meta.id,
           toId: journalEntity.meta.id,
+          collapsed: linkCollapsed,
         );
       }
 

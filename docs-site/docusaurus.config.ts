@@ -101,6 +101,9 @@ const config: Config = {
       process.env.MANUAL_MEDIA_BASE_URL ??
       'https://raw.githubusercontent.com/matthiasn/lotti-docs/main/manual/screenshots',
     manualReleases: releases,
+    tutorialVideoBaseUrl:
+      (process.env.TUTORIAL_VIDEO_BASE_URL ?? '').trim() ||
+      'https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/tutorial-videos',
   },
   presets: [
     [

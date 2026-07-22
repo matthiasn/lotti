@@ -12,11 +12,17 @@ const journalListPaneWidthKey = 'PANE_WIDTH_JOURNAL_LIST';
 const sidebarCollapsedKey = 'PANE_WIDTH_SIDEBAR_COLLAPSED';
 
 /// Default and constraint values for pane widths.
-const defaultSidebarWidth = 320.0;
+///
+/// Sidebar and list-pane defaults are 20% narrower than their original
+/// 320/540 flat values — on wide windows [scaledPaneWidth] scales both up
+/// simultaneously, and at the original values the combined sidebar + list
+/// pane consumed ~60% of a 1920px-wide window, leaving the detail pane
+/// visibly cramped relative to the other two columns.
+const defaultSidebarWidth = 256.0;
 const minSidebarWidth = 200.0;
 const maxSidebarWidth = 500.0;
 
-const defaultListPaneWidth = 540.0;
+const defaultListPaneWidth = 432.0;
 const minListPaneWidth = 300.0;
 const maxListPaneWidth = 800.0;
 
@@ -30,6 +36,77 @@ const maxJournalListPaneWidth = 800.0;
 /// How long to wait after the last drag update before persisting to disk.
 @visibleForTesting
 const persistDebounce = Duration(milliseconds: 300);
+
+/// Reference window width the flat pane-width defaults above were tuned
+/// for — a common laptop/desktop width. Below this, [scaledPaneWidth]
+/// returns its input unchanged.
+const kPaneWidthReferenceScreenWidth = 1440.0;
+
+/// Scales [width] proportionally with [screenWidth] on windows wider than
+/// [kPaneWidthReferenceScreenWidth], clamped to [minValue]/[maxValue].
+///
+/// Only applies when [width] still equals [flatDefault] — i.e. the sidebar
+/// or list pane has never been persisted/dragged by the user — so a large
+/// window gets a proportionally larger default instead of a fixed pane
+/// leaving the remaining space (typically the detail pane) disproportionately
+/// large, while any explicit user width is always honored verbatim. Callers
+/// pass [width] = the controller's current (possibly still-loading) value
+/// and [screenWidth] = `MediaQuery.sizeOf(context).width` from a widget that
+/// has real layout constraints, since the controller itself has no
+/// `BuildContext` to read them from.
+double scaledPaneWidth({
+  required double width,
+  required double flatDefault,
+  required double minValue,
+  required double maxValue,
+  required double screenWidth,
+}) {
+  if (width != flatDefault) return width;
+  if (screenWidth <= kPaneWidthReferenceScreenWidth) return width;
+  final scaled = flatDefault * screenWidth / kPaneWidthReferenceScreenWidth;
+  return scaled.clamp(minValue, maxValue);
+}
+
+/// Bundles [scaledPaneWidth]'s displayed width with an `onDrag` handler ready
+/// to hand a `ResizableDivider`.
+///
+/// The displayed width (screen-scaled) can differ from `storedWidth` (the
+/// controller's raw persisted value), but `onDelta` — the controller's own
+/// delta-relative update method, e.g. `updateSidebarWidth` /
+/// `updateListPaneWidth` — always expects a delta relative to `storedWidth`.
+/// A raw pointer delta would desync the divider from the pointer on the very
+/// first drag frame after scaling, so `onDrag` adjusts it by
+/// `(displayed + delta) - storedWidth` before forwarding to `onDelta`.
+///
+/// Shared by every desktop split-pane host (`beamer_app.dart`,
+/// `dashboards_list_page.dart`, `projects_tab_page.dart`,
+/// `tasks_root_page.dart`) so the scaling + delta-adjustment formula lives in
+/// exactly one place.
+typedef ResolvedPaneWidth = ({
+  double width,
+  void Function(double delta) onDrag,
+});
+
+ResolvedPaneWidth resolvedPaneWidth({
+  required double storedWidth,
+  required double flatDefault,
+  required double minValue,
+  required double maxValue,
+  required double screenWidth,
+  required void Function(double delta) onDelta,
+}) {
+  final width = scaledPaneWidth(
+    width: storedWidth,
+    flatDefault: flatDefault,
+    minValue: minValue,
+    maxValue: maxValue,
+    screenWidth: screenWidth,
+  );
+  return (
+    width: width,
+    onDrag: (delta) => onDelta((width + delta) - storedWidth),
+  );
+}
 
 /// State holding the current widths and collapsed flag for the sidebar, plus
 /// the width for the list pane.

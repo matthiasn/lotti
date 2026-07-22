@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1059]
+### Added
+- **Five narrated walkthrough videos are now embedded in the Manual, in
+  English and German.** Creating a task with your voice, generating cover
+  art, turning a coding task into an AI-ready prompt, filtering and saving
+  task views, and setting up a category each have a short captioned video on
+  their Manual page, alongside the existing screenshots.
+
 ## [0.9.1058]
 ### Fixed
 - **Accepting AI suggestions no longer bounces the task page.** Confirming a
@@ -44,6 +52,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and water use. Audio entries show the total across all their transcripts,
   while each transcript retains its own attribution. Coding-prompt usage also
   contributes to its parent task's AI-consumption total.
+
+### Changed
+- **Generated cover art no longer clutters the task's timeline.** The banner
+  and list thumbnail are unchanged, but the generated image's own entry in
+  the task's linked entries now starts collapsed instead of showing the same
+  artwork a third time — tap it to expand if you want to see it there too.
+- **The task AI summary card's wake control no longer moves around.**
+  Freshness (out of date / up to date), the wake button or countdown, and
+  the automatic-updates switch now always live together in one row, instead
+  of the wake button appearing in a separate strip above the switch only
+  while automatic updates were off. Model identity is now always its own
+  row below, never squeezed beside that cluster.
+
+### Fixed
+- **Generate Cover Art now actually shows the generated image.** The task was
+  pointed at the wrong internal id after generation, so the artwork was
+  created successfully but never appeared in the task header or task list.
+- **The record/stop button no longer flashes both states at once.** Starting
+  or stopping a recording briefly showed the record button overlapping the
+  stop/pause/cancel row mid-transition.
 
 ## [0.9.1056]
 ### Added

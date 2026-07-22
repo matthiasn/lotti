@@ -1,0 +1,78 @@
+# Tutorial scenario: filter the tasks list by category and save the filter
+# as a named view — open filter modal, pick a category, apply (list narrows,
+# active chip appears), then save the filter under a name.
+
+scenario: task_filters
+
+title:
+  en: Filter tasks and save your views
+  de: Aufgaben filtern und Ansichten speichern
+
+dictionary:
+  en:
+    - Penguin Operations
+  de:
+    - Pinguinbetrieb
+
+steps:
+  - id: intro
+    min_duration: 4.0
+    narration:
+      en: >-
+        The more tasks you have, the more the filters matter. In this
+        tutorial you'll narrow the list by category — and save that view for
+        next time.
+      de: >-
+        Je mehr Aufgaben, desto wichtiger die Filter. In diesem Tutorial
+        engst du die Liste nach Kategorie ein — und speicherst dir diese
+        Ansicht für das nächste Mal.
+
+  - id: open_filters
+    min_duration: 3.0
+    narration:
+      en: >-
+        Next to the search sits the filter button — this is mission control
+        for your task list.
+      de: >-
+        Neben der Suche sitzt der Filter-Button — die Kommandozentrale für
+        deine Aufgabenliste.
+
+  - id: pick_category
+    min_duration: 5.0
+    narration:
+      en: >-
+        Open the category section and pick Penguin Operations — you can
+        combine as many categories as you like.
+      de: >-
+        Öffne den Kategorie-Bereich und wähle Pinguinbetrieb — du kannst
+        beliebig viele Kategorien kombinieren.
+
+  - id: apply_filter
+    min_duration: 4.0
+    narration:
+      en: >-
+        Apply — and the list narrows to exactly this category, with a chip
+        showing what's active.
+      de: >-
+        Anwenden — und die Liste zeigt genau diese Kategorie, mit einem Chip
+        für den aktiven Filter.
+
+  - id: save_filter
+    min_duration: 5.0
+    narration:
+      en: >-
+        Now make it permanent: save the filter, give it a name, and it
+        becomes a view you can jump back to any time.
+      de: >-
+        Jetzt mach es dauerhaft: speichere den Filter, gib ihm einen Namen —
+        und er wird zur Ansicht, zu der du jederzeit zurückspringen kannst.
+
+  - id: outro
+    min_duration: 3.0
+    narration:
+      en: >-
+        Filters plus saved views — your task list, exactly the slice you
+        need right now.
+      de: >-
+        Filter plus gespeicherte Ansichten — deine Aufgabenliste, genau der
+        Ausschnitt, den du gerade brauchst.

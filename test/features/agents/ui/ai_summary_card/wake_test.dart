@@ -158,11 +158,20 @@ void main() {
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
-      expect(find.text('This summary is out of date'), findsOneWidget);
+      // The stale glyph rides in the same automation cluster as the wake
+      // button and switch, rather than a separate row — its tooltip
+      // carries the full message.
       expect(
-        find.byKey(const ValueKey('taskAgentStaleNotice')),
+        find.byKey(const ValueKey('taskAgentStaleGlyph')),
         findsOneWidget,
       );
+      final tooltip = tester.widget<Tooltip>(
+        find.ancestor(
+          of: find.byKey(const ValueKey('taskAgentStaleGlyph')),
+          matching: find.byType(Tooltip),
+        ),
+      );
+      expect(tooltip.message, 'This summary is out of date');
       expect(
         find.byKey(const ValueKey('taskAgentWakeButton')),
         findsOneWidget,
@@ -174,8 +183,8 @@ void main() {
     });
 
     testWidgets(
-      'stale without any report keeps the footer wake button — the strip '
-      'has nothing to describe',
+      'stale without any report omits the glyph — nothing to describe — but '
+      'keeps the wake button',
       (tester) async {
         final identity = makeTestIdentity().copyWith(
           config: const AgentConfig(automaticUpdatesEnabled: false),
@@ -189,7 +198,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.byKey(const ValueKey('taskAgentStaleNotice')),
+          find.byKey(const ValueKey('taskAgentStaleGlyph')),
           findsNothing,
         );
         expect(find.text('This summary is out of date'), findsNothing);

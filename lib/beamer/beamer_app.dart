@@ -636,6 +636,21 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     }
 
     final paneWidths = ref.watch(paneWidthControllerProvider);
+    // Scales the flat default proportionally on large windows so the
+    // sidebar doesn't stay pinned to a laptop-tuned width while the detail
+    // pane grows unbounded — see scaledPaneWidth's doc comment. A no-op once
+    // the user has dragged the sidebar to any other width.
+    final resolvedSidebar = resolvedPaneWidth(
+      storedWidth: paneWidths.sidebarWidth,
+      flatDefault: defaultSidebarWidth,
+      minValue: minSidebarWidth,
+      maxValue: maxSidebarWidth,
+      screenWidth: MediaQuery.sizeOf(context).width,
+      onDelta: ref
+          .read(paneWidthControllerProvider.notifier)
+          .updateSidebarWidth,
+    );
+    final sidebarWidth = resolvedSidebar.width;
     final isCollapsed = paneWidths.sidebarCollapsed;
     final showSyncIndicator =
         ref.watch(configFlagProvider(showSyncActivityIndicatorFlag)).value ??
@@ -681,7 +696,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   ? () => navService.tapIndex(settingsIndex)
                   : null,
               isSettingsActive: isSettingsActive,
-              width: paneWidths.sidebarWidth,
+              width: sidebarWidth,
               collapsed: isCollapsed,
               onToggleCollapsed: () => ref
                   .read(paneWidthControllerProvider.notifier)
@@ -694,12 +709,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           ),
           ResizableDivider(
             enabled: !isCollapsed,
-            currentValue: paneWidths.sidebarWidth,
+            currentValue: sidebarWidth,
             minValue: minSidebarWidth,
             maxValue: maxSidebarWidth,
-            onDrag: (delta) => ref
-                .read(paneWidthControllerProvider.notifier)
-                .updateSidebarWidth(delta),
+            onDrag: resolvedSidebar.onDrag,
           ),
           Expanded(
             child: KeyboardFocusRegion(
