@@ -6315,6 +6315,33 @@ void main() {
     });
   });
 
+  // ── countEntitiesByType (facade delegation) ───────────────────────────────
+
+  group('countEntitiesByType', () {
+    test('delegates and counts rows across agents for the type', () async {
+      await repo.upsertEntity(
+        makeTestDayPlan(
+          id: 'day_agent_plan:coordinator',
+          agentId: 'daily_os_planner',
+          dayId: 'coordinator',
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestDayPlan(
+          id: 'day_agent_plan:per-day',
+          agentId: 'day_agent:dayplan-2026-07-22',
+          dayId: 'per-day',
+        ),
+      );
+
+      final count = await repo.countEntitiesByType(
+        type: AgentEntityTypes.dayPlan,
+      );
+
+      expect(count, 2);
+    });
+  });
+
   // ── getEvolutionSessionRecaps / getEvolutionSessionRecap ──────────────────
 
   group('getEvolutionSessionRecaps', () {

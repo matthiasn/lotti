@@ -20,6 +20,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
@@ -957,8 +958,10 @@ void main() {
 
       test('validates a link to a knowledge entry via its key', () async {
         final ks = MockDayAgentKnowledgeService();
-        when(() => ks.activeFor(agentId)).thenAnswer((_) async => const []);
-        when(() => ks.allFor(agentId)).thenAnswer(
+        when(
+          () => ks.activeFor(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => const []);
+        when(() => ks.allFor(dailyOsPlannerAgentId)).thenAnswer(
           (_) async => [
             AgentDomainEntity.plannerKnowledge(
                   id: 'k1',
@@ -1042,7 +1045,7 @@ void main() {
         final knowledgeService = MockDayAgentKnowledgeService();
         when(
           () => knowledgeService.executeTool(
-            agentId: agentId,
+            agentId: dailyOsPlannerAgentId,
             toolName: DayAgentToolNames.proposeKnowledge,
             args: any(named: 'args'),
           ),
@@ -1071,7 +1074,7 @@ void main() {
         expect(result.success, isTrue);
         verify(
           () => knowledgeService.executeTool(
-            agentId: agentId,
+            agentId: dailyOsPlannerAgentId,
             toolName: DayAgentToolNames.proposeKnowledge,
             args: any(named: 'args'),
           ),
@@ -1101,7 +1104,7 @@ void main() {
         () async {
           final knowledgeService = MockDayAgentKnowledgeService();
           when(
-            () => knowledgeService.activeFor(agentId),
+            () => knowledgeService.activeFor(dailyOsPlannerAgentId),
           ).thenThrow(StateError('knowledge down'));
 
           final result = await execute(
@@ -1147,7 +1150,9 @@ void main() {
             ),
           );
           final knowledgeService = MockDayAgentKnowledgeService();
-          when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+          when(
+            () => knowledgeService.activeFor(dailyOsPlannerAgentId),
+          ).thenAnswer(
             (_) async => [
               AgentDomainEntity.plannerKnowledge(
                     id: 'k-proj',
@@ -2988,7 +2993,7 @@ void main() {
                 )
                 as PlannerKnowledgeEntity;
         when(
-          () => knowledgeService.activeFor(agentId),
+          () => knowledgeService.activeFor(dailyOsPlannerAgentId),
         ).thenAnswer((_) async => [globalEntry]);
 
         final result = await execute(
@@ -3024,7 +3029,7 @@ void main() {
     test('omits knowledge blocks when there is no active knowledge', () async {
       final knowledgeService = MockDayAgentKnowledgeService();
       when(
-        () => knowledgeService.activeFor(agentId),
+        () => knowledgeService.activeFor(dailyOsPlannerAgentId),
       ).thenAnswer((_) async => []);
 
       final result = await execute(
@@ -3043,7 +3048,9 @@ void main() {
       () async {
         final knowledgeService = MockDayAgentKnowledgeService();
         const statement = 'Never schedule deep work before 10:00.';
-        when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+        when(
+          () => knowledgeService.activeFor(dailyOsPlannerAgentId),
+        ).thenAnswer(
           (_) async => [
             AgentDomainEntity.plannerKnowledge(
                   id: 'k1',
@@ -3078,7 +3085,9 @@ void main() {
       'matching category',
       () async {
         final knowledgeService = MockDayAgentKnowledgeService();
-        when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+        when(
+          () => knowledgeService.activeFor(dailyOsPlannerAgentId),
+        ).thenAnswer(
           (_) async => [
             AgentDomainEntity.plannerKnowledge(
                   id: 'k-fitness',
@@ -3153,7 +3162,9 @@ void main() {
         ).thenAnswer((_) async => capture);
 
         final knowledgeService = MockDayAgentKnowledgeService();
-        when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+        when(
+          () => knowledgeService.activeFor(dailyOsPlannerAgentId),
+        ).thenAnswer(
           (_) async => [
             AgentDomainEntity.plannerKnowledge(
                   id: 'k-global',
@@ -3707,7 +3718,6 @@ void main() {
         final service = MockDayAgentWeekContextService();
         when(
           () => service.buildForDay(
-            agentId: any(named: 'agentId'),
             planDate: any(named: 'planDate'),
             now: any(named: 'now'),
           ),
@@ -3727,7 +3737,9 @@ void main() {
         'before the mode section',
         () async {
           final knowledgeService = MockDayAgentKnowledgeService();
-          when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+          when(
+            () => knowledgeService.activeFor(dailyOsPlannerAgentId),
+          ).thenAnswer(
             (_) async => [
               AgentDomainEntity.plannerKnowledge(
                     id: 'k-global',
@@ -3864,7 +3876,6 @@ void main() {
         final service = MockDayAgentWeekContextService();
         when(
           () => service.buildForDay(
-            agentId: any(named: 'agentId'),
             planDate: any(named: 'planDate'),
             now: any(named: 'now'),
           ),
@@ -3902,7 +3913,6 @@ void main() {
 
         verify(
           () => service.buildForDay(
-            agentId: agentId,
             planDate: DateTime(2026, 5, 25),
             // The wake's own clock read is passed through so the section's
             // day classification matches current_local_time.
@@ -3966,7 +3976,6 @@ void main() {
           expect(result.success, isTrue);
           verifyNever(
             () => service.buildForDay(
-              agentId: any(named: 'agentId'),
               planDate: any(named: 'planDate'),
               now: any(named: 'now'),
             ),

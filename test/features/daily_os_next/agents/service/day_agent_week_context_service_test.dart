@@ -5,6 +5,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -90,7 +91,6 @@ void main() {
     test('fetches all 21 deterministic ids in ONE chunked call', () async {
       await withNow(
         () => service.buildForDay(
-          agentId: _agentId,
           planDate: DateTime(2026, 6, 10),
         ),
       );
@@ -120,7 +120,6 @@ void main() {
     test('queries claims for [today, today+5)', () async {
       await withNow(
         () => service.buildForDay(
-          agentId: _agentId,
           planDate: DateTime(2026, 6, 10),
         ),
       );
@@ -136,7 +135,6 @@ void main() {
     test('recorded range spans lookback start to END OF today', () async {
       await withNow(
         () => service.buildForDay(
-          agentId: _agentId,
           planDate: DateTime(2026, 6, 10),
         ),
       );
@@ -154,7 +152,6 @@ void main() {
     test('a tomorrow plan date caps the recorded range at today', () async {
       await withNow(
         () => service.buildForDay(
-          agentId: _agentId,
           planDate: DateTime(2026, 6, 11),
         ),
       );
@@ -172,7 +169,6 @@ void main() {
       () async {
         await withNow(
           () => service.buildForDay(
-            agentId: _agentId,
             planDate: DateTime(2026, 6, 9),
           ),
         );
@@ -206,7 +202,6 @@ void main() {
 
       final ctx = await withNow(
         () => service.buildForDay(
-          agentId: _agentId,
           planDate: DateTime(2026, 6, 10),
         ),
       );
@@ -239,7 +234,6 @@ void main() {
 
       final ctx = await withNow(
         () => service.buildForDay(
-          agentId: _agentId,
           planDate: DateTime(2026, 6, 10),
         ),
       );
@@ -248,6 +242,42 @@ void main() {
       expect(ctx, isNotNull);
       expect(ctx!.isEmpty, isTrue);
     });
+
+    test(
+      'accepts plans and summaries written by sibling per-day agents '
+      '(ADR 0032 ownership spans the cutover)',
+      () async {
+        final perDayPlan = makeTestDayPlan(
+          agentId: perDayAgentId('dayplan-2026-06-09'),
+          dayId: 'dayplan-2026-06-09',
+          planDate: DateTime(2026, 6, 9),
+        );
+        final perDaySummary = makeTestDaySummary(
+          dayId: 'dayplan-2026-06-08',
+          agentId: perDayAgentId('dayplan-2026-06-08'),
+          text: 'written by the day agent',
+        );
+        when(() => repository.getEntitiesByIds(any())).thenAnswer(
+          (_) async => {
+            perDayPlan.id: perDayPlan,
+            perDaySummary.id: perDaySummary,
+          },
+        );
+
+        final ctx = await withNow(
+          () => service.buildForDay(
+            planDate: DateTime(2026, 6, 10),
+          ),
+        );
+
+        expect(ctx, isNotNull);
+        expect(ctx!.recentDays, contains('Tue Jun 9 — draft plan.'));
+        expect(
+          ctx.recentDays,
+          contains('Agent note: written by the day agent'),
+        );
+      },
+    );
 
     test('resolves recorded spans through links to tasks', () async {
       final day = DateTime(2026, 6, 9);
@@ -269,7 +299,6 @@ void main() {
 
       final ctx = await withNow(
         () => service.buildForDay(
-          agentId: _agentId,
           planDate: DateTime(2026, 6, 10),
         ),
       );
@@ -334,7 +363,6 @@ void main() {
 
       final ctx = await withNow(
         () => service.buildForDay(
-          agentId: _agentId,
           planDate: DateTime(2026, 6, 10),
         ),
       );
@@ -365,7 +393,6 @@ void main() {
       // Deliberately NO withClock: the passed `now` must drive both the
       // window arithmetic and the rendered day classification.
       final ctx = await service.buildForDay(
-        agentId: _agentId,
         planDate: DateTime(2026, 6, 10),
         now: DateTime(2026, 6, 10, 8, 30),
       );
@@ -392,7 +419,6 @@ void main() {
 
       final ctx = await withNow(
         () => service.buildForDay(
-          agentId: _agentId,
           planDate: DateTime(2026, 6, 10),
         ),
       );
@@ -461,7 +487,6 @@ void main() {
 
       final ctx = await withNow(
         () => serviceWithoutResolver().buildForDay(
-          agentId: _agentId,
           planDate: DateTime(2026, 6, 10),
         ),
       );
@@ -485,7 +510,6 @@ void main() {
 
         final ctx = await withNow(
           () => serviceWithoutResolver().buildForDay(
-            agentId: _agentId,
             planDate: DateTime(2026, 6, 10),
           ),
         );

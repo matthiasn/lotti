@@ -5,6 +5,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
@@ -73,12 +74,16 @@ class DayAgentWeekContextService {
   /// whose sections are null ([WeekContext.isEmpty]) — the prompt builder
   /// omits absent sections, so callers need not special-case it.
   ///
+  /// Reads are not keyed to the waking agent: lookback/lookahead plans and
+  /// summaries are accepted from any Daily OS day owner (coordinator or
+  /// per-day agent, ADR 0032), since neighboring days are owned by different
+  /// identities across the cutover.
+  ///
   /// [now] lets the caller pass its own wall-clock read so the rendered day
   /// classification agrees with the rest of the prompt (e.g. the payload's
   /// `current_local_time`) across a midnight straddle; defaults to
   /// `clock.now()`.
   Future<WeekContext?> buildForDay({
-    required String agentId,
     required DateTime planDate,
     DateTime? now,
   }) async {
@@ -110,17 +115,21 @@ class DayAgentWeekContextService {
         for (final day in lookaheadDays) dayAgentPlanEntityId(dayPlanId(day)),
       };
       final entitiesById = await agentRepository.getEntitiesByIds(ids);
+      // Ownership spans the ADR 0032 cutover: lookback/lookahead days may be
+      // written by the coordinator (pre-cutover) or by sibling per-day agents
+      // (post-cutover), so accept any Daily OS day owner rather than only the
+      // waking agent. Foreign/unknown agent ids stay excluded.
       final dayPlans = <DayPlanEntity>[
         for (final entity in entitiesById.values)
           if (entity is DayPlanEntity &&
-              entity.agentId == agentId &&
+              isDailyOsDayOwner(entity.agentId) &&
               entity.deletedAt == null)
             entity,
       ];
       final daySummaries = <DaySummaryEntity>[
         for (final entity in entitiesById.values)
           if (entity is DaySummaryEntity &&
-              entity.agentId == agentId &&
+              isDailyOsDayOwner(entity.agentId) &&
               entity.deletedAt == null)
             entity,
       ];

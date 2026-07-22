@@ -207,6 +207,17 @@ class AgentRepoEvolution {
     return _db.countAgentEntitiesByAgentAndType(agentId, type).getSingle();
   }
 
+  /// Counts agent entities of [type] across all agents, including
+  /// soft-deleted ones.
+  ///
+  /// Same tombstone-inclusive semantics as [countEntitiesByAgentAndType]
+  /// without the owner filter: under ADR 0032 day plans are written by
+  /// whichever identity owns the day, so eligibility gates that ask "has a
+  /// plan EVER existed" must not key on a single agent id.
+  Future<int> countEntitiesByType({required String type}) {
+    return _db.countAgentEntitiesByType(type).getSingle();
+  }
+
   // ── Evolution queries ──────────────────────────────────────────────────────
 
   /// Fetch the N most recent reports from all instances assigned to

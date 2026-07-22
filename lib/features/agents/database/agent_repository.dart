@@ -363,6 +363,9 @@ class AgentRepository {
     required String type,
   }) => _evolution.countEntitiesByAgentAndType(agentId: agentId, type: type);
 
+  Future<int> countEntitiesByType({required String type}) =>
+      _evolution.countEntitiesByType(type: type);
+
   Future<List<AgentReportEntity>> getRecentReportsByTemplate(
     String templateId, {
     int limit = 10,

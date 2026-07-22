@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
@@ -164,6 +165,57 @@ void main() {
           refreshed.triageDecisions['t_dentist']?.action,
           TriageAction.defer,
         );
+      },
+    );
+
+    test(
+      're-reads when the day workspace running signal falls '
+      '(ADR 0032 per-day keying)',
+      () async {
+        const id = CaptureId('cap_running_edge');
+        final params = paramsFor(id);
+        final running = StreamController<bool>.broadcast();
+        addTearDown(running.close);
+        final refreshingAgent = _RefreshingDayAgent();
+        final container = ProviderContainer(
+          overrides: [
+            dayAgentProvider.overrideWithValue(refreshingAgent),
+            dailyOsPreferencesControllerProvider.overrideWith(
+              () => _SeededPreferencesController(const <String>{}),
+            ),
+            reconcileCaptureUpdateProvider.overrideWith(
+              (ref, captureId) => const Stream<Set<String>>.empty(),
+            ),
+            // Id-sensitive: only the per-day agent for the params' day
+            // carries the running edge; every other id (coordinator
+            // included) reads false, mirroring production keying.
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => agentId == perDayAgentIdForDate(params.dayDate)
+                  ? running.stream
+                  : Stream.value(false),
+            ),
+          ],
+        )..listen(reconcileControllerProvider(params), (_, _) {});
+        addTearDown(container.dispose);
+
+        final initial = await container.read(
+          reconcileControllerProvider(params).future,
+        );
+        expect(initial.parsed, isEmpty);
+        expect(refreshingAgent.parseCalls, 1);
+
+        // The parse wake starts, then finishes: the falling edge must
+        // invalidate the controller so the Heard column re-reads.
+        running.add(true);
+        await pumpEventQueue();
+        running.add(false);
+        await pumpEventQueue();
+
+        final refreshed = await container.read(
+          reconcileControllerProvider(params).future,
+        );
+        expect(refreshingAgent.parseCalls, greaterThanOrEqualTo(2));
+        expect(refreshed.parsed, isNotEmpty);
       },
     );
 

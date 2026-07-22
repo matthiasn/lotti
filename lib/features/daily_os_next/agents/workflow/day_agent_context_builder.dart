@@ -124,13 +124,11 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   /// classification agrees with `current_local_time` across a midnight
   /// straddle.
   Future<WeekContext?> _weekContext({
-    required String agentId,
     required DateTime planDate,
     required DateTime now,
   }) async {
     try {
       return await weekContextService?.buildForDay(
-        agentId: agentId,
         planDate: planDate,
         now: now,
       );
@@ -153,12 +151,17 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     }
   }
 
-  /// Loads the planner's durable knowledge and renders the two-tier prompt
-  /// blocks (ADR 0022 Decisions 9–10): the always-on hook index plus the
-  /// scope-filtered full statements for the scopes this wake actually touches
-  /// (`global` always; [touchedScopes] for `category:`/`project:`). Returns
-  /// empty blocks (and the caller omits the field) when no knowledge or no
-  /// service is configured.
+  /// Loads the coordinator's durable knowledge and renders the two-tier
+  /// prompt blocks (ADR 0022 Decisions 9–10): the always-on hook index plus
+  /// the scope-filtered full statements for the scopes this wake actually
+  /// touches (`global` always; [touchedScopes] for `category:`/`project:`).
+  /// Returns empty blocks (and the caller omits the field) when no knowledge
+  /// or no service is configured.
+  ///
+  /// Knowledge is always read under [dailyOsPlannerAgentId], not the waking
+  /// agent: durable learning lives with the coordinator (ADR 0032 §4,
+  /// "coordinator-published"), so per-day agents see the same knowledge the
+  /// monolith would. For coordinator wakes the two ids coincide.
   Future<KnowledgeContext> _knowledgeContext({
     required AgentIdentityEntity agentIdentity,
     required Set<String> touchedScopes,
@@ -167,7 +170,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     final service = knowledgeService;
     if (service == null) return const KnowledgeContext.empty();
     try {
-      final active = await service.activeFor(agentIdentity.agentId);
+      final active = await service.activeFor(dailyOsPlannerAgentId);
       if (active.isEmpty) return const KnowledgeContext.empty();
       return KnowledgeContext(
         hookIndex: renderKnowledgeHookIndex(active),

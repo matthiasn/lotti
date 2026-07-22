@@ -196,11 +196,10 @@ void main() {
       ).thenAnswer((_) async => whatsNewUnseen);
 
       final mockAgentRepo = MockAgentRepository();
+      // Cross-agent count (ADR 0032): the writing identity varies across the
+      // per-day cutover, so the gate counts plans regardless of owner.
       when(
-        () => mockAgentRepo.countEntitiesByAgentAndType(
-          agentId: any(named: 'agentId'),
-          type: any(named: 'type'),
-        ),
+        () => mockAgentRepo.countEntitiesByType(type: any(named: 'type')),
       ).thenAnswer((_) async => everPlanCount);
 
       final container = ProviderContainer(

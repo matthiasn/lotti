@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
@@ -160,8 +159,10 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
 
   // Resolve the plan-existence signals. The "ever" count includes
   // soft-deleted tombstones; the "today" read reflects the active plan only.
-  final everPlanCount = await agentRepository.countEntitiesByAgentAndType(
-    agentId: dailyOsPlannerAgentId,
+  // Counted across all agents: under ADR 0032 the writing identity varies
+  // (coordinator pre-cutover, per-day agent after), and a planner-keyed count
+  // would stay 0 forever for post-cutover users.
+  final everPlanCount = await agentRepository.countEntitiesByType(
     type: AgentEntityTypes.dayPlan,
   );
   final todayPlan = await todayPlanFuture;

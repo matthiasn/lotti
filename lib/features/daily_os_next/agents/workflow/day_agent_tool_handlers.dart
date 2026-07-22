@@ -103,7 +103,10 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         );
       }
       final result = await service.executeTool(
-        agentId: agentId,
+        // Durable knowledge lives with the coordinator (ADR 0032 §2): a
+        // per-day agent's proposals must land in the coordinator's weekly
+        // confirm loop, not be stranded under a day-scoped id.
+        agentId: dailyOsPlannerAgentId,
         toolName: toolName,
         args: args,
       );
@@ -275,7 +278,9 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
     // so the agent cites it by key; include keys and entity ids. Non-fatal.
     final extraKnownIds = <String>{};
     try {
-      final knowledge = await knowledgeService?.allFor(agentId) ?? const [];
+      // Coordinator-keyed like every knowledge read (ADR 0032 §2).
+      final knowledge =
+          await knowledgeService?.allFor(dailyOsPlannerAgentId) ?? const [];
       for (final entry in knowledge) {
         extraKnownIds
           ..add(entry.key)
