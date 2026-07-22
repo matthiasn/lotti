@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -756,6 +757,123 @@ void main() {
         expect(plan.toJson()['runtimeType'], equals('dayPlan'));
         expect(plan.data.plannedBlocks.single.reason, isNotEmpty);
         expect(plan.energyBands.single.level, DayAgentEnergyLevel.high);
+      });
+
+      test('DayDirectiveEntity roundtrips the full distilled ledger', () {
+        final original = AgentDomainEntity.dayDirective(
+          id: 'day_directive:dayplan-2026-05-25',
+          agentId: 'daily_os_planner',
+          dayId: 'dayplan-2026-05-25',
+          planDate: DateTime(2026, 5, 25),
+          directiveRevisionId: 'rev-abc',
+          issuedAt: DateTime(2026, 5, 25, 6),
+          commitments: [
+            DayDirectiveCommitment(
+              id: 'award-001',
+              source: DayCommitmentSource.attentionAward,
+              title: 'Ship the release notes',
+              windowStart: DateTime(2026, 5, 25, 9),
+              windowEnd: DateTime(2026, 5, 25, 11),
+              minutes: 90,
+              evidenceRefs: const ['attention-award-001'],
+            ),
+            const DayDirectiveCommitment(
+              id: 'agreement-001',
+              source: DayCommitmentSource.standingAgreement,
+              title: 'Gym session',
+              minutes: 60,
+            ),
+          ],
+          capacityBudget: DayCapacityBudget(
+            availableMinutes: 420,
+            alreadyScheduledMinutes: 60,
+            energyBands: [
+              DayAgentEnergyBand(
+                start: DateTime(2026, 5, 25, 9),
+                end: DateTime(2026, 5, 25, 12),
+                level: DayAgentEnergyLevel.high,
+                label: 'HIGH ENERGY',
+              ),
+            ],
+          ),
+          carryOver: const [
+            DayCarryOverItem(
+              title: 'Expense report',
+              reason: 'Dropped yesterday for a client emergency.',
+              taskId: 'task-042',
+            ),
+          ],
+          constraints: const ['Protect 12:00-13:00 for lunch.'],
+          attentionNotes: const [
+            "Thursday already carries this week's third big commitment.",
+          ],
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final directive = roundtripped as DayDirectiveEntity;
+        expect(directive.toJson()['runtimeType'], equals('dayDirective'));
+        expect(
+          directive.commitments.first.source,
+          DayCommitmentSource.attentionAward,
+        );
+        expect(directive.commitments[1].windowStart, isNull);
+        expect(directive.capacityBudget!.availableMinutes, 420);
+        expect(directive.carryOver.single.taskId, 'task-042');
+      });
+
+      test('DayDirectiveEntity roundtrips with all optional fields empty', () {
+        final original = AgentDomainEntity.dayDirective(
+          id: 'day_directive:dayplan-2026-05-26',
+          agentId: 'daily_os_planner',
+          dayId: 'dayplan-2026-05-26',
+          planDate: DateTime(2026, 5, 26),
+          directiveRevisionId: 'rev-min',
+          issuedAt: DateTime(2026, 5, 26, 6),
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        );
+
+        final roundtripped = roundtrip(original) as DayDirectiveEntity;
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped.commitments, isEmpty);
+        expect(roundtripped.capacityBudget, isNull);
+        expect(roundtripped.carryOver, isEmpty);
+        expect(roundtripped.constraints, isEmpty);
+        expect(roundtripped.attentionNotes, isEmpty);
+      });
+
+      test('DayStatusEventEntity roundtrips typed status and reasons', () {
+        final original = AgentDomainEntity.dayStatusEvent(
+          id: 'day_status:dayplan-2026-05-25:event-1',
+          agentId: 'day_agent:dayplan-2026-05-25',
+          dayId: 'dayplan-2026-05-25',
+          status: DayStatusKind.attentionNeeded,
+          reasons: const [
+            DayStatusReason.overCommitted,
+            DayStatusReason.directiveUnsatisfiable,
+          ],
+          note:
+              'Two directive commitments no longer fit after the 14:00 '
+              'meeting landed.',
+          raisedAt: DateTime(2026, 5, 25, 14, 30),
+          createdAt: createdAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final event = roundtripped as DayStatusEventEntity;
+        expect(event.toJson()['runtimeType'], equals('dayStatusEvent'));
+        expect(event.status, DayStatusKind.attentionNeeded);
+        expect(event.reasons, hasLength(2));
       });
 
       test('AttentionRequestEntity roundtrips bounded bid fields', () {

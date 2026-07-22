@@ -134,6 +134,16 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
     expected: _updated,
   ),
   (
+    label: 'dayDirective',
+    entity: makeTestDayDirective(createdAt: _created, updatedAt: _updated),
+    expected: _updated,
+  ),
+  (
+    label: 'dayStatusEvent',
+    entity: makeTestDayStatusEvent(createdAt: _created),
+    expected: _created,
+  ),
+  (
     label: 'attentionRequest',
     entity: AgentDomainEntity.attentionRequest(
       id: 'attention-request-1',
@@ -294,7 +304,7 @@ void main() {
     test('covers every AgentDomainEntity variant', () {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
-      expect(_cases.length, 30);
+      expect(_cases.length, 32);
     });
   });
 }

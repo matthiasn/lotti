@@ -589,6 +589,126 @@ Map<String, dynamic> _$DaySummaryEntityToJson(DaySummaryEntity instance) =>
       'runtimeType': instance.$type,
     };
 
+DayDirectiveEntity _$DayDirectiveEntityFromJson(Map<String, dynamic> json) =>
+    DayDirectiveEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      dayId: json['dayId'] as String,
+      planDate: DateTime.parse(json['planDate'] as String),
+      directiveRevisionId: json['directiveRevisionId'] as String,
+      issuedAt: DateTime.parse(json['issuedAt'] as String),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      commitments:
+          (json['commitments'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    DayDirectiveCommitment.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <DayDirectiveCommitment>[],
+      capacityBudget: json['capacityBudget'] == null
+          ? null
+          : DayCapacityBudget.fromJson(
+              json['capacityBudget'] as Map<String, dynamic>,
+            ),
+      carryOver:
+          (json['carryOver'] as List<dynamic>?)
+              ?.map((e) => DayCarryOverItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <DayCarryOverItem>[],
+      constraints:
+          (json['constraints'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      attentionNotes:
+          (json['attentionNotes'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$DayDirectiveEntityToJson(DayDirectiveEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'dayId': instance.dayId,
+      'planDate': instance.planDate.toIso8601String(),
+      'directiveRevisionId': instance.directiveRevisionId,
+      'issuedAt': instance.issuedAt.toIso8601String(),
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'commitments': instance.commitments,
+      'capacityBudget': instance.capacityBudget,
+      'carryOver': instance.carryOver,
+      'constraints': instance.constraints,
+      'attentionNotes': instance.attentionNotes,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+DayStatusEventEntity _$DayStatusEventEntityFromJson(
+  Map<String, dynamic> json,
+) => DayStatusEventEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  dayId: json['dayId'] as String,
+  status: $enumDecode(_$DayStatusKindEnumMap, json['status']),
+  raisedAt: DateTime.parse(json['raisedAt'] as String),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  reasons:
+      (json['reasons'] as List<dynamic>?)
+          ?.map((e) => $enumDecode(_$DayStatusReasonEnumMap, e))
+          .toList() ??
+      const <DayStatusReason>[],
+  note: json['note'] as String? ?? '',
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$DayStatusEventEntityToJson(
+  DayStatusEventEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'dayId': instance.dayId,
+  'status': _$DayStatusKindEnumMap[instance.status]!,
+  'raisedAt': instance.raisedAt.toIso8601String(),
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'reasons': instance.reasons.map((e) => _$DayStatusReasonEnumMap[e]!).toList(),
+  'note': instance.note,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$DayStatusKindEnumMap = {
+  DayStatusKind.onTrack: 'onTrack',
+  DayStatusKind.attentionNeeded: 'attentionNeeded',
+  DayStatusKind.dayClosed: 'dayClosed',
+};
+
+const _$DayStatusReasonEnumMap = {
+  DayStatusReason.overCommitted: 'overCommitted',
+  DayStatusReason.directiveUnsatisfiable: 'directiveUnsatisfiable',
+  DayStatusReason.userDivergence: 'userDivergence',
+  DayStatusReason.processingBlocked: 'processingBlocked',
+};
+
 AttentionRequestEntity _$AttentionRequestEntityFromJson(
   Map<String, dynamic> json,
 ) => AttentionRequestEntity(

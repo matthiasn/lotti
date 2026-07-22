@@ -33,6 +33,85 @@ void main() {
     await db.close();
   });
 
+  group('getDayStatusEventsSince', () {
+    test(
+      'returns events strictly after the watermark, oldest first, '
+      'across all day-owner agents',
+      () async {
+        final watermark = DateTime(2026, 3, 15, 6);
+        await core.upsertEntity(
+          makeTestDayStatusEvent(
+            id: 'day_status:dayplan-2026-03-14:old',
+            agentId: 'daily_os_planner',
+            dayId: 'dayplan-2026-03-14',
+            createdAt: watermark.subtract(const Duration(hours: 2)),
+          ),
+        );
+        await core.upsertEntity(
+          makeTestDayStatusEvent(
+            id: 'day_status:dayplan-2026-03-15:later',
+            agentId: 'day_agent:dayplan-2026-03-15',
+            dayId: 'dayplan-2026-03-15',
+            createdAt: watermark.add(const Duration(hours: 5)),
+          ),
+        );
+        await core.upsertEntity(
+          makeTestDayStatusEvent(
+            id: 'day_status:dayplan-2026-03-15:earlier',
+            agentId: 'day_agent:dayplan-2026-03-15',
+            dayId: 'dayplan-2026-03-15',
+            createdAt: watermark.add(const Duration(hours: 1)),
+          ),
+        );
+
+        final events = await queries.getDayStatusEventsSince(watermark);
+
+        expect(
+          [for (final event in events) event.id],
+          [
+            'day_status:dayplan-2026-03-15:earlier',
+            'day_status:dayplan-2026-03-15:later',
+          ],
+          reason:
+              'Pre-watermark events are excluded; the rest come back '
+              'oldest first regardless of which agent raised them.',
+        );
+      },
+    );
+
+    test('excludes deleted events and honors the limit', () async {
+      final watermark = DateTime(2026, 3, 15, 6);
+      await core.upsertEntity(
+        makeTestDayStatusEvent(
+          id: 'day_status:dayplan-2026-03-15:deleted',
+          createdAt: watermark.add(const Duration(minutes: 30)),
+          deletedAt: watermark.add(const Duration(hours: 2)),
+        ),
+      );
+      for (var i = 1; i <= 3; i++) {
+        await core.upsertEntity(
+          makeTestDayStatusEvent(
+            id: 'day_status:dayplan-2026-03-15:live-$i',
+            createdAt: watermark.add(Duration(hours: i)),
+          ),
+        );
+      }
+
+      final events = await queries.getDayStatusEventsSince(
+        watermark,
+        limit: 2,
+      );
+
+      expect(
+        [for (final event in events) event.id],
+        [
+          'day_status:dayplan-2026-03-15:live-1',
+          'day_status:dayplan-2026-03-15:live-2',
+        ],
+      );
+    });
+  });
+
   Future<void> seedReportWithHead({
     required String agentId,
     required String reportId,
