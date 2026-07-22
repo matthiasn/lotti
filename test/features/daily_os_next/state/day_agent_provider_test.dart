@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     hide dayAgentProvider;
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
@@ -596,12 +597,27 @@ void main() {
   group('dayAgentIsRunningProvider', () {
     final date = DateTime(2026, 5, 25, 9);
 
-    ProviderContainer runningContainer(Set<String> runningIds) {
+    /// [perDayRunningIds] drives the per-day-agent check; [coordinatorWorkspaceKey]
+    /// (when non-null) is the single `day:<dayId>` workspace the coordinator
+    /// is currently running a wake for — `null` means the coordinator isn't
+    /// running at all.
+    ProviderContainer runningContainer({
+      Set<String> perDayRunningIds = const {},
+      String? coordinatorWorkspaceKey,
+    }) {
       final container = ProviderContainer(
         overrides: [
           agentIsRunningProvider.overrideWith(
-            (ref, agentId) => Stream.value(runningIds.contains(agentId)),
+            (ref, agentId) => Stream.value(perDayRunningIds.contains(agentId)),
           ),
+          agentIsRunningInWorkspaceProvider.overrideWith((ref, key) {
+            final (agentId, workspaceKey) = key;
+            final matches =
+                agentId == dailyOsPlannerAgentId &&
+                coordinatorWorkspaceKey != null &&
+                workspaceKey == coordinatorWorkspaceKey;
+            return Stream.value(matches);
+          }),
         ],
       );
       addTearDown(container.dispose);
@@ -616,27 +632,44 @@ void main() {
     }
 
     test('true while the per-day agent for the date is running', () async {
-      final container = runningContainer({perDayAgentIdForDate(date)});
+      final container = runningContainer(
+        perDayRunningIds: {perDayAgentIdForDate(date)},
+      );
       expect(await read(container), isTrue);
     });
 
     test('true while the coordinator is running (pre-cutover days)', () async {
-      final container = runningContainer({dailyOsPlannerAgentId});
+      final container = runningContainer(
+        coordinatorWorkspaceKey: dayAgentWorkspaceKey(dayAgentIdForDate(date)),
+      );
       expect(await read(container), isTrue);
     });
 
     test(
       "false when only a different day's agent is running",
       () async {
-        final container = runningContainer({
-          perDayAgentIdForDate(DateTime(2026, 5, 26)),
-        });
+        final container = runningContainer(
+          perDayRunningIds: {perDayAgentIdForDate(DateTime(2026, 5, 26))},
+        );
+        expect(await read(container), isFalse);
+      },
+    );
+
+    test(
+      "false when the coordinator is running a wake for a different day's "
+      'workspace',
+      () async {
+        final container = runningContainer(
+          coordinatorWorkspaceKey: dayAgentWorkspaceKey(
+            dayAgentIdForDate(DateTime(2026, 5, 26)),
+          ),
+        );
         expect(await read(container), isFalse);
       },
     );
 
     test('false when nothing is running', () async {
-      final container = runningContainer(const {});
+      final container = runningContainer();
       expect(await read(container), isFalse);
     });
   });

@@ -287,8 +287,8 @@ class RealDayAgent implements DayAgentInterface {
     );
     if (plan == null) {
       throw const DayAgentInteractionException(
-        'Failed to enqueue the refine wake. The plan may have been '
-        'deleted — refresh and try again.',
+        'No plan to refine — it may have been deleted. '
+        'Refresh and try again.',
       );
     }
 
@@ -540,7 +540,13 @@ class RealDayAgent implements DayAgentInterface {
     Future<void> checkTerminal() async {
       if (completer.isCompleted) return;
       final job = await outbox.getById(jobId);
-      if (job != null && _isAwaitDone(job)) {
+      // Re-checked after the `await` above: two overlapping invocations
+      // (e.g. the initial call plus a `changes` event, or two rapid
+      // `changes` events) can both pass the guard at the top of this
+      // function before either reaches `getById`, so without this second
+      // check both could observe a terminal job and both call `complete`,
+      // throwing "Bad state: Future already completed".
+      if (!completer.isCompleted && job != null && _isAwaitDone(job)) {
         completer.complete(job);
       }
     }

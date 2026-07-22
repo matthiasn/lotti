@@ -21,6 +21,14 @@ separate.
 
 ### One long-lived planner, explicit day workspaces (ADR 0022)
 
+This section covers the coordinator's own lifecycle (creation, migration,
+inference-setup inheritance) — unchanged and still current. For day
+*resolution* specifically (which identity a given date wakes/reads under),
+this section describes the pre-ADR-0032 model; see "Per-day agents and
+durable draft/refine jobs (ADR 0032)" below for the resolver actually in
+effect today, which supersedes the "resolves the same planner regardless of
+date" claim further down in this section.
+
 The runtime has **one durable coordinator identity** —
 `daily_os_planner` (`dailyOsPlannerAgentId`) — that owns cross-day learning
 and every day predating the ADR 0032 per-day cutover (see next section). The
@@ -63,8 +71,9 @@ Runtime behavior:
   `daily_os_planner` (via `AgentService.createAgent(agentId: ...)`), so two
   devices that independently create it converge through LWW instead of
   diverging into two identities. It is idempotent — a second call returns the
-  existing planner. `getDayAgentForDate(date)` resolves the same planner
-  regardless of date (it does not key on any day slot).
+  existing planner. Under ADR 0022 alone, `getDayAgentForDate(date)` resolved
+  the same planner regardless of date (it did not key on any day slot); ADR
+  0032 changed this for day resolution specifically — see below.
 - The planner pins **no** `activeDayId` slot and writes **no** per-day
   `agent_day` link. A wake's day is carried explicitly by its trigger tokens
   (`planning_day:<dayId>`, plus the mode tokens `drafting:` / `refine:` and

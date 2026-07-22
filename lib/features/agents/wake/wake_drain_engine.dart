@@ -134,7 +134,10 @@ extension WakeDrainEngine on WakeOrchestrator {
             continue;
           }
 
-          final acquired = await runner.tryAcquire(job.agentId);
+          final acquired = await runner.tryAcquire(
+            job.agentId,
+            workspaceKey: job.workspaceKey,
+          );
           if (!acquired) {
             // Keep same-agent work queued while its active wake executes. The
             // active wake uses queue visibility to decide whether to arm its

@@ -113,10 +113,11 @@ class DayAgentJobExecutor {
     try {
       agentId = await resolveAgentId(job.dayId);
     } on Object catch (e) {
-      return DayAgentJobFailed(
-        failureClass: DayProcessingFailureClass.setupRequired,
-        error: e.toString(),
-      );
+      // Routed through the same classifier as a wake failure rather than a
+      // blanket `setupRequired`: a transient lookup/I/O failure here should
+      // still get the outbox's retry behavior instead of being treated as a
+      // terminal setup problem.
+      return _classifyFailure(job, e);
     }
 
     final runKey = enqueueWake((agentId: agentId, dayId: job.dayId, job: job));

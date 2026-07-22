@@ -120,6 +120,14 @@ class DayAgentService {
       final duplicate = await agentService.getAgent(agentId);
       if (duplicate != null) return duplicate;
 
+      // Re-checked inside the transaction: the outer check above can race a
+      // concurrent write that makes the coordinator start owning this day
+      // between that read and this one, so only this check-and-write pair
+      // being atomic actually prevents split ownership.
+      if (await _plannerOwnsDay(planner: planner, dayId: dayId)) {
+        return planner;
+      }
+
       final templateEntity = await repository.getEntity(dayAgentTemplateId);
       if (templateEntity is! AgentTemplateEntity ||
           templateEntity.deletedAt != null ||

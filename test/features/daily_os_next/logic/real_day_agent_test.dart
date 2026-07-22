@@ -545,6 +545,52 @@ void main() {
     );
 
     test(
+      'two overlapping outbox change events for the same terminal job do '
+      'not throw "Future already completed"',
+      () async {
+        const agentId = 'day-agent-race';
+        final dayId = dayAgentIdForDate(_asOf);
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => bench.planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer(
+          (_) async => buildDayPlan(agentId: agentId, dayId: dayId),
+        );
+        when(
+          () => bench.journalDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
+
+        final future = bench.adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
+        );
+        await pumpEventQueue();
+
+        final jobId = DayProcessingOutboxRepository.draftJobId(dayId);
+        // Two change events fired back to back — both listener callbacks
+        // race to `await outbox.getById(jobId)` before either resolves, so
+        // both can observe the job as terminal. Without the re-check
+        // immediately before `completer.complete`, the second one throws.
+        bench.fakeOutbox
+          ..completeJob(jobId)
+          ..completeJob(jobId);
+
+        final result = await future;
+        expect(result.state, DayState.drafted);
+      },
+    );
+
+    test(
       'throws DayAgentInteractionException when the job reaches a terminal '
       'failure',
       () async {

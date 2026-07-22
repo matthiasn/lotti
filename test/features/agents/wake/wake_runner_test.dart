@@ -325,6 +325,40 @@ void main() {
       });
     });
 
+    group('workspaceKeyFor', () {
+      test('returns null for an agent that is not running', () {
+        expect(runner.workspaceKeyFor('agent-cold'), isNull);
+      });
+
+      test(
+        'returns the workspaceKey passed to tryAcquire and clears it on '
+        'release',
+        () {
+          fakeAsync((async) {
+            runner.tryAcquire('agent-1', workspaceKey: 'day:one');
+            async.flushMicrotasks();
+
+            expect(runner.workspaceKeyFor('agent-1'), 'day:one');
+
+            runner.release('agent-1');
+            expect(runner.workspaceKeyFor('agent-1'), isNull);
+          });
+        },
+      );
+
+      test(
+        'defaults to null when tryAcquire is called without a workspaceKey',
+        () {
+          fakeAsync((async) {
+            runner.tryAcquire('agent-1');
+            async.flushMicrotasks();
+
+            expect(runner.workspaceKeyFor('agent-1'), isNull);
+          });
+        },
+      );
+    });
+
     group('dispose', () {
       test('closes the runningAgentIds stream', () {
         fakeAsync((async) {

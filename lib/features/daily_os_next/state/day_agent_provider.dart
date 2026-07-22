@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -91,10 +92,15 @@ final dailyOsPlanDaysProvider = FutureProvider.autoDispose
 /// Whether the agent working the given date's workspace is currently
 /// executing a wake (ADR 0032).
 ///
-/// True when either the per-day agent (`day_agent:<dayId>`) or the
-/// coordinator is running: post-cutover days wake under their per-day
-/// identity, pre-cutover days still wake under the coordinator, and both ids
-/// are deterministic, so the check needs no identity lookup.
+/// True when either the per-day agent (`day_agent:<dayId>`) is running, or
+/// the coordinator is running a wake scoped to this date's `day:<dayId>`
+/// workspace: post-cutover days wake under their per-day identity,
+/// pre-cutover days still wake under the coordinator. The coordinator check
+/// is scoped to this date's workspace key (not just "is the coordinator
+/// running at all") because the coordinator is a single shared agent that
+/// may be busy with a different pre-cutover day — an unscoped check would
+/// report every day as running whenever the coordinator is running any one
+/// of them.
 // ignore: specify_nonobvious_property_types
 final dayAgentIsRunningProvider = Provider.autoDispose.family<bool, DateTime>((
   ref,
@@ -104,7 +110,15 @@ final dayAgentIsRunningProvider = Provider.autoDispose.family<bool, DateTime>((
       ref.watch(agentIsRunningProvider(perDayAgentIdForDate(date))).value ??
       false;
   final coordinatorRunning =
-      ref.watch(agentIsRunningProvider(dailyOsPlannerAgentId)).value ?? false;
+      ref
+          .watch(
+            agentIsRunningInWorkspaceProvider((
+              dailyOsPlannerAgentId,
+              dayAgentWorkspaceKey(dayAgentIdForDate(date)),
+            )),
+          )
+          .value ??
+      false;
   return perDayRunning || coordinatorRunning;
 });
 

@@ -66,8 +66,13 @@ import '../../agents/test_data/template_factories.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 
-  final now = DateTime(2026, 7, 22, 9);
-  final dayDate = DateTime(2026, 7, 22);
+  // Fixed well into the future (rather than tied to whatever "today" is at
+  // test-run time) so drafted blocks never trip the real
+  // `DayAgentPlanWriter.persistDraftPlan` "must not start before current
+  // time" guard, which compares against the real `clock.now()` whenever the
+  // plan's day is today's local day.
+  final now = DateTime(2030, 1, 15, 9);
+  final dayDate = DateTime(2030, 1, 15);
   final dayId = dayAgentIdForDate(dayDate);
 
   late Directory root;

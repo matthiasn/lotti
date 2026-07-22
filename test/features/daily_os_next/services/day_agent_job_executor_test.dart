@@ -214,6 +214,26 @@ void main() {
   });
 
   test(
+    'resolveAgentId throwing a transient (non-setup) error is routed '
+    'through the same classifier as a wake failure, not a blanket '
+    'setupRequired',
+    () async {
+      final executor = buildExecutor(
+        resolveAgentId: (_) async =>
+            throw StateError('day agent lookup timed out'),
+      );
+
+      final outcome = await executor.execute(parseJob());
+
+      expect(outcome, isA<DayAgentJobFailed>());
+      expect(
+        (outcome as DayAgentJobFailed).failureClass,
+        isNot(DayProcessingFailureClass.setupRequired),
+      );
+    },
+  );
+
+  test(
     'enqueueWake receives the resolved agent id and the job',
     () async {
       DayAgentJobWakeRequest? captured;
