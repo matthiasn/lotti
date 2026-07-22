@@ -7,15 +7,25 @@ Usage (from ``tools/tutorial_videos``)::
     python3 -m tutorial_videos build    --scenario create_task_from_audio --locale de
     python3 -m tutorial_videos publish  --scenario create_task_from_audio --locale de
 
+Every command also takes ``--device desktop|mobile`` (default ``desktop``).
+Mobile renders the real app at a phone-shaped window
+(``DEVICE_SIZES['mobile']``, well under the app's 960px desktop breakpoint,
+so it genuinely exercises the mobile bottom-nav layout, not a shrunk
+desktop one). Desktop output keeps its original unsuffixed filename/R2 key
+for backward compatibility; mobile output gets a ``_mobile`` suffix
+(``<scenario>_<locale>_mobile.mp4`` etc.) so both variants coexist.
+
 ``validate`` checks the scenario is buildable for the locale without any
 network access. ``tts`` runs the pre-pass: renders (or reuses cached) clips
 and writes the durations manifest consumed by the Dart harness and the
-compositor. ``build`` runs the full pipeline: TTS pre-pass, then the real
-app under Xvfb driven by `flutter drive` with the virtual microphone and
-screen capture, then OpenMontage composition into the final MP4, then WebVTT
-captions (see ``captions.py``) written alongside it. ``publish`` uploads the
-already-built MP4 and its captions to Cloudflare R2 (see ``publish.py``) and
-prints their public URLs.
+compositor — narration is device-independent, so this manifest is shared by
+the desktop and mobile builds of the same (scenario, locale). ``build`` runs
+the full pipeline: TTS pre-pass, then the real app under Xvfb driven by
+`flutter drive` with the virtual microphone and screen capture, then
+OpenMontage composition into the final MP4, then WebVTT captions (see
+``captions.py``) written alongside it. ``publish`` uploads the already-built
+MP4 and its captions to Cloudflare R2 (see ``publish.py``) and prints their
+public URLs.
 """
 
 from __future__ import annotations
@@ -39,6 +49,33 @@ TOOL_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = TOOL_ROOT.parents[1]
 DEFAULT_OUT = REPO_ROOT / "build" / "tutorial_videos"
 
+# Desktop keeps the original 1920x1080 capture with no filename suffix, so
+# every already-published desktop video stays at its existing R2 key. Mobile
+# is 2x the manual screenshots' logical phone size (402x874,
+# test/features/daily_os_next/screenshot_harness.dart's `proDevice`) so the
+# tutorial video matches the same device shape shown in phone screenshots —
+# well under the app's own 960px isDesktopLayout breakpoint
+# (lib/features/design_system/theme/breakpoints.dart), so it genuinely
+# renders the real mobile bottom-nav UI, not a shrunk desktop layout.
+DEVICE_SIZES = {"desktop": "1920x1080", "mobile": "804x1748"}
+
+# GTK/GDK scale factor per device (GDK_SCALE env var). Xvfb + ffmpeg always
+# capture at DEVICE_SIZES' full physical resolution — but `gtk_window_set_
+# default_size` (linux/runner/my_application.cc's LOTTI_WINDOW_SIZE) takes
+# GTK "application pixels", i.e. the LOGICAL size *before* GDK_SCALE is
+# applied. Without a scale override, mobile's physical 804x1748 window is
+# also its logical size, so Flutter's MediaQuery.sizeOf(context).width is
+# 804 — comfortably past width-based phone breakpoints narrower than
+# `kDesktopBreakpoint` (e.g. bottom sheets vs. centered dialogs below
+# 560px), so those render in their desktop/tablet shape even though the
+# bottom nav (which only checks the 960px breakpoint) looks right. Setting
+# GDK_SCALE=2 alongside a HALVED LOTTI_WINDOW_SIZE keeps the physical/
+# captured resolution at 804x1748 while Flutter sees the real phone logical
+# size (402x874, matching `proDevice`) — the same trick real HiDPI phones
+# use, and the reason `proDevice` itself pairs a 402x874 logical size with
+# devicePixelRatio 3 for its screenshots.
+DEVICE_SCALE = {"desktop": 1, "mobile": 2}
+
 
 def _load(args: argparse.Namespace):
     scenario = load_scenario(
@@ -46,6 +83,12 @@ def _load(args: argparse.Namespace):
     )
     scenario.validate_locale(args.locale)
     return scenario
+
+
+def _scenario_locale(args: argparse.Namespace) -> str:
+    device = getattr(args, "device", "desktop")
+    suffix = "" if device == "desktop" else f"_{device}"
+    return f"{args.scenario}_{args.locale}{suffix}"
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
@@ -85,13 +128,21 @@ def _read_env_pairs(names: list[str]) -> dict[str, str]:
 def cmd_build(args: argparse.Namespace) -> int:
     cmd_tts(args)
     out_dir = Path(args.out_dir)
-    scenario_locale = f"{args.scenario}_{args.locale}"
-    manifest_path = out_dir / f"{scenario_locale}.manifest.json"
+    # Narration is identical regardless of device, so the TTS manifest is
+    # shared across desktop/mobile builds of the same (scenario, locale) —
+    # only the capture/timeline/video/captions are device-specific.
+    manifest_path = out_dir / f"{args.scenario}_{args.locale}.manifest.json"
+    scenario_locale = _scenario_locale(args)
     timeline_path = out_dir / f"{scenario_locale}.timeline.json"
     capture_path = out_dir / f"{scenario_locale}.capture.mkv"
     video_path = out_dir / f"{scenario_locale}.mp4"
 
-    display, size, sink = ":99", "1920x1080", "lotti_tutorial_mic"
+    device = getattr(args, "device", "desktop")
+    size = DEVICE_SIZES[device]
+    scale = DEVICE_SCALE[device]
+    capture_width, capture_height = (int(part) for part in size.split("x"))
+    window_size = f"{capture_width // scale}x{capture_height // scale}"
+    display, sink = ":99", "lotti_tutorial_mic"
     secrets = _read_env_pairs(["MELIOUS_API_KEY", "MELIOUS_BASE_URL"])
 
     with XvfbDisplay(display=display, size=size), VirtualMic(sink_name=sink):
@@ -104,6 +155,10 @@ def cmd_build(args: argparse.Namespace) -> int:
                 "DISPLAY": display,
                 "GDK_BACKEND": "x11",
                 "WAYLAND_DISPLAY": "",
+                # See DEVICE_SCALE's comment: makes Flutter's MediaQuery see
+                # the real phone logical width while Xvfb/ffmpeg still
+                # capture at the full physical resolution.
+                "GDK_SCALE": str(scale),
                 "LOTTI_MANUAL_LOCALE": args.locale,
                 "LOTTI_TUTORIAL_MANIFEST": str(manifest_path),
                 "LOTTI_TUTORIAL_TIMELINE": str(timeline_path),
@@ -111,8 +166,15 @@ def cmd_build(args: argparse.Namespace) -> int:
                 "LOTTI_SCREENSHOT_DIR": str(out_dir),
                 # Honored by linux/runner/my_application.cc: sizes the GTK
                 # window at startup (post-launch resizing is not honored on
-                # the WM-less Xvfb display).
-                "LOTTI_WINDOW_SIZE": size,
+                # the WM-less Xvfb display). GTK's `gtk_window_set_default_
+                # size` takes application (logical) pixels, so this is the
+                # LOGICAL size — physical capture resolution is `size`,
+                # scaled up by GDK_SCALE.
+                "LOTTI_WINDOW_SIZE": window_size,
+                # Read by tutorial_harness.dart's tutorialDeviceIsMobile() so
+                # scenario tests can branch where the real mobile layout
+                # genuinely diverges from desktop (not just window size).
+                "LOTTI_TUTORIAL_DEVICE": device,
             }
             drive = subprocess.run(
                 [
@@ -142,6 +204,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         timeline_path=timeline_path,
         manifest=manifest,
         output=video_path,
+        size=(capture_width, capture_height),
     )
 
     vtt_path = out_dir / f"{scenario_locale}.vtt"
@@ -160,7 +223,7 @@ def cmd_build(args: argparse.Namespace) -> int:
 
 def cmd_publish(args: argparse.Namespace) -> int:
     out_dir = Path(args.out_dir)
-    scenario_locale = f"{args.scenario}_{args.locale}"
+    scenario_locale = _scenario_locale(args)
     video_path = out_dir / f"{scenario_locale}.mp4"
     url = publish_video(
         env_path=REPO_ROOT / ".env",
@@ -192,6 +255,9 @@ def main(argv: list[str] | None = None) -> int:
         p = sub.add_parser(name)
         p.add_argument("--scenario", required=True)
         p.add_argument("--locale", required=True)
+        p.add_argument(
+            "--device", choices=sorted(DEVICE_SIZES), default="desktop"
+        )
         p.add_argument("--out-dir", default=str(DEFAULT_OUT))
         p.set_defaults(handler=handler)
     args = parser.parse_args(argv)

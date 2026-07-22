@@ -23,6 +23,51 @@ Output: `build/tutorial_videos/<scenario>_<locale>.mp4` plus intermediates
 (raw + time-warped capture, narration mix, manifest, timeline, session)
 next to it.
 
+### Desktop vs. mobile
+
+`--device desktop|mobile` (`make ... TUTORIAL_DEVICE=mobile`, default
+`desktop`) picks the captured window size — `DEVICE_SIZES` in
+`tutorial_videos/__main__.py`. Desktop is the original 1920×1080 capture
+with an unsuffixed filename/R2 key (every already-published desktop video
+keeps its existing URL).
+
+Mobile's *physical* capture (Xvfb resolution, ffmpeg `-video_size`, and the
+final MP4) is 804×1748 — sharp output, well under the app's own 960px
+`kDesktopBreakpoint` (`lib/features/design_system/theme/breakpoints.dart`).
+But Flutter's `MediaQuery` doesn't see that: `GDK_SCALE=2` plus a *halved*
+`LOTTI_WINDOW_SIZE` (402×874, matching `proDevice`'s real phone logical
+size) makes Flutter render at the correct real-phone *logical* width, the
+same way a real HiDPI phone reports a smaller logical size than its pixel
+count. This distinction is layout-critical, not cosmetic — width-based
+breakpoints narrower than 960px (e.g. bottom sheets vs. centered dialogs
+below 560px) only render correctly at the true 402px logical width; at
+804px logical they'd render in their desktop/tablet shape even though the
+bottom nav (which only checks 960px) looks right. Output gets a `_mobile`
+suffix (`<scenario>_<locale>_mobile.mp4`). The TTS manifest
+(`<scenario>_<locale>.manifest.json`, no device suffix) is shared between
+both builds of the same (scenario, locale): narration is device-independent,
+so there's no reason to re-synthesize it.
+
+Scenario tests read `LOTTI_TUTORIAL_DEVICE` via
+`tutorial_harness.dart`'s `tutorialDeviceIsMobile()` to branch only where
+mobile and desktop genuinely diverge in the real app — e.g.
+`category_setup` finds the create action by icon (`DesignSystemFloatingActionButton`)
+on mobile vs. by its visible label on desktop's header button; `task_cover_art`
+pops back to the task list with `GlassBackButton` before scrolling it into
+view, since mobile's single-screen stack — unlike desktop's persistent
+split view — doesn't keep the list mounted alongside the open task. Most
+scenarios (`create_task_from_audio`, `task_filters`, `task_coding_prompt`)
+need no changes at all: the bottom nav renders the same real text labels as
+the desktop sidebar, so existing `find.text(...)` finders keep working.
+
+The docs-site `TutorialVideo` component follows the same shared
+`screenshotViewportStore` as `ManualScreenshot`
+(`docs-site/src/components/ManualScreenshot/viewportPreference.mjs`) — one
+mobile/desktop toggle drives both screenshots and videos on a page, and a
+first-time visitor's real device width (`matchMedia`/`innerWidth` against
+the same 960px breakpoint) picks the initial default before any manual
+toggle is stored.
+
 Requirements:
 
 - `.env` at the repo root with `GEMINI_API_KEY`, `MELIOUS_API_KEY`,

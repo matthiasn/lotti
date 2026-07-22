@@ -94,10 +94,11 @@ void main() {
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
     if (tempDir.existsSync()) {
       tempDir.deleteSync(recursive: true);
     }
+    await getIt.reset();
   });
 
   JournalAudio createAudio({

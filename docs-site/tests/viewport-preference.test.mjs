@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import {createScreenshotViewportStore} from '../src/components/ManualScreenshot/viewportPreference.mjs';
 
-function createBrowserWindow(initialViewport) {
+function createBrowserWindow(initialViewport, {innerWidth, matchMedia} = {}) {
   const storage = new Map();
   if (initialViewport !== undefined) {
     storage.set('lotti-manual-screenshot-viewport', initialViewport);
@@ -14,6 +14,7 @@ function createBrowserWindow(initialViewport) {
     addEventListener(type, listener) {
       if (type === 'storage') storageListeners.add(listener);
     },
+    innerWidth,
     localStorage: {
       getItem(key) {
         return storage.get(key) ?? null;
@@ -22,6 +23,7 @@ function createBrowserWindow(initialViewport) {
         storage.set(key, value);
       },
     },
+    matchMedia,
     removeEventListener(type, listener) {
       if (type === 'storage') storageListeners.delete(listener);
     },
@@ -36,6 +38,13 @@ function createBrowserWindow(initialViewport) {
     storedViewport() {
       return storage.get('lotti-manual-screenshot-viewport');
     },
+  };
+}
+
+function matchMediaAt(actualWidth) {
+  return (query) => {
+    const maxWidth = Number(/max-width: (\d+)px/.exec(query)[1]);
+    return {matches: actualWidth <= maxWidth};
   };
 }
 
@@ -75,4 +84,42 @@ test('invalid viewport values cannot enter the global store', () => {
   const window = createBrowserWindow();
   const store = createScreenshotViewportStore(() => window);
   assert.throws(() => store.setViewport('tablet'), /Unknown screenshot viewport/);
+});
+
+test('a first-time visitor on a narrow real device defaults to mobile', () => {
+  const window = createBrowserWindow(undefined, {
+    matchMedia: matchMediaAt(390),
+  });
+  const store = createScreenshotViewportStore(() => window);
+  assert.equal(store.getSnapshot(), 'mobile');
+});
+
+test('a first-time visitor on a wide real device defaults to desktop', () => {
+  const window = createBrowserWindow(undefined, {
+    matchMedia: matchMediaAt(1440),
+  });
+  const store = createScreenshotViewportStore(() => window);
+  assert.equal(store.getSnapshot(), 'desktop');
+});
+
+test('a stored preference wins over real-device detection', () => {
+  const window = createBrowserWindow('desktop', {
+    matchMedia: matchMediaAt(390),
+  });
+  const store = createScreenshotViewportStore(() => window);
+  assert.equal(store.getSnapshot(), 'desktop');
+});
+
+test('falls back to innerWidth when matchMedia is unavailable', () => {
+  const window = createBrowserWindow(undefined, {innerWidth: 1200});
+  const store = createScreenshotViewportStore(() => window);
+  assert.equal(store.getSnapshot(), 'desktop');
+});
+
+test('server snapshot stays mobile regardless of detection', () => {
+  const window = createBrowserWindow(undefined, {
+    matchMedia: matchMediaAt(1440),
+  });
+  const store = createScreenshotViewportStore(() => window);
+  assert.equal(store.getServerSnapshot(), 'mobile');
 });

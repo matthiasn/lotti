@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 
 import '../../test/helpers/manual_screenshot_locale.dart';
 import '../manual_screenshot_utils.dart';
@@ -155,43 +156,51 @@ void main() {
         await driver.tapLikeUser(categoriesTile.first);
         // The nested Settings delegate doesn't update navService.currentPath,
         // so assert on the loaded page's own content instead of the route.
+        //
+        // Desktop shows the labeled "Create category" button in the page
+        // header; mobile keeps only the thumb-reachable FAB (icon, no
+        // visible text) — see DefinitionsListPage.build's `desktop` branch.
         await driver.pumpUntilFound(
-          find.text(
-            localized(
-              en: 'Create category',
-              de: 'Kategorie erstellen',
-              fr: 'Créer une catégorie',
-              it: 'Creare una categoria',
-              es: 'Crear categoría',
-              cs: 'Vytvořit kategorii',
-              nl: 'Categorie aanmaken',
-              ro: 'Creare categorie',
-              pt: 'Criar categoria',
-              da: 'Opret kategori',
-              sv: 'Skapa kategori',
-            ),
-          ),
+          tutorialDeviceIsMobile()
+              ? find.byType(DesignSystemFloatingActionButton)
+              : find.text(
+                  localized(
+                    en: 'Create category',
+                    de: 'Kategorie erstellen',
+                    fr: 'Créer une catégorie',
+                    it: 'Creare una categoria',
+                    es: 'Crear categoría',
+                    cs: 'Vytvořit kategorii',
+                    nl: 'Categorie aanmaken',
+                    ro: 'Creare categorie',
+                    pt: 'Criar categoria',
+                    da: 'Opret kategori',
+                    sv: 'Skapa kategori',
+                  ),
+                ),
         );
       });
 
       await driver.step('create_category', () async {
-        final createButton = find
-            .text(
-              localized(
-                en: 'Create category',
-                de: 'Kategorie erstellen',
-                fr: 'Créer une catégorie',
-                it: 'Creare una categoria',
-                es: 'Crear categoría',
-                cs: 'Vytvořit kategorii',
-                nl: 'Categorie aanmaken',
-                ro: 'Creare categorie',
-                pt: 'Criar categoria',
-                da: 'Opret kategori',
-                sv: 'Skapa kategori',
-              ),
-            )
-            .hitTestable();
+        final createButton = tutorialDeviceIsMobile()
+            ? find.byType(DesignSystemFloatingActionButton).hitTestable()
+            : find
+                  .text(
+                    localized(
+                      en: 'Create category',
+                      de: 'Kategorie erstellen',
+                      fr: 'Créer une catégorie',
+                      it: 'Creare una categoria',
+                      es: 'Crear categoría',
+                      cs: 'Vytvořit kategorii',
+                      nl: 'Categorie aanmaken',
+                      ro: 'Creare categorie',
+                      pt: 'Criar categoria',
+                      da: 'Opret kategori',
+                      sv: 'Skapa kategori',
+                    ),
+                  )
+                  .hitTestable();
         await driver.pumpUntilFound(createButton);
         await driver.tapLikeUser(createButton.first);
 

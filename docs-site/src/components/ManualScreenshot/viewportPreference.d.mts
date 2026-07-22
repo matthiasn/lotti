@@ -9,7 +9,11 @@ export type ScreenshotViewportStore = {
 
 type BrowserWindow = Pick<
   Window,
-  'addEventListener' | 'localStorage' | 'removeEventListener'
+  | 'addEventListener'
+  | 'innerWidth'
+  | 'localStorage'
+  | 'matchMedia'
+  | 'removeEventListener'
 >;
 
 export function createScreenshotViewportStore(

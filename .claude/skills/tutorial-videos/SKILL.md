@@ -12,9 +12,14 @@ it first. This skill is the operational runbook.
 ## Build videos
 
 ```sh
-make tutorial_video TUTORIAL_LOCALE=de     # one locale (~5-8 min)
-make tutorial_videos_all                   # all TUTORIAL_LOCALES
+make tutorial_video TUTORIAL_LOCALE=de                       # one locale (~5-8 min)
+make tutorial_video TUTORIAL_LOCALE=de TUTORIAL_DEVICE=mobile # phone-shaped window, `_mobile`-suffixed output
+make tutorial_videos_all                                     # all TUTORIAL_LOCALES
 ```
+
+`TUTORIAL_DEVICE` (`desktop`|`mobile`, default `desktop`) picks the capture
+window size — see the README's "Desktop vs. mobile" section for the
+breakpoint rationale and the `tutorialDeviceIsMobile()` test hook.
 
 Preconditions (fail fast if missing):
 - `.env` at repo root with `GEMINI_API_KEY`, `MELIOUS_API_KEY`,
@@ -35,15 +40,19 @@ audible at step starts (`volumedetect`), duration ≈ warped timeline total.
 
 ```sh
 make tutorial_video_publish TUTORIAL_SCENARIO=create_task_from_audio TUTORIAL_LOCALE=de
+make tutorial_video_publish TUTORIAL_SCENARIO=create_task_from_audio TUTORIAL_LOCALE=de TUTORIAL_DEVICE=mobile
 ```
 
-Uploads `build/tutorial_videos/<scenario>_<locale>.mp4` to Cloudflare R2 at
-`tutorial-videos/<scenario>_<locale>.mp4` and prints its public r2.dev URL —
+Uploads `build/tutorial_videos/<scenario>_<locale>.mp4` (or, with
+`TUTORIAL_DEVICE=mobile`, `<scenario>_<locale>_mobile.mp4`) to Cloudflare R2
+at the matching `tutorial-videos/...` key and prints its public r2.dev URL —
 this is the URL the docs-site `TutorialVideo` component builds from
-`TUTORIAL_VIDEO_BASE_URL`/`tutorialVideoBaseUrl`. Full one-time Cloudflare
-setup (API token, enabling the bucket's public r2.dev URL) and the `.env`
-variable list are in the README's "Publishing to Cloudflare R2" section —
-read it before the first publish.
+`TUTORIAL_VIDEO_BASE_URL`/`tutorialVideoBaseUrl`. `TUTORIAL_DEVICE` must
+match whatever `--device` the video was built with, or publish will look for
+a file that was never produced. Full one-time Cloudflare setup (API token,
+enabling the bucket's public r2.dev URL) and the `.env` variable list are in
+the README's "Publishing to Cloudflare R2" section — read it before the
+first publish.
 
 `boto3` (needed only by publish, not by build/tts/validate) is not installed
 into the system Python on this host (PEP 668). Either run publish through

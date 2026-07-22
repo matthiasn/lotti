@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The Manual's five walkthrough videos are now available in every
   language Lotti supports** (previously English and German only): French,
   Italian, Spanish, Czech, Dutch, Romanian, Portuguese, Danish, and Swedish.
+- **Manual videos now have a mobile-view variant, matching the existing
+  screenshot toggle.** The same mobile/desktop switch that already
+  controlled screenshots now also switches the walkthrough videos, and
+  first-time visits from a phone or narrow window default both to mobile
+  view automatically; saved viewport preferences continue to take
+  precedence.
 - **Voice captures now survive the app closing before they're parsed.**
   Submitting or retrying a Daily OS capture queues its parsing durably (the
   same restart-safe queue drafting already uses), so backgrounding or killing
