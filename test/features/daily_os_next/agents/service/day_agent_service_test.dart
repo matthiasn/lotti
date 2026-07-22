@@ -478,6 +478,35 @@ void main() {
         expect(record.scheduledAt, DateTime(2026, 5, 26, 6));
       });
 
+      test(
+        'a bootstrap failure is logged and does not break the restore',
+        () async {
+          final planner = identity(id: dailyOsPlannerAgentId);
+          when(
+            () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+          ).thenAnswer((_) async => [planner]);
+          when(
+            () => repository.getAgentState(dailyOsPlannerAgentId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => repository.getEntity(digestRecordId),
+          ).thenThrow(StateError('record store unavailable'));
+
+          // Must complete normally despite the failing bootstrap read.
+          await withClock(Clock.fixed(now), service.restoreSubscriptions);
+
+          verify(
+            () => domainLogger.error(
+              any(),
+              any(),
+              message: 'failed to ensure coordinator digest wake',
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        },
+      );
+
       test('does nothing when no coordinator identity is active', () async {
         when(
           () => agentService.listAgents(lifecycle: AgentLifecycle.active),

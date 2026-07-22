@@ -339,6 +339,33 @@ void main() {
       expect(result.success, isFalse);
       expect(result.output, contains('unknown tool'));
     });
+
+    test('an unexpected error is logged and surfaced as a failure', () async {
+      when(
+        () => agentRepository.getEntity('day_directive:$dayId'),
+      ).thenThrow(StateError('store exploded'));
+
+      final result = await executeIssue({'dayId': dayId});
+
+      expect(result.success, isFalse);
+      expect(result.output, contains('store exploded'));
+      verify(
+        () => domainLogger.error(
+          any(),
+          any(),
+          message: 'day-directive tool failed',
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    });
+
+    test('the exception toString is its tool-facing message', () {
+      expect(
+        const DayAgentDirectiveException('boom').toString(),
+        'boom',
+      );
+    });
   });
 
   group('executeTool raise_day_status', () {

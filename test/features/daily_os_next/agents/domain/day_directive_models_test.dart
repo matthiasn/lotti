@@ -87,6 +87,16 @@ void main() {
       expect(decoded.alreadyScheduledMinutes, 0);
       expect(decoded.energyBands, isEmpty);
     });
+
+    test('equal-content budgets share a hashCode', () {
+      final same = DayCapacityBudget.fromJson(budget.toJson());
+
+      expect(same.hashCode, budget.hashCode);
+      expect(
+        const DayCapacityBudget(availableMinutes: 1).hashCode,
+        isNot(budget.hashCode),
+      );
+    });
   });
 
   group('DayCarryOverItem', () {
@@ -108,11 +118,17 @@ void main() {
       expect(itemBacked.toJson().containsKey('taskId'), isFalse);
     });
 
-    test('equality distinguishes differing reasons', () {
+    test('equality distinguishes differing reasons; equal items share a '
+        'hashCode', () {
       const a = DayCarryOverItem(title: 'X', reason: 'ran out of time');
       const b = DayCarryOverItem(title: 'X', reason: 'user dropped it');
 
       expect(a, isNot(b));
+      expect(a.hashCode, isNot(b.hashCode));
+      expect(
+        a.hashCode,
+        const DayCarryOverItem(title: 'X', reason: 'ran out of time').hashCode,
+      );
     });
   });
 }

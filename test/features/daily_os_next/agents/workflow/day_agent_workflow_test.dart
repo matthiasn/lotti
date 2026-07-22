@@ -1686,6 +1686,14 @@ void main() {
                 availableMinutes: 420,
                 alreadyScheduledMinutes: 60,
               ),
+              carryOver: const [
+                DayCarryOverItem(
+                  title: 'Expense report',
+                  reason: 'Dropped yesterday.',
+                  taskId: 'task-42',
+                ),
+              ],
+              constraints: const ['Protect 12:00-13:00.'],
               attentionNotes: const ['Third heavy commitment this week.'],
             ),
           );
@@ -1703,6 +1711,14 @@ void main() {
           expect(
             (section['capacityBudget'] as Map)['availableMinutes'],
             420,
+          );
+          expect(
+            ((section['carryOver'] as List).single as Map)['taskId'],
+            'task-42',
+          );
+          expect(
+            (section['constraints'] as List).single,
+            'Protect 12:00-13:00.',
           );
           expect(
             (section['attentionNotes'] as List).single,
@@ -1981,6 +1997,42 @@ void main() {
           ).thenAnswer(
             (_) async => makeTestDayDirective(directiveRevisionId: 'rev-t'),
           );
+          when(
+            () => directiveService.directiveForDay('dayplan-2026-05-26'),
+          ).thenAnswer(
+            (_) async => makeTestDayDirective(
+              dayId: 'dayplan-2026-05-26',
+              id: 'day_directive:dayplan-2026-05-26',
+              directiveRevisionId: 'rev-tomorrow',
+            ),
+          );
+          when(
+            () => repository.getAttentionPlanningInputsForWindow(
+              start: any(named: 'start'),
+              end: any(named: 'end'),
+            ),
+          ).thenAnswer(
+            (_) async => AttentionPlanningInputs(
+              claims: [
+                AgentDomainEntity.attentionRequest(
+                      id: 'claim-digest',
+                      agentId: 'task-agent',
+                      kind: AttentionRequestKind.task,
+                      title: 'Tax packet',
+                      categoryId: 'work',
+                      requestedMinutes: 45,
+                      impact: 3,
+                      urgency: 3,
+                      energyFit: AttentionEnergyFit.high,
+                      evidenceRefs: const [],
+                      createdAt: DateTime.utc(2026, 5, 24),
+                      vectorClock: null,
+                    )
+                    as AttentionRequestEntity,
+              ],
+              standingAgreements: const [],
+            ),
+          );
 
           final result = await executeDigest(
             workflow(directiveService: directiveService),
@@ -1999,7 +2051,15 @@ void main() {
             (directives['today'] as Map)['directiveRevisionId'],
             'rev-t',
           );
-          expect(directives['tomorrow'], isNull);
+          expect(
+            (directives['tomorrow'] as Map)['directiveRevisionId'],
+            'rev-tomorrow',
+          );
+          final attentionWindow = digest['attentionWindow'] as Map;
+          expect(
+            ((attentionWindow['claims'] as List).single as Map)['id'],
+            'claim-digest',
+          );
           expect(
             conversationRepository.lastSystemMessage,
             contains('Digest rules'),
@@ -2028,6 +2088,43 @@ void main() {
             rearmed.triggerTokens,
             [dayAgentDigestToken('dayplan-2026-05-26')],
           );
+        },
+      );
+
+      test(
+        'flags truncation when the status-event page fills up',
+        () async {
+          when(
+            () => repository.getMessagesByKind(
+              dailyOsPlannerAgentId,
+              AgentMessageKind.system,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => repository.getDayStatusEventsSince(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              for (var i = 0; i < 50; i++)
+                makeTestDayStatusEvent(
+                  id: 'day_status:$dayId:event-$i',
+                  raisedAt: now.subtract(Duration(minutes: 50 - i)),
+                  createdAt: now.subtract(Duration(minutes: 50 - i)),
+                ),
+            ],
+          );
+
+          final result = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          final digest = sentPrompt().json('digest')! as Map;
+          expect(digest['statusEventsTruncated'], isTrue);
+          expect(digest['statusEvents'], hasLength(50));
         },
       );
 

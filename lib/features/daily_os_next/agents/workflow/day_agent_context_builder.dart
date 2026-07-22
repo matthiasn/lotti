@@ -316,10 +316,18 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       final tomorrowId = dayAgentIdForDate(
         DateTime(dayDate.year, dayDate.month, dayDate.day + 1),
       );
+      // The watermark advances to the digest's OWN completion milestone —
+      // never to the last returned row — so the digest is an advisory
+      // distillation, not an exactly-once queue; equal-timestamp rows at a
+      // page boundary cannot be skipped by the watermark. The one real
+      // hazard is wholesale truncation past [_digestStatusEventLimit]: the
+      // rendered section says so explicitly instead of silently reading as
+      // "this was everything".
       final statusEvents = await agentRepository.getDayStatusEventsSince(
         since,
-        limit: 50,
+        limit: _digestStatusEventLimit,
       );
+      final truncated = statusEvents.length >= _digestStatusEventLimit;
       final todayDirective = await directiveService!.directiveForDay(
         wakeContext.dayId,
       );
@@ -339,6 +347,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         'since': since.toIso8601String(),
         'todayDayId': wakeContext.dayId,
         'tomorrowDayId': tomorrowId,
+        if (truncated) 'statusEventsTruncated': true,
         'statusEvents': [
           for (final event in statusEvents)
             {
@@ -367,6 +376,12 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       return null;
     }
   }
+
+  /// Cap on status events rendered into one digest. Escalations are rare by
+  /// contract (one per wake, typed reasons only), so hitting this means
+  /// something is systemically wrong — which the `statusEventsTruncated`
+  /// marker surfaces to the model rather than hiding.
+  static const _digestStatusEventLimit = 50;
 
   /// The newest digest watermark: the coordinator's most recent
   /// `dailyWakeCompleted` milestone, falling back to 48h ago for the first

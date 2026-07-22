@@ -45,12 +45,12 @@ class DayAgentStatusChip extends ConsumerWidget {
         Icons.priority_high_rounded,
         messages.dailyOsNextDayAgentStatusAttention,
       ),
-      DayAgentPersonaState.celebrating => (
+      // idle returned above, so the remaining case is celebrating.
+      _ => (
         tokens.colors.alert.success.defaultColor,
         Icons.celebration_outlined,
         messages.dailyOsNextDayAgentStatusDayClosed,
       ),
-      DayAgentPersonaState.idle => throw StateError('unreachable'),
     };
     final tokenSpend = ref.watch(dayAgentTokenSpendProvider(date)).value;
     final tooltip = tokenSpend == null

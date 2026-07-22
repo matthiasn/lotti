@@ -333,7 +333,9 @@ sequenceDiagram
   table — and renders `<day_directive>` in the byte-stable prompt prefix
   (after `<knowledge_index>`). The drafting contract makes it **binding**:
   every commitment is placed, traded away in a diff naming the collision, or
-  escalated via `raise_day_status(directiveUnsatisfiable)`; requested minutes
+  escalated via `raise_day_status` with `status: attentionNeeded` and
+  `directiveUnsatisfiable` among its `reasons` (the tool also requires the
+  wake's own `dayId`); requested minutes
   reconcile against the capacity budget before drafting.
 - **Upward — `DayStatusEventEntity`** (`day_status:<dayId>:<uuid>`):
   append-only typed events (`onTrack | attentionNeeded(reasons) |
@@ -364,6 +366,25 @@ sequenceDiagram
 `DayAgentStatusChip` when the day's agent has something to say: `working`
 (a wake for this day is executing), `attention` (newest status event is
 `attentionNeeded`), or `celebrating` (`dayClosed`) — idle renders nothing.
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> working: wake for this day starts
+  working --> idle: wake ends, no newer status event
+  working --> attention: wake ends, newest event attentionNeeded
+  working --> celebrating: wake ends, newest event dayClosed
+  attention --> working: wake for this day starts
+  celebrating --> working: wake for this day starts
+  attention --> celebrating: newer dayClosed event
+  celebrating --> attention: newer attentionNeeded event
+  note right of working
+    A running wake always wins;
+    otherwise the NEWEST status
+    event decides (onTrack or
+    none means idle).
+  end note
+```
 The chip's tooltip adds the per-day token spend for per-day identities
 (coordinator-owned days show none: the coordinator's lifetime aggregate
 would misattribute other days), and tapping it opens the agent internals —
