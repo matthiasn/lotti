@@ -16,7 +16,6 @@ PODS:
   - Flutter (1.0.0)
   - flutter_image_compress_common (1.0.0):
     - Flutter
-    - Mantle
     - SDWebImage
     - SDWebImageWebPCoder
   - flutter_keyboard_visibility_temp_fork (0.0.1):
@@ -68,9 +67,6 @@ PODS:
   - location (8.0.1):
     - Flutter
     - FlutterMacOS
-  - Mantle (2.2.0):
-    - Mantle/extobjc (= 2.2.0)
-  - Mantle/extobjc (2.2.0)
   - media_kit_libs_ios_audio (1.0.4):
     - Flutter
   - mobile_scanner (7.0.0):
@@ -191,7 +187,6 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - libwebp
-    - Mantle
     - ObjectBox
     - onnxruntime-c
     - onnxruntime-objc
@@ -288,7 +283,7 @@ SPEC CHECKSUMS:
   device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
   file_selector_ios: ec57ec07954363dd730b642e765e58f199bb621a
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  flutter_image_compress_common: 1697a328fd72bfb335507c6bca1a65fa5ad87df1
+  flutter_image_compress_common: 11d5dcfb36f4ded92320bfa896261813a073240e
   flutter_keyboard_visibility_temp_fork: 95b2d534bacf6ac62e7fcbe5c2a9e2c2a17ce06f
   flutter_lame: bee3d284f5ca264d3ab4c0c898ce219ddfeba03d
   flutter_local_notifications: 643a3eda1ce1c0599413ca31672536d423dee214
@@ -305,7 +300,6 @@ SPEC CHECKSUMS:
   just_waveform: be2cb6dec86096cb972bf8b73c893fe16bf1cff4
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
   location: 45c20040d0ccac3cb109821a9e7f2d39c468988c
-  Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
   media_kit_libs_ios_audio: 905e6323b72e65c63ab9262b2e473f52c024a3a8
   mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
   ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
@@ -330,6 +324,6 @@ SPEC CHECKSUMS:
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
 
-PODFILE CHECKSUM: 635607a61d3b29e64400ee5e7f0359dd94a3c254
+PODFILE CHECKSUM: 69594996206a85b34c83697f669217c2aa4370b7
 
 COCOAPODS: 1.16.2

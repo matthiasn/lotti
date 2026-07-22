@@ -2,7 +2,7 @@
 
 ## Running tests locally
 
-- Use `fvm` for every Flutter command — `.fvmrc` pins the version CI uses (currently 3.44.1). Running with a different local SDK can make a test pass locally and fail in CI (or vice versa).
+- Use `fvm` for every Flutter command — `.fvmrc` pins the version CI uses (currently 3.44.7). Running with a different local SDK can make a test pass locally and fail in CI (or vice versa).
 - Iterate on a single file with `fvm flutter test test/path/foo_test.dart` (optionally `--plain-name '<test name>'`). Run targeted files, not the whole suite — the full run is slow.
 - **Never pass `--coverage` to an ad-hoc `flutter test <file>` run.** It rewrites the shared `coverage/lcov.info` with only that file's data, clobbering a full-suite report someone else may be relying on. Generate coverage only through the `make` targets (`make test` / `make coverage` / `make coverage_standard`), which manage `coverage/` as a unit.
 - Prefer `tester.pump(duration)` over `tester.pumpAndSettle()` (10s default timeout → hangs if an animation never settles). Never pass `pumpAndSettle` a duration > 1s.
