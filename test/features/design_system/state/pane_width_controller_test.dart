@@ -662,4 +662,73 @@ void main() {
       expect(scaled, lessThanOrEqualTo(maxListPaneWidth));
     });
   });
+
+  group('resolvedPaneWidth', () {
+    test(
+      'below the reference screen width, onDrag forwards the raw delta '
+      'unchanged — displayed width equals the stored width, so no '
+      'adjustment is needed',
+      () {
+        double? forwarded;
+        final resolved = resolvedPaneWidth(
+          storedWidth: defaultSidebarWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: 1280,
+          onDelta: (delta) => forwarded = delta,
+        );
+
+        expect(resolved.width, defaultSidebarWidth);
+        resolved.onDrag(12);
+        expect(forwarded, 12);
+      },
+    );
+
+    test(
+      'above the reference screen width, onDrag adjusts the raw delta by '
+      '(displayed - stored) so the divider never desyncs from the pointer '
+      'on the first drag frame after large-screen scaling',
+      () {
+        double? forwarded;
+        final resolved = resolvedPaneWidth(
+          storedWidth: defaultSidebarWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: 1920,
+          onDelta: (delta) => forwarded = delta,
+        );
+
+        expect(resolved.width, greaterThan(defaultSidebarWidth));
+        resolved.onDrag(10);
+        expect(
+          forwarded,
+          closeTo(resolved.width + 10 - defaultSidebarWidth, 0.001),
+        );
+      },
+    );
+
+    test(
+      'once the stored width has been user-adjusted, onDrag forwards the '
+      'raw delta unchanged — scaledPaneWidth no longer scales, so displayed '
+      'and stored are identical regardless of screen size',
+      () {
+        const userWidth = 275.0;
+        double? forwarded;
+        final resolved = resolvedPaneWidth(
+          storedWidth: userWidth,
+          flatDefault: defaultSidebarWidth,
+          minValue: minSidebarWidth,
+          maxValue: maxSidebarWidth,
+          screenWidth: 4000,
+          onDelta: (delta) => forwarded = delta,
+        );
+
+        expect(resolved.width, userWidth);
+        resolved.onDrag(-5);
+        expect(forwarded, -5);
+      },
+    );
+  });
 }

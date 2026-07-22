@@ -61,7 +61,7 @@ junit_upload:
 
 .PHONY: integration_test
 integration_test:
-	 $(FLUTTER_CMD) test integration_test
+	 $(FLUTTER_CMD) test integration_test --exclude-tags tutorial-video
 
 .PHONY: clean
 clean:
@@ -417,6 +417,7 @@ fd_snapshot:
 # Requires: .env with GEMINI_API_KEY/MELIOUS_API_KEY/MELIOUS_BASE_URL, and a
 # pinned ../OpenMontage checkout (see tools/tutorial_videos/config/openmontage.pin).
 TUTORIAL_SCENARIO ?= create_task_from_audio
+TUTORIAL_LOCALE ?= en
 TUTORIAL_LOCALES ?= en de
 
 .PHONY: tutorial_video

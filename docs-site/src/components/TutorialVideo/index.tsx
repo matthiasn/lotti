@@ -2,7 +2,7 @@ import React, {useMemo} from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 
 import styles from './styles.module.css';
-import {tutorialVideoSource} from './videoSource.mjs';
+import {tutorialCaptionsSource, tutorialVideoSource} from './videoSource.mjs';
 
 type Props = {
   title: string;
@@ -26,6 +26,10 @@ export default function TutorialVideo({
     () => tutorialVideoSource({scenario, locale: currentLocale, videoBaseUrl}),
     [scenario, currentLocale, videoBaseUrl],
   );
+  const captionsSrc = useMemo(
+    () => tutorialCaptionsSource({scenario, locale: currentLocale, videoBaseUrl}),
+    [scenario, currentLocale, videoBaseUrl],
+  );
 
   return (
     <figure className={styles.figure} data-scenario={scenario}>
@@ -37,6 +41,13 @@ export default function TutorialVideo({
         preload="metadata"
         src={src}
       >
+        <track
+          default
+          kind="captions"
+          label={title}
+          src={captionsSrc}
+          srcLang={currentLocale}
+        />
         {title}
       </video>
       {caption ? <figcaption className={styles.caption}>{caption}</figcaption> : null}

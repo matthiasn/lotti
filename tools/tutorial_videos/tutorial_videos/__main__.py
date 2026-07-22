@@ -12,9 +12,10 @@ network access. ``tts`` runs the pre-pass: renders (or reuses cached) clips
 and writes the durations manifest consumed by the Dart harness and the
 compositor. ``build`` runs the full pipeline: TTS pre-pass, then the real
 app under Xvfb driven by `flutter drive` with the virtual microphone and
-screen capture, then OpenMontage composition into the final MP4. ``publish``
-uploads an already-built MP4 to Cloudflare R2 (see ``publish.py``) and prints
-its public URL.
+screen capture, then OpenMontage composition into the final MP4, then WebVTT
+captions (see ``captions.py``) written alongside it. ``publish`` uploads the
+already-built MP4 and its captions to Cloudflare R2 (see ``publish.py``) and
+prints their public URLs.
 """
 
 from __future__ import annotations
@@ -26,8 +27,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from .captions import build_vtt
 from .compose import ComposeError, compose_video
-from .publish import publish_video
+from .publish import PublishError, publish_video
 from .scenario import ScenarioError, load_scenario
 from .session import ScreenCapture, SessionError, VirtualMic, XvfbDisplay
 from .tts.base import load_voices, render_scenario_clips
@@ -141,19 +143,40 @@ def cmd_build(args: argparse.Namespace) -> int:
         manifest=manifest,
         output=video_path,
     )
+
+    vtt_path = out_dir / f"{scenario_locale}.vtt"
+    vtt_path.write_text(
+        build_vtt(
+            scenario=_load(args),
+            locale=args.locale,
+            timeline=json.loads(timeline_path.read_text()),
+            manifest=manifest,
+        )
+    )
+
     print(f"OK: {video_path}")
     return 0
 
 
 def cmd_publish(args: argparse.Namespace) -> int:
     out_dir = Path(args.out_dir)
-    video_path = out_dir / f"{args.scenario}_{args.locale}.mp4"
+    scenario_locale = f"{args.scenario}_{args.locale}"
+    video_path = out_dir / f"{scenario_locale}.mp4"
     url = publish_video(
         env_path=REPO_ROOT / ".env",
         video_path=video_path,
-        key=f"tutorial-videos/{args.scenario}_{args.locale}.mp4",
+        key=f"tutorial-videos/{scenario_locale}.mp4",
     )
     print(f"OK: {url}")
+
+    vtt_path = out_dir / f"{scenario_locale}.vtt"
+    if vtt_path.is_file():
+        caption_url = publish_video(
+            env_path=REPO_ROOT / ".env",
+            video_path=vtt_path,
+            key=f"tutorial-videos/{scenario_locale}.vtt",
+        )
+        print(f"OK: {caption_url}")
     return 0
 
 
@@ -176,6 +199,7 @@ def main(argv: list[str] | None = None) -> int:
         return args.handler(args)
     except (
         ComposeError,
+        PublishError,
         ScenarioError,
         SessionError,
         FileNotFoundError,

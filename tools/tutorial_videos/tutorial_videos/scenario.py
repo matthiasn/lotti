@@ -116,9 +116,16 @@ def load_scenario(path: Path) -> Scenario:
     if sum(step.dictation for step in steps) > 1:
         raise ScenarioError(f"{path}: at most one dictation step is allowed")
 
+    dictionary_raw = raw.get("dictionary") or {}
+    for locale, terms in dictionary_raw.items():
+        if not isinstance(terms, list):
+            raise ScenarioError(
+                f"{path}: dictionary[{locale!r}] must be a list of terms"
+            )
+
     return Scenario(
         name=name,
         title=dict(raw.get("title") or {}),
-        dictionary={k: list(v) for k, v in (raw.get("dictionary") or {}).items()},
+        dictionary={k: list(v) for k, v in dictionary_raw.items()},
         steps=steps,
     )

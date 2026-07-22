@@ -124,7 +124,7 @@ Integration rules:
 
 - Our `compose.py` calls OpenMontage's Python tools **directly and headlessly**; its
   human approval gates are agent-workflow conventions and stay out of the CI path.
-- The OpenMontage checkout is **pinned to a commit** (`config/openmontage.lock`) — the
+- The OpenMontage checkout is **pinned to a commit** (`config/openmontage.pin`) — the
   project has no releases yet.
 - **Determinism is validated** (same inputs rendered twice → identical output) before
   the pipeline relies on it; the fallback is a thin ffmpeg/Remotion composition of our
@@ -161,7 +161,7 @@ flowchart LR
         COMP --> MP4[scenario_locale.mp4]
     end
     subgraph app [Real Linux app under test]
-        APP[flutter test integration_test -d linux\ntutorial harness] -->|paplay into virtual mic| MIC
+        APP[fvm flutter drive -d linux\ntutorial harness] -->|paplay into virtual mic| MIC
         APP -->|emits step timestamps| TL
         APP -->|records via parecord\nfrom virtual mic| MIC
         APP -->|transcription HTTPS| MEL
@@ -180,7 +180,7 @@ sequenceDiagram
     O->>T: render narration + user_voice clips (locale)
     T-->>O: clips + durations manifest
     O->>X: start display, start capture
-    O->>A: flutter test integration_test/tutorial -d linux (env: locale, manifest, timeline path)
+    O->>A: fvm flutter drive -d linux --target=integration_test/tutorial/&lt;scenario&gt;_tutorial_test.dart (env: locale, manifest, timeline path)
     A->>A: seed penguin world, open task
     A->>A: step "record": open modal, start recording
     A->>A: paplay user_voice clip into virtual mic, stop recording
@@ -233,7 +233,7 @@ sequenceDiagram
 
 ## Project structure
 
-```
+```text
 tools/tutorial_videos/
   README.md
   pyproject.toml            # google-genai, pyyaml; stdlib otherwise
@@ -243,7 +243,7 @@ tools/tutorial_videos/
     tts/base.py  tts/gemini.py
     session/xvfb.py  session/virtual_mic.py  session/capture.py
     compose.py            # OpenMontage wrapper
-  config/openmontage.lock # pinned OpenMontage commit
+  config/openmontage.pin # pinned OpenMontage commit
   config/
     voices.yaml
     scenarios/create_task_from_audio.yaml

@@ -35,13 +35,17 @@ class TasksRootPage extends ConsumerWidget {
     // pane doesn't stay pinned to a laptop-tuned width while the detail
     // pane grows unbounded — see scaledPaneWidth's doc comment. A no-op once
     // the user has dragged the list pane to any other width.
-    final listPaneWidth = scaledPaneWidth(
-      width: paneWidths.listPaneWidth,
+    final resolvedListPane = resolvedPaneWidth(
+      storedWidth: paneWidths.listPaneWidth,
       flatDefault: defaultListPaneWidth,
       minValue: minListPaneWidth,
       maxValue: maxListPaneWidth,
       screenWidth: MediaQuery.sizeOf(context).width,
+      onDelta: ref
+          .read(paneWidthControllerProvider.notifier)
+          .updateListPaneWidth,
     );
+    final listPaneWidth = resolvedListPane.width;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -57,15 +61,7 @@ class TasksRootPage extends ConsumerWidget {
           currentValue: listPaneWidth,
           minValue: minListPaneWidth,
           maxValue: maxListPaneWidth,
-          // Rewritten so the divider always lands on (displayed position +
-          // delta) — see the matching comment on the sidebar's
-          // ResizableDivider in beamer_app.dart for why a raw delta would
-          // desync on the first drag frame after large-screen scaling.
-          onDrag: (delta) => ref
-              .read(paneWidthControllerProvider.notifier)
-              .updateListPaneWidth(
-                (listPaneWidth + delta) - paneWidths.listPaneWidth,
-              ),
+          onDrag: resolvedListPane.onDrag,
         ),
         detailPane: ValueListenableBuilder<List<String>>(
           valueListenable: getIt<NavService>().desktopTaskDetailStack,

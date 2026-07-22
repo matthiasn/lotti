@@ -60,12 +60,21 @@ class XvfbDisplay:
             if self._process.poll() is not None:
                 break
             time.sleep(0.2)
+        self._process.terminate()
+        try:
+            self._process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            self._process.kill()
         raise SessionError(f"Xvfb failed to come up on {self.display}")
 
     def __exit__(self, *_exc: object) -> None:
         if self._process is not None:
             self._process.terminate()
-            self._process.wait(timeout=10)
+            try:
+                self._process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self._process.kill()
+                self._process.wait(timeout=5)
 
 
 class VirtualMic:
@@ -87,7 +96,14 @@ class VirtualMic:
                 "sink_properties=device.description=LottiTutorialMic",
             ]
         )
-        _run(["pactl", "set-default-source", f"{self.sink_name}.monitor"])
+        try:
+            _run(["pactl", "set-default-source", f"{self.sink_name}.monitor"])
+        except SessionError:
+            subprocess.run(
+                ["pactl", "unload-module", self._module_id], check=False
+            )
+            self._module_id = None
+            raise
         return self
 
     def __exit__(self, *_exc: object) -> None:

@@ -15,6 +15,7 @@
 /// `cloudInferenceRepositoryProvider` — everything else (skill modal,
 /// progress view, image import, automatic cover assignment) is the real
 /// product pipeline (`SkillInferenceRunner.runImageGeneration`).
+@Tags(['tutorial-video'])
 library;
 
 import 'dart:io';

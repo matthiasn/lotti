@@ -28,6 +28,10 @@ ENV_VARS = (
 )
 
 
+class PublishError(RuntimeError):
+    pass
+
+
 def _client(account_id: str, access_key_id: str, secret_access_key: str):
     # Imported lazily so `validate`/`tts`/`build` never require boto3 to be
     # installed — only `publish` does.
@@ -47,6 +51,8 @@ def publish_video(env_path: Path, video_path: Path, key: str) -> str:
     if not video_path.is_file():
         raise FileNotFoundError(f"{video_path} does not exist — build it first")
 
+    from botocore.exceptions import BotoCoreError, ClientError
+
     values = {name: read_env_key(env_path, name) for name in ENV_VARS}
     client = _client(
         values["R2_ACCOUNT_ID"],
@@ -54,10 +60,13 @@ def publish_video(env_path: Path, video_path: Path, key: str) -> str:
         values["R2_SECRET_ACCESS_KEY"],
     )
     content_type = mimetypes.guess_type(video_path.name)[0] or "video/mp4"
-    client.upload_file(
-        str(video_path),
-        values["R2_BUCKET_NAME"],
-        key,
-        ExtraArgs={"ContentType": content_type},
-    )
+    try:
+        client.upload_file(
+            str(video_path),
+            values["R2_BUCKET_NAME"],
+            key,
+            ExtraArgs={"ContentType": content_type},
+        )
+    except (ClientError, BotoCoreError) as err:
+        raise PublishError(f"R2 upload failed for {key}: {err}") from err
     return f"{values['R2_PUBLIC_BASE_URL'].rstrip('/')}/{key}"

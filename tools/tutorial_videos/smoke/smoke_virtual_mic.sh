@@ -50,9 +50,9 @@ wait "$REC_PID" 2>/dev/null || true
 STATS=$(ffmpeg -hide_banner -i "$REC" -af volumedetect -f null - 2>&1 | grep -E 'mean_volume|max_volume')
 echo "$STATS"
 MEAN=$(echo "$STATS" | sed -n 's/.*mean_volume: \(-\{0,1\}[0-9.]*\) dB.*/\1/p')
-if awk "BEGIN{exit !($MEAN > -50)}"; then
+if [[ -n "$MEAN" ]] && awk "BEGIN{exit !($MEAN > -50)}"; then
   echo "PASS: virtual mic loopback carries audio (mean ${MEAN} dB) -> $REC"
 else
-  echo "FAIL: recording is silent (mean ${MEAN} dB)"
+  echo "FAIL: recording is silent or unmeasurable (mean '${MEAN}' dB)"
   exit 1
 fi

@@ -7,6 +7,8 @@
 
 #include <glib/gstdio.h>
 
+#include <cstdio>
+
 #include "audio_converter.h"
 #include "flutter/generated_plugin_registrant.h"
 

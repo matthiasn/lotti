@@ -5,3 +5,4 @@ export type VideoSourceOptions = {
 };
 
 export function tutorialVideoSource(options: VideoSourceOptions): string;
+export function tutorialCaptionsSource(options: VideoSourceOptions): string;

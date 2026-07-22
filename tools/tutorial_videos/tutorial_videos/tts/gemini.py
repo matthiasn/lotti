@@ -62,5 +62,10 @@ class GeminiTts:
         )
         with urllib.request.urlopen(req, timeout=120) as resp:
             payload = json.load(resp)
-        part = payload["candidates"][0]["content"]["parts"][0]
+        candidates = payload.get("candidates") or []
+        if not candidates or not candidates[0].get("content", {}).get("parts"):
+            raise RuntimeError(
+                f"Gemini TTS returned no audio for voice {voice!r}: {payload}"
+            )
+        part = candidates[0]["content"]["parts"][0]
         return _pcm_to_wav(base64.b64decode(part["inlineData"]["data"]))

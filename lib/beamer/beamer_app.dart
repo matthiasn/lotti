@@ -640,13 +640,17 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // sidebar doesn't stay pinned to a laptop-tuned width while the detail
     // pane grows unbounded — see scaledPaneWidth's doc comment. A no-op once
     // the user has dragged the sidebar to any other width.
-    final sidebarWidth = scaledPaneWidth(
-      width: paneWidths.sidebarWidth,
+    final resolvedSidebar = resolvedPaneWidth(
+      storedWidth: paneWidths.sidebarWidth,
       flatDefault: defaultSidebarWidth,
       minValue: minSidebarWidth,
       maxValue: maxSidebarWidth,
       screenWidth: MediaQuery.sizeOf(context).width,
+      onDelta: ref
+          .read(paneWidthControllerProvider.notifier)
+          .updateSidebarWidth,
     );
+    final sidebarWidth = resolvedSidebar.width;
     final isCollapsed = paneWidths.sidebarCollapsed;
     final showSyncIndicator =
         ref.watch(configFlagProvider(showSyncActivityIndicatorFlag)).value ??
@@ -708,17 +712,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             currentValue: sidebarWidth,
             minValue: minSidebarWidth,
             maxValue: maxSidebarWidth,
-            // Rewritten so the divider always lands on (displayed position +
-            // delta): `sidebarWidth` (the rendered, possibly large-screen-
-            // scaled value) can differ from `paneWidths.sidebarWidth` (the
-            // controller's stored value); updateSidebarWidth only takes a
-            // delta relative to the LATTER, so a raw delta would desync the
-            // divider from the pointer on the very first drag frame.
-            onDrag: (delta) => ref
-                .read(paneWidthControllerProvider.notifier)
-                .updateSidebarWidth(
-                  (sidebarWidth + delta) - paneWidths.sidebarWidth,
-                ),
+            onDrag: resolvedSidebar.onDrag,
           ),
           Expanded(
             child: KeyboardFocusRegion(

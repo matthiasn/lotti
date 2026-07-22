@@ -123,7 +123,7 @@ class TtsPrePassTest(unittest.TestCase):
         self.assertEqual(len(engine.calls), 1)
 
     def test_voices_yaml_loads_streams(self):
-        engine_name, model, streams = load_voices(
+        engine_name, _model, streams = load_voices(
             TOOL_ROOT / "config" / "voices.yaml"
         )
         self.assertEqual(engine_name, "gemini")

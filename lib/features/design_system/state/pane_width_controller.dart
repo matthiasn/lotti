@@ -67,6 +67,47 @@ double scaledPaneWidth({
   return scaled.clamp(minValue, maxValue);
 }
 
+/// Bundles [scaledPaneWidth]'s displayed width with an `onDrag` handler ready
+/// to hand a `ResizableDivider`.
+///
+/// The displayed width (screen-scaled) can differ from `storedWidth` (the
+/// controller's raw persisted value), but `onDelta` — the controller's own
+/// delta-relative update method, e.g. `updateSidebarWidth` /
+/// `updateListPaneWidth` — always expects a delta relative to `storedWidth`.
+/// A raw pointer delta would desync the divider from the pointer on the very
+/// first drag frame after scaling, so `onDrag` adjusts it by
+/// `(displayed + delta) - storedWidth` before forwarding to `onDelta`.
+///
+/// Shared by every desktop split-pane host (`beamer_app.dart`,
+/// `dashboards_list_page.dart`, `projects_tab_page.dart`,
+/// `tasks_root_page.dart`) so the scaling + delta-adjustment formula lives in
+/// exactly one place.
+typedef ResolvedPaneWidth = ({
+  double width,
+  void Function(double delta) onDrag,
+});
+
+ResolvedPaneWidth resolvedPaneWidth({
+  required double storedWidth,
+  required double flatDefault,
+  required double minValue,
+  required double maxValue,
+  required double screenWidth,
+  required void Function(double delta) onDelta,
+}) {
+  final width = scaledPaneWidth(
+    width: storedWidth,
+    flatDefault: flatDefault,
+    minValue: minValue,
+    maxValue: maxValue,
+    screenWidth: screenWidth,
+  );
+  return (
+    width: width,
+    onDrag: (delta) => onDelta((width + delta) - storedWidth),
+  );
+}
+
 /// State holding the current widths and collapsed flag for the sidebar, plus
 /// the width for the list pane.
 ///

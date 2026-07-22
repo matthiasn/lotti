@@ -10,3 +10,10 @@ tags:
     description: >-
       Manual local-inference evals that call a local model server and write
       report artifacts. They are skipped unless explicitly enabled.
+  tutorial-video:
+    description: >-
+      Tutorial-video drivers under integration_test/tutorial/ — paced at human
+      speed for screen recording via `fvm flutter drive` (see
+      tools/tutorial_videos/README.md). Not runnable under plain `flutter
+      test` (no window, requires LOTTI_TUTORIAL_MANIFEST/TIMELINE env vars),
+      so excluded from `make integration_test` via `--exclude-tags`.

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1059]
+### Added
+- **Five narrated walkthrough videos are now embedded in the Manual, in
+  English and German.** Creating a task with your voice, generating cover
+  art, turning a coding task into an AI-ready prompt, filtering and saving
+  task views, and setting up a category each have a short captioned video on
+  their Manual page, alongside the existing screenshots.
+
 ## [0.9.1058]
 ### Fixed
 - **Accepting AI suggestions no longer bounces the task page.** Confirming a

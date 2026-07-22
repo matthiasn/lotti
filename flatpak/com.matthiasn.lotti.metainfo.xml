@@ -35,6 +35,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1059" date="2026-07-22">
+      <description>
+        <p>Five narrated walkthrough videos are now embedded in the Manual, in English and German: creating a task with your voice, generating cover art, turning a coding task into an AI-ready prompt, filtering and saving task views, and setting up a category.</p>
+      </description>
+    </release>
     <release version="0.9.1058" date="2026-07-22">
       <description>
         <p>Accepting AI suggestions no longer bounces the task page: header changes (labels, due date, priority, status, title) confirmed together with checklist items keep the proposals pinned in place instead of shoving the page down and snapping it back mid-batch.</p>

@@ -38,10 +38,17 @@ def openmontage_root(repo_root: Path) -> Path:
             f"per {TOOL_ROOT / 'config' / 'openmontage.pin'}"
         )
     pinned = next(
-        line.split("=", 1)[1].strip()
-        for line in pin.splitlines()
-        if line.startswith("commit=")
+        (
+            line.split("=", 1)[1].strip()
+            for line in pin.splitlines()
+            if line.startswith("commit=")
+        ),
+        None,
     )
+    if pinned is None:
+        raise ComposeError(
+            f"{TOOL_ROOT / 'config' / 'openmontage.pin'}: no 'commit=' line found"
+        )
     actual = subprocess.run(
         ["git", "-C", str(root), "rev-parse", "HEAD"],
         capture_output=True,
@@ -103,7 +110,9 @@ def compose_video(
         for step in manifest["steps"]
         if "dictation" in step
     ]
-    for span, clip in zip(timeline.get("dictations", []), dictation_clips):
+    for span, clip in zip(
+        timeline.get("dictations", []), dictation_clips, strict=True
+    ):
         tracks.append(
             {
                 "path": clip,
@@ -195,7 +204,11 @@ def _validate(output: Path, *, expected_duration: float, size: tuple[int, int]) 
         ).stdout
     )
     duration = float(probe["format"]["duration"])
-    video = next(s for s in probe["streams"] if s["codec_type"] == "video")
+    video = next(
+        (s for s in probe["streams"] if s["codec_type"] == "video"), None
+    )
+    if video is None:
+        raise ComposeError(f"{output}: no video stream in ffprobe output")
     has_audio = any(s["codec_type"] == "audio" for s in probe["streams"])
     problems = []
     if abs(duration - expected_duration) > max(2, expected_duration * 0.05):

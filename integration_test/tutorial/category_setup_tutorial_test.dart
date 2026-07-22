@@ -7,6 +7,7 @@
 ///  2. create a new category (typed name, on camera),
 ///  3. configure it in the editor (mark as favorite),
 ///  4. save and see it in the list.
+@Tags(['tutorial-video'])
 library;
 
 import 'dart:io';

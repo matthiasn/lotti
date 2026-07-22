@@ -17,6 +17,7 @@
 /// model handles the wake tool calls. Run via the workbench
 /// (`python3 -m tutorial_videos build`) or headless as documented in
 /// `tools/tutorial_videos/README.md`.
+@Tags(['tutorial-video'])
 library;
 
 import 'dart:io';

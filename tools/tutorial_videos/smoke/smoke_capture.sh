@@ -18,6 +18,8 @@ mkdir -p "$OUT_DIR"
 DISPLAY_NUM=":97"
 SIZE=1280x720
 OUT="$OUT_DIR/capture.mkv"
+XVFB_PID=""
+FFPLAY_PID=""
 
 Xvfb "$DISPLAY_NUM" -screen 0 "${SIZE}x24" &
 XVFB_PID=$!

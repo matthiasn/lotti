@@ -10,6 +10,7 @@
 ///
 /// A second category with its own task is seeded so the narrowing is
 /// visible on camera.
+@Tags(['tutorial-video'])
 library;
 
 import 'dart:io';

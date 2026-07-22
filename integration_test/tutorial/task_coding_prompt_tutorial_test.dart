@@ -21,6 +21,7 @@
 /// (skill modal, profile resolution, prompt building, streaming collection,
 /// card rendering) is the real product pipeline
 /// (`SkillInferenceRunner.runPromptGeneration`).
+@Tags(['tutorial-video'])
 library;
 
 import 'dart:io';
