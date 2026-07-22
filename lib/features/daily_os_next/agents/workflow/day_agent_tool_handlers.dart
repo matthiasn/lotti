@@ -37,6 +37,29 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
       );
     }
 
+    // Directive tools are also dispatched BEFORE the workspace-day guard:
+    // the coordinator issues directives for days other than its wake's
+    // workspace (a digest wake writes today's and tomorrow's directives).
+    // The service enforces coordinator-only authorship itself.
+    if (DayAgentToolNames.isDirectiveTool(toolName)) {
+      final service = directiveService;
+      if (service == null) {
+        return const DayAgentToolResult(
+          success: false,
+          output: 'Error: directive tools are not configured.',
+        );
+      }
+      final result = await service.executeTool(
+        agentId: agentId,
+        toolName: toolName,
+        args: args,
+      );
+      return DayAgentToolResult(
+        success: result.success,
+        output: result.output,
+      );
+    }
+
     // Reject day-scoped tool calls targeting a day other than this wake's
     // workspace (ADR 0022 Decision 4). Under one planner the model must never
     // mutate a different day than the wake it is running.

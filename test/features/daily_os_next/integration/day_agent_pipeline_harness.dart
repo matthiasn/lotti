@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
@@ -225,6 +226,11 @@ class DayAgentPipelineHarness {
       nudgeProcessing: () => unawaited(runtimeRef?.nudge()),
     );
 
+    final directiveService = DayAgentDirectiveService(
+      agentRepository: agentRepository,
+      syncService: syncService,
+      domainLogger: domainLogger,
+    );
     final dayWorkflow = DayAgentWorkflow(
       agentRepository: agentRepository,
       conversationRepository: conversationRepository,
@@ -234,6 +240,7 @@ class DayAgentPipelineHarness {
       templateService: templateService,
       captureService: captureService,
       planService: planService,
+      directiveService: directiveService,
       domainLogger: domainLogger,
     );
 

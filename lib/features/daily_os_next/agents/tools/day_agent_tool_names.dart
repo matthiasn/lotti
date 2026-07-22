@@ -48,6 +48,10 @@ abstract final class DayAgentToolNames {
   /// Writes the contemporaneous day summary (today/yesterday only).
   static const writeDaySummary = 'write_day_summary';
 
+  /// Issues (or revises) the coordinator's directive for one day
+  /// (ADR 0032 phase 3). Coordinator-only.
+  static const issueDayDirective = 'issue_day_directive';
+
   /// Foundation tools implemented by the day-agent workflow itself.
   static const foundationHandlerTools = <String>{
     setNextWake,
@@ -66,6 +70,15 @@ abstract final class DayAgentToolNames {
   /// missing from that set dies as "unknown day-agent tool" on every call.
   static const weekContextTools = <String>{
     writeDaySummary,
+  };
+
+  /// Directive tools delegated to the directive service (ADR 0032 phase 3).
+  ///
+  /// Offered to the coordinator only; the service re-enforces that at
+  /// execution time. Must be folded into [workflowHandlerTools] (see the
+  /// [weekContextTools] warning).
+  static const directiveTools = <String>{
+    issueDayDirective,
   };
 
   /// Capture/reconcile tools delegated to the capture service.
@@ -99,6 +112,7 @@ abstract final class DayAgentToolNames {
     ...planTools,
     ...knowledgeTools,
     ...weekContextTools,
+    ...directiveTools,
   };
 
   /// Whether [name] should be routed through the workflow handler.
@@ -124,6 +138,11 @@ abstract final class DayAgentToolNames {
   /// Whether [name] is handled by the week-context service.
   static bool isWeekContextTool(String name) {
     return weekContextTools.contains(name);
+  }
+
+  /// Whether [name] is handled by the directive service.
+  static bool isDirectiveTool(String name) {
+    return directiveTools.contains(name);
   }
 
   /// Whether [name] is the foundation wake scheduling tool.

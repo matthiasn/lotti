@@ -203,4 +203,16 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'either — the exemption is now `cal` blocks only, since they mirror '
         'real calendar events that legitimately span the current moment.',
   ),
+  SeedDirectiveChange(
+    date: '2026-07-23',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        'Day directives (ADR 0032 phase 3): the coordinator can issue a '
+        'distilled per-day directive via `issue_day_directive` (commitments, '
+        'capacity budget, carry-over, constraints, attention notes). When a '
+        'wake carries a `<day_directive>` section it is binding — each '
+        'commitment must be placed, explicitly traded away in a diff naming '
+        'the collision, or called out as unsatisfiable; requested minutes '
+        'must be reconciled against the capacity budget before drafting.',
+  ),
 ];

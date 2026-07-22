@@ -20,6 +20,7 @@ void main() {
       DayAgentToolNames.proposePlanDiff,
       DayAgentToolNames.proposeKnowledge,
       DayAgentToolNames.writeDaySummary,
+      DayAgentToolNames.issueDayDirective,
     ];
 
     test('uses the wire names expected by the day-agent prompt', () {
@@ -40,6 +41,7 @@ void main() {
         'propose_plan_diff',
         'propose_knowledge',
         'write_day_summary',
+        'issue_day_directive',
       ]);
     });
 
@@ -97,6 +99,10 @@ void main() {
         {DayAgentToolNames.writeDaySummary},
       );
       expect(
+        DayAgentToolNames.directiveTools,
+        {DayAgentToolNames.issueDayDirective},
+      );
+      expect(
         DayAgentToolNames.workflowHandlerTools,
         {
           DayAgentToolNames.setNextWake,
@@ -105,6 +111,7 @@ void main() {
           ...DayAgentToolNames.planTools,
           ...DayAgentToolNames.knowledgeTools,
           ...DayAgentToolNames.weekContextTools,
+          ...DayAgentToolNames.directiveTools,
         },
       );
     });

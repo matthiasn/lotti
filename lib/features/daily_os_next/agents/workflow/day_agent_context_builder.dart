@@ -15,6 +15,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required RefineContext? refineContext,
     required AttentionPlanningInputs attentionPlanning,
     required KnowledgeContext knowledge,
+    DayDirectiveEntity? directive,
     WeekContext? weekContext,
     List<DayAudioEntryContext> dayAudioEntries = const [],
     String? compactedLog,
@@ -38,6 +39,14 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       // wake's touched scopes, so it is byte-stable across a planning session
       // and belongs ahead of the day log in the stable prefix.
       ..addText(DayAgentPromptTags.knowledgeIndex, knowledge.hookIndex)
+      // The coordinator's directive for this day (ADR 0032 phase 3): the
+      // distilled commitments/capacity ledger the drafting contract binds
+      // against. Stable within a revision, so it stays in the byte-stable
+      // prefix ahead of the day log (ADR §4 slot).
+      ..addJson(
+        DayAgentPromptTags.dayDirective,
+        directive == null ? null : _directiveToJson(directive),
+      )
       // The compacted day log (ADR 0017): capture transcripts and the agent's
       // observations as an append-only event tail behind a summary —
       // byte-stable at its head between folds. The derivable section the v2
@@ -249,6 +258,38 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     }
     return scopes;
   }
+
+  /// Loads the coordinator's directive for [dayId], fail-soft: a read error
+  /// degrades to "no directive" (the wake plans from its own day context)
+  /// rather than killing the wake.
+  Future<DayDirectiveEntity?> _directiveContext(String dayId) async {
+    final service = directiveService;
+    if (service == null) return null;
+    try {
+      return await service.directiveForDay(dayId);
+    } catch (e, s) {
+      _logError('failed to load day directive', error: e, stackTrace: s);
+      return null;
+    }
+  }
+
+  /// Renders the directive as the `<day_directive>` JSON body. Field order is
+  /// fixed so the section is byte-stable within a revision.
+  Map<String, Object?> _directiveToJson(DayDirectiveEntity directive) => {
+    'directiveRevisionId': directive.directiveRevisionId,
+    'issuedAt': directive.issuedAt.toIso8601String(),
+    if (directive.commitments.isNotEmpty)
+      'commitments': [
+        for (final commitment in directive.commitments) commitment.toJson(),
+      ],
+    if (directive.capacityBudget != null)
+      'capacityBudget': directive.capacityBudget!.toJson(),
+    if (directive.carryOver.isNotEmpty)
+      'carryOver': [for (final item in directive.carryOver) item.toJson()],
+    if (directive.constraints.isNotEmpty) 'constraints': directive.constraints,
+    if (directive.attentionNotes.isNotEmpty)
+      'attentionNotes': directive.attentionNotes,
+  };
 
   Future<AttentionPlanningInputs> _attentionPlanningContext(
     DateTime planDate,

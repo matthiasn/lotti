@@ -4,7 +4,7 @@ part of 'day_agent_workflow.dart';
 /// definitions for [DayAgentWorkflow]. Split from the main workflow file for
 /// size; all members are library-private.
 extension DayAgentPromptBuilder on DayAgentWorkflow {
-  String _buildSystemPrompt(TemplateContext? ctx) {
+  String _buildSystemPrompt(TemplateContext? ctx, {required String agentId}) {
     const captureToolLines =
         '- `submit_capture`: persist a user capture transcript and enqueue parsing.\n'
         '- `parse_capture_to_items`: persist capture phrases parsed from the current capture-submitted wake.\n'
@@ -25,6 +25,11 @@ extension DayAgentPromptBuilder on DayAgentWorkflow {
         '- `write_day_summary`: your contemporaneous note on a day (today or '
         'yesterday only) — what happened and why, one paragraph, max 500 '
         'characters.';
+    const directiveToolLines =
+        '- `issue_day_directive`: issue or revise your distilled directive '
+        'for one day — commitments, capacity budget, carry-over, '
+        'constraints, attention notes. Bounded facts only; never '
+        'transcripts.';
     final toolLines = <String>[
       '- `record_observations`: private memory for learnings and uncertainty.',
       '- `set_next_wake`: schedule the next useful pre-warm wake.',
@@ -33,6 +38,8 @@ extension DayAgentPromptBuilder on DayAgentWorkflow {
       if (planService != null) planToolLines,
       if (knowledgeService != null) knowledgeToolLines,
       if (weekContextService != null) weekContextToolLines,
+      if (directiveService != null && agentId == dailyOsPlannerAgentId)
+        directiveToolLines,
     ];
     final scaffold =
         '''
@@ -67,6 +74,16 @@ Drafting rules:
   blocks that start before that time — only `cal` blocks mirroring real
   calendar events may span it. Preserve already-started baseline blocks only
   when they represent existing in-progress, completed, or dropped history.
+- A `<day_directive>` section, when present, is the coordinator's distilled
+  ledger for this day and is BINDING, not a hint. Every commitment in it must
+  be (a) represented in the drafted plan, (b) explicitly traded away in a
+  proposed diff whose `reason` names the colliding commitment, or (c) called
+  out as unsatisfiable in your final message. Never silently drop one.
+- Before drafting or refining, reconcile the requested minutes against the
+  directive's `capacityBudget.availableMinutes` minus
+  `alreadyScheduledMinutes`. If the request does not fit, surface the
+  conflict — which commitments collide and what trade would make it fit —
+  instead of overpacking the plan.
 - Calendar, buffer, and manual blocks may omit reasons when their purpose is
   self-evident.
 - When this wake's user message carries a `<drafting>` section (i.e. the trigger
@@ -178,7 +195,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     return buf.toString();
   }
 
-  bool _isToolEnabled(String toolName) {
+  bool _isToolEnabled(String toolName, {required String agentId}) {
     if (DayAgentToolNames.isCaptureReconcileTool(toolName)) {
       return captureService != null;
     }
@@ -192,6 +209,12 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     // the model a tool whose every call dies as unconfigured.
     if (DayAgentToolNames.isWeekContextTool(toolName)) {
       return weekContextService != null;
+    }
+    if (DayAgentToolNames.isDirectiveTool(toolName)) {
+      // Coordinator-only (ADR 0032 §2): a per-day agent must not even see
+      // `issue_day_directive` — the service re-enforces this at execution
+      // time, but offering it would invite doomed calls.
+      return directiveService != null && agentId == dailyOsPlannerAgentId;
     }
     return true;
   }
@@ -317,17 +340,20 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     );
   }
 
-  List<ChatCompletionTool> _buildToolDefinitions() {
-    return dayAgentTools.where((tool) => _isToolEnabled(tool.name)).map((tool) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters,
-        ),
-      );
-    }).toList();
+  List<ChatCompletionTool> _buildToolDefinitions({required String agentId}) {
+    return dayAgentTools
+        .where((tool) => _isToolEnabled(tool.name, agentId: agentId))
+        .map((tool) {
+          return ChatCompletionTool(
+            type: ChatCompletionToolType.function,
+            function: FunctionObject(
+              name: tool.name,
+              description: tool.description,
+              parameters: tool.parameters,
+            ),
+          );
+        })
+        .toList();
   }
 
   String? _extractFinalAssistantContent(ConversationManager? manager) {

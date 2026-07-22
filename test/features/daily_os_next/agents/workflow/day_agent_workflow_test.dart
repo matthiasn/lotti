@@ -24,6 +24,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.da
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -168,6 +169,7 @@ void main() {
     MockDayAgentPlanService? planService,
     MockDayAgentKnowledgeService? knowledgeService,
     MockDayAgentWeekContextService? weekContextService,
+    MockDayAgentDirectiveService? directiveService,
     DayAudioEntryContextService? dayAudioEntryContextService,
   }) {
     return DayAgentWorkflow(
@@ -182,6 +184,7 @@ void main() {
       planService: planService,
       knowledgeService: knowledgeService,
       weekContextService: weekContextService,
+      directiveService: directiveService,
       dayAudioEntryContextService: dayAudioEntryContextService,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
@@ -1595,6 +1598,257 @@ void main() {
       // succeeds rather than propagating the error.
       expect(result.success, isTrue);
       expect(sentPrompt().has('attention_planning'), isFalse);
+    });
+
+    group('day directive (ADR 0032 phase 3)', () {
+      late MockDayAgentDirectiveService directiveService;
+
+      setUp(() {
+        directiveService = MockDayAgentDirectiveService();
+      });
+
+      /// Stubs the reads a coordinator-identity wake performs (the shared
+      /// setUp keys everything by the per-day [agentId]).
+      void stubCoordinatorReads() {
+        when(
+          () => repository.getAgentState(dailyOsPlannerAgentId),
+        ).thenAnswer(
+          (_) async => makeTestState(
+            id: 'state-$dailyOsPlannerAgentId',
+            agentId: dailyOsPlannerAgentId,
+            slots: const AgentSlots(activeDayId: dayId),
+            updatedAt: now,
+          ),
+        );
+        when(
+          () => repository.getMessagesByKind(
+            dailyOsPlannerAgentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getEntitiesByAgentId(
+            dailyOsPlannerAgentId,
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer((_) async => const <AgentDomainEntity>[]);
+        when(
+          () => repository.getCaptureEventMetaByAgentId(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => templateService.getTemplateForAgent(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => template());
+      }
+
+      Future<WakeResult> executeAsCoordinator(DayAgentWorkflow sut) {
+        stubCoordinatorReads();
+        return withClock(
+          Clock.fixed(now),
+          () => sut.execute(
+            agentIdentity: makeTestIdentity(
+              id: dailyOsPlannerAgentId,
+              agentId: dailyOsPlannerAgentId,
+              kind: AgentKinds.dayAgent,
+              displayName: 'Shepherd',
+              currentStateId: 'state-$dailyOsPlannerAgentId',
+              config: const AgentConfig(
+                profileId: 'profile-day',
+                maxTurnsPerWake: 5,
+              ),
+              createdAt: now,
+              updatedAt: now,
+            ),
+            runKey: runKey,
+            triggerTokens: {dayAgentPlanningDayToken(dayId)},
+            threadId: threadId,
+          ),
+        );
+      }
+
+      test(
+        'renders <day_directive> ahead of the volatile tail when one exists',
+        () async {
+          when(() => directiveService.directiveForDay(dayId)).thenAnswer(
+            (_) async => makeTestDayDirective(
+              directiveRevisionId: 'rev-7',
+              commitments: const [
+                DayDirectiveCommitment(
+                  id: 'award-1',
+                  source: DayCommitmentSource.attentionAward,
+                  title: 'Ship release notes',
+                  minutes: 90,
+                ),
+              ],
+              capacityBudget: const DayCapacityBudget(
+                availableMinutes: 420,
+                alreadyScheduledMinutes: 60,
+              ),
+              attentionNotes: const ['Third heavy commitment this week.'],
+            ),
+          );
+
+          final result = await execute(
+            workflow(directiveService: directiveService),
+            triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          );
+
+          expect(result.success, isTrue);
+          final section = sentPrompt().json('day_directive')! as Map;
+          expect(section['directiveRevisionId'], 'rev-7');
+          final commitments = section['commitments'] as List;
+          expect((commitments.single as Map)['title'], 'Ship release notes');
+          expect(
+            (section['capacityBudget'] as Map)['availableMinutes'],
+            420,
+          );
+          expect(
+            (section['attentionNotes'] as List).single,
+            'Third heavy commitment this week.',
+          );
+          // Stable-prefix placement: the directive precedes the volatile
+          // trigger-token tail.
+          final sent = conversationRepository.lastUserMessage!;
+          expect(
+            sent.indexOf('<day_directive>'),
+            lessThan(sent.indexOf('<trigger_tokens>')),
+          );
+        },
+      );
+
+      test('omits the section when no directive exists', () async {
+        when(
+          () => directiveService.directiveForDay(dayId),
+        ).thenAnswer((_) async => null);
+
+        final result = await execute(
+          workflow(directiveService: directiveService),
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+        );
+
+        expect(result.success, isTrue);
+        expect(sentPrompt().has('day_directive'), isFalse);
+      });
+
+      test(
+        'absorbs a directive read failure without killing the wake',
+        () async {
+          when(
+            () => directiveService.directiveForDay(dayId),
+          ).thenThrow(StateError('directive store unavailable'));
+
+          final result = await execute(
+            workflow(directiveService: directiveService),
+            triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          );
+
+          verify(() => directiveService.directiveForDay(dayId)).called(1);
+          expect(result.success, isTrue);
+          expect(sentPrompt().has('day_directive'), isFalse);
+        },
+      );
+
+      test(
+        'offers issue_day_directive to the coordinator but not to a per-day '
+        'agent',
+        () async {
+          when(
+            () => directiveService.directiveForDay(dayId),
+          ).thenAnswer((_) async => null);
+
+          await execute(
+            workflow(directiveService: directiveService),
+            triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          );
+          expect(
+            [
+              for (final tool in conversationRepository.lastTools)
+                tool.function.name,
+            ],
+            isNot(contains(DayAgentToolNames.issueDayDirective)),
+            reason: 'A per-day agent must not even see the tool.',
+          );
+
+          await executeAsCoordinator(
+            workflow(directiveService: directiveService),
+          );
+          expect(
+            [
+              for (final tool in conversationRepository.lastTools)
+                tool.function.name,
+            ],
+            contains(DayAgentToolNames.issueDayDirective),
+          );
+          expect(
+            conversationRepository.lastSystemMessage,
+            contains('`issue_day_directive`'),
+          );
+        },
+      );
+
+      test(
+        'dispatches issue_day_directive to the service with the waking '
+        'agent id',
+        () async {
+          when(
+            () => directiveService.directiveForDay(dayId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => directiveService.executeTool(
+              agentId: dailyOsPlannerAgentId,
+              toolName: DayAgentToolNames.issueDayDirective,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(
+              const {'id': 'day_directive:$dayId'},
+            ),
+          );
+          conversationRepository.toolCalls = [
+            _toolCall(
+              id: 'directive-call',
+              name: DayAgentToolNames.issueDayDirective,
+              // A directive for ANOTHER day than the wake workspace must
+              // pass: digest wakes issue tomorrow's directive, so the tool
+              // is exempt from the workspace-day guard.
+              args: {'dayId': 'dayplan-2026-05-26'},
+            ),
+          ];
+
+          final result = await executeAsCoordinator(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => directiveService.executeTool(
+              agentId: dailyOsPlannerAgentId,
+              toolName: DayAgentToolNames.issueDayDirective,
+              args: {'dayId': 'dayplan-2026-05-26'},
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'issue_day_directive without a configured service fails cleanly',
+        () async {
+          conversationRepository.toolCalls = [
+            _toolCall(
+              id: 'directive-call',
+              name: DayAgentToolNames.issueDayDirective,
+              args: {'dayId': dayId},
+            ),
+          ];
+
+          final result = await execute(workflow());
+
+          expect(result.success, isTrue);
+          expect(
+            conversationRepository.toolResponses.single,
+            contains('directive tools are not configured'),
+          );
+        },
+      );
     });
 
     test(

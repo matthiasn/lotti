@@ -19,7 +19,7 @@ void main() {
       // Pin the exact tool count so a tool added to dayAgentTools but missing
       // from the expected list below (or vice versa) is caught: containsAll
       // alone tolerates extras, hasLength closes that gap.
-      expect(names, hasLength(16));
+      expect(names, hasLength(17));
       expect(
         names,
         containsAll(const [
@@ -39,8 +39,40 @@ void main() {
           DayAgentToolNames.proposePlanDiff,
           DayAgentToolNames.proposeKnowledge,
           DayAgentToolNames.writeDaySummary,
+          DayAgentToolNames.issueDayDirective,
         ]),
       );
+    });
+
+    test('issue_day_directive schema pins its contract', () {
+      expect(requiredFor(DayAgentToolNames.issueDayDirective), ['dayId']);
+      final properties =
+          parametersFor(DayAgentToolNames.issueDayDirective)['properties']
+              as Map<String, dynamic>;
+      expect(
+        properties.keys,
+        containsAll(const [
+          'dayId',
+          'commitments',
+          'capacityBudget',
+          'carryOver',
+          'constraints',
+          'attentionNotes',
+        ]),
+      );
+      final commitmentItems =
+          (properties['commitments'] as Map<String, dynamic>)['items']
+              as Map<String, dynamic>;
+      expect(commitmentItems['required'], ['id', 'source', 'title']);
+      final sourceEnum =
+          (commitmentItems['properties'] as Map<String, dynamic>)['source']
+              as Map<String, dynamic>;
+      expect(sourceEnum['enum'], [
+        'attentionAward',
+        'standingAgreement',
+        'userCommitment',
+        'carryOver',
+      ]);
     });
 
     test(
