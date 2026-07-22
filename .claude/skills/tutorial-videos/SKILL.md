@@ -1,6 +1,6 @@
 ---
 name: tutorial-videos
-description: Build, debug, extend, or localize the automated tutorial videos — the workbench that drives the real Linux app under Xvfb (virtual mic, live Voxtral transcription, task-agent proposals), records the screen, narrates with Gemini TTS, fast-forwards waits, and composes MP4s via OpenMontage. Use when asked to "build/regenerate the tutorial video(s)", add a tutorial scenario, add a tutorial locale, fix a broken tutorial run, or adapt the pipeline.
+description: Build, debug, extend, localize, or publish the automated tutorial videos — the workbench that drives the real Linux app under Xvfb (virtual mic, live Voxtral transcription, task-agent proposals), records the screen, narrates with Gemini TTS, fast-forwards waits, composes MP4s via OpenMontage, and uploads finished videos to Cloudflare R2 for docs-site embedding. Use when asked to "build/regenerate the tutorial video(s)", add a tutorial scenario, add a tutorial locale, fix a broken tutorial run, adapt the pipeline, or upload/publish a video.
 argument-hint: "<what to do, e.g. 'build de+en', 'add scenario X', 'debug the failing run'>"
 ---
 
@@ -30,6 +30,27 @@ Output lands in `build/tutorial_videos/<scenario>_<locale>.mp4`. Verify with
 frame extraction (`ffmpeg -ss <t> -frames:v 1`) and check: cursor visible and
 gliding, HUD clock top-center, transcript/proposals on screen, narration
 audible at step starts (`volumedetect`), duration ≈ warped timeline total.
+
+## Publish to R2
+
+```sh
+make tutorial_video_publish TUTORIAL_SCENARIO=create_task_from_audio TUTORIAL_LOCALE=de
+```
+
+Uploads `build/tutorial_videos/<scenario>_<locale>.mp4` to Cloudflare R2 at
+`tutorial-videos/<scenario>_<locale>.mp4` and prints its public r2.dev URL —
+this is the URL the docs-site `TutorialVideo` component builds from
+`TUTORIAL_VIDEO_BASE_URL`/`tutorialVideoBaseUrl`. Full one-time Cloudflare
+setup (API token, enabling the bucket's public r2.dev URL) and the `.env`
+variable list are in the README's "Publishing to Cloudflare R2" section —
+read it before the first publish.
+
+`boto3` (needed only by publish, not by build/tts/validate) is not installed
+into the system Python on this host (PEP 668). Either run publish through
+`tools/tutorial_videos/.venv` (`.venv/bin/python3 -m tutorial_videos publish
+--scenario ... --locale ...`, created via `python3 -m venv .venv &&
+.venv/bin/pip install boto3 pyyaml`), or install `boto3` into whatever
+Python `make tutorial_video_publish` resolves to.
 
 ## The pipeline in one paragraph
 

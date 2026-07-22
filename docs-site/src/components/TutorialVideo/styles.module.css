@@ -1,0 +1,21 @@
+.figure {
+  margin: 2rem 0;
+  overflow: hidden;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 1rem;
+  background: var(--ifm-background-surface-color);
+  box-shadow: var(--lotti-shadow-soft);
+}
+
+.video {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #000;
+}
+
+.caption {
+  padding: 0.8rem 1rem 1rem;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.9rem;
+}
