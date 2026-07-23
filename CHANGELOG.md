@@ -26,10 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   raise typed status events (over-committed, directive unsatisfiable, plans
   diverging, processing blocked) that the coordinator picks up at its next
   digest, so week-level plans and learnings persist while each day keeps a
-  small, fast context of its own. Each digest also pools the last four weeks
-  into per-category planned-vs-recorded rollups, so the coordinator can
-  steer month-scale pacing — a chronically shortchanged category or a
-  shrinking planning streak — not just the day at hand.
+  small, fast context of its own. Each digest also pools the last four
+  complete weeks into per-category planned-vs-recorded rollups, so the
+  coordinator can steer month-scale pacing — a chronically shortchanged
+  category or a shrinking planning streak — not just the day at hand.
 
 ### Fixed
 - **The green focus border in list boxes no longer gets cropped at the

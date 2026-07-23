@@ -357,8 +357,9 @@ sequenceDiagram
   (50), selection is severity-ranked, not arrival-order
   (`selectDigestStatusEvents`: `attentionNeeded` > `dayClosed` > `onTrack`,
   `directiveUnsatisfiable` > `overCommitted` > `processingBlocked` >
-  `userDivergence`, newer beats older within a tier) and the section carries
-  `statusEventsTruncated: true`. Digest rules: react by revising directives —
+  `userDivergence`, newer beats older within a tier, ascending id as the
+  final deterministic tiebreak for equal timestamps) and the section
+  carries `statusEventsTruncated: true`. Digest rules: react by revising directives —
   never by drafting plans. Completion writes the watermark milestone and
   deterministically re-arms tomorrow's digest record;
   `DayAgentService.restoreSubscriptions` bootstraps the first record (and

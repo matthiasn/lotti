@@ -68,10 +68,16 @@ String dayStatusEventId(String dayId, String suffix) =>
 ///
 /// Weeks are ISO weeks (Monday-start), matching the digest's "recent weeks"
 /// framing. Normalizes through [localDay] first so UTC-typed inputs bucket to
-/// the user's local week.
+/// the user's local week. Uses component day arithmetic (not
+/// `subtract(Duration)`, which is instant-based) so the result stays at
+/// local midnight across DST transitions, where a day may be 23 or 25 hours.
 DateTime weekStartFor(DateTime date) {
   final day = localDay(date);
-  return day.subtract(Duration(days: day.weekday - DateTime.monday));
+  return DateTime(
+    day.year,
+    day.month,
+    day.day - (day.weekday - DateTime.monday),
+  );
 }
 
 /// Deterministic agent-entity ID for the weekly rollup register keyed by the
