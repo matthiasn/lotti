@@ -51,6 +51,15 @@ platform fork point: `isDesktopLayout(context)` renders `SettingsV2Page`, else
   leaf states would make Navigator swap the page and play the wrong pop
   animation.
 
+  Every mobile tree level (`SettingsMobileTreePage`) keeps the bottom nav bar
+  visible (menus keep the bar; terminal pages hide it — see
+  `settingsRouteHidesBottomNav` in `lib/beamer/beamer_app.dart`), and the
+  shell renders it as an overlay (`extendBody`). The tree list therefore pads
+  its bottom by `DesignSystemBottomNavigationBar.occupiedHeight` so the last
+  row — the Manual — scrolls clear of the docked pill instead of sitting
+  underneath it; its `SafeArea` has `bottom: false` because `occupiedHeight`
+  already absorbs the home-indicator inset.
+
 ## Directory Shape
 
 ```text

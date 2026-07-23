@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/components/chips/active_filter_chip
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -22,6 +23,7 @@ import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
+import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -236,6 +238,60 @@ void main() {
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.enabled, isTrue);
   });
+
+  testWidgets(
+    'list bottom padding clears the docked nav bar plus the FAB footprint',
+    (tester) async {
+      await pumpPage(tester, groups: [buildWorkGroup()]);
+
+      final BuildContext context = tester.element(
+        find.byType(ProjectsTabPage),
+      );
+      final occupied = DesignSystemBottomNavigationBar.occupiedHeight(context);
+      // The harness renders at a mobile width, so the bar genuinely occupies
+      // space — a zero here would make the clearance assertion vacuous.
+      expect(occupied, greaterThan(0));
+
+      final content = tester.widget<ProjectsOverviewContent>(
+        find.byType(ProjectsOverviewContent),
+      );
+      expect(
+        content.listBottomPadding,
+        occupied + context.designTokens.spacing.step12,
+      );
+    },
+  );
+
+  testWidgets(
+    'list bottom padding grows with the home-indicator inset',
+    (tester) async {
+      double paddingFor(WidgetTester t) => t
+          .widget<ProjectsOverviewContent>(
+            find.byType(ProjectsOverviewContent),
+          )
+          .listBottomPadding;
+
+      // A phone without a home indicator (no bottom inset).
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+      );
+      final withoutInset = paddingFor(tester);
+
+      // Same page on a home-indicator device: the clearance must track the
+      // inset the docked bar absorbs, not sit on a hardcoded constant.
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        mediaQueryData: const MediaQueryData(
+          size: Size(390, 844),
+          padding: EdgeInsets.only(bottom: 34),
+        ),
+      );
+      expect(paddingFor(tester), greaterThan(withoutInset));
+    },
+  );
 
   testWidgets('renders the grouped projects page in light theme', (
     tester,

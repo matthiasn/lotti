@@ -253,6 +253,13 @@ void main() {
         delegate.mainAxisSpacing,
         equals(CategoryIconConstants.pickerGridSpacing),
       );
+      // Taller-than-wide tiles reserve room for the icon plus a two-line
+      // label on narrow phones, where the dialog shrinks below its max
+      // width and square tiles would overflow.
+      expect(
+        delegate.childAspectRatio,
+        equals(CategoryIconConstants.pickerTileAspectRatio),
+      );
     });
 
     testWidgets('should have correct dialog constraints', (tester) async {
@@ -341,6 +348,26 @@ void main() {
       // Selected item should have shadow (glow effect)
       expect(decoration.boxShadow, isNotNull);
       expect(decoration.boxShadow, isNotEmpty);
+    });
+
+    testWidgets('grid tiles do not overflow on a narrow phone dialog', (
+      tester,
+    ) async {
+      // At ~375pt screen width the dialog shrinks below its 400pt max and
+      // the square grid tiles drop to ~57pt. The icon + spacing + two label
+      // lines used to overflow the tile's Column by a few pixels; the label
+      // now flexes (ellipsizing) into whatever height remains.
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        const WidgetTestBench(
+          child: CategoryIconPicker(),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
     });
   });
 }

@@ -31,6 +31,12 @@ class CategoryIconConstants {
   /// Spacing between grid items
   static const double pickerGridSpacing = 12;
 
+  /// Width : height ratio of a picker grid tile. Below 1 so tiles are taller
+  /// than wide: on narrow phones the dialog shrinks under [pickerMaxWidth]
+  /// and a square tile (~57pt at 375pt screens) cannot fit the icon plus a
+  /// two-line label without overflowing.
+  static const double pickerTileAspectRatio = 0.85;
+
   /// Icon picker dialog max width
   static const double pickerMaxWidth = 400;
 

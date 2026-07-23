@@ -67,6 +67,7 @@ class CategoryIconPicker extends StatelessWidget {
                   crossAxisCount: CategoryIconConstants.pickerGridColumns,
                   crossAxisSpacing: CategoryIconConstants.pickerGridSpacing,
                   mainAxisSpacing: CategoryIconConstants.pickerGridSpacing,
+                  childAspectRatio: CategoryIconConstants.pickerTileAspectRatio,
                 ),
                 itemCount: CategoryIcon.values.length,
                 itemBuilder: (context, index) {
@@ -133,22 +134,28 @@ class CategoryIconPicker extends StatelessWidget {
                           const SizedBox(
                             height: CategoryIconConstants.iconTextSpacing,
                           ),
-                          Text(
-                            icon.displayName,
-                            style: TextStyle(
-                              fontSize: CategoryIconConstants.pickerTextSize,
-                              color: isSelected
-                                  ? context.colorScheme.primary
-                                  : context.colorScheme.onSurface.withValues(
-                                      alpha: 0.8,
-                                    ),
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                          // Flexible so the label shrinks (ellipsizing) when
+                          // icon + spacing + two text lines exceed the square
+                          // grid tile, instead of overflowing the Column by a
+                          // few pixels at larger font metrics.
+                          Flexible(
+                            child: Text(
+                              icon.displayName,
+                              style: TextStyle(
+                                fontSize: CategoryIconConstants.pickerTextSize,
+                                color: isSelected
+                                    ? context.colorScheme.primary
+                                    : context.colorScheme.onSurface.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
                             ),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
                           ),
                         ],
                       ),
