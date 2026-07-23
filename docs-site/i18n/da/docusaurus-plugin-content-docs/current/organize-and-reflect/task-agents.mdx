@@ -1,111 +1,121 @@
 ---
 title: Tildel en task agent
-description: Giv en opgave sin egen AI-assistent med en rapport, vågentilstand og forslag, du gennemgår, før noget ændres.
+description: Giv en opgave sin egen AI-assistent med en rapport, vågetilstand og forslag, du gennemgår, før noget ændres.
 ---
 
 # Tildel en task agent
 
-En opgave kan have én opgaveagent. At tildele en giver opgaven en vedvarende AI
-Assistent med sit eget inferens-setup, rapport, vågentilstand og forslag
-Historie. Agenten læser opgaven og dens tilknyttede kontekst, destillerer strømmen
-situationen til en kort rapport, og kan fremvise foreslået opgave eller tjekliste
-Ændringer, du kan bekræfte eller afvise. For det systemdækkende overblik over
-alle kørende agenter, se [Kør og overvåg agenter](../ai-and-automation/agents.mdx).
+En opgave kan have én task agent. At tildele én giver opgaven en vedvarende
+AI-assistent med sit eget inferens-setup, rapport, vågetilstand og
+forslagshistorik. Agenten læser opgaven og dens tilknyttede kontekst,
+destillerer den aktuelle situation til en kort rapport og kan foreslå
+ændringer til opgaven eller tjeklisten, som du kan bekræfte eller afvise. For
+det systemdækkende overblik over alle kørende agenter, se [Kør og overvåg
+agenter](../ai-and-automation/agents.mdx).
 
 Den tildelte agent vises under opgavens tjeklister og tilknyttede opgaver. Det
-kollapset kort beholder det seneste resumé, automatisk opdateringskontrol, **Væk
-agent**-handling og aktiv modelrute synlig uden at gøre opgavesiden synlig
-føles som en AI-konsol.
+sammenfoldede kort holder det seneste resumé, kontrollen for automatiske
+opdateringer, handlingen **Væk agent** og den aktive modelrute synlige uden at
+få opgavesiden til at føles som en AI-konsol.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Assigned Habitat Watcher task agent on the orbital penguin habitat task, showing its current summary, automatic updates, wake action, and Project Waddle model route"
-  caption="Habitat Watcher is assigned to this task; assignment and automatic updates are separate choices."
+  alt="Tildelt task agent Habitat Watcher på opgaven om det kredsende pingvinhabitat, med dens aktuelle resumé, automatiske opdateringer, vågehandling og Project Waddle-modelruten"
+  caption="Habitat Watcher er tildelt denne opgave; tildeling og automatiske opdateringer er to separate valg."
 />
 
-På en telefon følger kortet en enkelt læserækkefølge: identitet, opdateringskontroller,
-AI-opsætning, rapport, derefter foreslåede ændringer og historik. På skrivebordet rapporterer og
-Forslag udgør læsekolonnen, mens Compact-kontrollerne forbliver i nærheden.
+På en telefon følger kortet én læserækkefølge: identitet,
+opdateringskontroller, AI-opsætning, rapport og derefter foreslåede ændringer
+og historik. På skrivebordet udgør rapporten og forslagene læsekolonnen, mens
+de kompakte kontroller forbliver i nærheden.
 
-Vælg **Læs mere** for at udvide den komplette rapport, der er på plads. Det udvidede kort
-holder opgaven synlig, tilføjer rapportens understøttende vurdering og anbefaling
-næste skridt, og tilbyder **Åbne agent-internt** når du har brug for rapporter,
-samtaler, observationer eller detaljer i runtime.
+Vælg **Læs mere** for at udvide hele rapporten på stedet. Det udvidede kort
+holder opgaven synlig, tilføjer rapportens understøttende vurdering og
+anbefalede næste skridt, og tilbyder **Åbn agentens interne detaljer**, når du
+har brug for rapporter, samtaler, observationer eller detaljer om kørslen.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
-  alt="Expanded Habitat Watcher task-agent card with the full Project Waddle habitat assessment and recommended next step"
-  caption="The full report expands inside the task instead of sending you to a separate page."
+  alt="Udvidet task agent-kort for Habitat Watcher med den fulde Project Waddle-habitatvurdering og det anbefalede næste skridt"
+  caption="Hele rapporten udvides inde i opgaven i stedet for at sende dig til en separat side."
 />
 
 ## Vælg agentens AI-opsætning
 
-Kortets række **Nuværende opsætning** identificerer profil, model og udbyder
-brugt til sin næste våge. Vælg den for at vælge en gemt inferensprofil, overstyr
-Kun tænkemodellen, gå tilbage til profilens standard, kopier kategoriens
-nuværende opsætning, eller slå AI fra for denne ene agent. Et valg forbliver hos det
-agent for fremtidige opdateringer; At kopiere en kategoriopsætning er et øjebliksbillede, ikke et link
-Det ændrer sig stille senere.
+Kortets række **Nuværende opsætning** viser den profil, model og udbyder, der
+bruges til agentens næste vågning. Vælg den for at vælge en gemt
+inferensprofil, kun overstyre tænkemodellen, gå tilbage til profilens
+standard, kopiere kategoriens aktuelle opsætning eller slå AI fra for netop
+denne agent. Et valg følger agenten ved fremtidige opdateringer; at kopiere en
+kategoriopsætning er et øjebliksbillede, ikke et link, der ændrer sig stille
+og roligt senere.
 
-Hvis en rapport blev udarbejdet gennem en anden rute, opbevarer Lotti en separat
-**Denne rapport** kilde i stedet for at omdøbe historien til den nuværende
-opsætning. At slå AI fra efterlader den eksisterende rapport læsbar, men forhindrer yderligere
-Vågner, indtil du vælger en fungerende opsætning igen. Automatiske opdateringer kan ikke
-aktiveret, mens agenten ikke har nogen fungerende AI-opsætning.
+Hvis en rapport blev udarbejdet via en anden rute, bevarer Lotti en separat
+kilde-angivelse under **Denne rapport** i stedet for at omdøbe historikken til
+den nuværende opsætning. Slår du AI fra, forbliver den eksisterende rapport
+læsbar, men yderligere vågninger forhindres, indtil du vælger en fungerende
+opsætning igen. Automatiske opdateringer kan ikke aktiveres, så længe agenten
+ikke har en fungerende AI-opsætning.
 
 ## Gennemgå foreslåede ændringer
 
-En færdig våge kan opdatere rapporten og tilføje foreslåede ændringer. Automatisk
-opdateringer afgør *hvornår agenten vågner*; De giver ikke agenten tilladelse til at
-Rediger opgaven. Forslag forbliver afventende, indtil du handler på dem.
+En fuldført vågning kan opdatere rapporten og tilføje foreslåede ændringer.
+Automatiske opdateringer afgør *hvornår agenten vågner*; de giver ikke
+agenten tilladelse til at redigere opgaven. Forslag forbliver afventende,
+indtil du tager stilling til dem.
 
 <ManualScreenshot
   caseId="tasks/agent-suggestions"
-  alt="Habitat Watcher task-agent card with two pending Project Waddle proposals, individual dismiss and confirm actions, and a Confirm all action"
-  caption="The agent proposes a feeder-test checklist item and a revised estimate; neither change has been applied yet."
+  alt="Task agent-kort for Habitat Watcher med to afventende Project Waddle-forslag, individuelle handlinger til at afvise og bekræfte, samt en Bekræft alle-handling"
+  caption="Agenten foreslår et tjeklistepunkt om en fodertest og et revideret estimat; ingen af ændringerne er anvendt endnu."
 />
 
-Brug korset til at **afvise** et forslag eller checken til **Bekræft** og ansøge
-det. Du kan også swipe et forslag til venstre for at afvise eller til højre for at bekræfte. Hvornår
-flere forslag er under behandling, **Bekræft alle** gælder for de nuværende listede
-ændrer sig sammen. Gennemgå masseforslag grundigt, især status, dato,
-og ændringer i tjeklisten.
+Brug krydset til at **afvise** et forslag, eller fluebenet til at
+**bekræfte** og anvende det. Du kan også swipe et forslag til venstre for at
+afvise eller til højre for at bekræfte. Når flere forslag er afventende,
+anvender **Bekræft alle** de aktuelt viste ændringer samlet. Gennemgå
+masseforslag omhyggeligt, især ændringer i status, dato og tjekliste.
 
-Åbn **Historie** for at genbesøge de seneste resultater. Den skelner bekræftet
-ændringer fra afviste ting. En afvist indførsel kan repræsentere enten din
-beslutning eller et forslag, som agenten trak tilbage efter nyere opgavekontekst havde fremsat det
-konstant.
+Åbn **Historik** for at genbesøge de seneste resultater. Den skelner mellem
+bekræftede og afviste ændringer. En afvist post kan enten repræsentere din
+egen beslutning eller et forslag, som agenten selv trak tilbage, efter at
+nyere opgavekontekst gjorde det forældet.
 
-En manuel **Wake-agent** kan producere samme slags rapporter og forslag som
-En automatisk vækning. At slå automatiske opdateringer fra stopper fremtidig baggrund
-vågner; Den anvender ikke, fravælger eller afslutter ikke forslag, der er
-venter allerede på din beslutning.
+En manuel **Væk agent** kan producere samme slags rapport og forslag som en
+automatisk vågning. Slår du automatiske opdateringer fra, stopper det
+fremtidige baggrundsvågninger; det hverken anvender, kasserer eller på anden
+vis afgør forslag, der allerede venter på din beslutning.
 
 ## Vælg automatiske eller manuelle opdateringer
 
-Nye opgaveagenter starter med **Automatiske opdateringer slået fra**. Tildeling alene gør det ikke
-Brug tokens i baggrunden. Mens opdateringerne er slukkede, fortsætter Lotti med at
-Bemærk relevante ændringer i opgaven og dens tilknyttede poster, markerer en ældre
-resumé som forældet, og venter på, at du vælger **Wake agent**. En manual
-wake forbliver tilgængelig, når agenten har en fungerende AI-opsætning.
+Nye task agents starter med **Automatiske opdateringer slået fra**. Tildeling
+alene bruger ikke tokens i baggrunden. Mens opdateringerne er slået fra,
+bliver Lotti ved med at bemærke relevante ændringer i opgaven og dens
+tilknyttede poster, markerer et ældre resumé som forældet og venter på, at du
+vælger **Væk agent**. En manuel vågning forbliver tilgængelig, så længe
+agenten har en fungerende AI-opsætning.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
-  alt="Habitat Watcher task-agent card with automatic updates off, an out-of-date report notice, and a manual Wake agent action"
-  caption="Manual mode observes changes and reports staleness without starting inference."
+  alt="Task agent-kort for Habitat Watcher med automatiske opdateringer slået fra, en meddelelse om en forældet rapport og en manuel Væk agent-handling"
+  caption="Manuel tilstand observerer ændringer og rapporterer, at data er forældede, uden at igangsætte inferens."
 />
 
-Den forældede meddelelse lader bevidst den sidste brugbare rapport stå tilbage. Hvis
-En relevant redigering ankommer, efter en våge begynder, og den nyere redigering beholder rapporten
-markeret gammel, selv når den tidligere våge er slut. Når du har brug for en rapport, der
-inkluderer de seneste ændringer, væk agenten igen, når opgaven er afsluttet.
+Meddelelsen om forældet indhold lader bevidst den seneste brugbare rapport
+blive stående. Hvis en relevant redigering ankommer, efter en vågning er
+begyndt, holder den nyere redigering rapporten markeret som forældet, selv
+når den tidligere vågning er afsluttet. Når du har brug for en rapport, der
+inkluderer de seneste ændringer, skal du vække agenten igen, når opgaven har
+lagt sig.
 
-Når **automatiske opdateringer** er tændt, samler Lotti matchende opgaveændringer for
-cirka to minutter før en opdatering. Denne sammensmeltning undgår en agent
-vågen for hver lille redigering. **Wake agent** er stadig tilgængelig med det samme,
-Brugerens anmodning om opdatering.
+Når **Automatiske opdateringer** er slået til, samler Lotti matchende
+opgaveændringer i omkring to minutter, før en opdatering planlægges. Denne
+sammenlægning undgår en agentvågning for hver eneste lille redigering. **Væk
+agent** er stadig tilgængelig til en øjeblikkelig, brugerinitieret
+opdatering.
 
-At slå automatiske opdateringer fra fjerner den ventende nedtælling og køen
-Automatisk opdatering, men annullerer ikke en vækning, du eksplicit har bedt om.
-At tænde den igen gælder for fremtidige ændringer; den genafspiller ikke ændringer, der ændrer
-ankom, mens automatiseringen var slået fra.
+Slår du automatiske opdateringer fra, ryddes den ventende nedtælling og de
+planlagte automatiske opdateringer, men det annullerer ikke en vågning, du
+selv har anmodet om. Slår du det til igen, gælder det for fremtidige
+ændringer; det genafspiller ikke ændringer, der ankom, mens automatiseringen
+var slået fra.
