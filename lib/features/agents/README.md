@@ -999,8 +999,9 @@ never the tasks (notification propagation is one hop). Instead,
 `SkillInferenceRunner.runImageAnalysis` emits the standard child-changed
 pairs (`taskId` + `PROPAGATED::taskId`, the same tokens `updateDbEntity`
 produces when the image itself is edited) after persisting the analysis —
-for **every parent of the image** (an image can be linked from several
-tasks), unioned with the resolved `linkedTaskId` (task resolution may have
+for **every parent task of the image** (an image can be linked from several
+tasks; non-task parents are skipped, since only task contexts render image
+analyses), unioned with the resolved `linkedTaskId` (task resolution may have
 matched an outgoing image→task link the incoming-parents query does not
 cover). Each parent agent's normal `subscription` wake picks it up —
 120-second coalescing (so it merges with the image-add wake instead of

@@ -1737,7 +1737,8 @@ void main() {
 
       test(
         'marks every parent task dirty with the standard child-changed '
-        'pairs once the attributed analysis is stored',
+        'pairs once the attributed analysis is stored, skipping non-task '
+        'parents',
         () async {
           _registerInteractionCapture();
           final imageEntity = makeImageEntity();
@@ -1760,6 +1761,11 @@ void main() {
             (_) async => [
               TestTaskFactory.create(id: 'task-1'),
               TestTaskFactory.create(id: 'task-2'),
+              // A non-task parent (e.g. a plain journal entry linking the
+              // image) must NOT receive a synthetic stale notification.
+              JournalEntity.journalEntry(
+                meta: TestMetadataFactory.create(id: 'non-task-parent'),
+              ),
             ],
           );
           when(
