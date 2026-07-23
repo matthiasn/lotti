@@ -633,11 +633,18 @@ isolation and diagnostics are identical everywhere.
 
 **Capture (always on).** Each task wake snapshots the user-content
 sources it read — one per linked journal log entry, the rendered text only (an
-audio entry contributes its transcript, never the raw audio) — via
-`AgentInputCaptureService.captureWakeInputs`:
+audio entry contributes its transcript, an image its AI analyses, never the
+raw artifact) — via `AgentInputCaptureService.captureWakeInputs`:
 
 - `renderTaskSources` turns the task's linked entries into `RenderedSource`s
-  (mirrors `AiInputRepository.generate`, keeping each entry id as provenance);
+  (mirrors `AiInputRepository.generate`, keeping each entry id as provenance).
+  For image entries it additionally emits one `image_analysis` source per
+  linked `AiResponseEntry` (summary, OCR, …) — resolved up front by
+  `fetchAiResponsesForImages` in one bulk query — with the analysis entity as
+  provenance, its own timestamp, and `model` / `refersTo` fields the compacted
+  line renderer surfaces as `model:` / `for:` tags. Analysis text is
+  immutable, so each analysis is captured exactly once and never re-mints the
+  image's own line;
 - `reconcileCapture` diffs them against the agent's active **input frontier**
   and appends only the delta;
 - each new/changed source becomes a content-addressed `AgentMessagePayloadEntity`
@@ -985,6 +992,15 @@ The persisted wake reasons are:
   inference. The enqueued wake carries `WakeInitiator.automation`, so
   toggling automation off sweeps a still-queued transcript wake from the
   queue.
+- `imageAnalysisComplete` — the image-analysis analog, fired by
+  `AutomaticImageAnalysisTrigger` after an analysis (summary/OCR) is stored
+  for a task-linked image. The nudge is required, not just an optimization:
+  the analysis is an `AiResponseEntry` linked *from the image*, so its
+  creation notifies only the image and response ids — never the task — and
+  without the explicit `requestContentWake` the task agent would not learn
+  about the new content until an unrelated wake. Same
+  `requestContentWake` semantics as `transcriptionComplete` (automatic-updates
+  opt-in, `WakeInitiator.automation`).
 
 Subscription-driven wakes are throttled with a 120-second window. A
 subscription can opt into daily-digest deferral for propagated-only matches;

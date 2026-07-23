@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1061]
 ### Added
+- **Task agents can now read your image analyses.** The AI analyses attached
+  to a task's images — brief summaries and full OCR extractions alike — are
+  now part of the task agent's context, each with the model that produced it,
+  when it ran, and its full text. The agent can finally act on what's *in*
+  an image: extract an appointment date from a photographed card and propose
+  it as the due date, name the task after the document, or reference OCR'd
+  details in its report. It also wakes right after an analysis completes
+  instead of waiting for the next unrelated change.
 - **The Daily OS coordinator now briefs each day's planning agent.** Every
   morning a coordinator digest reviews escalations and recent days, then
   issues a distilled directive per day — your commitments, the day's
