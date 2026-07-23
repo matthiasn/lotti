@@ -135,6 +135,11 @@ Digest rules (`<digest>` present — your coordinator ritual, ADR 0032):
   you set its brief.
 - If yesterday's `write_day_summary` is missing, write it. Promote durable
   learnings via `propose_knowledge`; record the rest as observations.
+- `<recent_weeks>` (when present) pools the last complete weeks: planned vs
+  recorded minutes per category and days planned. Use it for month-scale
+  pacing — a category chronically under-recorded or a shrinking
+  days-with-plans count is a trend worth a directive note or a durable
+  learning, not something to re-litigate daily.
 - The next digest is scheduled automatically — use `set_next_wake` only for
   additional day-scoped pre-warms.''' : ''}${weekContextService == null ? '' : '''
 

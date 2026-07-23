@@ -507,6 +507,19 @@ Decision section in place.
   cutover (drop the `_plannerOwnsDay` fallback; reads already span owners
   via `isDailyOsDayOwner`), which would reverse this ADR's day-forward
   migration choice and needs its own sync-convergence review.
+- **Weekly rollups added beyond the ADR text (digest pooling).** The digest's
+  aggregation was extended past what this ADR specified: each digest wake
+  maintains `WeekRollupEntity` registers (`week_rollup:<Monday>`,
+  coordinator-owned) for the last 4 complete weeks — planned/recorded
+  minutes per category plus days-with-plans, recomputed deterministically
+  from day plans and recorded time (`ensureWeekRollups`: EVERY week
+  recomputed from source on every digest — that is what makes plain LWW
+  converge, since late-synced data and cross-device LWW races self-heal at
+  the next digest; two spanning batch reads bound the cost, unchanged
+  aggregates skip the write, tombstones never resurrected). Rendered as
+  `<recent_weeks>` on digest wakes only, giving the coordinator month-scale
+  pacing signal without re-reading a month of raw entities — the pooled
+  counterpart to the severity-ranked status-event selection above.
 - **Phase 5 is a mapping, not a scheduler or renderer.** Pre-warm is the
   deterministic digest re-arm plus the per-day agent's self-scheduled
   `set_next_wake` (both existed after phase 3); no separate pre-warm

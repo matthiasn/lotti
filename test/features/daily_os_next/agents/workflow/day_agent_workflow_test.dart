@@ -2156,11 +2156,21 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => [
-              for (var i = 0; i < 50; i++)
+              // 51 routine closes, newest-skewed, plus one OLD escalation:
+              // ranked selection must keep the escalation and drop a
+              // routine close, not truncate by age.
+              makeTestDayStatusEvent(
+                id: 'day_status:$dayId:escalation',
+                raisedAt: now.subtract(const Duration(hours: 20)),
+                createdAt: now.subtract(const Duration(hours: 20)),
+              ),
+              for (var i = 0; i < 51; i++)
                 makeTestDayStatusEvent(
-                  id: 'day_status:$dayId:event-$i',
-                  raisedAt: now.subtract(Duration(minutes: 50 - i)),
-                  createdAt: now.subtract(Duration(minutes: 50 - i)),
+                  id: 'day_status:$dayId:close-$i',
+                  status: DayStatusKind.dayClosed,
+                  reasons: const [],
+                  raisedAt: now.subtract(Duration(minutes: 51 - i)),
+                  createdAt: now.subtract(Duration(minutes: 51 - i)),
                 ),
             ],
           );
@@ -2172,7 +2182,125 @@ void main() {
           expect(result.success, isTrue, reason: result.error);
           final digest = sentPrompt().json('digest')! as Map;
           expect(digest['statusEventsTruncated'], isTrue);
-          expect(digest['statusEvents'], hasLength(50));
+          final events = digest['statusEvents'] as List;
+          expect(events, hasLength(50));
+          expect(
+            (events.first as Map)['status'],
+            'attentionNeeded',
+            reason:
+                'The 20-hour-old escalation survives ranked truncation and '
+                'renders first chronologically.',
+          );
+        },
+      );
+
+      test(
+        'a full status-event page refetches wider so ranking sees the '
+        'newest events before the watermark advances past them',
+        () async {
+          when(
+            () => repository.getMessagesByKind(
+              dailyOsPlannerAgentId,
+              AgentMessageKind.system,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+          // 200 oldest routine closes fill the first page exactly; the one
+          // escalation is NEWER than all of them, so a fixed 200-row fetch
+          // would never rank it — and the completion watermark would then
+          // skip it forever.
+          final all = <DayStatusEventEntity>[
+            for (var i = 0; i < 200; i++)
+              makeTestDayStatusEvent(
+                id: 'day_status:$dayId:close-$i',
+                status: DayStatusKind.dayClosed,
+                reasons: const [],
+                raisedAt: now.subtract(Duration(hours: 40, minutes: 200 - i)),
+                createdAt: now.subtract(Duration(hours: 40, minutes: 200 - i)),
+              ),
+            makeTestDayStatusEvent(
+              id: 'day_status:$dayId:newest-escalation',
+              raisedAt: now.subtract(const Duration(hours: 1)),
+              createdAt: now.subtract(const Duration(hours: 1)),
+            ),
+          ];
+          when(
+            () => repository.getDayStatusEventsSince(any(), limit: 200),
+          ).thenAnswer((_) async => all.take(200).toList());
+          when(
+            () => repository.getDayStatusEventsSince(any(), limit: 400),
+          ).thenAnswer((_) async => all);
+
+          final result = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          verify(
+            () => repository.getDayStatusEventsSince(any(), limit: 400),
+          ).called(1);
+          final digest = sentPrompt().json('digest')! as Map;
+          expect(digest['statusEventsTruncated'], isTrue);
+          final events = digest['statusEvents'] as List;
+          expect(
+            (events.last as Map)['status'],
+            'attentionNeeded',
+            reason:
+                'The newest escalation sits beyond the first page and must '
+                'still be ranked in (rendering last, chronologically).',
+          );
+        },
+      );
+
+      test(
+        'the doubling refetch stops at the hard ceiling and forces the '
+        'truncation marker',
+        () async {
+          when(
+            () => repository.getMessagesByKind(
+              dailyOsPlannerAgentId,
+              AgentMessageKind.system,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+          final all = <DayStatusEventEntity>[
+            for (var i = 0; i < 2000; i++)
+              makeTestDayStatusEvent(
+                id: 'day_status:$dayId:flood-$i',
+                status: DayStatusKind.dayClosed,
+                reasons: const [],
+                raisedAt: now.subtract(Duration(minutes: 2000 - i)),
+                createdAt: now.subtract(Duration(minutes: 2000 - i)),
+              ),
+          ];
+          when(
+            () => repository.getDayStatusEventsSince(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((invocation) async {
+            final limit = invocation.namedArguments[#limit] as int?;
+            return all.take(limit ?? all.length).toList();
+          });
+
+          final result = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          // 200 → 400 → 800 → 1600 → 2000, then STOP: the ceiling bounds
+          // memory even against a pathological flood.
+          for (final limit in [200, 400, 800, 1600, 2000]) {
+            verify(
+              () => repository.getDayStatusEventsSince(any(), limit: limit),
+            ).called(1);
+          }
+          verifyNever(
+            () => repository.getDayStatusEventsSince(any(), limit: 3200),
+          );
+          final digest = sentPrompt().json('digest')! as Map;
+          expect(digest['statusEventsTruncated'], isTrue);
+          expect(digest['statusEvents'] as List, hasLength(50));
         },
       );
 
@@ -2255,6 +2383,104 @@ void main() {
 
         expect(result.success, isTrue, reason: result.error);
         expect(sentPrompt().has('digest'), isFalse);
+      });
+
+      MockDayAgentWeekContextService rollupStub({
+        List<Map<String, Object?>>? weeks,
+      }) {
+        final service = MockDayAgentWeekContextService();
+        when(
+          () => service.buildForDay(
+            planDate: any(named: 'planDate'),
+            now: any(named: 'now'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => service.ensureWeekRollups(now: any(named: 'now')),
+        ).thenAnswer((_) async {});
+        when(
+          () => service.recentWeeksJson(now: any(named: 'now')),
+        ).thenAnswer((_) async => weeks);
+        return service;
+      }
+
+      test(
+        'a digest wake refreshes rollups and renders <recent_weeks> plus '
+        'its digest rule',
+        () async {
+          final weekContextService = rollupStub(
+            weeks: [
+              {
+                'weekStart': '2026-05-18',
+                'daysWithPlans': 5,
+                'plannedMinutes': {'Work': 480},
+                'recordedMinutes': {'Work': 300},
+              },
+            ],
+          );
+
+          final result = await executeDigest(
+            workflow(
+              directiveService: directiveService,
+              weekContextService: weekContextService,
+            ),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          verify(
+            () => weekContextService.ensureWeekRollups(now: any(named: 'now')),
+          ).called(1);
+          final weeks = sentPrompt().json('recent_weeks')! as List;
+          final week = weeks.single as Map;
+          expect(week['weekStart'], '2026-05-18');
+          expect(week['daysWithPlans'], 5);
+          expect((week['plannedMinutes'] as Map)['Work'], 480);
+          expect((week['recordedMinutes'] as Map)['Work'], 300);
+          expect(
+            conversationRepository.lastSystemMessage,
+            contains('<recent_weeks>'),
+            reason: 'The digest rules must teach the section.',
+          );
+        },
+      );
+
+      test(
+        'a per-day agent digest token never refreshes rollups and renders '
+        'no <recent_weeks>',
+        () async {
+          final weekContextService = rollupStub();
+
+          final result = await execute(
+            workflow(
+              directiveService: directiveService,
+              weekContextService: weekContextService,
+            ),
+            triggerTokens: {dayAgentDigestToken(dayId)},
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          verifyNever(
+            () => weekContextService.ensureWeekRollups(now: any(named: 'now')),
+          );
+          expect(sentPrompt().has('recent_weeks'), isFalse);
+        },
+      );
+
+      test('absorbs a rollup refresh failure', () async {
+        final weekContextService = rollupStub();
+        when(
+          () => weekContextService.ensureWeekRollups(now: any(named: 'now')),
+        ).thenThrow(StateError('rollup storage offline'));
+
+        final result = await executeDigest(
+          workflow(
+            directiveService: directiveService,
+            weekContextService: weekContextService,
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        expect(sentPrompt().has('recent_weeks'), isFalse);
       });
     });
 

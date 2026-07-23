@@ -97,6 +97,43 @@ void main() {
     });
   });
 
+  group('weekStartFor', () {
+    test('maps every weekday of one week to the same Monday', () {
+      // 2026-05-18 is a Monday.
+      for (var offset = 0; offset < 7; offset++) {
+        expect(
+          weekStartFor(DateTime(2026, 5, 18 + offset, 13, 45)),
+          DateTime(2026, 5, 18),
+          reason: 'offset $offset must bucket to Monday 2026-05-18',
+        );
+      }
+    });
+
+    test('a Sunday belongs to the week begun the prior Monday, crossing '
+        'month boundaries', () {
+      expect(weekStartFor(DateTime(2026, 6, 7)), DateTime(2026, 6));
+      expect(weekStartFor(DateTime(2026, 5, 3)), DateTime(2026, 4, 27));
+    });
+  });
+
+  group('weekRollupEntityId', () {
+    test('locks the per-week register id format (Monday date key)', () {
+      // The literal prefix is the PK the digest recompute writes and reads;
+      // drift here would silently orphan persisted rollups.
+      expect(
+        weekRollupEntityId(DateTime(2026, 5, 18)),
+        'week_rollup:2026-05-18',
+      );
+    });
+
+    test('normalizes a mid-week timestamp through localDay', () {
+      expect(
+        weekRollupEntityId(DateTime(2026, 5, 18, 23, 59)),
+        'week_rollup:2026-05-18',
+      );
+    });
+  });
+
   group('captureDayId', () {
     CaptureEntity capture({String dayId = '', DateTime? capturedAt}) {
       return AgentDomainEntity.capture(

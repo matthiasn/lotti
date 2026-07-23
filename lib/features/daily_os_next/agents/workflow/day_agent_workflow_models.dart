@@ -2,6 +2,7 @@ import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:uuid/uuid.dart';
 
 /// Raised when a day-agent tool call fails (bad arguments, unknown tool, or a
@@ -347,4 +348,60 @@ DateTime nextDigestTime(DateTime now) {
           now.day + 1,
           AgentSchedules.dayAgentDigestHour,
         );
+}
+
+/// Severity-ranked selection of status events for one digest (ADR 0032):
+/// attention-weighted aggregation instead of arrival-order truncation.
+///
+/// When more events exist than the digest renders, relevance decides what
+/// survives — `attentionNeeded` outranks `dayClosed` outranks `onTrack`, a
+/// broken directive outranks capacity pressure outranks divergence or
+/// blockage, and newer beats older within a tier (id as the final total-order
+/// tiebreak). The survivors are returned in chronological order so the
+/// rendered narrative still reads oldest-first; the returned `truncated`
+/// flag is true only when something was actually dropped.
+({List<DayStatusEventEntity> selected, bool truncated})
+selectDigestStatusEvents(
+  List<DayStatusEventEntity> candidates, {
+  required int limit,
+}) {
+  List<DayStatusEventEntity> chronological(List<DayStatusEventEntity> list) =>
+      [...list]..sort((a, b) => a.raisedAt.compareTo(b.raisedAt));
+  if (candidates.length <= limit) {
+    return (selected: chronological(candidates), truncated: false);
+  }
+
+  int statusWeight(DayStatusEventEntity event) => switch (event.status) {
+    DayStatusKind.attentionNeeded => 2,
+    DayStatusKind.dayClosed => 1,
+    DayStatusKind.onTrack => 0,
+  };
+  int reasonWeight(DayStatusEventEntity event) {
+    var weight = 0;
+    for (final reason in event.reasons) {
+      final w = switch (reason) {
+        DayStatusReason.directiveUnsatisfiable => 4,
+        DayStatusReason.overCommitted => 3,
+        DayStatusReason.processingBlocked => 2,
+        DayStatusReason.userDivergence => 1,
+      };
+      if (w > weight) weight = w;
+    }
+    return weight;
+  }
+
+  final ranked = [...candidates]
+    ..sort((a, b) {
+      final byStatus = statusWeight(b).compareTo(statusWeight(a));
+      if (byStatus != 0) return byStatus;
+      final byReason = reasonWeight(b).compareTo(reasonWeight(a));
+      if (byReason != 0) return byReason;
+      final byRecency = b.raisedAt.compareTo(a.raisedAt);
+      if (byRecency != 0) return byRecency;
+      return a.id.compareTo(b.id);
+    });
+  return (
+    selected: chronological(ranked.take(limit).toList()),
+    truncated: true,
+  );
 }

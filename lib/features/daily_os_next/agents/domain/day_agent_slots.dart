@@ -63,3 +63,27 @@ const dayStatusEventIdPrefix = 'day_status:';
 /// unique per raise, unlike the keyed registers above.
 String dayStatusEventId(String dayId, String suffix) =>
     '$dayStatusEventIdPrefix$dayId:$suffix';
+
+/// Monday 00:00 local time of the calendar week containing [date].
+///
+/// Weeks are ISO weeks (Monday-start), matching the digest's "recent weeks"
+/// framing. Normalizes through [localDay] first so UTC-typed inputs bucket to
+/// the user's local week. Uses component day arithmetic (not
+/// `subtract(Duration)`, which is instant-based) so the result stays at
+/// local midnight across DST transitions, where a day may be 23 or 25 hours.
+DateTime weekStartFor(DateTime date) {
+  final day = localDay(date);
+  return DateTime(
+    day.year,
+    day.month,
+    day.day - (day.weekday - DateTime.monday),
+  );
+}
+
+/// Deterministic agent-entity ID for the weekly rollup register keyed by the
+/// week's Monday: `week_rollup:<yyyy-MM-dd>`.
+///
+/// One revisable register per calendar week, recomputed from source data at
+/// digest time (plain LWW — a recompute on any device converges).
+String weekRollupEntityId(DateTime weekStart) =>
+    'week_rollup:${localDay(weekStart).toIso8601String().substring(0, 10)}';
