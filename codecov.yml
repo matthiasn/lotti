@@ -1,10 +1,10 @@
 codecov:
   notify:
-    # The publish job merges the ten standard shards client-side and makes
-    # ONE upload (Codecov's server-side fold of eleven sharded reports
-    # stalled nondeterministically at this repo's size); the Glados job
-    # uploads its own flag directly. Two processed uploads total before the
-    # workflow sends its single notification.
+    # The dedicated full-suite coverage job makes ONE standard-flag upload
+    # (the sharded very_good lane dropped whole suites' hits from its lcov
+    # nondeterministically, so it gates test passing only); the Glados job
+    # uploads its own flag. Two processed uploads total before the workflow
+    # sends its single notification.
     after_n_builds: 2
     manual_trigger: true
     wait_for_ci: true
