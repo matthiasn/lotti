@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -169,7 +170,13 @@ class PersistenceLogic implements PersistenceLogicContract {
     required String fromId,
     required String toId,
     bool collapsed = false,
-  }) => _entries.createLink(fromId: fromId, toId: toId, collapsed: collapsed);
+    EntryLinkType linkType = EntryLinkType.basic,
+  }) => _entries.createLink(
+    fromId: fromId,
+    toId: toId,
+    collapsed: collapsed,
+    linkType: linkType,
+  );
 
   @override
   Future<bool?> createDbEntity(

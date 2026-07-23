@@ -640,6 +640,178 @@ void main() {
       });
     });
 
+    group('typedLinksForTaskIds -', () {
+      EntryLink buildBlocksLink({
+        required String id,
+        required String fromId,
+        required String toId,
+        required DateTime timestamp,
+      }) {
+        return EntryLink.blocks(
+          id: id,
+          fromId: fromId,
+          toId: toId,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          vectorClock: const VectorClock({'db': 1}),
+        );
+      }
+
+      test('returns empty list for empty ids', () async {
+        final results = await db!.typedLinksForTaskIds(
+          <String>{},
+          types: {'BlocksLink'},
+        );
+        expect(results, isEmpty);
+      });
+
+      test('returns empty list for empty types', () async {
+        await db!.upsertEntryLink(
+          buildBlocksLink(
+            id: 'typed-empty-types',
+            fromId: 'blocker',
+            toId: 'blocked',
+            timestamp: DateTime(2024, 10, 1),
+          ),
+        );
+
+        final results = await db!.typedLinksForTaskIds(
+          {'blocker', 'blocked'},
+          types: <String>{},
+        );
+        expect(results, isEmpty);
+      });
+
+      test('matches a link via the to_id side', () async {
+        await db!.upsertEntryLink(
+          buildBlocksLink(
+            id: 'typed-to-side',
+            fromId: 'blocker-a',
+            toId: 'blocked-a',
+            timestamp: DateTime(2024, 10, 2),
+          ),
+        );
+
+        final results = await db!.typedLinksForTaskIds(
+          {'blocked-a'},
+          types: {'BlocksLink'},
+        );
+
+        expect(results.map((l) => l.id), ['typed-to-side']);
+      });
+
+      test('matches a link via the from_id side', () async {
+        await db!.upsertEntryLink(
+          buildBlocksLink(
+            id: 'typed-from-side',
+            fromId: 'blocker-b',
+            toId: 'blocked-b',
+            timestamp: DateTime(2024, 10, 3),
+          ),
+        );
+
+        final results = await db!.typedLinksForTaskIds(
+          {'blocker-b'},
+          types: {'BlocksLink'},
+        );
+
+        expect(results.map((l) => l.id), ['typed-from-side']);
+      });
+
+      test(
+        'deduplicates a link matching both the from_id and to_id side',
+        () async {
+          await db!.upsertEntryLink(
+            buildBlocksLink(
+              id: 'typed-both-sides',
+              fromId: 'task-x',
+              toId: 'task-y',
+              timestamp: DateTime(2024, 10, 4),
+            ),
+          );
+
+          final results = await db!.typedLinksForTaskIds(
+            {'task-x', 'task-y'},
+            types: {'BlocksLink'},
+          );
+
+          expect(results.map((l) => l.id).toList(), ['typed-both-sides']);
+        },
+      );
+
+      test('restricts results to the requested type set', () async {
+        await db!.upsertEntryLink(
+          buildBlocksLink(
+            id: 'typed-blocks',
+            fromId: 'blocker-c',
+            toId: 'shared-task',
+            timestamp: DateTime(2024, 10, 5),
+          ),
+        );
+        await db!.upsertEntryLink(
+          EntryLink.followsUp(
+            id: 'typed-follows-up',
+            fromId: 'follower-c',
+            toId: 'shared-task',
+            createdAt: DateTime(2024, 10, 5),
+            updatedAt: DateTime(2024, 10, 5),
+            vectorClock: const VectorClock({'db': 1}),
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'typed-basic',
+            fromId: 'basic-c',
+            toId: 'shared-task',
+            timestamp: DateTime(2024, 10, 5),
+          ),
+        );
+
+        final blocksOnly = await db!.typedLinksForTaskIds(
+          {'shared-task'},
+          types: {'BlocksLink'},
+        );
+        expect(blocksOnly.map((l) => l.id), ['typed-blocks']);
+
+        final blocksAndFollowUps = await db!.typedLinksForTaskIds(
+          {'shared-task'},
+          types: {'BlocksLink', 'FollowsUpLink'},
+        );
+        expect(blocksAndFollowUps.map((l) => l.id).toSet(), {
+          'typed-blocks',
+          'typed-follows-up',
+        });
+      });
+
+      test(
+        'excludes links removed via deleteLink (tombstone exclusion)',
+        () async {
+          await db!.upsertEntryLink(
+            buildBlocksLink(
+              id: 'typed-removed',
+              fromId: 'blocker-d',
+              toId: 'blocked-d',
+              timestamp: DateTime(2024, 10, 6),
+            ),
+          );
+
+          final beforeDelete = await db!.typedLinksForTaskIds(
+            {'blocked-d'},
+            types: {'BlocksLink'},
+          );
+          expect(beforeDelete, hasLength(1));
+
+          await db!.deleteLink('blocker-d', 'blocked-d');
+
+          final afterDelete = await db!.typedLinksForTaskIds(
+            {'blocked-d'},
+            types: {'BlocksLink'},
+          );
+          expect(afterDelete, isEmpty);
+        },
+      );
+    });
+
     group('Rating queries -', () {
       final base = DateTime(2024, 9, 1, 10);
 

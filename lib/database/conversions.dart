@@ -261,6 +261,11 @@ LinkedDbEntry linkedDbEntity(EntryLink link) {
       basic: (_) => 'BasicLink',
       rating: (_) => 'RatingLink',
       project: (_) => 'ProjectLink',
+      blocks: (_) => 'BlocksLink',
+      followsUp: (_) => 'FollowsUpLink',
+      duplicates: (_) => 'DuplicatesLink',
+      fixes: (_) => 'FixesLink',
+      supersedes: (_) => 'SupersedesLink',
     ),
   );
 }

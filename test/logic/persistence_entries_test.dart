@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -124,4 +125,302 @@ void main() {
       verifyNever(() => outboxService.enqueueMessage(any()));
     },
   );
+
+  group('createLink linkType -', () {
+    setUp(() {
+      when(
+        () => vectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'host': 1}));
+      when(
+        () => mocks.journalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+    });
+
+    test('defaults to a BasicLink and never queries the cycle guard', () async {
+      final created = await entries.createLink(fromId: 'a', toId: 'b');
+
+      expect(created, isTrue);
+      verifyNever(
+        () => mocks.journalDb.typedLinksForTaskIds(
+          any(),
+          types: any(named: 'types'),
+        ),
+      );
+      final persisted =
+          verify(
+                () => mocks.journalDb.upsertEntryLink(captureAny()),
+              ).captured.single
+              as EntryLink;
+      expect(persisted, isA<BasicLink>());
+    });
+
+    test(
+      'a non-blocks linkType skips the cycle guard and persists that variant',
+      () async {
+        final created = await entries.createLink(
+          fromId: 'a',
+          toId: 'b',
+          linkType: EntryLinkType.followsUp,
+        );
+
+        expect(created, isTrue);
+        verifyNever(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            any(),
+            types: any(named: 'types'),
+          ),
+        );
+        final persisted =
+            verify(
+                  () => mocks.journalDb.upsertEntryLink(captureAny()),
+                ).captured.single
+                as EntryLink;
+        expect(persisted, isA<FollowsUpLink>());
+      },
+    );
+
+    test(
+      'rejects a direct self-block without querying the database',
+      () async {
+        final created = await entries.createLink(
+          fromId: 'same',
+          toId: 'same',
+          linkType: EntryLinkType.blocks,
+        );
+
+        expect(created, isFalse);
+        verifyNever(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            any(),
+            types: any(named: 'types'),
+          ),
+        );
+        verifyNever(() => mocks.journalDb.upsertEntryLink(any()));
+      },
+    );
+
+    test(
+      'creates a BlocksLink when no existing chain closes a cycle',
+      () async {
+        when(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            any(),
+            types: any(named: 'types'),
+          ),
+        ).thenAnswer((_) async => <EntryLink>[]);
+
+        final created = await entries.createLink(
+          fromId: 'a',
+          toId: 'b',
+          linkType: EntryLinkType.blocks,
+        );
+
+        expect(created, isTrue);
+        final persisted =
+            verify(
+                  () => mocks.journalDb.upsertEntryLink(captureAny()),
+                ).captured.single
+                as EntryLink;
+        expect(persisted, isA<BlocksLink>());
+      },
+    );
+
+    test(
+      'rejects a blocks edge that would immediately close a 1-hop cycle',
+      () async {
+        // b already blocks a, so creating a-blocks-b would close the loop.
+        when(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            {'b'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.blocks(
+              id: 'existing',
+              fromId: 'b',
+              toId: 'a',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        final created = await entries.createLink(
+          fromId: 'a',
+          toId: 'b',
+          linkType: EntryLinkType.blocks,
+        );
+
+        expect(created, isFalse);
+        verifyNever(() => mocks.journalDb.upsertEntryLink(any()));
+      },
+    );
+
+    test(
+      'rejects a blocks edge that would close a transitive 2-hop cycle',
+      () async {
+        // b blocks c, and c already blocks a, so a-blocks-b would close the
+        // loop two hops out.
+        when(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            {'b'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.blocks(
+              id: 'hop-1',
+              fromId: 'b',
+              toId: 'c',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            {'c'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.blocks(
+              id: 'hop-2',
+              fromId: 'c',
+              toId: 'a',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        final created = await entries.createLink(
+          fromId: 'a',
+          toId: 'b',
+          linkType: EntryLinkType.blocks,
+        );
+
+        expect(created, isFalse);
+        verifyNever(() => mocks.journalDb.upsertEntryLink(any()));
+      },
+    );
+
+    test(
+      'ignores an inbound link where the frontier task is only the target, '
+      'not the source of the blocks edge',
+      () async {
+        // 'x' blocks 'b' -- 'b' is the target here, not the source, so the
+        // outward-only traversal from 'b' must skip it rather than treating
+        // 'x' as something 'b' blocks.
+        when(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            {'b'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.blocks(
+              id: 'irrelevant-inbound',
+              fromId: 'x',
+              toId: 'b',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        final created = await entries.createLink(
+          fromId: 'a',
+          toId: 'b',
+          linkType: EntryLinkType.blocks,
+        );
+
+        expect(created, isTrue);
+      },
+    );
+
+    test(
+      'deduplicates a target reached from two frontier nodes in the same '
+      'hop instead of re-querying it twice',
+      () async {
+        // b blocks both c and d; c and d both block e -- e must be queried
+        // exactly once as the next frontier, not twice.
+        when(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            {'b'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.blocks(
+              id: 'b-blocks-c',
+              fromId: 'b',
+              toId: 'c',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+            ),
+            EntryLink.blocks(
+              id: 'b-blocks-d',
+              fromId: 'b',
+              toId: 'd',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            {'c', 'd'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.blocks(
+              id: 'c-blocks-e',
+              fromId: 'c',
+              toId: 'e',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+            ),
+            EntryLink.blocks(
+              id: 'd-blocks-e',
+              fromId: 'd',
+              toId: 'e',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            {'e'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer((_) async => <EntryLink>[]);
+
+        final created = await entries.createLink(
+          fromId: 'a',
+          toId: 'b',
+          linkType: EntryLinkType.blocks,
+        );
+
+        expect(created, isTrue);
+        verify(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            {'e'},
+            types: {'BlocksLink'},
+          ),
+        ).called(1);
+      },
+    );
+  });
 }
