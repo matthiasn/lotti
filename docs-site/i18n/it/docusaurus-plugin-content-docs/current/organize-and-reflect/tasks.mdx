@@ -23,7 +23,8 @@ L'arte di copertura è facoltativa, ma può rendere uno spazio di lavoro denso m
 Usalo per una cue visiva utile, un riferimento di prodotto, o una metafora memorabile
 per il lavoro. Le illustrazioni del progetto Waddle in questo manuale sono solo un
 esempio: una copertura può essere come pratico, giocoso, o meravigliosamente strano come voi
-Voglio.
+Voglio. Vedi [Genera la copertura dell'attività](./task-cover-art.mdx) per crearne una a
+partire dal contesto e dalle immagini di riferimento del compito stesso.
 
 <ManualScreenshot
   caseId="tasks/detail"
@@ -31,115 +32,9 @@ Voglio.
 />
 
 Lo stesso compito può contenere una descrizione, categoria, etichette, data di scadenza, record di tempo,
-elementi della lista di controllo, immagini, link e registrazioni audio.
-
-## Assegnare un agente di attività
-
-Un compito può avere un agente di compito. Assegnando uno dà a questo compito un AI persistente
-assistente con la propria configurazione di inferenza, rapporto, stato di veglia e proposta
-storia. L'agente legge il compito e il suo contesto collegato, distils l'attuale
-situazione in un breve rapporto, e può superficie proposto compito o lista di controllo
-modifiche per voi di confermare o rifiutare.
-
-L'agente assegnato appare sotto le liste di controllo dell'attività e i compiti collegati.
-carta collassata mantiene l'ultimo riassunto, controllo automatico di aggiornamento, **Wake
-agente** azione, e modello attivo percorso visibile senza fare la pagina delle attività
-sentire come una console AI.
-
-<ManualScreenshot
-  caseId="tasks/agent-card"
-  alt="Assigned Habitat Watcher task agent sul compito di habitat del pinguino orbitale, mostrando il suo attuale riassunto, aggiornamenti automatici, azione della sveglia e percorso del modello di Project Waddle"
-  caption="Habitat Watcher è assegnato a questo compito; l'assegnazione e gli aggiornamenti automatici sono scelte separate."
-/>
-
-Su un telefono, la scheda segue un unico ordine di lettura: identità, controlli di aggiornamento,
-Impostazione dell'intelligenza artificiale, rapporto, quindi proposte modifiche e storia. Sul desktop, il rapporto e
-le proposte formano la colonna di lettura mentre i controlli compatti rimangono nelle vicinanze.
-
-Scegliere **Per saperne di più** per espandere il report completo in atto. La scheda ampliata
-mantiene il compito visibile, aggiunge la valutazione di supporto del rapporto e raccomandato
-passo successivo, e offre **Apri agente interni** quando avete bisogno di rapporti,
-conversazioni, osservazioni o dettagli runtime.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-expanded"
-  alt="Scheda di incarico di Habitat Watcher ampliata con la valutazione completa dell'habitat del progetto Waddle e il prossimo passo raccomandato"
-  caption="Il rapporto completo si espande all'interno del compito invece di inviarti a una pagina separata."
-/>
-
-### Scegli la configurazione AI dell'agente
-
-La riga **Current setup** identifica il profilo, il modello e il fornitore
-usato per la sua prossima sveglia. Selezionare per scegliere un profilo di inferenza salvato, override
-solo il modello di pensiero, tornare al profilo predefinito, copiare la categoria
-configurazione attuale, o disattivare l'IA per questo un agente. Una scelta rimane con quello
-agente per aggiornamenti futuri; copiare una configurazione di categoria è un'istantanea, non un link
-che cambia silenziosamente più tardi.
-
-Se un rapporto è stato prodotto attraverso un percorso diverso, Lotti mantiene un separato
-**Questo rapporto** attribuzione invece di riavvicinare la storia con l'attuale
-setup. Disattivare l'IA lascia il report esistente leggibile ma impedisce ulteriormente
-si sveglia finché non si seleziona nuovamente una configurazione di lavoro. Gli aggiornamenti automatici non possono essere
-abilitato mentre l'agente non ha una configurazione AI funzionante.
-
-### Revisione delle modifiche proposte
-
-Una scia completa può aggiornare il rapporto e aggiungere modifiche proposte. Automatico
-gli aggiornamenti decidono *quando l'agente si sveglia*; non danno l'autorizzazione dell'agente
-modificare l'attività. Le proposte rimangono in sospeso fino a quando non si agisce su di loro.
-
-<ManualScreenshot
-  caseId="tasks/agent-suggestions"
-  alt="Scheda task-agent Habitat Watcher con due proposte in sospeso Project Waddle, licenziamento individuale e conferma azioni, e una Conferma tutte le azioni"
-  caption="L'agente propone un prodotto della lista di controllo dell'alimentatore-test e una stima riveduta; non è stata ancora applicata nessuna modifica."
-/>
-
-Utilizzare la croce per **Dismiss** una proposta o l'assegno a **Conferma** e applicare
-Si può anche scambiare una proposta lasciata a licenziare o a destra per confermare.
-diverse proposte sono in sospeso, **Conferma tutto** applica l'elenco attualmente elencato
-revisione proposte di massa con attenzione, in particolare stato, data,
-e le modifiche della lista di controllo.
-
-Aperto **Storia** per rivisitare i risultati recenti.
-una voce respinta può rappresentare o il vostro
-decisione o proposta l'agente ritratta dopo il nuovo contesto di attività lo ha fatto
-Stale.
-
-Un manuale **Wake agent** può produrre gli stessi tipi di relazione e di proposte come
-una sveglia automatica. Spegnere gli aggiornamenti automatici fuori impedisce lo sfondo futuro
-sveglia; non si applica, scarta o altrimenti si risolvono proposte che sono
-già in attesa della vostra decisione.
-
-### Scegli aggiornamenti automatici o manuali
-
-I nuovi agenti delle attività iniziano con **Aggiornamenti automatici**. La sola
-assegnazione non avvia l'inferenza. Quando gli aggiornamenti sono disattivati,
-Lotti continua a notare le modifiche rilevanti all'attività e alle voci
-collegate, contrassegna il riepilogo come non aggiornato e attende che tu
-selezioni **Agente sveglia**. Un risveglio manuale rimane disponibile ogni
-volta che l'agente ha una configurazione AI funzionante.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-manual"
-  alt="Scheda task-agent Habitat Watcher con aggiornamenti automatici, un avviso di report out-of-date, e un'azione manuale dell'agente Wake"
-  caption="La modalità manuale osserva i cambiamenti e segnala la stabilità senza iniziare l'inferenza."
-/>
-
-La comunicazione fuori data lascia deliberatamente l'ultimo utile rapporto in atto. Se
-una modifica rilevante arriva dopo che una sveglia inizia, quella nuova modifica mantiene il report
-marcato stallo anche quando la sveglia precedente termina.
-il compito si è risolto quando avete bisogno di un rapporto che include quelle ultime modifiche.
-
-Quando **Gli aggiornamenti automatici** sono attivi, Lotti raggruppa le
-modifiche corrispondenti dell'attività per circa due minuti prima di pianificare
-un aggiornamento. Questo raggruppamento evita che l'agente si risvegli per ogni
-piccola modifica. **Agente sveglia** resta disponibile per un aggiornamento
-immediato richiesto dall'utente.
-
-Spegnere gli aggiornamenti automatici cancella il conto alla rovescia in sospeso e in coda
-rinfreschi automatici, ma non cancella una sveglia che hai esplicitamente richiesto.
-Accendere di nuovo si applica ai cambiamenti futuri; non riscuote modifiche che
-è arrivato mentre l'automazione era spenta.
+elementi della lista di controllo, immagini, link e registrazioni audio. Può anche avere un
+assistente AI persistente con un proprio riepilogo, uno stato di veglia e modifiche proposte —
+vedi [Assegnare un agente di attività](./task-agents.mdx).
 
 ## Priorità
 
@@ -213,48 +108,6 @@ le azioni disponibili dipendono dalla piattaforma attuale e dal contesto.
 Vedere [Aggiungi le voci e il contesto](../plan-and-capture/entries.mdx) per quando usare
 ogni tipo di entrata.
 
-## Generare l'arte di copertura da immagine di compito reale
-
-<TutorialVideo
-  scenario="task_cover_art"
-  title="Lascia che l'IA crei la copertina della tua attività"
-  caption="Video commentato: generare l'immagine di copertina a partire dal contesto dell'attività e da immagini di riferimento."
-/>
-
-Se è configurata un'abilità di generazione dell'immagine, apri il menu di generazione dell'attività
-e scegliere la sua azione cover-art. Lotti mostra prima immagini già attaccate a
-l'attività, più immagini di copertura disponibili da attività collegate. Selezionare fino a cinque
-riferimenti per guidare il risultato, o continuare senza un riferimento.
-
-La copertura generata viene creata a Lotti dal contesto del compito e da qualsiasi
-Si tratta di un aiuto visivo, non di un campo richiesto: usarlo quando un
-immagine distinta rende il lavoro più facile o più divertente da riconoscere.
-corrente percorso di generazione dell'immagine utilizza il provider configurato, quindi trattare il
-generazione di riferimenti rapidi e selezionati come dati che state inviando intenzionalmente
-a quel fornitore; un modo di pensare o di trascrizione locale non fa copertura
-generazione locale.
-
-<ManualScreenshot
-  caseId="tasks/cover-references"
-  alt="Foglio d'arte di copertura Genera cinque immagini di riferimento del progetto Waddle dal contesto di attività"
-  caption="Il raccoglitore utilizza la stessa immagine di compito visibile in tutta la demo del progetto Waddle."
-/>
-
-Dopo aver continuato, la generazione di immagini funziona in background. Il progresso
-view utilizza lo visualizzatore di produzione di Lotti e può essere chiuso senza
-annullare il lavoro.
-
-<ManualScreenshot
-  caseId="tasks/cover-generating"
-  alt="Generazione di copertine di attività in corso con visualizzatore di produzione di Lotti"
-/>
-
-L'immagine generata diventa la copertura dell'attività e segue l'attività nell'elenco,
-dettaglio, progetto e viste del sistema operativo giornaliero. Una copertura forte dovrebbe rimanere riconoscibile
-quando l'immagine di sorgente larga è ritagliata in una miniatura di compito compatta.
-prove letterali, una metafora trattenuta, o strana come merita il lavoro;
-l'unico test utile è se si può riconoscere il compito più velocemente dopo.
-
 ## Link attività correlate
 
 Aprire la sezione **Linked** dell'attività e scegliere di collegare un'attività esistente.
@@ -272,17 +125,13 @@ il compito mantiene il proprio stato, il programma e gli allegati.
 
 ## Utilizzare la voce senza perdere il controllo
 
-<TutorialVideo
-  scenario="create_task_from_audio"
-  title="Crea un'attività con la voce"
-  caption="Video commentato: dettare un'attività, rivedere la trascrizione e spuntare un elemento suggerito della lista di controllo."
-/>
-
 Registra una nota all'interno del compito quando è più veloce per spiegare la situazione ad alta voce.
 Con le abilità di trascrizione e di attività configurate, Lotti può trasformare quel contesto in
 testo e le modifiche proposte della lista di controllo.
-date, e cambiamenti distruttivi. Vedi [Record audio](../plan-and-capture/recordings.mdx)
-per i controlli di registrazione e le opzioni di elaborazione.
+date, e cambiamenti distruttivi. Vedi [Registrazione audio](../plan-and-capture/recordings.mdx)
+per i controlli di registrazione e le opzioni di elaborazione. [Crea la tua prima
+attività](../getting-started/first-task.mdx) include un video commentato dello stesso flusso di
+dettatura, revisione e conferma.
 
 :::tip
 

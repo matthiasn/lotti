@@ -1,0 +1,114 @@
+---
+title: Tilldela en uppgiftsagent
+description: Ge en uppgift en egen AI-assistent med rapport, vakningstillstånd och förslag som du granskar innan något ändras.
+---
+
+# Tilldela en uppgiftsagent
+
+En uppgift kan ha en uppgiftsagent. Att tilldela en sådan ger uppgiften en beständig
+AI-assistent med egen inferensuppsättning, rapport, vakningstillstånd och
+förslagshistorik. Agenten läser uppgiften och dess länkade kontext, destillerar det
+aktuella läget till en kort rapport och kan lyfta fram föreslagna ändringar av
+uppgiften eller checklistan som du kan bekräfta eller avvisa. För den systemomfattande
+vyn över alla aktiva agenter, se [Driv och övervaka agenter](../ai-and-automation/agents.mdx).
+
+Den tilldelade agenten visas under uppgiftens checklistor och länkade uppgifter. Det
+hopfällda kortet håller den senaste sammanfattningen, kontrollen för automatiska
+uppdateringar, åtgärden **Wake-agent** och den aktiva modellrutten synliga utan att
+uppgiftssidan känns som en AI-konsol.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Tilldelad uppgiftsagent Habitat Watcher på uppgiften för det orbitala pingvinhabitatet, som visar aktuell sammanfattning, automatiska uppdateringar, åtgärden Wake-agent och modellrutten för Project Waddle"
+  caption="Habitat Watcher är tilldelad den här uppgiften; tilldelning och automatiska uppdateringar är separata val."
+/>
+
+På en telefon följer kortet en enda läsordning: identitet, uppdateringskontroller,
+AI-uppsättning, rapport och sedan föreslagna ändringar och historik. På skrivbordet
+utgör rapporten och förslagen läskolumnen, medan de kompakta kontrollerna finns kvar
+i närheten.
+
+Välj **Läs mer** för att expandera hela rapporten på plats. Det expanderade kortet
+håller uppgiften synlig, lägger till rapportens underliggande bedömning och
+rekommenderade nästa steg, och erbjuder **Öppna agent-interna funktioner** när du
+behöver rapporter, konversationer, observationer eller detaljer om körningen.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Expanderat uppgiftsagent-kort för Habitat Watcher med den fullständiga habitatbedömningen för Project Waddle och rekommenderat nästa steg"
+  caption="Den fullständiga rapporten expanderas inuti uppgiften istället för att skicka dig till en separat sida."
+/>
+
+## Välj agentens AI-uppsättning
+
+Kortets rad **Nuvarande upplägg** anger profilen, modellen och leverantören som
+används vid nästa vakning. Välj den för att välja en sparad inferensprofil,
+åsidosätta enbart den tänkande modellen, återgå till profilens standardvärde,
+kopiera kategorins nuvarande upplägg, eller stänga av AI för just den här agenten.
+Ett val följer med agenten för framtida uppdateringar; att kopiera ett kategoriupplägg
+är en ögonblicksbild, inte en länk som ändras i tysthet senare.
+
+Om en rapport togs fram via ett annat upplägg behåller Lotti en separat källmärkning,
+**Denna rapport**, istället för att märka om historiken med det nuvarande upplägget.
+Att stänga av AI lämnar den befintliga rapporten läsbar men hindrar fler vakningar
+tills du väljer ett fungerande upplägg igen. Automatiska uppdateringar kan inte
+aktiveras så länge agenten saknar ett fungerande AI-upplägg.
+
+## Granska föreslagna ändringar
+
+En avslutad vakning kan uppdatera rapporten och lägga till föreslagna ändringar.
+Automatiska uppdateringar avgör *när agenten vaknar*; de ger inte agenten tillstånd
+att redigera uppgiften. Förslag förblir väntande tills du agerar på dem.
+
+<ManualScreenshot
+  caseId="tasks/agent-suggestions"
+  alt="Uppgiftsagent-kort för Habitat Watcher med två väntande förslag för Project Waddle, enskilda åtgärder för att avvisa och bekräfta, samt åtgärden Bekräfta allt"
+  caption="Agenten föreslår en checklistepunkt om att testa foderautomaten och en reviderad uppskattning; ingen av ändringarna har tillämpats ännu."
+/>
+
+Använd krysset för att **Avvisa** ett förslag eller bocken för att **Bekräfta** och
+tillämpa det. Du kan också svepa ett förslag åt vänster för att avvisa eller åt höger
+för att bekräfta. När flera förslag väntar tillämpar **Bekräfta allt** de aktuellt
+listade ändringarna tillsammans. Granska massförslag noggrant, särskilt ändringar av
+status, datum och checklistor.
+
+Öppna **Historia** för att gå tillbaka till senaste resultat. Den skiljer på
+bekräftade ändringar och avvisade sådana. En avvisad post kan antingen representera
+ditt beslut eller ett förslag som agenten dragit tillbaka efter att nyare
+uppgiftskontext gjort det föråldrat.
+
+En manuell **Wake-agent** kan producera samma typer av rapporter och förslag som en
+automatisk vakning. Att stänga av automatiska uppdateringar stoppar framtida
+bakgrundsvakningar; det tillämpar, förkastar eller löser inte på annat sätt förslag
+som redan väntar på ditt beslut.
+
+## Välj automatiska eller manuella uppdateringar
+
+Nya uppgiftsagenter börjar med **Automatiska uppdateringar avstängda**. Enbart
+tilldelning förbrukar inga tokens i bakgrunden. Medan uppdateringarna är avstängda
+fortsätter Lotti att uppmärksamma relevanta ändringar i uppgiften och dess länkade
+poster, markerar en äldre sammanfattning som föråldrad och väntar på att du väljer
+**Wake-agent**. En manuell vakning är fortfarande tillgänglig så länge agenten har
+ett fungerande AI-upplägg.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Uppgiftsagent-kort för Habitat Watcher med automatiska uppdateringar avstängda, ett meddelande om att rapporten är föråldrad och en manuell Wake-agent-åtgärd"
+  caption="Manuellt läge observerar ändringar och rapporterar inaktualitet utan att starta inferens."
+/>
+
+Meddelandet om att rapporten är föråldrad lämnar medvetet den senaste användbara
+rapporten kvar. Om en relevant redigering kommer in efter att en vakning har
+påbörjats, håller den nyare redigeringen rapporten markerad som föråldrad även när
+den tidigare vakningen är klar. När du behöver en rapport som inkluderar de senaste
+ändringarna vaknar du agenten igen när uppgiften har lagt sig.
+
+När **Automatiska uppdateringar** är på samlar Lotti ihop matchande
+uppgiftsändringar i ungefär två minuter innan en uppdatering schemaläggs. Denna
+sammanslagning undviker en agentvakning för varje liten redigering. **Wake-agent**
+är fortfarande tillgänglig för en omedelbar, användarbegärd uppdatering.
+
+Att stänga av automatiska uppdateringar rensar den väntande nedräkningen och köade
+automatiska uppdateringar, men avbryter inte en vakning du uttryckligen begärt. Att
+slå på det igen gäller för framtida ändringar; det spelar inte upp ändringar som kom
+in medan automatiken var avstängd.

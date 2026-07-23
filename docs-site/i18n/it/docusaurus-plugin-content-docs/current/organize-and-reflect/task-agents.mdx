@@ -1,0 +1,127 @@
+---
+title: Assegnare un agente di attività
+description: Dai a un compito un proprio assistente AI con un rapporto, uno stato di veglia e delle proposte che rivedi prima che venga applicato qualsiasi cambiamento.
+---
+
+# Assegnare un agente di attività
+
+Un'attività può avere un solo agente di attività. Assegnarne uno dà a quell'attività
+un assistente IA persistente, con una propria configurazione di inferenza, un
+rapporto, uno stato di veglia e una cronologia delle proposte. L'agente legge
+l'attività e il suo contesto collegato, distilla la situazione attuale in un
+breve rapporto e può proporre modifiche all'attività o alla lista di controllo
+che tu puoi confermare o rifiutare. Per la vista a livello di sistema su tutti
+gli agenti in esecuzione, vedi [Eseguire e monitorare gli agenti](../ai-and-automation/agents.mdx).
+
+L'agente assegnato appare sotto le liste di controllo dell'attività e le
+attività collegate. La sua scheda ridotta mantiene visibili l'ultimo
+riassunto, il controllo degli aggiornamenti automatici, l'azione **Agente
+sveglia** e il percorso del modello attivo, senza far sembrare la pagina
+dell'attività una console IA.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Agente di attività Habitat Watcher assegnato all'attività dell'habitat del pinguino orbitale, che mostra il riassunto attuale, gli aggiornamenti automatici, l'azione di sveglia e il percorso del modello di Project Waddle"
+  caption="Habitat Watcher è assegnato a questa attività; l'assegnazione e gli aggiornamenti automatici sono scelte separate."
+/>
+
+Su un telefono, la scheda segue un unico ordine di lettura: identità,
+controlli di aggiornamento, configurazione IA, rapporto, quindi modifiche
+proposte e storia. Sul desktop, il rapporto e le proposte formano la colonna
+di lettura mentre i controlli compatti rimangono nelle vicinanze.
+
+Scegli **Leggi tutto** per espandere il rapporto completo senza lasciare la
+pagina. La scheda ampliata mantiene l'attività visibile, aggiunge la
+valutazione di supporto del rapporto e il prossimo passo raccomandato, e
+offre **Apri gli interni dell'agente** quando hai bisogno di rapporti,
+conversazioni, osservazioni o dettagli di runtime.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Scheda dell'agente di attività Habitat Watcher ampliata, con la valutazione completa dell'habitat di Project Waddle e il prossimo passo raccomandato"
+  caption="Il rapporto completo si espande all'interno dell'attività invece di inviarti a una pagina separata."
+/>
+
+## Scegli la configurazione IA dell'agente
+
+La riga **Configurazione attuale** identifica il profilo, il modello e il
+fornitore usati per la prossima sveglia. Selezionala per scegliere un
+profilo di inferenza salvato, sostituire solo il modello di pensiero,
+tornare al profilo predefinito, copiare la configurazione attuale della
+categoria o disattivare l'IA per questo singolo agente. Una scelta resta
+legata a quell'agente per gli aggiornamenti futuri; copiare la
+configurazione di una categoria è un'istantanea, non un link che cambia
+silenziosamente in seguito.
+
+Se un rapporto è stato prodotto tramite un percorso diverso, Lotti mantiene
+un'attribuzione **Questo rapporto** separata, invece di riassegnare la
+cronologia alla configurazione attuale. Disattivare l'IA lascia leggibile il
+rapporto esistente, ma impedisce ulteriori sveglie finché non selezioni di
+nuovo una configurazione funzionante. Gli aggiornamenti automatici non
+possono essere abilitati finché l'agente non ha una configurazione IA
+funzionante.
+
+## Revisione delle modifiche proposte
+
+Una sveglia completata può aggiornare il rapporto e aggiungere modifiche
+proposte. Gli aggiornamenti automatici decidono *quando l'agente si sveglia*;
+non danno all'agente il permesso di modificare l'attività. Le proposte
+restano in sospeso finché non agisci su di esse.
+
+<ManualScreenshot
+  caseId="tasks/agent-suggestions"
+  alt="Scheda dell'agente di attività Habitat Watcher con due proposte di Project Waddle in sospeso, le azioni individuali di scarto e conferma, e un'azione Conferma tutto"
+  caption="L'agente propone una voce della lista di controllo per il test dell'alimentatore e una stima rivista; nessuna modifica è stata ancora applicata."
+/>
+
+Usa la croce per **Scarta** una proposta o il segno di spunta per
+**Conferma** e applicarla. Puoi anche scorrere una proposta verso sinistra
+per scartarla o verso destra per confermarla. Quando sono in sospeso più
+proposte, **Conferma tutto** applica insieme le modifiche attualmente
+elencate. Rivedi con attenzione le proposte multiple, in particolare i
+cambiamenti di stato, data e lista di controllo.
+
+Apri **Storia** per rivedere i risultati recenti. Distingue le modifiche
+confermate da quelle scartate. Una voce scartata può rappresentare sia una
+tua decisione, sia una proposta che l'agente ha ritrattato dopo che un
+contesto più recente dell'attività l'ha resa obsoleta.
+
+Un **Agente sveglia** manuale può produrre gli stessi tipi di rapporto e di
+proposte di una sveglia automatica. Disattivare gli aggiornamenti automatici
+impedisce le future sveglie in background; non applica, scarta né altrimenti
+risolve le proposte già in attesa della tua decisione.
+
+## Scegli aggiornamenti automatici o manuali
+
+I nuovi agenti di attività iniziano con **Aggiornamenti automatici
+disattivati**. La sola assegnazione non consuma token in background. Quando
+gli aggiornamenti sono disattivati, Lotti continua a notare le modifiche
+rilevanti all'attività e alle voci collegate, contrassegna un riassunto
+precedente come non aggiornato e attende che tu selezioni **Agente sveglia**.
+Un risveglio manuale resta disponibile ogni volta che l'agente ha una
+configurazione IA funzionante.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Scheda dell'agente di attività Habitat Watcher con gli aggiornamenti automatici disattivati, un avviso di rapporto non aggiornato, e un'azione manuale di Agente sveglia"
+  caption="La modalità manuale osserva i cambiamenti e segnala quando i dati non sono più aggiornati, senza avviare l'inferenza."
+/>
+
+L'avviso di rapporto non aggiornato lascia deliberatamente visibile l'ultimo
+rapporto utile. Se una modifica rilevante arriva dopo l'inizio di una
+sveglia, quella nuova modifica mantiene il rapporto contrassegnato come
+obsoleto anche quando la sveglia precedente termina. Quando hai bisogno di
+un rapporto che includa quelle ultime modifiche, risveglia di nuovo l'agente
+dopo che l'attività si è stabilizzata.
+
+Quando gli **Aggiornamenti automatici** sono attivi, Lotti raggruppa le
+modifiche corrispondenti dell'attività per circa due minuti prima di
+pianificare un aggiornamento. Questo raggruppamento evita che l'agente si
+risvegli per ogni piccola modifica. **Agente sveglia** resta disponibile per
+un aggiornamento immediato richiesto dall'utente.
+
+Disattivare gli aggiornamenti automatici cancella il conto alla rovescia in
+sospeso e i rinfreschi automatici in coda, ma non annulla una sveglia
+richiesta esplicitamente da te. Riattivarli in seguito si applica solo ai
+cambiamenti futuri: non recupera le modifiche arrivate mentre l'automazione
+era spenta.

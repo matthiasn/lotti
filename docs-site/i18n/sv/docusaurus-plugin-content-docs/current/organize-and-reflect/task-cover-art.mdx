@@ -1,0 +1,48 @@
+---
+title: Generera omslagskonst för uppgifter
+description: Omvandla uppgiftens egen kontext och referensbilder till omslagskonst med en konfigurerad bildgenereringsfärdighet.
+---
+
+# Generera omslagskonst för uppgifter
+
+<TutorialVideo
+  scenario="task_cover_art"
+  title="Låt AI skapa omslagsbilden till din uppgift"
+  caption="Video med berättarröst: generera omslagskonst utifrån uppgiftens kontext och referensbilder."
+/>
+
+Om en bildgenereringsfärdighet är konfigurerad öppnar du uppgiftens genereringsmeny
+och väljer alternativet för omslagskonst. Lotti visar först bilder som redan är
+bifogade till uppgiften, samt tillgängliga omslagsbilder från länkade uppgifter.
+Välj upp till fem referenser för att styra resultatet, eller fortsätt utan referens.
+
+Det genererade omslaget skapas i Lotti utifrån uppgiftens kontext och de referenser
+du eventuellt väljer. Det är ett visuellt hjälpmedel, inte ett obligatoriskt fält:
+använd det när en tydlig bild gör det lättare eller roligare att känna igen arbetet.
+Den aktuella bildgenereringsvägen använder den konfigurerade leverantören, så
+behandla genereringsprompten och de valda referenserna som data du medvetet skickar
+till den leverantören; en lokal väg för tänkande eller transkribering gör inte att
+bildgenereringen sker lokalt.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Bladet Generera omslagskonst som visar fem tydliga referensbilder från Project Waddle-uppgiftens kontext"
+  caption="Väljaren använder samma uppgiftsbilder som syns genomgående i Project Waddle-demot."
+/>
+
+När du fortsätter körs bildgenereringen i bakgrunden. Förloppsvyn använder Lottis
+produktionsvisualiserare för tänkande och kan stängas utan att jobbet avbryts.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Pågående generering av uppgiftens omslagskonst med Lottis produktionsshader-visualiserare"
+/>
+
+Den genererade bilden blir uppgiftens omslag och följer med uppgiften i list-,
+detalj-, projekt- och Daily OS-vyer. Ett starkt omslag bör förbli igenkännbart när
+den breda källbilden beskärs till en kompakt uppgiftsminiatyr. Det kan vara
+bokstavliga bevis, en återhållen metafor, eller så märkligt som arbetet förtjänar;
+det enda användbara testet är om du känner igen uppgiften snabbare senare.
+
+Se [Arbeta med uppgifter](./tasks.mdx) för var omslagskonsten dyker upp när den väl
+finns.

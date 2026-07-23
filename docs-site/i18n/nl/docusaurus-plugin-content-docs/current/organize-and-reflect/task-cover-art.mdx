@@ -1,0 +1,52 @@
+---
+title: Genereer omslagafbeeldingen voor taken
+description: Zet de context en referentieafbeeldingen van een taak om in omslagafbeeldingen met een geconfigureerde vaardigheid voor het genereren van afbeeldingen.
+---
+
+# Genereer omslagafbeeldingen voor taken
+
+<TutorialVideo
+  scenario="task_cover_art"
+  title="Laat AI de cover van je taak maken"
+  caption="Video met uitleg: omslagafbeelding genereren op basis van taakcontext en referentieafbeeldingen."
+/>
+
+Als er een vaardigheid voor het genereren van afbeeldingen is geconfigureerd,
+open het generatiemenu van de taak en kies de cover-art-actie. Lotti laat
+eerst afbeeldingen zien die al aan de taak zijn toegevoegd, plus beschikbare
+omslagafbeeldingen van gekoppelde taken. Selecteer maximaal vijf referenties
+om het resultaat te begeleiden, of ga verder zonder referentie.
+
+De gegenereerde omslag wordt in Lotti gemaakt op basis van de context van de
+taak en eventuele referenties die je selecteert. Het is een visueel
+hulpmiddel, geen verplicht veld: gebruik het wanneer een duidelijk beeld het
+werk makkelijker of prettiger maakt om te herkennen. De huidige route voor
+het genereren van afbeeldingen maakt gebruik van de geconfigureerde provider,
+dus behandel de generatieprompt en geselecteerde referenties als gegevens die
+je opzettelijk naar die provider verzendt; een lokale denk- of
+transcriptieroute maakt het genereren van de omslag niet automatisch lokaal.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Vel voor het genereren van omslagafbeeldingen, met vijf verschillende Project Waddle-referentieafbeeldingen uit de taakcontext"
+  caption="De picker gebruikt dezelfde taakafbeeldingen die zichtbaar zijn tijdens de Project Waddle-demo."
+/>
+
+Nadat je doorgaat, wordt de afbeelding op de achtergrond gegenereerd. De
+voortgangsweergave gebruikt Lotti's productie-denkvisualizer en kan worden
+gesloten zonder de taak te annuleren.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Cover-art-generatie voor de taak in uitvoering met Lotti's productie-shadervisualizer"
+/>
+
+De gegenereerde afbeelding wordt de taakomslag en volgt de taak naar de
+lijst-, detail-, project- en Dagelijkse OS-weergaven. Een sterke cover moet
+herkenbaar blijven wanneer de brede bronafbeelding wordt bijgesneden tot een
+compacte taakminiatuur. Het kan letterlijk bewijs zijn, een ingetogen
+metafoor, of zo vreemd als het werk verdient; de enige bruikbare test is of
+je de taak later sneller kunt herkennen.
+
+Zie [Werken met taken](./tasks.mdx) voor waar de omslagafbeelding verschijnt
+zodra deze bestaat.

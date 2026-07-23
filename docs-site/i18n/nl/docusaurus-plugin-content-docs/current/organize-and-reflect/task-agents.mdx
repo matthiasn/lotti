@@ -1,0 +1,123 @@
+---
+title: Wijs een taakagent toe
+description: Geef een taak zijn eigen AI-assistent met een rapport, wekstatus en voorstellen die je beoordeelt voordat er iets verandert.
+---
+
+# Wijs een taakagent toe
+
+Een taak kan één taakagent hebben. Door er één toe te wijzen, krijgt die taak een
+persistente AI-assistent met een eigen AI-installatie, rapport, wekstatus en
+voorstellengeschiedenis. De agent leest de taak en de daaraan gekoppelde context,
+destilleert de huidige situatie in een kort rapport en kan voorgestelde taak- of
+checklistwijzigingen naar voren brengen die je kunt bevestigen of afwijzen. Voor
+het systeembrede overzicht van alle actieve agenten, zie [Agenten uitvoeren en
+monitoren](../ai-and-automation/agents.mdx).
+
+De toegewezen agent wordt weergegeven onder de checklists en gekoppelde taken van
+de taak. De ingeklapte kaart houdt de laatste samenvatting, de
+automatische-updateknop, de **Wake agent**-actie en de actieve modelroute
+zichtbaar, zonder dat de taakpagina aanvoelt als een AI-console.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Toegewezen taakagent Habitat Watcher op de taak orbitale pinguïnhabitat, met de huidige samenvatting, automatische updates, de wek-actie en de Project Waddle-modelroute"
+  caption="Habitat Watcher is aan deze taak toegewezen; toewijzing en automatische updates zijn aparte keuzes."
+/>
+
+Op een telefoon volgt de kaart één leesvolgorde: identiteit, updatecontroles,
+AI-installatie, rapport, en dan pas voorgestelde wijzigingen en geschiedenis. Op
+desktop vormen het rapport en de voorstellen de leeskolom, terwijl de compacte
+bedieningselementen dichtbij blijven.
+
+Kies **Lees meer** om het volledige rapport uit te vouwen. De uitgebreide kaart
+houdt de taak zichtbaar, voegt de ondersteunende beoordeling en aanbevolen
+volgende stap van het rapport toe, en biedt **Open agent internals** wanneer je
+rapporten, gesprekken, observaties of runtimedetails nodig hebt.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Uitgebreide Habitat Watcher-taakagentkaart met de volledige Project Waddle-habitatbeoordeling en de aanbevolen volgende stap"
+  caption="Het volledige rapport vouwt open binnen de taak, in plaats van je naar een aparte pagina te sturen."
+/>
+
+## Kies de AI-instellingen van de agent
+
+De rij **Huidige configuratie** op de kaart toont het profiel, het model en de
+provider die voor de volgende wake worden gebruikt. Selecteer deze rij om een
+opgeslagen gevolgtrekkingsprofiel te kiezen, alleen het denkmodel te
+overschrijven, terug te keren naar de standaardinstelling van het profiel, de
+huidige configuratie van de categorie te kopiëren, of AI voor deze ene agent uit
+te schakelen. Een keuze blijft bij die agent voor toekomstige updates; het
+kopiëren van een categorieconfiguratie is een momentopname, geen link die later
+stilletjes verandert.
+
+Als een rapport via een andere route tot stand is gekomen, houdt Lotti een
+aparte **Dit rapport**-toeschrijving aan in plaats van de geschiedenis opnieuw
+te labelen met de huidige configuratie. Als je AI uitschakelt, blijft het
+bestaande rapport leesbaar, maar worden nieuwe weksessies voorkomen totdat je
+opnieuw een werkende AI-installatie selecteert. Automatische updates kunnen niet
+worden ingeschakeld zolang de agent geen werkende AI-installatie heeft.
+
+## Beoordeel voorgestelde wijzigingen
+
+Een voltooide weksessie kan het rapport bijwerken en voorgestelde wijzigingen
+toevoegen. Automatische updates bepalen *wanneer de agent wakker wordt*; ze
+geven de agent geen toestemming om de taak te bewerken. Voorstellen blijven in
+behandeling totdat je erop reageert.
+
+<ManualScreenshot
+  caseId="tasks/agent-suggestions"
+  alt="Habitat Watcher-taakagentkaart met twee openstaande Project Waddle-voorstellen, aparte afwijs- en bevestigingsacties, en een Alles bevestigen-actie"
+  caption="De agent stelt een checklistitem voor de voedertest en een herziene schatting voor; geen van beide wijzigingen is al toegepast."
+/>
+
+Gebruik het kruisje om een voorstel te **Afwijzen**, of het vinkje om het te
+**Bevestigen** en toe te passen. Je kunt een voorstel ook naar links vegen om
+het af te wijzen, of naar rechts om het te bevestigen. Wanneer er meerdere
+voorstellen in behandeling zijn, past **Alles bevestigen** de op dat moment
+weergegeven wijzigingen gezamenlijk toe. Beoordeel bulkvoorstellen zorgvuldig,
+vooral status-, datum- en checklistwijzigingen.
+
+Open **Geschiedenis** om recente resultaten opnieuw te bekijken. Dat maakt
+onderscheid tussen bevestigde en afgewezen wijzigingen. Een afgewezen item kan
+jouw beslissing zijn, of een voorstel dat de agent heeft ingetrokken nadat een
+nieuwere taakcontext dit muf had gemaakt.
+
+Een handmatige **Wake agent**-actie kan dezelfde soorten rapporten en
+voorstellen opleveren als een automatische wake. Automatische updates
+uitschakelen stopt toekomstige achtergrondwekes; het past voorstellen die al op
+jouw beslissing wachten niet toe, wijst ze niet af en lost ze ook niet
+anderszins op.
+
+## Kies automatische of handmatige updates
+
+Nieuwe taakagenten beginnen met **Automatische updates uitgeschakeld**.
+Toewijzing alleen verbruikt geen tokens op de achtergrond. Terwijl automatische
+updates uit staan, blijft Lotti relevante wijzigingen in de taak en de daaraan
+gekoppelde items opmerken, markeert een oudere samenvatting als verouderd en
+wacht tot je **Wake agent** kiest. Een handmatige wake blijft beschikbaar zodra
+de agent een werkende AI-installatie heeft.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Habitat Watcher-taakagentkaart met automatische updates uitgeschakeld, een melding dat het rapport verouderd is, en een handmatige Wake agent-actie"
+  caption="Handmatige modus observeert wijzigingen en meldt veroudering zonder gevolgtrekking te starten."
+/>
+
+De melding dat het rapport verouderd is, laat opzettelijk het laatste bruikbare
+rapport staan. Als er een relevante bewerking binnenkomt nadat een weksessie is
+gestart, blijft het rapport gemarkeerd als verouderd, zelfs als de eerdere
+weksessie eindigt. Wanneer je een rapport wilt dat de laatste wijzigingen
+bevat, maak je de agent opnieuw wakker nadat de taak tot rust is gekomen.
+
+Wanneer **Automatische updates** zijn ingeschakeld, bundelt Lotti
+overeenkomende taakwijzigingen ongeveer twee minuten voordat er een vernieuwing
+wordt gepland. Deze samenvoeging voorkomt dat de agent wakker wordt voor elke
+kleine bewerking. **Wake agent** blijft beschikbaar voor een directe, door jou
+aangevraagde vernieuwing.
+
+Als je automatische updates uitschakelt, worden het lopende aftellen en de
+wachtende automatische vernieuwingen gewist, maar wordt een wake die je
+expliciet hebt aangevraagd niet geannuleerd. Als je ze weer inschakelt, geldt
+dat voor toekomstige wijzigingen; wijzigingen die binnenkwamen terwijl
+automatisering uit stond, worden niet alsnog verwerkt.

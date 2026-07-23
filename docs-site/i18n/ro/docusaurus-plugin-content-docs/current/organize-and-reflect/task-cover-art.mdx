@@ -1,0 +1,33 @@
+---
+title: Generați coperta sarcinii
+description: Transformați contextul propriu al sarcinii și imaginile de referință în copertă, cu o abilitate de generare a imaginilor configurată.
+---
+
+# Generați copertă din imagini reale ale sarcinii
+
+<TutorialVideo
+  scenario="task_cover_art"
+  title="Lăsați AI să creeze coperta sarcinii dvs."
+  caption="Prezentare comentată: generarea copertei din contextul sarcinii și imagini de referință."
+/>
+
+Dacă este configurată o abilitate de generare a imaginilor, deschideți meniul de generare al sarcinii și alegeți acțiunea pentru copertă. Lotti arată mai întâi imaginile atașate deja sarcinii, împreună cu imaginile de copertă disponibile din sarcinile legate. Selectați până la cinci referințe care să ghideze rezultatul sau continuați fără referință.
+
+Imaginea generată este creată în Lotti pe baza contextului sarcinii și a referințelor selectate. Este un ajutor vizual, nu un câmp obligatoriu: folosiți-o când o imagine distinctă face munca mai ușor sau mai plăcut de recunoscut. Ruta curentă de generare folosește furnizorul configurat, așadar tratați promptul și referințele selectate drept date pe care decideți intenționat să le trimiteți acelui furnizor; o rută locală de raționament sau transcriere nu înseamnă automat că generarea copertei rulează local.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Foaia Generați copertă care arată cinci imagini de referință Project Waddle distincte din contextul sarcinii"
+  caption="Selectorul folosește aceleași imagini de sarcini vizibile în întregul demo Project Waddle."
+/>
+
+După ce continuați, generarea imaginii rulează în fundal. Vizualizarea progresului folosește vizualizatorul de raționament din producție al Lotti și poate fi închisă fără a anula sarcina.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Generarea în curs a copertei sarcinii, cu vizualizatorul shader din producție al Lotti"
+/>
+
+Imaginea generată devine coperta sarcinii și o urmează în perspectivele de listă, detaliu, proiect și Daily OS. O copertă bună trebuie să rămână recognoscibilă când imaginea sursă lată este decupată într-o miniatură compactă. Poate fi dovadă literală, o metaforă discretă sau ceva la fel de ciudat ca munca; singurul test util este dacă recunoașteți mai repede sarcina mai târziu.
+
+Consultați [Lucrați cu sarcini](./tasks.mdx) pentru a vedea unde apare coperta odată ce există.

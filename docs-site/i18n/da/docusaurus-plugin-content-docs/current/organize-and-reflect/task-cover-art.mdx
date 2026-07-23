@@ -1,0 +1,51 @@
+---
+title: Generer coverkunst til opgaven
+description: Omdan opgavens egen kontekst og referencebilleder til coverkunst med en konfigureret billedgenereringsfærdighed.
+---
+
+# Generer coverkunst til opgaven
+
+<TutorialVideo
+  scenario="task_cover_art"
+  title="Lad AI skabe coverbilledet til din opgave"
+  caption="Fortalt gennemgang: sådan genereres coverkunst ud fra opgavens kontekst og referencebilleder."
+/>
+
+Hvis en billedgenereringsfærdighed er konfigureret, skal du åbne opgavens
+genereringsmenu og vælge dens cover-art-handling. Lotti viser først billeder,
+der allerede er vedhæftet opgaven, samt tilgængelige coverbilleder fra
+tilknyttede opgaver. Vælg op til fem referencer for at styre resultatet,
+eller fortsæt uden en reference.
+
+Det genererede cover skabes i Lotti ud fra opgavens kontekst og de
+referencer, du eventuelt vælger. Det er et visuelt hjælpemiddel, ikke et
+påkrævet felt: brug det, når et tydeligt billede gør arbejdet lettere eller
+sjovere at genkende. Den nuværende billedgenereringsrute bruger den
+konfigurerede udbyder, så betragt genereringsprompten og de valgte
+referencer som data, du bevidst sender til den udbyder; en lokal rute til
+tænkning eller transskription gør ikke coverkunst-generering lokal.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Ark til Generer coverkunst, der viser fem forskellige Project Waddle-referencebilleder fra opgavens kontekst"
+  caption="Vælgeren bruger de samme opgavebilleder, som ses gennem hele Project Waddle-demoen."
+/>
+
+Når du fortsætter, kører billedgenereringen i baggrunden. Fremskridtsvisningen
+bruger Lottis produktionstænkningsvisualisering og kan lukkes, uden at jobbet
+annulleres.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Igangværende generering af opgavens coverkunst med Lottis produktions-shader-visualisering"
+/>
+
+Det genererede billede bliver opgavens cover og følger opgaven ind i liste-,
+detalje-, projekt- og Daily OS-visninger. Et stærkt cover bør forblive
+genkendeligt, når det brede kildebillede beskæres til en kompakt
+opgaveminiature. Det kan være bogstavelig dokumentation, en tilbageholdt
+metafor eller lige så mærkeligt, som arbejdet fortjener; den eneste nyttige
+test er, om du kan genkende opgaven hurtigere senere.
+
+Se [Arbejd med opgaver](./tasks.mdx) for at se, hvor coverkunsten optræder,
+når den findes.

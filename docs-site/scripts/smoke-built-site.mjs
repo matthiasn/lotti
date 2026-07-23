@@ -285,7 +285,7 @@ for (const locale of translatedLocales) {
   }
   assert.equal(
     translatedDocCounts[locale],
-    38,
+    40,
     `The translation notice audit must cover every ${locale} manual document.`,
   );
 }
