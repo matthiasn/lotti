@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   digest, so week-level plans and learnings persist while each day keeps a
   small, fast context of its own.
 
+### Fixed
+- **The green focus border in list boxes no longer gets cropped at the
+  corners.** In the task filter box (and every other grouped list, e.g. in
+  Settings), the first and last row's keyboard-focus highlight was drawn as a
+  sharp rectangle and clipped by the box's rounded corners — visible after
+  picking a Status or Project filter. Edge rows now round the highlight to
+  match the box's corner radius.
+
 ## [0.9.1060]
 ### Added
 - **The Manual's five walkthrough videos are now available in every

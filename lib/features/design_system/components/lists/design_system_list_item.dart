@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list_corners.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
@@ -26,6 +27,10 @@ enum DesignSystemListItemVisualState {
 /// [onTap]/[onHoverChanged]; [forcedState] pins a
 /// [DesignSystemListItemVisualState] for widgetbook/tests. An optional bottom
 /// divider is configurable via [showDivider]/[dividerIndent]/[dividerColor].
+/// Inside a grouped list, edge rows read the enclosing
+/// [DesignSystemGroupedListCorners] scope and round their state fill and
+/// focus border to the group's corner radius so neither is cropped by the
+/// group's clip.
 class DesignSystemListItem extends StatefulWidget {
   const DesignSystemListItem({
     this.title,
@@ -171,6 +176,9 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                   tokens.colors.surface.focusPressed,
           };
     final focused = visualState == DesignSystemListItemVisualState.focused;
+    // Rows at the edge of a grouped list round their decoration to the
+    // group's clip, so the focus border is not cropped at the corners.
+    final groupCorners = DesignSystemGroupedListCorners.maybeOf(context);
 
     final item = Column(
       mainAxisSize: MainAxisSize.min,
@@ -180,6 +188,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
           child: Ink(
             decoration: BoxDecoration(
               color: backgroundColor,
+              borderRadius: groupCorners,
               border: Border.all(
                 color: focused
                     ? tokens.colors.interactive.enabled

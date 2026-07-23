@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list_corners.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -347,16 +349,8 @@ void main() {
           ),
         );
 
-        final ink = tester.widget<Ink>(
-          find.descendant(
-            of: find.byKey(itemKey),
-            matching: find.byType(Ink),
-          ),
-        );
-        final decoration = ink.decoration! as BoxDecoration;
-
         final expected = DesignSystemListPalette.activatedFill(dsTokensLight);
-        expect(decoration.color, expected);
+        expect(_inkDecoration(tester, itemKey).color, expected);
       },
     );
 
@@ -417,15 +411,7 @@ void main() {
         ),
       );
 
-      final ink = tester.widget<Ink>(
-        find.descendant(
-          of: find.byKey(itemKey),
-          matching: find.byType(Ink),
-        ),
-      );
-      final decoration = ink.decoration! as BoxDecoration;
-
-      expect(decoration.color, activeColor);
+      expect(_inkDecoration(tester, itemKey).color, activeColor);
     });
 
     testWidgets('applies hover background via forced state', (tester) async {
@@ -441,16 +427,85 @@ void main() {
         ),
       );
 
-      final ink = tester.widget<Ink>(
-        find.descendant(
-          of: find.byKey(itemKey),
-          matching: find.byType(Ink),
+      expect(
+        _inkDecoration(tester, itemKey).color,
+        dsTokensLight.colors.surface.hover,
+      );
+    });
+
+    testWidgets('applies pressed background via forced state', (tester) async {
+      const itemKey = Key('pressed-item');
+
+      await _pumpListItem(
+        tester,
+        DesignSystemListItem(
+          key: itemKey,
+          title: 'Pressed',
+          forcedState: DesignSystemListItemVisualState.pressed,
+          onTap: () {},
         ),
       );
-      final decoration = ink.decoration! as BoxDecoration;
 
-      expect(decoration.color, dsTokensLight.colors.surface.hover);
+      expect(
+        _inkDecoration(tester, itemKey).color,
+        dsTokensLight.colors.surface.focusPressed,
+      );
     });
+
+    testWidgets('uses overridden pressed background color', (tester) async {
+      const itemKey = Key('custom-pressed-item');
+      const pressedColor = Colors.purple;
+
+      await _pumpListItem(
+        tester,
+        DesignSystemListItem(
+          key: itemKey,
+          title: 'Pressed',
+          forcedState: DesignSystemListItemVisualState.pressed,
+          pressedBackgroundColor: pressedColor,
+          onTap: () {},
+        ),
+      );
+
+      expect(_inkDecoration(tester, itemKey).color, pressedColor);
+    });
+
+    testWidgets(
+      'excludeFromSemantics removes the internal semantics node while the '
+      'row stays visible',
+      (tester) async {
+        const itemKey = Key('exclude-semantics-item');
+        final handle = tester.ensureSemantics();
+        // The inner label merges with the row text, so match a substring.
+        final label = RegExp('Row label');
+
+        await _pumpListItem(
+          tester,
+          DesignSystemListItem(
+            key: itemKey,
+            title: 'Row',
+            semanticsLabel: 'Row label',
+            onTap: () {},
+          ),
+        );
+        expect(find.bySemanticsLabel(label), findsOneWidget);
+
+        await _pumpListItem(
+          tester,
+          DesignSystemListItem(
+            key: itemKey,
+            title: 'Row',
+            semanticsLabel: 'Row label',
+            excludeFromSemantics: true,
+            onTap: () {},
+          ),
+        );
+        expect(find.bySemanticsLabel(label), findsNothing);
+        expect(find.text('Row'), findsOneWidget);
+
+        handle.dispose();
+      },
+    );
 
     testWidgets('applies disabled opacity when onTap is null', (
       tester,
@@ -555,6 +610,204 @@ void main() {
       expect(divider.indent, customIndent);
     });
 
+    testWidgets(
+      'real keyboard focus paints the accent border and reports '
+      'onFocusChanged on gain and loss',
+      (tester) async {
+        const itemKey = Key('keyboard-focus-item');
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+        final events = <bool>[];
+
+        await _pumpListItem(
+          tester,
+          DesignSystemListItem(
+            key: itemKey,
+            title: 'Focusable',
+            focusNode: focusNode,
+            onTap: () {},
+            onFocusChanged: events.add,
+          ),
+        );
+
+        focusNode.requestFocus();
+        await tester.pump();
+        expect(events, [true]);
+        expect(
+          _inkDecoration(tester, itemKey).border!.top.color,
+          dsTokensLight.colors.interactive.enabled,
+        );
+
+        focusNode.unfocus();
+        await tester.pump();
+        expect(events, [true, false]);
+        // The focus-loss callback lands after the first frame; one more
+        // frame renders the reverted border.
+        await tester.pump();
+        expect(
+          _inkDecoration(tester, itemKey).border!.top.color,
+          Colors.transparent,
+        );
+      },
+    );
+
+    testWidgets(
+      'changing forcedState clears stale transient focus visuals',
+      (tester) async {
+        const itemKey = Key('reset-item');
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+
+        Future<void> pump(DesignSystemListItemVisualState? forcedState) {
+          return _pumpListItem(
+            tester,
+            DesignSystemListItem(
+              key: itemKey,
+              title: 'Resettable',
+              focusNode: focusNode,
+              forcedState: forcedState,
+              onTap: () {},
+            ),
+          );
+        }
+
+        await pump(null);
+        focusNode.requestFocus();
+        await tester.pump();
+        expect(
+          _inkDecoration(tester, itemKey).border!.top.color,
+          dsTokensLight.colors.interactive.enabled,
+        );
+
+        await pump(DesignSystemListItemVisualState.idle);
+        expect(
+          _inkDecoration(tester, itemKey).border!.top.color,
+          Colors.transparent,
+        );
+
+        // Back to free-running: the reset cleared the stale focus flag, so
+        // the border stays idle even though the node itself kept focus.
+        await pump(null);
+        expect(focusNode.hasFocus, isTrue);
+        expect(
+          _inkDecoration(tester, itemKey).border!.top.color,
+          Colors.transparent,
+        );
+      },
+    );
+
+    testWidgets(
+      'focus border stays square outside a grouped list',
+      (tester) async {
+        const itemKey = Key('ungrouped-focused-item');
+
+        await _pumpListItem(
+          tester,
+          DesignSystemListItem(
+            key: itemKey,
+            title: 'Focused',
+            forcedState: DesignSystemListItemVisualState.focused,
+            onTap: () {},
+          ),
+        );
+
+        expect(_inkDecoration(tester, itemKey).borderRadius, isNull);
+      },
+    );
+
+    testWidgets(
+      'focus border follows the grouped-list corner scope so it is not '
+      'cropped by the group clip',
+      (tester) async {
+        const itemKey = Key('grouped-focused-item');
+        final corners = BorderRadius.vertical(
+          top: Radius.circular(dsTokensLight.radii.m),
+        );
+
+        await _pumpListItem(
+          tester,
+          DesignSystemGroupedListCorners(
+            borderRadius: corners,
+            child: DesignSystemListItem(
+              key: itemKey,
+              title: 'Focused edge row',
+              forcedState: DesignSystemListItemVisualState.focused,
+              onTap: () {},
+            ),
+          ),
+        );
+
+        final decoration = _inkDecoration(tester, itemKey);
+        expect(decoration.borderRadius, corners);
+        expect(
+          decoration.border!.top.color,
+          dsTokensLight.colors.interactive.enabled,
+        );
+      },
+    );
+
+    testWidgets(
+      'focused edge row inside a real DesignSystemGroupedList rounds to '
+      'the group corner radius',
+      (tester) async {
+        const firstKey = Key('grouped-list-first-item');
+
+        await _pumpListItem(
+          tester,
+          DesignSystemGroupedList(
+            padding: EdgeInsets.zero,
+            children: [
+              DesignSystemListItem(
+                key: firstKey,
+                title: 'First',
+                forcedState: DesignSystemListItemVisualState.focused,
+                onTap: () {},
+              ),
+              DesignSystemListItem(title: 'Last', onTap: () {}),
+            ],
+          ),
+        );
+
+        final decoration = _inkDecoration(tester, firstKey);
+        expect(
+          decoration.borderRadius,
+          BorderRadius.vertical(top: Radius.circular(dsTokensLight.radii.m)),
+        );
+        expect(
+          decoration.border!.top.color,
+          dsTokensLight.colors.interactive.enabled,
+        );
+      },
+    );
+
+    testWidgets(
+      'state fill also rounds to the corner scope when the row is not '
+      'focused',
+      (tester) async {
+        const itemKey = Key('grouped-hover-item');
+        final corners = BorderRadius.vertical(
+          bottom: Radius.circular(dsTokensLight.radii.m),
+        );
+
+        await _pumpListItem(
+          tester,
+          DesignSystemGroupedListCorners(
+            borderRadius: corners,
+            child: DesignSystemListItem(
+              key: itemKey,
+              title: 'Hovered edge row',
+              forcedState: DesignSystemListItemVisualState.hover,
+              onTap: () {},
+            ),
+          ),
+        );
+
+        final decoration = _inkDecoration(tester, itemKey);
+        expect(decoration.borderRadius, corners);
+        expect(decoration.border!.top.color, Colors.transparent);
+      },
+    );
+
     testWidgets('uses small size spec with reduced padding', (tester) async {
       const itemKey = Key('small-item');
 
@@ -604,4 +857,14 @@ Future<void> _pumpListItem(
       theme: DesignSystemTheme.light(),
     ),
   );
+}
+
+BoxDecoration _inkDecoration(WidgetTester tester, Key itemKey) {
+  final ink = tester.widget<Ink>(
+    find.descendant(
+      of: find.byKey(itemKey),
+      matching: find.byType(Ink),
+    ),
+  );
+  return ink.decoration! as BoxDecoration;
 }

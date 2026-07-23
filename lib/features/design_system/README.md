@@ -184,6 +184,14 @@ Representative primitive-ish components:
 - text inputs and textareas
 - chips, badges, avatars, dividers, tooltips
 - dropdowns, lists, spinners, progress bars, scrollbars
+- grouped lists (`components/lists/design_system_grouped_list.dart`) — the
+  rounded, outlined card that groups list-item rows and clips them to its
+  corner radius. The group wraps its first and last child in a
+  `DesignSystemGroupedListCorners` inherited scope
+  (`components/lists/design_system_grouped_list_corners.dart`);
+  `DesignSystemListItem` reads it and rounds its state fill and
+  keyboard-focus border to the group's corners, so the focus outline is
+  never cropped by the clip
 - grouped-card row surfaces
   (`components/lists/grouped_card_row_surface.dart`) — selection, pointer
   hover, and keyboard focus paint through one background layer. Focus reuses
