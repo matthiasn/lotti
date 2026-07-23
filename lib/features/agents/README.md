@@ -995,13 +995,17 @@ The persisted wake reasons are:
 Image analyses (summary/OCR) deliberately have **no** analogous
 throttle-bypassing reason: a stored analysis is an `AiResponseEntry` linked
 *from the image*, so its creation notifies only the image and response ids —
-never the task (notification propagation is one hop). Instead,
-`SkillInferenceRunner.runImageAnalysis` emits the standard child-changed pair
-(`taskId` + `PROPAGATED::taskId`, the same tokens `updateDbEntity` produces
-when the image itself is edited) after persisting the analysis, and the
-agent's normal `subscription` wake picks it up — 120-second coalescing (so it
-merges with the image-add wake instead of racing it), automatic-updates
-opt-in / stale-marking included.
+never the tasks (notification propagation is one hop). Instead,
+`SkillInferenceRunner.runImageAnalysis` emits the standard child-changed
+pairs (`taskId` + `PROPAGATED::taskId`, the same tokens `updateDbEntity`
+produces when the image itself is edited) after persisting the analysis —
+for **every parent task of the image** (an image can be linked from several
+tasks; non-task parents are skipped, since only task contexts render image
+analyses), unioned with the resolved `linkedTaskId` (task resolution may have
+matched an outgoing image→task link the incoming-parents query does not
+cover). Each parent agent's normal `subscription` wake picks it up —
+120-second coalescing (so it merges with the image-add wake instead of
+racing it), automatic-updates opt-in / stale-marking included.
 
 Subscription-driven wakes are throttled with a 120-second window. A
 subscription can opt into daily-digest deferral for propagated-only matches;

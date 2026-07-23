@@ -37,6 +37,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -1735,8 +1736,9 @@ void main() {
       });
 
       test(
-        'marks the linked task dirty with the standard child-changed pair '
-        'once the attributed analysis is stored',
+        'marks every parent task dirty with the standard child-changed '
+        'pairs once the attributed analysis is stored, skipping non-task '
+        'parents',
         () async {
           _registerInteractionCapture();
           final imageEntity = makeImageEntity();
@@ -1753,6 +1755,19 @@ void main() {
           when(
             () => mockAiInputRepo.buildLinkedTasksJson('task-1'),
           ).thenAnswer((_) async => '{}');
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'img-1'),
+          ).thenAnswer(
+            (_) async => [
+              TestTaskFactory.create(id: 'task-1'),
+              TestTaskFactory.create(id: 'task-2'),
+              // A non-task parent (e.g. a plain journal entry linking the
+              // image) must NOT receive a synthetic stale notification.
+              JournalEntity.journalEntry(
+                meta: TestMetadataFactory.create(id: 'non-task-parent'),
+              ),
+            ],
+          );
           when(
             () => mockCloudRepo.generateWithImages(
               any(),
@@ -1787,10 +1802,81 @@ void main() {
             linkedTaskId: 'task-1',
           );
 
-          // The same token pair updateDbEntity emits when the image itself
-          // is edited: the task agent's subscription picks it up on the
+          // The same token pairs updateDbEntity emits when the image itself
+          // is edited — for BOTH parent tasks, not just the resolved
+          // linkedTaskId: each parent's subscription picks it up on the
           // normal throttled wake — deliberately NOT an immediate
           // throttle-bypassing content wake.
+          final notifications =
+              getIt<UpdateNotifications>() as MockUpdateNotifications;
+          verify(
+            () => notifications.notify({
+              'task-1',
+              propagatedNotification('task-1'),
+              'task-2',
+              propagatedNotification('task-2'),
+            }),
+          ).called(1);
+        },
+      );
+
+      test(
+        'falls back to the resolved task pair when the parent lookup fails',
+        () async {
+          _registerInteractionCapture();
+          final imageEntity = makeImageEntity();
+          await createStubImageFile();
+          when(
+            () => mockAiInputRepo.getEntity('img-1'),
+          ).thenAnswer((_) async => imageEntity);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-1'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'img-1'),
+          ).thenThrow(Exception('db unavailable'));
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(makeStreamChunk('Datum: 05.10.26')),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (invocation) async => makePersistedResponse(invocation),
+          );
+          stubLoggingEvent();
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: makeImageAnalysisResult(),
+            linkedTaskId: 'task-1',
+          );
+
+          // The analysis is already persisted, so a failed parent lookup
+          // degrades to notifying just the resolved task, never to aborting.
           final notifications =
               getIt<UpdateNotifications>() as MockUpdateNotifications;
           verify(
@@ -1815,6 +1901,9 @@ void main() {
           when(
             () => mockTaskSummaryResolver.resolve(any()),
           ).thenAnswer((_) async => null);
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'img-1'),
+          ).thenAnswer((_) async => <JournalEntity>[]);
           when(
             () => mockCloudRepo.generateWithImages(
               any(),
