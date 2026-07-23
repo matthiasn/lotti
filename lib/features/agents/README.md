@@ -633,11 +633,18 @@ isolation and diagnostics are identical everywhere.
 
 **Capture (always on).** Each task wake snapshots the user-content
 sources it read — one per linked journal log entry, the rendered text only (an
-audio entry contributes its transcript, never the raw audio) — via
-`AgentInputCaptureService.captureWakeInputs`:
+audio entry contributes its transcript, an image its AI analyses, never the
+raw artifact) — via `AgentInputCaptureService.captureWakeInputs`:
 
 - `renderTaskSources` turns the task's linked entries into `RenderedSource`s
-  (mirrors `AiInputRepository.generate`, keeping each entry id as provenance);
+  (mirrors `AiInputRepository.generate`, keeping each entry id as provenance).
+  For image entries it additionally emits one `image_analysis` source per
+  linked `AiResponseEntry` (summary, OCR, …) — resolved up front by
+  `fetchAiResponsesForImages` in one bulk query — with the analysis entity as
+  provenance, its own timestamp, and `model` / `refersTo` fields the compacted
+  line renderer surfaces as `model:` / `for:` tags. Analysis text is
+  immutable, so each analysis is captured exactly once and never re-mints the
+  image's own line;
 - `reconcileCapture` diffs them against the agent's active **input frontier**
   and appends only the delta;
 - each new/changed source becomes a content-addressed `AgentMessagePayloadEntity`
@@ -985,6 +992,16 @@ The persisted wake reasons are:
   inference. The enqueued wake carries `WakeInitiator.automation`, so
   toggling automation off sweeps a still-queued transcript wake from the
   queue.
+Image analyses (summary/OCR) deliberately have **no** analogous
+throttle-bypassing reason: a stored analysis is an `AiResponseEntry` linked
+*from the image*, so its creation notifies only the image and response ids —
+never the task (notification propagation is one hop). Instead,
+`SkillInferenceRunner.runImageAnalysis` emits the standard child-changed pair
+(`taskId` + `PROPAGATED::taskId`, the same tokens `updateDbEntity` produces
+when the image itself is edited) after persisting the analysis, and the
+agent's normal `subscription` wake picks it up — 120-second coalescing (so it
+merges with the image-add wake instead of racing it), automatic-updates
+opt-in / stale-marking included.
 
 Subscription-driven wakes are throttled with a 120-second window. A
 subscription can opt into daily-digest deferral for propagated-only matches;

@@ -601,7 +601,9 @@ as DateTime?,
 /// @nodoc
 mixin _$AiInputLogEntryObject {
 
- DateTime get creationTimestamp; String get loggedDuration; String get text; String? get audioTranscript; String? get transcriptLanguage; String? get entryType;
+ DateTime get creationTimestamp; String get loggedDuration; String get text; String? get audioTranscript; String? get transcriptLanguage; String? get entryType;// Omitted from JSON when null so text/audio entries don't pay for the
+// key on every prompt; only image entries with analyses carry it.
+@JsonKey(includeIfNull: false) List<AiInputAiResponseObject>? get aiResponses;
 /// Create a copy of AiInputLogEntryObject
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -614,16 +616,16 @@ $AiInputLogEntryObjectCopyWith<AiInputLogEntryObject> get copyWith => _$AiInputL
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiInputLogEntryObject&&(identical(other.creationTimestamp, creationTimestamp) || other.creationTimestamp == creationTimestamp)&&(identical(other.loggedDuration, loggedDuration) || other.loggedDuration == loggedDuration)&&(identical(other.text, text) || other.text == text)&&(identical(other.audioTranscript, audioTranscript) || other.audioTranscript == audioTranscript)&&(identical(other.transcriptLanguage, transcriptLanguage) || other.transcriptLanguage == transcriptLanguage)&&(identical(other.entryType, entryType) || other.entryType == entryType));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiInputLogEntryObject&&(identical(other.creationTimestamp, creationTimestamp) || other.creationTimestamp == creationTimestamp)&&(identical(other.loggedDuration, loggedDuration) || other.loggedDuration == loggedDuration)&&(identical(other.text, text) || other.text == text)&&(identical(other.audioTranscript, audioTranscript) || other.audioTranscript == audioTranscript)&&(identical(other.transcriptLanguage, transcriptLanguage) || other.transcriptLanguage == transcriptLanguage)&&(identical(other.entryType, entryType) || other.entryType == entryType)&&const DeepCollectionEquality().equals(other.aiResponses, aiResponses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,creationTimestamp,loggedDuration,text,audioTranscript,transcriptLanguage,entryType);
+int get hashCode => Object.hash(runtimeType,creationTimestamp,loggedDuration,text,audioTranscript,transcriptLanguage,entryType,const DeepCollectionEquality().hash(aiResponses));
 
 @override
 String toString() {
-  return 'AiInputLogEntryObject(creationTimestamp: $creationTimestamp, loggedDuration: $loggedDuration, text: $text, audioTranscript: $audioTranscript, transcriptLanguage: $transcriptLanguage, entryType: $entryType)';
+  return 'AiInputLogEntryObject(creationTimestamp: $creationTimestamp, loggedDuration: $loggedDuration, text: $text, audioTranscript: $audioTranscript, transcriptLanguage: $transcriptLanguage, entryType: $entryType, aiResponses: $aiResponses)';
 }
 
 
@@ -634,7 +636,7 @@ abstract mixin class $AiInputLogEntryObjectCopyWith<$Res>  {
   factory $AiInputLogEntryObjectCopyWith(AiInputLogEntryObject value, $Res Function(AiInputLogEntryObject) _then) = _$AiInputLogEntryObjectCopyWithImpl;
 @useResult
 $Res call({
- DateTime creationTimestamp, String loggedDuration, String text, String? audioTranscript, String? transcriptLanguage, String? entryType
+ DateTime creationTimestamp, String loggedDuration, String text, String? audioTranscript, String? transcriptLanguage, String? entryType,@JsonKey(includeIfNull: false) List<AiInputAiResponseObject>? aiResponses
 });
 
 
@@ -651,7 +653,7 @@ class _$AiInputLogEntryObjectCopyWithImpl<$Res>
 
 /// Create a copy of AiInputLogEntryObject
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? creationTimestamp = null,Object? loggedDuration = null,Object? text = null,Object? audioTranscript = freezed,Object? transcriptLanguage = freezed,Object? entryType = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? creationTimestamp = null,Object? loggedDuration = null,Object? text = null,Object? audioTranscript = freezed,Object? transcriptLanguage = freezed,Object? entryType = freezed,Object? aiResponses = freezed,}) {
   return _then(_self.copyWith(
 creationTimestamp: null == creationTimestamp ? _self.creationTimestamp : creationTimestamp // ignore: cast_nullable_to_non_nullable
 as DateTime,loggedDuration: null == loggedDuration ? _self.loggedDuration : loggedDuration // ignore: cast_nullable_to_non_nullable
@@ -659,7 +661,8 @@ as String,text: null == text ? _self.text : text // ignore: cast_nullable_to_non
 as String,audioTranscript: freezed == audioTranscript ? _self.audioTranscript : audioTranscript // ignore: cast_nullable_to_non_nullable
 as String?,transcriptLanguage: freezed == transcriptLanguage ? _self.transcriptLanguage : transcriptLanguage // ignore: cast_nullable_to_non_nullable
 as String?,entryType: freezed == entryType ? _self.entryType : entryType // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,aiResponses: freezed == aiResponses ? _self.aiResponses : aiResponses // ignore: cast_nullable_to_non_nullable
+as List<AiInputAiResponseObject>?,
   ));
 }
 
@@ -744,10 +747,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime creationTimestamp,  String loggedDuration,  String text,  String? audioTranscript,  String? transcriptLanguage,  String? entryType)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime creationTimestamp,  String loggedDuration,  String text,  String? audioTranscript,  String? transcriptLanguage,  String? entryType, @JsonKey(includeIfNull: false)  List<AiInputAiResponseObject>? aiResponses)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AiInputLogEntryObject() when $default != null:
-return $default(_that.creationTimestamp,_that.loggedDuration,_that.text,_that.audioTranscript,_that.transcriptLanguage,_that.entryType);case _:
+return $default(_that.creationTimestamp,_that.loggedDuration,_that.text,_that.audioTranscript,_that.transcriptLanguage,_that.entryType,_that.aiResponses);case _:
   return orElse();
 
 }
@@ -765,10 +768,10 @@ return $default(_that.creationTimestamp,_that.loggedDuration,_that.text,_that.au
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime creationTimestamp,  String loggedDuration,  String text,  String? audioTranscript,  String? transcriptLanguage,  String? entryType)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime creationTimestamp,  String loggedDuration,  String text,  String? audioTranscript,  String? transcriptLanguage,  String? entryType, @JsonKey(includeIfNull: false)  List<AiInputAiResponseObject>? aiResponses)  $default,) {final _that = this;
 switch (_that) {
 case _AiInputLogEntryObject():
-return $default(_that.creationTimestamp,_that.loggedDuration,_that.text,_that.audioTranscript,_that.transcriptLanguage,_that.entryType);case _:
+return $default(_that.creationTimestamp,_that.loggedDuration,_that.text,_that.audioTranscript,_that.transcriptLanguage,_that.entryType,_that.aiResponses);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -785,10 +788,10 @@ return $default(_that.creationTimestamp,_that.loggedDuration,_that.text,_that.au
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime creationTimestamp,  String loggedDuration,  String text,  String? audioTranscript,  String? transcriptLanguage,  String? entryType)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime creationTimestamp,  String loggedDuration,  String text,  String? audioTranscript,  String? transcriptLanguage,  String? entryType, @JsonKey(includeIfNull: false)  List<AiInputAiResponseObject>? aiResponses)?  $default,) {final _that = this;
 switch (_that) {
 case _AiInputLogEntryObject() when $default != null:
-return $default(_that.creationTimestamp,_that.loggedDuration,_that.text,_that.audioTranscript,_that.transcriptLanguage,_that.entryType);case _:
+return $default(_that.creationTimestamp,_that.loggedDuration,_that.text,_that.audioTranscript,_that.transcriptLanguage,_that.entryType,_that.aiResponses);case _:
   return null;
 
 }
@@ -800,7 +803,7 @@ return $default(_that.creationTimestamp,_that.loggedDuration,_that.text,_that.au
 @JsonSerializable()
 
 class _AiInputLogEntryObject implements AiInputLogEntryObject {
-  const _AiInputLogEntryObject({required this.creationTimestamp, required this.loggedDuration, required this.text, this.audioTranscript, this.transcriptLanguage, this.entryType});
+  const _AiInputLogEntryObject({required this.creationTimestamp, required this.loggedDuration, required this.text, this.audioTranscript, this.transcriptLanguage, this.entryType, @JsonKey(includeIfNull: false) final  List<AiInputAiResponseObject>? aiResponses}): _aiResponses = aiResponses;
   factory _AiInputLogEntryObject.fromJson(Map<String, dynamic> json) => _$AiInputLogEntryObjectFromJson(json);
 
 @override final  DateTime creationTimestamp;
@@ -809,6 +812,19 @@ class _AiInputLogEntryObject implements AiInputLogEntryObject {
 @override final  String? audioTranscript;
 @override final  String? transcriptLanguage;
 @override final  String? entryType;
+// Omitted from JSON when null so text/audio entries don't pay for the
+// key on every prompt; only image entries with analyses carry it.
+ final  List<AiInputAiResponseObject>? _aiResponses;
+// Omitted from JSON when null so text/audio entries don't pay for the
+// key on every prompt; only image entries with analyses carry it.
+@override@JsonKey(includeIfNull: false) List<AiInputAiResponseObject>? get aiResponses {
+  final value = _aiResponses;
+  if (value == null) return null;
+  if (_aiResponses is EqualUnmodifiableListView) return _aiResponses;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of AiInputLogEntryObject
 /// with the given fields replaced by the non-null parameter values.
@@ -823,16 +839,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiInputLogEntryObject&&(identical(other.creationTimestamp, creationTimestamp) || other.creationTimestamp == creationTimestamp)&&(identical(other.loggedDuration, loggedDuration) || other.loggedDuration == loggedDuration)&&(identical(other.text, text) || other.text == text)&&(identical(other.audioTranscript, audioTranscript) || other.audioTranscript == audioTranscript)&&(identical(other.transcriptLanguage, transcriptLanguage) || other.transcriptLanguage == transcriptLanguage)&&(identical(other.entryType, entryType) || other.entryType == entryType));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiInputLogEntryObject&&(identical(other.creationTimestamp, creationTimestamp) || other.creationTimestamp == creationTimestamp)&&(identical(other.loggedDuration, loggedDuration) || other.loggedDuration == loggedDuration)&&(identical(other.text, text) || other.text == text)&&(identical(other.audioTranscript, audioTranscript) || other.audioTranscript == audioTranscript)&&(identical(other.transcriptLanguage, transcriptLanguage) || other.transcriptLanguage == transcriptLanguage)&&(identical(other.entryType, entryType) || other.entryType == entryType)&&const DeepCollectionEquality().equals(other._aiResponses, _aiResponses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,creationTimestamp,loggedDuration,text,audioTranscript,transcriptLanguage,entryType);
+int get hashCode => Object.hash(runtimeType,creationTimestamp,loggedDuration,text,audioTranscript,transcriptLanguage,entryType,const DeepCollectionEquality().hash(_aiResponses));
 
 @override
 String toString() {
-  return 'AiInputLogEntryObject(creationTimestamp: $creationTimestamp, loggedDuration: $loggedDuration, text: $text, audioTranscript: $audioTranscript, transcriptLanguage: $transcriptLanguage, entryType: $entryType)';
+  return 'AiInputLogEntryObject(creationTimestamp: $creationTimestamp, loggedDuration: $loggedDuration, text: $text, audioTranscript: $audioTranscript, transcriptLanguage: $transcriptLanguage, entryType: $entryType, aiResponses: $aiResponses)';
 }
 
 
@@ -843,7 +859,7 @@ abstract mixin class _$AiInputLogEntryObjectCopyWith<$Res> implements $AiInputLo
   factory _$AiInputLogEntryObjectCopyWith(_AiInputLogEntryObject value, $Res Function(_AiInputLogEntryObject) _then) = __$AiInputLogEntryObjectCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime creationTimestamp, String loggedDuration, String text, String? audioTranscript, String? transcriptLanguage, String? entryType
+ DateTime creationTimestamp, String loggedDuration, String text, String? audioTranscript, String? transcriptLanguage, String? entryType,@JsonKey(includeIfNull: false) List<AiInputAiResponseObject>? aiResponses
 });
 
 
@@ -860,7 +876,7 @@ class __$AiInputLogEntryObjectCopyWithImpl<$Res>
 
 /// Create a copy of AiInputLogEntryObject
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? creationTimestamp = null,Object? loggedDuration = null,Object? text = null,Object? audioTranscript = freezed,Object? transcriptLanguage = freezed,Object? entryType = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? creationTimestamp = null,Object? loggedDuration = null,Object? text = null,Object? audioTranscript = freezed,Object? transcriptLanguage = freezed,Object? entryType = freezed,Object? aiResponses = freezed,}) {
   return _then(_AiInputLogEntryObject(
 creationTimestamp: null == creationTimestamp ? _self.creationTimestamp : creationTimestamp // ignore: cast_nullable_to_non_nullable
 as DateTime,loggedDuration: null == loggedDuration ? _self.loggedDuration : loggedDuration // ignore: cast_nullable_to_non_nullable
@@ -868,7 +884,277 @@ as String,text: null == text ? _self.text : text // ignore: cast_nullable_to_non
 as String,audioTranscript: freezed == audioTranscript ? _self.audioTranscript : audioTranscript // ignore: cast_nullable_to_non_nullable
 as String?,transcriptLanguage: freezed == transcriptLanguage ? _self.transcriptLanguage : transcriptLanguage // ignore: cast_nullable_to_non_nullable
 as String?,entryType: freezed == entryType ? _self.entryType : entryType // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,aiResponses: freezed == aiResponses ? _self._aiResponses : aiResponses // ignore: cast_nullable_to_non_nullable
+as List<AiInputAiResponseObject>?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$AiInputAiResponseObject {
+
+ String get model; DateTime get generatedAt; String get text;
+/// Create a copy of AiInputAiResponseObject
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AiInputAiResponseObjectCopyWith<AiInputAiResponseObject> get copyWith => _$AiInputAiResponseObjectCopyWithImpl<AiInputAiResponseObject>(this as AiInputAiResponseObject, _$identity);
+
+  /// Serializes this AiInputAiResponseObject to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiInputAiResponseObject&&(identical(other.model, model) || other.model == model)&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.text, text) || other.text == text));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,model,generatedAt,text);
+
+@override
+String toString() {
+  return 'AiInputAiResponseObject(model: $model, generatedAt: $generatedAt, text: $text)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AiInputAiResponseObjectCopyWith<$Res>  {
+  factory $AiInputAiResponseObjectCopyWith(AiInputAiResponseObject value, $Res Function(AiInputAiResponseObject) _then) = _$AiInputAiResponseObjectCopyWithImpl;
+@useResult
+$Res call({
+ String model, DateTime generatedAt, String text
+});
+
+
+
+
+}
+/// @nodoc
+class _$AiInputAiResponseObjectCopyWithImpl<$Res>
+    implements $AiInputAiResponseObjectCopyWith<$Res> {
+  _$AiInputAiResponseObjectCopyWithImpl(this._self, this._then);
+
+  final AiInputAiResponseObject _self;
+  final $Res Function(AiInputAiResponseObject) _then;
+
+/// Create a copy of AiInputAiResponseObject
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? model = null,Object? generatedAt = null,Object? text = null,}) {
+  return _then(_self.copyWith(
+model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as String,generatedAt: null == generatedAt ? _self.generatedAt : generatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AiInputAiResponseObject].
+extension AiInputAiResponseObjectPatterns on AiInputAiResponseObject {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AiInputAiResponseObject value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AiInputAiResponseObject() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AiInputAiResponseObject value)  $default,){
+final _that = this;
+switch (_that) {
+case _AiInputAiResponseObject():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AiInputAiResponseObject value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AiInputAiResponseObject() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String model,  DateTime generatedAt,  String text)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AiInputAiResponseObject() when $default != null:
+return $default(_that.model,_that.generatedAt,_that.text);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String model,  DateTime generatedAt,  String text)  $default,) {final _that = this;
+switch (_that) {
+case _AiInputAiResponseObject():
+return $default(_that.model,_that.generatedAt,_that.text);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String model,  DateTime generatedAt,  String text)?  $default,) {final _that = this;
+switch (_that) {
+case _AiInputAiResponseObject() when $default != null:
+return $default(_that.model,_that.generatedAt,_that.text);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AiInputAiResponseObject implements AiInputAiResponseObject {
+  const _AiInputAiResponseObject({required this.model, required this.generatedAt, required this.text});
+  factory _AiInputAiResponseObject.fromJson(Map<String, dynamic> json) => _$AiInputAiResponseObjectFromJson(json);
+
+@override final  String model;
+@override final  DateTime generatedAt;
+@override final  String text;
+
+/// Create a copy of AiInputAiResponseObject
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AiInputAiResponseObjectCopyWith<_AiInputAiResponseObject> get copyWith => __$AiInputAiResponseObjectCopyWithImpl<_AiInputAiResponseObject>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AiInputAiResponseObjectToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiInputAiResponseObject&&(identical(other.model, model) || other.model == model)&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.text, text) || other.text == text));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,model,generatedAt,text);
+
+@override
+String toString() {
+  return 'AiInputAiResponseObject(model: $model, generatedAt: $generatedAt, text: $text)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AiInputAiResponseObjectCopyWith<$Res> implements $AiInputAiResponseObjectCopyWith<$Res> {
+  factory _$AiInputAiResponseObjectCopyWith(_AiInputAiResponseObject value, $Res Function(_AiInputAiResponseObject) _then) = __$AiInputAiResponseObjectCopyWithImpl;
+@override @useResult
+$Res call({
+ String model, DateTime generatedAt, String text
+});
+
+
+
+
+}
+/// @nodoc
+class __$AiInputAiResponseObjectCopyWithImpl<$Res>
+    implements _$AiInputAiResponseObjectCopyWith<$Res> {
+  __$AiInputAiResponseObjectCopyWithImpl(this._self, this._then);
+
+  final _AiInputAiResponseObject _self;
+  final $Res Function(_AiInputAiResponseObject) _then;
+
+/// Create a copy of AiInputAiResponseObject
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? model = null,Object? generatedAt = null,Object? text = null,}) {
+  return _then(_AiInputAiResponseObject(
+model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as String,generatedAt: null == generatedAt ? _self.generatedAt : generatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

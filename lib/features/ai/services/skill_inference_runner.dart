@@ -40,6 +40,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -331,6 +332,11 @@ class SkillInferenceRunner {
   /// changing the entire profile. A stale or unresolvable override
   /// falls back to the profile slot (with a warning log) — stranding
   /// the user is worse than ignoring a stale id.
+  ///
+  /// After the attributed path stores the analysis, a [linkedTaskId] (when
+  /// present) is marked dirty via the standard child-changed notification
+  /// pair, so the task agent picks the new analysis up on its normal
+  /// subscription wake.
   Future<void> runImageAnalysis({
     required String imageEntryId,
     required AutomationResult automationResult,
@@ -497,6 +503,21 @@ class SkillInferenceRunner {
             );
           }
           await _finalizeAttribution(attributionEnvelope);
+
+          // The analysis entry is linked FROM the image, so its creation only
+          // notifies the image and response ids — notification propagation is
+          // one hop, and the parent task never hears about it. Emit the same
+          // child-changed pair `updateDbEntity` produces when the image itself
+          // is edited, so the task agent's normal subscription wake (120 s
+          // coalescing, automatic-updates opt-in / stale-marking) picks up the
+          // new analysis. The legacy branch below needs no equivalent: its
+          // image update propagates to the task on its own.
+          if (linkedTaskId != null) {
+            getIt<UpdateNotifications>().notify({
+              linkedTaskId,
+              propagatedNotification(linkedTaskId),
+            });
+          }
         } else {
           final originalText = currentImage.entryText?.markdown ?? '';
           final amendedText = originalText.isEmpty

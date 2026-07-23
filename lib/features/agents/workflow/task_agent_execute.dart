@@ -56,6 +56,19 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     if (inputCaptureService != null) {
       try {
         final linked = await journalDb.getLinkedEntities(taskId);
+        // Image AI analyses (summary, OCR, …) are linked from their image,
+        // not from the task, so they need their own bulk lookup. A failure
+        // here degrades to capturing without analyses rather than skipping
+        // the whole capture.
+        var imageAiResponses = const <String, List<AiResponseEntry>>{};
+        try {
+          imageAiResponses = await fetchAiResponsesForImages(
+            db: journalDb,
+            linkedEntities: linked,
+          );
+        } catch (e) {
+          _logError('failed to fetch image AI responses for capture', error: e);
+        }
         captureSucceeded = await memory.capture(
           agentId: agentId,
           sources: renderTaskSources(
@@ -63,6 +76,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             // A running timer's duration is still ticking; capturing it would
             // mint a new content version every wake (see renderTaskSources).
             runningEntryId: getIt<TimeService>().getCurrent()?.meta.id,
+            aiResponsesByEntryId: imageAiResponses,
           ),
           at: now,
           threadId: threadId,

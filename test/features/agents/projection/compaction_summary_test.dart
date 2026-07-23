@@ -437,6 +437,38 @@ void main() {
       expect(text, contains('spoken words'));
     });
 
+    test(
+      'renders an image analysis with its model and image reference so the '
+      'agent can read extracted dates',
+      () {
+        final text = assembleCompactedTaskLog(
+          tail: [
+            TailLine(
+              source: RenderedSource(
+                contentEntryId: 'resp-ocr',
+                sourceCreatedAt: DateTime.utc(2026, 7, 23, 17, 9),
+                content: const {
+                  'entryType': 'image_analysis',
+                  'model': 'mistral-ocr-latest',
+                  'refersTo': 'img-1',
+                  'text': 'Datum: 05.10.26\nUhrzeit: 14:30',
+                },
+              ),
+            ),
+          ],
+        );
+        // Model + image provenance in the tags, OCR body collapsed to the
+        // one-line contract with the date evidence verbatim.
+        expect(
+          text,
+          contains(
+            '(id: resp-ocr, image_analysis, model: mistral-ocr-latest, '
+            'for: img-1) Datum: 05.10.26 Uhrzeit: 14:30',
+          ),
+        );
+      },
+    );
+
     test('renders the per-entry duration when it carries information', () {
       final text = assembleCompactedTaskLog(
         tail: [

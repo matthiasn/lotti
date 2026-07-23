@@ -79,6 +79,9 @@ _AiInputLogEntryObject _$AiInputLogEntryObjectFromJson(
   audioTranscript: json['audioTranscript'] as String?,
   transcriptLanguage: json['transcriptLanguage'] as String?,
   entryType: json['entryType'] as String?,
+  aiResponses: (json['aiResponses'] as List<dynamic>?)
+      ?.map((e) => AiInputAiResponseObject.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
 
 Map<String, dynamic> _$AiInputLogEntryObjectToJson(
@@ -90,6 +93,23 @@ Map<String, dynamic> _$AiInputLogEntryObjectToJson(
   'audioTranscript': instance.audioTranscript,
   'transcriptLanguage': instance.transcriptLanguage,
   'entryType': instance.entryType,
+  'aiResponses': ?instance.aiResponses,
+};
+
+_AiInputAiResponseObject _$AiInputAiResponseObjectFromJson(
+  Map<String, dynamic> json,
+) => _AiInputAiResponseObject(
+  model: json['model'] as String,
+  generatedAt: DateTime.parse(json['generatedAt'] as String),
+  text: json['text'] as String,
+);
+
+Map<String, dynamic> _$AiInputAiResponseObjectToJson(
+  _AiInputAiResponseObject instance,
+) => <String, dynamic>{
+  'model': instance.model,
+  'generatedAt': instance.generatedAt.toIso8601String(),
+  'text': instance.text,
 };
 
 _AiInputActionItemsList _$AiInputActionItemsListFromJson(

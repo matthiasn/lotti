@@ -52,7 +52,9 @@ abstract class AiActionItem with _$AiActionItem {
 
 /// A single journal/log entry attached to a task, as seen by the model inside
 /// an [AiInputTaskObject]. Carries the pre-formatted logged duration plus any
-/// audio transcript so the prompt can reference past activity.
+/// audio transcript so the prompt can reference past activity. Image entries
+/// additionally nest their AI analysis results (summary, OCR, …) in
+/// [aiResponses] so the model can reason over extracted image content.
 @freezed
 abstract class AiInputLogEntryObject with _$AiInputLogEntryObject {
   const factory AiInputLogEntryObject({
@@ -62,10 +64,29 @@ abstract class AiInputLogEntryObject with _$AiInputLogEntryObject {
     String? audioTranscript,
     String? transcriptLanguage,
     String? entryType,
+    // Omitted from JSON when null so text/audio entries don't pay for the
+    // key on every prompt; only image entries with analyses carry it.
+    @JsonKey(includeIfNull: false) List<AiInputAiResponseObject>? aiResponses,
   }) = _AiInputLogEntryObject;
 
   factory AiInputLogEntryObject.fromJson(Map<String, dynamic> json) =>
       _$AiInputLogEntryObjectFromJson(json);
+}
+
+/// One AI analysis response nested under an [AiInputLogEntryObject] — e.g. an
+/// image's brief summary or its full OCR extraction. [model] identifies which
+/// analysis produced [text] (summary vs OCR models differ), and [generatedAt]
+/// is when the analysis ran.
+@freezed
+abstract class AiInputAiResponseObject with _$AiInputAiResponseObject {
+  const factory AiInputAiResponseObject({
+    required String model,
+    required DateTime generatedAt,
+    required String text,
+  }) = _AiInputAiResponseObject;
+
+  factory AiInputAiResponseObject.fromJson(Map<String, dynamic> json) =>
+      _$AiInputAiResponseObjectFromJson(json);
 }
 
 /// Wrapper around a list of [AiActionItem]s, used as the structured-output

@@ -205,6 +205,10 @@ void registerAllFallbackValues() {
   // AI skill types (for hasAutomatedSkillType stubs with `any()`)
   registerFallbackValue(SkillType.transcription);
 
+  // Notification token sets (for UpdateNotifications.notify stubs with
+  // `any()`)
+  registerFallbackValue(<String>{});
+
   // Fake classes from mocks.dart
   registerFallbackValue(FakeMetadata());
   registerFallbackValue(FakeDashboardDefinition());

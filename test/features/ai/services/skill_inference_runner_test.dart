@@ -32,6 +32,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -1732,6 +1733,126 @@ void main() {
         expect(_capturedEvents(attribution), hasLength(1));
         verify(() => attribution.service.finalize(any())).called(1);
       });
+
+      test(
+        'marks the linked task dirty with the standard child-changed pair '
+        'once the attributed analysis is stored',
+        () async {
+          _registerInteractionCapture();
+          final imageEntity = makeImageEntity();
+          await createStubImageFile();
+          when(
+            () => mockAiInputRepo.getEntity('img-1'),
+          ).thenAnswer((_) async => imageEntity);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-1'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(makeStreamChunk('Datum: 05.10.26')),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (invocation) async => makePersistedResponse(invocation),
+          );
+          stubLoggingEvent();
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: makeImageAnalysisResult(),
+            linkedTaskId: 'task-1',
+          );
+
+          // The same token pair updateDbEntity emits when the image itself
+          // is edited: the task agent's subscription picks it up on the
+          // normal throttled wake — deliberately NOT an immediate
+          // throttle-bypassing content wake.
+          final notifications =
+              getIt<UpdateNotifications>() as MockUpdateNotifications;
+          verify(
+            () => notifications.notify({
+              'task-1',
+              propagatedNotification('task-1'),
+            }),
+          ).called(1);
+        },
+      );
+
+      test(
+        'emits no task notification when the analyzed image has no linked '
+        'task',
+        () async {
+          _registerInteractionCapture();
+          final imageEntity = makeImageEntity();
+          await createStubImageFile();
+          when(
+            () => mockAiInputRepo.getEntity('img-1'),
+          ).thenAnswer((_) async => imageEntity);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(makeStreamChunk('A standalone photo')),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (invocation) async => makePersistedResponse(invocation),
+          );
+          stubLoggingEvent();
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: makeImageAnalysisResult(),
+          );
+
+          final notifications =
+              getIt<UpdateNotifications>() as MockUpdateNotifications;
+          verifyNever(() => notifications.notify(any()));
+        },
+      );
 
       test('appends analysis to existing entryText', () async {
         final imageEntity =

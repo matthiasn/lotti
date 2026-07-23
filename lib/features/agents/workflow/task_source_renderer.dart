@@ -10,7 +10,8 @@ import 'package:lotti/widgets/charts/utils.dart';
 /// This mirrors that walk (text / image / audio, with edited text taking
 /// precedence over a raw transcript) but keeps each entry's id as provenance
 /// and snapshots the rendered **text** only — an audio entry contributes its
-/// transcript, never the raw audio — so capture stays bounded by distinct
+/// transcript and an image its AI analyses (as separate `image_analysis`
+/// sources), never the raw artifact — so capture stays bounded by distinct
 /// content. Keep in sync with `AiInputRepository.generate`.
 ///
 /// Non-log linked entities (the task itself, checklists, quantitative entries,
@@ -22,9 +23,19 @@ import 'package:lotti/widgets/charts/utils.dart';
 /// content version (and mutate the entry's rendered line mid-log, voiding the
 /// provider prefix cache) on every wake of a work session. The duration is
 /// captured once, when it is final.
+///
+/// [aiResponsesByEntryId] carries each image entry's AI analyses (summary,
+/// OCR, …) keyed by image id — see `fetchAiResponsesForImages`. Every analysis
+/// becomes its **own** [RenderedSource] (`entryType: 'image_analysis'`, with
+/// the analysis entity as provenance and its `refersTo` naming the image)
+/// rather than being folded into the image's content: analysis text is
+/// immutable, so a separate source is captured exactly once and never re-mints
+/// the image's line, and it lands at its true chronological position in the
+/// log.
 List<RenderedSource> renderTaskSources(
   Iterable<JournalEntity> linkedEntities, {
   String? runningEntryId,
+  Map<String, List<AiResponseEntry>> aiResponsesByEntryId = const {},
 }) {
   final sources = <RenderedSource>[];
   for (final linked in linkedEntities) {
@@ -75,6 +86,25 @@ List<RenderedSource> renderTaskSources(
         },
       ),
     );
+
+    if (linked is JournalImage) {
+      final analyses =
+          aiResponsesByEntryId[linked.meta.id] ?? const <AiResponseEntry>[];
+      for (final response in analyses) {
+        sources.add(
+          RenderedSource(
+            contentEntryId: response.meta.id,
+            sourceCreatedAt: response.meta.dateFrom,
+            content: <String, Object?>{
+              'entryType': 'image_analysis',
+              'model': response.data.model,
+              'refersTo': linked.meta.id,
+              'text': response.data.response,
+            },
+          ),
+        );
+      }
+    }
   }
   return sources;
 }
