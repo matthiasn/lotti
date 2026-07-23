@@ -61,15 +61,18 @@ jobs:
           very_good test --coverage --exclude-tags glados -- \
             --total-shards=10 \
             --shard-index=${{ matrix.shard_index }}
-      - uses: codecov/codecov-action@v7
+      # Shards no longer upload to Codecov directly: merging eleven sharded
+      # reports server-side proved unreliable at this repo's size (the fold
+      # stalled at arbitrary points, deflating project coverage by 5-10
+      # points nondeterministically). Each shard publishes its lcov as a
+      # workflow artifact; the publish job merges them client-side and makes
+      # one deterministic upload.
+      - uses: actions/upload-artifact@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: matthiasn/lotti
-          version: v11.2.8
-          fail_ci_if_error: true
-          flags: standard
-          name: standard-shard-${{ matrix.shard_label }}
-          files: coverage/lcov.info
+          name: coverage-standard-shard-${{ matrix.shard_label }}
+          path: coverage/lcov.info
+          retention-days: 1
+          if-no-files-found: error
 
   glados:
     name: Glados Property Tests (Linux)
@@ -115,6 +118,63 @@ jobs:
       - glados
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-standard-shard-*
+          path: coverage-artifacts
+      - name: Merge shard coverage
+        run: |
+          python3 - <<'EOF'
+          import collections
+          import glob
+
+          # Union per (file, line) by max hits: a line covered in ANY shard
+          # is covered. Only SF/DA matter to Codecov's line coverage;
+          # function/branch records are deliberately dropped.
+          hits = collections.defaultdict(dict)
+          inputs = sorted(glob.glob('coverage-artifacts/**/lcov.info',
+                                    recursive=True))
+          assert len(inputs) == 10, f'expected 10 shard reports: {inputs}'
+          for path in inputs:
+              sf = None
+              for line in open(path):
+                  line = line.strip()
+                  if line.startswith('SF:'):
+                      sf = line[3:]
+                  elif line.startswith('DA:') and sf:
+                      number, hit = line[3:].split(',')[:2]
+                      number = int(number)
+                      hit = int(hit)
+                      per_file = hits[sf]
+                      per_file[number] = max(per_file.get(number, 0), hit)
+                  elif line == 'end_of_record':
+                      sf = None
+          import os
+          os.makedirs('coverage', exist_ok=True)
+          with open('coverage/lcov.info', 'w') as out:
+              for sf in sorted(hits):
+                  out.write(f'SF:{sf}\n')
+                  per_file = hits[sf]
+                  for number in sorted(per_file):
+                      out.write(f'DA:{number},{per_file[number]}\n')
+                  covered = sum(1 for v in per_file.values() if v > 0)
+                  out.write(f'LF:{len(per_file)}\nLH:{covered}\n')
+                  out.write('end_of_record\n')
+          total = sum(len(v) for v in hits.values())
+          covered = sum(
+              1 for v in hits.values() for h in v.values() if h > 0)
+          print(f'merged {len(hits)} files, {covered}/{total} lines '
+                f'({covered / total:.2%})')
+          EOF
+      - uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: matthiasn/lotti
+          version: v11.2.8
+          fail_ci_if_error: true
+          flags: standard
+          name: standard-merged
+          files: coverage/lcov.info
       - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
