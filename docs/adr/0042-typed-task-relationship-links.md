@@ -118,9 +118,18 @@ indexes. The UI offers both phrasings when creating a link and simply swaps
 
 A task is **ready** iff it has no live blocker:
 
-> no non-deleted `blocks` link with `toId == task` whose `fromId` task
-> exists and is not closed (`DONE`/`REJECTED`, the `isClosedTask`
-> predicate).
+> no non-deleted `blocks` link with `toId == task` whose `fromId` task is
+> neither tombstoned (`deletedAt` set) nor closed (`DONE`/`REJECTED`, the
+> `isClosedTask` predicate).
+
+An **unresolvable blocker keeps blocking**: when the link row exists but
+the `fromId` task cannot be loaded (typically a sync gap — the link
+arrived before its task), the dependent stays blocked until the task
+materializes or the link is deleted. Journal entities tombstone rather
+than hard-delete, so a *deliberately* deleted blocker carries `deletedAt`
+and releases its dependents; only a genuinely unresolved reference blocks
+conservatively. The resolver tests must pin all three cases (closed →
+released, tombstoned → released, unresolvable → blocked).
 
 - Readiness is **derived at read time, never stored**. Closing a blocker
   "releases" its dependents implicitly on every device — no unlock write,

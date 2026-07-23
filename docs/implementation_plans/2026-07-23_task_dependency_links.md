@@ -113,16 +113,26 @@ old-build compatibility window before any device can create typed links.
    of task ids — one `(to_id, type)`-indexed link fetch + one batch
    blocker-status load; one hop, visited-set safe, no per-task fan-out.
 2. **Corpus annotation**: `buildTaskCorpusSnapshot` rows gain `blockedBy:
-   [{taskId, title, status}]` on blocked rows only (absence = ready).
+   [{taskId, title, status}]` on link-blocked rows only. Absence means
+   *link-ready*, not free to schedule: "blocked for planning" is the union
+   `status == BLOCKED || blockedBy.isNotEmpty` (ADR 0043 §1) — the manual
+   status is already visible in every row's `status` field, so the corpus
+   shape needs no second flag.
 3. **Prompt rules** in `day_agent_prompt_builder.dart`, conditional on the
-   dependency data path being configured: drafting/refine (don't place
-   blocked work without placing the blocker or naming it in the reason;
-   prefer scheduling blockers) and digest (commitments target ready work
-   or name the blocker in an attention note).
-4. **Tests**: resolver (direction, closed-blocker release, tombstones,
-   cycles → all-blocked), corpus annotation shape and absence-when-ready,
-   workflow prompt assertions for both rule blocks, byte-stability of the
-   snapshot for dependency-free corpora.
+   dependency data path being configured. Drafting/refine carry the ADR
+   0043 §3 predicate verbatim: a task blocked for planning
+   (`status == BLOCKED` or non-empty `blockedBy`) may be placed only if
+   (a) the same plan places work on its blocker earlier in the day, or
+   (b) the block's `reason` explicitly names the blocker and why the work
+   can proceed despite it; prefer scheduling blockers. Digest: commitments
+   target ready work or name the blocker in an attention note.
+4. **Tests**: resolver (direction; closed blocker → released; tombstoned
+   blocker → released; unresolvable blocker (link without loadable task)
+   → still blocked, per ADR 0042 §4; cycles → all-blocked), corpus
+   annotation shape including the manually-blocked-without-links case
+   (status `BLOCKED`, no `blockedBy` key), workflow prompt assertions for
+   both rule blocks, byte-stability of the snapshot for dependency-free
+   corpora.
 5. **Docs**: feature READMEs (tasks, daily_os_next) updated with the new
    sections and a state/flow diagram; ADR 0042/0043 status flipped to
    Accepted with amendments for any deviations found while building.

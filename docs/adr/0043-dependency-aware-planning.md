@@ -52,9 +52,19 @@ Blocked tasks stay in the corpus. Rows for blocked tasks gain one field:
 }
 ```
 
-Ready tasks carry no `blockedBy` key at all (absence means ready), so the
-common case adds zero tokens and the snapshot stays byte-stable for
-prompt-prefix caching except where a dependency genuinely exists.
+Ready tasks carry no `blockedBy` key at all, so the common case adds zero
+tokens and the snapshot stays byte-stable for prompt-prefix caching except
+where a dependency genuinely exists.
+
+**Absence of `blockedBy` means link-ready, not free to schedule.** The
+manual `TaskStatus.blocked` stays independent of typed links (ADR 0042
+§4), and every corpus row already carries `status` — so a manually blocked
+task with no named blocker is visible as `"status": "BLOCKED"` with no
+`blockedBy` key. "Blocked for planning" is the union of both signals:
+`status == BLOCKED` (self-declared, cause possibly external/unnamed) **or**
+a non-empty `blockedBy` (computed, cause named). The prompt rules below
+and their tests use this union definition; the corpus shape needs no
+second flag for it.
 
 ### 2. A batch dependency resolver, one hop, bounded
 
@@ -68,11 +78,14 @@ batch-read discipline as `getEntitiesByIds` in the week-context service).
 
 ### 3. Prompt contract: schedule blockers, don't schedule blocked work
 
-Drafting/refine rules (day agents):
+Drafting/refine rules (day agents), one predicate, stated once and
+mirrored verbatim by the implementation plan:
 
-- Do not place a task carrying `blockedBy` unless the plan also places (or
-  the day log shows completed) work on its blocker; placing blocked work
-  deliberately requires the block's `reason` to name the blocker.
+> A task that is blocked for planning (`status == BLOCKED` or non-empty
+> `blockedBy`) may be placed **only if** (a) the same plan places work on
+> its blocker earlier in the day, **or** (b) the block's `reason`
+> explicitly names the blocker and why the work can proceed despite it.
+
 - When a decided/committed task is blocked, prefer placing the blocker and
   say so in the reason.
 
