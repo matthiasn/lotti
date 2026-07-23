@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted (phases 1–5 implemented; phase 6 — coordinator slimming, gated on
-measured token stats — remains proposed). See Amendments below for where the
+Accepted (phases 1–5 implemented; phase 6 partially implemented — see the
+phase-6 amendment for the split). See Amendments below for where the
 implementation diverged from this ADR's original text.
 
 ## Date
@@ -490,6 +490,23 @@ Decision section in place.
   spend in its tooltip (per-day identities only — a coordinator-owned day
   shows no spend, since the coordinator's lifetime aggregate would
   misattribute other days), tappable straight into the agent internals.
+- **Phase 6 splits three ways.** (a) *Distilled-only log growth* is
+  implemented and verified: digest wakes assemble the digest block instead
+  of per-day mode blocks, and a regression test pins that a digest persists
+  only distilled entities (dialogue messages/payloads, state, the
+  next-digest record) — never captures, plan mutations, or change sets
+  under the coordinator's id. (b) *Token measurement* needs no new tooling:
+  `WakeTokenUsageEntity` rows are agent-keyed, and the template detail
+  page's per-instance token breakdown already separates the coordinator
+  from every `day_agent:<dayId>` instance, so the before/after comparison
+  reads directly from that surface as post-split usage accrues. (c)
+  *Removing per-day prompt sections from the coordinator* is the one part
+  deliberately deferred: pre-cutover days the coordinator owns still need
+  capture/draft/refine blocks for retroactive work, so the sections stay
+  until those days recede — or until a decision to force-complete the
+  cutover (drop the `_plannerOwnsDay` fallback; reads already span owners
+  via `isDailyOsDayOwner`), which would reverse this ADR's day-forward
+  migration choice and needs its own sync-convergence review.
 - **Phase 5 is a mapping, not a scheduler or renderer.** Pre-warm is the
   deterministic digest re-arm plus the per-day agent's self-scheduled
   `set_next_wake` (both existed after phase 3); no separate pre-warm

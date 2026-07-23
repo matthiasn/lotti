@@ -2092,6 +2092,54 @@ void main() {
       );
 
       test(
+        'digest wakes grow the coordinator log distilled-only '
+        '(ADR 0032 phase 6)',
+        () async {
+          when(
+            () => repository.getMessagesByKind(
+              dailyOsPlannerAgentId,
+              AgentMessageKind.system,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          final result = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          // The structural fix ADR 0032 promises: the coordinator's log
+          // grows at distilled-event rate only. A digest may persist its
+          // own dialogue (messages + payloads), updated state, and the
+          // deterministic next-digest record — never transcript-rate
+          // artifacts (captures), plan mutations, or change sets under the
+          // coordinator's id.
+          for (final entity in upsertedEntities) {
+            expect(
+              entity,
+              anyOf(
+                isA<AgentMessageEntity>(),
+                isA<AgentMessagePayloadEntity>(),
+                isA<AgentStateEntity>(),
+                isA<ScheduledWakeEntity>(),
+              ),
+              reason:
+                  'Digest persisted a non-distilled entity: '
+                  '${entity.runtimeType}',
+            );
+          }
+          expect(upsertedEntities.whereType<CaptureEntity>(), isEmpty);
+          expect(upsertedEntities.whereType<DayPlanEntity>(), isEmpty);
+          expect(upsertedEntities.whereType<ChangeSetEntity>(), isEmpty);
+          // The dialogue itself is bounded: one user message, one thought.
+          expect(
+            upsertedEntities.whereType<AgentMessageEntity>().length,
+            lessThanOrEqualTo(4),
+          );
+        },
+      );
+
+      test(
         'flags truncation when the status-event page fills up',
         () async {
           when(
