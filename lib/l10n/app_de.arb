@@ -922,6 +922,8 @@
   "aiResponseDeleteError": "KI-Antwort konnte nicht gelöscht werden. Bitte versuche es erneut.",
   "aiResponseDeleteTitle": "KI-Antwort löschen",
   "aiResponseDeleteWarning": "Möchtest du diese KI-Antwort wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
+  "aiResponseShowLess": "Weniger anzeigen",
+  "aiResponseShowMore": "Mehr anzeigen",
   "aiResponseTypeAudioTranscription": "Audio-Transkription",
   "aiResponseTypeChecklistUpdates": "Checklisten-Aktualisierungen",
   "aiResponseTypeImageAnalysis": "Bildanalyse",

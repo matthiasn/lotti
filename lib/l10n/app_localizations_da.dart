@@ -2032,6 +2032,12 @@ class AppLocalizationsDa extends AppLocalizations {
       'Er du sikker på, at du vil slette dette AI-svar? Det kan ikke gøres om.';
 
   @override
+  String get aiResponseShowLess => 'Vis mindre';
+
+  @override
+  String get aiResponseShowMore => 'Vis mere';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Lydtransskription';
 
   @override

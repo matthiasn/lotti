@@ -1097,6 +1097,8 @@
   "aiResponseDeleteError": "Falha ao excluir a resposta do AI. Por favor, tente novamente.",
   "aiResponseDeleteTitle": "Excluir resposta de IA",
   "aiResponseDeleteWarning": "Tem certeza de que deseja excluir esta resposta de IA? Isto não pode ser desfeito.",
+  "aiResponseShowLess": "Mostrar menos",
+  "aiResponseShowMore": "Mostrar mais",
   "aiResponseTypeAudioTranscription": "Transcrição de áudio",
   "aiResponseTypeChecklistUpdates": "Atualizações da lista de verificação",
   "aiResponseTypeImageAnalysis": "Análise de imagem",

@@ -2051,6 +2051,12 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Seguro que quieres eliminar esta respuesta de IA? Esta acción no se puede deshacer.';
 
   @override
+  String get aiResponseShowLess => 'Mostrar menos';
+
+  @override
+  String get aiResponseShowMore => 'Mostrar más';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Transcripción de audio';
 
   @override

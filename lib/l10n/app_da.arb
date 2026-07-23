@@ -1098,6 +1098,8 @@
   "aiResponseDeleteError": "Undlod at slette AI-svaret. Prøv venligst igen.",
   "aiResponseDeleteTitle": "Slet AI-svar",
   "aiResponseDeleteWarning": "Er du sikker på, at du vil slette dette AI-svar? Det kan ikke gøres om.",
+  "aiResponseShowLess": "Vis mindre",
+  "aiResponseShowMore": "Vis mere",
   "aiResponseTypeAudioTranscription": "Lydtransskription",
   "aiResponseTypeChecklistUpdates": "Tjeklisteopdateringer",
   "aiResponseTypeImageAnalysis": "Billedanalyse",

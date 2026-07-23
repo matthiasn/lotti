@@ -2042,6 +2042,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Weet u zeker dat u dit AI-antwoord wilt verwijderen? Dit kan niet ongedaan worden gemaakt.';
 
   @override
+  String get aiResponseShowLess => 'Minder tonen';
+
+  @override
+  String get aiResponseShowMore => 'Meer tonen';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Audio-transcriptie';
 
   @override

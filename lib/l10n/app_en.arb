@@ -1192,6 +1192,8 @@
   "aiResponseDeleteError": "Failed to delete AI response. Please try again.",
   "aiResponseDeleteTitle": "Delete AI Response",
   "aiResponseDeleteWarning": "Are you sure you want to delete this AI response? This cannot be undone.",
+  "aiResponseShowLess": "Show less",
+  "aiResponseShowMore": "Show more",
   "aiResponseTypeAudioTranscription": "Audio Transcription",
   "aiResponseTypeChecklistUpdates": "Checklist Updates",
   "aiResponseTypeImageAnalysis": "Image Analysis",

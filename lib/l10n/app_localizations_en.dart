@@ -2024,6 +2024,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to delete this AI response? This cannot be undone.';
 
   @override
+  String get aiResponseShowLess => 'Show less';
+
+  @override
+  String get aiResponseShowMore => 'Show more';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Audio Transcription';
 
   @override

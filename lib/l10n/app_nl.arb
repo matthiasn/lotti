@@ -1097,6 +1097,8 @@
   "aiResponseDeleteError": "Verwijderen van AI-antwoord is mislukt. Probeer het opnieuw.",
   "aiResponseDeleteTitle": "AI-respons verwijderen",
   "aiResponseDeleteWarning": "Weet u zeker dat u dit AI-antwoord wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "aiResponseShowLess": "Minder tonen",
+  "aiResponseShowMore": "Meer tonen",
   "aiResponseTypeAudioTranscription": "Audio-transcriptie",
   "aiResponseTypeChecklistUpdates": "Checklist Updates",
   "aiResponseTypeImageAnalysis": "Afbeeldingsanalyse",

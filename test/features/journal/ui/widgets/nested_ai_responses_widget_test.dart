@@ -358,6 +358,50 @@ void main() {
       expect(find.byType(Dismissible), findsOneWidget);
     });
 
+    testWidgets(
+      'a long analysis starts collapsed inside the nested tree '
+      '(collapsible wiring)',
+      (tester) async {
+        // Long enough (> 500 chars) that the per-card collapse kicks in.
+        final longOcr = testAiResponseEntry2.copyWith(
+          data: testAiResponseEntry2.data.copyWith(
+            response: List.generate(
+              30,
+              (i) => 'OCR line $i with Datum 05.10.26 um 14:30.',
+            ).join('\n'),
+            type: AiResponseType.imageAnalysis,
+          ),
+        );
+
+        when(
+          () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.basic(
+              id: 'link-long',
+              fromId: testAudioEntry.meta.id,
+              toId: longOcr.meta.id,
+              createdAt: DateTime(2024, 1, 15, 10),
+              updatedAt: DateTime(2024, 1, 15, 10),
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => mockJournalRepository.getJournalEntityById(longOcr.meta.id),
+        ).thenAnswer((_) async => longOcr);
+
+        await pumpWidget(tester);
+
+        // The nested card passes collapsible: true, so the long analysis
+        // starts as a faded preview with the expand toggle.
+        expect(
+          find.byKey(AiResponseSummary.collapseToggleKey),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('renders multiple AI responses with correct count', (
       tester,
     ) async {

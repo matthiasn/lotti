@@ -2061,6 +2061,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Es-tu sûr de vouloir supprimer cette réponse IA ? Cette action est irréversible.';
 
   @override
+  String get aiResponseShowLess => 'Voir moins';
+
+  @override
+  String get aiResponseShowMore => 'Voir plus';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Transcription audio';
 
   @override

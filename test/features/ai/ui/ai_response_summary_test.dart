@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -323,6 +324,146 @@ Style: isometric digital art. --ar 16:9
         }
       }
       expect(linkCallbackFound, isTrue);
+    });
+
+    group('quiet aiCard surface and per-card collapse', () {
+      // Comfortably above both thresholds (500 chars / 6 newlines).
+      final longOcrText = List.generate(
+        40,
+        (i) => 'Zeile $i der OCR-Extraktion mit Datum 05.10.26 um 14:30.',
+      ).join('\n');
+      const shortSummaryText = 'Der Termin ist am 05.10.2026 um 14:30.';
+
+      AiResponseEntry buildResponse(String text) =>
+          testAiResponseEntry.copyWith(
+            data: testAiResponseEntry.data.copyWith(
+              response: text,
+              type: AiResponseType.imageAnalysis,
+            ),
+          );
+
+      Future<void> pumpSummary(
+        WidgetTester tester, {
+        required String text,
+        bool collapsible = false,
+        bool fadeOut = false,
+      }) {
+        return tester.pumpWidget(
+          WidgetTestBench(
+            child: SingleChildScrollView(
+              child: AiResponseSummary(
+                buildResponse(text),
+                linkedFromId: 'test-id',
+                fadeOut: fadeOut,
+                collapsible: collapsible,
+              ),
+            ),
+          ),
+        );
+      }
+
+      BoxDecoration cardDecoration(WidgetTester tester) {
+        final container = tester.widget<Container>(
+          find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                w.decoration is BoxDecoration &&
+                (w.decoration! as BoxDecoration).color ==
+                    dsTokensLight.colors.aiCard.subtleWash,
+          ),
+        );
+        return container.decoration! as BoxDecoration;
+      }
+
+      testWidgets(
+        'renders the subtle aiCard surface: wash fill, hairline, no shadow',
+        (tester) async {
+          await pumpSummary(tester, text: shortSummaryText);
+
+          final decoration = cardDecoration(tester);
+          expect(
+            decoration.border!.top.color,
+            dsTokensLight.colors.aiCard.subtleBorder,
+          );
+          expect(decoration.boxShadow, isNull);
+          expect(decoration.gradient, isNull);
+        },
+      );
+
+      testWidgets(
+        'long collapsible response starts collapsed and toggles open/closed',
+        (tester) async {
+          await pumpSummary(tester, text: longOcrText, collapsible: true);
+
+          // Collapsed by default: faded preview + "Show more".
+          expect(
+            find.byKey(AiResponseSummary.collapseToggleKey),
+            findsOneWidget,
+          );
+          expect(find.text('Show more'), findsOneWidget);
+          expect(find.byType(ShaderMask), findsOneWidget);
+
+          await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
+          await tester.pump();
+          expect(find.text('Show less'), findsOneWidget);
+          expect(find.byType(ShaderMask), findsNothing);
+
+          // Expanded content pushes the toggle below the fold — scroll it
+          // back into view before collapsing again.
+          await tester.ensureVisible(
+            find.byKey(AiResponseSummary.collapseToggleKey),
+          );
+          await tester.pump();
+          await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
+          await tester.pump();
+          expect(find.text('Show more'), findsOneWidget);
+          expect(find.byType(ShaderMask), findsOneWidget);
+        },
+      );
+
+      testWidgets('tapping the faded preview expands the card', (
+        tester,
+      ) async {
+        await pumpSummary(tester, text: longOcrText, collapsible: true);
+
+        await tester.tap(find.byType(ShaderMask));
+        // Let the single tap win over the double-tap recognizer's window.
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('Show less'), findsOneWidget);
+        expect(find.byType(ShaderMask), findsNothing);
+      });
+
+      testWidgets('short collapsible response renders fully with no toggle', (
+        tester,
+      ) async {
+        await pumpSummary(tester, text: shortSummaryText, collapsible: true);
+
+        expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+        expect(find.byType(ShaderMask), findsNothing);
+      });
+
+      testWidgets(
+        'non-collapsible long response renders fully with no toggle',
+        (tester) async {
+          await pumpSummary(tester, text: longOcrText);
+
+          expect(
+            find.byKey(AiResponseSummary.collapseToggleKey),
+            findsNothing,
+          );
+          expect(find.byType(ShaderMask), findsNothing);
+        },
+      );
+
+      testWidgets('legacy fadeOut keeps the preview but never a toggle', (
+        tester,
+      ) async {
+        await pumpSummary(tester, text: longOcrText, fadeOut: true);
+
+        expect(find.byType(ShaderMask), findsOneWidget);
+        expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+      });
     });
   });
 }

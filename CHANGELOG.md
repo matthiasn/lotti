@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it as the due date, name the task after the document, or reference OCR'd
   details in its report. A completed analysis now also flags the task for the
   agent's next regular update — previously the agent was never told at all.
+- **AI analysis cards are collapsible and visually calmer.** Long analyses
+  (e.g. a full OCR extraction) under an image or audio entry now start as a
+  short faded preview with a "Show more"/"Show less" toggle, so one card can
+  no longer dominate the entry. The cards also drop their heavy
+  card-on-card look for the app's quiet AI surface — a subtle wash with a
+  hairline border that matches the agent report cards, in both light and
+  dark themes.
 
 ## [0.9.1061]
 ### Added

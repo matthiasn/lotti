@@ -922,6 +922,8 @@
   "aiResponseDeleteError": "Échec de la suppression de la réponse IA. Réessaie, s'il te plaît.",
   "aiResponseDeleteTitle": "Supprimer la réponse IA",
   "aiResponseDeleteWarning": "Es-tu sûr de vouloir supprimer cette réponse IA ? Cette action est irréversible.",
+  "aiResponseShowLess": "Voir moins",
+  "aiResponseShowMore": "Voir plus",
   "aiResponseTypeAudioTranscription": "Transcription audio",
   "aiResponseTypeChecklistUpdates": "Mises à jour de la liste de contrôle",
   "aiResponseTypeImageAnalysis": "Analyse d'image",
