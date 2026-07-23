@@ -5,18 +5,21 @@
 #   user_voice — the "user" dictating into the app's microphone; must be a
 #                clearly different voice so viewers never confuse the two
 #
-# `engine` selects the adapter in tutorial_videos/tts/ (currently: gemini).
-# Style prompts are per-locale so the instruction is in the narration's own
+# Each stream picks its own `engine` (adapter in tutorial_videos/tts/) and
+# `model` — the two streams have no reason to share a TTS vendor. `style`
+# prompts are per-locale so the instruction is in the narration's own
 # language (same lesson as Voxtral: prompts in the target language behave
-# best).
-
-engine: gemini
-model: models/gemini-3.1-flash-tts-preview
+# best) — engines that don't take a natural-language style prompt (e.g.
+# ElevenLabs) ignore it; see tts/elevenlabs.py's module docstring.
 
 streams:
-  # Smooth male voice for the off-screen narrator.
+  # Narrator: ElevenLabs "Christian" — chosen over Gemini's prebuilt voices
+  # (too melodic/singsong for tutorial narration) after an ear-comparison
+  # against another ElevenLabs candidate (Oliver Wagner).
   narrator:
-    voice: Algieba
+    engine: elevenlabs
+    model: eleven_multilingual_v2
+    voice: NBqeXKdZHweef6y0B67V
     style:
       en: "Speak as a calm, friendly tutorial narrator:"
       de: "Sprich als ruhiger, freundlicher Tutorial-Erzähler:"
@@ -34,6 +37,8 @@ streams:
   # plays into the virtual microphone) — keeps the two streams from ever
   # being confused for one another.
   user_voice:
+    engine: gemini
+    model: models/gemini-3.1-flash-tts-preview
     voice: Kore
     style:
       en: "Speak naturally, as someone dictating a note to their phone:"

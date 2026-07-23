@@ -19,6 +19,13 @@ from typing import Protocol
 from ..scenario import Scenario
 
 
+def read_env_key(env_path: Path, name: str) -> str:
+    for line in env_path.read_text().splitlines():
+        if line.startswith(f"{name}="):
+            return line.split("=", 1)[1].strip()
+    raise KeyError(f"{name} not found in {env_path}")
+
+
 class TtsEngine(Protocol):
     """A text-to-speech backend (see ``gemini.py`` for the default)."""
 
@@ -32,20 +39,33 @@ class TtsEngine(Protocol):
 
 @dataclass(frozen=True)
 class VoiceSpec:
+    engine: str  # TtsEngine.name this stream renders through, e.g. "gemini"
+    model: str
     voice: str
-    style: dict[str, str]  # locale -> style instruction
+    style: dict[str, str]  # locale -> style instruction (ignored by engines
+    # that don't take a natural-language style prompt, e.g. ElevenLabs — see
+    # tts/elevenlabs.py's module docstring)
 
 
-def load_voices(path: Path) -> tuple[str, str, dict[str, VoiceSpec]]:
-    """Load ``voices.yaml`` -> (engine name, model, stream -> VoiceSpec)."""
+def load_voices(path: Path) -> dict[str, VoiceSpec]:
+    """Load ``voices.yaml`` -> stream -> VoiceSpec.
+
+    Each stream (``narrator``, ``user_voice``) picks its own engine/model, so
+    e.g. the narrator can render through ElevenLabs while dictation stays on
+    Gemini — the two streams have no reason to share a TTS vendor.
+    """
     import yaml
 
     raw = yaml.safe_load(path.read_text())
-    streams = {
-        stream: VoiceSpec(voice=spec["voice"], style=dict(spec.get("style", {})))
+    return {
+        stream: VoiceSpec(
+            engine=spec["engine"],
+            model=spec["model"],
+            voice=spec["voice"],
+            style=dict(spec.get("style", {})),
+        )
         for stream, spec in raw["streams"].items()
     }
-    return raw["engine"], raw["model"], streams
 
 
 def wav_duration_seconds(path: Path) -> float:
@@ -83,17 +103,24 @@ def synthesize_cached(
 def render_scenario_clips(
     scenario: Scenario,
     locale: str,
-    engine: TtsEngine,
+    engines: dict[str, TtsEngine],
     streams: dict[str, VoiceSpec],
     cache_dir: Path,
     manifest_path: Path,
 ) -> dict:
     """Render all clips for (scenario, locale) and write the manifest.
 
+    ``engines`` maps a `VoiceSpec.engine` name (e.g. ``"gemini"``,
+    ``"elevenlabs"``) to the constructed adapter for it — each stream
+    resolves its own engine via ``streams[stream].engine``, so narrator and
+    dictation can render through different TTS vendors.
+
     Manifest shape::
 
         {
-          "scenario": ..., "locale": ..., "engine": ..., "model": ...,
+          "scenario": ..., "locale": ...,
+          "engines": {"narrator": {"name": ..., "model": ...},
+                      "user_voice": {"name": ..., "model": ...}},
           "steps": [
             {"id": ..., "min_duration": ...,
              "narration": {"clip": "/abs.wav", "duration": 4.2},
@@ -104,11 +131,13 @@ def render_scenario_clips(
     scenario.validate_locale(locale)
     narrator = streams["narrator"]
     user_voice = streams["user_voice"]
+    narrator_engine = engines[narrator.engine]
+    user_voice_engine = engines[user_voice.engine]
 
     steps = []
     for step in scenario.steps:
         clip = synthesize_cached(
-            engine,
+            narrator_engine,
             voice=narrator.voice,
             style=narrator.style[locale],
             text=step.narration[locale],
@@ -124,7 +153,7 @@ def render_scenario_clips(
         }
         if step.dictation:
             dictation_clip = synthesize_cached(
-                engine,
+                user_voice_engine,
                 voice=user_voice.voice,
                 style=user_voice.style[locale],
                 text=step.dictation_text[locale],
@@ -139,8 +168,16 @@ def render_scenario_clips(
     manifest = {
         "scenario": scenario.name,
         "locale": locale,
-        "engine": engine.name,
-        "model": engine.model,
+        "engines": {
+            "narrator": {
+                "name": narrator_engine.name,
+                "model": narrator_engine.model,
+            },
+            "user_voice": {
+                "name": user_voice_engine.name,
+                "model": user_voice_engine.model,
+            },
+        },
         "title": scenario.title[locale],
         "dictionary": scenario.dictionary[locale],
         "steps": steps,

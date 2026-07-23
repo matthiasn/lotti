@@ -42,8 +42,9 @@ from .compose import ComposeError, compose_video
 from .publish import PublishError, publish_video
 from .scenario import ScenarioError, load_scenario
 from .session import ScreenCapture, SessionError, VirtualMic, XvfbDisplay
-from .tts.base import load_voices, render_scenario_clips
-from .tts.gemini import GeminiTts, read_env_key
+from .tts.base import load_voices, read_env_key, render_scenario_clips
+from .tts.elevenlabs import ElevenLabsTts
+from .tts.gemini import GeminiTts
 
 TOOL_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = TOOL_ROOT.parents[1]
@@ -97,18 +98,37 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+# Each stream (narrator, user_voice) in voices.yaml names the engine it
+# renders through; these factories build only the engines actually
+# referenced, so a build that only uses one vendor never demands the other
+# vendor's API key.
+_ENGINE_FACTORIES = {
+    "gemini": lambda model: GeminiTts(
+        read_env_key(REPO_ROOT / ".env", "GEMINI_API_KEY"), model
+    ),
+    "elevenlabs": lambda model: ElevenLabsTts(
+        read_env_key(REPO_ROOT / ".env", "ELEVEN_LABS_API_KEY"), model
+    ),
+}
+
+
 def cmd_tts(args: argparse.Namespace) -> int:
     scenario = _load(args)
-    engine_name, model, streams = load_voices(TOOL_ROOT / "config" / "voices.yaml")
-    if engine_name != "gemini":
-        raise SystemExit(f"unknown TTS engine: {engine_name}")
-    engine = GeminiTts(read_env_key(REPO_ROOT / ".env", "GEMINI_API_KEY"), model)
+    streams = load_voices(TOOL_ROOT / "config" / "voices.yaml")
+    engines = {}
+    for spec in streams.values():
+        if spec.engine in engines:
+            continue
+        factory = _ENGINE_FACTORIES.get(spec.engine)
+        if factory is None:
+            raise SystemExit(f"unknown TTS engine: {spec.engine}")
+        engines[spec.engine] = factory(spec.model)
 
     out_dir = Path(args.out_dir)
     manifest = render_scenario_clips(
         scenario,
         args.locale,
-        engine,
+        engines,
         streams,
         cache_dir=out_dir / "tts_cache",
         manifest_path=out_dir / f"{scenario.name}_{args.locale}.manifest.json",

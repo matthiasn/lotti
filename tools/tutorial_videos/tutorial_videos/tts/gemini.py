@@ -13,7 +13,8 @@ import base64
 import json
 import struct
 import urllib.request
-from pathlib import Path
+
+from .base import read_env_key
 
 SAMPLE_RATE = 24_000
 
@@ -25,13 +26,6 @@ def _pcm_to_wav(pcm: bytes) -> bytes:
         SAMPLE_RATE, SAMPLE_RATE * 2, 2, 16, b"data", len(pcm),
     )
     return header + pcm
-
-
-def read_env_key(env_path: Path, name: str) -> str:
-    for line in env_path.read_text().splitlines():
-        if line.startswith(f"{name}="):
-            return line.split("=", 1)[1].strip()
-    raise KeyError(f"{name} not found in {env_path}")
 
 
 class GeminiTts:

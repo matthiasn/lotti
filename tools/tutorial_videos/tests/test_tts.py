@@ -37,10 +37,10 @@ def _wav(seconds: float) -> bytes:
 class FakeEngine:
     """Deterministic engine: 1s of silence per 10 chars; counts calls."""
 
-    name = "fake"
     model = "fake-1"
 
-    def __init__(self) -> None:
+    def __init__(self, name: str = "fake") -> None:
+        self.name = name
         self.calls: list[str] = []
 
     def synthesize(self, *, text: str, voice: str, style: str) -> bytes:
@@ -49,8 +49,15 @@ class FakeEngine:
 
 
 STREAMS = {
-    "narrator": VoiceSpec(voice="N", style={"en": "calm:", "de": "ruhig:"}),
-    "user_voice": VoiceSpec(voice="U", style={"en": "natural:", "de": "locker:"}),
+    "narrator": VoiceSpec(
+        engine="fake", model="fake-1", voice="N", style={"en": "calm:", "de": "ruhig:"}
+    ),
+    "user_voice": VoiceSpec(
+        engine="fake",
+        model="fake-1",
+        voice="U",
+        style={"en": "natural:", "de": "locker:"},
+    ),
 }
 
 
@@ -63,12 +70,14 @@ class TtsPrePassTest(unittest.TestCase):
             TOOL_ROOT / "config" / "scenarios" / "create_task_from_audio.yaml"
         )
 
-    def _render(self, engine: FakeEngine, locale: str = "de") -> dict:
+    def _render(
+        self, engine: FakeEngine, locale: str = "de", streams: dict = STREAMS
+    ) -> dict:
         return render_scenario_clips(
             self.scenario,
             locale,
-            engine,
-            STREAMS,
+            {"fake": engine},
+            streams,
             cache_dir=self.tmp / "cache",
             manifest_path=self.tmp / "manifest.json",
         )
@@ -77,6 +86,13 @@ class TtsPrePassTest(unittest.TestCase):
         engine = FakeEngine()
         manifest = self._render(engine)
         self.assertEqual(manifest["locale"], "de")
+        self.assertEqual(
+            manifest["engines"],
+            {
+                "narrator": {"name": "fake", "model": "fake-1"},
+                "user_voice": {"name": "fake", "model": "fake-1"},
+            },
+        )
         self.assertEqual(
             [s["id"] for s in manifest["steps"]],
             [s.id for s in self.scenario.steps],
@@ -109,6 +125,38 @@ class TtsPrePassTest(unittest.TestCase):
         self._render(engine, locale="en")  # different locale -> new synthesis
         self.assertEqual(len(engine.calls), 2 * first_calls)
 
+    def test_streams_can_use_different_engines(self):
+        narrator_engine = FakeEngine(name="narrator_fake")
+        user_voice_engine = FakeEngine(name="user_voice_fake")
+        mixed_streams = {
+            "narrator": VoiceSpec(
+                engine="narrator_fake",
+                model="fake-1",
+                voice="N",
+                style={"en": "calm:", "de": "ruhig:"},
+            ),
+            "user_voice": VoiceSpec(
+                engine="user_voice_fake",
+                model="fake-1",
+                voice="U",
+                style={"en": "natural:", "de": "locker:"},
+            ),
+        }
+        manifest = render_scenario_clips(
+            self.scenario,
+            "de",
+            {"narrator_fake": narrator_engine, "user_voice_fake": user_voice_engine},
+            mixed_streams,
+            cache_dir=self.tmp / "cache",
+            manifest_path=self.tmp / "manifest.json",
+        )
+        self.assertEqual(manifest["engines"]["narrator"]["name"], "narrator_fake")
+        self.assertEqual(manifest["engines"]["user_voice"]["name"], "user_voice_fake")
+        # Every narration line went through the narrator engine, and the one
+        # dictation line went through the user_voice engine — never crossed.
+        self.assertEqual(len(narrator_engine.calls), len(self.scenario.steps))
+        self.assertEqual(len(user_voice_engine.calls), 1)
+
     def test_cached_clip_content_is_reused_not_rewritten(self):
         engine = FakeEngine()
         path = synthesize_cached(
@@ -123,20 +171,19 @@ class TtsPrePassTest(unittest.TestCase):
         self.assertEqual(len(engine.calls), 1)
 
     def test_voices_yaml_loads_streams(self):
-        engine_name, _model, streams = load_voices(
-            TOOL_ROOT / "config" / "voices.yaml"
-        )
-        self.assertEqual(engine_name, "gemini")
+        streams = load_voices(TOOL_ROOT / "config" / "voices.yaml")
         self.assertIn("narrator", streams)
         self.assertIn("user_voice", streams)
+        # Narrator and dictation are free to use different TTS vendors —
+        # narrator currently renders through ElevenLabs, user_voice through
+        # Gemini (see voices.yaml's doc comment for why).
+        self.assertEqual(streams["narrator"].engine, "elevenlabs")
+        self.assertEqual(streams["user_voice"].engine, "gemini")
         # Distinct voices (user decision, config/voices.yaml's own doc
         # comment): the narrator audibly "speaks into Lotti" when dictating,
         # so a shared voice would confuse the two streams.
         self.assertNotEqual(
             streams["narrator"].voice, streams["user_voice"].voice
-        )
-        self.assertNotEqual(
-            streams["narrator"].style["en"], streams["user_voice"].style["en"]
         )
         for spec in streams.values():
             self.assertIn("en", spec.style)

@@ -17,7 +17,7 @@ from __future__ import annotations
 import mimetypes
 from pathlib import Path
 
-from .tts.gemini import read_env_key
+from .tts.base import read_env_key
 
 ENV_VARS = (
     "R2_ACCOUNT_ID",
