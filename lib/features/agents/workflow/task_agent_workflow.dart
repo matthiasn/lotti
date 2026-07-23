@@ -47,6 +47,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
+import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';

@@ -1,8 +1,10 @@
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 
 /// Default fixed date for test entities. Never use DateTime.now() in tests.
 final testFixedDate = DateTime(2024, 3, 15, 10);
@@ -156,6 +158,78 @@ class TestProjectFactory {
         ),
         dateFrom: dateFrom ?? date,
         dateTo: dateTo ?? date,
+      ),
+    );
+  }
+}
+
+/// Factory for creating [JournalImage] instances in tests.
+///
+/// ```dart
+/// final image = TestImageFactory.create(id: 'img-1');
+/// ```
+class TestImageFactory {
+  static JournalImage create({
+    String id = 'test-image-1',
+    String? plainText,
+    DateTime? createdAt,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+  }) {
+    final date = createdAt ?? testFixedDate;
+    final from = dateFrom ?? date;
+    return JournalImage(
+      meta: TestMetadataFactory.create(
+        id: id,
+        createdAt: date,
+        dateFrom: from,
+        dateTo: dateTo ?? from,
+      ),
+      data: ImageData(
+        capturedAt: from,
+        imageId: 'image-id-$id',
+        imageFile: '$id.jpg',
+        imageDirectory: '/images/',
+      ),
+      entryText: plainText == null ? null : EntryText(plainText: plainText),
+    );
+  }
+}
+
+/// Factory for creating [AiResponseEntry] instances in tests — e.g. the image
+/// analyses (summary/OCR) linked from an image entry.
+///
+/// ```dart
+/// final ocr = TestAiResponseFactory.create(
+///   id: 'ocr-1',
+///   model: 'mistral-ocr-latest',
+///   response: 'Datum: 05.10.2026',
+/// );
+/// ```
+class TestAiResponseFactory {
+  static AiResponseEntry create({
+    String id = 'test-ai-response-1',
+    String model = 'test-model',
+    String response = 'Test analysis',
+    AiResponseType? type = AiResponseType.imageAnalysis,
+    DateTime? dateFrom,
+    DateTime? deletedAt,
+  }) {
+    final date = dateFrom ?? testFixedDate;
+    return AiResponseEntry(
+      meta: TestMetadataFactory.create(
+        id: id,
+        createdAt: date,
+        dateFrom: date,
+        dateTo: date,
+      ).copyWith(deletedAt: deletedAt),
+      data: AiResponseData(
+        model: model,
+        systemMessage: 'system',
+        prompt: 'prompt',
+        thoughts: '',
+        response: response,
+        type: type,
       ),
     );
   }

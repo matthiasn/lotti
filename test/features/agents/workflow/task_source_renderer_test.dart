@@ -143,6 +143,75 @@ void main() {
       });
     });
 
+    test(
+      'emits one image_analysis source per linked AI response, with the '
+      'analysis entity as provenance at its own timestamp',
+      () {
+        final image = TestImageFactory.create(
+          id: 'img-1',
+          dateFrom: DateTime(2026, 7, 23, 17, 5),
+        );
+        final summary = TestAiResponseFactory.create(
+          id: 'resp-summary',
+          model: 'mistral-small',
+          response: 'Termin beim Augenzentrum.',
+          dateFrom: DateTime(2026, 7, 23, 17, 9),
+        );
+        final ocr = TestAiResponseFactory.create(
+          id: 'resp-ocr',
+          model: 'mistral-ocr-latest',
+          response: 'Datum: 05.10.26, Uhrzeit: 14:30',
+          dateFrom: DateTime(2026, 7, 23, 17, 10),
+        );
+
+        final sources = renderTaskSources(
+          [image],
+          aiResponsesByEntryId: {
+            'img-1': [summary, ocr],
+          },
+        );
+
+        expect(sources.map((s) => s.contentEntryId), [
+          'img-1',
+          'resp-summary',
+          'resp-ocr',
+        ]);
+        expect(sources[1].sourceCreatedAt, DateTime(2026, 7, 23, 17, 9));
+        expect(sources[1].content, {
+          'entryType': 'image_analysis',
+          'model': 'mistral-small',
+          'refersTo': 'img-1',
+          'text': 'Termin beim Augenzentrum.',
+        });
+        expect(sources[2].sourceCreatedAt, DateTime(2026, 7, 23, 17, 10));
+        expect(sources[2].content, {
+          'entryType': 'image_analysis',
+          'model': 'mistral-ocr-latest',
+          'refersTo': 'img-1',
+          'text': 'Datum: 05.10.26, Uhrzeit: 14:30',
+        });
+        // A new analysis must not re-mint the image's own content version.
+        expect(sources[0].content, {
+          'entryType': 'image',
+          'loggedDuration': '00:00',
+          'text': '',
+        });
+      },
+    );
+
+    test('only image entries consult the analyses map', () {
+      // A stray map entry keyed to a text entry must not emit a source: the
+      // renderer resolves analyses for images only.
+      final sources = renderTaskSources(
+        [_text('e1', 'a note')],
+        aiResponsesByEntryId: {
+          'e1': [TestAiResponseFactory.create(id: 'resp-1')],
+        },
+      );
+
+      expect(sources.map((s) => s.contentEntryId), ['e1']);
+    });
+
     test('skips non-log linked entities', () {
       final sources = renderTaskSources([
         TestTaskFactory.create(id: 'task-1'),

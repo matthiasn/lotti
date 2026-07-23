@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/workflow/task_state_markdown.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/linked_task_context_builder.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
+import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -112,6 +113,10 @@ class AiInputRepository {
 
     final logEntries = <AiInputLogEntryObject>[];
     final linkedEntities = await _db.getLinkedEntities(id);
+    final aiResponsesByImageId = await fetchAiResponsesForImages(
+      db: _db,
+      linkedEntities: linkedEntities,
+    );
 
     for (final linked in linkedEntities) {
       if (linked is JournalEntry ||
@@ -120,6 +125,7 @@ class AiInputRepository {
         String? audioTranscript;
         String? transcriptLanguage;
         String? entryType;
+        List<AiInputAiResponseObject>? aiResponses;
         final editedText = linked.entryText?.plainText;
         // An explicit edit (even to empty string) takes precedence over transcript
         final hasEditedText = editedText != null;
@@ -139,6 +145,20 @@ class AiInputRepository {
           }
         } else if (linked is JournalImage) {
           entryType = 'image';
+          // Nest all AI analyses (summary, OCR, …) so the model can reason
+          // over extracted image content — dates, names, amounts — that
+          // lives only in those responses, not on the image entry itself.
+          final analysisEntries = aiResponsesByImageId[linked.meta.id];
+          if (analysisEntries != null) {
+            aiResponses = [
+              for (final response in analysisEntries)
+                AiInputAiResponseObject(
+                  model: response.data.model,
+                  generatedAt: response.meta.dateFrom,
+                  text: response.data.response,
+                ),
+            ];
+          }
         } else if (linked is JournalEntry) {
           entryType = 'text';
         }
@@ -151,6 +171,7 @@ class AiInputRepository {
             audioTranscript: audioTranscript,
             transcriptLanguage: transcriptLanguage,
             entryType: entryType,
+            aiResponses: aiResponses,
           ),
         );
       }

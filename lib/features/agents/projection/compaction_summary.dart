@@ -151,11 +151,13 @@ String assembleCompactedTaskLog({
 }
 
 /// Renders one captured source as the single line the compacted task log uses:
-/// `- [iso8601] (id: sourceId, entryType[, edited][ · loggedDuration]) body`,
-/// where the body falls back to the audio transcript when the text is empty
-/// and the duration tag is omitted when it carries no information
-/// (`00:00`/absent). [edited] marks an event that supersedes an earlier
-/// capture of the same source.
+/// `- [iso8601] (id: sourceId, entryType[, model: …][, for: …][, edited]`
+/// `[ · loggedDuration]) body`, where the body falls back to the audio
+/// transcript when the text is empty and the duration tag is omitted when it
+/// carries no information (`00:00`/absent). [edited] marks an event that
+/// supersedes an earlier capture of the same source. `image_analysis` sources
+/// carry the analysing `model` and a `for:` tag naming the image entry the
+/// analysis belongs to.
 /// Whitespace runs (including embedded newlines) collapse to single spaces so
 /// one event is always exactly one line — the line-oriented contract the
 /// append-only tail and its token accounting rely on.
@@ -175,6 +177,14 @@ String renderCompactedSourceLine(RenderedSource source, {bool edited = false}) {
       ? text
       : (transcript is String ? transcript : '');
   final body = normalizeWhitespace(rawBody);
+  // AI analysis provenance: which model produced this text and which image
+  // entry it belongs to (set by renderTaskSources for image_analysis sources).
+  final model = source.content['model'];
+  final modelTag = model is String && model.isNotEmpty ? ', model: $model' : '';
+  final refersTo = source.content['refersTo'];
+  final refersToTag = refersTo is String && refersTo.isNotEmpty
+      ? ', for: $refersTo'
+      : '';
   final editedTag = edited ? ', edited' : '';
   // Keep the per-entry time evidence when it carries information.
   final duration = source.content['loggedDuration'];
@@ -183,5 +193,5 @@ String renderCompactedSourceLine(RenderedSource source, {bool edited = false}) {
       ? ' · $duration'
       : '';
   return '- [${source.sourceCreatedAt.toIso8601String()}] '
-      '(id: $sourceId, $type$editedTag$durationTag) $body';
+      '(id: $sourceId, $type$modelTag$refersToTag$editedTag$durationTag) $body';
 }

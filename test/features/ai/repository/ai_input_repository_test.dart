@@ -28,6 +28,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/entity_factories.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -2204,6 +2205,163 @@ void main() {
         expect(jsonData['logEntries'][0]['loggedDuration'], equals('00:30'));
       });
 
+      test(
+        'nests every image AI analysis (summary + OCR) with model, date and '
+        'text so the agent can extract dates from image content',
+        () async {
+          final task = JournalEntity.task(
+            meta: Metadata(
+              id: taskId,
+              dateFrom: creationDate,
+              dateTo: creationDate,
+              createdAt: creationDate,
+              updatedAt: creationDate,
+            ),
+            data: TaskData(
+              title: 'Augenarzt Kontrolltermin',
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: creationDate,
+                utcOffset: 0,
+              ),
+              statusHistory: [],
+              dateFrom: creationDate,
+              dateTo: creationDate,
+            ),
+          );
+          final image = TestImageFactory.create(
+            id: 'img-1',
+            dateFrom: DateTime(2026, 7, 23, 17, 5),
+          );
+          final textEntry = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: 'text-1',
+              dateFrom: creationDate,
+              dateTo: creationDate,
+              createdAt: creationDate,
+              updatedAt: creationDate,
+            ),
+            entryText: const EntryText(plainText: 'a note'),
+          );
+          final summary = TestAiResponseFactory.create(
+            id: 'resp-summary',
+            model: 'mistral-small-4-119b-instruct',
+            response: 'Termin am 05.10.2026 um 14:30 beim Augenzentrum.',
+            dateFrom: DateTime(2026, 7, 23, 17, 9),
+          );
+          final ocr = TestAiResponseFactory.create(
+            id: 'resp-ocr',
+            model: 'mistral-ocr-latest',
+            response: 'Datum: 05.10.26 Uhrzeit: 14:30',
+            dateFrom: DateTime(2026, 7, 23, 17, 10),
+          );
+          final deleted = TestAiResponseFactory.create(
+            id: 'resp-deleted',
+            deletedAt: DateTime(2026, 7, 24),
+          );
+
+          when(
+            () => mockDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => task);
+          when(
+            () => mockDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [image, textEntry]);
+          when(
+            () => mockDb.getBulkLinkedEntities({'img-1'}),
+          ).thenAnswer(
+            (_) async => {
+              'img-1': [ocr, summary, deleted],
+            },
+          );
+
+          final result = await repository.buildTaskDetailsJson(id: taskId);
+          final jsonData = jsonDecode(result!) as Map<String, dynamic>;
+
+          final logEntries = jsonData['logEntries'] as List<dynamic>;
+          expect(logEntries, hasLength(2));
+
+          final imageEntry =
+              logEntries.firstWhere(
+                    (dynamic e) => e['entryType'] == 'image',
+                  )
+                  as Map<String, dynamic>;
+          final aiResponses = imageEntry['aiResponses'] as List<dynamic>;
+          // Both analyses nested, chronological, deleted one dropped.
+          expect(aiResponses, hasLength(2));
+          expect(aiResponses[0]['model'], 'mistral-small-4-119b-instruct');
+          expect(
+            aiResponses[0]['generatedAt'],
+            DateTime(2026, 7, 23, 17, 9).toIso8601String(),
+          );
+          expect(
+            aiResponses[0]['text'],
+            'Termin am 05.10.2026 um 14:30 beim Augenzentrum.',
+          );
+          expect(aiResponses[1]['model'], 'mistral-ocr-latest');
+          expect(aiResponses[1]['text'], 'Datum: 05.10.26 Uhrzeit: 14:30');
+
+          // The date evidence the agent needs for title/due-date extraction
+          // is present verbatim in the rendered task context.
+          expect(result, contains('05.10.2026'));
+          expect(result, contains('14:30'));
+
+          // Non-image entries don't carry the key at all (kept out of the
+          // JSON entirely, not rendered as null).
+          final textLogEntry =
+              logEntries.firstWhere(
+                    (dynamic e) => e['entryType'] == 'text',
+                  )
+                  as Map<String, dynamic>;
+          expect(textLogEntry.containsKey('aiResponses'), isFalse);
+        },
+      );
+
+      test(
+        'omits aiResponses for an image without analyses',
+        () async {
+          final task = JournalEntity.task(
+            meta: Metadata(
+              id: taskId,
+              dateFrom: creationDate,
+              dateTo: creationDate,
+              createdAt: creationDate,
+              updatedAt: creationDate,
+            ),
+            data: TaskData(
+              title: 'Task',
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: creationDate,
+                utcOffset: 0,
+              ),
+              statusHistory: [],
+              dateFrom: creationDate,
+              dateTo: creationDate,
+            ),
+          );
+          final image = TestImageFactory.create(id: 'img-1');
+
+          when(
+            () => mockDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => task);
+          when(
+            () => mockDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [image]);
+          when(
+            () => mockDb.getBulkLinkedEntities({'img-1'}),
+          ).thenAnswer((_) async => {'img-1': <JournalEntity>[]});
+
+          final result = await repository.buildTaskDetailsJson(id: taskId);
+          final jsonData = jsonDecode(result!) as Map<String, dynamic>;
+
+          final imageEntry =
+              (jsonData['logEntries'] as List<dynamic>).single
+                  as Map<String, dynamic>;
+          expect(imageEntry['entryType'], 'image');
+          expect(imageEntry.containsKey('aiResponses'), isFalse);
+        },
+      );
+
       test('includes assigned labels with names in task JSON', () async {
         // Arrange
         const taskTitle = 'Test Task';
@@ -2601,6 +2759,10 @@ void main() {
             ..registerSingleton<PersistenceLogic>(mockPersistenceLogicLang);
         },
       );
+
+      when(
+        () => mockDbLang.getBulkLinkedEntities(any()),
+      ).thenAnswer((_) async => <String, List<JournalEntity>>{});
 
       containerLang = ProviderContainer(
         overrides: [

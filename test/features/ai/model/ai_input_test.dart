@@ -37,6 +37,45 @@ void main() {
       expect(AiInputLogEntryObject.fromJson(_roundTrip(entry)), entry);
     });
 
+    test('AiInputLogEntryObject round-trips nested image AI analyses and '
+        'omits the key entirely when there are none', () {
+      final imageEntry = AiInputLogEntryObject(
+        creationTimestamp: DateTime(2026, 7, 23, 17, 5),
+        loggedDuration: '00:00',
+        text: '',
+        entryType: 'image',
+        aiResponses: [
+          AiInputAiResponseObject(
+            model: 'mistral-ocr-latest',
+            generatedAt: DateTime(2026, 7, 23, 17, 9),
+            text: 'Datum: 05.10.26',
+          ),
+        ],
+      );
+      expect(
+        AiInputLogEntryObject.fromJson(_roundTrip(imageEntry)),
+        imageEntry,
+      );
+
+      // Prompt-size guard: entries without analyses must not render an
+      // `aiResponses: null` key on every log line.
+      final textEntry = AiInputLogEntryObject(
+        creationTimestamp: DateTime(2024, 3, 15, 8, 30),
+        loggedDuration: '00:45',
+        text: 'Did some work',
+      );
+      expect(_roundTrip(textEntry).containsKey('aiResponses'), isFalse);
+    });
+
+    test('AiInputAiResponseObject survives a round-trip', () {
+      final response = AiInputAiResponseObject(
+        model: 'mistral-small-4-119b-instruct',
+        generatedAt: DateTime(2026, 7, 23, 17, 9),
+        text: 'Termin am 05.10.2026 um 14:30.',
+      );
+      expect(AiInputAiResponseObject.fromJson(_roundTrip(response)), response);
+    });
+
     test('AiInputActionItemsList survives a round-trip', () {
       final list = AiInputActionItemsList(items: [actionItem]);
       final decoded = AiInputActionItemsList.fromJson(_roundTrip(list));
