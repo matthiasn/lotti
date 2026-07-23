@@ -390,6 +390,24 @@ class JournalRepository {
     return res;
   }
 
+  /// Deletes only the link of [linkType] between `fromId` and `toId`, leaving
+  /// any other type coexisting between the same pair intact (ADR 0042 allows
+  /// e.g. a `BasicLink` and a `BlocksLink` between the same two tasks
+  /// simultaneously — unlike [removeLink], this never touches the other one).
+  Future<int> removeTypedLink({
+    required String fromId,
+    required String toId,
+    required String linkType,
+  }) async {
+    final res = await getIt<JournalDb>().deleteTypedLink(
+      fromId,
+      toId,
+      linkType,
+    );
+    getIt<UpdateNotifications>().notify({fromId, toId, linkNotification});
+    return res;
+  }
+
   /// Returns the entities that link *to* `linkedTo` (incoming / "linked from"
   /// direction). Contrast with [getLinkedEntities], which returns the outgoing
   /// targets.
@@ -449,6 +467,33 @@ class JournalRepository {
         );
 
     return sortedToIds.map((id) => linksByToId[id]).nonNulls.toList();
+  }
+
+  /// Returns typed links (e.g. `blocks`, `followsUp`) touching any of [ids] in
+  /// either direction, restricted to [linkTypes] (the `linked_entries.type`
+  /// column values, e.g. `'BlocksLink'`). Thin pass-through to
+  /// [JournalDb.typedLinksForTaskIds].
+  Future<List<EntryLink>> getTypedLinksForTaskIds(
+    Set<String> ids, {
+    required Set<String> linkTypes,
+  }) {
+    return getIt<JournalDb>().typedLinksForTaskIds(ids, types: linkTypes);
+  }
+
+  /// Bulk-fetch entities by id, including tombstoned (soft-deleted) ones.
+  ///
+  /// Unlike [getJournalEntitiesByIds], this does not filter `deleted = false`
+  /// — it's the one lookup that can tell "tombstoned" apart from "never
+  /// resolved" (needed by `TaskBlockersController` to release a dependent when
+  /// its blocker was deliberately closed/deleted vs. keep it blocked when the
+  /// blocker simply hasn't synced yet).
+  Future<List<JournalEntity>> getJournalEntitiesByIdsIncludingDeleted(
+    Iterable<String> ids,
+  ) async {
+    final idSet = ids.toSet();
+    if (idSet.isEmpty) return const <JournalEntity>[];
+    final rows = await getIt<JournalDb>().entriesForIds(idSet.toList()).get();
+    return rows.map(fromDbEntity).toList();
   }
 }
 

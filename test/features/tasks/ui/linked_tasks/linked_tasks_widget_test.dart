@@ -9,8 +9,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/journal/state/linked_entries_controller.dart';
-import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
@@ -86,6 +84,67 @@ void main() {
     expect(icon.color, expectedColor, reason: title);
   }
 
+  // Stubs a MockJournalRepository so `TaskLinkGroupsController` resolves
+  // `outgoing` as basic links from [taskId] and `incoming` as basic links
+  // to it — mirroring the flat "Linked Tasks" list's pre-typed-links shape.
+  MockJournalRepository stubLinkGroupsRepository({
+    required String taskId,
+    required List<JournalEntity> incoming,
+    required List<Task> outgoing,
+  }) {
+    final journalRepo = MockJournalRepository();
+    when(
+      () => journalRepo.removeLink(
+        fromId: any(named: 'fromId'),
+        toId: any(named: 'toId'),
+      ),
+    ).thenAnswer((_) async => 1);
+    when(
+      () => journalRepo.removeTypedLink(
+        fromId: any(named: 'fromId'),
+        toId: any(named: 'toId'),
+        linkType: any(named: 'linkType'),
+      ),
+    ).thenAnswer((_) async => 1);
+
+    final outgoingLinks = outgoing
+        .map(
+          (t) => EntryLink.basic(
+            id: 'link-${t.meta.id}',
+            fromId: taskId,
+            toId: t.meta.id,
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        )
+        .toList();
+    final incomingLinks = incoming
+        .map(
+          (e) => EntryLink.basic(
+            id: 'link-in-${e.id}',
+            fromId: e.id,
+            toId: taskId,
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        )
+        .toList();
+
+    when(
+      () => journalRepo.getTypedLinksForTaskIds(
+        {taskId},
+        linkTypes: any(named: 'linkTypes'),
+      ),
+    ).thenAnswer((_) async => [...outgoingLinks, ...incomingLinks]);
+    when(
+      () => journalRepo.getJournalEntitiesByIds(any()),
+    ).thenAnswer((_) async => [...outgoing, ...incoming]);
+
+    return journalRepo;
+  }
+
   Future<MockJournalRepository> pumpWidget(
     WidgetTester tester, {
     required List<JournalEntity> incoming,
@@ -94,26 +153,11 @@ void main() {
     MediaQueryData? mediaQueryData,
     List<Override> extraOverrides = const [],
   }) async {
-    final journalRepo = MockJournalRepository();
-    when(
-      () => journalRepo.removeLink(
-        fromId: any(named: 'fromId'),
-        toId: any(named: 'toId'),
-      ),
-    ).thenAnswer((_) async => 1);
-
-    final outgoingLinks = outgoing
-        .map(
-          (t) => EntryLink.basic(
-            id: 'link-${t.meta.id}',
-            fromId: 'task-main',
-            toId: t.meta.id,
-            createdAt: now,
-            updatedAt: now,
-            vectorClock: null,
-          ),
-        )
-        .toList();
+    final journalRepo = stubLinkGroupsRepository(
+      taskId: 'task-main',
+      incoming: incoming,
+      outgoing: outgoing,
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -122,15 +166,6 @@ void main() {
             manageMode
                 ? () => MockLinkedTasksControllerManageMode('task-main')
                 : LinkedTasksController.new,
-          ),
-          outgoingLinkedTasksProvider('task-main').overrideWith(
-            (ref) => outgoing,
-          ),
-          linkedFromEntriesControllerProvider('task-main').overrideWith(
-            () => MockLinkedFromEntriesController(incoming),
-          ),
-          linkedEntriesControllerProvider('task-main').overrideWith(
-            () => MockLinkedEntriesController(outgoingLinks, 'task-main'),
           ),
           journalRepositoryProvider.overrideWithValue(journalRepo),
           ...extraOverrides,
@@ -407,6 +442,45 @@ void main() {
       final taskA = buildTask(id: 'a-out', title: 'Task A linked');
       final taskB = buildTask(id: 'b-out', title: 'Task B linked');
 
+      final journalRepo = MockJournalRepository();
+      when(
+        () => journalRepo.getTypedLinksForTaskIds(
+          {'task-a'},
+          linkTypes: any(named: 'linkTypes'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-a',
+            fromId: 'task-a',
+            toId: 'a-out',
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        ],
+      );
+      when(
+        () => journalRepo.getTypedLinksForTaskIds(
+          {'task-b'},
+          linkTypes: any(named: 'linkTypes'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-b',
+            fromId: 'task-b',
+            toId: 'b-out',
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        ],
+      );
+      when(
+        () => journalRepo.getJournalEntitiesByIds(any()),
+      ).thenAnswer((_) async => [taskA, taskB]);
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -416,24 +490,7 @@ void main() {
             linkedTasksControllerProvider('task-b').overrideWith(
               LinkedTasksController.new,
             ),
-            outgoingLinkedTasksProvider(
-              'task-a',
-            ).overrideWith((ref) => [taskA]),
-            outgoingLinkedTasksProvider(
-              'task-b',
-            ).overrideWith((ref) => [taskB]),
-            linkedFromEntriesControllerProvider('task-a').overrideWith(
-              () => MockLinkedFromEntriesController([]),
-            ),
-            linkedFromEntriesControllerProvider('task-b').overrideWith(
-              () => MockLinkedFromEntriesController([]),
-            ),
-            linkedEntriesControllerProvider('task-a').overrideWith(
-              MockLinkedEntriesController.new,
-            ),
-            linkedEntriesControllerProvider('task-b').overrideWith(
-              MockLinkedEntriesController.new,
-            ),
+            journalRepositoryProvider.overrideWithValue(journalRepo),
           ],
           child: const WidgetTestBench(
             child: LinkedTasksWidget(taskId: 'task-a'),
@@ -460,24 +517,7 @@ void main() {
             linkedTasksControllerProvider('task-b').overrideWith(
               LinkedTasksController.new,
             ),
-            outgoingLinkedTasksProvider(
-              'task-a',
-            ).overrideWith((ref) => [taskA]),
-            outgoingLinkedTasksProvider(
-              'task-b',
-            ).overrideWith((ref) => [taskB]),
-            linkedFromEntriesControllerProvider('task-a').overrideWith(
-              () => MockLinkedFromEntriesController([]),
-            ),
-            linkedFromEntriesControllerProvider('task-b').overrideWith(
-              () => MockLinkedFromEntriesController([]),
-            ),
-            linkedEntriesControllerProvider('task-a').overrideWith(
-              MockLinkedEntriesController.new,
-            ),
-            linkedEntriesControllerProvider('task-b').overrideWith(
-              MockLinkedEntriesController.new,
-            ),
+            journalRepositoryProvider.overrideWithValue(journalRepo),
           ],
           child: const WidgetTestBench(
             child: LinkedTasksWidget(taskId: 'task-b'),

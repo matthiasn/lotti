@@ -88,10 +88,18 @@ class FakeEntryController extends EntryController {
   }
 
   @override
-  Future<void> updateTaskStatus(String? status) async {
+  Future<TaskStatusUpdateResult> updateTaskStatus(
+    String? status, {
+    String? blockerTaskId,
+    String? blockerTaskTitle,
+  }) async {
     if (status != null) {
       _tracker?.updateTaskStatusCalls.add(status);
     }
+    return const TaskStatusUpdateResult(
+      statusUpdated: true,
+      blockerLinked: false,
+    );
   }
 
   @override

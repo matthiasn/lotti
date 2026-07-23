@@ -2773,12 +2773,35 @@
   "knowledgeGraphTitle": "Grafo de conocimiento",
   "knowledgeGraphTooltip": "Explorar enlaces",
   "knowledgeGraphWalkHint": "Toca un nodo para avanzar · nodos: {count}",
+  "linkBlocksCycleErrorMessage": "Esto crearía un ciclo de bloqueo — elige otra tarea.",
   "linkedFromCaption": "desde",
   "linkedTaskImageBadge": "De tarea vinculada",
+  "linkedTasksBlockedBySectionTitle": "Bloqueada por",
+  "linkedTasksBlocksSectionTitle": "Bloquea",
+  "linkedTasksDuplicatesSectionTitle": "Duplicados",
+  "linkedTasksFixesSectionTitle": "Corrige",
+  "linkedTasksFollowUpsSectionTitle": "Seguimientos",
   "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
+  "linkedTasksSupersedesSectionTitle": "Reemplaza",
   "linkedTasksTitle": "Tareas vinculadas",
   "linkedToCaption": "a",
   "linkExistingTask": "Vincular tarea existente...",
+  "linkPhraseBlocksInverse": "Está bloqueada por",
+  "linkPhraseBlocksPrimary": "Bloquea",
+  "linkPhraseDuplicatesInverse": "Está duplicada por",
+  "linkPhraseDuplicatesPrimary": "Duplica",
+  "linkPhraseFixesInverse": "Está corregida por",
+  "linkPhraseFixesPrimary": "Corrige",
+  "linkPhraseFollowsUpInverse": "Tiene seguimiento",
+  "linkPhraseFollowsUpPrimary": "Da seguimiento a",
+  "linkPhraseSupersedesInverse": "Está reemplazada por",
+  "linkPhraseSupersedesPrimary": "Reemplaza",
+  "linkTypeBasicOption": "Vincular",
+  "linkTypeBlocksOption": "Bloquea",
+  "linkTypeDuplicatesOption": "Duplica",
+  "linkTypeFixesOption": "Corrige",
+  "linkTypeFollowsUpOption": "Da seguimiento",
+  "linkTypeSupersedesOption": "Reemplaza",
   "logbookEmptyHint": "Crea tu primera entrada para empezar tu diario.",
   "logbookEmptyTitle": "Tu diario está vacío",
   "logbookNewEntriesHint": "Las nuevas entradas se abrirán aquí.",
@@ -4091,6 +4114,30 @@
   "taskAgentUseCategoryDefaultDescription": "Copia la configuración actual de la categoría. Los cambios posteriores de la categoría no afectarán a este agente.",
   "taskAgentUseProfileDefault": "Usar el valor predeterminado del perfil",
   "taskAgentWakeAgent": "Ejecutar agente",
+  "taskBlockedByChipLabel": "{count, plural, =1{Bloqueada por {title}} other{Bloqueada por {count} tareas}}",
+  "@taskBlockedByChipLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedByChipTooltip": "{count, plural, =1{Bloqueada por {title}} other{Toca para ver {count} bloqueos}}",
+  "@taskBlockedByChipTooltip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockerPickerSkipButton": "Omitir",
+  "taskBlockerPickerTitle": "¿Qué está bloqueando esta tarea?",
   "taskCategoryAllLabel": "todos",
   "taskCategoryLabel": "Categoría:",
   "taskCategoryUnassignedLabel": "sin asignar",

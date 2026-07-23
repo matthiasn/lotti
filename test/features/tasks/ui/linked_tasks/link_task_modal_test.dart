@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
@@ -37,6 +40,12 @@ void main() {
       dateFrom: now,
       dateTo: now,
     );
+
+    // DsSegmentedToggle renders an invisible width-reserving ghost copy of
+    // each segment's label alongside the visible one (see its doc comment) —
+    // plain find.text matches two Texts; the visible one is the Stack's last
+    // child.
+    Finder visibleText(String label) => find.text(label).last;
 
     // Pumps a button that opens the modal, taps it, and settles.
     Future<void> openModal(
@@ -710,6 +719,8 @@ void main() {
         () => mockPersistenceLogic.createLink(
           fromId: any(named: 'fromId'),
           toId: any(named: 'toId'),
+          // ignore: avoid_redundant_argument_values
+          linkType: EntryLinkType.basic,
         ),
       ).thenAnswer((_) async => true);
 
@@ -741,14 +752,188 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      // Verify link was created
+      // Verify link was created as a plain (basic) link, the default
       verify(
         () => mockPersistenceLogic.createLink(
           fromId: 'current-task',
           toId: 'task-to-link',
+          // ignore: avoid_redundant_argument_values
+          linkType: EntryLinkType.basic,
         ),
       ).called(1);
     });
+
+    testWidgets(
+      'defaults to "Link" selected and shows no phrasing toggle',
+      (tester) async {
+        await openModal(tester);
+
+        final linkPill = tester.widget<DsPill>(
+          find.ancestor(
+            of: find.text('Link'),
+            matching: find.byType(DsPill),
+          ),
+        );
+        expect(linkPill.selected, isTrue);
+        expect(find.byType(DsSegmentedToggle<bool>), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'selecting "Blocks" reveals the phrasing toggle; "Link" does not',
+      (tester) async {
+        await openModal(tester);
+
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+
+        expect(find.byType(DsSegmentedToggle<bool>), findsOneWidget);
+        expect(visibleText('Is blocked by'), findsOneWidget);
+
+        await tester.tap(find.text('Link'));
+        await tester.pump();
+
+        expect(find.byType(DsSegmentedToggle<bool>), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'switching relationship type resets the phrasing toggle to primary',
+      (tester) async {
+        await openModal(tester);
+
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+        await tester.tap(visibleText('Is blocked by'));
+        await tester.pump();
+
+        var toggle = tester.widget<DsSegmentedToggle<bool>>(
+          find.byType(DsSegmentedToggle<bool>),
+        );
+        expect(toggle.selected, isTrue);
+
+        await tester.tap(find.text('Fixes'));
+        await tester.pump();
+
+        toggle = tester.widget<DsSegmentedToggle<bool>>(
+          find.byType(DsSegmentedToggle<bool>),
+        );
+        expect(toggle.selected, isFalse);
+      },
+    );
+
+    testWidgets(
+      'selecting "Blocks" creates a blocks link in the primary direction',
+      (tester) async {
+        final testTask = buildTask(id: 'blocker-task', title: 'Blocker Task');
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [testTask]);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await openModal(tester);
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+
+        await tester.tap(find.text('Blocker Task'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'current-task',
+            toId: 'blocker-task',
+            linkType: EntryLinkType.blocks,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'selecting the inverse phrasing swaps fromId/toId before persisting',
+      (tester) async {
+        final testTask = buildTask(id: 'blocker-task', title: 'Blocker Task');
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [testTask]);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await openModal(tester);
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+        await tester.tap(visibleText('Is blocked by'));
+        await tester.pump();
+
+        await tester.tap(find.text('Blocker Task'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // "Is blocked by" + picking blocker-task ⇒ blocker-task is the
+        // blocker (fromId), current-task is blocked (toId).
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'blocker-task',
+            toId: 'current-task',
+            linkType: EntryLinkType.blocks,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'a rejected cycle guard shows an error and keeps the modal open',
+      (tester) async {
+        final testTask = buildTask(id: 'blocker-task', title: 'Blocker Task');
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [testTask]);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => false);
+
+        await openModal(tester);
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+
+        await tester.tap(find.text('Blocker Task'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('Blocker Task'), findsOneWidget);
+        expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
 
     testWidgets('shows status labels for blocked tasks', (tester) async {
       final blockedTask = buildTask(
