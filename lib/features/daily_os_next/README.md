@@ -352,7 +352,12 @@ sequenceDiagram
   lane — never coalesces with day work) assembles `<digest>` with status
   events since the last digest (watermark = newest `dailyWakeCompleted`
   milestone, 48h fallback), today's + tomorrow's current directives, and the
-  two-day attention window. Digest rules: react by revising directives —
+  two-day attention window. When more events exist than the digest renders
+  (50), selection is severity-ranked, not arrival-order
+  (`selectDigestStatusEvents`: `attentionNeeded` > `dayClosed` > `onTrack`,
+  `directiveUnsatisfiable` > `overCommitted` > `processingBlocked` >
+  `userDivergence`, newer beats older within a tier) and the section carries
+  `statusEventsTruncated: true`. Digest rules: react by revising directives —
   never by drafting plans. Completion writes the watermark milestone and
   deterministically re-arms tomorrow's digest record;
   `DayAgentService.restoreSubscriptions` bootstraps the first record (and

@@ -319,15 +319,20 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       // The watermark advances to the digest's OWN completion milestone —
       // never to the last returned row — so the digest is an advisory
       // distillation, not an exactly-once queue; equal-timestamp rows at a
-      // page boundary cannot be skipped by the watermark. The one real
-      // hazard is wholesale truncation past [_digestStatusEventLimit]: the
-      // rendered section says so explicitly instead of silently reading as
-      // "this was everything".
-      final statusEvents = await agentRepository.getDayStatusEventsSince(
+      // page boundary cannot be skipped by the watermark. When more events
+      // exist than the digest renders, selection is severity-ranked
+      // (attention-weighted aggregation) rather than arrival-order, and the
+      // rendered section says it was truncated instead of silently reading
+      // as "this was everything".
+      final candidates = await agentRepository.getDayStatusEventsSince(
         since,
+        limit: _digestStatusEventFetchLimit,
+      );
+      final (:selected, :truncated) = selectDigestStatusEvents(
+        candidates,
         limit: _digestStatusEventLimit,
       );
-      final truncated = statusEvents.length >= _digestStatusEventLimit;
+      final statusEvents = selected;
       final todayDirective = await directiveService!.directiveForDay(
         wakeContext.dayId,
       );
@@ -382,6 +387,12 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   /// something is systemically wrong — which the `statusEventsTruncated`
   /// marker surfaces to the model rather than hiding.
   static const _digestStatusEventLimit = 50;
+
+  /// Candidate pool fetched for ranked selection — larger than the render
+  /// cap so severity decides what survives truncation instead of arrival
+  /// order. Still bounded: a backlog beyond this is pathological, and the
+  /// truncation marker plus the oldest-first scan keep it visible.
+  static const _digestStatusEventFetchLimit = 200;
 
   /// The newest digest watermark: the coordinator's most recent
   /// `dailyWakeCompleted` milestone, falling back to 48h ago for the first

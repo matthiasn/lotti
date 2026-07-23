@@ -2156,11 +2156,21 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => [
-              for (var i = 0; i < 50; i++)
+              // 51 routine closes, newest-skewed, plus one OLD escalation:
+              // ranked selection must keep the escalation and drop a
+              // routine close, not truncate by age.
+              makeTestDayStatusEvent(
+                id: 'day_status:$dayId:escalation',
+                raisedAt: now.subtract(const Duration(hours: 20)),
+                createdAt: now.subtract(const Duration(hours: 20)),
+              ),
+              for (var i = 0; i < 51; i++)
                 makeTestDayStatusEvent(
-                  id: 'day_status:$dayId:event-$i',
-                  raisedAt: now.subtract(Duration(minutes: 50 - i)),
-                  createdAt: now.subtract(Duration(minutes: 50 - i)),
+                  id: 'day_status:$dayId:close-$i',
+                  status: DayStatusKind.dayClosed,
+                  reasons: const [],
+                  raisedAt: now.subtract(Duration(minutes: 51 - i)),
+                  createdAt: now.subtract(Duration(minutes: 51 - i)),
                 ),
             ],
           );
@@ -2172,7 +2182,15 @@ void main() {
           expect(result.success, isTrue, reason: result.error);
           final digest = sentPrompt().json('digest')! as Map;
           expect(digest['statusEventsTruncated'], isTrue);
-          expect(digest['statusEvents'], hasLength(50));
+          final events = digest['statusEvents'] as List;
+          expect(events, hasLength(50));
+          expect(
+            (events.first as Map)['status'],
+            'attentionNeeded',
+            reason:
+                'The 20-hour-old escalation survives ranked truncation and '
+                'renders first chronologically.',
+          );
         },
       );
 
