@@ -28,6 +28,13 @@ Each ADR should contain:
 
 ## Index
 
+### Task graph decision cluster
+
+| ADR | Status | Decision ownership |
+| --- | --- | --- |
+| [0042: Typed Task Relationship Links](./0042-typed-task-relationship-links.md) | Proposed | `EntryLink` union variants (blocks, followsUp, duplicates, fixes, supersedes), one stored edge with rendered inverses, derived one-hop readiness, cycle tolerance, suggestion-only lifecycle coupling. |
+| [0043: Dependency-Aware Planning](./0043-dependency-aware-planning.md) | Proposed | Ready frontier consumed by planning: corpus annotation (never exclusion), batch dependency resolver, drafting/digest prompt rules, task-detail visibility, explicit non-goals. |
+
 ### Relationship management decision cluster
 
 | ADR | Status | Decision ownership |
@@ -90,3 +97,5 @@ Each ADR should contain:
 - [`0039-relationship-check-in-reminders.md`](./0039-relationship-check-in-reminders.md)
 - [`0040-relationship-executive-briefing.md`](./0040-relationship-executive-briefing.md)
 - [`0041-relationship-contact-linking.md`](./0041-relationship-contact-linking.md)
+- [`0042-typed-task-relationship-links.md`](./0042-typed-task-relationship-links.md)
+- [`0043-dependency-aware-planning.md`](./0043-dependency-aware-planning.md)
