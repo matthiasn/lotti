@@ -872,7 +872,9 @@ void main() {
       );
       when(
         () => journalDb.sortedCalendarEntries(
-          rangeStart: DateTime(2026, 6),
+          // The FOUR weeks are read as one spanning range (oldest Monday to
+          // end of the newest complete week), then bucketed per week.
+          rangeStart: DateTime(2026, 5, 11),
           rangeEnd: DateTime(2026, 6, 8),
         ),
       ).thenAnswer(
@@ -888,6 +890,13 @@ void main() {
             start: DateTime(2026, 6, 3, 20),
             minutes: 30,
           ),
+          // Lands in the 05-18 week's bucket, not the newest week's.
+          timeEntry(
+            id: 'entry-3',
+            start: DateTime(2026, 5, 19, 9),
+            minutes: 60,
+            categoryId: 'cat-work',
+          ),
         ],
       );
 
@@ -898,35 +907,51 @@ void main() {
       expect(newest.daysWithPlans, 1, reason: 'The foreign plan is excluded.');
       expect(newest.plannedMinutesByCategory, {'cat-work': 120});
       expect(newest.recordedMinutesByCategory, {'': 30, 'cat-work': 45});
-    });
-
-    test('recomputes only the newest complete week when all rollups exist, '
-        'skipping the write when aggregates are unchanged', () async {
-      stubEntityReads(
-        rollups: {
-          for (final id in allRollupIds)
-            id: makeTestWeekRollup(
-              id: id,
-              weekStart: DateTime.parse(id.substring('week_rollup:'.length)),
-              plannedMinutesByCategory: const {},
-              recordedMinutesByCategory: const {},
-              daysWithPlans: 0,
-            ),
-        },
+      final midWeek =
+          upserted.firstWhere((e) => e.id == 'week_rollup:2026-05-18')
+              as WeekRollupEntity;
+      expect(
+        midWeek.recordedMinutesByCategory,
+        {'cat-work': 60},
+        reason: 'The spanning read buckets each span into its own week.',
       );
-
-      await withNow(() => service.ensureWeekRollups());
-
-      expect(upserted, isEmpty, reason: 'Unchanged aggregates: no sync churn.');
-      // One rollup-id batch read + exactly ONE per-week plan read (newest).
-      verify(() => repository.getEntitiesByIds(any())).called(2);
-      verify(
-        () => journalDb.sortedCalendarEntries(
-          rangeStart: DateTime(2026, 6),
-          rangeEnd: DateTime(2026, 6, 8),
-        ),
-      ).called(1);
     });
+
+    test(
+      'recomputes every complete week when all rollups exist, in TWO '
+      'batch reads, skipping every write when aggregates are unchanged',
+      () async {
+        stubEntityReads(
+          rollups: {
+            for (final id in allRollupIds)
+              id: makeTestWeekRollup(
+                id: id,
+                weekStart: DateTime.parse(id.substring('week_rollup:'.length)),
+                plannedMinutesByCategory: const {},
+                recordedMinutesByCategory: const {},
+                daysWithPlans: 0,
+              ),
+          },
+        );
+
+        await withNow(() => service.ensureWeekRollups());
+
+        expect(
+          upserted,
+          isEmpty,
+          reason: 'Unchanged aggregates: no sync churn.',
+        );
+        // One rollup-id batch read + ONE spanning plan batch (28 ids) — never
+        // a per-week read loop.
+        verify(() => repository.getEntitiesByIds(any())).called(2);
+        verify(
+          () => journalDb.sortedCalendarEntries(
+            rangeStart: DateTime(2026, 5, 11),
+            rangeEnd: DateTime(2026, 6, 8),
+          ),
+        ).called(1);
+      },
+    );
 
     test('a changed newest week rewrites in place, preserving createdAt and '
         'vector clock', () async {
@@ -966,37 +991,55 @@ void main() {
       expect(rewritten.vectorClock, priorClock);
     });
 
-    test('backfills only the missing older weeks', () async {
-      stubEntityReads(
-        rollups: {
-          newestId: makeTestWeekRollup(
-            id: newestId,
-            weekStart: DateTime(2026, 6),
-            plannedMinutesByCategory: const {},
-            recordedMinutesByCategory: const {},
-            daysWithPlans: 0,
-          ),
-          'week_rollup:2026-05-18': makeTestWeekRollup(
-            id: 'week_rollup:2026-05-18',
-            weekStart: DateTime(2026, 5, 18),
-            plannedMinutesByCategory: const {'cat-a': 1},
-            recordedMinutesByCategory: const {},
-          ),
-        },
-      );
+    test(
+      'corrects a stale older week and backfills the missing ones',
+      () async {
+        stubEntityReads(
+          rollups: {
+            newestId: makeTestWeekRollup(
+              id: newestId,
+              weekStart: DateTime(2026, 6),
+              plannedMinutesByCategory: const {},
+              recordedMinutesByCategory: const {},
+              daysWithPlans: 0,
+            ),
+            // Stale register: source data says empty (e.g. a plan tombstoned
+            // after the week left the newest slot, or an incomplete aggregate
+            // that won a concurrent-LWW race on another device).
+            'week_rollup:2026-05-18': makeTestWeekRollup(
+              id: 'week_rollup:2026-05-18',
+              weekStart: DateTime(2026, 5, 18),
+              plannedMinutesByCategory: const {'cat-a': 1},
+              recordedMinutesByCategory: const {},
+            ),
+          },
+        );
 
-      await withNow(() => service.ensureWeekRollups());
+        await withNow(() => service.ensureWeekRollups());
 
-      expect(
-        [for (final e in upserted) e.id],
-        ['week_rollup:2026-05-25', 'week_rollup:2026-05-11'],
-        reason:
-            'The unchanged newest week skips its write; the existing 05-18 '
-            'register is not recomputed at all.',
-      );
-    });
+        expect(
+          [for (final e in upserted) e.id],
+          [
+            'week_rollup:2026-05-25',
+            'week_rollup:2026-05-18',
+            'week_rollup:2026-05-11',
+          ],
+          reason:
+              'The unchanged newest week skips its write; the stale 05-18 '
+              'register is corrected from source, the missing weeks created.',
+        );
+        final corrected =
+            upserted.firstWhere((e) => e.id == 'week_rollup:2026-05-18')
+                as WeekRollupEntity;
+        expect(
+          corrected.plannedMinutesByCategory,
+          isEmpty,
+          reason: 'Recompute-from-source overwrites the stale aggregate.',
+        );
+      },
+    );
 
-    test('a tombstoned rollup is never recomputed or resurrected', () async {
+    test('a tombstoned rollup is never resurrected', () async {
       stubEntityReads(
         rollups: {
           for (final id in allRollupIds)
@@ -1013,9 +1056,13 @@ void main() {
 
       await withNow(() => service.ensureWeekRollups());
 
-      expect(upserted, isEmpty);
-      // Only the rollup batch read happens — no week is computed.
-      verify(() => repository.getEntitiesByIds(any())).called(1);
+      expect(
+        upserted,
+        isEmpty,
+        reason:
+            'The tombstoned newest week must not be rewritten even though '
+            'the batch recompute covered it; the others are unchanged.',
+      );
     });
 
     test(

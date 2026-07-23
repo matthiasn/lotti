@@ -2195,6 +2195,116 @@ void main() {
       );
 
       test(
+        'a full status-event page refetches wider so ranking sees the '
+        'newest events before the watermark advances past them',
+        () async {
+          when(
+            () => repository.getMessagesByKind(
+              dailyOsPlannerAgentId,
+              AgentMessageKind.system,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+          // 200 oldest routine closes fill the first page exactly; the one
+          // escalation is NEWER than all of them, so a fixed 200-row fetch
+          // would never rank it — and the completion watermark would then
+          // skip it forever.
+          final all = <DayStatusEventEntity>[
+            for (var i = 0; i < 200; i++)
+              makeTestDayStatusEvent(
+                id: 'day_status:$dayId:close-$i',
+                status: DayStatusKind.dayClosed,
+                reasons: const [],
+                raisedAt: now.subtract(Duration(hours: 40, minutes: 200 - i)),
+                createdAt: now.subtract(Duration(hours: 40, minutes: 200 - i)),
+              ),
+            makeTestDayStatusEvent(
+              id: 'day_status:$dayId:newest-escalation',
+              raisedAt: now.subtract(const Duration(hours: 1)),
+              createdAt: now.subtract(const Duration(hours: 1)),
+            ),
+          ];
+          when(
+            () => repository.getDayStatusEventsSince(any(), limit: 200),
+          ).thenAnswer((_) async => all.take(200).toList());
+          when(
+            () => repository.getDayStatusEventsSince(any(), limit: 400),
+          ).thenAnswer((_) async => all);
+
+          final result = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          verify(
+            () => repository.getDayStatusEventsSince(any(), limit: 400),
+          ).called(1);
+          final digest = sentPrompt().json('digest')! as Map;
+          expect(digest['statusEventsTruncated'], isTrue);
+          final events = digest['statusEvents'] as List;
+          expect(
+            (events.last as Map)['status'],
+            'attentionNeeded',
+            reason:
+                'The newest escalation sits beyond the first page and must '
+                'still be ranked in (rendering last, chronologically).',
+          );
+        },
+      );
+
+      test(
+        'the doubling refetch stops at the hard ceiling and forces the '
+        'truncation marker',
+        () async {
+          when(
+            () => repository.getMessagesByKind(
+              dailyOsPlannerAgentId,
+              AgentMessageKind.system,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+          final all = <DayStatusEventEntity>[
+            for (var i = 0; i < 2000; i++)
+              makeTestDayStatusEvent(
+                id: 'day_status:$dayId:flood-$i',
+                status: DayStatusKind.dayClosed,
+                reasons: const [],
+                raisedAt: now.subtract(Duration(minutes: 2000 - i)),
+                createdAt: now.subtract(Duration(minutes: 2000 - i)),
+              ),
+          ];
+          when(
+            () => repository.getDayStatusEventsSince(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((invocation) async {
+            final limit = invocation.namedArguments[#limit] as int?;
+            return all.take(limit ?? all.length).toList();
+          });
+
+          final result = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          // 200 → 400 → 800 → 1600 → 2000, then STOP: the ceiling bounds
+          // memory even against a pathological flood.
+          for (final limit in [200, 400, 800, 1600, 2000]) {
+            verify(
+              () => repository.getDayStatusEventsSince(any(), limit: limit),
+            ).called(1);
+          }
+          verifyNever(
+            () => repository.getDayStatusEventsSince(any(), limit: 3200),
+          );
+          final digest = sentPrompt().json('digest')! as Map;
+          expect(digest['statusEventsTruncated'], isTrue);
+          expect(digest['statusEvents'] as List, hasLength(50));
+        },
+      );
+
+      test(
         'falls back to a 48h watermark for the first digest',
         () async {
           when(

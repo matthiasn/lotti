@@ -359,7 +359,11 @@ sequenceDiagram
   `directiveUnsatisfiable` > `overCommitted` > `processingBlocked` >
   `userDivergence`, newer beats older within a tier, ascending id as the
   final deterministic tiebreak for equal timestamps) and the section
-  carries `statusEventsTruncated: true`. Digest rules: react by revising directives —
+  carries `statusEventsTruncated: true`. Ranking sees EVERY event since
+  the watermark: the oldest-first query refetches with a doubled limit
+  whenever a page fills (ceiling 2000), because a fixed-size fetch would
+  drop the newest events pre-ranking and the advancing watermark would
+  then skip them forever. Digest rules: react by revising directives —
   never by drafting plans. Completion writes the watermark milestone and
   deterministically re-arms tomorrow's digest record;
   `DayAgentService.restoreSubscriptions` bootstraps the first record (and
@@ -370,10 +374,13 @@ sequenceDiagram
   category (dropped blocks excluded), recorded minutes per category
   (empty-string key = uncategorized), and days-with-plans, computed by
   `DayAgentWeekContextService.ensureWeekRollups` from the same sources as
-  the week context. The newest complete week is always recomputed
-  (late-synced data), older weeks only backfilled when missing, unchanged
-  aggregates skip the write, and tombstones are never resurrected — plain
-  LWW converges because every device recomputes from source. The rollups
+  the week context. Every week is recomputed from source on every digest —
+  that is what makes plain LWW converge: late-synced entries and an
+  incomplete aggregate that won a concurrent-LWW race on another device
+  both self-heal at the next digest. Cost stays bounded by batching (one
+  plan read and one recorded-time read span all four weeks, bucketed per
+  week), unchanged aggregates skip the write (steady state writes
+  nothing), and tombstones are never resurrected. The rollups
   render as `<recent_weeks>` (names resolved, newest first) so the digest
   can spot month-scale pacing trends without re-reading a month of raw
   entities.

@@ -357,10 +357,31 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       // (attention-weighted aggregation) rather than arrival-order, and the
       // rendered section says it was truncated instead of silently reading
       // as "this was everything".
-      final candidates = await agentRepository.getDayStatusEventsSince(
+      //
+      // Ranking must see EVERY event since the watermark: the query returns
+      // oldest-first, so a fixed-size fetch would truncate the NEWEST events
+      // before ranking — and once this digest's completion milestone
+      // advances the watermark, those unseen events (possibly escalations)
+      // would be skipped forever. A full page therefore refetches with a
+      // doubled limit until the tail fits, bounded by a hard ceiling; only
+      // at the ceiling may events go unranked, and then the truncation
+      // marker is forced on.
+      var fetchLimit = _digestStatusEventFetchLimit;
+      var candidates = await agentRepository.getDayStatusEventsSince(
         since,
-        limit: _digestStatusEventFetchLimit,
+        limit: fetchLimit,
       );
+      while (candidates.length >= fetchLimit &&
+          fetchLimit < _digestStatusEventFetchCeiling) {
+        fetchLimit = fetchLimit * 2 < _digestStatusEventFetchCeiling
+            ? fetchLimit * 2
+            : _digestStatusEventFetchCeiling;
+        candidates = await agentRepository.getDayStatusEventsSince(
+          since,
+          limit: fetchLimit,
+        );
+      }
+      final poolTruncated = candidates.length >= _digestStatusEventFetchCeiling;
       final (:selected, :truncated) = selectDigestStatusEvents(
         candidates,
         limit: _digestStatusEventLimit,
@@ -385,7 +406,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         'since': since.toIso8601String(),
         'todayDayId': wakeContext.dayId,
         'tomorrowDayId': tomorrowId,
-        if (truncated) 'statusEventsTruncated': true,
+        if (truncated || poolTruncated) 'statusEventsTruncated': true,
         'statusEvents': [
           for (final event in statusEvents)
             {
@@ -421,11 +442,17 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   /// marker surfaces to the model rather than hiding.
   static const _digestStatusEventLimit = 50;
 
-  /// Candidate pool fetched for ranked selection — larger than the render
-  /// cap so severity decides what survives truncation instead of arrival
-  /// order. Still bounded: a backlog beyond this is pathological, and the
-  /// truncation marker plus the oldest-first scan keep it visible.
+  /// Initial candidate-pool fetch for ranked selection — larger than the
+  /// render cap so severity decides what survives truncation instead of
+  /// arrival order. A full page doubles and refetches (see the loop above)
+  /// so ranking covers everything since the watermark.
   static const _digestStatusEventFetchLimit = 200;
+
+  /// Hard ceiling on the doubling refetch — a memory backstop far above any
+  /// real backlog (per-wake caps make even hundreds pathological). Only at
+  /// this ceiling can events since the watermark go unranked, and then the
+  /// `statusEventsTruncated` marker is forced on.
+  static const _digestStatusEventFetchCeiling = 2000;
 
   /// The newest digest watermark: the coordinator's most recent
   /// `dailyWakeCompleted` milestone, falling back to 48h ago for the first

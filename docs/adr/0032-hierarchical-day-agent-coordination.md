@@ -512,10 +512,11 @@ Decision section in place.
   maintains `WeekRollupEntity` registers (`week_rollup:<Monday>`,
   coordinator-owned) for the last 4 complete weeks — planned/recorded
   minutes per category plus days-with-plans, recomputed deterministically
-  from day plans and recorded time (`ensureWeekRollups`: newest complete
-  week always recomputed, older weeks backfilled only when missing,
-  unchanged aggregates skip the write, tombstones never resurrected; plain
-  LWW converges because every device recomputes from source). Rendered as
+  from day plans and recorded time (`ensureWeekRollups`: EVERY week
+  recomputed from source on every digest — that is what makes plain LWW
+  converge, since late-synced data and cross-device LWW races self-heal at
+  the next digest; two spanning batch reads bound the cost, unchanged
+  aggregates skip the write, tombstones never resurrected). Rendered as
   `<recent_weeks>` on digest wakes only, giving the coordinator month-scale
   pacing signal without re-reading a month of raw entities — the pooled
   counterpart to the severity-ranked status-event selection above.

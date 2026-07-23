@@ -240,12 +240,15 @@ class DayAgentWeekContextService {
   /// (ADR 0032 digest pooling): the last [recentWeekRollupCount] complete
   /// calendar weeks, coordinator-owned, keyed `week_rollup:<Monday>`.
   ///
-  /// The newest complete week is ALWAYS recomputed (late-synced entries and
-  /// plan edits still trickle in right after a week closes); older weeks are
-  /// backfilled only when missing — their sources no longer change, and an
-  /// unconditional recompute would re-read a month of journal data every
-  /// morning. A recompute whose aggregates match the stored register skips
-  /// the write entirely (no sync churn); a tombstoned register is a
+  /// EVERY week is recomputed from source on every call — this is what makes
+  /// the "plain LWW converges because every device recomputes" claim true:
+  /// late-synced plans/time entries and an incomplete aggregate that won a
+  /// concurrent-LWW race on another device both self-heal at the next
+  /// digest, no dirty-tracking needed. The cost stays bounded by batching:
+  /// one plan read and one recorded-time read span all
+  /// [recentWeekRollupCount] weeks (see [_computeAggregatesForWeeks]), and
+  /// a recompute whose aggregates match the stored register skips the write
+  /// entirely (steady state writes nothing). A tombstoned register is a
   /// deliberate delete and is never resurrected. Fail-soft: any error logs
   /// and returns — rollups are advisory context, never worth killing a
   /// digest wake.
@@ -256,16 +259,15 @@ class DayAgentWeekContextService {
       final existingById = await agentRepository.getEntitiesByIds({
         for (final weekStart in weekStarts) weekRollupEntityId(weekStart),
       });
-      for (var index = 0; index < weekStarts.length; index++) {
-        final weekStart = weekStarts[index];
+      final aggregatesByWeek = await _computeAggregatesForWeeks(weekStarts);
+      for (final weekStart in weekStarts) {
         final id = weekRollupEntityId(weekStart);
         final existing = existingById[id];
         if (existing is WeekRollupEntity && existing.deletedAt != null) {
           continue;
         }
         final prior = existing is WeekRollupEntity ? existing : null;
-        if (index > 0 && prior != null) continue;
-        final aggregates = await _computeWeekAggregates(weekStart);
+        final aggregates = aggregatesByWeek[weekStart]!;
         const equality = DeepCollectionEquality();
         if (prior != null &&
             prior.daysWithPlans == aggregates.daysWithPlans &&
@@ -358,44 +360,69 @@ class DayAgentWeekContextService {
     ];
   }
 
-  /// Computes one week's pooled aggregates from its 7 day plans (same
-  /// deterministic-id batch read and ownership filter as [buildForDay]) and
-  /// its recorded-time spans.
+  /// Computes every week's pooled aggregates in TWO batch reads spanning
+  /// all [weekStarts] (assumed consecutive, newest first): one
+  /// deterministic-id plan fetch (same ownership filter as [buildForDay])
+  /// and one recorded-time range resolution, bucketed per week afterwards.
+  /// A per-week read loop would multiply both queries by
+  /// [recentWeekRollupCount] every digest for identical results.
   Future<
-    ({
-      int daysWithPlans,
-      Map<String, int> plannedMinutesByCategory,
-      Map<String, int> recordedMinutesByCategory,
-    })
+    Map<
+      DateTime,
+      ({
+        int daysWithPlans,
+        Map<String, int> plannedMinutesByCategory,
+        Map<String, int> recordedMinutesByCategory,
+      })
+    >
   >
-  _computeWeekAggregates(DateTime weekStart) async {
-    final entitiesById = await agentRepository.getEntitiesByIds({
-      for (var offset = 0; offset < DateTime.daysPerWeek; offset++)
-        dayAgentPlanEntityId(
-          dayPlanId(
-            DateTime(weekStart.year, weekStart.month, weekStart.day + offset),
-          ),
-        ),
-    });
-    final dayPlans = <DayPlanEntity>[
-      for (final entity in entitiesById.values)
-        if (entity is DayPlanEntity &&
-            isDailyOsDayOwner(entity.agentId) &&
-            entity.deletedAt == null)
-          entity,
-    ];
+  _computeAggregatesForWeeks(List<DateTime> weekStarts) async {
+    final weekByPlanId = <String, DateTime>{};
+    for (final weekStart in weekStarts) {
+      for (var offset = 0; offset < DateTime.daysPerWeek; offset++) {
+        final day = DateTime(
+          weekStart.year,
+          weekStart.month,
+          weekStart.day + offset,
+        );
+        weekByPlanId[dayAgentPlanEntityId(dayPlanId(day))] = weekStart;
+      }
+    }
+    final entitiesById = await agentRepository.getEntitiesByIds(
+      weekByPlanId.keys,
+    );
+    final plansByWeek = <DateTime, List<DayPlanEntity>>{};
+    for (final entry in entitiesById.entries) {
+      final entity = entry.value;
+      if (entity is DayPlanEntity &&
+          isDailyOsDayOwner(entity.agentId) &&
+          entity.deletedAt == null) {
+        plansByWeek.putIfAbsent(weekByPlanId[entry.key]!, () => []).add(entity);
+      }
+    }
+
+    final oldest = weekStarts.last;
+    final newest = weekStarts.first;
     final spans = await _recordedSpansInRange(
-      rangeStart: weekStart,
+      rangeStart: oldest,
       rangeEnd: DateTime(
-        weekStart.year,
-        weekStart.month,
-        weekStart.day + DateTime.daysPerWeek,
+        newest.year,
+        newest.month,
+        newest.day + DateTime.daysPerWeek,
       ),
     );
-    return computeWeekRollupAggregates(
-      dayPlans: dayPlans,
-      recordedSpans: spans,
-    );
+    final spansByWeek = <DateTime, List<RecordedSpan>>{};
+    for (final span in spans) {
+      spansByWeek.putIfAbsent(weekStartFor(span.start), () => []).add(span);
+    }
+
+    return {
+      for (final weekStart in weekStarts)
+        weekStart: computeWeekRollupAggregates(
+          dayPlans: plansByWeek[weekStart] ?? const [],
+          recordedSpans: spansByWeek[weekStart] ?? const [],
+        ),
+    };
   }
 
   /// Executes a week-context tool emitted by the agent.
