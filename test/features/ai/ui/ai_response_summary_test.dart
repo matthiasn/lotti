@@ -374,7 +374,9 @@ Style: isometric digital art. --ar 16:9
                 w is Container &&
                 w.decoration is BoxDecoration &&
                 (w.decoration! as BoxDecoration).color ==
-                    dsTokensLight.colors.aiCard.background,
+                    dsTokensLight.colors.aiCard.background.withValues(
+                      alpha: 0.5,
+                    ),
           ),
         );
         return container.decoration! as BoxDecoration;

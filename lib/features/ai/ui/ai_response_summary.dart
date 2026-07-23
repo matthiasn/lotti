@@ -197,7 +197,10 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
 
     return Container(
       decoration: BoxDecoration(
-        color: ai.background,
+        // Half-strength tint: keeps the AI color identity while letting the
+        // entry card's surface blend through, so the nested card stays
+        // clearly subordinate to its parent.
+        color: ai.background.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         border: Border.all(color: ai.borderSoft),
       ),
