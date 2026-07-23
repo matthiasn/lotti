@@ -24,6 +24,21 @@ class AgentRepoQueries {
   final AgentRepoCore _core;
   final AgentRepoLinks _links;
 
+  /// Day-status events raised after [since], oldest first, across ALL
+  /// day-owner agents (ADR 0032 phase 3): the coordinator's digest wake
+  /// consumes every day's escalations in one scan, so this deliberately does
+  /// not filter by `agent_id`.
+  Future<List<DayStatusEventEntity>> getDayStatusEventsSince(
+    DateTime since, {
+    int? limit,
+  }) async {
+    final rows = await _db.getDayStatusEventsSince(since, limit ?? -1).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<DayStatusEventEntity>()
+        .toList();
+  }
+
   Future<List<AgentMessageEntity>> getMessagesByKind(
     String agentId,
     AgentMessageKind kind, {

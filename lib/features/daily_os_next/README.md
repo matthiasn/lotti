@@ -299,6 +299,102 @@ sequenceDiagram
   and `waitingForUser` end the wait (need explicit user action); `waitingForNetwork`
   is left waiting through, since the outbox retries it automatically.
 
+**Directive + status protocol (phase 3).** The coordinator and per-day agents
+coordinate through two durable, synced entities — no RPC (ADR 0016/0018/0019):
+
+```mermaid
+sequenceDiagram
+  participant SWM as ScheduledWakeManager
+  participant Coord as Coordinator (digest wake)
+  participant Dir as DayDirectiveEntity
+  participant Day as Per-day agent
+  participant Status as DayStatusEventEntity
+
+  SWM->>Coord: due digest record fires (06:00, workspace coordinator:digest)
+  Coord->>Coord: <digest> = status events since last digest + directives + attention window
+  Coord->>Dir: issue_day_directive (today + tomorrow, revisable register)
+  Coord->>Coord: dailyWakeCompleted milestone + re-arm tomorrow's digest record
+  Day->>Dir: read newest revision at wake start -> <day_directive> section
+  Day->>Day: draft/refine bound by the commitment contract
+  Day->>Status: raise_day_status(attentionNeeded | dayClosed) when warranted
+  Status-->>Coord: getDayStatusEventsSince(watermark) at the next digest
+```
+
+- **Downward — `DayDirectiveEntity`** (`day_directive:<dayId>`): one revisable
+  register per day, coordinator-authored only (`DayAgentDirectiveService`
+  rejects other issuers; the tool is only *offered* on coordinator wakes).
+  Carries distilled commitments (source, window, minutes, evidence refs), a
+  capacity budget (available/already-scheduled minutes + energy bands),
+  carry-over items, bounded constraints and attention notes — never
+  transcripts. Bounded by validation: ≤12 commitments/carry-over, ≤8
+  notes/constraints, 280-char strings, windows inside the day. Revisions
+  upsert the deterministic id with a fresh `directiveRevisionId` (LWW,
+  `createdAt` preserved). The per-day wake reads it by PK — no projection
+  table — and renders `<day_directive>` in the byte-stable prompt prefix
+  (after `<knowledge_index>`). The drafting contract makes it **binding**:
+  every commitment is placed, traded away in a diff naming the collision, or
+  escalated via `raise_day_status` with `status: attentionNeeded` and
+  `directiveUnsatisfiable` among its `reasons` (the tool also requires the
+  wake's own `dayId`); requested minutes
+  reconcile against the capacity budget before drafting.
+- **Upward — `DayStatusEventEntity`** (`day_status:<dayId>:<uuid>`):
+  append-only typed events (`onTrack | attentionNeeded(reasons) |
+  dayClosed`; reasons `overCommitted | directiveUnsatisfiable |
+  userDivergence | processingBlocked`). `raise_day_status` may only target
+  the wake's own day (`wakeDayId` threaded through the tool dispatch), caps
+  at one event per wake (per-`runKey` guard), requires typed reasons with
+  `attentionNeeded`, and bounds notes at 500 chars. A new entity variant —
+  not an `AgentMessageKind` — so status stays out of the compaction fold and
+  scans via the type/subtype index (`getDayStatusEventsSince`, cross-agent,
+  oldest-first, served by `idx_agent_entities_active_type_created`).
+- **The digest wake** is the coordinator's consumption point: a
+  `digest:<dayId>` token wake on the `coordinator:digest` workspace (its own
+  lane — never coalesces with day work) assembles `<digest>` with status
+  events since the last digest (watermark = newest `dailyWakeCompleted`
+  milestone, 48h fallback), today's + tomorrow's current directives, and the
+  two-day attention window. Digest rules: react by revising directives —
+  never by drafting plans. Completion writes the watermark milestone and
+  deterministically re-arms tomorrow's digest record;
+  `DayAgentService.restoreSubscriptions` bootstraps the first record (and
+  recovers a missed re-arm) whenever the coordinator identity is active.
+- **The other two upward channels already existed**: day summaries
+  (`write_day_summary` → `<recent_days>`) carry the distilled narrative, and
+  `propose_knowledge` is coordinator-keyed even on per-day wakes, so durable
+  learnings land in the coordinator's confirm loop directly.
+
+**Visibility + persona (phases 4–5).** The Day page header shows a
+`DayAgentStatusChip` when the day's agent has something to say: `working`
+(a wake for this day is executing), `attention` (newest status event is
+`attentionNeeded`), or `celebrating` (`dayClosed`) — idle renders nothing.
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> working: wake for this day starts
+  working --> idle: wake ends, no newer status event
+  working --> attention: wake ends, newest event attentionNeeded
+  working --> celebrating: wake ends, newest event dayClosed
+  attention --> working: wake for this day starts
+  celebrating --> working: wake for this day starts
+  attention --> celebrating: newer dayClosed event
+  celebrating --> attention: newer attentionNeeded event
+  note right of working
+    A running wake always wins;
+    otherwise the NEWEST status
+    event decides (onTrack or
+    none means idle).
+  end note
+```
+The chip's tooltip adds the per-day token spend for per-day identities
+(coordinator-owned days show none: the coordinator's lifetime aggregate
+would misattribute other days), and tapping it opens the agent internals —
+same destination as the header menu's existing "Inspect agent" entry. Both
+facts come from `state/day_agent_persona_provider.dart`:
+`dayAgentPersonaStateProvider` (the ADR §7 persona contract the character
+animation binds to when it lands) and `dayAgentTokenSpendProvider`
+(`getTokenUsageForAgent` by agent id — no new storage). Settings › Agents
+already filters/groups day agents via the Type axis.
+
 ### Week Context & Day Summaries (ADR 0028)
 
 - **Facts vs testimony.** `<recent_days>` renders one paragraph per day over a

@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
@@ -58,6 +59,21 @@ DayAgentCaptureService dayAgentCaptureService(Ref ref) {
     nudgeProcessing: () => unawaited(
       ref.read(dayProcessingRuntimeProvider).nudge(),
     ),
+  );
+}
+
+/// The Daily OS day-directive service (ADR 0032 phase 3).
+final dayAgentDirectiveServiceProvider = Provider<DayAgentDirectiveService>(
+  dayAgentDirectiveService,
+  name: 'dayAgentDirectiveServiceProvider',
+);
+DayAgentDirectiveService dayAgentDirectiveService(Ref ref) {
+  final notifications = ref.watch(updateNotificationsProvider);
+  return DayAgentDirectiveService(
+    agentRepository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }
 

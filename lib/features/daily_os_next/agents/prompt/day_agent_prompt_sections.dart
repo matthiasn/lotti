@@ -33,6 +33,11 @@ abstract final class DayAgentPromptTags {
   /// The always-on compact hook index of durable knowledge (ADR 0022).
   static const knowledgeIndex = 'knowledge_index';
 
+  /// The coordinator's directive for this day (ADR 0032 phase 3, JSON):
+  /// commitments, capacity budget, carry-over, constraints, attention notes.
+  /// Stable within a revision, so it sits in the byte-stable prefix.
+  static const dayDirective = 'day_directive';
+
   /// The compacted day log (ADR 0017) — the derivable section the v2 prompt
   /// record splices around.
   static const dayLog = 'day_log';
@@ -61,6 +66,11 @@ abstract final class DayAgentPromptTags {
   /// Refine baseline plan (JSON).
   static const refine = 'refine';
 
+  /// Coordinator digest inputs (ADR 0032 phase 3, JSON): status events since
+  /// the last digest, current directives, and the near-window attention
+  /// ledger. Present only on coordinator digest wakes.
+  static const digest = 'digest';
+
   /// Pre-compaction fallback listing of recent observations (JSON).
   static const recentObservations = 'recent_observations';
 
@@ -75,6 +85,7 @@ abstract final class DayAgentPromptTags {
     dayId,
     planDate,
     knowledgeIndex,
+    dayDirective,
     dayLog,
     dayEntries,
     attentionPlanning,
@@ -84,6 +95,7 @@ abstract final class DayAgentPromptTags {
     capture,
     drafting,
     refine,
+    digest,
     recentObservations,
     triggerTokens,
     currentLocalTime,

@@ -45,3 +45,21 @@ String dayAgentPlanEntityId(String dayId) => 'day_agent_plan:$dayId';
 /// `day_agent_plan:<dayId>`, the id deliberately carries no agentId (the same
 /// latent identity-recreation hazard, precedented and accepted).
 String dayAgentSummaryEntityId(String dayId) => 'day_agent_summary:$dayId';
+
+/// Deterministic agent-entity ID for the coordinator-issued day directive
+/// keyed by [dayId] (ADR 0032 phase 3).
+///
+/// One revisable register per day: the coordinator revises it in place
+/// (newest revision wins via LWW), and any day owner reads it by PK — no
+/// projection table needed.
+String dayDirectiveEntityId(String dayId) => 'day_directive:$dayId';
+
+/// Prefix for append-only day-status events (ADR 0032 phase 3):
+/// `day_status:<dayId>:<uuid>`.
+const dayStatusEventIdPrefix = 'day_status:';
+
+/// Builds a fresh day-status event ID for [dayId] with the caller-supplied
+/// [suffix] (a UUID). Events are append-only and never revised, so the ID is
+/// unique per raise, unlike the keyed registers above.
+String dayStatusEventId(String dayId, String suffix) =>
+    '$dayStatusEventIdPrefix$dayId:$suffix';

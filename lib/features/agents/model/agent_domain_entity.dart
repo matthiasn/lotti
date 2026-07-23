@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -304,6 +305,55 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required VectorClock? vectorClock,
     DateTime? deletedAt,
   }) = DaySummaryEntity;
+
+  /// Coordinator-issued directive for one day (ADR 0032 §2, phase 3).
+  ///
+  /// Keyed `day_directive:<dayId>` — a deterministic per-day register the
+  /// coordinator revises in place (newest revision wins via LWW; a fresh
+  /// [directiveRevisionId] marks each revision). Contains only distilled,
+  /// bounded facts — never capture transcripts or another day's log content.
+  /// The per-day agent reads the newest revision at wake start; its prompt
+  /// contract requires every commitment to be represented in the plan,
+  /// explicitly traded away in a proposed diff, or escalated via a status
+  /// event.
+  const factory AgentDomainEntity.dayDirective({
+    required String id,
+    required String agentId,
+    required String dayId,
+    required DateTime planDate,
+    required String directiveRevisionId,
+    required DateTime issuedAt,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    @Default(<DayDirectiveCommitment>[])
+    List<DayDirectiveCommitment> commitments,
+    DayCapacityBudget? capacityBudget,
+    @Default(<DayCarryOverItem>[]) List<DayCarryOverItem> carryOver,
+    @Default(<String>[]) List<String> constraints,
+    @Default(<String>[]) List<String> attentionNotes,
+    DateTime? deletedAt,
+  }) = DayDirectiveEntity;
+
+  /// Typed status event raised by a day-owner agent (ADR 0032 §2, phase 3).
+  ///
+  /// Append-only (`day_status:<dayId>:<uuid>`), never revised — the upward
+  /// channel the coordinator scans at its digest wake. A new entity variant
+  /// (not an [AgentMessageKind]) so status stays out of the compaction fold
+  /// and gets an indexed typed scan via the type/subtype columns (subtype =
+  /// [status] name).
+  const factory AgentDomainEntity.dayStatusEvent({
+    required String id,
+    required String agentId,
+    required String dayId,
+    required DayStatusKind status,
+    required DateTime raisedAt,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    @Default(<DayStatusReason>[]) List<DayStatusReason> reasons,
+    @Default('') String note,
+    DateTime? deletedAt,
+  }) = DayStatusEventEntity;
 
   /// Event-sourced bid for the user's scarce attention.
   ///

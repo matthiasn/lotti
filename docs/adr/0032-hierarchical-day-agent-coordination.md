@@ -2,9 +2,9 @@
 
 ## Status
 
-Accepted (phases 1–2 implemented; phases 3–6 remain proposed). See
-Amendments below for where the implementation diverged from this ADR's
-original text.
+Accepted (phases 1–5 implemented; phase 6 partially implemented — see the
+phase-6 amendment for the split). See Amendments below for where the
+implementation diverged from this ADR's original text.
 
 ## Date
 
@@ -467,12 +467,54 @@ Decision section in place.
   knowledge is read under `dailyOsPlannerAgentId` on every wake (coordinator
   or per-day), and a per-day agent's `propose_knowledge` tool calls persist
   under the coordinator's id too — there is no per-day knowledge store.
-- **Directive/status protocol (phase 3: `DayDirectiveEntity`,
-  `DayStatusEvent`) is not implemented.** The coordinator does not yet issue
-  directives or receive per-day status events; a per-day agent currently has
-  no commitments/capacity input beyond what its own day's captures and the
-  coordinator's knowledge provide. Pushback (§3) is not yet grounded in a
-  structured ledger.
+- **Directive/status protocol (phase 3) shipped with four deviations from
+  this ADR's text.** (1) Upward channel 1 is day summaries, not
+  `agentReportHead`: day agents never wrote `AgentReportEntity`, and the
+  coordinator's `<recent_days>` week context already consumes
+  `DaySummaryEntity` per day — a parallel report chain would duplicate that
+  artifact. (2) Upward channel 3 (`promotionCandidate` observations) was
+  unnecessary: `propose_knowledge` is coordinator-keyed even on per-day
+  wakes, so promotion-with-user-throttle already exists. (3)
+  `DayDirectiveEntity` needs no indexed projection — `day_directive:<dayId>`
+  is a deterministic PK read like `DayPlanEntity`; only `DayStatusEventEntity`
+  gets a query (`getDayStatusEventsSince`, served by an existing index).
+  (4) The digest cadence is re-armed deterministically by code (completion
+  re-arm + startup bootstrap), not by the model's `set_next_wake` — a digest
+  that forgets to self-schedule cannot break the cadence. The
+  `attentionNeeded` same-day subscription (open question 1) is deferred:
+  phase 3 ships digest-cadence consumption only.
+- **Phase 4 shipped thinner than proposed.** The Day page's "Inspect agent"
+  menu entry and Settings > Agents Type-based instance filtering/grouping
+  already existed before this phase. Net-new: the day-header status chip
+  (`DayAgentStatusChip`) surfacing the persona state with the per-day token
+  spend in its tooltip (per-day identities only — a coordinator-owned day
+  shows no spend, since the coordinator's lifetime aggregate would
+  misattribute other days), tappable straight into the agent internals.
+- **Phase 6 splits three ways.** (a) *Distilled-only log growth* is
+  implemented and verified: digest wakes assemble the digest block instead
+  of per-day mode blocks, and a regression test pins that a digest persists
+  only distilled entities (dialogue messages/payloads, state, the
+  next-digest record) — never captures, plan mutations, or change sets
+  under the coordinator's id. (b) *Token measurement* needs no new tooling:
+  `WakeTokenUsageEntity` rows are agent-keyed, and the template detail
+  page's per-instance token breakdown already separates the coordinator
+  from every `day_agent:<dayId>` instance, so the before/after comparison
+  reads directly from that surface as post-split usage accrues. (c)
+  *Removing per-day prompt sections from the coordinator* is the one part
+  deliberately deferred: pre-cutover days the coordinator owns still need
+  capture/draft/refine blocks for retroactive work, so the sections stay
+  until those days recede — or until a decision to force-complete the
+  cutover (drop the `_plannerOwnsDay` fallback; reads already span owners
+  via `isDailyOsDayOwner`), which would reverse this ADR's day-forward
+  migration choice and needs its own sync-convergence review.
+- **Phase 5 is a mapping, not a scheduler or renderer.** Pre-warm is the
+  deterministic digest re-arm plus the per-day agent's self-scheduled
+  `set_next_wake` (both existed after phase 3); no separate pre-warm
+  scheduler was added. Persona is `dayAgentPersonaStateProvider`, deriving
+  §7's states (idle | working | attention | celebrating) from runtime facts
+  (running wake, newest `DayStatusEventEntity`); the `character` feature has
+  no Daily OS consumer yet, so the provider is the contract the animation
+  binds to when it lands. Distinct visual personas stay out of scope.
 - **No dormancy automation.** §1 described bounded-not-ephemeral per-day
   agents going `dormant` after day close. No day-close lifecycle exists yet
   (shutdown/reflection tools are still mocked in `RealDayAgent`), so per-day

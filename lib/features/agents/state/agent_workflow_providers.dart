@@ -190,6 +190,7 @@ DayAgentWorkflow dayAgentWorkflow(Ref ref) {
     planService: ref.watch(dayAgentPlanServiceProvider),
     knowledgeService: ref.watch(dayAgentKnowledgeServiceProvider),
     weekContextService: ref.watch(dayAgentWeekContextServiceProvider),
+    directiveService: ref.watch(dayAgentDirectiveServiceProvider),
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
     dayAudioEntryContextService: DayAudioEntryContextService(
       journalDb: ref.watch(journalDbProvider),

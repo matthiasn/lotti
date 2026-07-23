@@ -6485,6 +6485,30 @@ abstract class AppLocalizations {
   /// **'Today is yours.'**
   String get dailyOsNextCommitTodayIsYours;
 
+  /// Day-header chip when the day agent raised attentionNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get dailyOsNextDayAgentStatusAttention;
+
+  /// Day-header chip when the day agent closed the day.
+  ///
+  /// In en, this message translates to:
+  /// **'Day closed'**
+  String get dailyOsNextDayAgentStatusDayClosed;
+
+  /// Day-header chip while a wake for this day is executing.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning…'**
+  String get dailyOsNextDayAgentStatusWorking;
+
+  /// Tooltip line with the day agent's total token spend.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} tokens spent planning this day'**
+  String dailyOsNextDayAgentTokensToday(int tokens);
+
   /// No description provided for @dailyOsNextDayBack.
   ///
   /// In en, this message translates to:

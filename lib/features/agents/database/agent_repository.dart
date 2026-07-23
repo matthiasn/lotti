@@ -233,6 +233,11 @@ class AgentRepository {
     int? limit,
   }) => _queries.getMessagesByKind(agentId, kind, limit: limit);
 
+  Future<List<DayStatusEventEntity>> getDayStatusEventsSince(
+    DateTime since, {
+    int? limit,
+  }) => _queries.getDayStatusEventsSince(since, limit: limit);
+
   Future<List<AgentMessageEntity>> getMessagesForThread(
     String agentId,
     String threadId, {

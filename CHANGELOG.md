@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1061]
+### Added
+- **The Daily OS coordinator now briefs each day's planning agent.** Every
+  morning a coordinator digest reviews escalations and recent days, then
+  issues a distilled directive per day — your commitments, the day's
+  capacity budget, carry-overs, and cross-day context — which that day's
+  agent must honor when drafting: every commitment is placed, explicitly
+  traded away with the collision named, or escalated back. Day agents can
+  raise typed status events (over-committed, directive unsatisfiable, plans
+  diverging, processing blocked) that the coordinator picks up at its next
+  digest, so week-level plans and learnings persist while each day keeps a
+  small, fast context of its own.
+
 ## [0.9.1060]
 ### Added
 - **The Manual's five walkthrough videos are now available in every

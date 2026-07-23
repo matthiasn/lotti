@@ -19,7 +19,7 @@ void main() {
       // Pin the exact tool count so a tool added to dayAgentTools but missing
       // from the expected list below (or vice versa) is caught: containsAll
       // alone tolerates extras, hasLength closes that gap.
-      expect(names, hasLength(16));
+      expect(names, hasLength(18));
       expect(
         names,
         containsAll(const [
@@ -39,8 +39,68 @@ void main() {
           DayAgentToolNames.proposePlanDiff,
           DayAgentToolNames.proposeKnowledge,
           DayAgentToolNames.writeDaySummary,
+          DayAgentToolNames.issueDayDirective,
+          DayAgentToolNames.raiseDayStatus,
         ]),
       );
+    });
+
+    test('raise_day_status schema pins its contract', () {
+      expect(requiredFor(DayAgentToolNames.raiseDayStatus), [
+        'dayId',
+        'status',
+      ]);
+      final properties =
+          parametersFor(DayAgentToolNames.raiseDayStatus)['properties']
+              as Map<String, dynamic>;
+      expect(
+        (properties['status'] as Map<String, dynamic>)['enum'],
+        ['onTrack', 'attentionNeeded', 'dayClosed'],
+      );
+      final reasonItems =
+          (properties['reasons'] as Map<String, dynamic>)['items']
+              as Map<String, dynamic>;
+      expect(reasonItems['enum'], [
+        'overCommitted',
+        'directiveUnsatisfiable',
+        'userDivergence',
+        'processingBlocked',
+      ]);
+      expect(
+        (properties['note'] as Map<String, dynamic>)['maxLength'],
+        500,
+      );
+    });
+
+    test('issue_day_directive schema pins its contract', () {
+      expect(requiredFor(DayAgentToolNames.issueDayDirective), ['dayId']);
+      final properties =
+          parametersFor(DayAgentToolNames.issueDayDirective)['properties']
+              as Map<String, dynamic>;
+      expect(
+        properties.keys,
+        containsAll(const [
+          'dayId',
+          'commitments',
+          'capacityBudget',
+          'carryOver',
+          'constraints',
+          'attentionNotes',
+        ]),
+      );
+      final commitmentItems =
+          (properties['commitments'] as Map<String, dynamic>)['items']
+              as Map<String, dynamic>;
+      expect(commitmentItems['required'], ['id', 'source', 'title']);
+      final sourceEnum =
+          (commitmentItems['properties'] as Map<String, dynamic>)['source']
+              as Map<String, dynamic>;
+      expect(sourceEnum['enum'], [
+        'attentionAward',
+        'standingAgreement',
+        'userCommitment',
+        'carryOver',
+      ]);
     });
 
     test(

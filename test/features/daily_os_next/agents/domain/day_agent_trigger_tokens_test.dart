@@ -199,6 +199,20 @@ void main() {
       expect(resolution.dayId, 'dayplan-2026-05-25');
     });
 
+    test('resolves the day from a digest token alone (ADR 0032)', () {
+      final resolution = resolvePlannerWakeDay({
+        dayAgentDigestToken('dayplan-2026-05-25'),
+      });
+      expect(resolution.dayId, 'dayplan-2026-05-25');
+      expect(
+        dayAgentDigestToken('dayplan-2026-05-25'),
+        'digest:dayplan-2026-05-25',
+      );
+      // The digest lane is coordinator-scoped, never a day workspace, so a
+      // digest can never coalesce with a day's plan work.
+      expect(coordinatorDigestWorkspaceKey, 'coordinator:digest');
+    });
+
     test('disagreeing day tokens are reported as ambiguous, not picked', () {
       final resolution = resolvePlannerWakeDay({
         dayAgentDraftingToken('dayplan-2026-05-25'),

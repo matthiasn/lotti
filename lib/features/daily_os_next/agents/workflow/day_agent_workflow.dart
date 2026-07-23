@@ -33,6 +33,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dar
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
@@ -66,6 +67,7 @@ class DayAgentWorkflow {
     this.planService,
     this.knowledgeService,
     this.weekContextService,
+    this.directiveService,
     this.soulDocumentService,
     this.dayAudioEntryContextService,
     this.onPersistedStateChanged,
@@ -111,6 +113,10 @@ class DayAgentWorkflow {
   /// Week-context backend: lookback/lookahead prompt sections and the
   /// `write_day_summary` tool.
   final DayAgentWeekContextService? weekContextService;
+
+  /// Directive backend: the coordinator-only `issue_day_directive` tool and
+  /// the per-day `<day_directive>` prompt read (ADR 0032 phase 3).
+  final DayAgentDirectiveService? directiveService;
 
   /// Structured logger.
   final DomainLogger domainLogger;
@@ -307,6 +313,13 @@ class DayAgentWorkflow {
       wakeContext: wakeContext,
     );
     final attentionPlanning = await _attentionPlanningContext(dayDate);
+    final directive = await _directiveContext(resolvedDayId);
+    final digestContext = await _digestContext(
+      agentId: agentId,
+      wakeContext: wakeContext,
+      dayDate: dayDate,
+      now: now,
+    );
     final knowledge = await _knowledgeContext(
       agentIdentity: agentIdentity,
       touchedScopes: _touchedScopes(
@@ -320,7 +333,7 @@ class DayAgentWorkflow {
         ? await _weekContext(planDate: dayDate, now: now)
         : null;
     final dayAudioEntries = await _dayAudioEntries(resolvedDayId);
-    final systemPrompt = _buildSystemPrompt(templateCtx);
+    final systemPrompt = _buildSystemPrompt(templateCtx, agentId: agentId);
     final userMessage = _buildUserMessage(
       dayId: resolvedDayId,
       planDate: dayDate,
@@ -332,6 +345,8 @@ class DayAgentWorkflow {
       draftingContext: draftingContext,
       refineContext: refineContext,
       attentionPlanning: attentionPlanning,
+      directive: directive,
+      digestContext: digestContext,
       knowledge: knowledge,
       weekContext: weekContext,
       dayAudioEntries: dayAudioEntries,
@@ -385,7 +400,7 @@ class DayAgentWorkflow {
         );
       }
 
-      final tools = _buildToolDefinitions();
+      final tools = _buildToolDefinitions(agentId: agentId);
       final recordConsumption = getIt.isRegistered<AiInteractionCapture>();
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
@@ -506,6 +521,39 @@ class DayAgentWorkflow {
           threadId: threadId,
           runKey: runKey,
         );
+        if (wakeContext.isDigestWake && agentId == dailyOsPlannerAgentId) {
+          // The digest watermark: `getDayStatusEventsSince` at the next
+          // digest reads events newer than this marker.
+          await syncService.appendMilestone(
+            agentId: agentId,
+            milestone: AgentMilestone.dailyWakeCompleted,
+            createdAt: now,
+            threadId: threadId,
+            runKey: runKey,
+          );
+          // Deterministic re-arm: the next morning digest is scheduled by
+          // code, not by the model, so a digest that forgets set_next_wake
+          // cannot break the cadence. LWW on the deterministic record id.
+          final next = nextDigestTime(now);
+          await syncService.upsertEntity(
+            AgentDomainEntity.scheduledWake(
+              id: scheduledWakeRecordId(
+                agentId,
+                workspaceKey: coordinatorDigestWorkspaceKey,
+              ),
+              agentId: agentId,
+              scheduledAt: next,
+              status: ScheduledWakeStatus.pending,
+              reason: dayAgentDigestReason,
+              updatedAt: now,
+              vectorClock: null,
+              triggerTokens: [
+                dayAgentDigestToken(dayAgentIdForDate(next)),
+              ],
+              workspaceKey: coordinatorDigestWorkspaceKey,
+            ),
+          );
+        }
       });
       onPersistedStateChanged
         ?..call(agentId)

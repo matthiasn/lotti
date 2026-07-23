@@ -1,10 +1,11 @@
 codecov:
   notify:
-    # Sharded coverage uploads arrive independently, so do not let Codecov
-    # publish transient project statuses from a partial report set.
-    # Ten standard shards plus the Glados shard must be processed before the
-    # GitHub workflow sends its single notification.
-    after_n_builds: 11
+    # The dedicated full-suite coverage job makes ONE standard-flag upload
+    # (the sharded very_good lane dropped whole suites' hits from its lcov
+    # nondeterministically, so it gates test passing only); the Glados job
+    # uploads its own flag. Two processed uploads total before the workflow
+    # sends its single notification.
+    after_n_builds: 2
     manual_trigger: true
     wait_for_ci: true
 

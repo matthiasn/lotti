@@ -205,6 +205,12 @@ getAgentEntitiesByType: SELECT * FROM agent_entities WHERE agent_id = :agentId A
 
 getAgentEntitiesByTypeAndSubtype: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = :type AND subtype = :subtype AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
+-- Cross-agent scan of day-status events newer than a watermark (ADR 0032
+-- phase 3): the coordinator's digest wake reads every day-owner's events
+-- since its last digest. Served by idx_agent_entities_active_type_created
+-- (type, created_at) — ascending so the digest renders oldest-first.
+getDayStatusEventsSince: SELECT * FROM agent_entities WHERE type = 'day_status_event' AND deleted_at IS NULL AND created_at > :since ORDER BY created_at ASC LIMIT :limit;
+
 getAgentEntityById: SELECT * FROM agent_entities WHERE id = :id AND deleted_at IS NULL;
 
 -- Narrow projection used by the sync attachment ingestor's

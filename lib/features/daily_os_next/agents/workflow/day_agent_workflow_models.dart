@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/memory/memory_links.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:uuid/uuid.dart';
@@ -326,4 +327,24 @@ Map<String, int> nextToolCounterByKey(
 String scheduledWakeCountKey(DateTime now, String dayId) {
   return 'day_agent_set_next_wake:$dayId:'
       '${now.toIso8601String().substring(0, 10)}';
+}
+
+/// The next coordinator digest instant strictly after [now]: today at
+/// [AgentSchedules.dayAgentDigestHour] local when that is still ahead,
+/// otherwise the same hour tomorrow (ADR 0032 phase 3).
+DateTime nextDigestTime(DateTime now) {
+  final todayAt = DateTime(
+    now.year,
+    now.month,
+    now.day,
+    AgentSchedules.dayAgentDigestHour,
+  );
+  return todayAt.isAfter(now)
+      ? todayAt
+      : DateTime(
+          now.year,
+          now.month,
+          now.day + 1,
+          AgentSchedules.dayAgentDigestHour,
+        );
 }

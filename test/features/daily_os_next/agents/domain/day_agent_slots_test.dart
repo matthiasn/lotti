@@ -66,6 +66,37 @@ void main() {
     }, tags: 'glados');
   });
 
+  group('dayDirectiveEntityId', () {
+    test('locks the per-day directive register id format', () {
+      // The literal prefix is the PK the coordinator writes and every day
+      // owner reads; drift here would silently orphan issued directives.
+      expect(
+        dayDirectiveEntityId('dayplan-2026-05-25'),
+        'day_directive:dayplan-2026-05-25',
+      );
+    });
+  });
+
+  group('dayStatusEventId', () {
+    test('locks the append-only event id format (prefix:dayId:suffix)', () {
+      expect(
+        dayStatusEventId('dayplan-2026-05-25', 'abc123'),
+        'day_status:dayplan-2026-05-25:abc123',
+      );
+      expect(
+        dayStatusEventId('dayplan-2026-05-25', 'abc123'),
+        startsWith(dayStatusEventIdPrefix),
+      );
+    });
+
+    test('distinct suffixes yield distinct ids for the same day', () {
+      expect(
+        dayStatusEventId('dayplan-2026-05-25', 'a'),
+        isNot(dayStatusEventId('dayplan-2026-05-25', 'b')),
+      );
+    });
+  });
+
   group('captureDayId', () {
     CaptureEntity capture({String dayId = '', DateTime? capturedAt}) {
       return AgentDomainEntity.capture(

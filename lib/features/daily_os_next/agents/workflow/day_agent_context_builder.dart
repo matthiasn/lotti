@@ -15,6 +15,8 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required RefineContext? refineContext,
     required AttentionPlanningInputs attentionPlanning,
     required KnowledgeContext knowledge,
+    DayDirectiveEntity? directive,
+    Map<String, Object?>? digestContext,
     WeekContext? weekContext,
     List<DayAudioEntryContext> dayAudioEntries = const [],
     String? compactedLog,
@@ -38,6 +40,14 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       // wake's touched scopes, so it is byte-stable across a planning session
       // and belongs ahead of the day log in the stable prefix.
       ..addText(DayAgentPromptTags.knowledgeIndex, knowledge.hookIndex)
+      // The coordinator's directive for this day (ADR 0032 phase 3): the
+      // distilled commitments/capacity ledger the drafting contract binds
+      // against. Stable within a revision, so it stays in the byte-stable
+      // prefix ahead of the day log (ADR §4 slot).
+      ..addJson(
+        DayAgentPromptTags.dayDirective,
+        directive == null ? null : _directiveToJson(directive),
+      )
       // The compacted day log (ADR 0017): capture transcripts and the agent's
       // observations as an append-only event tail behind a summary —
       // byte-stable at its head between folds. The derivable section the v2
@@ -90,6 +100,9 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         DayAgentPromptTags.refine,
         refineContext?.toJson(),
       )
+      // Coordinator digest inputs (ADR 0032 phase 3): present only on
+      // digest wakes, per-wake stable like the other mode blocks.
+      ..addJson(DayAgentPromptTags.digest, digestContext)
       // Pre-compaction fallback listing: superseded by the day log once the
       // read flips, so only rendered while there is no compacted log.
       ..addJson(
@@ -248,6 +261,143 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       }
     }
     return scopes;
+  }
+
+  /// Loads the coordinator's directive for [dayId], fail-soft: a read error
+  /// degrades to "no directive" (the wake plans from its own day context)
+  /// rather than killing the wake.
+  Future<DayDirectiveEntity?> _directiveContext(String dayId) async {
+    final service = directiveService;
+    if (service == null) return null;
+    try {
+      return await service.directiveForDay(dayId);
+    } catch (e, s) {
+      _logError('failed to load day directive', error: e, stackTrace: s);
+      return null;
+    }
+  }
+
+  /// Renders the directive as the `<day_directive>` JSON body. Field order is
+  /// fixed so the section is byte-stable within a revision.
+  Map<String, Object?> _directiveToJson(DayDirectiveEntity directive) => {
+    'directiveRevisionId': directive.directiveRevisionId,
+    'issuedAt': directive.issuedAt.toIso8601String(),
+    if (directive.commitments.isNotEmpty)
+      'commitments': [
+        for (final commitment in directive.commitments) commitment.toJson(),
+      ],
+    if (directive.capacityBudget != null)
+      'capacityBudget': directive.capacityBudget!.toJson(),
+    if (directive.carryOver.isNotEmpty)
+      'carryOver': [for (final item in directive.carryOver) item.toJson()],
+    if (directive.constraints.isNotEmpty) 'constraints': directive.constraints,
+    if (directive.attentionNotes.isNotEmpty)
+      'attentionNotes': directive.attentionNotes,
+  };
+
+  /// Assembles the `<digest>` inputs for a coordinator digest wake
+  /// (ADR 0032 phase 3): status events raised since the last digest, the
+  /// current directives for today and tomorrow, and the two-day attention
+  /// window. Null for every other wake. Fail-soft: a load error degrades to
+  /// no digest section rather than killing the wake.
+  Future<Map<String, Object?>?> _digestContext({
+    required String agentId,
+    required DailyOsPlannerWakeContext wakeContext,
+    required DateTime dayDate,
+    required DateTime now,
+  }) async {
+    if (!wakeContext.isDigestWake ||
+        agentId != dailyOsPlannerAgentId ||
+        directiveService == null) {
+      return null;
+    }
+    try {
+      final since = await _lastDigestAt(agentId, now);
+      final tomorrowId = dayAgentIdForDate(
+        DateTime(dayDate.year, dayDate.month, dayDate.day + 1),
+      );
+      // The watermark advances to the digest's OWN completion milestone —
+      // never to the last returned row — so the digest is an advisory
+      // distillation, not an exactly-once queue; equal-timestamp rows at a
+      // page boundary cannot be skipped by the watermark. The one real
+      // hazard is wholesale truncation past [_digestStatusEventLimit]: the
+      // rendered section says so explicitly instead of silently reading as
+      // "this was everything".
+      final statusEvents = await agentRepository.getDayStatusEventsSince(
+        since,
+        limit: _digestStatusEventLimit,
+      );
+      final truncated = statusEvents.length >= _digestStatusEventLimit;
+      final todayDirective = await directiveService!.directiveForDay(
+        wakeContext.dayId,
+      );
+      final tomorrowDirective = await directiveService!.directiveForDay(
+        tomorrowId,
+      );
+      final dayStart = DateTime(dayDate.year, dayDate.month, dayDate.day);
+      final attentionWindow = await agentRepository
+          .getAttentionPlanningInputsForWindow(
+            start: dayStart,
+            // Two local days (see _attentionPlanningContext on DST-safe
+            // day arithmetic): the digest issues today's AND tomorrow's
+            // directives.
+            end: DateTime(dayStart.year, dayStart.month, dayStart.day + 2),
+          );
+      return {
+        'since': since.toIso8601String(),
+        'todayDayId': wakeContext.dayId,
+        'tomorrowDayId': tomorrowId,
+        if (truncated) 'statusEventsTruncated': true,
+        'statusEvents': [
+          for (final event in statusEvents)
+            {
+              'dayId': event.dayId,
+              'agentId': event.agentId,
+              'status': event.status.name,
+              if (event.reasons.isNotEmpty)
+                'reasons': [for (final reason in event.reasons) reason.name],
+              if (event.note.isNotEmpty) 'note': event.note,
+              'raisedAt': event.raisedAt.toIso8601String(),
+            },
+        ],
+        'directives': {
+          'today': todayDirective == null
+              ? null
+              : _directiveToJson(todayDirective),
+          'tomorrow': tomorrowDirective == null
+              ? null
+              : _directiveToJson(tomorrowDirective),
+        },
+        if (!attentionWindow.isEmpty)
+          'attentionWindow': _attentionPlanningToJson(attentionWindow),
+      };
+    } catch (e, s) {
+      _logError('failed to load digest context', error: e, stackTrace: s);
+      return null;
+    }
+  }
+
+  /// Cap on status events rendered into one digest. Escalations are rare by
+  /// contract (one per wake, typed reasons only), so hitting this means
+  /// something is systemically wrong — which the `statusEventsTruncated`
+  /// marker surfaces to the model rather than hiding.
+  static const _digestStatusEventLimit = 50;
+
+  /// The newest digest watermark: the coordinator's most recent
+  /// `dailyWakeCompleted` milestone, falling back to 48h ago for the first
+  /// digest so a fresh install does not scan unbounded history.
+  Future<DateTime> _lastDigestAt(String agentId, DateTime now) async {
+    final markers = await agentRepository.getMessagesByKind(
+      agentId,
+      AgentMessageKind.system,
+      limit: 200,
+    );
+    for (final marker in markers) {
+      if (marker.metadata.milestone == AgentMilestone.dailyWakeCompleted) {
+        return marker.createdAt;
+      }
+    }
+    return now.subtract(const Duration(hours: 48));
   }
 
   Future<AttentionPlanningInputs> _attentionPlanningContext(

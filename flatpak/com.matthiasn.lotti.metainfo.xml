@@ -35,6 +35,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1061" date="2026-07-23">
+      <description>
+        <p>The Daily OS coordinator now briefs each day's planning agent: a morning digest reviews escalations and recent days, then issues a distilled per-day directive (commitments, capacity budget, carry-overs, cross-day context) which that day's agent must honor when drafting — placing each commitment, trading it away with the collision named, or escalating back via typed status events the coordinator picks up at its next digest.</p>
+      </description>
+    </release>
     <release version="0.9.1060" date="2026-07-22">
       <description>
         <p>The Manual's five walkthrough videos are now available in every language Lotti supports (previously English and German only): French, Italian, Spanish, Czech, Dutch, Romanian, Portuguese, Danish, and Swedish.</p>

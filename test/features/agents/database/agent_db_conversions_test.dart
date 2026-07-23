@@ -586,6 +586,37 @@ void main() {
       expect(companion.updatedAt, Value(updatedAt));
     });
 
+    test('dayDirective writes type and dayId subtype', () {
+      final entity = makeTestDayDirective(
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('day_directive:dayplan-2026-05-25'));
+      expect(companion.type, const Value(AgentEntityTypes.dayDirective));
+      // Subtype is the dayId so indexed type+subtype lookups can fetch one
+      // day's directive without scanning.
+      expect(companion.subtype, const Value('dayplan-2026-05-25'));
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(updatedAt));
+    });
+
+    test('dayStatusEvent writes type and status-name subtype', () {
+      final entity = makeTestDayStatusEvent(createdAt: createdAt);
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.type, const Value(AgentEntityTypes.dayStatusEvent));
+      // Subtype is the status name so a filtered scan (e.g. only
+      // attentionNeeded) can use the type+subtype index.
+      expect(companion.subtype, const Value('attentionNeeded'));
+      expect(companion.createdAt, Value(createdAt));
+      // Append-only variant: updated_at mirrors created_at.
+      expect(companion.updatedAt, Value(createdAt));
+    });
+
     test('daySummary writes type/subtype and roundtrips through a row', () {
       final entity = AgentDomainEntity.daySummary(
         id: 'day_agent_summary:dayplan-2026-06-08',
@@ -1874,6 +1905,8 @@ void main() {
           makeTestParsedItem(),
           makeTestDayPlan(),
           makeTestDaySummary(),
+          makeTestDayDirective(),
+          makeTestDayStatusEvent(),
           makeTestChangeSet(),
           makeTestChangeDecision(),
           makeTestEvolutionSession(),

@@ -95,6 +95,7 @@ import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dar
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
@@ -1226,6 +1227,9 @@ class MockDayAgentCaptureService extends Mock
     implements DayAgentCaptureService {}
 
 class MockDayAgentPlanService extends Mock implements DayAgentPlanService {}
+
+class MockDayAgentDirectiveService extends Mock
+    implements DayAgentDirectiveService {}
 
 class MockDayAgentKnowledgeService extends Mock
     implements DayAgentKnowledgeService {}

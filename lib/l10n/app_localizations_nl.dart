@@ -3793,6 +3793,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextCommitTodayIsYours => 'Vandaag is het van jou.';
 
   @override
+  String get dailyOsNextDayAgentStatusAttention => 'Needs attention';
+
+  @override
+  String get dailyOsNextDayAgentStatusDayClosed => 'Day closed';
+
+  @override
+  String get dailyOsNextDayAgentStatusWorking => 'Planning…';
+
+  @override
+  String dailyOsNextDayAgentTokensToday(int tokens) {
+    return '$tokens tokens spent planning this day';
+  }
+
+  @override
   String get dailyOsNextDayBack => 'Terug';
 
   @override

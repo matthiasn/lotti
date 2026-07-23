@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -386,6 +387,144 @@ void main() {
         );
       },
     );
+
+    group('coordinator digest bootstrap (ADR 0032 phase 3)', () {
+      final digestRecordId = scheduledWakeRecordId(
+        dailyOsPlannerAgentId,
+        workspaceKey: coordinatorDigestWorkspaceKey,
+      );
+
+      List<ScheduledWakeEntity> upsertedWakes() {
+        final captured = <ScheduledWakeEntity>[];
+        final calls = verify(() => syncService.upsertEntity(captureAny()));
+        for (final entity in calls.captured) {
+          if (entity is ScheduledWakeEntity) captured.add(entity);
+        }
+        return captured;
+      }
+
+      Future<void> restoreWithPlanner({
+        AgentDomainEntity? existingRecord,
+      }) async {
+        final planner = identity(id: dailyOsPlannerAgentId);
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [planner]);
+        when(
+          () => repository.getAgentState(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => repository.getEntity(digestRecordId),
+        ).thenAnswer((_) async => existingRecord);
+        // now = 2026-05-25 08:00, past the 06:00 digest hour.
+        await withClock(Clock.fixed(now), service.restoreSubscriptions);
+      }
+
+      test(
+        'schedules the first digest wake when no record exists',
+        () async {
+          await restoreWithPlanner();
+
+          final record = upsertedWakes().single;
+          expect(record.id, digestRecordId);
+          expect(record.agentId, dailyOsPlannerAgentId);
+          expect(record.status, ScheduledWakeStatus.pending);
+          expect(record.workspaceKey, coordinatorDigestWorkspaceKey);
+          expect(record.scheduledAt, DateTime(2026, 5, 26, 6));
+          expect(
+            record.triggerTokens,
+            [dayAgentDigestToken('dayplan-2026-05-26')],
+          );
+        },
+      );
+
+      test('leaves an already-pending digest record alone', () async {
+        await restoreWithPlanner(
+          existingRecord: AgentDomainEntity.scheduledWake(
+            id: digestRecordId,
+            agentId: dailyOsPlannerAgentId,
+            scheduledAt: DateTime(2026, 5, 26, 6),
+            status: ScheduledWakeStatus.pending,
+            reason: dayAgentDigestReason,
+            updatedAt: now,
+            vectorClock: null,
+            triggerTokens: [dayAgentDigestToken('dayplan-2026-05-26')],
+            workspaceKey: coordinatorDigestWorkspaceKey,
+          ),
+        );
+
+        verifyNever(
+          () => syncService.upsertEntity(any(that: isA<ScheduledWakeEntity>())),
+        );
+      });
+
+      test('re-arms after a consumed digest record', () async {
+        await restoreWithPlanner(
+          existingRecord: AgentDomainEntity.scheduledWake(
+            id: digestRecordId,
+            agentId: dailyOsPlannerAgentId,
+            scheduledAt: DateTime(2026, 5, 25, 6),
+            status: ScheduledWakeStatus.consumed,
+            reason: dayAgentDigestReason,
+            updatedAt: now,
+            vectorClock: null,
+            triggerTokens: [dayAgentDigestToken('dayplan-2026-05-25')],
+            workspaceKey: coordinatorDigestWorkspaceKey,
+          ),
+        );
+
+        final record = upsertedWakes().single;
+        expect(record.status, ScheduledWakeStatus.pending);
+        expect(record.scheduledAt, DateTime(2026, 5, 26, 6));
+      });
+
+      test(
+        'a bootstrap failure is logged and does not break the restore',
+        () async {
+          final planner = identity(id: dailyOsPlannerAgentId);
+          when(
+            () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+          ).thenAnswer((_) async => [planner]);
+          when(
+            () => repository.getAgentState(dailyOsPlannerAgentId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => repository.getEntity(digestRecordId),
+          ).thenThrow(StateError('record store unavailable'));
+
+          // Must complete normally despite the failing bootstrap read.
+          await withClock(Clock.fixed(now), service.restoreSubscriptions);
+
+          verify(
+            () => domainLogger.error(
+              any(),
+              any(),
+              message: 'failed to ensure coordinator digest wake',
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('does nothing when no coordinator identity is active', () async {
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer(
+          (_) async => [identity(id: perDayAgentId(dayId))],
+        );
+        when(
+          () => repository.getAgentState(any()),
+        ).thenAnswer((_) async => null);
+
+        await withClock(Clock.fixed(now), service.restoreSubscriptions);
+
+        verifyNever(() => repository.getEntity(digestRecordId));
+        verifyNever(
+          () => syncService.upsertEntity(any(that: isA<ScheduledWakeEntity>())),
+        );
+      });
+    });
   });
 
   group('getOrCreatePlannerAgent', () {

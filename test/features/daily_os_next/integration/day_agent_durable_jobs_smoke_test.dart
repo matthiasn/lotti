@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -9,6 +11,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
@@ -164,6 +167,140 @@ void main() {
       expect(refineJobs.single.resultEntityId, isNotNull);
     },
   );
+
+  test(
+    'digest -> directive -> draft -> status round-trip through the real '
+    'protocol chain (ADR 0032 phase 3)',
+    () async {
+      // ── Digest wake issues tomorrow's... today's directive ───────────────
+      // The coordinator identity must exist for a digest to run under it.
+      final coordinator = await harness.dayAgentService
+          .getOrCreatePlannerAgent();
+      conversationRepository.toolCalls = [
+        _toolCall(
+          id: 'issue-call',
+          name: DayAgentToolNames.issueDayDirective,
+          args: {
+            'dayId': dayId,
+            'commitments': [
+              {
+                'id': 'user-gym',
+                'source': 'userCommitment',
+                'title': 'Gym session',
+                'minutes': 60,
+              },
+            ],
+            'capacityBudget': {'availableMinutes': 420},
+            'attentionNotes': ['Light day after two heavy ones.'],
+          },
+        ),
+      ];
+      final digestRunKey = harness.orchestrator.enqueueManualWake(
+        agentId: coordinator.agentId,
+        reason: dayAgentDigestReason,
+        triggerTokens: {dayAgentDigestToken(dayId)},
+        workspaceKey: coordinatorDigestWorkspaceKey,
+      );
+      await harness.orchestrator.runCompletions.firstWhere(
+        (completion) => completion.runKey == digestRunKey,
+      );
+
+      // The directive is durably persisted under its deterministic id...
+      final directive =
+          await harness.agentRepository.getEntity(
+                dayDirectiveEntityId(dayId),
+              )
+              as DayDirectiveEntity?;
+      expect(directive, isNotNull);
+      expect(directive!.commitments.single.title, 'Gym session');
+      // ...and the digest completion re-armed the next digest record.
+      final nextDigest =
+          await harness.agentRepository.getEntity(
+                scheduledWakeRecordId(
+                  coordinator.agentId,
+                  workspaceKey: coordinatorDigestWorkspaceKey,
+                ),
+              )
+              as ScheduledWakeEntity?;
+      expect(nextDigest, isNotNull);
+      expect(nextDigest!.status, ScheduledWakeStatus.pending);
+
+      // ── A draft wake for the same day sees the directive ─────────────────
+      conversationRepository.toolCalls = [
+        _toolCall(
+          id: 'draft-call',
+          name: DayAgentToolNames.draftDayPlan,
+          args: {
+            'dayId': dayId,
+            'blocks': [
+              {
+                'title': 'Gym session',
+                'categoryId': 'health',
+                'start': dayDate
+                    .add(const Duration(hours: 17))
+                    .toIso8601String(),
+                'end': dayDate.add(const Duration(hours: 18)).toIso8601String(),
+                'reason': 'Directive commitment user-gym.',
+              },
+            ],
+          },
+        ),
+      ];
+      final draft = await harness.realDayAgent.draftDayPlan(
+        captureId: const CaptureId(''),
+        decidedTaskIds: const [],
+        dayDate: dayDate,
+      );
+      expect(draft.blocks.single.title, 'Gym session');
+      expect(
+        conversationRepository.lastUserMessage,
+        contains('<day_directive>'),
+        reason:
+            "The per-day draft wake must see the coordinator's directive "
+            'in its prompt.',
+      );
+      expect(conversationRepository.lastUserMessage, contains('user-gym'));
+
+      // ── The day agent raises status; the coordinator scan finds it ───────
+      final dayAgent = await harness.agentRepository.getEntity(
+        perDayAgentId(dayId),
+      );
+      conversationRepository.toolCalls = [
+        _toolCall(
+          id: 'status-call',
+          name: DayAgentToolNames.raiseDayStatus,
+          args: {
+            'dayId': dayId,
+            'status': 'attentionNeeded',
+            'reasons': ['overCommitted'],
+            'note': 'The afternoon filled up.',
+          },
+        ),
+      ];
+      final statusRunKey = harness.orchestrator.enqueueManualWake(
+        agentId: (dayAgent! as AgentIdentityEntity).agentId,
+        reason: dayAgentDraftingReason,
+        triggerTokens: {
+          dayAgentPlanningDayToken(dayId),
+          dayAgentDraftingToken(dayId),
+        },
+        workspaceKey: dayAgentWorkspaceKey(dayId),
+      );
+      await harness.orchestrator.runCompletions.firstWhere(
+        (completion) => completion.runKey == statusRunKey,
+      );
+
+      // The event's createdAt is the real clock (only entity fixtures use
+      // the pinned 2030 date), so scan from a past watermark.
+      final events = await harness.agentRepository.getDayStatusEventsSince(
+        DateTime(2020),
+      );
+      expect(events, hasLength(1));
+      expect(events.single.dayId, dayId);
+      expect(events.single.status.name, 'attentionNeeded');
+      expect(events.single.agentId, perDayAgentId(dayId));
+    },
+  );
 }
 
 ChatCompletionMessageToolCall _toolCall({
@@ -190,6 +327,7 @@ class _ScriptedConversationRepository extends ConversationRepository {
   int _createdCount = 0;
 
   List<ChatCompletionMessageToolCall> toolCalls = const [];
+  String? lastUserMessage;
 
   @override
   String createConversation({String? systemMessage, int maxTurns = 20}) {
@@ -222,6 +360,7 @@ class _ScriptedConversationRepository extends ConversationRepository {
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
   }) async {
+    lastUserMessage = message;
     final manager = _managers[conversationId]!..addUserMessage(message);
     if (toolCalls.isNotEmpty) {
       manager.addAssistantMessage(toolCalls: toolCalls);

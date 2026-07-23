@@ -1086,6 +1086,34 @@ void main() {
       });
     });
 
+    group('getDayStatusEventsSince', () {
+      test('delegates through the facade to the real since-scan', () async {
+        final watermark = DateTime(2026, 7, 23, 6);
+        await repo.upsertEntity(
+          makeTestDayStatusEvent(
+            id: 'day_status:dayplan-2026-07-23:before',
+            createdAt: watermark.subtract(const Duration(hours: 1)),
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestDayStatusEvent(
+            id: 'day_status:dayplan-2026-07-23:after',
+            createdAt: watermark.add(const Duration(hours: 1)),
+          ),
+        );
+
+        final events = await repo.getDayStatusEventsSince(
+          watermark,
+          limit: 10,
+        );
+
+        expect(
+          [for (final event in events) event.id],
+          ['day_status:dayplan-2026-07-23:after'],
+        );
+      });
+    });
+
     group('getMessagesForThread', () {
       test('filters messages by threadId', () async {
         await repo.upsertEntity(

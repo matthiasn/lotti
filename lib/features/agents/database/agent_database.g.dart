@@ -4562,6 +4562,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getDayStatusEventsSince(DateTime since, int limit) {
+    return customSelect(
+      'SELECT * FROM agent_entities WHERE type = \'day_status_event\' AND deleted_at IS NULL AND created_at > ?1 ORDER BY created_at ASC LIMIT ?2',
+      variables: [Variable<DateTime>(since), Variable<int>(limit)],
+      readsFrom: {agentEntities},
+    ).asyncMap(agentEntities.mapFromRow);
+  }
+
   Selectable<AgentEntity> getAgentEntityById(String id) {
     return customSelect(
       'SELECT * FROM agent_entities WHERE id = ?1 AND deleted_at IS NULL',

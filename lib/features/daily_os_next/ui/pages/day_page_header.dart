@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_agent_status_chip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
@@ -68,6 +69,9 @@ class DayHeader extends StatelessWidget {
         actions: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ADR 0032 phase 4: the day agent's observable state (working /
+            // attention / day-closed), tappable straight into its internals.
+            DayAgentStatusChip(date: date, onInspectAgent: onInspectAgent),
             const ProcessingCategoryFilterButton(),
             PopupMenuButton<_DayMenuAction>(
               icon: const Icon(Icons.more_vert_rounded),

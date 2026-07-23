@@ -3829,6 +3829,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCommitTodayIsYours => 'Den je tvůj.';
 
   @override
+  String get dailyOsNextDayAgentStatusAttention => 'Vyžaduje pozornost';
+
+  @override
+  String get dailyOsNextDayAgentStatusDayClosed => 'Den uzavřen';
+
+  @override
+  String get dailyOsNextDayAgentStatusWorking => 'Plánuji…';
+
+  @override
+  String dailyOsNextDayAgentTokensToday(int tokens) {
+    return '$tokens tokenů spotřebováno na plánování tohoto dne';
+  }
+
+  @override
   String get dailyOsNextDayBack => 'Zpět';
 
   @override

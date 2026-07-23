@@ -3840,6 +3840,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextCommitTodayIsYours => 'La journée est à toi.';
 
   @override
+  String get dailyOsNextDayAgentStatusAttention => 'Attention requise';
+
+  @override
+  String get dailyOsNextDayAgentStatusDayClosed => 'Journée clôturée';
+
+  @override
+  String get dailyOsNextDayAgentStatusWorking => 'Planification…';
+
+  @override
+  String dailyOsNextDayAgentTokensToday(int tokens) {
+    return '$tokens tokens utilisés pour planifier cette journée';
+  }
+
+  @override
   String get dailyOsNextDayBack => 'Retour';
 
   @override

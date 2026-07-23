@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -290,4 +291,68 @@ DaySummaryEntity makeTestDaySummary({
         deletedAt: deletedAt,
       )
       as DaySummaryEntity;
+}
+
+DayDirectiveEntity makeTestDayDirective({
+  String? id,
+  String agentId = 'daily_os_planner',
+  String dayId = 'dayplan-2026-05-25',
+  DateTime? planDate,
+  String directiveRevisionId = 'rev-1',
+  DateTime? issuedAt,
+  List<DayDirectiveCommitment> commitments = const [],
+  DayCapacityBudget? capacityBudget,
+  List<DayCarryOverItem> carryOver = const [],
+  List<String> constraints = const [],
+  List<String> attentionNotes = const [],
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  DateTime? deletedAt,
+}) {
+  return AgentDomainEntity.dayDirective(
+        id: id ?? 'day_directive:$dayId',
+        agentId: agentId,
+        dayId: dayId,
+        planDate: planDate ?? DateTime(2026, 5, 25),
+        directiveRevisionId: directiveRevisionId,
+        issuedAt: issuedAt ?? kAgentTestDate,
+        commitments: commitments,
+        capacityBudget: capacityBudget,
+        carryOver: carryOver,
+        constraints: constraints,
+        attentionNotes: attentionNotes,
+        createdAt: createdAt ?? kAgentTestDate,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        deletedAt: deletedAt,
+      )
+      as DayDirectiveEntity;
+}
+
+DayStatusEventEntity makeTestDayStatusEvent({
+  String? id,
+  String agentId = 'day_agent:dayplan-2026-05-25',
+  String dayId = 'dayplan-2026-05-25',
+  DayStatusKind status = DayStatusKind.attentionNeeded,
+  List<DayStatusReason> reasons = const [DayStatusReason.overCommitted],
+  String note = 'Requested work exceeds the remaining capacity.',
+  DateTime? raisedAt,
+  DateTime? createdAt,
+  VectorClock? vectorClock,
+  DateTime? deletedAt,
+}) {
+  return AgentDomainEntity.dayStatusEvent(
+        id: id ?? 'day_status:$dayId:event-1',
+        agentId: agentId,
+        dayId: dayId,
+        status: status,
+        reasons: reasons,
+        note: note,
+        raisedAt: raisedAt ?? kAgentTestDate,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        deletedAt: deletedAt,
+      )
+      as DayStatusEventEntity;
 }

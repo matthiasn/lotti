@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart'
         AgentInferenceSetupOrigin,
         AgentLifecycle,
         AgentTemplateKind,
+        ScheduledWakeStatus,
         WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
@@ -17,6 +18,8 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
@@ -704,6 +707,7 @@ class DayAgentService {
     );
 
     var count = 0;
+    var sawCoordinator = false;
     for (final agent in activeAgents) {
       if (agent.kind != _agentKind) continue;
       // Legitimate active `day_agent` identities are the coordinator and
@@ -715,6 +719,7 @@ class DayAgentService {
           !isPerDayAgentId(agent.agentId)) {
         continue;
       }
+      sawCoordinator = sawCoordinator || agent.agentId == dailyOsPlannerAgentId;
       try {
         await _hydrateThrottleDeadline(agent.agentId);
         count++;
@@ -731,9 +736,60 @@ class DayAgentService {
       }
     }
 
+    if (sawCoordinator) {
+      try {
+        await _ensurePendingDigestWake();
+      } catch (e, s) {
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message: 'failed to ensure coordinator digest wake',
+          stackTrace: s,
+        );
+      }
+    }
+
     domainLogger.log(
       LogDomain.agentRuntime,
       'restored $count day agent(s)',
+      subDomain: 'restore',
+    );
+  }
+
+  /// Cold-start bootstrap for the coordinator's digest cadence (ADR 0032
+  /// phase 3): ensure one pending digest `ScheduledWakeEntity` exists. A
+  /// completed digest re-arms the next one deterministically; this covers
+  /// the first digest ever and any install that missed the re-arm (e.g. the
+  /// app was killed mid-digest).
+  Future<void> _ensurePendingDigestWake() async {
+    final id = scheduledWakeRecordId(
+      dailyOsPlannerAgentId,
+      workspaceKey: coordinatorDigestWorkspaceKey,
+    );
+    final existing = await repository.getEntity(id);
+    final now = clock.now();
+    if (existing is ScheduledWakeEntity &&
+        existing.deletedAt == null &&
+        existing.status == ScheduledWakeStatus.pending) {
+      return;
+    }
+    final next = nextDigestTime(now);
+    await syncService.upsertEntity(
+      AgentDomainEntity.scheduledWake(
+        id: id,
+        agentId: dailyOsPlannerAgentId,
+        scheduledAt: next,
+        status: ScheduledWakeStatus.pending,
+        reason: dayAgentDigestReason,
+        updatedAt: now,
+        vectorClock: null,
+        triggerTokens: [dayAgentDigestToken(dayAgentIdForDate(next))],
+        workspaceKey: coordinatorDigestWorkspaceKey,
+      ),
+    );
+    domainLogger.log(
+      LogDomain.agentRuntime,
+      'scheduled coordinator digest wake for ${next.toIso8601String()}',
       subDomain: 'restore',
     );
   }

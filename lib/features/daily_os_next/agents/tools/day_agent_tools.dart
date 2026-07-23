@@ -516,6 +516,171 @@ const dayAgentTools = <AgentToolDefinition>[
     },
   ),
   AgentToolDefinition(
+    name: DayAgentToolNames.issueDayDirective,
+    description:
+        'Issue (or revise) your directive for one day: the distilled ledger '
+        "the day's agent plans against. Include only bounded facts — "
+        'commitments it must place/trade/escalate, the capacity budget, '
+        'carry-over, hard constraints, and cross-day attention notes. Never '
+        "transcripts or another day's log content. Re-issuing replaces the "
+        'previous revision for that day. Coordinator-only.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'dayId': {
+          'type': 'string',
+          'description': 'The target day (dayplan-YYYY-MM-DD).',
+        },
+        'commitments': {
+          'type': 'array',
+          'maxItems': 12,
+          'items': {
+            'type': 'object',
+            'properties': {
+              'id': {
+                'type': 'string',
+                'description':
+                    'Stable id of the underlying source record (award id, '
+                    'agreement id, task id) so revisions keep referring to '
+                    'the same commitment.',
+              },
+              'source': {
+                'type': 'string',
+                'enum': [
+                  'attentionAward',
+                  'standingAgreement',
+                  'userCommitment',
+                  'carryOver',
+                ],
+              },
+              'title': {'type': 'string'},
+              'windowStart': {
+                'type': 'string',
+                'description':
+                    'Optional ISO-8601 window start; set with windowEnd, '
+                    'within the target day.',
+              },
+              'windowEnd': {'type': 'string'},
+              'minutes': {
+                'type': 'integer',
+                'description': 'Estimated minutes (1-1440), when known.',
+              },
+              'evidenceRefs': {
+                'type': 'array',
+                'items': {'type': 'string'},
+              },
+            },
+            'required': ['id', 'source', 'title'],
+            'additionalProperties': false,
+          },
+        },
+        'capacityBudget': {
+          'type': 'object',
+          'properties': {
+            'availableMinutes': {'type': 'integer'},
+            'alreadyScheduledMinutes': {'type': 'integer'},
+            'energyBands': {
+              'type': 'array',
+              'items': {
+                'type': 'object',
+                'properties': {
+                  'start': {'type': 'string'},
+                  'end': {'type': 'string'},
+                  'level': {
+                    'type': 'string',
+                    'enum': ['high', 'low', 'secondWind'],
+                  },
+                  'label': {'type': 'string'},
+                },
+                'required': ['start', 'end', 'level', 'label'],
+                'additionalProperties': false,
+              },
+            },
+          },
+          'required': ['availableMinutes'],
+          'additionalProperties': false,
+        },
+        'carryOver': {
+          'type': 'array',
+          'maxItems': 12,
+          'items': {
+            'type': 'object',
+            'properties': {
+              'title': {'type': 'string'},
+              'reason': {'type': 'string', 'maxLength': 280},
+              'taskId': {'type': 'string'},
+              'itemId': {'type': 'string'},
+            },
+            'required': ['title', 'reason'],
+            'additionalProperties': false,
+          },
+        },
+        'constraints': {
+          'type': 'array',
+          'maxItems': 8,
+          'items': {'type': 'string', 'maxLength': 280},
+          'description': 'Hard bounds, e.g. protected windows.',
+        },
+        'attentionNotes': {
+          'type': 'array',
+          'maxItems': 8,
+          'items': {'type': 'string', 'maxLength': 280},
+          'description':
+              'Distilled cross-day context relevant to this day, e.g. '
+              '"third heavy commitment this week".',
+        },
+      },
+      'required': ['dayId'],
+      'additionalProperties': false,
+    },
+  ),
+  AgentToolDefinition(
+    name: DayAgentToolNames.raiseDayStatus,
+    description:
+        "Raise a typed status event for this wake's day — the upward channel "
+        'the coordinator reads at its next digest. Raise `attentionNeeded` '
+        'only for the typed reasons (never for routine progress); raise '
+        '`onTrack` only when explicitly asked — silence already means fine. '
+        '`dayClosed` marks the day done. At most one event per wake.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'dayId': {
+          'type': 'string',
+          'description':
+              "This wake's day (dayplan-YYYY-MM-DD) — you cannot raise "
+              "status for another agent's day.",
+        },
+        'status': {
+          'type': 'string',
+          'enum': ['onTrack', 'attentionNeeded', 'dayClosed'],
+        },
+        'reasons': {
+          'type': 'array',
+          'items': {
+            'type': 'string',
+            'enum': [
+              'overCommitted',
+              'directiveUnsatisfiable',
+              'userDivergence',
+              'processingBlocked',
+            ],
+          },
+          'description':
+              'Required (non-empty) for attentionNeeded; omit otherwise.',
+        },
+        'note': {
+          'type': 'string',
+          'maxLength': 500,
+          'description':
+              'Short context for the coordinator (max 500 characters).',
+        },
+      },
+      'required': ['dayId', 'status'],
+      'additionalProperties': false,
+    },
+  ),
+  AgentToolDefinition(
     name: DayAgentToolNames.writeDaySummary,
     description:
         'Write your contemporaneous summary of a day, in your own words, for '
