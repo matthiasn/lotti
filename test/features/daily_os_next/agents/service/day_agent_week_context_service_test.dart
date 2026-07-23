@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -767,5 +768,350 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('week rollups', () {
+    // _now is Wednesday 2026-06-10 → current week starts Monday 2026-06-08;
+    // the last four COMPLETE weeks start 06-01, 05-25, 05-18, 05-11.
+    const newestId = 'week_rollup:2026-06-01';
+    const allRollupIds = [
+      newestId,
+      'week_rollup:2026-05-25',
+      'week_rollup:2026-05-18',
+      'week_rollup:2026-05-11',
+    ];
+
+    /// Routes [repository.getEntitiesByIds] by requested id shape: rollup-id
+    /// requests serve [rollups]; day-plan-id requests serve the matching
+    /// subset of [plans] (keyed by entity id).
+    void stubEntityReads({
+      Map<String, AgentDomainEntity> rollups = const {},
+      Map<String, AgentDomainEntity> plans = const {},
+    }) {
+      when(() => repository.getEntitiesByIds(any())).thenAnswer((
+        invocation,
+      ) async {
+        final ids = (invocation.positionalArguments.single as Iterable)
+            .cast<String>()
+            .toSet();
+        if (ids.any((id) => id.startsWith('week_rollup:'))) {
+          return {
+            for (final entry in rollups.entries)
+              if (ids.contains(entry.key)) entry.key: entry.value,
+          };
+        }
+        return {
+          for (final entry in plans.entries)
+            if (ids.contains(entry.key)) entry.key: entry.value,
+        };
+      });
+    }
+
+    JournalEntity timeEntry({
+      required String id,
+      required DateTime start,
+      required int minutes,
+      String? categoryId,
+    }) => JournalEntity.journalEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: start,
+        updatedAt: start,
+        dateFrom: start,
+        dateTo: start.add(Duration(minutes: minutes)),
+        categoryId: categoryId,
+      ),
+    );
+
+    test('creates all four missing complete-week rollups, coordinator-owned '
+        'and keyed by Monday', () async {
+      stubEntityReads();
+
+      await withNow(() => service.ensureWeekRollups());
+
+      expect([for (final e in upserted) e.id], allRollupIds);
+      final rollup = upserted.first as WeekRollupEntity;
+      expect(rollup.agentId, dailyOsPlannerAgentId);
+      expect(rollup.weekStart, DateTime(2026, 6));
+      expect(rollup.plannedMinutesByCategory, isEmpty);
+      expect(rollup.recordedMinutesByCategory, isEmpty);
+      expect(rollup.daysWithPlans, 0);
+      expect(rollup.createdAt, _now);
+      expect(rollup.updatedAt, _now);
+    });
+
+    test("aggregates a week's plans and recorded entries, excluding "
+        'foreign-agent plans', () async {
+      stubEntityReads(
+        plans: {
+          'day_agent_plan:dayplan-2026-06-01': makeTestDayPlan(
+            id: 'day_agent_plan:dayplan-2026-06-01',
+            agentId: dailyOsPlannerAgentId,
+            dayId: 'dayplan-2026-06-01',
+            planDate: DateTime(2026, 6),
+            data: DayPlanData(
+              planDate: DateTime(2026, 6),
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: [
+                PlannedBlock(
+                  id: 'block-1',
+                  categoryId: 'cat-work',
+                  startTime: DateTime(2026, 6, 1, 9),
+                  endTime: DateTime(2026, 6, 1, 11),
+                ),
+              ],
+            ),
+          ),
+          // Foreign agent id (not a Daily OS day owner): must not count.
+          'day_agent_plan:dayplan-2026-06-02': makeTestDayPlan(
+            id: 'day_agent_plan:dayplan-2026-06-02',
+            dayId: 'dayplan-2026-06-02',
+            planDate: DateTime(2026, 6, 2),
+          ),
+        },
+      );
+      when(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: DateTime(2026, 6),
+          rangeEnd: DateTime(2026, 6, 8),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          timeEntry(
+            id: 'entry-1',
+            start: DateTime(2026, 6, 2, 9),
+            minutes: 45,
+            categoryId: 'cat-work',
+          ),
+          timeEntry(
+            id: 'entry-2',
+            start: DateTime(2026, 6, 3, 20),
+            minutes: 30,
+          ),
+        ],
+      );
+
+      await withNow(() => service.ensureWeekRollups());
+
+      final newest = upserted.first as WeekRollupEntity;
+      expect(newest.id, newestId);
+      expect(newest.daysWithPlans, 1, reason: 'The foreign plan is excluded.');
+      expect(newest.plannedMinutesByCategory, {'cat-work': 120});
+      expect(newest.recordedMinutesByCategory, {'': 30, 'cat-work': 45});
+    });
+
+    test('recomputes only the newest complete week when all rollups exist, '
+        'skipping the write when aggregates are unchanged', () async {
+      stubEntityReads(
+        rollups: {
+          for (final id in allRollupIds)
+            id: makeTestWeekRollup(
+              id: id,
+              weekStart: DateTime.parse(id.substring('week_rollup:'.length)),
+              plannedMinutesByCategory: const {},
+              recordedMinutesByCategory: const {},
+              daysWithPlans: 0,
+            ),
+        },
+      );
+
+      await withNow(() => service.ensureWeekRollups());
+
+      expect(upserted, isEmpty, reason: 'Unchanged aggregates: no sync churn.');
+      // One rollup-id batch read + exactly ONE per-week plan read (newest).
+      verify(() => repository.getEntitiesByIds(any())).called(2);
+      verify(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: DateTime(2026, 6),
+          rangeEnd: DateTime(2026, 6, 8),
+        ),
+      ).called(1);
+    });
+
+    test('a changed newest week rewrites in place, preserving createdAt and '
+        'vector clock', () async {
+      final created = DateTime(2026, 6, 8, 6);
+      const priorClock = VectorClock({'node-a': 3});
+      stubEntityReads(
+        rollups: {
+          newestId: makeTestWeekRollup(
+            id: newestId,
+            weekStart: DateTime(2026, 6),
+            plannedMinutesByCategory: const {'cat-work': 999},
+            recordedMinutesByCategory: const {},
+            daysWithPlans: 4,
+            createdAt: created,
+            updatedAt: created,
+            vectorClock: priorClock,
+          ),
+          for (final id in allRollupIds.skip(1))
+            id: makeTestWeekRollup(
+              id: id,
+              weekStart: DateTime.parse(id.substring('week_rollup:'.length)),
+              plannedMinutesByCategory: const {},
+              recordedMinutesByCategory: const {},
+              daysWithPlans: 0,
+            ),
+        },
+      );
+
+      await withNow(() => service.ensureWeekRollups());
+
+      final rewritten = upserted.single as WeekRollupEntity;
+      expect(rewritten.id, newestId);
+      expect(rewritten.plannedMinutesByCategory, isEmpty);
+      expect(rewritten.daysWithPlans, 0);
+      expect(rewritten.createdAt, created);
+      expect(rewritten.updatedAt, _now);
+      expect(rewritten.vectorClock, priorClock);
+    });
+
+    test('backfills only the missing older weeks', () async {
+      stubEntityReads(
+        rollups: {
+          newestId: makeTestWeekRollup(
+            id: newestId,
+            weekStart: DateTime(2026, 6),
+            plannedMinutesByCategory: const {},
+            recordedMinutesByCategory: const {},
+            daysWithPlans: 0,
+          ),
+          'week_rollup:2026-05-18': makeTestWeekRollup(
+            id: 'week_rollup:2026-05-18',
+            weekStart: DateTime(2026, 5, 18),
+            plannedMinutesByCategory: const {'cat-a': 1},
+            recordedMinutesByCategory: const {},
+          ),
+        },
+      );
+
+      await withNow(() => service.ensureWeekRollups());
+
+      expect(
+        [for (final e in upserted) e.id],
+        ['week_rollup:2026-05-25', 'week_rollup:2026-05-11'],
+        reason:
+            'The unchanged newest week skips its write; the existing 05-18 '
+            'register is not recomputed at all.',
+      );
+    });
+
+    test('a tombstoned rollup is never recomputed or resurrected', () async {
+      stubEntityReads(
+        rollups: {
+          for (final id in allRollupIds)
+            id: makeTestWeekRollup(
+              id: id,
+              weekStart: DateTime.parse(id.substring('week_rollup:'.length)),
+              plannedMinutesByCategory: const {},
+              recordedMinutesByCategory: const {},
+              daysWithPlans: 0,
+              deletedAt: id == newestId ? _now : null,
+            ),
+        },
+      );
+
+      await withNow(() => service.ensureWeekRollups());
+
+      expect(upserted, isEmpty);
+      // Only the rollup batch read happens — no week is computed.
+      verify(() => repository.getEntitiesByIds(any())).called(1);
+    });
+
+    test(
+      'ensureWeekRollups is fail-soft: a storage error logs and returns',
+      () async {
+        when(
+          () => repository.getEntitiesByIds(any()),
+        ).thenThrow(StateError('storage offline'));
+
+        await withNow(() => service.ensureWeekRollups());
+
+        expect(upserted, isEmpty);
+        verify(
+          () => domainLogger.error(
+            any(),
+            any(),
+            message: 'failed to ensure week rollups',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('recentWeekRollups returns live rollups newest first, skipping '
+        'tombstones', () async {
+      stubEntityReads(
+        rollups: {
+          'week_rollup:2026-05-18': makeTestWeekRollup(
+            id: 'week_rollup:2026-05-18',
+            weekStart: DateTime(2026, 5, 18),
+          ),
+          newestId: makeTestWeekRollup(
+            id: newestId,
+            weekStart: DateTime(2026, 6),
+          ),
+          'week_rollup:2026-05-25': makeTestWeekRollup(
+            id: 'week_rollup:2026-05-25',
+            weekStart: DateTime(2026, 5, 25),
+            deletedAt: _now,
+          ),
+        },
+      );
+
+      final rollups = await withNow(() => service.recentWeekRollups());
+
+      expect(
+        [for (final r in rollups) r.weekStart],
+        [DateTime(2026, 6), DateTime(2026, 5, 18)],
+      );
+    });
+
+    test('recentWeekRollups is fail-soft: a storage error yields an empty '
+        'list', () async {
+      when(
+        () => repository.getEntitiesByIds(any()),
+      ).thenThrow(StateError('storage offline'));
+
+      final rollups = await withNow(() => service.recentWeekRollups());
+
+      expect(rollups, isEmpty);
+      verify(
+        () => domainLogger.error(
+          any(),
+          any(),
+          message: 'failed to load week rollups',
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    });
+
+    test(
+      'recentWeeksJson renders through the service category resolver',
+      () async {
+        stubEntityReads(
+          rollups: {
+            newestId: makeTestWeekRollup(
+              id: newestId,
+              weekStart: DateTime(2026, 6),
+            ),
+          },
+        );
+
+        final rendered = await withNow(() => service.recentWeeksJson());
+
+        // The bench resolver is the identity function, so ids pass through.
+        expect(rendered, [
+          {
+            'weekStart': '2026-06-01',
+            'daysWithPlans': 5,
+            'plannedMinutes': {'cat-work': 480},
+            'recordedMinutes': {'cat-work': 300},
+          },
+        ]);
+      },
+    );
   });
 }

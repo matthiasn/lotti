@@ -51,6 +51,7 @@ abstract final class AgentEntityTypes {
   static const daySummary = 'daySummary';
   static const dayDirective = 'day_directive';
   static const dayStatusEvent = 'day_status_event';
+  static const weekRollup = 'week_rollup';
   static const attentionRequest = 'attentionRequest';
   static const attentionClaimDisposition = 'attentionClaimDisposition';
   static const attentionAward = 'attentionAward';

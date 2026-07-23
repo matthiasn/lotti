@@ -617,6 +617,22 @@ void main() {
       expect(companion.updatedAt, Value(createdAt));
     });
 
+    test('weekRollup writes type, no subtype, and its own timestamps', () {
+      final entity = makeTestWeekRollup(
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('week_rollup:2026-05-18'));
+      expect(companion.type, const Value(AgentEntityTypes.weekRollup));
+      // Deterministic per-week ids make PK lookups sufficient; no subtype.
+      expect(companion.subtype, const Value<String?>.absent());
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(updatedAt));
+    });
+
     test('daySummary writes type/subtype and roundtrips through a row', () {
       final entity = AgentDomainEntity.daySummary(
         id: 'day_agent_summary:dayplan-2026-06-08',
@@ -1907,6 +1923,7 @@ void main() {
           makeTestDaySummary(),
           makeTestDayDirective(),
           makeTestDayStatusEvent(),
+          makeTestWeekRollup(),
           makeTestChangeSet(),
           makeTestChangeDecision(),
           makeTestEvolutionSession(),

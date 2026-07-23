@@ -356,3 +356,31 @@ DayStatusEventEntity makeTestDayStatusEvent({
       )
       as DayStatusEventEntity;
 }
+
+WeekRollupEntity makeTestWeekRollup({
+  String? id,
+  String agentId = 'daily_os_planner',
+  DateTime? weekStart,
+  Map<String, int> plannedMinutesByCategory = const {'cat-work': 480},
+  Map<String, int> recordedMinutesByCategory = const {'cat-work': 300},
+  int daysWithPlans = 5,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  DateTime? deletedAt,
+}) {
+  final start = weekStart ?? DateTime(2026, 5, 18);
+  return AgentDomainEntity.weekRollup(
+        id: id ?? 'week_rollup:2026-05-18',
+        agentId: agentId,
+        weekStart: start,
+        plannedMinutesByCategory: plannedMinutesByCategory,
+        recordedMinutesByCategory: recordedMinutesByCategory,
+        daysWithPlans: daysWithPlans,
+        createdAt: createdAt ?? kAgentTestDate,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        deletedAt: deletedAt,
+      )
+      as WeekRollupEntity;
+}

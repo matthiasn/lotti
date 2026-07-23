@@ -2274,6 +2274,104 @@ void main() {
         expect(result.success, isTrue, reason: result.error);
         expect(sentPrompt().has('digest'), isFalse);
       });
+
+      MockDayAgentWeekContextService rollupStub({
+        List<Map<String, Object?>>? weeks,
+      }) {
+        final service = MockDayAgentWeekContextService();
+        when(
+          () => service.buildForDay(
+            planDate: any(named: 'planDate'),
+            now: any(named: 'now'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => service.ensureWeekRollups(now: any(named: 'now')),
+        ).thenAnswer((_) async {});
+        when(
+          () => service.recentWeeksJson(now: any(named: 'now')),
+        ).thenAnswer((_) async => weeks);
+        return service;
+      }
+
+      test(
+        'a digest wake refreshes rollups and renders <recent_weeks> plus '
+        'its digest rule',
+        () async {
+          final weekContextService = rollupStub(
+            weeks: [
+              {
+                'weekStart': '2026-05-18',
+                'daysWithPlans': 5,
+                'plannedMinutes': {'Work': 480},
+                'recordedMinutes': {'Work': 300},
+              },
+            ],
+          );
+
+          final result = await executeDigest(
+            workflow(
+              directiveService: directiveService,
+              weekContextService: weekContextService,
+            ),
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          verify(
+            () => weekContextService.ensureWeekRollups(now: any(named: 'now')),
+          ).called(1);
+          final weeks = sentPrompt().json('recent_weeks')! as List;
+          final week = weeks.single as Map;
+          expect(week['weekStart'], '2026-05-18');
+          expect(week['daysWithPlans'], 5);
+          expect((week['plannedMinutes'] as Map)['Work'], 480);
+          expect((week['recordedMinutes'] as Map)['Work'], 300);
+          expect(
+            conversationRepository.lastSystemMessage,
+            contains('<recent_weeks>'),
+            reason: 'The digest rules must teach the section.',
+          );
+        },
+      );
+
+      test(
+        'a per-day agent digest token never refreshes rollups and renders '
+        'no <recent_weeks>',
+        () async {
+          final weekContextService = rollupStub();
+
+          final result = await execute(
+            workflow(
+              directiveService: directiveService,
+              weekContextService: weekContextService,
+            ),
+            triggerTokens: {dayAgentDigestToken(dayId)},
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          verifyNever(
+            () => weekContextService.ensureWeekRollups(now: any(named: 'now')),
+          );
+          expect(sentPrompt().has('recent_weeks'), isFalse);
+        },
+      );
+
+      test('absorbs a rollup refresh failure', () async {
+        final weekContextService = rollupStub();
+        when(
+          () => weekContextService.ensureWeekRollups(now: any(named: 'now')),
+        ).thenThrow(StateError('rollup storage offline'));
+
+        final result = await executeDigest(
+          workflow(
+            directiveService: directiveService,
+            weekContextService: weekContextService,
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        expect(sentPrompt().has('recent_weeks'), isFalse);
+      });
     });
 
     test(

@@ -66,6 +66,11 @@ abstract final class DayAgentPromptTags {
   /// Refine baseline plan (JSON).
   static const refine = 'refine';
 
+  /// Weekly rollup registers (ADR 0032 digest pooling, JSON): planned vs
+  /// recorded minutes per category and days-with-plans for the last complete
+  /// weeks, newest first. Present only on coordinator digest wakes.
+  static const recentWeeks = 'recent_weeks';
+
   /// Coordinator digest inputs (ADR 0032 phase 3, JSON): status events since
   /// the last digest, current directives, and the near-window attention
   /// ledger. Present only on coordinator digest wakes.
@@ -95,6 +100,7 @@ abstract final class DayAgentPromptTags {
     capture,
     drafting,
     refine,
+    recentWeeks,
     digest,
     recentObservations,
     triggerTokens,

@@ -320,6 +320,11 @@ class DayAgentWorkflow {
       dayDate: dayDate,
       now: now,
     );
+    final recentWeeksContext = await _recentWeeksContext(
+      agentId: agentId,
+      wakeContext: wakeContext,
+      now: now,
+    );
     final knowledge = await _knowledgeContext(
       agentIdentity: agentIdentity,
       touchedScopes: _touchedScopes(
@@ -346,6 +351,7 @@ class DayAgentWorkflow {
       refineContext: refineContext,
       attentionPlanning: attentionPlanning,
       directive: directive,
+      recentWeeksContext: recentWeeksContext,
       digestContext: digestContext,
       knowledge: knowledge,
       weekContext: weekContext,

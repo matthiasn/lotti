@@ -311,6 +311,7 @@ sequenceDiagram
   participant Status as DayStatusEventEntity
 
   SWM->>Coord: due digest record fires (06:00, workspace coordinator:digest)
+  Coord->>Coord: ensureWeekRollups (last 4 complete weeks) -> <recent_weeks>
   Coord->>Coord: <digest> = status events since last digest + directives + attention window
   Coord->>Dir: issue_day_directive (today + tomorrow, revisable register)
   Coord->>Coord: dailyWakeCompleted milestone + re-arm tomorrow's digest record
@@ -362,6 +363,19 @@ sequenceDiagram
   deterministically re-arms tomorrow's digest record;
   `DayAgentService.restoreSubscriptions` bootstraps the first record (and
   recovers a missed re-arm) whenever the coordinator identity is active.
+- **Weekly rollups pool month-scale history for the digest.** A digest wake
+  first refreshes `WeekRollupEntity` registers (`week_rollup:<Monday>`,
+  coordinator-owned) for the last 4 complete weeks: planned minutes per
+  category (dropped blocks excluded), recorded minutes per category
+  (empty-string key = uncategorized), and days-with-plans, computed by
+  `DayAgentWeekContextService.ensureWeekRollups` from the same sources as
+  the week context. The newest complete week is always recomputed
+  (late-synced data), older weeks only backfilled when missing, unchanged
+  aggregates skip the write, and tombstones are never resurrected — plain
+  LWW converges because every device recomputes from source. The rollups
+  render as `<recent_weeks>` (names resolved, newest first) so the digest
+  can spot month-scale pacing trends without re-reading a month of raw
+  entities.
 - **The other two upward channels already existed**: day summaries
   (`write_day_summary` → `<recent_days>`) carry the distilled narrative, and
   `propose_knowledge` is coordinator-keyed even on per-day wakes, so durable

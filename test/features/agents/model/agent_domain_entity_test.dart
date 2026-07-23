@@ -876,6 +876,51 @@ void main() {
         expect(event.reasons, hasLength(2));
       });
 
+      test('WeekRollupEntity roundtrips minute maps and day count', () {
+        final original = AgentDomainEntity.weekRollup(
+          id: 'week_rollup:2026-05-18',
+          agentId: 'daily_os_planner',
+          weekStart: DateTime(2026, 5, 18),
+          plannedMinutesByCategory: const {'': 60, 'cat-work': 480},
+          recordedMinutesByCategory: const {'cat-health': 45, 'cat-work': 310},
+          daysWithPlans: 5,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final rollup = roundtripped as WeekRollupEntity;
+        expect(rollup.toJson()['runtimeType'], equals('weekRollup'));
+        expect(
+          rollup.plannedMinutesByCategory,
+          equals(const {'': 60, 'cat-work': 480}),
+          reason: 'The empty-string uncategorized key must survive JSON.',
+        );
+        expect(rollup.recordedMinutesByCategory['cat-work'], 310);
+        expect(rollup.daysWithPlans, 5);
+      });
+
+      test('WeekRollupEntity defaults are empty maps and zero days', () {
+        final original = AgentDomainEntity.weekRollup(
+          id: 'week_rollup:2026-05-11',
+          agentId: 'daily_os_planner',
+          weekStart: DateTime(2026, 5, 11),
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        );
+
+        final roundtripped = roundtrip(original) as WeekRollupEntity;
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped.plannedMinutesByCategory, isEmpty);
+        expect(roundtripped.recordedMinutesByCategory, isEmpty);
+        expect(roundtripped.daysWithPlans, 0);
+      });
+
       test('AttentionRequestEntity roundtrips bounded bid fields', () {
         final original = AgentDomainEntity.attentionRequest(
           id: 'attention-request-001',

@@ -16,6 +16,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required AttentionPlanningInputs attentionPlanning,
     required KnowledgeContext knowledge,
     DayDirectiveEntity? directive,
+    List<Map<String, Object?>>? recentWeeksContext,
     Map<String, Object?>? digestContext,
     WeekContext? weekContext,
     List<DayAudioEntryContext> dayAudioEntries = const [],
@@ -100,6 +101,10 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         DayAgentPromptTags.refine,
         refineContext?.toJson(),
       )
+      // Weekly rollup registers (ADR 0032 digest pooling): month-scale
+      // planned-vs-recorded trends, present only on digest wakes and stable
+      // within one (rollups refresh at most once per digest).
+      ..addJson(DayAgentPromptTags.recentWeeks, recentWeeksContext)
       // Coordinator digest inputs (ADR 0032 phase 3): present only on
       // digest wakes, per-wake stable like the other mode blocks.
       ..addJson(DayAgentPromptTags.digest, digestContext)
@@ -294,6 +299,34 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     if (directive.attentionNotes.isNotEmpty)
       'attentionNotes': directive.attentionNotes,
   };
+
+  /// Refreshes and loads the `<recent_weeks>` rollups for a coordinator
+  /// digest wake (ADR 0032 digest pooling). Null for every other wake.
+  ///
+  /// The refresh WRITES the rollup registers (the digest wake is their only
+  /// maintenance point — same precedent as the memory pipeline compacting
+  /// during context assembly); both the write and the read are fail-soft in
+  /// the service, and this guard absorbs unexpected bugs so rollups can
+  /// never kill a wake.
+  Future<List<Map<String, Object?>>?> _recentWeeksContext({
+    required String agentId,
+    required DailyOsPlannerWakeContext wakeContext,
+    required DateTime now,
+  }) async {
+    final service = weekContextService;
+    if (!wakeContext.isDigestWake ||
+        agentId != dailyOsPlannerAgentId ||
+        service == null) {
+      return null;
+    }
+    try {
+      await service.ensureWeekRollups(now: now);
+      return await service.recentWeeksJson(now: now);
+    } catch (e, s) {
+      _logError('failed to load recent weeks', error: e, stackTrace: s);
+      return null;
+    }
+  }
 
   /// Assembles the `<digest>` inputs for a coordinator digest wake
   /// (ADR 0032 phase 3): status events raised since the last digest, the

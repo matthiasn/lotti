@@ -355,6 +355,28 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = DayStatusEventEntity;
 
+  /// Deterministic weekly rollup register (ADR 0032 digest pooling).
+  ///
+  /// Keyed `week_rollup:<ISO Monday date>` and coordinator-owned: a pure
+  /// aggregation over one calendar week's day plans (planned minutes per
+  /// category, days that had a plan) and recorded time entries (recorded
+  /// minutes per category). Recomputed from source data — never accumulated
+  /// in place — whenever the digest wake refreshes rollups, so concurrent
+  /// revisions converge via plain LWW. Minutes maps are keyed by category id;
+  /// the empty-string key buckets uncategorized recorded time.
+  const factory AgentDomainEntity.weekRollup({
+    required String id,
+    required String agentId,
+    required DateTime weekStart,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    @Default(<String, int>{}) Map<String, int> plannedMinutesByCategory,
+    @Default(<String, int>{}) Map<String, int> recordedMinutesByCategory,
+    @Default(0) int daysWithPlans,
+    DateTime? deletedAt,
+  }) = WeekRollupEntity;
+
   /// Event-sourced bid for the user's scarce attention.
   ///
   /// [agentId] is the requesting agent. A planner reads pending requests and

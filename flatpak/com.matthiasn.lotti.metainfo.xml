@@ -42,7 +42,7 @@
     </release>
     <release version="0.9.1061" date="2026-07-23">
       <description>
-        <p>The Daily OS coordinator now briefs each day's planning agent: a morning digest reviews escalations and recent days, then issues a distilled per-day directive (commitments, capacity budget, carry-overs, cross-day context) which that day's agent must honor when drafting — placing each commitment, trading it away with the collision named, or escalating back via typed status events the coordinator picks up at its next digest.</p>
+        <p>The Daily OS coordinator now briefs each day's planning agent: a morning digest reviews escalations and recent days, then issues a distilled per-day directive (commitments, capacity budget, carry-overs, cross-day context) which that day's agent must honor when drafting — placing each commitment, trading it away with the collision named, or escalating back via typed status events the coordinator picks up at its next digest. Each digest also pools the last four weeks into per-category planned-vs-recorded rollups, so the coordinator can steer month-scale pacing, not just the day at hand.</p>
         <p>Fixed: the green focus border in list boxes no longer gets cropped at the corners. In the task filter box (and every other grouped list, e.g. in Settings), the first and last row's keyboard-focus highlight was drawn as a sharp rectangle and clipped by the box's rounded corners. Edge rows now round the highlight to match the box's corner radius.</p>
       </description>
     </release>
