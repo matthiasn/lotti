@@ -35,9 +35,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1061" date="2026-07-23">
+    <release version="0.9.1062" date="2026-07-23">
       <description>
         <p>Task agents can now read your image analyses: the AI analyses attached to a task's images — brief summaries and full OCR extractions alike — are part of the task agent's context, each with the model that produced it, when it ran, and its full text. The agent can act on what's in an image (e.g. extract an appointment date from a photographed card and propose it as the due date) and wakes right after an analysis completes.</p>
+      </description>
+    </release>
+    <release version="0.9.1061" date="2026-07-23">
+      <description>
         <p>The Daily OS coordinator now briefs each day's planning agent: a morning digest reviews escalations and recent days, then issues a distilled per-day directive (commitments, capacity budget, carry-overs, cross-day context) which that day's agent must honor when drafting — placing each commitment, trading it away with the collision named, or escalating back via typed status events the coordinator picks up at its next digest.</p>
         <p>Fixed: the green focus border in list boxes no longer gets cropped at the corners. In the task filter box (and every other grouped list, e.g. in Settings), the first and last row's keyboard-focus highlight was drawn as a sharp rectangle and clipped by the box's rounded corners. Edge rows now round the highlight to match the box's corner radius.</p>
       </description>

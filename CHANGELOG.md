@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1061]
+## [0.9.1062]
 ### Added
 - **Task agents can now read your image analyses.** The AI analyses attached
   to a task's images — brief summaries and full OCR extractions alike — are
@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it as the due date, name the task after the document, or reference OCR'd
   details in its report. It also wakes right after an analysis completes
   instead of waiting for the next unrelated change.
+
+## [0.9.1061]
+### Added
 - **The Daily OS coordinator now briefs each day's planning agent.** Every
   morning a coordinator digest reviews escalations and recent days, then
   issues a distilled directive per day — your commitments, the day's
