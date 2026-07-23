@@ -333,9 +333,10 @@ class SkillInferenceRunner {
   /// falls back to the profile slot (with a warning log) — stranding
   /// the user is worse than ignoring a stale id.
   ///
-  /// After the attributed path stores the analysis, a [linkedTaskId] (when
-  /// present) is marked dirty via the standard child-changed notification
-  /// pair, so the task agent picks the new analysis up on its normal
+  /// After the attributed path stores the analysis, every parent of the
+  /// image (all tasks linking to it, plus [linkedTaskId] when present) is
+  /// marked dirty via the standard child-changed notification pairs, so each
+  /// parent task's agent picks the new analysis up on its normal
   /// subscription wake.
   Future<void> runImageAnalysis({
     required String imageEntryId,
@@ -506,16 +507,34 @@ class SkillInferenceRunner {
 
           // The analysis entry is linked FROM the image, so its creation only
           // notifies the image and response ids — notification propagation is
-          // one hop, and the parent task never hears about it. Emit the same
-          // child-changed pair `updateDbEntity` produces when the image itself
-          // is edited, so the task agent's normal subscription wake (120 s
-          // coalescing, automatic-updates opt-in / stale-marking) picks up the
-          // new analysis. The legacy branch below needs no equivalent: its
-          // image update propagates to the task on its own.
-          if (linkedTaskId != null) {
+          // one hop, and the parent tasks never hear about it. Emit the same
+          // child-changed pairs `updateDbEntity` produces when the image
+          // itself is edited — for EVERY parent of the image, not just the
+          // resolved [linkedTaskId]: an image can be linked from several
+          // tasks, and each parent's agent needs its normal subscription wake
+          // (120 s coalescing, automatic-updates opt-in / stale-marking) to
+          // pick up the new analysis. [linkedTaskId] is unioned in because
+          // task resolution may have matched an outgoing image→task link the
+          // incoming-parents query does not cover. The legacy branch below
+          // needs no equivalent: its image update propagates on its own.
+          final staleIds = <String>{?linkedTaskId};
+          try {
+            final parents = await _journalRepository.getLinkedToEntities(
+              linkedTo: imageEntryId,
+            );
+            staleIds.addAll(parents.map((parent) => parent.meta.id));
+          } catch (e) {
+            // Degraded, not fatal: the analysis is already persisted, so
+            // fall back to notifying just the resolved task.
+            _loggingService.log(
+              LogDomain.ai,
+              'parent lookup for stale notification failed: $e',
+              subDomain: 'runImageAnalysis',
+            );
+          }
+          if (staleIds.isNotEmpty) {
             getIt<UpdateNotifications>().notify({
-              linkedTaskId,
-              propagatedNotification(linkedTaskId),
+              for (final id in staleIds) ...{id, propagatedNotification(id)},
             });
           }
         } else {
