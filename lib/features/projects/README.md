@@ -333,6 +333,11 @@ It is responsible for:
 - floating create action that opens the responsive create overlay
   (`showProjectCreateModal`) in place, so creation stays inside the Projects
   tab; an optional `categoryId` argument prefills the category
+- bottom scroll clearance for that floating action: the list pads its bottom
+  by `DesignSystemBottomNavigationBar.occupiedHeight` plus the FAB footprint
+  (`tokens.spacing.step12`), so the last project card always scrolls clear of
+  both the docked nav pill and the FAB — including the home-indicator inset
+  the bar absorbs on modern phones
 
 ### Project Detail Pages
 
@@ -346,6 +351,13 @@ The newer top-level route is not just a renamed editor. It assembles a
 (`ProjectMobileDetailContent`, `HealthPanel`, `ProjectTasksPanel` /
 `ProjectTasksSliverPanel`), which keeps the production surface aligned with
 Widgetbook.
+
+On mobile, both detail routes are terminal pages that own the whole bottom
+edge: the mobile shell slides the bottom navigation bar away when either is
+active (`projectsRouteHidesBottomNav` for `/projects/:projectId`,
+`settingsRouteHidesBottomNav` for the settings-scoped editor — both in
+`lib/beamer/beamer_app.dart`). The reserved `/projects/create` slug renders
+the list and keeps the bar.
 
 When the derived `ProjectRecord` reloads because linked tasks or task-agent
 reports changed, the page keeps rendering the previous `ProjectRecord` until the

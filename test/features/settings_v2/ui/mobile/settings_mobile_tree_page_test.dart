@@ -5,6 +5,7 @@ import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_shell.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_tree_page.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -145,4 +146,54 @@ void main() {
     expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
   });
+
+  testWidgets(
+    "pads the list bottom by the nav pill's occupied height so the last "
+    'row scrolls clear of the bar',
+    (tester) async {
+      await pump(tester, onNodeTap: (_) {}, nodes: const [_leaf, _manual]);
+
+      final BuildContext context = tester.element(
+        find.byType(SettingsMobileTreePage),
+      );
+      final tokens = context.designTokens;
+      final occupied = DesignSystemBottomNavigationBar.occupiedHeight(context);
+      // The harness renders at a mobile width, so the bar genuinely
+      // occupies space — a zero here would make the clearance assertion
+      // vacuous.
+      expect(occupied, greaterThan(0));
+
+      final listView = tester.widget<ListView>(find.byType(ListView));
+      expect(
+        listView.padding,
+        EdgeInsets.only(
+          top: tokens.spacing.step4,
+          bottom: tokens.spacing.step4 + occupied,
+        ),
+      );
+    },
+  );
+
+  testWidgets(
+    'the list SafeArea leaves the bottom inset to the occupied-height '
+    'padding (no double clearance)',
+    (tester) async {
+      await pump(tester, onNodeTap: (_) {});
+
+      // `occupiedHeight` already absorbs the home-indicator inset, so the
+      // SafeArea wrapping the list must not consume it a second time.
+      final safeArea = tester.widget<SafeArea>(
+        find
+            .ancestor(
+              of: find.byType(ListView),
+              matching: find.byType(SafeArea),
+            )
+            .first,
+      );
+      expect(safeArea.top, isFalse);
+      expect(safeArea.bottom, isFalse);
+      expect(safeArea.left, isTrue);
+      expect(safeArea.right, isTrue);
+    },
+  );
 }

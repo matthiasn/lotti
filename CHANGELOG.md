@@ -22,6 +22,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   when the app reopens.
 
 ### Fixed
+- **The Settings list no longer jams its last entry (the Manual) against
+  the bottom navigation bar on phones.** The list now scrolls clear of the
+  docked nav pill, so the Manual row is fully readable and tappable.
+- **The Keyboard Shortcuts page now smoothly hides the bottom navigation
+  bar**, matching the slide-away motion every other terminal settings page
+  (Daily OS, Theming, Speech, …) already had.
+- **The Projects list's floating "new project" button no longer covers the
+  last project card.** The list reserves clearance for the button and the
+  nav bar — including the home-indicator inset on modern phones — instead
+  of a fixed spacing that came up short.
+- **Opening a project from the Projects tab now slides the bottom
+  navigation bar away**, giving the project detail page the whole bottom
+  edge — the same motion as the settings detail pages.
+- **The category icon picker no longer overflows its grid tiles on narrow
+  phones.** On ~375pt screens the icon label could spill out of its tile by
+  a few pixels; the label now shrinks into the available space instead.
 - **Same-day plans can no longer schedule new blocks in the past.** The
   drafting guard that kept AI and manual blocks from starting before the
   current time now covers buffer blocks too; only imported calendar events —

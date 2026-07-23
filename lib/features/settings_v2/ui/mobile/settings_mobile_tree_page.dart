@@ -4,6 +4,7 @@ import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_shell.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_node_indicators.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Presentational mobile settings level — one rung of the drill-down.
 ///
@@ -51,16 +52,29 @@ class SettingsMobileTreePage extends StatelessWidget {
     return SettingsMobileShell(
       title: title,
       showBack: showBack,
-      // `top: false` — the shell header already claims the top inset; this
-      // guards the list against the home indicator / landscape notches.
+      // `top: false` — the shell header already claims the top inset.
+      // `bottom: false` — the nav pill overlays the list (the mobile shell
+      // renders with `extendBody`), so the list clears it via the
+      // `occupiedHeight` bottom padding below, which already absorbs the
+      // home-indicator inset; a bottom SafeArea on top of that would
+      // double-count it. Left/right stay guarded for landscape notches.
       child: SafeArea(
         top: false,
+        bottom: false,
         child: ListView(
-          // Only vertical outer padding: the row supplies its own
+          // Vertical outer padding only: the row supplies its own
           // horizontal content inset, and dropping the active rail
           // (showActiveRail: false) lets the icon tile line up with the
           // header title instead of sitting behind an extra left gutter.
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+          // The bottom adds the docked nav pill's occupied height so the
+          // last row (the Manual) scrolls clear of the bar instead of
+          // sitting underneath it.
+          padding: EdgeInsets.only(
+            top: tokens.spacing.step4,
+            bottom:
+                tokens.spacing.step4 +
+                DesignSystemBottomNavigationBar.occupiedHeight(context),
+          ),
           children: [
             ?header,
             for (final node in nodes) ...[

@@ -9,6 +9,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -129,7 +130,7 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
 ///     `about`, `health_import`) and the conflict **detail**
 ///     `/settings/advanced/conflicts/<id>`
 ///   * the top-level leaves `theming`, `recording-style`, `daily-os`,
-///     `speech`, `onboarding`
+///     `speech`, `onboarding`, `keyboard-shortcuts`
 ///   * the entity **editors** (`.../<id>` or `.../create`) for categories,
 ///     labels, dashboards, measurables, habits, and projects
 ///
@@ -182,11 +183,28 @@ bool settingsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
     'speech' ||
     'onboarding' ||
     'health_import' ||
+    'keyboard-shortcuts' ||
     'maintenance' => true,
     // Everything else — notably the `/settings/definitions` menu hub — keeps
     // the bar.
     _ => false,
   };
+}
+
+/// True when the projects beamer location points at a project detail
+/// (`/projects/<id>`) — a terminal page owning the whole bottom edge, so the
+/// mobile shell slides the bottom nav out of the way exactly like the settings
+/// detail surfaces in [settingsRouteHidesBottomNav]. Pure function of router
+/// state.
+///
+/// The `/projects` list root keeps the bar, and so does the reserved
+/// `/projects/create` slug: it is a stale deep link from the retired
+/// full-screen create route that [ProjectsLocation] renders as the list.
+bool projectsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
+  if (location is! ProjectsLocation) return false;
+  final segments = location.state.uri.pathSegments;
+  if (segments.length < 2 || segments.first != 'projects') return false;
+  return segments[1] != 'create';
 }
 
 /// Clamps a raw navigation index into `[0, itemCount - 1]` so a stale index
@@ -295,10 +313,11 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   final NavService navService = getIt<NavService>();
 
   /// Merged once: recreating the merge on every rebuild would make the
-  /// enclosing [ListenableBuilder] resubscribe to both delegates each
+  /// enclosing [ListenableBuilder] resubscribe to the delegates each
   /// frame the nav-index stream emits.
   late final Listenable _routeChangeListenable = Listenable.merge([
     navService.tasksDelegate,
+    navService.projectsDelegate,
     navService.settingsDelegate,
   ]);
 
@@ -566,11 +585,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Beamer(routerDelegate: navService.settingsDelegate),
         ];
 
-        // Listen to the tasks and settings delegates so the mobile shell
-        // rebuilds when their routes change (push to / pop from task
-        // details, into / out of settings entity editors). That's how we
-        // know whether to hide the mobile bottom nav.
-        // See [_isTaskDetailRoute] and [settingsRouteHidesBottomNav].
+        // Listen to the tasks, projects, and settings delegates so the
+        // mobile shell rebuilds when their routes change (push to / pop
+        // from task or project details, into / out of settings entity
+        // editors). That's how we know whether to hide the mobile bottom
+        // nav. See [_isTaskDetailRoute], [projectsRouteHidesBottomNav],
+        // and [settingsRouteHidesBottomNav].
         return ListenableBuilder(
           listenable: _routeChangeListenable,
           builder: (context, _) => isWide
@@ -763,12 +783,18 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // editors — but not the menu hubs or browse lists) — slide the bar away
     // instead of removing it: nothing replaces the bar there, so an instant
     // unmount would read as a jumpy glitch rather than a handoff to a
-    // page-owned surface. See [settingsRouteHidesBottomNav].
+    // page-owned surface. Project details (`/projects/<id>`) are the same
+    // kind of terminal page and share the motion. See
+    // [settingsRouteHidesBottomNav] and [projectsRouteHidesBottomNav].
     final slideNavAway =
-        destinations[index].kind == _AppNavigationDestinationKind.settings &&
-        settingsRouteHidesBottomNav(
-          navService.settingsDelegate.currentBeamLocation,
-        );
+        (destinations[index].kind == _AppNavigationDestinationKind.settings &&
+            settingsRouteHidesBottomNav(
+              navService.settingsDelegate.currentBeamLocation,
+            )) ||
+        (destinations[index].kind == _AppNavigationDestinationKind.projects &&
+            projectsRouteHidesBottomNav(
+              navService.projectsDelegate.currentBeamLocation,
+            ));
 
     // The bar fills with as many destinations as fit comfortably at the
     // current window width and text scale. The base line-up is Tasks,

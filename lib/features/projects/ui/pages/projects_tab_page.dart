@@ -162,9 +162,17 @@ class _ProjectsListScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
     final overviewAsync = ref.watch(projectsOverviewProvider);
     final visibleGroupsAsync = ref.watch(visibleProjectGroupsProvider);
     final filter = ref.watch(projectsFilterControllerProvider);
+    // Reserve room so the floating create button never lands on top of the
+    // last project card. The FAB is lifted above the bottom nav by
+    // `occupiedHeight`, so the scroll content must clear that plus the FAB's
+    // own footprint (step12) — same clearance the AI settings list uses.
+    final listBottomPadding =
+        DesignSystemBottomNavigationBar.occupiedHeight(context) +
+        tokens.spacing.step12;
     final categories = overviewAsync.maybeWhen(
       data: (overview) => _filterCategoriesFromOverview(overview.groups),
       orElse: () => const <CategoryDefinition>[],
@@ -236,7 +244,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
                     query: filter.textQuery,
                     selectedProjectId: activeProjectId,
                     scrollController: scrollController,
-                    listBottomPadding: 112,
+                    listBottomPadding: listBottomPadding,
                     onProjectTap: (project) {
                       beamToNamed('/projects/${project.project.meta.id}');
                     },

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -154,6 +155,24 @@ class _TestSettingsLocation extends SettingsLocation {
   }
 }
 
+/// A [ProjectsLocation] whose pages are inert stubs: route matching (and
+/// therefore [projectsRouteHidesBottomNav]) behaves exactly like production,
+/// but neither the real list page nor the detail page — with their provider
+/// and getIt dependency fan-out — is ever built.
+class _TestProjectsLocation extends ProjectsLocation {
+  _TestProjectsLocation(super.routeInformation);
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) {
+    return [
+      BeamPage(
+        key: ValueKey('test-projects-${state.uri.path}'),
+        child: const SizedBox.shrink(),
+      ),
+    ];
+  }
+}
+
 Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
   final delegate = BeamerDelegate(
     setBrowserTabTitle: false,
@@ -178,9 +197,10 @@ Future<void> _stubNavService(
   required bool Function() isDashboardsEnabled,
   bool Function() isEventsEnabled = _eventsDisabledByDefault,
   BeamerDelegate? settingsDelegate,
+  BeamerDelegate? projectsDelegate,
 }) async {
   final tasksDelegate = await _createEmptyDelegate('/tasks');
-  final projectsDelegate = await _createEmptyDelegate('/projects');
+  projectsDelegate ??= await _createEmptyDelegate('/projects');
   final calendarDelegate = await _createEmptyDelegate('/calendar');
   final habitsDelegate = await _createEmptyDelegate('/habits');
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
@@ -1947,6 +1967,7 @@ void main() {
             '/settings/speech',
             '/settings/onboarding',
             '/settings/health_import',
+            '/settings/keyboard-shortcuts',
             '/settings/maintenance',
           ], hides: true);
         },
@@ -2006,6 +2027,63 @@ void main() {
         // must not hide the bar.
         expectHides(['/settings/projects/create'], hides: false);
       });
+    });
+  });
+
+  group('projectsRouteHidesBottomNav', () {
+    ProjectsLocation projectsLocationFor(String path) =>
+        ProjectsLocation(RouteInformation(uri: Uri.parse(path)));
+
+    test('a null location keeps the bar', () {
+      expect(projectsRouteHidesBottomNav(null), isFalse);
+    });
+
+    test('a non-projects location keeps the bar even at a projects-like '
+        'path', () {
+      expect(
+        projectsRouteHidesBottomNav(
+          _ArbitraryLocation(
+            RouteInformation(uri: Uri.parse('/projects/some-project-id')),
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('the /projects list root keeps the bar', () {
+      expect(
+        projectsRouteHidesBottomNav(projectsLocationFor('/projects')),
+        isFalse,
+      );
+    });
+
+    test('a ProjectsLocation whose path is not under /projects keeps the '
+        'bar', () {
+      // Exercises the `segments.first != 'projects'` guard: a
+      // ProjectsLocation can be constructed for any URI.
+      expect(
+        projectsRouteHidesBottomNav(projectsLocationFor('/elsewhere/deep')),
+        isFalse,
+      );
+    });
+
+    test('a project detail hides the bar', () {
+      expect(
+        projectsRouteHidesBottomNav(
+          projectsLocationFor('/projects/some-project-id'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('the reserved create slug keeps the bar', () {
+      // `/projects/create` is a stale deep link from the retired full-screen
+      // create route; ProjectsLocation renders the list for it, so the bar
+      // must stay.
+      expect(
+        projectsRouteHidesBottomNav(projectsLocationFor('/projects/create')),
+        isFalse,
+      );
     });
   });
 
@@ -2121,6 +2199,93 @@ void main() {
     );
 
     testWidgets(
+      'slides the bar away inside a project detail and back on the list',
+      (tester) async {
+        final mockNavService = MockNavService();
+        final indexController = StreamController<int>.broadcast();
+        addTearDown(indexController.close);
+
+        final projectsDelegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/projects',
+          locationBuilder: (routeInformation, _) =>
+              _TestProjectsLocation(routeInformation),
+        );
+        addTearDown(projectsDelegate.dispose);
+        await projectsDelegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/projects')),
+        );
+
+        await _stubNavService(
+          mockNavService,
+          indexStream: indexController.stream,
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+          projectsDelegate: projectsDelegate,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+
+        // Activate the Projects tab (destinations: Tasks, Projects,
+        // Journal, Settings).
+        indexController.add(1);
+        await tester.pump();
+
+        AnimatedSlide slide() => tester.widget<AnimatedSlide>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(AnimatedSlide),
+              )
+              .first,
+        );
+        IgnorePointer ignorePointer() => tester.widget<IgnorePointer>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(IgnorePointer),
+              )
+              .first,
+        );
+
+        // On the projects list the bar sits in place and accepts taps.
+        expect(slide().offset, Offset.zero);
+        expect(ignorePointer().ignoring, isFalse);
+
+        // Entering a project detail keeps the bar mounted (so the move can
+        // animate) but slides it down by its own height and makes it inert —
+        // the same motion as the settings detail surfaces.
+        projectsDelegate.beamToNamed('/projects/some-project-id');
+        await tester.pump();
+        expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+        expect(slide().offset, const Offset(0, 1));
+        expect(ignorePointer().ignoring, isTrue);
+        await tester.pump(const Duration(milliseconds: 450));
+
+        // Popping back to the list slides the bar into place.
+        projectsDelegate.beamToNamed('/projects');
+        await tester.pump();
+        expect(slide().offset, Offset.zero);
+        expect(ignorePointer().ignoring, isFalse);
+        await tester.pump(const Duration(milliseconds: 450));
+
+        // The reserved create slug renders the list, so the bar stays put.
+        projectsDelegate.beamToNamed('/projects/create');
+        await tester.pump();
+        expect(slide().offset, Offset.zero);
+        expect(ignorePointer().ignoring, isFalse);
+        await tester.pump(const Duration(milliseconds: 450));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
       'keeps the bar in place inside editors when another tab is active',
       (tester) async {
         final mockNavService = MockNavService();
@@ -2146,6 +2311,54 @@ void main() {
           isHabitsEnabled: () => false,
           isDashboardsEnabled: () => false,
           settingsDelegate: settingsDelegate,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+
+        final slide = tester.widget<AnimatedSlide>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(AnimatedSlide),
+              )
+              .first,
+        );
+        expect(slide.offset, Offset.zero);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'keeps the bar in place over a background project detail when '
+      'another tab is active',
+      (tester) async {
+        final mockNavService = MockNavService();
+
+        final projectsDelegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/projects/some-project-id',
+          locationBuilder: (routeInformation, _) =>
+              _TestProjectsLocation(routeInformation),
+        );
+        addTearDown(projectsDelegate.dispose);
+        await projectsDelegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/projects/some-project-id')),
+        );
+
+        await _stubNavService(
+          mockNavService,
+          // Tasks tab active; the projects delegate's detail route is
+          // background state and must not hide the bar.
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+          projectsDelegate: projectsDelegate,
         );
         await _registerAppScreenGetIt(mockNavService);
         addTearDown(tearDownTestGetIt);
