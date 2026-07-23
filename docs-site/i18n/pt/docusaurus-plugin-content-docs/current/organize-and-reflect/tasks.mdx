@@ -24,7 +24,9 @@ A arte de capa é opcional, mas pode tornar um espaço de trabalho denso muito
 mais fácil de escanear. Use-a para uma dica visual útil, uma referência do
 produto ou uma metáfora memorável para o trabalho. As ilustrações do Project
 Waddle neste manual são apenas um exemplo: uma capa pode ser tão prática,
-divertida ou maravilhosamente estranha quanto você quiser.
+divertida ou maravilhosamente estranha quanto você quiser. Consulte [Gerar
+arte de capa da tarefa](./task-cover-art.mdx) para criar uma a partir do
+contexto da própria tarefa e de imagens de referência.
 
 <ManualScreenshot
   caseId="tasks/detail"
@@ -33,96 +35,9 @@ divertida ou maravilhosamente estranha quanto você quiser.
 
 A mesma tarefa pode conter descrição, categoria, rótulos, data de vencimento,
 registros de tempo, itens de lista de verificação, imagens, links e gravações
-de áudio.
-
-## Atribuir um agente de tarefa
-
-Uma tarefa pode ter um agente de tarefa. Atribuir um dá à tarefa um assistente
-de IA persistente, com configuração de inferência, relatório, estado de
-despertar e histórico de propostas próprios. O agente lê a tarefa e seu
-contexto vinculado, destila a situação atual em um relatório curto e pode
-apresentar propostas de alterações na tarefa ou na lista de verificação para
-você confirmar ou rejeitar.
-
-O agente atribuído aparece abaixo das listas de verificação e das tarefas
-vinculadas da tarefa. Seu cartão recolhido mantém visíveis o resumo mais
-recente, o controle de atualização automática, a ação **Ativar agente** e a
-rota do modelo ativo, sem fazer a página da tarefa parecer um console de IA.
-
-<ManualScreenshot
-  caseId="tasks/agent-card"
-  alt="Agente de tarefa Habitat Watcher atribuído à tarefa do habitat orbital dos pinguins, mostrando seu resumo atual, atualizações automáticas, ação de despertar e rota do modelo do Project Waddle"
-  caption="O Habitat Watcher está atribuído a esta tarefa; a atribuição e as atualizações automáticas são escolhas separadas."
-/>
-
-Escolha **Leia mais** para expandir o relatório completo ali mesmo. O cartão
-expandido mantém a tarefa visível, adiciona a avaliação de apoio do relatório e
-a próxima etapa recomendada, e oferece **Abrir detalhes internos do agente**
-quando você precisar de relatórios, conversas, observações ou detalhes de
-execução.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-expanded"
-  alt="Cartão expandido do agente de tarefa Habitat Watcher com a avaliação completa do habitat do Project Waddle e a próxima etapa recomendada"
-  caption="O relatório completo se expande dentro da tarefa em vez de enviar você para uma página separada."
-/>
-
-### Revise as alterações propostas
-
-Um despertar concluído pode atualizar o relatório e adicionar alterações
-propostas. As atualizações automáticas decidem *quando o agente acorda*; elas
-não dão ao agente permissão para editar a tarefa. As propostas permanecem
-pendentes até você agir sobre elas.
-
-<ManualScreenshot
-  caseId="tasks/agent-suggestions"
-  alt="Cartão do agente de tarefa Habitat Watcher com duas propostas pendentes do Project Waddle, ações individuais de rejeitar e confirmar e uma ação Confirmar todas"
-  caption="O agente propõe um item de lista de verificação para o teste do alimentador e uma estimativa revisada; nenhuma das alterações foi aplicada ainda."
-/>
-
-Use o X para **Rejeitar** uma proposta ou a marca de confirmação para
-**Confirmar** e aplicá-la. Você também pode deslizar uma proposta para a
-esquerda para rejeitar ou para a direita para confirmar. Quando várias
-propostas estão pendentes, **Confirme todas** aplica de uma vez as alterações
-listadas no momento. Revise propostas em massa com cuidado, especialmente
-alterações de status, data e lista de verificação.
-
-Abra o **Histórico** para revisitar os resultados recentes. Ele distingue as
-alterações confirmadas das rejeitadas. Uma entrada rejeitada pode representar
-tanto uma decisão sua quanto uma proposta que o agente retirou depois que um
-contexto mais novo da tarefa a tornou obsoleta.
-
-Um **Ativar agente** manual pode produzir os mesmos tipos de relatório e
-propostas que um despertar automático. Desativar as atualizações automáticas
-interrompe os despertares futuros em segundo plano; isso não aplica, descarta
-nem resolve de outra forma as propostas que já aguardam sua decisão.
-
-### Escolha atualizações automáticas ou manuais
-
-Novos agentes de tarefa começam com **Atualizações automáticas desativadas**. A
-atribuição por si só não gasta tokens em segundo plano. Enquanto as
-atualizações estão desativadas, a Lotti continua percebendo alterações
-relevantes na tarefa e em suas entradas vinculadas, marca um resumo mais antigo
-como desatualizado e espera você escolher **Ativar agente**. Um despertar
-manual continua disponível sempre que o agente tiver uma configuração de IA
-funcional.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-manual"
-  alt="Cartão do agente de tarefa Habitat Watcher com atualizações automáticas desativadas, um aviso de relatório desatualizado e uma ação manual Ativar agente"
-  caption="O modo manual observa alterações e relata a desatualização sem iniciar a inferência."
-/>
-
-Quando as **Atualizações automáticas** estão ativadas, a Lotti agrupa as
-alterações correspondentes da tarefa por cerca de dois minutos antes de agendar
-uma atualização. Esse agrupamento evita um despertar do agente a cada pequena
-edição. **Ativar agente** continua disponível para uma atualização imediata
-solicitada por você.
-
-Desativar as atualizações automáticas limpa a contagem regressiva pendente e as
-atualizações automáticas na fila, mas não cancela um despertar que você
-solicitou explicitamente. Reativá-las vale para alterações futuras; isso não
-reexecuta alterações que chegaram enquanto a automação estava desligada.
+de áudio. Ela também pode ter um assistente de IA persistente, com seu próprio
+resumo, estado de despertar e alterações propostas — consulte [Atribuir um
+agente de tarefa](./task-agents.mdx).
 
 ## Prioridade
 
@@ -183,50 +98,6 @@ contexto atuais.
 Consulte [Adicionar entradas e contexto](../plan-and-capture/entries.mdx) para
 saber quando usar cada tipo de entrada.
 
-## Gere arte de capa a partir de imagens de tarefas reais
-
-<TutorialVideo
-  scenario="task_cover_art"
-  title="Deixe a IA criar a capa da sua tarefa"
-  caption="Passo a passo narrado: gerar a arte de capa a partir do contexto da tarefa e imagens de referência."
-/>
-
-Se uma habilidade de geração de imagens estiver configurada, abra o menu de
-geração da tarefa e escolha a ação de arte de capa. A Lotti primeiro mostra as
-imagens já anexadas à tarefa, além das imagens de capa disponíveis nas tarefas
-vinculadas. Selecione até cinco referências para orientar o resultado, ou
-continue sem referência.
-
-A capa gerada é criada na Lotti a partir do contexto da tarefa e das
-referências que você selecionar. É um auxílio visual, não um campo obrigatório:
-use-a quando uma imagem distinta tornar o trabalho mais fácil ou mais agradável
-de reconhecer. A rota atual de geração de imagens usa o provedor configurado,
-então trate o prompt de geração e as referências selecionadas como dados que
-você está enviando intencionalmente a esse provedor; uma rota local de
-pensamento ou de transcrição não torna a geração de capas local.
-
-<ManualScreenshot
-  caseId="tasks/cover-references"
-  alt="Painel Gerar arte de capa mostrando cinco imagens de referência distintas do Project Waddle vindas do contexto da tarefa"
-  caption="O seletor usa as mesmas imagens de tarefa visíveis em toda a demonstração do Project Waddle."
-/>
-
-Depois que você continua, a geração da imagem é executada em segundo plano. A
-visualização de progresso usa o visualizador de pensamento de produção da Lotti
-e pode ser fechada sem cancelar o trabalho.
-
-<ManualScreenshot
-  caseId="tasks/cover-generating"
-  alt="Geração de arte de capa de tarefa em andamento com o visualizador de shader de produção da Lotti"
-/>
-
-A imagem gerada se torna a capa da tarefa e acompanha a tarefa nas
-visualizações de lista, detalhes, projetos e Daily OS. Uma capa forte deve
-continuar reconhecível quando a imagem de origem, mais larga, é cortada em uma
-miniatura compacta de tarefa. Ela pode ser evidência literal, uma metáfora
-contida ou tão estranha quanto o trabalho merecer; o único teste útil é se você
-consegue reconhecer a tarefa mais rápido depois.
-
 ## Vincule tarefas relacionadas
 
 Abra a seção **Vinculada** da tarefa e escolha vincular uma tarefa existente.
@@ -245,18 +116,14 @@ anexos.
 
 ## Use a voz sem perder o controle
 
-<TutorialVideo
-  scenario="create_task_from_audio"
-  title="Crie uma tarefa com a sua voz"
-  caption="Passo a passo narrado: ditar uma tarefa, revisar a transcrição e marcar um item sugerido da lista de verificação."
-/>
-
 Grave uma nota dentro da tarefa quando for mais rápido explicar a situação em
 voz alta. Com a transcrição e as habilidades de tarefa configuradas, a Lotti
 pode transformar esse contexto em texto e em alterações propostas na lista de
 verificação. Revise o resultado, especialmente nomes, datas e mudanças
 destrutivas. Consulte [Gravar áudio](../plan-and-capture/recordings.mdx) para
-os controles de gravação e as opções de processamento.
+os controles de gravação e as opções de processamento. [Crie sua primeira
+tarefa](../getting-started/first-task.mdx) tem um passo a passo narrado do
+mesmo fluxo de ditar, revisar e confirmar.
 
 :::tip
 

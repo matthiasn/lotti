@@ -1,0 +1,49 @@
+---
+title: Generate task cover art
+description: Turn a task's own context and reference images into cover art with a configured image-generation skill.
+---
+
+# Generate task cover art
+
+<TutorialVideo
+  scenario="task_cover_art"
+  title="Let AI create your task's cover art"
+  caption="Narrated walkthrough: generating cover art from task context and reference images."
+/>
+
+If an image-generation skill is configured, open the task's generation menu
+and choose its cover-art action. Lotti first shows images already attached to
+the task, plus available cover images from linked tasks. Select up to five
+references to guide the result, or continue without a reference.
+
+The generated cover is created in Lotti from the task's context and any
+references you select. It is a visual aid, not a required field: use it when a
+distinct image makes the work easier or more enjoyable to recognize. The
+current image-generation route uses the configured provider, so treat the
+generation prompt and selected references as data you are intentionally sending
+to that provider; a local thinking or transcription route does not make cover
+generation local.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Generate Cover Art sheet showing five distinct Project Waddle reference images from the task context"
+  caption="The picker uses the same task imagery visible throughout the Project Waddle demo."
+/>
+
+After you continue, image generation runs in the background. The progress
+view uses Lotti's production thinking visualizer and can be closed without
+cancelling the job.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Task cover-art generation in progress with Lotti's production shader visualizer"
+/>
+
+The generated image becomes the task cover and follows the task into list,
+detail, project, and Daily OS views. A strong cover should remain recognizable
+when the wide source image is cropped into a compact task thumbnail. It can be
+literal evidence, a restrained metaphor, or as strange as the work deserves;
+the only useful test is whether you can recognize the task faster later.
+
+See [Work with tasks](./tasks.mdx) for where the cover art appears once it
+exists.

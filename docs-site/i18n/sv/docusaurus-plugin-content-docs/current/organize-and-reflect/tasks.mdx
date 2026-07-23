@@ -23,7 +23,8 @@ Omslagskonst är valfritt, men det kan göra en tät arbetsyta mycket lättare a
 Använd det som en användbar visuell ledtråd, en produktreferens eller en minnesvärd metafor
 för arbetet. Project Waddle-illustrationerna i denna manual är endast en
 Exempel: Ett omslag kan vara lika praktiskt, lekfullt eller underbart konstigt som du
-vilja.
+vilja. Se [Generera omslagskonst för uppgifter](./task-cover-art.mdx) för att
+skapa en utifrån uppgiftens egen kontext och referensbilder.
 
 <ManualScreenshot
   caseId="tasks/detail"
@@ -31,113 +32,9 @@ vilja.
 />
 
 Samma uppgift kan innehålla en beskrivning, kategori, etiketter, förfallodatum, tidsposter,
-checklista, bilder, länkar och ljudinspelningar.
-
-## Tilldela en uppgiftsagent
-
-En uppgift kan ha en uppgiftsagent. Att tilldela en sådan ger den uppgiften en bestående AI
-Assistent med egen inferensuppsättning, rapport, vakningstillstånd och förslag
-historia. Agenten läser uppgiften och dess länkade kontext, destillerar strömmen
-situation i en kort rapport, och kan framföra föreslagen uppgift eller checklista
-ändringar som du kan bekräfta eller avslå.
-
-Den tilldelade agenten visas under uppgiftens checklistor och länkade uppgifter. Det är
-kollapsat kort behåller den senaste sammanfattningen, automatisk uppdateringskontroll, **Vakna
-agent**-åtgärd och aktiv modellrutt synliga utan att göra uppgiftssidan synlig
-känns som en AI-konsol.
-
-<ManualScreenshot
-  caseId="tasks/agent-card"
-  alt="Assigned Habitat Watcher task agent on the orbital penguin habitat task, showing its current summary, automatic updates, wake action, and Project Waddle model route"
-  caption="Habitat Watcher is assigned to this task; assignment and automatic updates are separate choices."
-/>
-
-På en telefon följer kortet en enda läsordning: identitet, uppdateringskontroller,
-AI-installation, rapport, sedan föreslagna förändringar och historik. På skrivbordet rapporterar och
-Förslag utgör läskolumnen medan Compact-kontrollerna ligger i närheten.
-
-Välj **Läs mer** för att utöka hela rapporten som finns på plats. Det utökade kortet
-håller uppgiften synlig, lägger till rapportens stödjande bedömning och rekommendation
-Nästa steg, och erbjuder **Öppna agentinterna** när du behöver rapporter,
-samtal, observationer eller detaljer i realtid.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-expanded"
-  alt="Expanded Habitat Watcher task-agent card with the full Project Waddle habitat assessment and recommended next step"
-  caption="The full report expands inside the task instead of sending you to a separate page."
-/>
-
-### Välj agentens AI-uppsättning
-
-Kortets rad **Nuvarande setup** identifierar profil, modell och leverantör
-använd för nästa vake. Välj den för att välja en sparad inferensprofil, åsidosätt
-Endast tänkande modellen, återgå till profilens standard, kopiera kategorins
-nuvarande setup, eller stäng av AI för just denna agent. Ett val stannar kvar hos det
-agent för framtida uppdateringar; Att kopiera en kategoriuppsättning är en ögonblicksbild, inte en länk
-Det förändras tyst senare.
-
-Om en rapport producerades via en annan väg håller Lotti en separat
-**Denna rapport** tillskrivs istället för att ommärka historien med den nuvarande
-Setup. Att stänga av AI lämnar den befintliga rapporten läsbar men förhindrar vidare
-vaknar tills du väljer en fungerande setup igen. Automatiska uppdateringar kan inte göras
-aktiverat medan agenten inte har någon fungerande AI-installation.
-
-### Granska föreslagna förändringar
-
-En färdig vake kan uppdatera rapporten och lägga till föreslagna ändringar. Automatisk
-uppdateringar avgör *när agenten vaknar*; De ger inte agenten tillstånd att
-Redigera uppgiften. Förslag är fortfarande under behandling tills du agerar på dem.
-
-<ManualScreenshot
-  caseId="tasks/agent-suggestions"
-  alt="Habitat Watcher task-agent card with two pending Project Waddle proposals, individual dismiss and confirm actions, and a Confirm all action"
-  caption="The agent proposes a feeder-test checklist item and a revised estimate; neither change has been applied yet."
-/>
-
-Använd korset för att **avvisa** ett förslag eller checken för att **Bekräfta** och ansöka
-det. Du kan också svepa ett förslag åt vänster för att avvisa eller åt höger för att bekräfta. När
-flera förslag är under behandling, **Bekräfta alla** gäller de för närvarande listade
-förändras tillsammans. Gå noggrant igenom bulkförslag, särskilt status, datum,
-och ändringar i checklistor.
-
-Öppna **Historia** för att återbesöka senaste resultat. Den särskiljer bekräftade
-förändringar från de avfärdade. En avvisad anmälan kan representera antingen din
-beslut eller förslag som agenten drog tillbaka efter att nyare uppgiftskontext tagit det
-Ständigt.
-
-En manuell **Wake-agent** kan producera samma typ av rapport och förslag som
-En automatisk väckning. Att stänga av automatiska uppdateringar stoppar framtida bakgrund
-vaknar; Den tilämpar, förkastar inte eller på annat sätt löser förslag som är
-Väntar redan på ditt beslut.
-
-### Välj automatiska eller manuella uppdateringar
-
-Nya uppgiftsagenter börjar med **Automatiska uppdateringar avstängda**. Endast tilldelning gör det inte
-spendera tokens i bakgrunden. Medan uppdateringarna är avstängda fortsätter Lotti att göra det
-Notera relevanta ändringar i uppgiften och dess länkade poster, markerar en äldre
-sammanfattning som föråldrad och väntar på att du ska välja **Wake agent**. En manual
-wake är fortfarande tillgänglig när agenten har en fungerande AI-uppsättning.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-manual"
-  alt="Habitat Watcher task-agent card with automatic updates off, an out-of-date report notice, and a manual Wake agent action"
-  caption="Manual mode observes changes and reports staleness without starting inference."
-/>
-
-Den inaktuella meddelandet lämnar medvetet den sista användbara rapporten kvar. Om
-En relevant redigering anländer efter att en vaka börjat, den nyare redigeringen behåller rapporten
-märkt gammal även när den tidigare vaken är slut. När du behöver en rapport som
-inkluderar de senaste ändringarna, väcker agenten igen efter att uppgiften är avslutad.
-
-När **automatiska uppdateringar** är på, paketerar Lotti matchande uppgiftsändringar för
-ungefär två minuter innan jag bokade en uppdatering. Denna sammansmältning undviker en agent
-vakna för varje liten redigering. **Wake agent** är fortfarande tillgänglig för en omedelbar tid,
-Användarbegärd uppdatering.
-
-Att stänga av automatiska uppdateringar raderar dess väntande nedräkning och kö
-Automatiskt uppdateras, men avbryter inte en väckning du uttryckligen begärt.
-Att slå på den igen gäller för framtida förändringar; den spelar inte upp ändringar som ändras
-Kom medan automationen var avstängd.
+checklista, bilder, länkar och ljudinspelningar. Den kan också ha en bestående
+AI-assistent med egen sammanfattning, vakningstillstånd och föreslagna ändringar —
+se [Tilldela en uppgiftsagent](./task-agents.mdx).
 
 ## Prioritet
 
@@ -211,48 +108,6 @@ tillgängliga åtgärder beror på den aktuella plattformen och kontexten.
 See [Add entries and context](../plan-and-capture/entries.mdx) for when to use
 varje typ av inträde.
 
-## Generera omslagskonst från verkliga bilder
-
-<TutorialVideo
-  scenario="task_cover_art"
-  title="Låt AI skapa omslagsbilden till din uppgift"
-  caption="Video med berättarröst: generera omslagskonst utifrån uppgiftens kontext och referensbilder."
-/>
-
-Om en bildgenereringsfärdighet är konfigurerad, öppna uppgiftens genereringsmeny
-och välja dess omslagshandling. Lotti visar först bilder som redan är bifogade till
-uppgiften, plus tillgängliga omslagsbilder från länkade uppgifter. Välj upp till fem
-referenser för att styra resultatet, eller fortsätta utan referens.
-
-Det genererade omslaget skapas i Lotti utifrån uppgiftens kontext och någon
-referenser du väljer. Det är ett visuellt hjälpmedel, inte ett obligatoriskt område: använd det när en
-Distinkt bild gör verket lättare eller mer njutbart att känna igen. The
-Nuvarande bildgenereringsrutt använder den konfigurerade leverantören, så behandla
-genereringsprompt och valda referenser som data du medvetet skickar
-till den leverantören; En lokal tänkande eller transkriptionsväg räcker inte till täckning
-Generation Local.
-
-<ManualScreenshot
-  caseId="tasks/cover-references"
-  alt="Generate Cover Art sheet showing five distinct Project Waddle reference images from the task context"
-  caption="The picker uses the same task imagery visible throughout the Project Waddle demo."
-/>
-
-Efter att du fortsätter körs bildgenereringen i bakgrunden. Framstegen
-vyn använder Lottis produktionstänkande visualiserare och kan stängas utan
-Att ställa in jobbet.
-
-<ManualScreenshot
-  caseId="tasks/cover-generating"
-  alt="Task cover-art generation in progress with Lotti's production shader visualizer"
-/>
-
-Den genererade bilden blir uppgiftsomslaget och följer uppgiften in i listan,
-detalj-, projekt- och dagliga OS-vyer. Ett starkt omslag bör förbli igenkännbart
-när den breda källbildsbilden beskärs till en kompakt uppgiftsminiatyr. Det kan vara
-bokstavliga bevis, en återhållen metafor, eller så märkligt som verket förtjänar;
-Det enda användbara testet är om du kan känna igen uppgiften snabbare senare.
-
 ## Länkrelaterade uppgifter
 
 Öppna uppgiftens **länkade**-sektion och välj att länka en befintlig uppgift. Sökning
@@ -270,17 +125,13 @@ Uppgiften behåller sin egen status, schema och bilagor.
 
 ## Använd röst utan att tappa kontrollen
 
-<TutorialVideo
-  scenario="create_task_from_audio"
-  title="Skapa en uppgift med din röst"
-  caption="Video med berättarröst: diktera en uppgift, granska transkriptionen och bocka av en föreslagen checklistepunkt."
-/>
-
 Skriv in en anteckning i uppgiften när det är snabbare att förklara situationen högt.
 Med transkription och uppgiftsfärdigheter konfigurerade kan Lotti omvandla den kontexten till
 text och föreslagna ändringar i checklistor. Gå igenom resultatet, särskilt namnen,
 dates, and destructive changes. See [Record audio](../plan-and-capture/recordings.mdx)
-för inspelningskontroller och bearbetningsalternativ.
+för inspelningskontroller och bearbetningsalternativ. [Skapa din första
+uppgift](../getting-started/first-task.mdx) har en video med berättarröst som
+visar samma flöde: diktera, granska och bekräfta.
 
 :::tip
 

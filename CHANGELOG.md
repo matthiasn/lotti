@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   diverging, processing blocked) that the coordinator picks up at its next
   digest, so week-level plans and learnings persist while each day keeps a
   small, fast context of its own.
+- **The Manual's task-agent and cover-art coverage now has its own pages,**
+  split out of the "Work with tasks" page into "Assign a task agent" and
+  "Generate task cover art" so each stays focused and easy to find in the
+  sidebar. The "Create your first task" page also now opens with the
+  dictate-a-task walkthrough video, so new users see it right away instead
+  of scrolling to the bottom of the tasks page.
 
 ### Fixed
 - **The green focus border in list boxes no longer gets cropped at the

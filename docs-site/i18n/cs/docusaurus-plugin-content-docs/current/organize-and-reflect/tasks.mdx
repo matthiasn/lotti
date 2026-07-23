@@ -23,7 +23,8 @@ Titulní obrázek je volitelný, ale v hustém pracovním prostoru usnadní rych
 orientaci. Může být užitečnou vizuální nápovědou, odkazem na produkt nebo
 zapamatovatelnou metaforou práce. Ilustrace Project Waddle v této příručce jsou
 jen příklad: titulní obrázek může být tak praktický, hravý nebo nádherně
-podivný, jak chceš.
+podivný, jak chceš. Jak ho vytvořit z vlastního kontextu úkolu a referenčních
+obrázků, popisuje část [Generuj titulní obrázek úkolu](./task-cover-art.mdx).
 
 <ManualScreenshot
   caseId="tasks/detail"
@@ -31,87 +32,9 @@ podivný, jak chceš.
 />
 
 Jeden úkol může obsahovat popis, kategorii, štítky, termín, časové záznamy,
-položky kontrolního seznamu, obrázky, odkazy i zvukové nahrávky.
-
-## Přiřaď agenta úkolu
-
-Úkol může mít jednoho agenta. Přiřazením získá trvalého AI asistenta s vlastním
-nastavením inference, zprávou, stavem probuzení a historií návrhů. Agent čte
-úkol a jeho propojený kontext, shrne aktuální situaci do krátké zprávy a může
-předložit změny úkolu nebo kontrolního seznamu, které potvrdíš či odmítneš.
-
-Přiřazený agent se zobrazí pod kontrolními seznamy a propojenými úkoly. Jeho
-sbalená karta udržuje viditelné nejnovější shrnutí, ovládání automatických
-aktualizací, akci **Probudit agenta** a aktivní trasu modelu, aniž by ze stránky
-úkolu dělala konzoli AI.
-
-<ManualScreenshot
-  caseId="tasks/agent-card"
-  alt="Agent úkolu Habitat Watcher přiřazený ke kontrole orbitálního obydlí, se shrnutím, automatickými aktualizacemi, probuzením a trasou modelu Project Waddle"
-  caption="Habitat Watcher je přiřazen k tomuto úkolu; přiřazení a automatické aktualizace jsou dvě samostatná rozhodnutí."
-/>
-
-Volbou **Číst více** rozbalíš celou zprávu na místě. Rozbalená karta ponechá
-úkol viditelný, přidá podpůrné vyhodnocení a doporučený další krok a nabídne
-**Otevřít interní informace agenta**, pokud potřebuješ zprávy, konverzace,
-pozorování nebo podrobnosti běhu.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-expanded"
-  alt="Rozbalená karta agenta Habitat Watcher s úplným vyhodnocením obydlí Project Waddle a doporučeným dalším krokem"
-  caption="Úplná zpráva se rozbalí uvnitř úkolu, místo aby tě poslala na samostatnou stránku."
-/>
-
-### Kontroluj navržené změny
-
-Dokončené probuzení může aktualizovat zprávu a přidat návrhy změn. Automatické
-aktualizace rozhodují, *kdy se agent probudí*; nedávají mu oprávnění upravovat
-úkol. Návrhy čekají, dokud o nich nerozhodneš.
-
-<ManualScreenshot
-  caseId="tasks/agent-suggestions"
-  alt="Karta agenta Habitat Watcher se dvěma čekajícími návrhy Project Waddle, jednotlivým odmítnutím a potvrzením a akcí Potvrdit vše"
-  caption="Agent navrhuje položku kontrolního seznamu pro test krmítka a upravený odhad; žádná změna ještě nebyla použita."
-/>
-
-Křížkem návrh odmítneš; zaškrtnutím ho potvrdíš a použiješ. Návrh můžeš také
-tažením doleva odmítnout nebo doprava potvrdit. Když čeká několik návrhů,
-akce **Potvrdit vše** použije aktuálně uvedené změny společně.
-Hromadné návrhy kontroluj pečlivě, zejména změny stavu, data a kontrolního
-seznamu.
-
-V **Historii** se můžeš vrátit k nedávným výsledkům. Rozlišuje potvrzené změny
-od odmítnutých. Odmítnutá položka může znamenat tvoje rozhodnutí nebo návrh,
-který agent stáhl poté, co ho novější kontext úkolu učinil zastaralým.
-
-Ruční **Probudit agenta** může vytvořit stejné zprávy a návrhy jako automatické
-probuzení. Vypnutí automatických aktualizací zastaví budoucí probouzení na
-pozadí; nepoužije, nezahodí ani jinak nevyřeší návrhy, které už čekají na tvoje
-rozhodnutí.
-
-### Vyber automatické nebo ruční aktualizace
-
-Noví agenti úkolů začínají s vypnutými **Automatickými aktualizacemi**. Samotné
-přiřazení nespotřebovává tokeny na pozadí. Když jsou aktualizace vypnuté, Lotti
-dál sleduje relevantní změny úkolu a propojených záznamů, označí starší shrnutí
-za zastaralé a čeká na volbu **Probudit agenta**. Ruční probuzení je dostupné,
-kdykoli má agent funkční nastavení AI.
-
-<ManualScreenshot
-  caseId="tasks/agent-card-manual"
-  alt="Karta agenta Habitat Watcher s vypnutými automatickými aktualizacemi, upozorněním na zastaralou zprávu a ruční akcí Probudit agenta"
-  caption="Ruční režim sleduje změny a hlásí zastarání, aniž by spustil inferenci."
-/>
-
-Když jsou **Automatické aktualizace** zapnuté, Lotti přibližně dvě minuty
-seskupuje odpovídající změny úkolu a teprve potom naplánuje obnovení. Tím se
-vyhne probuzení agenta po každé drobné úpravě. **Probudit agenta** zůstává
-dostupné pro okamžité, uživatelem vyžádané obnovení.
-
-Vypnutí automatických aktualizací zruší čekající odpočet a automatická
-obnovení ve frontě, ale nezruší probuzení, které jsi výslovně vyžádal. Opětovné
-zapnutí platí pro budoucí změny; nepřehraje změny, které přišly během vypnuté
-automatizace.
+položky kontrolního seznamu, obrázky, odkazy i zvukové nahrávky. Může nést také
+trvalého AI asistenta s vlastním shrnutím, stavem probuzení a navrhovanými
+změnami — viz [Přiřaď agenta úkolu](./task-agents.mdx).
 
 ## Priorita
 
@@ -168,47 +91,6 @@ na platformě a aktuálním kontextu.
 V části [Přidávání záznamů a kontextu](../plan-and-capture/entries.mdx) najdeš,
 kdy použít jednotlivé typy záznamu.
 
-## Generuj titulní obrázek ze skutečných obrázků úkolu
-
-<TutorialVideo
-  scenario="task_cover_art"
-  title="Nech AI vytvořit titulní obrázek tvého úkolu"
-  caption="Video s komentářem: vytvoření titulního obrázku z kontextu úkolu a referenčních obrázků."
-/>
-
-Pokud je nastavená dovednost generování obrázků, otevři nabídku generování
-úkolu a vyber akci titulního obrázku. Lotti nejdřív zobrazí obrázky už připojené
-k úkolu a dostupné titulní obrázky propojených úkolů. Vyber až pět referencí,
-které povedou výsledek, nebo pokračuj bez nich.
-
-Lotti vytvoří titulní obrázek z kontextu úkolu a z vybraných referencí. Je to
-vizuální pomůcka, ne povinné pole: použij ji, když odlišný obrázek usnadní
-rozpoznání práce nebo ti ji prostě zpříjemní. Aktuální cesta generování obrázků
-používá nastaveného poskytovatele, proto s výzvou k vytvoření obrázku i s
-vybranými referencemi zacházej jako s údaji, které tomuto poskytovateli vědomě
-odesíláš; to, že přemýšlení nebo přepis běží místně, z generování titulních
-obrázků místní cestu nedělá.
-
-<ManualScreenshot
-  caseId="tasks/cover-references"
-  alt="Panel Generovat titulní obrázek s pěti různými referenčními obrázky Project Waddle z kontextu úkolu"
-  caption="Výběr používá stejné obrázky úkolu jako v celé ukázce Project Waddle."
-/>
-
-Po pokračování běží generování obrázku na pozadí. Zobrazení postupu používá
-produkční vizualizaci přemýšlení Lotti a můžeš ho zavřít bez zrušení úlohy.
-
-<ManualScreenshot
-  caseId="tasks/cover-generating"
-  alt="Probíhající generování titulního obrázku úkolu s produkční shaderovou vizualizací Lotti"
-/>
-
-Vygenerovaný obrázek se stane titulním obrázkem úkolu a následuje ho do
-seznamu, podrobností, projektu i Daily OS. Dobrý titulní obrázek zůstane
-rozpoznatelný, i když se široký zdroj ořízne na malý náhled úkolu. Může jít o
-doslovný doklad, střídmou metaforu nebo o tak podivný obraz, jak si práce žádá;
-užitečné měřítko je jen jedno: poznáš díky němu úkol později rychleji?
-
 ## Propojuj související úkoly
 
 Otevři sekci **Propojené** a zvol propojení existujícího úkolu. Vyhledej
@@ -226,17 +108,13 @@ zachovává vlastní stav, rozvrh i přílohy.
 
 ## Používej hlas bez ztráty kontroly
 
-<TutorialVideo
-  scenario="create_task_from_audio"
-  title="Vytvoř úkol hlasem"
-  caption="Video s komentářem: nadiktování úkolu, kontrola přepisu a odškrtnutí navrženého bodu kontrolního seznamu."
-/>
-
 Když je rychlejší situaci vysvětlit nahlas, nahraj poznámku uvnitř úkolu. S
 nastaveným přepisem a dovednostmi úkolů může Lotti proměnit kontext v text a
 navržené změny kontrolního seznamu. Výsledek zkontroluj, zejména jména, data a
 destruktivní změny. Ovládání nahrávání a zpracování popisuje část
-[Nahrávání zvuku](../plan-and-capture/recordings.mdx).
+[Nahrávání zvuku](../plan-and-capture/recordings.mdx). [Vytvoření prvního
+úkolu](../getting-started/first-task.mdx) obsahuje video s komentářem ke
+stejnému postupu nadiktování, kontroly a potvrzení.
 
 :::tip
 

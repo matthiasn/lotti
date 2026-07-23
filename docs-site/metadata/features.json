@@ -46,15 +46,31 @@
       "screenshotCases": [
         "tasks/workspace",
         "tasks/detail",
+        "tasks/filters",
+        "entries/create-menu",
+        "tasks/link-picker"
+      ]
+    },
+    {
+      "id": "task-agents",
+      "title": "Task agents",
+      "page": "organize-and-reflect/task-agents",
+      "status": "verified",
+      "screenshotCases": [
         "tasks/agent-card",
         "tasks/agent-card-expanded",
         "tasks/agent-card-manual",
-        "tasks/agent-suggestions",
-        "tasks/filters",
-        "entries/create-menu",
+        "tasks/agent-suggestions"
+      ]
+    },
+    {
+      "id": "task-cover-art",
+      "title": "Task cover art",
+      "page": "organize-and-reflect/task-cover-art",
+      "status": "verified",
+      "screenshotCases": [
         "tasks/cover-references",
-        "tasks/cover-generating",
-        "tasks/link-picker"
+        "tasks/cover-generating"
       ]
     },
     {

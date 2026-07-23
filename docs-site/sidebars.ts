@@ -30,6 +30,8 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'organize-and-reflect/tasks',
+        'organize-and-reflect/task-agents',
+        'organize-and-reflect/task-cover-art',
         'organize-and-reflect/projects',
         'organize-and-reflect/events',
         'organize-and-reflect/journal',
