@@ -23,6 +23,26 @@ EntryLink _$EntryLinkFromJson(
           return ProjectLink.fromJson(
             json
           );
+                case 'blocks':
+          return BlocksLink.fromJson(
+            json
+          );
+                case 'followsUp':
+          return FollowsUpLink.fromJson(
+            json
+          );
+                case 'duplicates':
+          return DuplicatesLink.fromJson(
+            json
+          );
+                case 'fixes':
+          return FixesLink.fromJson(
+            json
+          );
+                case 'supersedes':
+          return SupersedesLink.fromJson(
+            json
+          );
         
           default:
             return BasicLink.fromJson(
@@ -117,13 +137,18 @@ extension EntryLinkPatterns on EntryLink {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( BasicLink value)?  basic,TResult Function( RatingLink value)?  rating,TResult Function( ProjectLink value)?  project,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( BasicLink value)?  basic,TResult Function( RatingLink value)?  rating,TResult Function( ProjectLink value)?  project,TResult Function( BlocksLink value)?  blocks,TResult Function( FollowsUpLink value)?  followsUp,TResult Function( DuplicatesLink value)?  duplicates,TResult Function( FixesLink value)?  fixes,TResult Function( SupersedesLink value)?  supersedes,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case BasicLink() when basic != null:
 return basic(_that);case RatingLink() when rating != null:
 return rating(_that);case ProjectLink() when project != null:
-return project(_that);case _:
+return project(_that);case BlocksLink() when blocks != null:
+return blocks(_that);case FollowsUpLink() when followsUp != null:
+return followsUp(_that);case DuplicatesLink() when duplicates != null:
+return duplicates(_that);case FixesLink() when fixes != null:
+return fixes(_that);case SupersedesLink() when supersedes != null:
+return supersedes(_that);case _:
   return orElse();
 
 }
@@ -141,13 +166,18 @@ return project(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( BasicLink value)  basic,required TResult Function( RatingLink value)  rating,required TResult Function( ProjectLink value)  project,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( BasicLink value)  basic,required TResult Function( RatingLink value)  rating,required TResult Function( ProjectLink value)  project,required TResult Function( BlocksLink value)  blocks,required TResult Function( FollowsUpLink value)  followsUp,required TResult Function( DuplicatesLink value)  duplicates,required TResult Function( FixesLink value)  fixes,required TResult Function( SupersedesLink value)  supersedes,}){
 final _that = this;
 switch (_that) {
 case BasicLink():
 return basic(_that);case RatingLink():
 return rating(_that);case ProjectLink():
-return project(_that);case _:
+return project(_that);case BlocksLink():
+return blocks(_that);case FollowsUpLink():
+return followsUp(_that);case DuplicatesLink():
+return duplicates(_that);case FixesLink():
+return fixes(_that);case SupersedesLink():
+return supersedes(_that);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -164,13 +194,18 @@ return project(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( BasicLink value)?  basic,TResult? Function( RatingLink value)?  rating,TResult? Function( ProjectLink value)?  project,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( BasicLink value)?  basic,TResult? Function( RatingLink value)?  rating,TResult? Function( ProjectLink value)?  project,TResult? Function( BlocksLink value)?  blocks,TResult? Function( FollowsUpLink value)?  followsUp,TResult? Function( DuplicatesLink value)?  duplicates,TResult? Function( FixesLink value)?  fixes,TResult? Function( SupersedesLink value)?  supersedes,}){
 final _that = this;
 switch (_that) {
 case BasicLink() when basic != null:
 return basic(_that);case RatingLink() when rating != null:
 return rating(_that);case ProjectLink() when project != null:
-return project(_that);case _:
+return project(_that);case BlocksLink() when blocks != null:
+return blocks(_that);case FollowsUpLink() when followsUp != null:
+return followsUp(_that);case DuplicatesLink() when duplicates != null:
+return duplicates(_that);case FixesLink() when fixes != null:
+return fixes(_that);case SupersedesLink() when supersedes != null:
+return supersedes(_that);case _:
   return null;
 
 }
@@ -187,12 +222,17 @@ return project(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  basic,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  rating,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  project,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  basic,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  rating,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  project,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  blocks,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  followsUp,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  duplicates,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  fixes,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  supersedes,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case BasicLink() when basic != null:
 return basic(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case RatingLink() when rating != null:
 return rating(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case ProjectLink() when project != null:
-return project(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
+return project(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case BlocksLink() when blocks != null:
+return blocks(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case FollowsUpLink() when followsUp != null:
+return followsUp(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case DuplicatesLink() when duplicates != null:
+return duplicates(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case FixesLink() when fixes != null:
+return fixes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case SupersedesLink() when supersedes != null:
+return supersedes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
   return orElse();
 
 }
@@ -210,12 +250,17 @@ return project(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  basic,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  rating,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  project,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  basic,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  rating,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  project,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  blocks,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  followsUp,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  duplicates,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  fixes,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  supersedes,}) {final _that = this;
 switch (_that) {
 case BasicLink():
 return basic(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case RatingLink():
 return rating(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case ProjectLink():
-return project(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
+return project(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case BlocksLink():
+return blocks(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case FollowsUpLink():
+return followsUp(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case DuplicatesLink():
+return duplicates(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case FixesLink():
+return fixes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case SupersedesLink():
+return supersedes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -232,12 +277,17 @@ return project(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  basic,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  rating,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  project,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  basic,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  rating,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  project,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  blocks,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  followsUp,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  duplicates,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  fixes,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  supersedes,}) {final _that = this;
 switch (_that) {
 case BasicLink() when basic != null:
 return basic(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case RatingLink() when rating != null:
 return rating(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case ProjectLink() when project != null:
-return project(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
+return project(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case BlocksLink() when blocks != null:
+return blocks(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case FollowsUpLink() when followsUp != null:
+return followsUp(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case DuplicatesLink() when duplicates != null:
+return duplicates(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case FixesLink() when fixes != null:
+return fixes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case SupersedesLink() when supersedes != null:
+return supersedes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
   return null;
 
 }
@@ -496,6 +546,451 @@ class _$ProjectLinkCopyWithImpl<$Res>
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromId = null,Object? toId = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? hidden = freezed,Object? collapsed = freezed,Object? deletedAt = freezed,}) {
   return _then(ProjectLink(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
+as String,toId: null == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,hidden: freezed == hidden ? _self.hidden : hidden // ignore: cast_nullable_to_non_nullable
+as bool?,collapsed: freezed == collapsed ? _self.collapsed : collapsed // ignore: cast_nullable_to_non_nullable
+as bool?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class BlocksLink implements EntryLink {
+  const BlocksLink({required this.id, required this.fromId, required this.toId, required this.createdAt, required this.updatedAt, required this.vectorClock, this.hidden, this.collapsed, this.deletedAt, final  String? $type}): $type = $type ?? 'blocks';
+  factory BlocksLink.fromJson(Map<String, dynamic> json) => _$BlocksLinkFromJson(json);
+
+@override final  String id;
+@override final  String fromId;
+@override final  String toId;
+@override final  DateTime createdAt;
+@override final  DateTime updatedAt;
+@override final  VectorClock? vectorClock;
+@override final  bool? hidden;
+@override final  bool? collapsed;
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$BlocksLinkCopyWith<BlocksLink> get copyWith => _$BlocksLinkCopyWithImpl<BlocksLink>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$BlocksLinkToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BlocksLink&&(identical(other.id, id) || other.id == id)&&(identical(other.fromId, fromId) || other.fromId == fromId)&&(identical(other.toId, toId) || other.toId == toId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.hidden, hidden) || other.hidden == hidden)&&(identical(other.collapsed, collapsed) || other.collapsed == collapsed)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,fromId,toId,createdAt,updatedAt,vectorClock,hidden,collapsed,deletedAt);
+
+@override
+String toString() {
+  return 'EntryLink.blocks(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, collapsed: $collapsed, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $BlocksLinkCopyWith<$Res> implements $EntryLinkCopyWith<$Res> {
+  factory $BlocksLinkCopyWith(BlocksLink value, $Res Function(BlocksLink) _then) = _$BlocksLinkCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String fromId, String toId, DateTime createdAt, DateTime updatedAt, VectorClock? vectorClock, bool? hidden, bool? collapsed, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$BlocksLinkCopyWithImpl<$Res>
+    implements $BlocksLinkCopyWith<$Res> {
+  _$BlocksLinkCopyWithImpl(this._self, this._then);
+
+  final BlocksLink _self;
+  final $Res Function(BlocksLink) _then;
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromId = null,Object? toId = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? hidden = freezed,Object? collapsed = freezed,Object? deletedAt = freezed,}) {
+  return _then(BlocksLink(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
+as String,toId: null == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,hidden: freezed == hidden ? _self.hidden : hidden // ignore: cast_nullable_to_non_nullable
+as bool?,collapsed: freezed == collapsed ? _self.collapsed : collapsed // ignore: cast_nullable_to_non_nullable
+as bool?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class FollowsUpLink implements EntryLink {
+  const FollowsUpLink({required this.id, required this.fromId, required this.toId, required this.createdAt, required this.updatedAt, required this.vectorClock, this.hidden, this.collapsed, this.deletedAt, final  String? $type}): $type = $type ?? 'followsUp';
+  factory FollowsUpLink.fromJson(Map<String, dynamic> json) => _$FollowsUpLinkFromJson(json);
+
+@override final  String id;
+@override final  String fromId;
+@override final  String toId;
+@override final  DateTime createdAt;
+@override final  DateTime updatedAt;
+@override final  VectorClock? vectorClock;
+@override final  bool? hidden;
+@override final  bool? collapsed;
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FollowsUpLinkCopyWith<FollowsUpLink> get copyWith => _$FollowsUpLinkCopyWithImpl<FollowsUpLink>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FollowsUpLinkToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FollowsUpLink&&(identical(other.id, id) || other.id == id)&&(identical(other.fromId, fromId) || other.fromId == fromId)&&(identical(other.toId, toId) || other.toId == toId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.hidden, hidden) || other.hidden == hidden)&&(identical(other.collapsed, collapsed) || other.collapsed == collapsed)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,fromId,toId,createdAt,updatedAt,vectorClock,hidden,collapsed,deletedAt);
+
+@override
+String toString() {
+  return 'EntryLink.followsUp(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, collapsed: $collapsed, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FollowsUpLinkCopyWith<$Res> implements $EntryLinkCopyWith<$Res> {
+  factory $FollowsUpLinkCopyWith(FollowsUpLink value, $Res Function(FollowsUpLink) _then) = _$FollowsUpLinkCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String fromId, String toId, DateTime createdAt, DateTime updatedAt, VectorClock? vectorClock, bool? hidden, bool? collapsed, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$FollowsUpLinkCopyWithImpl<$Res>
+    implements $FollowsUpLinkCopyWith<$Res> {
+  _$FollowsUpLinkCopyWithImpl(this._self, this._then);
+
+  final FollowsUpLink _self;
+  final $Res Function(FollowsUpLink) _then;
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromId = null,Object? toId = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? hidden = freezed,Object? collapsed = freezed,Object? deletedAt = freezed,}) {
+  return _then(FollowsUpLink(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
+as String,toId: null == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,hidden: freezed == hidden ? _self.hidden : hidden // ignore: cast_nullable_to_non_nullable
+as bool?,collapsed: freezed == collapsed ? _self.collapsed : collapsed // ignore: cast_nullable_to_non_nullable
+as bool?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class DuplicatesLink implements EntryLink {
+  const DuplicatesLink({required this.id, required this.fromId, required this.toId, required this.createdAt, required this.updatedAt, required this.vectorClock, this.hidden, this.collapsed, this.deletedAt, final  String? $type}): $type = $type ?? 'duplicates';
+  factory DuplicatesLink.fromJson(Map<String, dynamic> json) => _$DuplicatesLinkFromJson(json);
+
+@override final  String id;
+@override final  String fromId;
+@override final  String toId;
+@override final  DateTime createdAt;
+@override final  DateTime updatedAt;
+@override final  VectorClock? vectorClock;
+@override final  bool? hidden;
+@override final  bool? collapsed;
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DuplicatesLinkCopyWith<DuplicatesLink> get copyWith => _$DuplicatesLinkCopyWithImpl<DuplicatesLink>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DuplicatesLinkToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DuplicatesLink&&(identical(other.id, id) || other.id == id)&&(identical(other.fromId, fromId) || other.fromId == fromId)&&(identical(other.toId, toId) || other.toId == toId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.hidden, hidden) || other.hidden == hidden)&&(identical(other.collapsed, collapsed) || other.collapsed == collapsed)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,fromId,toId,createdAt,updatedAt,vectorClock,hidden,collapsed,deletedAt);
+
+@override
+String toString() {
+  return 'EntryLink.duplicates(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, collapsed: $collapsed, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DuplicatesLinkCopyWith<$Res> implements $EntryLinkCopyWith<$Res> {
+  factory $DuplicatesLinkCopyWith(DuplicatesLink value, $Res Function(DuplicatesLink) _then) = _$DuplicatesLinkCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String fromId, String toId, DateTime createdAt, DateTime updatedAt, VectorClock? vectorClock, bool? hidden, bool? collapsed, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$DuplicatesLinkCopyWithImpl<$Res>
+    implements $DuplicatesLinkCopyWith<$Res> {
+  _$DuplicatesLinkCopyWithImpl(this._self, this._then);
+
+  final DuplicatesLink _self;
+  final $Res Function(DuplicatesLink) _then;
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromId = null,Object? toId = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? hidden = freezed,Object? collapsed = freezed,Object? deletedAt = freezed,}) {
+  return _then(DuplicatesLink(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
+as String,toId: null == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,hidden: freezed == hidden ? _self.hidden : hidden // ignore: cast_nullable_to_non_nullable
+as bool?,collapsed: freezed == collapsed ? _self.collapsed : collapsed // ignore: cast_nullable_to_non_nullable
+as bool?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class FixesLink implements EntryLink {
+  const FixesLink({required this.id, required this.fromId, required this.toId, required this.createdAt, required this.updatedAt, required this.vectorClock, this.hidden, this.collapsed, this.deletedAt, final  String? $type}): $type = $type ?? 'fixes';
+  factory FixesLink.fromJson(Map<String, dynamic> json) => _$FixesLinkFromJson(json);
+
+@override final  String id;
+@override final  String fromId;
+@override final  String toId;
+@override final  DateTime createdAt;
+@override final  DateTime updatedAt;
+@override final  VectorClock? vectorClock;
+@override final  bool? hidden;
+@override final  bool? collapsed;
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FixesLinkCopyWith<FixesLink> get copyWith => _$FixesLinkCopyWithImpl<FixesLink>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FixesLinkToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FixesLink&&(identical(other.id, id) || other.id == id)&&(identical(other.fromId, fromId) || other.fromId == fromId)&&(identical(other.toId, toId) || other.toId == toId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.hidden, hidden) || other.hidden == hidden)&&(identical(other.collapsed, collapsed) || other.collapsed == collapsed)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,fromId,toId,createdAt,updatedAt,vectorClock,hidden,collapsed,deletedAt);
+
+@override
+String toString() {
+  return 'EntryLink.fixes(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, collapsed: $collapsed, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FixesLinkCopyWith<$Res> implements $EntryLinkCopyWith<$Res> {
+  factory $FixesLinkCopyWith(FixesLink value, $Res Function(FixesLink) _then) = _$FixesLinkCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String fromId, String toId, DateTime createdAt, DateTime updatedAt, VectorClock? vectorClock, bool? hidden, bool? collapsed, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$FixesLinkCopyWithImpl<$Res>
+    implements $FixesLinkCopyWith<$Res> {
+  _$FixesLinkCopyWithImpl(this._self, this._then);
+
+  final FixesLink _self;
+  final $Res Function(FixesLink) _then;
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromId = null,Object? toId = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? hidden = freezed,Object? collapsed = freezed,Object? deletedAt = freezed,}) {
+  return _then(FixesLink(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
+as String,toId: null == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,hidden: freezed == hidden ? _self.hidden : hidden // ignore: cast_nullable_to_non_nullable
+as bool?,collapsed: freezed == collapsed ? _self.collapsed : collapsed // ignore: cast_nullable_to_non_nullable
+as bool?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class SupersedesLink implements EntryLink {
+  const SupersedesLink({required this.id, required this.fromId, required this.toId, required this.createdAt, required this.updatedAt, required this.vectorClock, this.hidden, this.collapsed, this.deletedAt, final  String? $type}): $type = $type ?? 'supersedes';
+  factory SupersedesLink.fromJson(Map<String, dynamic> json) => _$SupersedesLinkFromJson(json);
+
+@override final  String id;
+@override final  String fromId;
+@override final  String toId;
+@override final  DateTime createdAt;
+@override final  DateTime updatedAt;
+@override final  VectorClock? vectorClock;
+@override final  bool? hidden;
+@override final  bool? collapsed;
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SupersedesLinkCopyWith<SupersedesLink> get copyWith => _$SupersedesLinkCopyWithImpl<SupersedesLink>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SupersedesLinkToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SupersedesLink&&(identical(other.id, id) || other.id == id)&&(identical(other.fromId, fromId) || other.fromId == fromId)&&(identical(other.toId, toId) || other.toId == toId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.hidden, hidden) || other.hidden == hidden)&&(identical(other.collapsed, collapsed) || other.collapsed == collapsed)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,fromId,toId,createdAt,updatedAt,vectorClock,hidden,collapsed,deletedAt);
+
+@override
+String toString() {
+  return 'EntryLink.supersedes(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, collapsed: $collapsed, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SupersedesLinkCopyWith<$Res> implements $EntryLinkCopyWith<$Res> {
+  factory $SupersedesLinkCopyWith(SupersedesLink value, $Res Function(SupersedesLink) _then) = _$SupersedesLinkCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String fromId, String toId, DateTime createdAt, DateTime updatedAt, VectorClock? vectorClock, bool? hidden, bool? collapsed, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$SupersedesLinkCopyWithImpl<$Res>
+    implements $SupersedesLinkCopyWith<$Res> {
+  _$SupersedesLinkCopyWithImpl(this._self, this._then);
+
+  final SupersedesLink _self;
+  final $Res Function(SupersedesLink) _then;
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromId = null,Object? toId = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? hidden = freezed,Object? collapsed = freezed,Object? deletedAt = freezed,}) {
+  return _then(SupersedesLink(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
 as String,toId: null == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable

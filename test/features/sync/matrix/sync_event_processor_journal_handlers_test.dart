@@ -1,11 +1,13 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -388,6 +390,93 @@ void main() {
       expect(capturedLink.collapsed, isTrue);
       expect(capturedLink.updatedAt, DateTime(2025, 1, 2));
     });
+  });
+
+  group('SyncEventProcessor - typed EntryLink round-trip (ADR 0042)', () {
+    late JournalDb realJournalDb;
+
+    setUp(() {
+      realJournalDb = JournalDb(inMemoryDatabase: true);
+    });
+
+    tearDown(() async {
+      await realJournalDb.close();
+    });
+
+    test(
+      'a typed blocks link serializes, is received over sync, upserts, and '
+      'reads back with its type preserved',
+      () async {
+        final link = EntryLink.blocks(
+          id: 'sync-blocks-link',
+          fromId: 'blocker-task',
+          toId: 'blocked-task',
+          createdAt: DateTime(2024, 6, 1),
+          updatedAt: DateTime(2024, 6, 1),
+          vectorClock: const VectorClock({'host-sync': 1}),
+        );
+        final message = SyncMessage.entryLink(
+          entryLink: link,
+          status: SyncEntryStatus.initial,
+        );
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: realJournalDb);
+
+        final stored = await realJournalDb.entryLinkById('sync-blocks-link');
+        expect(stored, isA<BlocksLink>());
+        expect(stored!.fromId, 'blocker-task');
+        expect(stored.toId, 'blocked-task');
+
+        final typed = await realJournalDb.typedLinksForTaskIds(
+          {'blocked-task'},
+          types: {'BlocksLink'},
+        );
+        expect(typed.map((l) => l.id), ['sync-blocks-link']);
+      },
+    );
+
+    test(
+      'a future/unknown link type received over sync degrades to a plain '
+      'BasicLink and upserts without crashing',
+      () async {
+        final baseMessage = SyncMessage.entryLink(
+          entryLink: EntryLink.basic(
+            id: 'sync-future-link',
+            fromId: 'future-a',
+            toId: 'future-b',
+            createdAt: DateTime(2024, 6, 2),
+            updatedAt: DateTime(2024, 6, 2),
+            vectorClock: null,
+          ),
+          status: SyncEntryStatus.initial,
+        );
+
+        // Simulate the wire payload from a build that already knows a
+        // relationship type this build doesn't (e.g. a deferred ADR 0042 §3
+        // verb like 'causes'): round-trip through real JSON once (so nested
+        // `EntryLink.toJson()` materializes into a plain map, matching what
+        // actually crosses the wire), then mutate the nested runtimeType to
+        // an unknown string.
+        final rawJson =
+            jsonDecode(jsonEncode(baseMessage.toJson()))
+                as Map<String, dynamic>;
+        (rawJson['entryLink']! as Map<String, dynamic>)['runtimeType'] =
+            'causes';
+
+        when(
+          () => event.text,
+        ).thenReturn(base64.encode(utf8.encode(json.encode(rawJson))));
+
+        await processor.process(event: event, journalDb: realJournalDb);
+
+        final stored = await realJournalDb.entryLinkById('sync-future-link');
+        expect(stored, isA<BasicLink>());
+        expect(stored!.fromId, 'future-a');
+        expect(stored.toId, 'future-b');
+      },
+    );
   });
 
   group('EntryLink sequence log recording -', () {

@@ -2491,6 +2491,37 @@ void main() {
           verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
         },
       );
+
+      test(
+        'createLink forwards linkType through to the persisted variant',
+        () async {
+          when(
+            () => journalDb.upsertEntryLink(any<EntryLink>()),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => journalDb.typedLinksForTaskIds(
+              any(),
+              types: any(named: 'types'),
+            ),
+          ).thenAnswer((_) async => <EntryLink>[]);
+
+          final created = await logic.createLink(
+            fromId: 'blocker-id',
+            toId: 'blocked-id',
+            linkType: EntryLinkType.blocks,
+          );
+
+          expect(created, isTrue);
+          final persisted =
+              verify(
+                    () => journalDb.upsertEntryLink(captureAny<EntryLink>()),
+                  ).captured.single
+                  as EntryLink;
+          expect(persisted, isA<BlocksLink>());
+          expect(persisted.fromId, 'blocker-id');
+          expect(persisted.toId, 'blocked-id');
+        },
+      );
     });
 
     test(

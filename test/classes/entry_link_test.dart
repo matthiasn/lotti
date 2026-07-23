@@ -386,9 +386,270 @@ void main() {
       },
     );
   });
+
+  group('Typed task-relationship links (ADR 0042)', () {
+    final typedTestDate = DateTime(2024, 5, 1, 9);
+
+    final variants =
+        <
+          ({
+            String label,
+            EntryLink Function({
+              required String id,
+              required String fromId,
+              required String toId,
+              required DateTime createdAt,
+              required DateTime updatedAt,
+              required VectorClock? vectorClock,
+            })
+            build,
+            String dbType,
+            EntryLinkType linkType,
+          })
+        >[
+          (
+            label: 'blocks',
+            build:
+                ({
+                  required id,
+                  required fromId,
+                  required toId,
+                  required createdAt,
+                  required updatedAt,
+                  required vectorClock,
+                }) => EntryLink.blocks(
+                  id: id,
+                  fromId: fromId,
+                  toId: toId,
+                  createdAt: createdAt,
+                  updatedAt: updatedAt,
+                  vectorClock: vectorClock,
+                ),
+            dbType: 'BlocksLink',
+            linkType: EntryLinkType.blocks,
+          ),
+          (
+            label: 'followsUp',
+            build:
+                ({
+                  required id,
+                  required fromId,
+                  required toId,
+                  required createdAt,
+                  required updatedAt,
+                  required vectorClock,
+                }) => EntryLink.followsUp(
+                  id: id,
+                  fromId: fromId,
+                  toId: toId,
+                  createdAt: createdAt,
+                  updatedAt: updatedAt,
+                  vectorClock: vectorClock,
+                ),
+            dbType: 'FollowsUpLink',
+            linkType: EntryLinkType.followsUp,
+          ),
+          (
+            label: 'duplicates',
+            build:
+                ({
+                  required id,
+                  required fromId,
+                  required toId,
+                  required createdAt,
+                  required updatedAt,
+                  required vectorClock,
+                }) => EntryLink.duplicates(
+                  id: id,
+                  fromId: fromId,
+                  toId: toId,
+                  createdAt: createdAt,
+                  updatedAt: updatedAt,
+                  vectorClock: vectorClock,
+                ),
+            dbType: 'DuplicatesLink',
+            linkType: EntryLinkType.duplicates,
+          ),
+          (
+            label: 'fixes',
+            build:
+                ({
+                  required id,
+                  required fromId,
+                  required toId,
+                  required createdAt,
+                  required updatedAt,
+                  required vectorClock,
+                }) => EntryLink.fixes(
+                  id: id,
+                  fromId: fromId,
+                  toId: toId,
+                  createdAt: createdAt,
+                  updatedAt: updatedAt,
+                  vectorClock: vectorClock,
+                ),
+            dbType: 'FixesLink',
+            linkType: EntryLinkType.fixes,
+          ),
+          (
+            label: 'supersedes',
+            build:
+                ({
+                  required id,
+                  required fromId,
+                  required toId,
+                  required createdAt,
+                  required updatedAt,
+                  required vectorClock,
+                }) => EntryLink.supersedes(
+                  id: id,
+                  fromId: fromId,
+                  toId: toId,
+                  createdAt: createdAt,
+                  updatedAt: updatedAt,
+                  vectorClock: vectorClock,
+                ),
+            dbType: 'SupersedesLink',
+            linkType: EntryLinkType.supersedes,
+          ),
+        ];
+
+    for (final variant in variants) {
+      EntryLink buildLink() => variant.build(
+        id: 'link-${variant.label}',
+        fromId: 'from-${variant.label}',
+        toId: 'to-${variant.label}',
+        createdAt: typedTestDate,
+        updatedAt: typedTestDate,
+        vectorClock: const VectorClock({'host': 3}),
+      );
+
+      test(
+        '${variant.label}: round-trips through JSON preserving the variant',
+        () {
+          final link = buildLink();
+
+          final restored = EntryLink.fromJson(
+            jsonDecode(jsonEncode(link)) as Map<String, dynamic>,
+          );
+
+          expect(restored, equals(link));
+          expect(restored.runtimeType, link.runtimeType);
+          expect(restored.fromId, 'from-${variant.label}');
+          expect(restored.toId, 'to-${variant.label}');
+        },
+      );
+
+      test(
+        '${variant.label}: linkedDbEntity tags rows with the '
+        '${variant.dbType} type',
+        () {
+          final dbLink = linkedDbEntity(buildLink());
+
+          expect(dbLink.type, variant.dbType);
+          expect(dbLink.fromId, 'from-${variant.label}');
+          expect(dbLink.toId, 'to-${variant.label}');
+        },
+      );
+
+      test(
+        '${variant.label}: entryLinkFromLinkedDbEntry round-trips through '
+        'DB rows',
+        () {
+          final link = buildLink();
+
+          final restored = entryLinkFromLinkedDbEntry(linkedDbEntity(link));
+
+          expect(restored, equals(link));
+          expect(restored.runtimeType, link.runtimeType);
+        },
+      );
+
+      test(
+        'EntryLinkType.${variant.label}.buildLink constructs the matching '
+        'variant tagged as ${variant.dbType}',
+        () {
+          final built = variant.linkType.buildLink(
+            id: 'built-${variant.label}',
+            fromId: 'from-x',
+            toId: 'to-x',
+            createdAt: typedTestDate,
+            updatedAt: typedTestDate,
+            vectorClock: null,
+          );
+
+          expect(built.runtimeType, buildLink().runtimeType);
+          expect(linkedDbEntity(built).type, variant.dbType);
+        },
+      );
+    }
+
+    test('EntryLinkType.rating.buildLink constructs a RatingLink', () {
+      final built = EntryLinkType.rating.buildLink(
+        id: 'built-rating',
+        fromId: 'from-x',
+        toId: 'to-x',
+        createdAt: typedTestDate,
+        updatedAt: typedTestDate,
+        vectorClock: null,
+      );
+
+      expect(built, isA<RatingLink>());
+      expect(linkedDbEntity(built).type, 'RatingLink');
+    });
+
+    test('EntryLinkType.project.buildLink constructs a ProjectLink', () {
+      final built = EntryLinkType.project.buildLink(
+        id: 'built-project',
+        fromId: 'from-x',
+        toId: 'to-x',
+        createdAt: typedTestDate,
+        updatedAt: typedTestDate,
+        vectorClock: null,
+      );
+
+      expect(built, isA<ProjectLink>());
+      expect(linkedDbEntity(built).type, 'ProjectLink');
+    });
+
+    test(
+      'fallback union: a genuinely unknown future type degrades to '
+      'BasicLink without crashing',
+      () {
+        // Simulates a build receiving a relationship variant introduced
+        // after it shipped (e.g. the deferred 'causes'/'clones' verbs from
+        // ADR 0042 §3) — must degrade to a visible plain link, not crash.
+        final json = <String, dynamic>{
+          'runtimeType': 'causes',
+          'id': 'link-future',
+          'fromId': 'a',
+          'toId': 'b',
+          'createdAt': typedTestDate.toIso8601String(),
+          'updatedAt': typedTestDate.toIso8601String(),
+          'vectorClock': null,
+        };
+
+        final restored = EntryLink.fromJson(json);
+
+        expect(restored, isA<BasicLink>());
+        expect(restored.id, 'link-future');
+        expect(restored.fromId, 'a');
+        expect(restored.toId, 'b');
+      },
+    );
+  });
 }
 
-enum _GeneratedEntryLinkKind { basic, rating, project }
+enum _GeneratedEntryLinkKind {
+  basic,
+  rating,
+  project,
+  blocks,
+  followsUp,
+  duplicates,
+  fixes,
+  supersedes,
+}
 
 class _GeneratedEntryLink {
   const _GeneratedEntryLink({
@@ -452,6 +713,61 @@ class _GeneratedEntryLink {
         deletedAt: common.deletedAt,
       ),
       _GeneratedEntryLinkKind.project => EntryLink.project(
+        id: common.id,
+        fromId: common.fromId,
+        toId: common.toId,
+        createdAt: common.createdAt,
+        updatedAt: common.updatedAt,
+        vectorClock: common.vectorClock,
+        hidden: common.hidden,
+        collapsed: common.collapsed,
+        deletedAt: common.deletedAt,
+      ),
+      _GeneratedEntryLinkKind.blocks => EntryLink.blocks(
+        id: common.id,
+        fromId: common.fromId,
+        toId: common.toId,
+        createdAt: common.createdAt,
+        updatedAt: common.updatedAt,
+        vectorClock: common.vectorClock,
+        hidden: common.hidden,
+        collapsed: common.collapsed,
+        deletedAt: common.deletedAt,
+      ),
+      _GeneratedEntryLinkKind.followsUp => EntryLink.followsUp(
+        id: common.id,
+        fromId: common.fromId,
+        toId: common.toId,
+        createdAt: common.createdAt,
+        updatedAt: common.updatedAt,
+        vectorClock: common.vectorClock,
+        hidden: common.hidden,
+        collapsed: common.collapsed,
+        deletedAt: common.deletedAt,
+      ),
+      _GeneratedEntryLinkKind.duplicates => EntryLink.duplicates(
+        id: common.id,
+        fromId: common.fromId,
+        toId: common.toId,
+        createdAt: common.createdAt,
+        updatedAt: common.updatedAt,
+        vectorClock: common.vectorClock,
+        hidden: common.hidden,
+        collapsed: common.collapsed,
+        deletedAt: common.deletedAt,
+      ),
+      _GeneratedEntryLinkKind.fixes => EntryLink.fixes(
+        id: common.id,
+        fromId: common.fromId,
+        toId: common.toId,
+        createdAt: common.createdAt,
+        updatedAt: common.updatedAt,
+        vectorClock: common.vectorClock,
+        hidden: common.hidden,
+        collapsed: common.collapsed,
+        deletedAt: common.deletedAt,
+      ),
+      _GeneratedEntryLinkKind.supersedes => EntryLink.supersedes(
         id: common.id,
         fromId: common.fromId,
         toId: common.toId,

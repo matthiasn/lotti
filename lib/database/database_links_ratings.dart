@@ -307,6 +307,43 @@ mixin _JournalDbLinksRatings
     );
   }
 
+  /// Returns typed links (e.g. `blocks`, `followsUp`) touching any of [ids]
+  /// in either direction, restricted to [types] (the `linked_entries.type`
+  /// column values from [linkedDbEntity], e.g. `'BlocksLink'`).
+  ///
+  /// Two indexed selects — one on `to_id`, one on `from_id`, both scoped by
+  /// `type` — unioned and deduplicated by link id in Dart, mirroring the
+  /// [basicLinksForEntryIds] discipline. Unlike that method, this is not
+  /// microtask-coalesced: callers batch their own id sets, and the type set
+  /// is typically small and stable per call site, so a coalescing wave would
+  /// add complexity without the fan-out pressure that justifies it there.
+  Future<List<EntryLink>> typedLinksForTaskIds(
+    Set<String> ids, {
+    required Set<String> types,
+  }) async {
+    if (ids.isEmpty || types.isEmpty) return <EntryLink>[];
+    final idList = ids.toList(growable: false);
+    final typeList = types.toList(growable: false);
+
+    final toRows = await (select(linkedEntries)..where(
+          (t) => t.toId.isIn(idList) & t.type.isIn(typeList),
+        ))
+        .get();
+    final fromRows = await (select(linkedEntries)..where(
+          (t) => t.fromId.isIn(idList) & t.type.isIn(typeList),
+        ))
+        .get();
+
+    final seenIds = <String>{};
+    final result = <EntryLink>[];
+    for (final row in toRows.followedBy(fromRows)) {
+      if (seenIds.add(row.id)) {
+        result.add(entryLinkFromLinkedDbEntry(row));
+      }
+    }
+    return result;
+  }
+
   Future<List<EntryLink>> linksForEntryIdsBidirectional(Set<String> ids) async {
     if (ids.isEmpty) return <EntryLink>[];
     final idList = ids.toList();
