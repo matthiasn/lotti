@@ -2047,6 +2047,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchtest du diese KI-Antwort wirklich löschen? Dies kann nicht rückgängig gemacht werden.';
 
   @override
+  String get aiResponseShowLess => 'Weniger anzeigen';
+
+  @override
+  String get aiResponseShowMore => 'Mehr anzeigen';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Audio-Transkription';
 
   @override

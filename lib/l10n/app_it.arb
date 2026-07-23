@@ -1098,6 +1098,8 @@
   "aiResponseDeleteError": "Non è riuscito a eliminare la risposta AI. Si prega di riprovare.",
   "aiResponseDeleteTitle": "Eliminare la risposta AI",
   "aiResponseDeleteWarning": "Sei sicuro di voler eliminare questa risposta AI? Questo non può essere annullato.",
+  "aiResponseShowLess": "Mostra meno",
+  "aiResponseShowMore": "Mostra di più",
   "aiResponseTypeAudioTranscription": "Trascrizione audio",
   "aiResponseTypeChecklistUpdates": "Aggiornamenti della lista di controllo",
   "aiResponseTypeImageAnalysis": "Analisi immagine",

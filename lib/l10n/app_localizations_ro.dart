@@ -2060,6 +2060,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sigur doriți să ștergeți acest răspuns AI? Această acțiune nu poate fi anulată.';
 
   @override
+  String get aiResponseShowLess => 'Afișați mai puțin';
+
+  @override
+  String get aiResponseShowMore => 'Afișați mai mult';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Transcriere audio';
 
   @override

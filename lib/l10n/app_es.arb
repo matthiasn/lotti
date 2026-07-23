@@ -922,6 +922,8 @@
   "aiResponseDeleteError": "Error al eliminar la respuesta de IA. Inténtalo de nuevo.",
   "aiResponseDeleteTitle": "Eliminar respuesta de IA",
   "aiResponseDeleteWarning": "¿Seguro que quieres eliminar esta respuesta de IA? Esta acción no se puede deshacer.",
+  "aiResponseShowLess": "Mostrar menos",
+  "aiResponseShowMore": "Mostrar más",
   "aiResponseTypeAudioTranscription": "Transcripción de audio",
   "aiResponseTypeChecklistUpdates": "Actualizaciones de lista de verificación",
   "aiResponseTypeImageAnalysis": "Análisis de imagen",

@@ -2037,6 +2037,12 @@ class AppLocalizationsSv extends AppLocalizations {
       'Är du säker på att du vill ta bort detta AI-svar? Detta kan inte göras ogjort.';
 
   @override
+  String get aiResponseShowLess => 'Visa mindre';
+
+  @override
+  String get aiResponseShowMore => 'Visa mer';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Ljudtranskription';
 
   @override

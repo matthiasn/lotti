@@ -922,6 +922,8 @@
   "aiResponseDeleteError": "Eșec la ștergerea răspunsului AI. Vă rugăm să încercați din nou.",
   "aiResponseDeleteTitle": "Ștergeți răspunsul AI",
   "aiResponseDeleteWarning": "Sigur doriți să ștergeți acest răspuns AI? Această acțiune nu poate fi anulată.",
+  "aiResponseShowLess": "Afișați mai puțin",
+  "aiResponseShowMore": "Afișați mai mult",
   "aiResponseTypeAudioTranscription": "Transcriere audio",
   "aiResponseTypeChecklistUpdates": "Actualizări listă de verificare",
   "aiResponseTypeImageAnalysis": "Analiză de imagine",

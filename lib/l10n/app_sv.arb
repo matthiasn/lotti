@@ -1098,6 +1098,8 @@
   "aiResponseDeleteError": "Misslyckades med att ta bort AI-svaret. Försök igen, tack.",
   "aiResponseDeleteTitle": "Ta bort AI-svar",
   "aiResponseDeleteWarning": "Är du säker på att du vill ta bort detta AI-svar? Detta kan inte göras ogjort.",
+  "aiResponseShowLess": "Visa mindre",
+  "aiResponseShowMore": "Visa mer",
   "aiResponseTypeAudioTranscription": "Ljudtranskription",
   "aiResponseTypeChecklistUpdates": "Uppdateringar av checklistor",
   "aiResponseTypeImageAnalysis": "Bildanalys",

@@ -2049,6 +2049,12 @@ class AppLocalizationsCs extends AppLocalizations {
       'Jste si jistý, že chcete tuto AI odpověď smazat? To nelze vzít zpět.';
 
   @override
+  String get aiResponseShowLess => 'Zobrazit méně';
+
+  @override
+  String get aiResponseShowMore => 'Zobrazit více';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Přepis zvuku';
 
   @override

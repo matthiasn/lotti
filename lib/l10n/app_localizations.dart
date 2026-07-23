@@ -3594,6 +3594,18 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to delete this AI response? This cannot be undone.'**
   String get aiResponseDeleteWarning;
 
+  /// No description provided for @aiResponseShowLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get aiResponseShowLess;
+
+  /// No description provided for @aiResponseShowMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get aiResponseShowMore;
+
   /// No description provided for @aiResponseTypeAudioTranscription.
   ///
   /// In en, this message translates to:

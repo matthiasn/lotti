@@ -929,6 +929,8 @@
   "aiResponseDeleteError": "Nepodařilo se smazat odpověď AI. Prosím, zkuste to znovu.",
   "aiResponseDeleteTitle": "Smazat AI odpověď",
   "aiResponseDeleteWarning": "Jste si jistý, že chcete tuto AI odpověď smazat? To nelze vzít zpět.",
+  "aiResponseShowLess": "Zobrazit méně",
+  "aiResponseShowMore": "Zobrazit více",
   "aiResponseTypeAudioTranscription": "Přepis zvuku",
   "aiResponseTypeChecklistUpdates": "Aktualizace kontrolního seznamu",
   "aiResponseTypeImageAnalysis": "Analýza obrázku",

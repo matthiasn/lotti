@@ -6,6 +6,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -323,6 +325,248 @@ Style: isometric digital art. --ar 16:9
         }
       }
       expect(linkCallbackFound, isTrue);
+    });
+
+    group('tinted aiCard surface and binary per-card collapse', () {
+      // Comfortably above both thresholds (500 chars / 6 newlines).
+      final longOcrText = List.generate(
+        40,
+        (i) =>
+            'Cargo line $i: sardine pod docking 05.10.26 14:30 UTC, Bay 7, '
+            'Orbital Habitat Waddle One.',
+      ).join('\n');
+      const shortSummaryText =
+          'The placard confirms the sardine pod docks on 05.10.2026 at '
+          '14:30 UTC at the orbital penguin habitat.';
+
+      AiResponseEntry buildResponse(String text) =>
+          testAiResponseEntry.copyWith(
+            data: testAiResponseEntry.data.copyWith(
+              response: text,
+              type: AiResponseType.imageAnalysis,
+            ),
+          );
+
+      Future<void> pumpSummary(
+        WidgetTester tester, {
+        required String text,
+        bool collapsible = false,
+        bool fadeOut = false,
+      }) {
+        return tester.pumpWidget(
+          WidgetTestBench(
+            child: SingleChildScrollView(
+              child: AiResponseSummary(
+                buildResponse(text),
+                linkedFromId: 'test-id',
+                fadeOut: fadeOut,
+                collapsible: collapsible,
+              ),
+            ),
+          ),
+        );
+      }
+
+      BoxDecoration cardDecoration(WidgetTester tester) {
+        final container = tester.widget<Container>(
+          find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                w.decoration is BoxDecoration &&
+                (w.decoration! as BoxDecoration).color ==
+                    dsTokensLight.colors.aiCard.background.withValues(
+                      alpha: 0.5,
+                    ),
+          ),
+        );
+        return container.decoration! as BoxDecoration;
+      }
+
+      testWidgets(
+        'renders the tinted aiCard surface: background fill, soft accent '
+        'hairline, no shadow',
+        (tester) async {
+          await pumpSummary(tester, text: shortSummaryText);
+
+          final decoration = cardDecoration(tester);
+          expect(
+            decoration.border!.top.color,
+            dsTokensLight.colors.aiCard.borderSoft,
+          );
+          expect(decoration.boxShadow, isNull);
+          expect(decoration.gradient, isNull);
+        },
+      );
+
+      testWidgets(
+        'long collapsible response starts fully collapsed (no body) and '
+        'toggles open/closed',
+        (tester) async {
+          await pumpSummary(tester, text: longOcrText, collapsible: true);
+
+          // Collapsed by default: no body at all, just the toggle (and the
+          // attribution pill identifying the analysis).
+          expect(
+            find.byKey(AiResponseSummary.collapseToggleKey),
+            findsOneWidget,
+          );
+          expect(find.text('Show more'), findsOneWidget);
+          expect(find.byType(GptMarkdown), findsNothing);
+
+          await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
+          await tester.pump();
+          expect(find.text('Show less'), findsOneWidget);
+          expect(find.byType(GptMarkdown), findsOneWidget);
+
+          // Expanded content pushes the toggle below the fold — scroll it
+          // back into view before collapsing again.
+          await tester.ensureVisible(
+            find.byKey(AiResponseSummary.collapseToggleKey),
+          );
+          await tester.pump();
+          await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
+          await tester.pump();
+          expect(find.text('Show more'), findsOneWidget);
+          expect(find.byType(GptMarkdown), findsNothing);
+        },
+      );
+
+      testWidgets('short collapsible response renders fully with no toggle', (
+        tester,
+      ) async {
+        await pumpSummary(tester, text: shortSummaryText, collapsible: true);
+
+        expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+        expect(find.byType(GptMarkdown), findsOneWidget);
+        expect(find.byType(ShaderMask), findsNothing);
+      });
+
+      testWidgets(
+        'non-collapsible long response renders fully with no toggle',
+        (tester) async {
+          await pumpSummary(tester, text: longOcrText);
+
+          expect(
+            find.byKey(AiResponseSummary.collapseToggleKey),
+            findsNothing,
+          );
+          expect(find.byType(GptMarkdown), findsOneWidget);
+          expect(find.byType(ShaderMask), findsNothing);
+        },
+      );
+
+      testWidgets('legacy fadeOut keeps the faded preview but never a toggle', (
+        tester,
+      ) async {
+        await pumpSummary(tester, text: longOcrText, fadeOut: true);
+
+        expect(find.byType(ShaderMask), findsOneWidget);
+        expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+      });
+
+      testWidgets(
+        'collapse thresholds: >500 chars OR >6 newlines, boundaries exact',
+        (tester) async {
+          final cases = <(String, String, bool)>[
+            ('exactly 500 chars stays open', 'a' * 500, false),
+            ('501 chars collapses', 'a' * 501, true),
+            ('exactly 6 newlines stays open', '${'line\n' * 6}end', false),
+            ('7 newlines collapses (short text)', '${'line\n' * 7}end', true),
+          ];
+
+          for (final (label, text, collapses) in cases) {
+            // Fresh element per case — the widget deliberately keeps its
+            // collapse state on same-id rebuilds, so cases must not share
+            // element state.
+            await tester.pumpWidget(const SizedBox.shrink());
+            await pumpSummary(tester, text: text, collapsible: true);
+            expect(
+              find.byKey(AiResponseSummary.collapseToggleKey),
+              collapses ? findsOneWidget : findsNothing,
+              reason: label,
+            );
+            expect(
+              find.byType(GptMarkdown),
+              collapses ? findsNothing : findsOneWidget,
+              reason: label,
+            );
+          }
+        },
+      );
+
+      testWidgets('the toggle renders in the AI accent color', (tester) async {
+        await pumpSummary(tester, text: longOcrText, collapsible: true);
+
+        final icon = tester.widget<Icon>(
+          find.descendant(
+            of: find.byKey(AiResponseSummary.collapseToggleKey),
+            matching: find.byType(Icon),
+          ),
+        );
+        expect(icon.color, dsTokensLight.colors.aiCard.accent);
+
+        final label = tester.widget<Text>(
+          find.descendant(
+            of: find.byKey(AiResponseSummary.collapseToggleKey),
+            matching: find.text('Show more'),
+          ),
+        );
+        expect(label.style?.color, dsTokensLight.colors.aiCard.accent);
+      });
+
+      testWidgets(
+        'the attribution pill stays visible while the body is collapsed',
+        (tester) async {
+          await pumpSummary(tester, text: longOcrText, collapsible: true);
+
+          expect(find.byType(GptMarkdown), findsNothing);
+          // The pill is the collapsed card's only identity (model/cost), so
+          // it must not collapse away with the body.
+          expect(find.byType(AiAttributionSummary), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'a recycled card re-derives its default for a new response but '
+        'keeps user-chosen state on same-id rebuilds',
+        (tester) async {
+          final responseA = buildResponse(longOcrText);
+          final responseB = buildResponse(longOcrText).copyWith(
+            meta: responseA.meta.copyWith(id: 'other-response'),
+          );
+
+          Future<void> pumpEntry(AiResponseEntry entry) {
+            return tester.pumpWidget(
+              WidgetTestBench(
+                child: SingleChildScrollView(
+                  child: AiResponseSummary(
+                    entry,
+                    linkedFromId: 'test-id',
+                    fadeOut: false,
+                    collapsible: true,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          await pumpEntry(responseA);
+          await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
+          await tester.pump();
+          expect(find.text('Show less'), findsOneWidget);
+
+          // Same id, new build (e.g. background refresh): the user's
+          // expanded choice must survive.
+          await pumpEntry(responseA);
+          expect(find.text('Show less'), findsOneWidget);
+
+          // Different response id in the same element: default re-derived,
+          // long content starts collapsed again.
+          await pumpEntry(responseB);
+          expect(find.text('Show more'), findsOneWidget);
+          expect(find.byType(GptMarkdown), findsNothing);
+        },
+      );
     });
   });
 }

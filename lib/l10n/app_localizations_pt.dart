@@ -2048,6 +2048,12 @@ class AppLocalizationsPt extends AppLocalizations {
       'Tem certeza de que deseja excluir esta resposta de IA? Isto não pode ser desfeito.';
 
   @override
+  String get aiResponseShowLess => 'Mostrar menos';
+
+  @override
+  String get aiResponseShowMore => 'Mostrar mais';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Transcrição de áudio';
 
   @override
