@@ -367,7 +367,9 @@ void main() {
           data: testAiResponseEntry2.data.copyWith(
             response: List.generate(
               30,
-              (i) => 'OCR line $i with Datum 05.10.26 um 14:30.',
+              (i) =>
+                  'Manifest line $i: sardine pod $i cleared for Bay 7 '
+                  'docking at Orbital Habitat Waddle One.',
             ).join('\n'),
             type: AiResponseType.imageAnalysis,
           ),

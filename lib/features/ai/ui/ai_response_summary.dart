@@ -22,31 +22,31 @@ const _collapseCharThreshold = 500;
 /// when it stays under [_collapseCharThreshold].
 const _collapseNewlineThreshold = 6;
 
-/// Max height of the faded preview shown for collapsed content and for the
-/// legacy [AiResponseSummary.fadeOut] mode.
-const _previewMaxHeight = 200.0;
+/// Max height of the faded preview in the legacy
+/// [AiResponseSummary.fadeOut] mode (unchanged standalone-entry behavior).
+const _fadeOutPreviewMaxHeight = 200.0;
 
-/// Renders one AI response (image analysis, task summary, …) as a quiet,
+/// Renders one AI response (image analysis, task summary, …) as a flat,
 /// non-elevated AI surface.
 ///
-/// Uses the *subtle* `aiCard` token family (`subtleWash` fill + `subtleBorder`
-/// hairline, no shadow) — deliberately lighter than the accent-blended
-/// task-agent report cards — so a response nested inside an entry card reads
-/// as an inset panel of AI content rather than a second elevated card.
+/// Uses the tinted `aiCard` surface (`background` fill + `borderSoft` accent
+/// hairline, no shadow) — the same color family as the task-agent report
+/// cards, but without their accent-blended fill and badges — so a response
+/// nested inside an entry card reads as recognizably AI-generated content
+/// without becoming a second elevated card.
 ///
 /// Prompt-generation responses short-circuit to [GeneratedPromptCard].
 ///
 /// Collapse modes:
-/// - [collapsible]: long content (by [_collapseCharThreshold] /
-///   [_collapseNewlineThreshold]) starts collapsed to a faded preview with a
-///   "Show more"/"Show less" toggle; tapping the preview also expands (while
-///   collapsed the preview ignores pointer events, so selection/links
-///   activate only once expanded). Short content renders fully with no
-///   toggle.
+/// - [collapsible]: binary show-full-or-collapsed. Long content (by
+///   [_collapseCharThreshold] / [_collapseNewlineThreshold]) starts fully
+///   collapsed — no body at all, just the "Show more" toggle and the
+///   attribution pill identifying the analysis. Short content renders fully
+///   with no toggle.
 /// - [fadeOut]: legacy always-faded preview without a toggle, used where the
 ///   response renders as its own journal entry detail.
 ///
-/// Double-tap opens the full response in a modal in every mode.
+/// Double-tap on the body opens the full response in a modal.
 class AiResponseSummary extends StatefulWidget {
   const AiResponseSummary(
     this.aiResponse, {
@@ -93,7 +93,8 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
     }
   }
 
-  /// Clips [content] to the preview height and fades it out at the bottom.
+  /// Clips [content] to the legacy preview height and fades it out at the
+  /// bottom (the [AiResponseSummary.fadeOut] mode).
   Widget _fadedPreview(Widget content) {
     return ShaderMask(
       shaderCallback: (rect) {
@@ -111,7 +112,7 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       },
       blendMode: BlendMode.dstIn,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: _previewMaxHeight),
+        constraints: const BoxConstraints(maxHeight: _fadeOutPreviewMaxHeight),
         child: content,
       ),
     );
@@ -135,13 +136,13 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
             Icon(
               _collapsed ? Icons.expand_more : Icons.expand_less,
               size: 16,
-              color: ai.metaText,
+              color: ai.accent,
             ),
             const SizedBox(width: AppTheme.spacingXSmall),
             Text(
               label,
               style: context.textTheme.labelMedium?.copyWith(
-                color: ai.metaText,
+                color: ai.accent,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -175,20 +176,7 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       ),
     );
 
-    final showPreview = widget.fadeOut || (_canCollapse && _collapsed);
-    final previewBody = showPreview ? _fadedPreview(content) : content;
-
     final responseContent = GestureDetector(
-      // Collapsed previews sit behind an IgnorePointer, which yields no child
-      // hits — the detector must be opaque there or taps would never land.
-      behavior: _canCollapse && _collapsed
-          ? HitTestBehavior.opaque
-          : HitTestBehavior.deferToChild,
-      // The single-tap expand exists only while collapsed, so the tap-delay
-      // it adds next to onDoubleTap never affects expanded cards.
-      onTap: _canCollapse && _collapsed
-          ? () => setState(() => _collapsed = false)
-          : null,
       onDoubleTap: () {
         ModalUtils.showSinglePageModal<void>(
           context: context,
@@ -200,26 +188,24 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
           },
         );
       },
-      // While collapsed the preview is a teaser, not a reading surface: its
-      // pointer handling is disabled so the tap-to-expand always wins over
-      // text selection in the gesture arena. Selection and links work once
-      // expanded (and in the legacy fadeOut mode, which keeps them live).
-      child: _canCollapse && _collapsed
-          ? IgnorePointer(child: previewBody)
-          : previewBody,
+      child: widget.fadeOut ? _fadedPreview(content) : content,
     );
+
+    // Binary collapse: a collapsed card carries no body at all — only the
+    // toggle and the attribution pill that identifies the analysis.
+    final showBody = !(_canCollapse && _collapsed);
 
     return Container(
       decoration: BoxDecoration(
-        color: ai.subtleWash,
+        color: ai.background,
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        border: Border.all(color: ai.subtleBorder),
+        border: Border.all(color: ai.borderSoft),
       ),
       padding: const EdgeInsets.all(AppTheme.cardPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          responseContent,
+          if (showBody) responseContent,
           if (_canCollapse) _collapseToggle(context, ai),
           AiAttributionSummary(
             artifact: AiArtifactReference(

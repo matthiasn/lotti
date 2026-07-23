@@ -38,7 +38,7 @@
     <release version="0.9.1062" date="2026-07-23">
       <description>
         <p>Task agents can now read your image analyses: the AI analyses attached to a task's images — brief summaries and full OCR extractions alike — are part of the task agent's context, each with the model that produced it, when it ran, and its full text. The agent can act on what's in an image (e.g. extract an appointment date from a photographed card and propose it as the due date), and a completed analysis now flags the task for the agent's next regular update.</p>
-        <p>AI analysis cards are collapsible and visually calmer: long analyses (e.g. a full OCR extraction) under an image or audio entry start as a short faded preview with a Show more/Show less toggle, and the cards drop their heavy card-on-card look for a subtle AI surface that matches the agent report cards in both light and dark themes.</p>
+        <p>AI analysis cards are collapsible and visually calmer: long analyses (e.g. a full OCR extraction) under an image or audio entry start fully collapsed — just a Show more toggle and the model pill — and the cards drop their heavy card-on-card look for the tinted AI surface that matches the agent report cards in both light and dark themes.</p>
       </description>
     </release>
     <release version="0.9.1061" date="2026-07-23">

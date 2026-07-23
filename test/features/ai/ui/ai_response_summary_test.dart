@@ -326,13 +326,17 @@ Style: isometric digital art. --ar 16:9
       expect(linkCallbackFound, isTrue);
     });
 
-    group('quiet aiCard surface and per-card collapse', () {
+    group('tinted aiCard surface and binary per-card collapse', () {
       // Comfortably above both thresholds (500 chars / 6 newlines).
       final longOcrText = List.generate(
         40,
-        (i) => 'Zeile $i der OCR-Extraktion mit Datum 05.10.26 um 14:30.',
+        (i) =>
+            'Cargo line $i: sardine pod docking 05.10.26 14:30 UTC, Bay 7, '
+            'Orbital Habitat Waddle One.',
       ).join('\n');
-      const shortSummaryText = 'Der Termin ist am 05.10.2026 um 14:30.';
+      const shortSummaryText =
+          'The placard confirms the sardine pod docks on 05.10.2026 at '
+          '14:30 UTC at the orbital penguin habitat.';
 
       AiResponseEntry buildResponse(String text) =>
           testAiResponseEntry.copyWith(
@@ -369,21 +373,22 @@ Style: isometric digital art. --ar 16:9
                 w is Container &&
                 w.decoration is BoxDecoration &&
                 (w.decoration! as BoxDecoration).color ==
-                    dsTokensLight.colors.aiCard.subtleWash,
+                    dsTokensLight.colors.aiCard.background,
           ),
         );
         return container.decoration! as BoxDecoration;
       }
 
       testWidgets(
-        'renders the subtle aiCard surface: wash fill, hairline, no shadow',
+        'renders the tinted aiCard surface: background fill, soft accent '
+        'hairline, no shadow',
         (tester) async {
           await pumpSummary(tester, text: shortSummaryText);
 
           final decoration = cardDecoration(tester);
           expect(
             decoration.border!.top.color,
-            dsTokensLight.colors.aiCard.subtleBorder,
+            dsTokensLight.colors.aiCard.borderSoft,
           );
           expect(decoration.boxShadow, isNull);
           expect(decoration.gradient, isNull);
@@ -391,22 +396,24 @@ Style: isometric digital art. --ar 16:9
       );
 
       testWidgets(
-        'long collapsible response starts collapsed and toggles open/closed',
+        'long collapsible response starts fully collapsed (no body) and '
+        'toggles open/closed',
         (tester) async {
           await pumpSummary(tester, text: longOcrText, collapsible: true);
 
-          // Collapsed by default: faded preview + "Show more".
+          // Collapsed by default: no body at all, just the toggle (and the
+          // attribution pill identifying the analysis).
           expect(
             find.byKey(AiResponseSummary.collapseToggleKey),
             findsOneWidget,
           );
           expect(find.text('Show more'), findsOneWidget);
-          expect(find.byType(ShaderMask), findsOneWidget);
+          expect(find.byType(GptMarkdown), findsNothing);
 
           await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
           await tester.pump();
           expect(find.text('Show less'), findsOneWidget);
-          expect(find.byType(ShaderMask), findsNothing);
+          expect(find.byType(GptMarkdown), findsOneWidget);
 
           // Expanded content pushes the toggle below the fold — scroll it
           // back into view before collapsing again.
@@ -417,22 +424,9 @@ Style: isometric digital art. --ar 16:9
           await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
           await tester.pump();
           expect(find.text('Show more'), findsOneWidget);
-          expect(find.byType(ShaderMask), findsOneWidget);
+          expect(find.byType(GptMarkdown), findsNothing);
         },
       );
-
-      testWidgets('tapping the faded preview expands the card', (
-        tester,
-      ) async {
-        await pumpSummary(tester, text: longOcrText, collapsible: true);
-
-        await tester.tap(find.byType(ShaderMask));
-        // Let the single tap win over the double-tap recognizer's window.
-        await tester.pump(const Duration(milliseconds: 400));
-
-        expect(find.text('Show less'), findsOneWidget);
-        expect(find.byType(ShaderMask), findsNothing);
-      });
 
       testWidgets('short collapsible response renders fully with no toggle', (
         tester,
@@ -440,6 +434,7 @@ Style: isometric digital art. --ar 16:9
         await pumpSummary(tester, text: shortSummaryText, collapsible: true);
 
         expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+        expect(find.byType(GptMarkdown), findsOneWidget);
         expect(find.byType(ShaderMask), findsNothing);
       });
 
@@ -452,11 +447,12 @@ Style: isometric digital art. --ar 16:9
             find.byKey(AiResponseSummary.collapseToggleKey),
             findsNothing,
           );
+          expect(find.byType(GptMarkdown), findsOneWidget);
           expect(find.byType(ShaderMask), findsNothing);
         },
       );
 
-      testWidgets('legacy fadeOut keeps the preview but never a toggle', (
+      testWidgets('legacy fadeOut keeps the faded preview but never a toggle', (
         tester,
       ) async {
         await pumpSummary(tester, text: longOcrText, fadeOut: true);
