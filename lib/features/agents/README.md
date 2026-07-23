@@ -992,15 +992,16 @@ The persisted wake reasons are:
   inference. The enqueued wake carries `WakeInitiator.automation`, so
   toggling automation off sweeps a still-queued transcript wake from the
   queue.
-- `imageAnalysisComplete` — the image-analysis analog, fired by
-  `AutomaticImageAnalysisTrigger` after an analysis (summary/OCR) is stored
-  for a task-linked image. The nudge is required, not just an optimization:
-  the analysis is an `AiResponseEntry` linked *from the image*, so its
-  creation notifies only the image and response ids — never the task — and
-  without the explicit `requestContentWake` the task agent would not learn
-  about the new content until an unrelated wake. Same
-  `requestContentWake` semantics as `transcriptionComplete` (automatic-updates
-  opt-in, `WakeInitiator.automation`).
+Image analyses (summary/OCR) deliberately have **no** analogous
+throttle-bypassing reason: a stored analysis is an `AiResponseEntry` linked
+*from the image*, so its creation notifies only the image and response ids —
+never the task (notification propagation is one hop). Instead,
+`SkillInferenceRunner.runImageAnalysis` emits the standard child-changed pair
+(`taskId` + `PROPAGATED::taskId`, the same tokens `updateDbEntity` produces
+when the image itself is edited) after persisting the analysis, and the
+agent's normal `subscription` wake picks it up — 120-second coalescing (so it
+merges with the image-add wake instead of racing it), automatic-updates
+opt-in / stale-marking included.
 
 Subscription-driven wakes are throttled with a 120-second window. A
 subscription can opt into daily-digest deferral for propagated-only matches;

@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   when it ran, and its full text. The agent can finally act on what's *in*
   an image: extract an appointment date from a photographed card and propose
   it as the due date, name the task after the document, or reference OCR'd
-  details in its report. It also wakes right after an analysis completes
-  instead of waiting for the next unrelated change.
+  details in its report. A completed analysis now also flags the task for the
+  agent's next regular update — previously the agent was never told at all.
 
 ## [0.9.1061]
 ### Added

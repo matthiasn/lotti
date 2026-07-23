@@ -37,7 +37,7 @@
   <releases>
     <release version="0.9.1062" date="2026-07-23">
       <description>
-        <p>Task agents can now read your image analyses: the AI analyses attached to a task's images — brief summaries and full OCR extractions alike — are part of the task agent's context, each with the model that produced it, when it ran, and its full text. The agent can act on what's in an image (e.g. extract an appointment date from a photographed card and propose it as the due date) and wakes right after an analysis completes.</p>
+        <p>Task agents can now read your image analyses: the AI analyses attached to a task's images — brief summaries and full OCR extractions alike — are part of the task agent's context, each with the model that produced it, when it ran, and its full text. The agent can act on what's in an image (e.g. extract an appointment date from a photographed card and propose it as the due date), and a completed analysis now flags the task for the agent's next regular update.</p>
       </description>
     </release>
     <release version="0.9.1061" date="2026-07-23">

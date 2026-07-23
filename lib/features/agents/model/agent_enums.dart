@@ -153,12 +153,6 @@ enum WakeReason {
   /// audio entry linked to a task — bypasses the throttle so the user
   /// does not wait through a 2-minute countdown after speaking.
   transcriptionComplete,
-
-  /// Triggered immediately after AI image analysis (summary/OCR) completes
-  /// for an image linked to a task — bypasses the throttle so the agent can
-  /// act on freshly extracted image content (e.g. dates for due dates)
-  /// without waiting out the countdown.
-  imageAnalysisComplete,
 }
 
 /// Whether a queued wake was explicitly requested by the user or automation.
