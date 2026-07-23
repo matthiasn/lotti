@@ -102,11 +102,15 @@ jobs:
           files: coverage/lcov.info
 
   coverage:
-    name: Coverage (full suite)
+    name: Coverage (chunk ${{ matrix.chunk }}/6)
     permissions:
       contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: [0, 1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@v5
       - name: Cache Pub Packages
@@ -123,24 +127,27 @@ jobs:
           cache: true
       - name: Get dependencies
         run: flutter pub get
-      # Plain `flutter test --coverage` over the whole suite in one run:
-      # the sharded very_good lane dropped whole suites' hits from its lcov
-      # nondeterministically (tests passing, coverage silently absent), so
-      # the Codecov report comes from the one collection mode that matches
-      # local verification. Glados property tests keep their own flag/job.
-      - name: Run Flutter tests with coverage
-        # --concurrency=1 mirrors the same-thread execution the suite is
-        # hardened for under very_good test (see test/README.md).
-        run: flutter test --coverage --concurrency=1 --exclude-tags glados
-      - uses: codecov/codecov-action@v7
+      # Plain `flutter test --coverage` in serial mode is the one collection
+      # mode that records reliably (the sharded very_good lane dropped whole
+      # suites' hits from its lcov nondeterministically while tests passed,
+      # and parallel isolates flake suites hardened for same-thread
+      # execution — see test/README.md). Serial for the whole suite exceeds
+      # the job timeout, so six chunk jobs each run a deterministic
+      # round-robin slice serially; the publish job merges the slices
+      # client-side into one upload.
+      - name: Run Flutter tests with coverage (chunk slice)
+        run: |
+          readarray -t FILES < <(find test -name '*_test.dart' | sort \
+            | awk "NR % 6 == ${{ matrix.chunk }}")
+          echo "chunk ${{ matrix.chunk }}: ${#FILES[@]} suites"
+          flutter test --coverage --concurrency=1 --exclude-tags glados \
+            "${FILES[@]}"
+      - uses: actions/upload-artifact@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: matthiasn/lotti
-          version: v11.2.8
-          fail_ci_if_error: true
-          flags: standard
-          name: standard-full
-          files: coverage/lcov.info
+          name: coverage-chunk-${{ matrix.chunk }}
+          path: coverage/lcov.info
+          retention-days: 1
+          if-no-files-found: error
 
   codecov:
     name: Publish Codecov Status
@@ -152,6 +159,64 @@ jobs:
       - glados
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-chunk-*
+          path: coverage-artifacts
+      - name: Merge chunk coverage
+        run: |
+          python3 - <<'EOF'
+          import collections
+          import glob
+          import os
+
+          # Union per (file, line) by max hits. All chunks come from plain
+          # `flutter test --coverage` on the same commit, so instrumentation
+          # (the DA line sets) is consistent across inputs. Only SF/DA matter
+          # to Codecov's line coverage.
+          hits = collections.defaultdict(dict)
+          inputs = sorted(glob.glob('coverage-artifacts/**/lcov.info',
+                                    recursive=True))
+          assert len(inputs) == 6, f'expected 6 chunk reports: {inputs}'
+          for path in inputs:
+              sf = None
+              for line in open(path):
+                  line = line.strip()
+                  if line.startswith('SF:'):
+                      sf = line[3:]
+                  elif line.startswith('DA:') and sf:
+                      number, hit = line[3:].split(',')[:2]
+                      number = int(number)
+                      hit = int(hit)
+                      per_file = hits[sf]
+                      per_file[number] = max(per_file.get(number, 0), hit)
+                  elif line == 'end_of_record':
+                      sf = None
+          os.makedirs('coverage', exist_ok=True)
+          with open('coverage/lcov.info', 'w') as out:
+              for sf in sorted(hits):
+                  out.write(f'SF:{sf}\n')
+                  per_file = hits[sf]
+                  for number in sorted(per_file):
+                      out.write(f'DA:{number},{per_file[number]}\n')
+                  covered = sum(1 for v in per_file.values() if v > 0)
+                  out.write(f'LF:{len(per_file)}\nLH:{covered}\n')
+                  out.write('end_of_record\n')
+          total = sum(len(v) for v in hits.values())
+          covered = sum(
+              1 for v in hits.values() for h in v.values() if h > 0)
+          print(f'merged {len(hits)} files, {covered}/{total} lines '
+                f'({covered / total:.2%})')
+          EOF
+      - uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: matthiasn/lotti
+          version: v11.2.8
+          fail_ci_if_error: true
+          flags: standard
+          name: standard-merged
+          files: coverage/lcov.info
       - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
