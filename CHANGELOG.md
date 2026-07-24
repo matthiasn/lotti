@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1062]
 ### Added
+- **AI activity now uses one consistent decoder-bars animation.** Unified AI
+  progress, entry details, and cover-art generation now match the shader-based
+  activity indicator already used by task details and Daily OS, including
+  smooth entry and exit transitions and tap-to-open progress where available.
 - **Task agents can now read your image analyses.** The AI analyses attached
   to a task's images — brief summaries and full OCR extractions alike — are
   now part of the task agent's context, each with the model that produced it,

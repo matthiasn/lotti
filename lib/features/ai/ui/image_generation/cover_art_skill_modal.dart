@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_widget.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -18,7 +19,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 /// generation via the skill system.
 ///
 /// After the user selects reference images and taps "Continue", the modal
-/// transitions to a progress view showing the Siri waveform animation.
+/// transitions to a progress view showing the decoder-bars thinking shader.
 /// The user can dismiss the modal at any time without stopping the background
 /// generation, which continues via `SkillInferenceRunner.runImageGeneration`.
 class CoverArtSkillModal extends ConsumerStatefulWidget {
@@ -192,32 +193,38 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
             imageGenerationErrorControllerProvider(widget.linkedTaskId),
           )
         : null;
+    final spacing = context.designTokens.spacing;
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(spacing.step6),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 24),
-          // Status icon or animation
-          if (isRunning)
-            const SizedBox(
-              height: 60,
-              child: AiRunningAnimation(height: 60),
-            )
-          else if (isError)
-            Icon(
-              Icons.error_outline_rounded,
-              size: 48,
-              color: colorScheme.error,
-            )
-          else if (isComplete)
-            Icon(
-              Icons.check_circle_outline_rounded,
-              size: 48,
-              color: colorScheme.primary,
+          SizedBox(height: spacing.step6),
+          // Keep one stable status region while the shader exits and the
+          // terminal icon appears.
+          SizedBox(
+            height: spacing.step10,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                AiThinkingShaderPresence(isRunning: isRunning),
+                if (isError)
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: spacing.step9,
+                    color: colorScheme.error,
+                  )
+                else if (isComplete)
+                  Icon(
+                    Icons.check_circle_outline_rounded,
+                    size: spacing.step9,
+                    color: colorScheme.primary,
+                  ),
+              ],
             ),
-          const SizedBox(height: 24),
+          ),
+          SizedBox(height: spacing.step6),
           // Status text
           Text(
             _statusText(
@@ -229,7 +236,7 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
             textAlign: TextAlign.center,
             style: context.textTheme.titleMedium,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: spacing.step3),
           // Subtitle with reference image count
           Text(
             _subtitleText(
@@ -243,7 +250,7 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: spacing.step7),
         ],
       ),
     );

@@ -771,7 +771,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(AiRunningAnimationWrapper), findsOneWidget);
+      expect(find.byType(AiRunningDecoderBars), findsOneWidget);
     });
   });
 
@@ -810,7 +810,7 @@ void main() {
               // Sticky action bar hosts the running animation keyed to this
               // entity and the prompt's response type.
               final align = page.stickyActionBar! as Align;
-              final animation = align.child! as AiRunningAnimationWrapper;
+              final animation = align.child! as AiRunningDecoderBars;
               expect(animation.entryId, 'test-entity');
               expect(
                 animation.responseTypes,

@@ -230,9 +230,8 @@ class _UnifiedAiProgressContentState
         if (isRunning && state.isEmpty) {
           // Show only the animation when no progress text yet
           return Center(
-            child: AiRunningAnimationWrapper(
+            child: AiRunningDecoderBars(
               entryId: widget.entityId,
-              height: 50,
               responseTypes: {promptConfig.aiResponseType},
             ),
           );
@@ -453,9 +452,8 @@ class UnifiedAiProgressUtils {
       scrollController: scrollController,
       stickyActionBar: Align(
         alignment: Alignment.bottomCenter,
-        child: AiRunningAnimationWrapper(
+        child: AiRunningDecoderBars(
           entryId: entityId,
-          height: 50,
           responseTypes: {prompt.aiResponseType},
         ),
       ),

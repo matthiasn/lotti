@@ -9,6 +9,8 @@ import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/get_it.dart';
@@ -134,6 +136,8 @@ void main() {
 
         // Should now show the progress view with "Generating image..." text
         expect(find.text('Generating image...'), findsOneWidget);
+        expect(find.byType(AiThinkingShaderPresence), findsOneWidget);
+        expect(find.byType(AiThinkingLineShader), findsOneWidget);
       },
     );
 
@@ -393,6 +397,7 @@ void main() {
       await tester.pump();
       await tester.pump();
       await tester.pump();
+      expect(find.byType(AiThinkingLineShader), findsOneWidget);
 
       // Now transition to idle (completion)
       final container = ProviderScope.containerOf(
@@ -410,6 +415,20 @@ void main() {
 
       // Should show completion state
       expect(find.text('Cover art ready!'), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
+      expect(
+        tester
+            .widget<AiThinkingShaderPresence>(
+              find.byType(AiThinkingShaderPresence),
+            )
+            .isRunning,
+        isFalse,
+      );
+
+      // The local presence envelope exits before removing the shader while
+      // the completion icon remains visible in the stable status region.
+      await tester.pump(AiRunningDecoderBars.transitionDuration);
+      expect(find.byType(AiThinkingLineShader), findsNothing);
       expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
     });
 
@@ -549,6 +568,17 @@ void main() {
 
       // Should show error state
       expect(find.text('Failed to generate image'), findsOneWidget);
+      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      expect(
+        tester
+            .widget<AiThinkingShaderPresence>(
+              find.byType(AiThinkingShaderPresence),
+            )
+            .isRunning,
+        isFalse,
+      );
+      await tester.pump(AiRunningDecoderBars.transitionDuration);
+      expect(find.byType(AiThinkingLineShader), findsNothing);
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
     });
 
