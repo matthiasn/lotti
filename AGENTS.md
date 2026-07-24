@@ -164,3 +164,20 @@
 - Use fvm when running any flutter command
 - Read test/README.md on every session start and keep it up to date when gaining relevant new information
 - Do not hoard code. We do not keep unused code around. Also, this is no library, there are no known mysterious callers for whom we would keep any code around.
+
+## Issue Tracking
+
+- Public bugs, feature requests, and contributor coordination belong in
+  [GitHub Issues](https://github.com/matthiasn/lotti/issues).
+- Authorized maintainers may use the private Beads tracker for implementation
+  plans, dependencies, handoffs, and durable agent memory. Follow
+  `.agents/skills/beads/SKILL.md`.
+- Public contributors are not expected to install Beads or have access to the
+  private tracker. PR descriptions and GitHub issue links must contain all
+  context needed for public review.
+- Agent-local planning tools remain appropriate for the current turn. Beads is
+  the durable maintainer record, not a replacement for a short execution plan.
+- Beads sync, Git commits, and pushes require explicit user or orchestrator
+  authority. Never store secrets in Beads.
+- Do not install repository-controlled Git, Codex, or Claude hooks for Beads.
+  Maintainers run `bd prime`, `bd dolt pull`, and `bd dolt push` explicitly.

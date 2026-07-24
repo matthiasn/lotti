@@ -1,0 +1,4 @@
+interface:
+  display_name: "Beads"
+  short_description: "Private maintainer task tracking with bd"
+  default_prompt: "Use $beads for authorized maintainer task tracking; keep public work in GitHub Issues."
