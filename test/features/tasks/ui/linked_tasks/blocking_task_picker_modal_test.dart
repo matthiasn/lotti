@@ -141,7 +141,7 @@ void main() {
     testWidgets('renders the title', (tester) async {
       await openModal(tester);
 
-      expect(find.text("What's blocking this task?"), findsOneWidget);
+      expect(find.text("What's blocking this?"), findsOneWidget);
     });
 
     testWidgets(
@@ -160,7 +160,7 @@ void main() {
             linkType: EntryLinkType.blocks,
           ),
         );
-        expect(find.text("What's blocking this task?"), findsNothing);
+        expect(find.text("What's blocking this?"), findsNothing);
         expect(await completer.future, isNull);
       },
     );

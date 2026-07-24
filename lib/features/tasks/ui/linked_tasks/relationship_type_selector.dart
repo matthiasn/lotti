@@ -129,15 +129,25 @@ class RelationshipTypeSelector extends StatelessWidget {
           Text(
             context.messages.linkDirectionLabel,
             style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+              // highEmphasis, not mediumEmphasis: low-vision persona flagged
+              // the caption as small/low-contrast next to the toggle it names
+              // (design-review-panel round 2).
+              color: tokens.colors.text.highEmphasis,
               fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: tokens.spacing.step1),
           DsSegmentedToggle<bool>(
+            // Arrow-prefixed rather than the bare phrase: for 4 of the 5
+            // directional types the bare primary phrase is the exact same
+            // word as the just-selected type pill above (e.g. "Blocks" /
+            // "Blocks"), which a novice persona flagged as an outright
+            // blocker ("did I already choose this?") in round 2. The arrow
+            // reframes this control as being about direction, not repeating
+            // the relationship name.
             segments: [
-              DsSegment(false, phrasePair.$1),
-              DsSegment(true, phrasePair.$2),
+              DsSegment(false, '${phrasePair.$1} →'),
+              DsSegment(true, '← ${phrasePair.$2}'),
             ],
             selected: inverse,
             onChanged: onInverseChanged,

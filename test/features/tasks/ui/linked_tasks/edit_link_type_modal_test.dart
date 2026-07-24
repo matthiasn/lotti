@@ -99,7 +99,7 @@ void main() {
         find.byType(DsSegmentedToggle<bool>),
       );
       expect(toggle.selected, isTrue);
-      expect(visibleText('Is blocked by'), findsOneWidget);
+      expect(visibleText('← Is blocked by'), findsOneWidget);
     });
 
     testWidgets(
@@ -113,8 +113,8 @@ void main() {
           find.byType(DsSegmentedToggle<bool>),
         );
         expect(toggle.selected, isFalse);
-        expect(toggle.segments[0].label, 'Blocks');
-        expect(toggle.segments[1].label, 'Is blocked by');
+        expect(toggle.segments[0].label, 'Blocks →');
+        expect(toggle.segments[1].label, '← Is blocked by');
       },
     );
 

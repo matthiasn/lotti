@@ -150,8 +150,8 @@ void main() {
         );
 
         expect(find.byType(DsSegmentedToggle<bool>), findsOneWidget);
-        expect(visibleText('Duplicates'), findsOneWidget);
-        expect(visibleText('Is duplicated by'), findsOneWidget);
+        expect(visibleText('Duplicates →'), findsOneWidget);
+        expect(visibleText('← Is duplicated by'), findsOneWidget);
       },
     );
 

@@ -6685,6 +6685,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedTasksMenuTooltip => 'Možnosti propojených úkolů';
 
   @override
+  String get linkedTasksOtherLinksSectionTitle => 'Další odkazy';
+
+  @override
   String get linkedTasksSupersedesSectionTitle => 'Nahrazuje';
 
   @override
@@ -10293,7 +10296,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => 'Co blokuje tento úkol?';
+  String get taskBlockerPickerTitle => 'Co to blokuje?';
 
   @override
   String get taskCategoryAllLabel => 'vše';

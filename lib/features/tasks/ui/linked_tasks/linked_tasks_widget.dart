@@ -115,6 +115,10 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                     thickness: 1,
                     color: tokens.colors.decorative.level01,
                   ),
+                if (flatRows.isNotEmpty)
+                  LinkedTaskSectionHeader(
+                    title: context.messages.linkedTasksOtherLinksSectionTitle,
+                  ),
                 for (var i = 0; i < flatRows.length; i++) ...[
                   if (i > 0)
                     Divider(

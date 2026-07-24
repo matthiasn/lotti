@@ -131,7 +131,7 @@ class TaskRelationshipSections extends ConsumerWidget {
           ),
         );
       }
-      children.add(_SectionHeader(title: sections[s].title));
+      children.add(LinkedTaskSectionHeader(title: sections[s].title));
       for (final entry in sections[s].entries) {
         children.add(
           LinkedTaskRow(
@@ -185,8 +185,12 @@ class TaskRelationshipSections extends ConsumerWidget {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
+/// Shared section-header caption for the linked-tasks card — used both by the
+/// typed-relationship sections here and by the flat/plain-link section in
+/// `LinkedTasksWidget`, so a plain link is never left to read as an unlabeled
+/// continuation of the typed section above it.
+class LinkedTaskSectionHeader extends StatelessWidget {
+  const LinkedTaskSectionHeader({required this.title, super.key});
 
   final String title;
 

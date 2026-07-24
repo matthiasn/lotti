@@ -11,6 +11,7 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
@@ -477,6 +478,7 @@ class _TaskBlockedByChip extends ConsumerWidget {
     }
 
     final single = blockers.length == 1;
+    final tokens = context.designTokens;
 
     return Tooltip(
       message: context.messages.taskBlockedByChipTooltip(
@@ -490,6 +492,13 @@ class _TaskBlockedByChip extends ConsumerWidget {
         label: context.messages.taskBlockedByChipLabel(
           blockers.length,
           single ? blockers.first.data.title : '',
+        ),
+        // Matches LinkedTaskRow's own browse-mode chevron so a chip that
+        // navigates reads as tappable, not just as a status readout.
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 12,
+          color: tokens.colors.text.lowEmphasis,
         ),
         onTap: () => single
             ? openLinkedTaskDetail(context: context, taskId: blockers.first.id)

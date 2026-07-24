@@ -224,6 +224,21 @@ void main() {
       },
     );
 
+    testWidgets(
+      'shows an "Other links" section header above the flat/plain-link rows '
+      'so they never read as an unlabeled continuation of a typed section',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+        );
+
+        expect(find.text('Other links'), findsOneWidget);
+        expect(find.text('Outgoing Task'), findsOneWidget);
+      },
+    );
+
     testWidgets('manage action toggles manage mode UI', (tester) async {
       await pumpWidget(
         tester,
@@ -274,7 +289,6 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Modal renders the LinkTaskModal as a draggable bottom sheet.
         expect(find.byType(LinkTaskModal), findsOneWidget);
       },
     );
@@ -650,7 +664,7 @@ void main() {
 
         await tester.tap(find.text('Blocks'));
         await tester.pump();
-        await tester.tap(find.text('Is blocked by').last);
+        await tester.tap(find.text('← Is blocked by').last);
         await tester.pump();
         await tester.tap(find.text('Create'));
         await tester.pump();

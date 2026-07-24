@@ -714,7 +714,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(DsSegmentedToggle<bool>), findsOneWidget);
-        expect(visibleText('Is blocked by'), findsOneWidget);
+        expect(visibleText('← Is blocked by'), findsOneWidget);
 
         await tester.tap(find.text('Link'));
         await tester.pump();
@@ -730,7 +730,7 @@ void main() {
 
         await tester.tap(find.text('Blocks'));
         await tester.pump();
-        await tester.tap(visibleText('Is blocked by'));
+        await tester.tap(visibleText('← Is blocked by'));
         await tester.pump();
 
         var toggle = tester.widget<DsSegmentedToggle<bool>>(
@@ -809,7 +809,7 @@ void main() {
         await openModal(tester);
         await tester.tap(find.text('Blocks'));
         await tester.pump();
-        await tester.tap(visibleText('Is blocked by'));
+        await tester.tap(visibleText('← Is blocked by'));
         await tester.pump();
 
         await tester.tap(find.text('Blocker Task'));

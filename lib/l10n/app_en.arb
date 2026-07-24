@@ -3358,6 +3358,7 @@
     }
   },
   "linkBlocksCycleErrorMessage": "This would create a blocking cycle — choose a different task.",
+  "linkDirectionLabel": "Direction:",
   "linkedFromCaption": "from",
   "linkedTaskImageBadge": "From linked task",
   "linkedTasksBlockedBySectionTitle": "Blocked by",
@@ -3366,10 +3367,10 @@
   "linkedTasksFixesSectionTitle": "Fixes",
   "linkedTasksFollowUpsSectionTitle": "Follow-ups",
   "linkedTasksMenuTooltip": "Linked tasks options",
+  "linkedTasksOtherLinksSectionTitle": "Other links",
   "linkedTasksSupersedesSectionTitle": "Supersedes",
   "linkedTasksTitle": "Linked Tasks",
   "linkedToCaption": "to",
-  "linkDirectionLabel": "Direction:",
   "linkExistingTask": "Link existing task...",
   "linkPhraseBlocksInverse": "Is blocked by",
   "linkPhraseBlocksPrimary": "Blocks",
@@ -4937,7 +4938,7 @@
       }
     }
   },
-  "taskBlockerPickerTitle": "What's blocking this task?",
+  "taskBlockerPickerTitle": "What's blocking this?",
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",
   "taskCategoryUnassignedLabel": "unassigned",

@@ -6642,6 +6642,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkedTasksMenuTooltip => 'Optionen für verknüpfte Aufgaben';
 
   @override
+  String get linkedTasksOtherLinksSectionTitle => 'Weitere Links';
+
+  @override
   String get linkedTasksSupersedesSectionTitle => 'Ersetzt';
 
   @override
@@ -10222,7 +10225,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => 'Was blockiert diese Aufgabe?';
+  String get taskBlockerPickerTitle => 'Was blockiert das?';
 
   @override
   String get taskCategoryAllLabel => 'Alle';

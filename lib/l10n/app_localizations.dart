@@ -11525,6 +11525,12 @@ abstract class AppLocalizations {
   /// **'Linked tasks options'**
   String get linkedTasksMenuTooltip;
 
+  /// No description provided for @linkedTasksOtherLinksSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Other links'**
+  String get linkedTasksOtherLinksSectionTitle;
+
   /// No description provided for @linkedTasksSupersedesSectionTitle.
   ///
   /// In en, this message translates to:
@@ -17553,7 +17559,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskBlockerPickerTitle.
   ///
   /// In en, this message translates to:
-  /// **'What\'s blocking this task?'**
+  /// **'What\'s blocking this?'**
   String get taskBlockerPickerTitle;
 
   /// No description provided for @taskCategoryAllLabel.

@@ -163,9 +163,14 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
     final screenHeight = MediaQuery.of(context).size.height;
     final maxHeight = math.min(screenHeight * 0.9, 640).toDouble();
 
+    // Cap at maxHeight for long lists (which then scroll internally via the
+    // shrink-wrapped ListView below) without forcing short lists to claim
+    // that full height — a fixed `Expanded` list here previously left a large
+    // blank surface under a 2-3 row result set (design-review-panel finding).
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(
@@ -198,25 +203,21 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
             ),
           ),
           if (showEmptyState)
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: tokens.spacing.step6,
-                    vertical: tokens.spacing.step4,
-                  ),
-                  child: Text(
-                    widget.emptyMessage,
-                    textAlign: TextAlign.center,
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step6,
+                vertical: tokens.spacing.step6,
+              ),
+              child: Text(
+                widget.emptyMessage,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
             )
           else
-            Expanded(
+            Flexible(
               child: _multi
                   ? ValueListenableBuilder<Set<String>>(
                       valueListenable: widget.stagedNotifier!,
@@ -237,6 +238,7 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
     bool showCreate,
   ) {
     return ListView(
+      shrinkWrap: true,
       padding: EdgeInsets.only(
         bottom: (_multi && widget.reserveFooterInset)
             ? DesignSystemGlassActionFooter.reservedHeightFor(context)

@@ -6726,6 +6726,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
 
   @override
+  String get linkedTasksOtherLinksSectionTitle => 'Alte legături';
+
+  @override
   String get linkedTasksSupersedesSectionTitle => 'Înlocuiește';
 
   @override
@@ -10352,7 +10355,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => 'Ce blochează această sarcină?';
+  String get taskBlockerPickerTitle => 'Ce blochează asta?';
 
   @override
   String get taskCategoryAllLabel => 'toate';
