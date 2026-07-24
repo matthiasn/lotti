@@ -1,0 +1,11 @@
+{
+  "$comment": "Advisories the docs site cannot currently resolve by any dependency change. Each entry must state why no fix is reachable and expire, so it fails the build rather than quietly becoming permanent. Re-check upstream before extending an expiry.",
+  "allow": [
+    {
+      "id": "GHSA-mh99-v99m-4gvg",
+      "package": "brace-expansion",
+      "reason": "Vulnerable range is <= 5.0.7, so every published version except 5.0.8 is flagged, and nothing in the tree depends on 5.0.8 yet. Reached only via @docusaurus/core -> serve-handler -> minimatch@3 -> brace-expansion@1.1.16. No fix is reachable: 1.x has no backport (tops out at 1.1.16), `npm audit fix --force` churns 357 packages and leaves the same 22 findings, and an override to ^5.0.8 breaks minimatch@3 at runtime because 5.x exports a named `expand` instead of a callable default. serve-handler backs `docusaurus serve` (local preview); the deployed artifact is a static site that never runs it.",
+      "expires": "2026-10-01"
+    }
+  ]
+}

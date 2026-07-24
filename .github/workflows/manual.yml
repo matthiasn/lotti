@@ -113,7 +113,7 @@ jobs:
 
       - name: Reject high-severity production advisories
         working-directory: lotti/docs-site
-        run: npm audit --omit=dev --audit-level=high
+        run: npm run audit:gate
 
       - name: Validate, test, type-check, and build
         working-directory: lotti/docs-site
