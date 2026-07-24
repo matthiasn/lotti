@@ -33,6 +33,7 @@ void main() {
     late MockDayAgentPlanService planService;
     late MockDayAgentCaptureService captureService;
     late MockWakeOrchestrator orchestrator;
+    late MockDayProcessingOutboxRepository outbox;
     late DayAgentJobExecutor executor;
 
     setUp(() {
@@ -40,14 +41,17 @@ void main() {
       planService = MockDayAgentPlanService();
       captureService = MockDayAgentCaptureService();
       orchestrator = MockWakeOrchestrator();
+      outbox = MockDayProcessingOutboxRepository();
       when(
         () => orchestrator.runCompletions,
       ).thenAnswer((_) => const Stream.empty());
+      when(() => outbox.getById(any())).thenAnswer((_) async => null);
       executor = buildDayAgentJobExecutor(
         dayAgentService: dayAgentService,
         planService: planService,
         captureService: captureService,
         orchestrator: orchestrator,
+        outbox: outbox,
       );
     });
 
@@ -333,6 +337,39 @@ void main() {
           ),
           isNull,
         );
+      },
+    );
+
+    test(
+      'hasPendingDraftWork reads the deterministic draft job and reports '
+      'true only for statuses that can still produce a plan',
+      () async {
+        DayProcessingJob draftJobWith(DayProcessingJobStatus status) =>
+            buildJob(const DraftPlanPayload()).copyWith(status: status);
+
+        Future<bool> withStatus(DayProcessingJobStatus? status) {
+          when(
+            () => outbox.getById('draft_dayplan-2026-07-22'),
+          ).thenAnswer(
+            (_) async => status == null ? null : draftJobWith(status),
+          );
+          return executor.hasPendingDraftWork('dayplan-2026-07-22');
+        }
+
+        expect(await withStatus(null), isFalse);
+        expect(await withStatus(DayProcessingJobStatus.queued), isTrue);
+        expect(await withStatus(DayProcessingJobStatus.running), isTrue);
+        expect(
+          await withStatus(DayProcessingJobStatus.waitingForNetwork),
+          isTrue,
+        );
+        expect(
+          await withStatus(DayProcessingJobStatus.waitingForUser),
+          isFalse,
+        );
+        expect(await withStatus(DayProcessingJobStatus.failed), isFalse);
+        expect(await withStatus(DayProcessingJobStatus.succeeded), isFalse);
+        expect(await withStatus(DayProcessingJobStatus.cancelled), isFalse);
       },
     );
   });

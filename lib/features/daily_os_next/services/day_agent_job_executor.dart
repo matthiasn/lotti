@@ -50,6 +50,7 @@ class DayAgentJobExecutor {
     required this.draftPlanUpdatedAt,
     required this.pendingDiffCreatedSince,
     required this.hasParsedItems,
+    required this.hasPendingDraftWork,
     this.wakeTimeout = const Duration(minutes: 3),
     this.maxAttempts = 5,
   });
@@ -80,6 +81,13 @@ class DayAgentJobExecutor {
   /// Whether the given capture already has parsed items.
   final Future<bool> Function(String captureId) hasParsedItems;
 
+  /// Whether the day still has a draft job in the outbox that can produce a
+  /// plan (queued, running, or waiting for network). Used by refine jobs
+  /// with no plan to decide between a short defer (a draft is on the way)
+  /// and failing fast (nothing will ever produce one — a `local` defer never
+  /// counts an attempt, so deferring unconditionally would loop forever).
+  final Future<bool> Function(String dayId) hasPendingDraftWork;
+
   /// Upper bound on how long one attempt waits for its wake to finish.
   final Duration wakeTimeout;
 
@@ -98,13 +106,24 @@ class DayAgentJobExecutor {
         job.dayId,
       );
       if (draftPending == null) {
-        // No plan to refine yet — most likely a draft job for this day is
-        // still in flight. Defer briefly rather than spending a wake on a
-        // refine that has nothing to act on.
+        if (await hasPendingDraftWork(job.dayId)) {
+          // No plan to refine yet, but a draft job for this day is still in
+          // flight. Defer briefly rather than spending a wake on a refine
+          // that has nothing to act on.
+          return const DayAgentJobFailed(
+            failureClass: DayProcessingFailureClass.local,
+            error: 'No plan to refine yet',
+            retryAfter: Duration(seconds: 5),
+          );
+        }
+        // No plan exists and nothing will produce one: the day's draft job
+        // is absent, terminally failed, or waiting on the user. Fail
+        // deterministically instead of deferring forever.
         return const DayAgentJobFailed(
-          failureClass: DayProcessingFailureClass.local,
-          error: 'No plan to refine yet',
-          retryAfter: Duration(seconds: 5),
+          failureClass: DayProcessingFailureClass.deterministic,
+          error:
+              'No plan to refine — the day has no drafted plan and no '
+              'pending draft job',
         );
       }
     }
@@ -138,12 +157,15 @@ class DayAgentJobExecutor {
       final settled = await _artifactOutcome(job, agentId: agentId);
       if (settled != null) return settled;
       // The wake reported success but the expected artifact is missing —
-      // the workflow's forced-tool retry already exhausted itself producing
-      // a Missing*Exception in this case, so this is unexpected; treat it
-      // like any other transient miss and let the outbox retry.
-      return const DayAgentJobFailed(
-        failureClass: DayProcessingFailureClass.local,
-        error: 'Wake completed without producing the expected artifact',
+      // the workflow's forced-tool retry should have surfaced this as a
+      // Missing*Exception, so it is unexpected. A full inference was still
+      // spent, so the failure must count as an attempt and respect
+      // [maxAttempts]: `providerBusy` increments the attempt counter,
+      // whereas `local` would retry forever without ever counting one.
+      return _cappedRetryableFailure(
+        job,
+        DayProcessingFailureClass.providerBusy,
+        'Wake completed without producing the expected artifact',
       );
     }
 
@@ -194,18 +216,28 @@ class DayAgentJobExecutor {
     }
   }
 
-  DayAgentJobOutcome _classifyFailure(DayProcessingJob job, Object? error) {
-    final failureClass = classifyDayAgentJobFailure(error);
+  DayAgentJobOutcome _classifyFailure(DayProcessingJob job, Object? error) =>
+      _cappedRetryableFailure(
+        job,
+        classifyDayAgentJobFailure(error),
+        error?.toString() ?? 'Wake failed',
+      );
+
+  /// Applies the [maxAttempts] cap to a retryable failure: once this attempt
+  /// is counted the job will have been tried `attempts + 1` times, and
+  /// further retries are cut off by downgrading to `deterministic`.
+  DayAgentJobOutcome _cappedRetryableFailure(
+    DayProcessingJob job,
+    DayProcessingFailureClass failureClass,
+    String error,
+  ) {
     if (_isRetryable(failureClass) && job.attempts + 1 >= maxAttempts) {
       return DayAgentJobFailed(
         failureClass: DayProcessingFailureClass.deterministic,
         error: 'Gave up after ${job.attempts + 1} attempts: $error',
       );
     }
-    return DayAgentJobFailed(
-      failureClass: failureClass,
-      error: error?.toString() ?? 'Wake failed',
-    );
+    return DayAgentJobFailed(failureClass: failureClass, error: error);
   }
 
   bool _isRetryable(DayProcessingFailureClass failureClass) =>

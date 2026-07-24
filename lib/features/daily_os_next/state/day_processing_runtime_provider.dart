@@ -31,6 +31,7 @@ dayProcessingOutboxProcessorProvider = Provider((ref) {
     planService: ref.watch(dayAgentPlanServiceProvider),
     captureService: ref.watch(dayAgentCaptureServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    outbox: ref.watch(dayProcessingOutboxRepositoryProvider),
   );
   return DayProcessingOutboxProcessor(
     repository: ref.watch(dayProcessingOutboxRepositoryProvider),

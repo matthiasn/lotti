@@ -78,6 +78,7 @@ void main() {
     Future<String?> Function(String agentId, String dayId, DateTime since)?
     pendingDiffCreatedSince,
     Future<bool> Function(String captureId)? hasParsedItems,
+    Future<bool> Function(String dayId)? hasPendingDraftWork,
     Duration wakeTimeout = const Duration(seconds: 1),
     int maxAttempts = 5,
   }) => DayAgentJobExecutor(
@@ -87,6 +88,7 @@ void main() {
     draftPlanUpdatedAt: draftPlanUpdatedAt ?? (_, _) async => null,
     pendingDiffCreatedSince: pendingDiffCreatedSince ?? (_, _, _) async => null,
     hasParsedItems: hasParsedItems ?? (_) async => false,
+    hasPendingDraftWork: hasPendingDraftWork ?? (_) async => false,
     wakeTimeout: wakeTimeout,
     maxAttempts: maxAttempts,
   );
@@ -186,7 +188,25 @@ void main() {
     );
   });
 
-  test('refinePlan defers behind a plan that does not exist yet', () async {
+  test(
+    'refinePlan defers while a pending draft job can still produce a plan',
+    () async {
+      final executor = buildExecutor(
+        draftPlanUpdatedAt: (agentId, dayId) async => null,
+        hasPendingDraftWork: (jobDayId) async => jobDayId == dayId,
+      );
+
+      final outcome = await executor.execute(refineJob());
+
+      expect(outcome, isA<DayAgentJobFailed>());
+      final failed = outcome as DayAgentJobFailed;
+      expect(failed.failureClass, DayProcessingFailureClass.local);
+      expect(failed.retryAfter, isNotNull);
+    },
+  );
+
+  test('refinePlan fails deterministically when no plan exists and no draft '
+      'job is pending — a local defer would loop forever', () async {
     final executor = buildExecutor(
       draftPlanUpdatedAt: (agentId, dayId) async => null,
     );
@@ -195,8 +215,8 @@ void main() {
 
     expect(outcome, isA<DayAgentJobFailed>());
     final failed = outcome as DayAgentJobFailed;
-    expect(failed.failureClass, DayProcessingFailureClass.local);
-    expect(failed.retryAfter, isNotNull);
+    expect(failed.failureClass, DayProcessingFailureClass.deterministic);
+    expect(failed.retryAfter, isNull);
   });
 
   test('resolveAgentId throwing maps to setupRequired', () async {
@@ -292,7 +312,8 @@ void main() {
   );
 
   test(
-    'a completed wake without the expected artifact reports a local retry',
+    'a completed wake without the expected artifact counts the spent '
+    'inference as an attempt (providerBusy, not local)',
     () async {
       final completions = StreamController<WakeRunCompletion>.broadcast();
       addTearDown(completions.close);
@@ -317,8 +338,41 @@ void main() {
       expect(outcome, isA<DayAgentJobFailed>());
       expect(
         (outcome as DayAgentJobFailed).failureClass,
-        DayProcessingFailureClass.local,
+        DayProcessingFailureClass.providerBusy,
       );
+    },
+  );
+
+  test(
+    'a completed wake without the expected artifact is downgraded to '
+    'deterministic at maxAttempts instead of re-inferring forever',
+    () async {
+      final completions = StreamController<WakeRunCompletion>.broadcast();
+      addTearDown(completions.close);
+      final executor = buildExecutor(
+        runCompletions: completions.stream,
+        hasParsedItems: (_) async => false,
+        maxAttempts: 3,
+      );
+      unawaited(
+        Future<void>.delayed(Duration.zero, () {
+          completions.add(
+            const WakeRunCompletion(
+              runKey: 'run-key-1',
+              agentId: agentId,
+              status: WakeRunStatus.completed,
+            ),
+          );
+        }),
+      );
+      final job = parseJob().copyWith(attempts: 2);
+
+      final outcome = await executor.execute(job);
+
+      expect(outcome, isA<DayAgentJobFailed>());
+      final failed = outcome as DayAgentJobFailed;
+      expect(failed.failureClass, DayProcessingFailureClass.deterministic);
+      expect(failed.error, contains('Gave up after 3 attempts'));
     },
   );
 
@@ -346,7 +400,7 @@ void main() {
       expect(outcome, isA<DayAgentJobFailed>());
       expect(
         (outcome as DayAgentJobFailed).failureClass,
-        DayProcessingFailureClass.local,
+        DayProcessingFailureClass.providerBusy,
       );
     },
   );
