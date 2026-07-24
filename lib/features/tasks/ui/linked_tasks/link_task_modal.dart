@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/get_it.dart';
@@ -59,9 +61,16 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
 
   Future<void> _selectTask(Task task) async {
     final swap = _relation.inverse;
+    final fromId = swap ? task.meta.id : widget.currentTaskId;
+    final toId = swap ? widget.currentTaskId : task.meta.id;
+    // Captured before the pop below: the modal's own context is gone by the
+    // time the confirmation needs a messenger.
+    final messenger = ScaffoldMessenger.of(context);
+    final repository = ref.read(journalRepositoryProvider);
+
     final created = await getIt<PersistenceLogic>().createLink(
-      fromId: swap ? task.meta.id : widget.currentTaskId,
-      toId: swap ? widget.currentTaskId : task.meta.id,
+      fromId: fromId,
+      toId: toId,
       linkType: _relation.type,
     );
 
@@ -77,6 +86,15 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
     await HapticFeedback.mediumImpact();
 
     if (mounted) {
+      showLinkCreatedFeedback(
+        context: context,
+        messenger: messenger,
+        repository: repository,
+        relation: _relation,
+        fromId: fromId,
+        toId: toId,
+        linkedTaskTitle: task.data.title,
+      );
       Navigator.of(context).pop(task);
     }
   }

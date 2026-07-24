@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1064]
+### Added
+- **Undo a link you just made.** Picking a task in the link or blocker picker
+  still commits on that single tap — but it now says what it wrote ("Blocks:
+  Draft crew rotation schedule") and offers Undo, so a mis-tap or the right
+  task under the wrong relationship is one tap to take back instead of a trip
+  through Manage links.
+
+### Changed
+- **Manage mode says it is on.** The Linked Tasks card now shows a Done button
+  in its header while you are editing links, instead of leaving the only exit
+  inside the same overflow menu you opened it from.
+- On a desktop-sized window the task search field is focused when the link and
+  blocker pickers open, so you can type straight away. Left unfocused on
+  phones, where it would raise the keyboard over the results.
+- The Linked Tasks overflow menu uses the app's own surface and radius rather
+  than Material defaults, so it matches the card it opens from.
+
 ## [0.9.1063]
 ### Changed
 - **Picking what two tasks mean to each other is now one choice, not two.**

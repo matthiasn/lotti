@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -39,7 +42,15 @@ class BlockingTaskPickerModal extends ConsumerWidget {
     );
   }
 
-  Future<void> _selectBlocker(BuildContext context, Task blocker) async {
+  Future<void> _selectBlocker(
+    BuildContext context,
+    WidgetRef ref,
+    Task blocker,
+  ) async {
+    // Captured before the pop below, which disposes this modal's context.
+    final messenger = ScaffoldMessenger.of(context);
+    final repository = ref.read(journalRepositoryProvider);
+
     final created = await getIt<PersistenceLogic>().createLink(
       fromId: blocker.meta.id,
       toId: blockedTaskId,
@@ -58,6 +69,20 @@ class BlockingTaskPickerModal extends ConsumerWidget {
     await HapticFeedback.mediumImpact();
 
     if (context.mounted) {
+      showLinkCreatedFeedback(
+        context: context,
+        messenger: messenger,
+        repository: repository,
+        // The picked task blocks the anchor, so from the anchor's side this
+        // is the inverse phrasing — the same words the card will show.
+        relation: const DirectedRelation(
+          EntryLinkType.blocks,
+          inverse: true,
+        ),
+        fromId: blocker.meta.id,
+        toId: blockedTaskId,
+        linkedTaskTitle: blocker.data.title,
+      );
       Navigator.of(context).pop(blocker);
     }
   }
@@ -80,7 +105,7 @@ class BlockingTaskPickerModal extends ConsumerWidget {
 
     return TaskSearchPickerBody(
       excludeIds: {blockedTaskId, ...existingBlockerIds},
-      onTaskSelected: (task) => _selectBlocker(context, task),
+      onTaskSelected: (task) => _selectBlocker(context, ref, task),
     );
   }
 }

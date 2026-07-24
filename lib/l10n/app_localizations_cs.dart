@@ -6661,6 +6661,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tím by vznikl blokující cyklus — vyber jiný úkol.';
 
   @override
+  String linkCreatedMessage(String relation, String title) {
+    return '$relation: $title';
+  }
+
+  @override
+  String get linkCreatedUndo => 'Zpět';
+
+  @override
   String get linkDirectionLabel => 'Tento úkol…';
 
   @override

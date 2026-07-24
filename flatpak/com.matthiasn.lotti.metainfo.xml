@@ -35,6 +35,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1064" date="2026-07-25">
+      <description>
+        <p>Undo a link you just made. Picking a task in the link or blocker picker still commits on that single tap, but it now says what it wrote ("Blocks: Draft crew rotation schedule") and offers Undo, so a mis-tap or the right task under the wrong relationship is one tap to take back instead of a trip through Manage links.</p>
+        <p>Manage mode says it is on: the Linked Tasks card shows a Done button in its header while you are editing links, instead of leaving the only exit inside the same overflow menu you opened it from.</p>
+        <p>On a desktop-sized window the task search field is focused when the link and blocker pickers open, so you can type straight away; it is left unfocused on phones, where it would raise the keyboard over the results. The Linked Tasks overflow menu now uses the app's own surface and radius rather than Material defaults, so it matches the card it opens from.</p>
+      </description>
+    </release>
     <release version="0.9.1063" date="2026-07-25">
       <description>
         <p>Picking what two tasks mean to each other is now one choice, not two. The relationship picker was a row of type chips plus a separate direction switch, which put the same word on screen twice — a chip reading "Blocks" directly above a switch whose first option also read "Blocks". You now pick from a single list that completes the sentence "This task…": Relates to, Blocks, Is blocked by, Follows up on, Has follow-up, Duplicates, Is duplicated by, Fixes, Is fixed by, Supersedes, Is superseded by.</p>

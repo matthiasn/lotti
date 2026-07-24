@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Whether the picker assigns a single entity or edits a set of entities.
@@ -202,6 +203,10 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
               // Match the tasks/projects tab search (the small variant), whose
               // radii.l corner also lines up with the selection pills below.
               size: DesignSystemSearchSize.small,
+              // Wide windows only: on a phone this would raise the keyboard
+              // over the very results the field filters, and the list is the
+              // point of the sheet.
+              autofocus: MediaQuery.sizeOf(context).width >= kDesktopBreakpoint,
               controller: _searchController,
               hintText: widget.searchHintText,
               semanticsLabel: widget.searchHintText,

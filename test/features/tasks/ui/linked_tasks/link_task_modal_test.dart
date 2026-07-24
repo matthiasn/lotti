@@ -11,6 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
@@ -51,9 +52,14 @@ void main() {
       WidgetTester tester, {
       Set<ExistingRelation> existingRelations = const {},
       MediaQueryData? mediaQueryData,
+      MockJournalRepository? journalRepo,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            if (journalRepo != null)
+              journalRepositoryProvider.overrideWithValue(journalRepo),
+          ],
           child: WidgetTestBench(
             mediaQueryData: mediaQueryData,
             child: Builder(
@@ -701,6 +707,80 @@ void main() {
       // The modal actually pops on success, not just createLink firing.
       expect(find.text('Link existing task...'), findsNothing);
     });
+
+    testWidgets(
+      'a committed link is confirmed with an Undo that removes exactly the '
+      'relation just written',
+      (tester) async {
+        final repo = MockJournalRepository();
+        when(
+          () => repo.removeTypedLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async => 1);
+        stubTasks([buildTask(id: 'blocker-task', title: 'Blocker Task')]);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await openModal(tester, journalRepo: repo);
+        await pickRelation(tester, 'Is blocked by');
+        await tester.tap(find.text('Blocker Task'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Names the relation and the task, so the confirmation says what was
+        // actually written rather than just "linked".
+        expect(find.text('Is blocked by: Blocker Task'), findsWidgets);
+
+        await tester.tap(find.text('Undo').last);
+        await tester.pump();
+
+        // The exact triple the link was created under — not a broader removal
+        // that could take out another relationship the pair also holds.
+        verify(
+          () => repo.removeTypedLink(
+            fromId: 'blocker-task',
+            toId: 'current-task',
+            linkType: 'BlocksLink',
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'a rejected link is not confirmed and offers no undo',
+      (tester) async {
+        stubTasks([buildTask(id: 'blocker-task', title: 'Blocker Task')]);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => false);
+
+        await openModal(tester);
+        await pickRelation(tester, 'Blocks');
+        await tester.tap(find.text('Blocker Task'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('Undo'), findsNothing);
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsWidgets,
+        );
+      },
+    );
 
     testWidgets(
       'a task already linked by one relation stays a candidate for a '

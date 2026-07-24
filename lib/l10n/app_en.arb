@@ -3358,6 +3358,18 @@
     }
   },
   "linkBlocksCycleErrorMessage": "This would create a blocking cycle — choose a different task.",
+  "linkCreatedMessage": "{relation}: {title}",
+  "@linkCreatedMessage": {
+    "placeholders": {
+      "relation": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "linkCreatedUndo": "Undo",
   "linkDirectionLabel": "This task…",
   "linkedTaskImageBadge": "From linked task",
   "linkedTasksBlockedBySectionTitle": "Blocked by",

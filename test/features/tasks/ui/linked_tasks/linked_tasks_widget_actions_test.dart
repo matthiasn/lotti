@@ -274,15 +274,17 @@ void main() {
       expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
-      // Toggling again returns to browse mode.
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Done'));
+      // The mode now says so in the header and offers its own way out, rather
+      // than hiding the exit back inside the menu it was entered from.
+      final inlineDone = find.widgetWithText(TextButton, 'Done');
+      expect(inlineDone, findsOneWidget);
+
+      await tester.tap(inlineDone);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Done'), findsNothing);
       expect(find.byIcon(Icons.close_rounded), findsNothing);
     });
 

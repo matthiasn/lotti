@@ -682,6 +682,13 @@ anchor already touches. The schema's `UNIQUE(from_id, to_id, type)` lets one
 pair hold several different relationships, and direction is part of the
 identity, so the inverse of an existing link stays offerable.
 
+Committing is one tap — picking a candidate row creates the link and pops.
+That speed is the point of the flow, so it is not gated behind a confirm step;
+instead the commit is followed by a SnackBar naming the relation that was
+written ("Blocks: <title>") with an Undo action that removes exactly that
+`(fromId, toId, type)` triple. Undo therefore can only take back the edge the
+message is about, never another relationship the same pair also holds.
+
 `EditLinkTypeModal` retypes or reverses an existing link in place, via the same
 selector pre-seeded to the link's current relation, calling
 `JournalRepository.updateLinkType` (which reuses `updateLink`'s vector-clock,
@@ -713,6 +720,12 @@ Rows compose `DesignSystemListItem`, and `EntityPickerSheet` takes the same
 `rowSize`, so one task title renders at one rank whether it is read on the card
 or in the picker one tap away. The status label sits as a trailing anchor where
 there is width for it and drops to the subtitle slot at narrow widths.
+
+Manage mode (the card's edit/unlink affordances) says so while it is on: the
+header replaces its link action with an inline Done, and the overflow offers
+"Manage links…" only as a way *in*. Previously the mode was visible only as two
+icons appearing per row, and the way out was the same unlabelled menu it was
+entered from.
 
 The card always renders its header, including on a task with no links at all —
 where it shows a worded "Link a task…" action rather than nothing. Rendering

@@ -19,7 +19,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/themes/theme.dart';
 
 /// Linked tasks card on the task detail view.
 ///
@@ -231,9 +230,18 @@ class _LinkedTasksHeader extends ConsumerWidget {
               _CountBadge(count: count),
             ],
             const Spacer(),
+            // Manage mode is otherwise invisible except for two icons
+            // appearing per row, and the only way out used to be the same
+            // unlabelled overflow menu it was entered from. While it is on,
+            // the header says so and offers the exit inline.
+            if (manageMode)
+              TextButton(
+                onPressed: notifier.toggleManageMode,
+                child: Text(context.messages.doneButton),
+              ),
             // The link action is worded in the empty state's own row, so the
             // header only carries it once there is a list to add to.
-            if (hasLinkedTasks) ...[
+            if (hasLinkedTasks && !manageMode) ...[
               IconButton(
                 tooltip: context.messages.linkExistingTask,
                 onPressed: () => _showLinkTaskModal(context, ref, taskId),
@@ -254,18 +262,15 @@ class _LinkedTasksHeader extends ConsumerWidget {
             SizedBox(width: tokens.spacing.step3),
             Theme(
               data: Theme.of(context).copyWith(
+                // Tokens rather than Material scheme colours and raw radii,
+                // so the menu belongs to the same surface family as the card
+                // it opens from instead of being a themed island inside it.
                 popupMenuTheme: PopupMenuThemeData(
-                  color: context.colorScheme.surfaceContainerHighest,
-                  elevation: 8,
+                  color: tokens.colors.background.level03,
                   surfaceTintColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: context.colorScheme.outlineVariant.withValues(
-                        alpha: 0.3,
-                      ),
-                      width: 0.8,
-                    ),
+                    borderRadius: BorderRadius.circular(tokens.radii.m),
+                    side: BorderSide(color: tokens.colors.decorative.level01),
                   ),
                 ),
               ),
@@ -298,25 +303,17 @@ class _LinkedTasksHeader extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  if (hasLinkedTasks)
+                  // Only offered as a way *in*: manage mode now carries its
+                  // own inline exit in the header, so a second "Done" here
+                  // would be two controls for one state.
+                  if (hasLinkedTasks && !manageMode)
                     PopupMenuItem(
                       value: 'manage',
                       child: Row(
                         children: [
-                          Icon(
-                            manageMode
-                                ? Icons.check_rounded
-                                : Icons.edit_rounded,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              manageMode
-                                  ? context.messages.doneButton
-                                  : context.messages.manageLinks,
-                            ),
-                          ),
+                          Icon(Icons.edit_rounded, size: tokens.spacing.step5),
+                          SizedBox(width: tokens.spacing.step3),
+                          Flexible(child: Text(context.messages.manageLinks)),
                         ],
                       ),
                     ),

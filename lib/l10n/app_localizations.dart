@@ -11477,6 +11477,18 @@ abstract class AppLocalizations {
   /// **'This would create a blocking cycle — choose a different task.'**
   String get linkBlocksCycleErrorMessage;
 
+  /// No description provided for @linkCreatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{relation}: {title}'**
+  String linkCreatedMessage(String relation, String title);
+
+  /// No description provided for @linkCreatedUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get linkCreatedUndo;
+
   /// No description provided for @linkDirectionLabel.
   ///
   /// In en, this message translates to:

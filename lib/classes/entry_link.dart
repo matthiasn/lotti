@@ -246,6 +246,21 @@ extension EntryLinkTypeFactory on EntryLinkType {
   }
 }
 
+/// The `linked_entries.type` column value for an [EntryLinkType], without
+/// needing an [EntryLink] instance — used when removing a link the caller
+/// only knows the type of (e.g. undoing a link it just created). Must agree
+/// with [entryLinkTypeName] for every variant.
+String entryLinkTypeDbName(EntryLinkType type) => switch (type) {
+  EntryLinkType.basic => 'BasicLink',
+  EntryLinkType.rating => 'RatingLink',
+  EntryLinkType.project => 'ProjectLink',
+  EntryLinkType.blocks => 'BlocksLink',
+  EntryLinkType.followsUp => 'FollowsUpLink',
+  EntryLinkType.duplicates => 'DuplicatesLink',
+  EntryLinkType.fixes => 'FixesLink',
+  EntryLinkType.supersedes => 'SupersedesLink',
+};
+
 /// The `linked_entries.type` column value for [link]'s union variant. Shared
 /// by `linkedDbEntity` (the write path) and `JournalRepository`'s
 /// `updateLink` change-detection so a variant change is never missed.

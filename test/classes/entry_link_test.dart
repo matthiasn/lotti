@@ -638,6 +638,28 @@ void main() {
       },
     );
   });
+
+  group('entryLinkTypeDbName', () {
+    test('maps every link type to its linked_entries.type column value', () {
+      // Undo removes a link the caller only knows the *type* of, so this must
+      // agree with entryLinkTypeName for every variant or an undo would fail
+      // to match the row it just wrote.
+      const expected = {
+        EntryLinkType.basic: 'BasicLink',
+        EntryLinkType.rating: 'RatingLink',
+        EntryLinkType.project: 'ProjectLink',
+        EntryLinkType.blocks: 'BlocksLink',
+        EntryLinkType.followsUp: 'FollowsUpLink',
+        EntryLinkType.duplicates: 'DuplicatesLink',
+        EntryLinkType.fixes: 'FixesLink',
+        EntryLinkType.supersedes: 'SupersedesLink',
+      };
+      expect(expected.keys, containsAll(EntryLinkType.values));
+      for (final entry in expected.entries) {
+        expect(entryLinkTypeDbName(entry.key), entry.value);
+      }
+    });
+  });
 }
 
 enum _GeneratedEntryLinkKind {

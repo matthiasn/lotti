@@ -2781,6 +2781,18 @@
   "knowledgeGraphTooltip": "Explorer les liens",
   "knowledgeGraphWalkHint": "Touche un nœud pour avancer · {count, plural, =1{1 nœud} other{{count} nœuds}}",
   "linkBlocksCycleErrorMessage": "Cela créerait un cycle de blocage — choisis une autre tâche.",
+  "linkCreatedMessage": "{relation} : {title}",
+  "@linkCreatedMessage": {
+    "placeholders": {
+      "relation": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "linkCreatedUndo": "Annuler",
   "linkDirectionLabel": "Cette tâche…",
   "linkedTaskImageBadge": "De la tâche liée",
   "linkedTasksBlockedBySectionTitle": "Bloquée par",
