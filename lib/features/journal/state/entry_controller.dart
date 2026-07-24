@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_quill/flutter_quill.dart' hide ChangeSource;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/change_source.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -25,12 +27,14 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
@@ -38,6 +42,18 @@ import 'package:super_clipboard/super_clipboard.dart';
 /// Overridable in tests to avoid real delays.
 @visibleForTesting
 Duration stopRecordingDelay = const Duration(milliseconds: 100);
+
+/// Outcome of `EntryController.updateTaskStatus`'s two independent writes —
+/// see that method's doc comment for why they're decoupled.
+class TaskStatusUpdateResult {
+  const TaskStatusUpdateResult({
+    required this.statusUpdated,
+    required this.blockerLinked,
+  });
+
+  final bool statusUpdated;
+  final bool blockerLinked;
+}
 
 /// The detail-side controller for a single journal entry, keyed by entry id.
 ///
@@ -316,21 +332,65 @@ class EntryController extends AsyncNotifier<EntryState?> {
     emitState();
   }
 
-  Future<void> updateTaskStatus(String? status) async {
+  /// Sets the task's status and, independently, optionally links a blocking
+  /// task (ADR 0042 §4 status-enrichment: the manual `blocked` status stays
+  /// user-owned; naming a blocker is offered, never required, and never
+  /// gates or rolls back the status write).
+  ///
+  /// The two writes are deliberately decoupled: [blockerTaskId] is applied
+  /// (or attempted) even when the status write is a no-op (e.g. the task is
+  /// already Blocked and the user just wants to add another blocker), and a
+  /// rejected blocker link (the cycle guard firing) never prevents the
+  /// status from being set.
+  Future<TaskStatusUpdateResult> updateTaskStatus(
+    String? status, {
+    String? blockerTaskId,
+    String? blockerTaskTitle,
+  }) async {
     final task = state.value?.entry;
+    var statusUpdated = false;
 
     if (task is Task &&
         status != null &&
         status != task.data.status.toDbString) {
+      final newStatus =
+          status == 'BLOCKED' &&
+              blockerTaskTitle != null &&
+              blockerTaskTitle.isNotEmpty
+          ? TaskStatus.blocked(
+              id: uuid.v1(),
+              createdAt: DateTime.now(),
+              utcOffset: DateTime.now().timeZoneOffset.inMinutes,
+              // No BuildContext here — resolve the platform locale directly,
+              // same pattern as change_set_builder.dart's notification copy.
+              reason: lookupAppLocalizations(
+                ui.PlatformDispatcher.instance.locale,
+              ).taskBlockedReason(blockerTaskTitle),
+            )
+          : taskStatusFromString(status);
+
       await _persistenceLogic.updateTask(
         journalEntityId: id,
-        taskData: task.data.copyWith(
-          status: taskStatusFromString(status),
-        ),
+        taskData: task.data.copyWith(status: newStatus),
       );
 
       await HapticFeedback.heavyImpact();
+      statusUpdated = true;
     }
+
+    var blockerLinked = false;
+    if (task is Task && blockerTaskId != null && blockerTaskId != id) {
+      blockerLinked = await _persistenceLogic.createLink(
+        fromId: blockerTaskId,
+        toId: id,
+        linkType: EntryLinkType.blocks,
+      );
+    }
+
+    return TaskStatusUpdateResult(
+      statusUpdated: statusUpdated,
+      blockerLinked: blockerLinked,
+    );
   }
 
   Future<void> updateTaskPriority(String code) async {

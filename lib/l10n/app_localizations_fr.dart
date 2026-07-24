@@ -6665,13 +6665,35 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get linkBlocksCycleErrorMessage =>
+      'Cela créerait un cycle de blocage — choisis une autre tâche.';
+
+  @override
   String get linkedFromCaption => 'depuis';
 
   @override
   String get linkedTaskImageBadge => 'De la tâche liée';
 
   @override
+  String get linkedTasksBlockedBySectionTitle => 'Bloquée par';
+
+  @override
+  String get linkedTasksBlocksSectionTitle => 'Bloque';
+
+  @override
+  String get linkedTasksDuplicatesSectionTitle => 'Doublons';
+
+  @override
+  String get linkedTasksFixesSectionTitle => 'Corrige';
+
+  @override
+  String get linkedTasksFollowUpsSectionTitle => 'Suivis';
+
+  @override
   String get linkedTasksMenuTooltip => 'Options des tâches liées';
+
+  @override
+  String get linkedTasksSupersedesSectionTitle => 'Remplace';
 
   @override
   String get linkedTasksTitle => 'Tâches liées';
@@ -6681,6 +6703,54 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Lier une tâche existante...';
+
+  @override
+  String get linkPhraseBlocksInverse => 'Est bloquée par';
+
+  @override
+  String get linkPhraseBlocksPrimary => 'Bloque';
+
+  @override
+  String get linkPhraseDuplicatesInverse => 'Est dupliquée par';
+
+  @override
+  String get linkPhraseDuplicatesPrimary => 'Duplique';
+
+  @override
+  String get linkPhraseFixesInverse => 'Est corrigée par';
+
+  @override
+  String get linkPhraseFixesPrimary => 'Corrige';
+
+  @override
+  String get linkPhraseFollowsUpInverse => 'A un suivi';
+
+  @override
+  String get linkPhraseFollowsUpPrimary => 'Fait suite à';
+
+  @override
+  String get linkPhraseSupersedesInverse => 'Est remplacée par';
+
+  @override
+  String get linkPhraseSupersedesPrimary => 'Remplace';
+
+  @override
+  String get linkTypeBasicOption => 'Lier';
+
+  @override
+  String get linkTypeBlocksOption => 'Bloque';
+
+  @override
+  String get linkTypeDuplicatesOption => 'Duplique';
+
+  @override
+  String get linkTypeFixesOption => 'Corrige';
+
+  @override
+  String get linkTypeFollowsUpOption => 'Fait suite à';
+
+  @override
+  String get linkTypeSupersedesOption => 'Remplace';
 
   @override
   String get logbookEmptyHint =>
@@ -10230,6 +10300,39 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentWakeAgent => 'Réveiller l’agent';
 
   @override
+  String taskBlockedByChipLabel(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bloquée par $count tâches',
+      one: 'Bloquée par $title',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String taskBlockedReason(String title) {
+    return 'Bloquée par : $title';
+  }
+
+  @override
+  String taskBlockedByChipTooltip(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ouvre pour voir $count blocages',
+      one: 'Bloquée par $title',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskBlockerPickerSkipButton => 'Passer';
+
+  @override
+  String get taskBlockerPickerTitle => 'Qu\'est-ce qui bloque cette tâche ?';
+
+  @override
   String get taskCategoryAllLabel => 'tout';
 
   @override
@@ -10868,6 +10971,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get unlinkTaskConfirm => 'Es-tu sûr de vouloir délier cette tâche ?';
+
+  @override
+  String get unlinkTaskFailedMessage =>
+      'Impossible de délier la tâche. Réessaie.';
 
   @override
   String get unlinkTaskTitle => 'Délier la tâche';

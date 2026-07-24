@@ -2,36 +2,31 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/state/linked_entries_controller.dart';
-import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
-import 'package:lotti/features/tasks/ui/utils.dart';
-import 'package:lotti/features/tasks/util/task_navigation.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/task_relationship_sections.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
-
-enum _LinkDirection { to, from }
-
-class _LinkedTaskRowData {
-  const _LinkedTaskRowData(this.task, this.direction);
-  final Task task;
-  final _LinkDirection direction;
-}
 
 /// Linked tasks card on the task detail view.
 ///
 /// Renders a single section card with a header (title, count badge, expand
-/// chevron, overflow menu) and a list of incoming ("from") and outgoing ("to")
-/// task links separated by dividers. Hidden entirely when no links exist.
+/// chevron, overflow menu), the 6 typed-relationship sections
+/// ([TaskRelationshipSections] — Blocked by, Blocks, Follow-ups, Duplicates,
+/// Fixes, Supersedes, each shown only when non-empty), and the flat
+/// plain-link list (today's original "Linked Tasks" rows, unchanged). Hidden
+/// entirely when there are no links of any kind.
 class LinkedTasksWidget extends ConsumerStatefulWidget {
   const LinkedTasksWidget({
     required this.taskId,
@@ -59,24 +54,27 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
   Widget build(BuildContext context) {
     final taskId = widget.taskId;
     final uiState = ref.watch(linkedTasksControllerProvider(taskId));
+    final linkGroups =
+        ref.watch(taskLinkGroupsControllerProvider(taskId)).value ??
+        TaskLinkGroups.empty;
 
-    final outgoingTasks = ref
-        .watch(outgoingLinkedTasksProvider(taskId))
-        .whereType<Task>()
-        .toList();
-
-    final incomingEntities =
-        ref.watch(linkedFromEntriesControllerProvider(taskId)).value ?? [];
-    final incomingTasks = incomingEntities.whereType<Task>().toList();
-
-    if (incomingTasks.isEmpty && outgoingTasks.isEmpty) {
+    if (linkGroups.totalCount == 0) {
       return const SizedBox.shrink();
     }
 
-    final rows = <_LinkedTaskRowData>[
-      ...outgoingTasks.map((t) => _LinkedTaskRowData(t, _LinkDirection.to)),
-      ...incomingTasks.map((t) => _LinkedTaskRowData(t, _LinkDirection.from)),
-    ];
+    final flatRows = linkGroups.flat
+        .map(
+          (entry) => LinkedTaskRowData(
+            task: entry.task,
+            direction: entry.direction == TaskLinkDirection.outgoing
+                ? LinkDirection.outgoing
+                : LinkDirection.incoming,
+            caption: entry.direction == TaskLinkDirection.outgoing
+                ? context.messages.linkedToCaption
+                : context.messages.linkedFromCaption,
+          ),
+        )
+        .toList();
 
     final tokens = context.designTokens;
     final radius = BorderRadius.circular(tokens.radii.l);
@@ -98,26 +96,50 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
             children: [
               _LinkedTasksHeader(
                 taskId: taskId,
-                count: rows.length,
+                count: linkGroups.totalCount,
                 expanded: _expanded,
-                hasLinkedTasks: rows.isNotEmpty,
+                hasLinkedTasks: true,
                 manageMode: uiState.manageMode,
                 onToggleExpanded: () => setState(() => _expanded = !_expanded),
               ),
-              if (_expanded)
-                for (var i = 0; i < rows.length; i++) ...[
+              if (_expanded) ...[
+                if (linkGroups.typed.isNotEmpty)
+                  TaskRelationshipSections(
+                    taskId: taskId,
+                    manageMode: uiState.manageMode,
+                  ),
+                if (linkGroups.typed.isNotEmpty && flatRows.isNotEmpty)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: tokens.colors.decorative.level01,
+                  ),
+                for (var i = 0; i < flatRows.length; i++) ...[
                   if (i > 0)
                     Divider(
                       height: 1,
                       thickness: 1,
                       color: tokens.colors.decorative.level01,
                     ),
-                  _LinkedTaskRow(
+                  LinkedTaskRow(
                     taskId: taskId,
-                    data: rows[i],
+                    data: flatRows[i],
                     manageMode: uiState.manageMode,
+                    onUnlink: () => ref
+                        .read(journalRepositoryProvider)
+                        .removeTypedLink(
+                          fromId:
+                              flatRows[i].direction == LinkDirection.outgoing
+                              ? taskId
+                              : flatRows[i].task.meta.id,
+                          toId: flatRows[i].direction == LinkDirection.outgoing
+                              ? flatRows[i].task.meta.id
+                              : taskId,
+                          linkType: 'BasicLink',
+                        ),
                   ),
                 ],
+              ],
             ],
           ),
         ),
@@ -268,14 +290,10 @@ class _LinkedTasksHeader extends ConsumerWidget {
   }
 
   Future<void> _showLinkTaskModal(BuildContext context, WidgetRef ref) async {
-    final outgoingLinks =
-        ref.read(linkedEntriesControllerProvider(taskId)).value ?? [];
-    final incomingEntities =
-        ref.read(linkedFromEntriesControllerProvider(taskId)).value ?? [];
-
+    final linkGroups = ref.read(taskLinkGroupsControllerProvider(taskId)).value;
     final existingLinkedIds = <String>{
-      ...outgoingLinks.map((link) => link.toId),
-      ...incomingEntities.whereType<Task>().map((task) => task.meta.id),
+      ...?linkGroups?.flat.map((e) => e.task.meta.id),
+      ...?linkGroups?.typed.map((e) => e.task.meta.id),
     };
 
     await LinkTaskModal.show(
@@ -286,6 +304,9 @@ class _LinkedTasksHeader extends ConsumerWidget {
   }
 
   Future<void> _createNewLinkedTask(BuildContext context, WidgetRef ref) async {
+    final selection = await _pickRelationshipType(context);
+    if (selection == null || !context.mounted) return;
+
     final entryState = ref.read(entryControllerProvider(taskId)).value;
     final categoryId = entryState?.entry?.meta.categoryId;
 
@@ -294,10 +315,88 @@ class _LinkedTasksHeader extends ConsumerWidget {
       categoryId: categoryId,
     );
 
+    if (newTask != null && selection.type != EntryLinkType.basic) {
+      // createTask always makes a BasicLink; swap it for the chosen
+      // relationship rather than leaving a redundant plain link alongside it.
+      await ref
+          .read(journalRepositoryProvider)
+          .removeTypedLink(
+            fromId: taskId,
+            toId: newTask.meta.id,
+            linkType: 'BasicLink',
+          );
+      final swap = selection.inverse;
+      await getIt<PersistenceLogic>().createLink(
+        fromId: swap ? newTask.meta.id : taskId,
+        toId: swap ? taskId : newTask.meta.id,
+        linkType: selection.type,
+      );
+    }
+
     if (newTask != null && context.mounted) {
       unawaited(autoAssignCategoryAgent(ref, newTask));
       tasksBeamerDelegate.beamToNamed('/tasks/${newTask.meta.id}');
     }
+  }
+}
+
+/// Relationship type + direction chosen for a newly-created linked task.
+class _RelationshipSelection {
+  const _RelationshipSelection({required this.type, required this.inverse});
+  final EntryLinkType type;
+  final bool inverse;
+}
+
+/// Prompts for the relationship the new task will have to the current one,
+/// or null if cancelled. The new task always defaults to today's plain-link
+/// direction (current task → new task); the inverse toggle swaps it.
+Future<_RelationshipSelection?> _pickRelationshipType(
+  BuildContext context,
+) async {
+  return showDialog<_RelationshipSelection>(
+    context: context,
+    builder: (context) => const _RelationshipPickerDialog(),
+  );
+}
+
+class _RelationshipPickerDialog extends StatefulWidget {
+  const _RelationshipPickerDialog();
+
+  @override
+  State<_RelationshipPickerDialog> createState() =>
+      _RelationshipPickerDialogState();
+}
+
+class _RelationshipPickerDialogState extends State<_RelationshipPickerDialog> {
+  EntryLinkType _selectedType = EntryLinkType.basic;
+  bool _inverse = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.messages.createNewLinkedTask),
+      content: RelationshipTypeSelector(
+        selectedType: _selectedType,
+        inverse: _inverse,
+        onTypeChanged: (type) => setState(() {
+          _selectedType = type;
+          _inverse = false;
+        }),
+        onInverseChanged: (value) => setState(() => _inverse = value),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(context.messages.cancelButton),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(
+            _RelationshipSelection(type: _selectedType, inverse: _inverse),
+          ),
+          child: Text(context.messages.createButton),
+        ),
+      ],
+    );
   }
 }
 
@@ -323,149 +422,6 @@ class _CountBadge extends StatelessWidget {
           color: tokens.colors.text.onInteractiveAlert,
           height: 1,
         ),
-      ),
-    );
-  }
-}
-
-class _LinkedTaskRow extends ConsumerWidget {
-  const _LinkedTaskRow({
-    required this.taskId,
-    required this.data,
-    required this.manageMode,
-  });
-
-  final String taskId;
-  final _LinkedTaskRowData data;
-  final bool manageMode;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    final task = data.task;
-    final isOutgoing = data.direction == _LinkDirection.to;
-    final directionColor = isOutgoing
-        ? tokens.colors.alert.info.defaultColor
-        : tokens.colors.alert.success.defaultColor;
-    final glyph = isOutgoing
-        ? 'assets/icons/subdirectory_arrow_right.svg'
-        : 'assets/icons/subdirectory_arrow_left.svg';
-    final caption = isOutgoing
-        ? context.messages.linkedToCaption
-        : context.messages.linkedFromCaption;
-
-    return InkWell(
-      onTap: manageMode
-          ? null
-          : () => openLinkedTaskDetail(context: context, taskId: task.id),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step5,
-          vertical: tokens.spacing.step3,
-        ),
-        child: Row(
-          children: [
-            SvgPicture.asset(
-              glyph,
-              width: 16,
-              height: 16,
-              colorFilter: ColorFilter.mode(directionColor, BlendMode.srcIn),
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            Text(
-              caption,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: directionColor,
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            _StatusGlyph(status: task.data.status),
-            SizedBox(width: tokens.spacing.step2),
-            Expanded(
-              child: Text(
-                task.data.title,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            if (manageMode)
-              IconButton(
-                tooltip: context.messages.unlinkButton,
-                onPressed: () => _confirmUnlink(context, ref),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 32,
-                  minHeight: 32,
-                ),
-                icon: Icon(
-                  Icons.close_rounded,
-                  size: 16,
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              )
-            else
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 14,
-                color: tokens.colors.text.lowEmphasis,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _confirmUnlink(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(ctx.messages.unlinkTaskTitle),
-        content: Text(ctx.messages.unlinkTaskConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(ctx.messages.cancelButton),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(ctx.messages.unlinkButton),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
-
-    if (data.direction == _LinkDirection.to) {
-      await ref
-          .read(linkedEntriesControllerProvider(taskId).notifier)
-          .removeLink(toId: data.task.id);
-    } else {
-      await ref
-          .read(journalRepositoryProvider)
-          .removeLink(fromId: data.task.id, toId: taskId);
-    }
-  }
-}
-
-class _StatusGlyph extends StatelessWidget {
-  const _StatusGlyph({required this.status});
-
-  final TaskStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    return Icon(
-      taskIconFromStatusString(status.toDbString),
-      size: 16,
-      color: taskColorFromStatusString(
-        status.toDbString,
-        brightness: brightness,
       ),
     );
   }

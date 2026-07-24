@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -245,6 +246,7 @@ void main() {
     registerFallbackValue(const AsyncLoading<EntryState?>());
     registerFallbackValue(DateTime(2024, 3, 15, 10, 30));
     registerFallbackValue(FakeQuillController());
+    registerFallbackValue(EntryLinkType.basic);
 
     when(
       () => mockUpdateNotifications.updateStream,
@@ -1897,6 +1899,167 @@ void main() {
         ),
       );
     });
+
+    test(
+      'setting BLOCKED with a blocker title populates reason and links the '
+      'blocker with linkType blocks',
+      () async {
+        final container = makeProviderContainer();
+        final entryId = testTask.meta.id;
+        final testEntryProvider = entryControllerProvider(entryId);
+        final notifier = container.read(testEntryProvider.notifier);
+
+        await container.read(testEntryProvider.future);
+
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: entryId,
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'blocker-id',
+            toId: entryId,
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result = await notifier.updateTaskStatus(
+          'BLOCKED',
+          blockerTaskId: 'blocker-id',
+          blockerTaskTitle: 'Fix the outage',
+        );
+
+        expect(result.statusUpdated, isTrue);
+        expect(result.blockerLinked, isTrue);
+
+        final captured =
+            verify(
+                  () => mockPersistenceLogic.updateTask(
+                    journalEntityId: entryId,
+                    taskData: captureAny(named: 'taskData'),
+                  ),
+                ).captured.single
+                as TaskData;
+        expect(captured.status, isA<TaskBlocked>());
+        expect(
+          (captured.status as TaskBlocked).reason,
+          'Blocked by: Fix the outage',
+        );
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'blocker-id',
+            toId: entryId,
+            linkType: EntryLinkType.blocks,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'blockerLinked reflects a false return from createLink without '
+      'affecting statusUpdated (cycle guard rejection is independent)',
+      () async {
+        final container = makeProviderContainer();
+        final entryId = testTask.meta.id;
+        final testEntryProvider = entryControllerProvider(entryId);
+        final notifier = container.read(testEntryProvider.notifier);
+
+        await container.read(testEntryProvider.future);
+
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: entryId,
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'blocker-id',
+            toId: entryId,
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => false);
+
+        final result = await notifier.updateTaskStatus(
+          'BLOCKED',
+          blockerTaskId: 'blocker-id',
+          blockerTaskTitle: 'Would create a cycle',
+        );
+
+        expect(result.statusUpdated, isTrue);
+        expect(result.blockerLinked, isFalse);
+      },
+    );
+
+    test(
+      'links a blocker even when the status write is a no-op (already '
+      'blocked, just naming another blocker)',
+      () async {
+        final container = makeProviderContainer();
+        final entryId = testTask.meta.id;
+        final testEntryProvider = entryControllerProvider(entryId);
+        final notifier = container.read(testEntryProvider.notifier);
+
+        await container.read(testEntryProvider.future);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'blocker-id',
+            toId: entryId,
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result = await notifier.updateTaskStatus(
+          testTask.data.status.toDbString,
+          blockerTaskId: 'blocker-id',
+          blockerTaskTitle: 'Another blocker',
+        );
+
+        expect(result.statusUpdated, isFalse);
+        expect(result.blockerLinked, isTrue);
+        verifyNever(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            taskData: any(named: 'taskData'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'without a blockerTaskId, createLink is never called (regression '
+      'guard for the plain status-only path)',
+      () async {
+        final container = makeProviderContainer();
+        final entryId = testTask.meta.id;
+        final testEntryProvider = entryControllerProvider(entryId);
+        final notifier = container.read(testEntryProvider.notifier);
+
+        await container.read(testEntryProvider.future);
+
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: entryId,
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result = await notifier.updateTaskStatus('DONE');
+
+        expect(result.statusUpdated, isTrue);
+        expect(result.blockerLinked, isFalse);
+        verifyNever(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        );
+      },
+    );
   });
 
   group('updateTaskLanguage method', () {

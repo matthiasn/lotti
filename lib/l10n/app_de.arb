@@ -2773,12 +2773,35 @@
   "knowledgeGraphTitle": "Wissensgraph",
   "knowledgeGraphTooltip": "Verknüpfungen erkunden",
   "knowledgeGraphWalkHint": "Tippe auf einen Knoten · Knoten: {count}",
+  "linkBlocksCycleErrorMessage": "Das würde einen blockierenden Kreislauf erzeugen — wähle eine andere Aufgabe.",
   "linkedFromCaption": "von",
   "linkedTaskImageBadge": "Von verknüpfter Aufgabe",
+  "linkedTasksBlockedBySectionTitle": "Blockiert von",
+  "linkedTasksBlocksSectionTitle": "Blockiert",
+  "linkedTasksDuplicatesSectionTitle": "Duplikate",
+  "linkedTasksFixesSectionTitle": "Behebt",
+  "linkedTasksFollowUpsSectionTitle": "Folgeaufgaben",
   "linkedTasksMenuTooltip": "Optionen für verknüpfte Aufgaben",
+  "linkedTasksSupersedesSectionTitle": "Ersetzt",
   "linkedTasksTitle": "Verknüpfte Aufgaben",
   "linkedToCaption": "zu",
   "linkExistingTask": "Vorhandene Aufgabe verknüpfen...",
+  "linkPhraseBlocksInverse": "Wird blockiert von",
+  "linkPhraseBlocksPrimary": "Blockiert",
+  "linkPhraseDuplicatesInverse": "Duplikat von",
+  "linkPhraseDuplicatesPrimary": "Dupliziert",
+  "linkPhraseFixesInverse": "Wird behoben durch",
+  "linkPhraseFixesPrimary": "Behebt",
+  "linkPhraseFollowsUpInverse": "Hat Folgeaufgabe",
+  "linkPhraseFollowsUpPrimary": "Folgt auf",
+  "linkPhraseSupersedesInverse": "Wird ersetzt durch",
+  "linkPhraseSupersedesPrimary": "Ersetzt",
+  "linkTypeBasicOption": "Verknüpfen",
+  "linkTypeBlocksOption": "Blockiert",
+  "linkTypeDuplicatesOption": "Dupliziert",
+  "linkTypeFixesOption": "Behebt",
+  "linkTypeFollowsUpOption": "Folgt auf",
+  "linkTypeSupersedesOption": "Ersetzt",
   "logbookEmptyHint": "Erstelle deinen ersten Eintrag, um mit dem Logbuch zu starten.",
   "logbookEmptyTitle": "Dein Logbuch ist leer",
   "logbookNewEntriesHint": "Neue Einträge erscheinen hier.",
@@ -4091,6 +4114,31 @@
   "taskAgentUseCategoryDefaultDescription": "Kopiert das aktuelle Setup der Kategorie. Spätere Kategorieänderungen wirken sich nicht auf diesen Agenten aus.",
   "taskAgentUseProfileDefault": "Profilstandard verwenden",
   "taskAgentWakeAgent": "Agenten aufwecken",
+  "taskBlockedByChipLabel": "{count, plural, =1{Blockiert von {title}} other{Blockiert von {count} Aufgaben}}",
+  "@taskBlockedByChipLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedByChipTooltip": "{count, plural, =1{Blockiert von {title}} other{Tippen, um {count} Blockierer zu sehen}}",
+  "@taskBlockedByChipTooltip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedReason": "Blockiert von: {title}",
+  "taskBlockerPickerSkipButton": "Überspringen",
+  "taskBlockerPickerTitle": "Was blockiert diese Aufgabe?",
   "taskCategoryAllLabel": "Alle",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "Nicht zugewiesen",
@@ -4368,6 +4416,7 @@
   "transcriptModelLabel": "Modell: {provider}, {model}",
   "unlinkButton": "Verknüpfung aufheben",
   "unlinkTaskConfirm": "Bist du sicher, dass du die Verknüpfung zu dieser Aufgabe aufheben möchtest?",
+  "unlinkTaskFailedMessage": "Die Verknüpfung konnte nicht aufgehoben werden. Bitte versuch es erneut.",
   "unlinkTaskTitle": "Verknüpfung aufheben",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} Ergebnis} other{{elapsed}ms, {count} Ergebnisse}}",
   "@vectorSearchTiming": {

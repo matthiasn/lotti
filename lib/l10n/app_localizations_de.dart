@@ -6588,13 +6588,35 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get linkBlocksCycleErrorMessage =>
+      'Das würde einen blockierenden Kreislauf erzeugen — wähle eine andere Aufgabe.';
+
+  @override
   String get linkedFromCaption => 'von';
 
   @override
   String get linkedTaskImageBadge => 'Von verknüpfter Aufgabe';
 
   @override
+  String get linkedTasksBlockedBySectionTitle => 'Blockiert von';
+
+  @override
+  String get linkedTasksBlocksSectionTitle => 'Blockiert';
+
+  @override
+  String get linkedTasksDuplicatesSectionTitle => 'Duplikate';
+
+  @override
+  String get linkedTasksFixesSectionTitle => 'Behebt';
+
+  @override
+  String get linkedTasksFollowUpsSectionTitle => 'Folgeaufgaben';
+
+  @override
   String get linkedTasksMenuTooltip => 'Optionen für verknüpfte Aufgaben';
+
+  @override
+  String get linkedTasksSupersedesSectionTitle => 'Ersetzt';
 
   @override
   String get linkedTasksTitle => 'Verknüpfte Aufgaben';
@@ -6604,6 +6626,54 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
+
+  @override
+  String get linkPhraseBlocksInverse => 'Wird blockiert von';
+
+  @override
+  String get linkPhraseBlocksPrimary => 'Blockiert';
+
+  @override
+  String get linkPhraseDuplicatesInverse => 'Duplikat von';
+
+  @override
+  String get linkPhraseDuplicatesPrimary => 'Dupliziert';
+
+  @override
+  String get linkPhraseFixesInverse => 'Wird behoben durch';
+
+  @override
+  String get linkPhraseFixesPrimary => 'Behebt';
+
+  @override
+  String get linkPhraseFollowsUpInverse => 'Hat Folgeaufgabe';
+
+  @override
+  String get linkPhraseFollowsUpPrimary => 'Folgt auf';
+
+  @override
+  String get linkPhraseSupersedesInverse => 'Wird ersetzt durch';
+
+  @override
+  String get linkPhraseSupersedesPrimary => 'Ersetzt';
+
+  @override
+  String get linkTypeBasicOption => 'Verknüpfen';
+
+  @override
+  String get linkTypeBlocksOption => 'Blockiert';
+
+  @override
+  String get linkTypeDuplicatesOption => 'Dupliziert';
+
+  @override
+  String get linkTypeFixesOption => 'Behebt';
+
+  @override
+  String get linkTypeFollowsUpOption => 'Folgt auf';
+
+  @override
+  String get linkTypeSupersedesOption => 'Ersetzt';
 
   @override
   String get logbookEmptyHint =>
@@ -10092,6 +10162,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskAgentWakeAgent => 'Agenten aufwecken';
 
   @override
+  String taskBlockedByChipLabel(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blockiert von $count Aufgaben',
+      one: 'Blockiert von $title',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String taskBlockedReason(String title) {
+    return 'Blockiert von: $title';
+  }
+
+  @override
+  String taskBlockedByChipTooltip(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tippen, um $count Blockierer zu sehen',
+      one: 'Blockiert von $title',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskBlockerPickerSkipButton => 'Überspringen';
+
+  @override
+  String get taskBlockerPickerTitle => 'Was blockiert diese Aufgabe?';
+
+  @override
   String get taskCategoryAllLabel => 'Alle';
 
   @override
@@ -10724,6 +10827,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       'Bist du sicher, dass du die Verknüpfung zu dieser Aufgabe aufheben möchtest?';
+
+  @override
+  String get unlinkTaskFailedMessage =>
+      'Die Verknüpfung konnte nicht aufgehoben werden. Bitte versuch es erneut.';
 
   @override
   String get unlinkTaskTitle => 'Verknüpfung aufheben';

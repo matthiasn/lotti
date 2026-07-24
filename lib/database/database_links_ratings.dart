@@ -325,14 +325,16 @@ mixin _JournalDbLinksRatings
     final idList = ids.toList(growable: false);
     final typeList = types.toList(growable: false);
 
-    final toRows = await (select(linkedEntries)..where(
-          (t) => t.toId.isIn(idList) & t.type.isIn(typeList),
-        ))
-        .get();
-    final fromRows = await (select(linkedEntries)..where(
-          (t) => t.fromId.isIn(idList) & t.type.isIn(typeList),
-        ))
-        .get();
+    final toRows =
+        await (select(linkedEntries)..where(
+              (t) => t.toId.isIn(idList) & t.type.isIn(typeList),
+            ))
+            .get();
+    final fromRows =
+        await (select(linkedEntries)..where(
+              (t) => t.fromId.isIn(idList) & t.type.isIn(typeList),
+            ))
+            .get();
 
     final seenIds = <String>{};
     final result = <EntryLink>[];
@@ -342,6 +344,22 @@ mixin _JournalDbLinksRatings
       }
     }
     return result;
+  }
+
+  /// Deletes only the [type]-typed link between [fromId] and [toId], leaving
+  /// any other type coexisting between the same pair intact. Unlike the
+  /// generic `deleteLink` (which deletes every type for the pair), this is
+  /// needed once a pair can hold both a `BasicLink` and e.g. a `BlocksLink`
+  /// simultaneously (ADR 0042) — unlinking one must not silently remove the
+  /// other.
+  Future<int> deleteTypedLink(String fromId, String toId, String type) {
+    return (delete(linkedEntries)..where(
+          (t) =>
+              t.fromId.equals(fromId) &
+              t.toId.equals(toId) &
+              t.type.equals(type),
+        ))
+        .go();
   }
 
   Future<List<EntryLink>> linksForEntryIdsBidirectional(Set<String> ids) async {

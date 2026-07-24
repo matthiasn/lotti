@@ -6520,13 +6520,35 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get linkBlocksCycleErrorMessage =>
+      'This would create a blocking cycle — choose a different task.';
+
+  @override
   String get linkedFromCaption => 'from';
 
   @override
   String get linkedTaskImageBadge => 'From linked task';
 
   @override
+  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
+
+  @override
+  String get linkedTasksBlocksSectionTitle => 'Blocks';
+
+  @override
+  String get linkedTasksDuplicatesSectionTitle => 'Duplicates';
+
+  @override
+  String get linkedTasksFixesSectionTitle => 'Fixes';
+
+  @override
+  String get linkedTasksFollowUpsSectionTitle => 'Follow-ups';
+
+  @override
   String get linkedTasksMenuTooltip => 'Linked tasks options';
+
+  @override
+  String get linkedTasksSupersedesSectionTitle => 'Supersedes';
 
   @override
   String get linkedTasksTitle => 'Linked Tasks';
@@ -6536,6 +6558,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Link existing task...';
+
+  @override
+  String get linkPhraseBlocksInverse => 'Is blocked by';
+
+  @override
+  String get linkPhraseBlocksPrimary => 'Blocks';
+
+  @override
+  String get linkPhraseDuplicatesInverse => 'Is duplicated by';
+
+  @override
+  String get linkPhraseDuplicatesPrimary => 'Duplicates';
+
+  @override
+  String get linkPhraseFixesInverse => 'Is fixed by';
+
+  @override
+  String get linkPhraseFixesPrimary => 'Fixes';
+
+  @override
+  String get linkPhraseFollowsUpInverse => 'Has follow-up';
+
+  @override
+  String get linkPhraseFollowsUpPrimary => 'Follows up on';
+
+  @override
+  String get linkPhraseSupersedesInverse => 'Is superseded by';
+
+  @override
+  String get linkPhraseSupersedesPrimary => 'Supersedes';
+
+  @override
+  String get linkTypeBasicOption => 'Link';
+
+  @override
+  String get linkTypeBlocksOption => 'Blocks';
+
+  @override
+  String get linkTypeDuplicatesOption => 'Duplicates';
+
+  @override
+  String get linkTypeFixesOption => 'Fixes';
+
+  @override
+  String get linkTypeFollowsUpOption => 'Follows up';
+
+  @override
+  String get linkTypeSupersedesOption => 'Supersedes';
 
   @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
@@ -9960,6 +10030,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentWakeAgent => 'Wake agent';
 
   @override
+  String taskBlockedByChipLabel(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blocked by $count tasks',
+      one: 'Blocked by $title',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String taskBlockedReason(String title) {
+    return 'Blocked by: $title';
+  }
+
+  @override
+  String taskBlockedByChipTooltip(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tap to see $count blockers',
+      one: 'Blocked by $title',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskBlockerPickerSkipButton => 'Skip';
+
+  @override
+  String get taskBlockerPickerTitle => 'What\'s blocking this task?';
+
+  @override
   String get taskCategoryAllLabel => 'all';
 
   @override
@@ -10583,6 +10686,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unlinkTaskConfirm => 'Are you sure you want to unlink this task?';
+
+  @override
+  String get unlinkTaskFailedMessage =>
+      'Couldn\'t unlink the task. Please try again.';
 
   @override
   String get unlinkTaskTitle => 'Unlink Task';

@@ -9,6 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -1004,6 +1005,122 @@ void main() {
           }),
         ).called(1);
       });
+    });
+
+    group('removeTypedLink', () {
+      test(
+        'deletes only the given type and notifies both endpoints',
+        () async {
+          when(
+            () => mockJournalDb.deleteTypedLink(
+              'from-id',
+              'to-id',
+              'BlocksLink',
+            ),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => mockUpdateNotifications.notify(any()),
+          ).thenAnswer((_) async {});
+
+          final result = await repository.removeTypedLink(
+            fromId: 'from-id',
+            toId: 'to-id',
+            linkType: 'BlocksLink',
+          );
+
+          expect(result, 1);
+          verify(
+            () => mockJournalDb.deleteTypedLink(
+              'from-id',
+              'to-id',
+              'BlocksLink',
+            ),
+          ).called(1);
+          verify(
+            () => mockUpdateNotifications.notify({
+              'from-id',
+              'to-id',
+              linkNotification,
+            }),
+          ).called(1);
+        },
+      );
+
+      test('returns 0 when no link of that type exists', () async {
+        when(
+          () => mockJournalDb.deleteTypedLink('from-id', 'to-id', 'BlocksLink'),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockUpdateNotifications.notify(any()),
+        ).thenAnswer((_) async {});
+
+        final result = await repository.removeTypedLink(
+          fromId: 'from-id',
+          toId: 'to-id',
+          linkType: 'BlocksLink',
+        );
+
+        expect(result, 0);
+      });
+    });
+
+    group('getTypedLinksForTaskIds', () {
+      test('delegates to JournalDb.typedLinksForTaskIds', () async {
+        final link = EntryLink.blocks(
+          id: 'link-1',
+          fromId: 'blocker',
+          toId: 'blocked',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        );
+        when(
+          () => mockJournalDb.typedLinksForTaskIds(
+            {'blocked'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer((_) async => [link]);
+
+        final result = await repository.getTypedLinksForTaskIds(
+          {'blocked'},
+          linkTypes: {'BlocksLink'},
+        );
+
+        expect(result, [link]);
+      });
+    });
+
+    group('getJournalEntitiesByIdsIncludingDeleted', () {
+      test(
+        'returns empty list without hitting the DB for empty input',
+        () async {
+          final result = await repository
+              .getJournalEntitiesByIdsIncludingDeleted(
+                <String>[],
+              );
+
+          expect(result, isEmpty);
+          verifyNever(() => mockJournalDb.entriesForIds(any()));
+        },
+      );
+
+      test(
+        'resolves entities including tombstoned ones via entriesForIds',
+        () async {
+          final tombstoned = testJournalEntry(
+            meta: testMeta(id: 'tombstoned', deletedAt: DateTime(2024)),
+          );
+          when(
+            () => mockJournalDb.entriesForIds(['tombstoned']),
+          ).thenReturn(MockSelectable([toDbEntity(tombstoned)]));
+
+          final result = await repository
+              .getJournalEntitiesByIdsIncludingDeleted(['tombstoned']);
+
+          expect(result.single.id, 'tombstoned');
+          expect(result.single.meta.deletedAt, isNotNull);
+        },
+      );
     });
 
     group('getLinkedEntities', () {

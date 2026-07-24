@@ -2773,12 +2773,35 @@
   "knowledgeGraphTitle": "Graf de cunoștințe",
   "knowledgeGraphTooltip": "Explorați legăturile",
   "knowledgeGraphWalkHint": "Atingeți un nod pentru a continua · {count, plural, =1{1 nod} few{{count} noduri} other{{count} de noduri}}",
+  "linkBlocksCycleErrorMessage": "Aceasta ar crea un ciclu de blocare — alegeți o altă sarcină.",
   "linkedFromCaption": "de la",
   "linkedTaskImageBadge": "Din sarcina legată",
+  "linkedTasksBlockedBySectionTitle": "Blocată de",
+  "linkedTasksBlocksSectionTitle": "Blochează",
+  "linkedTasksDuplicatesSectionTitle": "Duplicate",
+  "linkedTasksFixesSectionTitle": "Remediază",
+  "linkedTasksFollowUpsSectionTitle": "Continuări",
   "linkedTasksMenuTooltip": "Opțiuni sarcini legate",
+  "linkedTasksSupersedesSectionTitle": "Înlocuiește",
   "linkedTasksTitle": "Sarcini legate",
   "linkedToCaption": "la",
   "linkExistingTask": "Leagă o sarcină existentă...",
+  "linkPhraseBlocksInverse": "Este blocată de",
+  "linkPhraseBlocksPrimary": "Blochează",
+  "linkPhraseDuplicatesInverse": "Este duplicată de",
+  "linkPhraseDuplicatesPrimary": "Duplică",
+  "linkPhraseFixesInverse": "Este remediată de",
+  "linkPhraseFixesPrimary": "Remediază",
+  "linkPhraseFollowsUpInverse": "Are o continuare",
+  "linkPhraseFollowsUpPrimary": "Continuă",
+  "linkPhraseSupersedesInverse": "Este înlocuită de",
+  "linkPhraseSupersedesPrimary": "Înlocuiește",
+  "linkTypeBasicOption": "Legați",
+  "linkTypeBlocksOption": "Blocați",
+  "linkTypeDuplicatesOption": "Duplicați",
+  "linkTypeFixesOption": "Remediați",
+  "linkTypeFollowsUpOption": "Continuați",
+  "linkTypeSupersedesOption": "Înlocuiți",
   "logbookEmptyHint": "Creați prima dvs. intrare pentru a începe jurnalul.",
   "logbookEmptyTitle": "Jurnalul dvs. este gol",
   "logbookNewEntriesHint": "Intrările noi se vor deschide aici.",
@@ -4091,6 +4114,31 @@
   "taskAgentUseCategoryDefaultDescription": "Copiați configurarea curentă a categoriei. Modificările ulterioare ale categoriei nu vor afecta acest agent.",
   "taskAgentUseProfileDefault": "Folosiți modelul implicit al profilului",
   "taskAgentWakeAgent": "Treziți agentul",
+  "taskBlockedByChipLabel": "{count, plural, =1{Blocată de {title}} few{Blocată de {count} sarcini} other{Blocată de {count} de sarcini}}",
+  "@taskBlockedByChipLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedByChipTooltip": "{count, plural, =1{Blocată de {title}} few{Atingeți pentru a vedea {count} blocaje} other{Atingeți pentru a vedea {count} de blocaje}}",
+  "@taskBlockedByChipTooltip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedReason": "Blocată de: {title}",
+  "taskBlockerPickerSkipButton": "Omiteți",
+  "taskBlockerPickerTitle": "Ce blochează această sarcină?",
   "taskCategoryAllLabel": "toate",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "neeatribuit",
@@ -4368,6 +4416,7 @@
   "transcriptModelLabel": "Model: {provider}, {model}",
   "unlinkButton": "Dezleagă",
   "unlinkTaskConfirm": "Sigur doriți să deconectați această sarcină?",
+  "unlinkTaskFailedMessage": "Nu s-a putut deconecta sarcina. Vă rugăm să încercați din nou.",
   "unlinkTaskTitle": "Deconectați sarcina",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} rezultat} other{{elapsed}ms, {count} rezultate}}",
   "@vectorSearchTiming": {

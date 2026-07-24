@@ -196,6 +196,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackConfigFlag);
   registerFallbackValue(fallbackSurveyData);
   registerFallbackValue(FakeLaunchOptions());
+  registerFallbackValue(EntryLinkType.basic);
 
   // Logging
   registerFallbackValue(LogDomain.general);

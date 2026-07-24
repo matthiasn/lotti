@@ -97,6 +97,7 @@ class DesktopTaskHeader extends StatefulWidget {
     this.onAddLabelTap,
     this.estimateSlot,
     this.consumptionSlot,
+    this.blockedBySlot,
     this.initialEditing = false,
     super.key,
   });
@@ -118,6 +119,9 @@ class DesktopTaskHeader extends StatefulWidget {
 
   /// Optional AI-consumption pill forwarded into [MetaRow].
   final Widget? consumptionSlot;
+
+  /// Optional "Blocked by" chip forwarded into [MetaRow].
+  final Widget? blockedBySlot;
 
   /// Force the inline editor open on first build. Used by Widgetbook / tests
   /// to pin the editing state without simulating a tap.
@@ -227,6 +231,7 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
             labels: widget.data.labels,
             estimateSlot: widget.estimateSlot,
             consumptionSlot: widget.consumptionSlot,
+            blockedBySlot: widget.blockedBySlot,
             onPriorityTap: widget.onPriorityTap,
             onStatusTap: widget.onStatusTap,
             onDueDateTap: widget.onDueDateTap,

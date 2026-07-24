@@ -3350,12 +3350,35 @@
       }
     }
   },
+  "linkBlocksCycleErrorMessage": "This would create a blocking cycle — choose a different task.",
   "linkedFromCaption": "from",
   "linkedTaskImageBadge": "From linked task",
+  "linkedTasksBlockedBySectionTitle": "Blocked by",
+  "linkedTasksBlocksSectionTitle": "Blocks",
+  "linkedTasksDuplicatesSectionTitle": "Duplicates",
+  "linkedTasksFixesSectionTitle": "Fixes",
+  "linkedTasksFollowUpsSectionTitle": "Follow-ups",
   "linkedTasksMenuTooltip": "Linked tasks options",
+  "linkedTasksSupersedesSectionTitle": "Supersedes",
   "linkedTasksTitle": "Linked Tasks",
   "linkedToCaption": "to",
   "linkExistingTask": "Link existing task...",
+  "linkPhraseBlocksInverse": "Is blocked by",
+  "linkPhraseBlocksPrimary": "Blocks",
+  "linkPhraseDuplicatesInverse": "Is duplicated by",
+  "linkPhraseDuplicatesPrimary": "Duplicates",
+  "linkPhraseFixesInverse": "Is fixed by",
+  "linkPhraseFixesPrimary": "Fixes",
+  "linkPhraseFollowsUpInverse": "Has follow-up",
+  "linkPhraseFollowsUpPrimary": "Follows up on",
+  "linkPhraseSupersedesInverse": "Is superseded by",
+  "linkPhraseSupersedesPrimary": "Supersedes",
+  "linkTypeBasicOption": "Link",
+  "linkTypeBlocksOption": "Blocks",
+  "linkTypeDuplicatesOption": "Duplicates",
+  "linkTypeFixesOption": "Fixes",
+  "linkTypeFollowsUpOption": "Follows up",
+  "linkTypeSupersedesOption": "Supersedes",
   "logbookEmptyHint": "Create your first entry to start journaling.",
   "logbookEmptyTitle": "Your logbook is empty",
   "logbookNewEntriesHint": "New entries will open here.",
@@ -4875,6 +4898,38 @@
   "taskAgentUseCategoryDefaultDescription": "Copies the category’s current setup. Later category changes won’t affect this agent.",
   "taskAgentUseProfileDefault": "Use profile default",
   "taskAgentWakeAgent": "Wake agent",
+  "taskBlockedByChipLabel": "{count, plural, =1{Blocked by {title}} other{Blocked by {count} tasks}}",
+  "@taskBlockedByChipLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedByChipTooltip": "{count, plural, =1{Blocked by {title}} other{Tap to see {count} blockers}}",
+  "@taskBlockedByChipTooltip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedReason": "Blocked by: {title}",
+  "@taskBlockedReason": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockerPickerSkipButton": "Skip",
+  "taskBlockerPickerTitle": "What's blocking this task?",
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",
   "taskCategoryUnassignedLabel": "unassigned",
@@ -5211,6 +5266,7 @@
   },
   "unlinkButton": "Unlink",
   "unlinkTaskConfirm": "Are you sure you want to unlink this task?",
+  "unlinkTaskFailedMessage": "Couldn't unlink the task. Please try again.",
   "unlinkTaskTitle": "Unlink Task",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}",
   "@vectorSearchTiming": {
