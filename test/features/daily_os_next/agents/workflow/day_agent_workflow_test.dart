@@ -1957,8 +1957,13 @@ void main() {
         'renders <digest> with status events, directives, and the digest '
         'rules, then re-arms the next digest',
         () async {
-          // Watermark: the newest dailyWakeCompleted milestone.
+          // Watermark: the newest dailyWakeCompleted milestone, overlapped
+          // by the 12h sync-lag slack so a peer's late-synced escalation
+          // (origin timestamp older than the local milestone) still ranks.
           final lastDigestAt = now.subtract(const Duration(hours: 24));
+          final sinceWithSlack = lastDigestAt.subtract(
+            const Duration(hours: 12),
+          );
           when(
             () => repository.getMessagesByKind(
               dailyOsPlannerAgentId,
@@ -1980,7 +1985,7 @@ void main() {
           );
           when(
             () => repository.getDayStatusEventsSince(
-              lastDigestAt,
+              sinceWithSlack,
               limit: any(named: 'limit'),
             ),
           ).thenAnswer(
@@ -2042,7 +2047,7 @@ void main() {
           final digest = sentPrompt().json('digest')! as Map;
           expect(digest['todayDayId'], dayId);
           expect(digest['tomorrowDayId'], 'dayplan-2026-05-26');
-          expect(digest['since'], lastDigestAt.toIso8601String());
+          expect(digest['since'], sinceWithSlack.toIso8601String());
           final events = digest['statusEvents'] as List;
           expect((events.single as Map)['status'], 'attentionNeeded');
           expect((events.single as Map)['reasons'], ['overCommitted']);
@@ -2337,7 +2342,8 @@ void main() {
       );
 
       test(
-        'falls back to a 48h watermark for the first digest',
+        'falls back to a 48h watermark (plus the sync-lag slack) for the '
+        'first digest',
         () async {
           when(
             () => repository.getMessagesByKind(
@@ -2355,11 +2361,11 @@ void main() {
           final digest = sentPrompt().json('digest')! as Map;
           expect(
             digest['since'],
-            now.subtract(const Duration(hours: 48)).toIso8601String(),
+            now.subtract(const Duration(hours: 60)).toIso8601String(),
           );
           verify(
             () => repository.getDayStatusEventsSince(
-              now.subtract(const Duration(hours: 48)),
+              now.subtract(const Duration(hours: 60)),
               limit: any(named: 'limit'),
             ),
           ).called(1);

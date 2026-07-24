@@ -17,6 +17,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -136,6 +137,7 @@ void main() {
     int? scheduledMinutes,
     DateTime? deletedAt,
     String agentId = _agentId,
+    VectorClock? vectorClock,
   }) {
     final resolvedBlocks = blocks ?? defaultSeedBlocks();
     final plan =
@@ -159,7 +161,7 @@ void main() {
               createdAt: _now,
               updatedAt: _now,
               deletedAt: deletedAt,
-              vectorClock: null,
+              vectorClock: vectorClock,
             )
             as DayPlanEntity;
     agentEntities[plan.id] = plan;
@@ -347,6 +349,35 @@ void main() {
         // The committed plan is untouched — nothing was written.
         expect(upsertedEntities, isEmpty);
         expect(agentEntities[committed.id], same(committed));
+      },
+    );
+
+    test(
+      'persistDraftPlan preserves the persisted vector clock on a redraft '
+      'so the rewrite causally dominates the prior plan (no LWW downgrade)',
+      () async {
+        const priorClock = VectorClock({'host-a': 4});
+        seedPlanEntity(vectorClock: priorClock);
+
+        final plan = await withClock(Clock.fixed(_now), () {
+          return createService().persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: [
+              {
+                'id': 'block-1',
+                'title': 'Prep demo',
+                'categoryId': 'work',
+                'start': DateTime(2026, 5, 25, 9).toIso8601String(),
+                'end': DateTime(2026, 5, 25, 10).toIso8601String(),
+                'type': 'manual',
+              },
+            ],
+          );
+        });
+
+        expect(plan.vectorClock, priorClock);
       },
     );
 

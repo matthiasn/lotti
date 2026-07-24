@@ -346,7 +346,12 @@ class DayAgentPlanWriter {
               scheduledMinutes: scheduledMinutes,
               createdAt: existing?.createdAt ?? now,
               updatedAt: now,
-              vectorClock: null,
+              // Seed from the persisted register so the sync layer's
+              // next-clock stamp causally DOMINATES the prior plan (same
+              // discipline as _writeDaySummary and the rollup rewrite);
+              // null would downgrade a redraft to wall-clock LWW against
+              // any revision that synced in meanwhile.
+              vectorClock: existing?.vectorClock,
             )
             as DayPlanEntity;
 

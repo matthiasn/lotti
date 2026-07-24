@@ -345,7 +345,19 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       return null;
     }
     try {
-      final since = await _lastDigestAt(agentId, now);
+      // Overlap the watermark by a sync-lag slack: `created_at` is stamped
+      // by the ORIGINATING device, so another device's offline escalation
+      // can sync in bearing a timestamp older than this device's
+      // digest-completion milestone. A strict `> watermark` read would skip
+      // it forever; the bounded overlap re-ranks such late arrivals instead
+      // (re-showing an already-digested event is advisory noise, skipping
+      // an escalation is loss). Events syncing in later than the slack are
+      // still missed — accepted residual until consumed-event tracking
+      // exists.
+      final since = (await _lastDigestAt(
+        agentId,
+        now,
+      )).subtract(_digestStatusEventSyncLagSlack);
       final tomorrowId = dayAgentIdForDate(
         DateTime(dayDate.year, dayDate.month, dayDate.day + 1),
       );
@@ -458,6 +470,10 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   /// something is systemically wrong — which the `statusEventsTruncated`
   /// marker surfaces to the model rather than hiding.
   static const _digestStatusEventLimit = 50;
+
+  /// Sync-lag overlap subtracted from the digest watermark before reading
+  /// status events (see `_digestContext`).
+  static const _digestStatusEventSyncLagSlack = Duration(hours: 12);
 
   /// Initial candidate-pool fetch for ranked selection — larger than the
   /// render cap so severity decides what survives truncation instead of

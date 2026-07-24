@@ -210,7 +210,14 @@ class DayAgentDirectiveService {
               attentionNotes: attentionNotes,
               createdAt: createdAt,
               updatedAt: now,
-              vectorClock: null,
+              // Seed from the persisted register so the sync layer's
+              // next-clock stamp causally DOMINATES the prior revision.
+              // With null, a re-issue after a peer's revision synced in is
+              // judged concurrent and falls to wall-clock LWW — a
+              // skew-behind device's directive would diverge across peers.
+              vectorClock: existing is DayDirectiveEntity
+                  ? existing.vectorClock
+                  : null,
             )
             as DayDirectiveEntity;
 
