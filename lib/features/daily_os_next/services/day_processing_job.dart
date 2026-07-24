@@ -222,6 +222,7 @@ class DayProcessingJob {
     required this.nextAttemptAt,
     required this.attempts,
     required this.generation,
+    this.runKeys = const [],
     this.claimToken,
     this.leaseUntil,
     this.retryNotBefore,
@@ -254,6 +255,11 @@ class DayProcessingJob {
       nextAttemptAt: DateTime.parse(json['nextAttemptAt']! as String),
       attempts: json['attempts']! as int,
       generation: json['generation']! as int,
+      // Absent in files written before run-key provenance was introduced.
+      runKeys: [
+        for (final key in json['runKeys'] as List<Object?>? ?? const [])
+          key! as String,
+      ],
       claimToken: json['claimToken'] as String?,
       leaseUntil: _dateOrNull(json['leaseUntil']),
       retryNotBefore: _dateOrNull(json['retryNotBefore']),
@@ -287,6 +293,13 @@ class DayProcessingJob {
   final DateTime nextAttemptAt;
   final int attempts;
   final int generation;
+
+  /// Run keys of the wakes enqueued for this job (agent jobs only), newest
+  /// last. The artifact checks match produced ChangeSets by their `runKey`
+  /// against this list, so a sibling job's artifact — created in the same
+  /// time window but by a different wake — can never satisfy this job.
+  final List<String> runKeys;
+
   final String? claimToken;
   final DateTime? leaseUntil;
   final DateTime? retryNotBefore;
@@ -357,6 +370,7 @@ class DayProcessingJob {
     DateTime? nextAttemptAt,
     int? attempts,
     int? generation,
+    List<String>? runKeys,
     String? claimToken,
     bool clearClaimToken = false,
     DateTime? leaseUntil,
@@ -384,6 +398,7 @@ class DayProcessingJob {
     nextAttemptAt: nextAttemptAt ?? this.nextAttemptAt,
     attempts: attempts ?? this.attempts,
     generation: generation ?? this.generation,
+    runKeys: runKeys ?? this.runKeys,
     claimToken: clearClaimToken ? null : claimToken ?? this.claimToken,
     leaseUntil: clearLeaseUntil ? null : leaseUntil ?? this.leaseUntil,
     retryNotBefore: clearRetryNotBefore
@@ -415,6 +430,7 @@ class DayProcessingJob {
     'nextAttemptAt': nextAttemptAt.toUtc().toIso8601String(),
     'attempts': attempts,
     'generation': generation,
+    if (runKeys.isNotEmpty) 'runKeys': runKeys,
     'claimToken': claimToken,
     'leaseUntil': leaseUntil?.toUtc().toIso8601String(),
     'retryNotBefore': retryNotBefore?.toUtc().toIso8601String(),

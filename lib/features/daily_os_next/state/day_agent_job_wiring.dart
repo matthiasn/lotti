@@ -107,6 +107,19 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
       }
       return null;
     },
+    pendingDiffForRuns: (agentId, dayId, runKeys) async {
+      final diffs = await planService.pendingPlanDiffsForDay(
+        agentId: agentId,
+        dayId: dayId,
+      );
+      for (final diff in diffs) {
+        if (runKeys.contains(diff.runKey)) return diff.id;
+      }
+      return null;
+    },
+    recordRunKey: (jobId, runKey) async {
+      await outbox.recordRunKey(jobId: jobId, runKey: runKey);
+    },
     hasParsedItems: (captureId) async {
       final items = await captureService.parsedItemsForCapture(captureId);
       return items.isNotEmpty;

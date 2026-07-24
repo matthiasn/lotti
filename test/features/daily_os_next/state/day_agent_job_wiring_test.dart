@@ -341,6 +341,66 @@ void main() {
     );
 
     test(
+      'pendingDiffForRuns matches only diffs whose runKey belongs to the '
+      'job, newest-first via pendingPlanDiffsForDay',
+      () async {
+        ChangeSetEntity diff(String id, String runKey) =>
+            AgentDomainEntity.changeSet(
+                  id: id,
+                  agentId: 'agent-1',
+                  taskId: 'day_agent_plan:dayplan-2026-07-22',
+                  threadId: 'thread-1',
+                  runKey: runKey,
+                  status: ChangeSetStatus.pending,
+                  items: const [],
+                  createdAt: DateTime.utc(2026, 7, 22),
+                  vectorClock: null,
+                )
+                as ChangeSetEntity;
+        when(
+          () => planService.pendingPlanDiffsForDay(
+            agentId: 'agent-1',
+            dayId: 'dayplan-2026-07-22',
+          ),
+        ).thenAnswer(
+          (_) async => [diff('diff-a', 'sibling-key'), diff('diff-b', 'mine')],
+        );
+
+        expect(
+          await executor.pendingDiffForRuns(
+            'agent-1',
+            'dayplan-2026-07-22',
+            {'mine'},
+          ),
+          'diff-b',
+        );
+        expect(
+          await executor.pendingDiffForRuns(
+            'agent-1',
+            'dayplan-2026-07-22',
+            {'unknown'},
+          ),
+          isNull,
+        );
+      },
+    );
+
+    test('recordRunKey delegates to the outbox repository', () async {
+      when(
+        () => outbox.recordRunKey(
+          jobId: any(named: 'jobId'),
+          runKey: any(named: 'runKey'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      await executor.recordRunKey('job-1', 'run-key-9');
+
+      verify(
+        () => outbox.recordRunKey(jobId: 'job-1', runKey: 'run-key-9'),
+      ).called(1);
+    });
+
+    test(
       'hasPendingDraftWork reads the deterministic draft job and reports '
       'true only for statuses that can still produce a plan',
       () async {

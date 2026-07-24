@@ -254,7 +254,13 @@ class DayAgentPlanEditor {
     }
     if (captureId != null) {
       final capture = await reads.captureOrNull(captureId);
-      if (capture == null || capture.agentId != agentId) {
+      // Ownership spans the ADR 0032 cutover (see persistParsedItems).
+      if (capture == null ||
+          !canReadDailyOsDayArtifact(
+            readerAgentId: agentId,
+            ownerAgentId: capture.agentId,
+            dayId: captureDayId(capture),
+          )) {
         throw DayAgentCaptureException('capture $captureId not found');
       }
     }
