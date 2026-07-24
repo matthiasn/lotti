@@ -11525,6 +11525,12 @@ abstract class AppLocalizations {
   /// **'Link existing task...'**
   String get linkExistingTask;
 
+  /// No description provided for @linkPhraseBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'Relates to'**
+  String get linkPhraseBasic;
+
   /// No description provided for @linkPhraseBlocksInverse.
   ///
   /// In en, this message translates to:

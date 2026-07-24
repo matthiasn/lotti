@@ -222,21 +222,25 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('row tap is disabled in manage mode', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
-          child: LinkedTaskRow(
-            taskId: 'anchor-task',
-            data: buildRowData(),
-            manageMode: true,
+    testWidgets(
+      'the row stays navigable in manage mode — the edit/unlink buttons are '
+      'additive, so a live-looking row is never a dead tap target',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: true,
+            ),
           ),
-        ),
-      );
+        );
 
-      final rowInkWell = tester.widget<InkWell>(find.byType(InkWell));
-      expect(rowInkWell.onTap, isNull);
-    });
+        final rowInkWell = tester.widget<InkWell>(find.byType(InkWell).first);
+        expect(rowInkWell.onTap, isNotNull);
+      },
+    );
   });
 
   group('StatusGlyph', () {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_relationship_sections.dart';
@@ -436,8 +437,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Switch the type from Follows up to Blocks before saving.
-        await tester.tap(find.text('Blocks'));
+        // Switch the relation from "Follows up on" to "Blocks" before saving.
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
+        );
+        dropdown.onItemPressed!(
+          dropdown.items.firstWhere((item) => item.label == 'Blocks'),
+        );
         await tester.pump();
         await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
         await tester.pump();

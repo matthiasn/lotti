@@ -6573,6 +6573,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkExistingTask => 'Link existing task...';
 
   @override
+  String get linkPhraseBasic => 'Relates to';
+
+  @override
   String get linkPhraseBlocksInverse => 'Is blocked by';
 
   @override

@@ -6719,6 +6719,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkExistingTask => 'Lier une tâche existante...';
 
   @override
+  String get linkPhraseBasic => 'Est lié à';
+
+  @override
   String get linkPhraseBlocksInverse => 'Est bloquée par';
 
   @override

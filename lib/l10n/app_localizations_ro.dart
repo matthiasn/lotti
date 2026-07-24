@@ -6726,6 +6726,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkExistingTask => 'Leagă o sarcină existentă...';
 
   @override
+  String get linkPhraseBasic => 'Are legătură cu';
+
+  @override
   String get linkPhraseBlocksInverse => 'Este blocată de';
 
   @override

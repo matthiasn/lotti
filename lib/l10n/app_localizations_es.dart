@@ -6692,6 +6692,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkExistingTask => 'Vincular tarea existente...';
 
   @override
+  String get linkPhraseBasic => 'Se relaciona con';
+
+  @override
   String get linkPhraseBlocksInverse => 'Está bloqueada por';
 
   @override

@@ -58,9 +58,9 @@ class LinkedTaskRow extends StatelessWidget {
     final task = data.task;
 
     return InkWell(
-      onTap: manageMode
-          ? null
-          : () => openLinkedTaskDetail(context: context, taskId: task.id),
+      // Navigable in manage mode too: the edit/unlink buttons are additive,
+      // so nulling this only produced a row that looked tappable and wasn't.
+      onTap: () => openLinkedTaskDetail(context: context, taskId: task.id),
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: tokens.spacing.step5,

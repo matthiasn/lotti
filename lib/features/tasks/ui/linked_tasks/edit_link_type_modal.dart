@@ -24,9 +24,11 @@ abstract final class EditLinkTypeModal {
     required EntryLinkType currentType,
     required TaskLinkDirection currentDirection,
   }) async {
-    final selectedType = ValueNotifier(currentType);
-    final inverse = ValueNotifier(
-      currentDirection == TaskLinkDirection.incoming,
+    final relation = ValueNotifier(
+      DirectedRelation(
+        currentType,
+        inverse: currentDirection == TaskLinkDirection.incoming,
+      ),
     );
     try {
       await ModalUtils.showSinglePageModal<void>(
@@ -36,24 +38,20 @@ abstract final class EditLinkTypeModal {
         stickyActionBarBuilder: (_) => _EditLinkTypeApplyFooter(
           linkId: linkId,
           currentDirection: currentDirection,
-          selectedType: selectedType,
-          inverse: inverse,
+          relation: relation,
         ),
-        builder: (_) =>
-            _EditLinkTypeBody(selectedType: selectedType, inverse: inverse),
+        builder: (_) => _EditLinkTypeBody(relation: relation),
       );
     } finally {
-      selectedType.dispose();
-      inverse.dispose();
+      relation.dispose();
     }
   }
 }
 
 class _EditLinkTypeBody extends StatelessWidget {
-  const _EditLinkTypeBody({required this.selectedType, required this.inverse});
+  const _EditLinkTypeBody({required this.relation});
 
-  final ValueNotifier<EntryLinkType> selectedType;
-  final ValueNotifier<bool> inverse;
+  final ValueNotifier<DirectedRelation> relation;
 
   @override
   Widget build(BuildContext context) {
@@ -65,19 +63,11 @@ class _EditLinkTypeBody extends StatelessWidget {
         tokens.spacing.step5,
         tokens.spacing.step5,
       ),
-      child: ValueListenableBuilder<EntryLinkType>(
-        valueListenable: selectedType,
-        builder: (context, type, _) => ValueListenableBuilder<bool>(
-          valueListenable: inverse,
-          builder: (context, isInverse, _) => RelationshipTypeSelector(
-            selectedType: type,
-            inverse: isInverse,
-            onTypeChanged: (newType) {
-              selectedType.value = newType;
-              inverse.value = false;
-            },
-            onInverseChanged: (value) => inverse.value = value,
-          ),
+      child: ValueListenableBuilder<DirectedRelation>(
+        valueListenable: relation,
+        builder: (context, value, _) => RelationshipTypeSelector(
+          selected: value,
+          onChanged: (next) => relation.value = next,
         ),
       ),
     );
@@ -88,14 +78,12 @@ class _EditLinkTypeApplyFooter extends ConsumerWidget {
   const _EditLinkTypeApplyFooter({
     required this.linkId,
     required this.currentDirection,
-    required this.selectedType,
-    required this.inverse,
+    required this.relation,
   });
 
   final String linkId;
   final TaskLinkDirection currentDirection;
-  final ValueNotifier<EntryLinkType> selectedType;
-  final ValueNotifier<bool> inverse;
+  final ValueNotifier<DirectedRelation> relation;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -107,10 +95,8 @@ class _EditLinkTypeApplyFooter extends ConsumerWidget {
         final messenger = ScaffoldMessenger.of(context);
         final messages = context.messages;
 
-        final type = selectedType.value;
-        final isInverse = inverse.value;
-        final swap = type != EntryLinkType.basic && isInverse;
-        final newIsOutgoing = !swap;
+        final selected = relation.value;
+        final newIsOutgoing = !selected.inverse;
         final oldIsOutgoing = currentDirection == TaskLinkDirection.outgoing;
         final swapDirection = newIsOutgoing != oldIsOutgoing;
 
@@ -118,7 +104,7 @@ class _EditLinkTypeApplyFooter extends ConsumerWidget {
             .read(journalRepositoryProvider)
             .updateLinkType(
               linkId: linkId,
-              newType: type,
+              newType: selected.type,
               swapDirection: swapDirection,
             );
 

@@ -10,7 +10,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
@@ -147,6 +147,18 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     return journalRepo;
+  }
+
+  // Drives the relationship dropdown by its own callback; the inline panel is
+  // unreliable to hit-test inside a dialog in the test harness.
+  Future<void> pickRelation(WidgetTester tester, String label) async {
+    final dropdown = tester.widget<DesignSystemDropdown>(
+      find.byType(DesignSystemDropdown),
+    );
+    dropdown.onItemPressed!(
+      dropdown.items.firstWhere((item) => item.label == label),
+    );
+    await tester.pump();
   }
 
   late MockNavService mockNavService;
@@ -293,8 +305,28 @@ void main() {
       },
     );
 
-    testWidgets('row tap is disabled in manage mode to avoid '
-        'accidental navigation while unlinking', (tester) async {
+    testWidgets(
+      'the header link action opens LinkTaskModal directly, without going '
+      'through the overflow menu',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+        );
+
+        await tester.tap(find.byIcon(Icons.add_link));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(LinkTaskModal), findsOneWidget);
+      },
+    );
+
+    testWidgets('rows stay navigable in manage mode — the edit/unlink '
+        'buttons are additive, not a replacement for the row tap', (
+      tester,
+    ) async {
       await pumpWidget(
         tester,
         incoming: [],
@@ -302,9 +334,6 @@ void main() {
         manageMode: true,
       );
 
-      // The row InkWell wrapping the title has its onTap nulled out in manage
-      // mode. The header InkWell is unrelated; find the InkWell ancestor of
-      // the task title.
       final rowInkWell = tester.widget<InkWell>(
         find
             .ancestor(
@@ -313,7 +342,7 @@ void main() {
             )
             .first,
       );
-      expect(rowInkWell.onTap, isNull);
+      expect(rowInkWell.onTap, isNotNull);
     });
   });
 
@@ -549,10 +578,14 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final linkPill = tester.widget<DsPill>(
-          find.ancestor(of: find.text('Link'), matching: find.byType(DsPill)),
+        expect(
+          tester
+              .widget<DesignSystemDropdown>(
+                find.byType(DesignSystemDropdown),
+              )
+              .inputLabel,
+          'Relates to',
         );
-        expect(linkPill.selected, isTrue);
 
         await tester.tap(find.text('Cancel'));
         await tester.pump();
@@ -604,8 +637,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
+        await pickRelation(tester, 'Blocks');
         await tester.tap(find.text('Create'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -662,10 +694,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
-        await tester.tap(find.text('← Is blocked by').last);
-        await tester.pump();
+        await pickRelation(tester, 'Is blocked by');
         await tester.tap(find.text('Create'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));

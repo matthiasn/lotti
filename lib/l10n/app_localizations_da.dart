@@ -6607,6 +6607,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkExistingTask => 'Link eksisterende opgave...';
 
   @override
+  String get linkPhraseBasic => 'Relates to';
+
+  @override
   String get linkPhraseBlocksInverse => 'Is blocked by';
 
   @override

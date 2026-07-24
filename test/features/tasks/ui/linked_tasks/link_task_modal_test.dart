@@ -10,7 +10,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
@@ -45,12 +45,6 @@ void main() {
       dateTo: now,
     );
 
-    // DsSegmentedToggle renders an invisible width-reserving ghost copy of
-    // each segment's label alongside the visible one (see its doc comment) —
-    // plain find.text matches two Texts; the visible one is the Stack's last
-    // child.
-    Finder visibleText(String label) => find.text(label).last;
-
     // Pumps a button that opens the modal, taps it, and settles.
     Future<void> openModal(
       WidgetTester tester, {
@@ -80,6 +74,19 @@ void main() {
       await tester.tap(find.text('Open Modal'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    // Drives the relationship dropdown by its own callback. The panel expands
+    // inline inside a Wolt-hosted modal, where hit-testing an expanded row is
+    // unreliable — this repo's established pattern for such controls.
+    Future<void> pickRelation(WidgetTester tester, String label) async {
+      final dropdown = tester.widget<DesignSystemDropdown>(
+        find.byType(DesignSystemDropdown),
+      );
+      dropdown.onItemPressed!(
+        dropdown.items.firstWhere((item) => item.label == label),
+      );
+      await tester.pump();
     }
 
     void stubTasks(List<Task> tasks) {
@@ -690,61 +697,32 @@ void main() {
     });
 
     testWidgets(
-      'defaults to "Link" selected and shows no phrasing toggle',
+      'defaults to the plain link, offered as one directed-relation control',
       (tester) async {
         await openModal(tester);
 
-        final linkPill = tester.widget<DsPill>(
-          find.ancestor(
-            of: find.text('Link'),
-            matching: find.byType(DsPill),
-          ),
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
         );
-        expect(linkPill.selected, isTrue);
+        expect(dropdown.inputLabel, 'Relates to');
+        // Type and direction are a single list, so there is no second control.
+        expect(find.byType(DesignSystemDropdown), findsOneWidget);
         expect(find.byType(DsSegmentedToggle<bool>), findsNothing);
       },
     );
 
     testWidgets(
-      'selecting "Blocks" reveals the phrasing toggle; "Link" does not',
+      'picking a directed relation updates the control value in place',
       (tester) async {
         await openModal(tester);
 
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
+        await pickRelation(tester, 'Is blocked by');
 
-        expect(find.byType(DsSegmentedToggle<bool>), findsOneWidget);
-        expect(visibleText('← Is blocked by'), findsOneWidget);
-
-        await tester.tap(find.text('Link'));
-        await tester.pump();
-
-        expect(find.byType(DsSegmentedToggle<bool>), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'switching relationship type resets the phrasing toggle to primary',
-      (tester) async {
-        await openModal(tester);
-
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
-        await tester.tap(visibleText('← Is blocked by'));
-        await tester.pump();
-
-        var toggle = tester.widget<DsSegmentedToggle<bool>>(
-          find.byType(DsSegmentedToggle<bool>),
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
         );
-        expect(toggle.selected, isTrue);
-
-        await tester.tap(find.text('Fixes'));
-        await tester.pump();
-
-        toggle = tester.widget<DsSegmentedToggle<bool>>(
-          find.byType(DsSegmentedToggle<bool>),
-        );
-        expect(toggle.selected, isFalse);
+        expect(dropdown.inputLabel, 'Is blocked by');
+        expect(find.byType(DesignSystemDropdown), findsOneWidget);
       },
     );
 
@@ -769,8 +747,7 @@ void main() {
         ).thenAnswer((_) async => true);
 
         await openModal(tester);
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
+        await pickRelation(tester, 'Blocks');
 
         await tester.tap(find.text('Blocker Task'));
         await tester.pump();
@@ -807,10 +784,7 @@ void main() {
         ).thenAnswer((_) async => true);
 
         await openModal(tester);
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
-        await tester.tap(visibleText('← Is blocked by'));
-        await tester.pump();
+        await pickRelation(tester, 'Is blocked by');
 
         await tester.tap(find.text('Blocker Task'));
         await tester.pump();
@@ -849,8 +823,7 @@ void main() {
         ).thenAnswer((_) async => false);
 
         await openModal(tester);
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
+        await pickRelation(tester, 'Blocks');
 
         await tester.tap(find.text('Blocker Task'));
         await tester.pump();

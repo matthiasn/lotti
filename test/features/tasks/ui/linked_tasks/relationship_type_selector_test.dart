@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
-import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 
 import '../../../../test_helper.dart';
@@ -108,70 +107,146 @@ void main() {
     );
   });
 
-  group('RelationshipTypeSelector', () {
-    // DsSegmentedToggle renders an invisible width-reserving ghost copy of
-    // each segment's label (see its own doc comment) — plain find.text
-    // matches two Texts; the visible one is the Stack's last child.
-    Finder visibleText(String label) => find.text(label).last;
+  group('relationshipDirectedOptions', () {
+    test('offers the symmetric link first, then every type both ways', () {
+      expect(relationshipDirectedOptions, [
+        const DirectedRelation(EntryLinkType.basic),
+        const DirectedRelation(EntryLinkType.blocks),
+        const DirectedRelation(EntryLinkType.blocks, inverse: true),
+        const DirectedRelation(EntryLinkType.followsUp),
+        const DirectedRelation(EntryLinkType.followsUp, inverse: true),
+        const DirectedRelation(EntryLinkType.duplicates),
+        const DirectedRelation(EntryLinkType.duplicates, inverse: true),
+        const DirectedRelation(EntryLinkType.fixes),
+        const DirectedRelation(EntryLinkType.fixes, inverse: true),
+        const DirectedRelation(EntryLinkType.supersedes),
+        const DirectedRelation(EntryLinkType.supersedes, inverse: true),
+      ]);
+      // Ids are unique, so a dropdown item always maps back to one relation.
+      final ids = relationshipDirectedOptions.map((r) => r.id).toList();
+      expect(ids.toSet(), hasLength(ids.length));
+    });
 
-    testWidgets('defaults to Link selected with no phrasing toggle', (
+    testWidgets('labels each option with its own directed phrase', (
       tester,
     ) async {
+      final context = await pumpContext(tester);
+
+      String label(EntryLinkType type, {bool inverse = false}) =>
+          directedRelationLabel(
+            context,
+            DirectedRelation(type, inverse: inverse),
+          );
+
+      // The symmetric link completes the same sentence stem as the rest.
+      expect(label(EntryLinkType.basic), 'Relates to');
+      expect(label(EntryLinkType.blocks), 'Blocks');
+      expect(label(EntryLinkType.blocks, inverse: true), 'Is blocked by');
+      expect(label(EntryLinkType.supersedes), 'Supersedes');
+      expect(
+        label(EntryLinkType.supersedes, inverse: true),
+        'Is superseded by',
+      );
+    });
+  });
+
+  group('DirectedRelation', () {
+    test('equality and hashCode cover both type and direction', () {
+      const primary = DirectedRelation(EntryLinkType.blocks);
+      const inverse = DirectedRelation(EntryLinkType.blocks, inverse: true);
+
+      expect(primary, const DirectedRelation(EntryLinkType.blocks));
+      expect(
+        primary.hashCode,
+        const DirectedRelation(EntryLinkType.blocks).hashCode,
+      );
+      expect(primary, isNot(inverse));
+      expect(primary, isNot(const DirectedRelation(EntryLinkType.fixes)));
+    });
+  });
+
+  group('RelationshipTypeSelector', () {
+    Future<DirectedRelation?> pumpSelector(
+      WidgetTester tester, {
+      DirectedRelation selected = const DirectedRelation(EntryLinkType.basic),
+    }) async {
+      DirectedRelation? picked;
       await tester.pumpWidget(
         WidgetTestBench(
           child: RelationshipTypeSelector(
-            selectedType: EntryLinkType.basic,
-            inverse: false,
-            onTypeChanged: (_) {},
-            onInverseChanged: (_) {},
+            selected: selected,
+            onChanged: (relation) => picked = relation,
           ),
         ),
       );
-
-      final linkPill = tester.widget<DsPill>(
-        find.ancestor(of: find.text('Link'), matching: find.byType(DsPill)),
-      );
-      expect(linkPill.selected, isTrue);
-      expect(find.byType(DsSegmentedToggle<bool>), findsNothing);
-    });
+      return picked;
+    }
 
     testWidgets(
-      'selecting Duplicates reveals its own phrasing toggle',
+      'is a single control showing the current relation as its value',
       (tester) async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: RelationshipTypeSelector(
-              selectedType: EntryLinkType.duplicates,
-              inverse: false,
-              onTypeChanged: (_) {},
-              onInverseChanged: (_) {},
-            ),
-          ),
-        );
+        await pumpSelector(tester);
 
-        expect(find.byType(DsSegmentedToggle<bool>), findsOneWidget);
-        expect(visibleText('Duplicates →'), findsOneWidget);
-        expect(visibleText('← Is duplicated by'), findsOneWidget);
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
+        );
+        expect(dropdown.label, 'This task…');
+        expect(dropdown.inputLabel, 'Relates to');
+        // Type and direction are one list, not two controls.
+        expect(dropdown.items, hasLength(11));
+        expect(
+          dropdown.items.where((i) => i.selected).map((i) => i.label),
+          ['Relates to'],
+        );
       },
     );
 
-    testWidgets('tapping a pill invokes onTypeChanged', (tester) async {
-      EntryLinkType? selected;
+    testWidgets('marks the supplied inverse relation as the selected item', (
+      tester,
+    ) async {
+      await pumpSelector(
+        tester,
+        selected: const DirectedRelation(
+          EntryLinkType.blocks,
+          inverse: true,
+        ),
+      );
+
+      final dropdown = tester.widget<DesignSystemDropdown>(
+        find.byType(DesignSystemDropdown),
+      );
+      expect(dropdown.inputLabel, 'Is blocked by');
+      expect(
+        dropdown.items.where((i) => i.selected).map((i) => i.label),
+        ['Is blocked by'],
+      );
+    });
+
+    testWidgets('reports the picked option as a type + direction pair', (
+      tester,
+    ) async {
+      DirectedRelation? picked;
       await tester.pumpWidget(
         WidgetTestBench(
           child: RelationshipTypeSelector(
-            selectedType: EntryLinkType.basic,
-            inverse: false,
-            onTypeChanged: (type) => selected = type,
-            onInverseChanged: (_) {},
+            selected: const DirectedRelation(EntryLinkType.basic),
+            onChanged: (relation) => picked = relation,
           ),
         ),
       );
 
-      await tester.tap(find.text('Blocks'));
-      await tester.pump();
+      final dropdown = tester.widget<DesignSystemDropdown>(
+        find.byType(DesignSystemDropdown),
+      );
+      final inverseBlocks = dropdown.items.firstWhere(
+        (i) => i.label == 'Is blocked by',
+      );
+      dropdown.onItemPressed!(inverseBlocks);
 
-      expect(selected, EntryLinkType.blocks);
+      expect(
+        picked,
+        const DirectedRelation(EntryLinkType.blocks, inverse: true),
+      );
     });
   });
 }

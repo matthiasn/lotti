@@ -6642,6 +6642,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
 
   @override
+  String get linkPhraseBasic => 'Bezieht sich auf';
+
+  @override
   String get linkPhraseBlocksInverse => 'Wird blockiert von';
 
   @override

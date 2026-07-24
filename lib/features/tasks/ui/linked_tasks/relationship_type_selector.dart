@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entry_link.dart';
-import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The 6 relationship types offered by [RelationshipTypeSelector], in display
@@ -15,6 +13,51 @@ const List<EntryLinkType> relationshipSelectorTypes = [
   EntryLinkType.duplicates,
   EntryLinkType.fixes,
   EntryLinkType.supersedes,
+];
+
+/// A relationship exactly as a user picks it: the type *and* which of the two
+/// tasks is its subject.
+///
+/// Type and direction are one choice, not two. Every established
+/// task/issue tracker presents relations as a single flat list of directed
+/// phrases — "Blocks", "Is blocked by", "Duplicates", "Is duplicated by" —
+/// rather than a type control plus a separate direction switch. Splitting them
+/// forced the same word to appear twice on screen ("Blocks" selected above a
+/// toggle whose first segment also read "Blocks"), which reviewers and test
+/// users repeatedly read as a duplicated or contradictory control.
+@immutable
+class DirectedRelation {
+  const DirectedRelation(this.type, {this.inverse = false});
+
+  final EntryLinkType type;
+
+  /// True when the *other* task is the subject — i.e. the caller must swap
+  /// `fromId`/`toId` before persisting the canonical direction.
+  final bool inverse;
+
+  /// Stable identity for [DesignSystemDropdownItem.id].
+  String get id => '${type.name}.${inverse ? 'inverse' : 'primary'}';
+
+  @override
+  bool operator ==(Object other) =>
+      other is DirectedRelation &&
+      other.type == type &&
+      other.inverse == inverse;
+
+  @override
+  int get hashCode => Object.hash(type, inverse);
+}
+
+/// Every relationship a user can pick, in display order: the symmetric plain
+/// link first (today's default, unchanged when untouched), then each
+/// directional type in both directions.
+List<DirectedRelation> get relationshipDirectedOptions => [
+  const DirectedRelation(EntryLinkType.basic),
+  for (final type in relationshipSelectorTypes)
+    if (type != EntryLinkType.basic) ...[
+      DirectedRelation(type),
+      DirectedRelation(type, inverse: true),
+    ],
 ];
 
 /// Compact chip label for a relationship type (the picker's primary row).
@@ -40,8 +83,8 @@ String relationshipTypeOptionLabel(BuildContext context, EntryLinkType type) {
 
 /// The (primary, inverse) phrasing pair for a directional relationship type,
 /// or null for `basic` (symmetric — no phrasing choice). Shared by the
-/// picker's phrasing toggle and the grouped-section row captions, so the same
-/// words describe a relationship whether read off a toggle or a row.
+/// picker's option list and the grouped-section headers, so the same words
+/// describe a relationship whether read off the picker or off the card.
 (String primary, String inverse)? relationshipPhrasePair(
   BuildContext context,
   EntryLinkType type,
@@ -79,82 +122,50 @@ String relationshipTypeOptionLabel(BuildContext context, EntryLinkType type) {
   }
 }
 
-/// The relationship-type + direction picker shared by `LinkTaskModal` (linking
-/// an existing task) and the "Create new linked task…" flow: 6 primary chips
-/// (Link/Blocks/Follows up/Duplicates/Fixes/Supersedes), defaulting to "Link"
-/// (today's plain-link behavior, unchanged when untouched). Selecting a
-/// directional type reveals a second toggle for the two phrasings (e.g.
-/// "Blocks" vs "Is blocked by") — picking the inverse phrasing means the
-/// caller should swap `fromId`/`toId` before persisting the canonical
-/// direction (`EntryLinkType.blocks`'s `fromId` is always the blocker).
+/// The phrase for one directed relation, e.g. "Blocks" vs "Is blocked by".
+/// The symmetric plain link reads "Relates to" so every option in the list
+/// completes the same sentence stem.
+String directedRelationLabel(BuildContext context, DirectedRelation relation) {
+  final pair = relationshipPhrasePair(context, relation.type);
+  if (pair == null) return context.messages.linkPhraseBasic;
+  return relation.inverse ? pair.$2 : pair.$1;
+}
+
+/// The relationship picker shared by `LinkTaskModal` (linking an existing
+/// task), `EditLinkTypeModal` (retyping one in place), and the "Create new
+/// linked task…" flow.
+///
+/// A single dropdown completing the sentence "This task… ⟨Blocks⟩", listing
+/// every relationship in both directions. Picking "Is blocked by" means the
+/// caller swaps `fromId`/`toId` before persisting, since a `blocks` link's
+/// `fromId` is always the blocker.
 class RelationshipTypeSelector extends StatelessWidget {
   const RelationshipTypeSelector({
-    required this.selectedType,
-    required this.inverse,
-    required this.onTypeChanged,
-    required this.onInverseChanged,
+    required this.selected,
+    required this.onChanged,
     super.key,
   });
 
-  final EntryLinkType selectedType;
-  final bool inverse;
-  final ValueChanged<EntryLinkType> onTypeChanged;
-  final ValueChanged<bool> onInverseChanged;
+  final DirectedRelation selected;
+  final ValueChanged<DirectedRelation> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final phrasePair = relationshipPhrasePair(context, selectedType);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Wrap(
-          spacing: tokens.spacing.step2,
-          runSpacing: tokens.spacing.step2,
-          children: [
-            for (final type in relationshipSelectorTypes)
-              DsPill(
-                variant: DsPillVariant.filled,
-                bordered: true,
-                selected: type == selectedType,
-                label: relationshipTypeOptionLabel(context, type),
-                onTap: () => onTypeChanged(type),
-              ),
-          ],
-        ),
-        if (phrasePair != null) ...[
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            // Reads as the opening of a sentence the toggle completes
-            // ("This task… | Blocks → | ← Is blocked by"), rather than a
-            // second label for what the type pills above already said. Round
-            // 2's arrow suffix alone still left the selected pill and the
-            // toggle's first segment showing the identical bare word for 4 of
-            // the 5 directional types, which reviewers kept reading as a
-            // duplicated control (design-review-panel rounds 2 and 3).
-            context.messages.linkDirectionLabel,
-            style: tokens.typography.styles.others.caption.copyWith(
-              // highEmphasis, not mediumEmphasis: low-vision persona flagged
-              // the caption as small/low-contrast next to the toggle it names.
-              // w500 rather than w600 so it stays a label instead of competing
-              // with the toggle's own bold selected segment.
-              color: tokens.colors.text.highEmphasis,
-              fontWeight: FontWeight.w500,
-            ),
+    final options = relationshipDirectedOptions;
+    return DesignSystemDropdown(
+      label: context.messages.linkDirectionLabel,
+      inputLabel: directedRelationLabel(context, selected),
+      items: [
+        for (final option in options)
+          DesignSystemDropdownItem(
+            id: option.id,
+            label: directedRelationLabel(context, option),
+            selected: option == selected,
           ),
-          SizedBox(height: tokens.spacing.step1),
-          DsSegmentedToggle<bool>(
-            segments: [
-              DsSegment(false, '${phrasePair.$1} →'),
-              DsSegment(true, '← ${phrasePair.$2}'),
-            ],
-            selected: inverse,
-            onChanged: onInverseChanged,
-          ),
-        ],
       ],
+      onItemPressed: (item) => onChanged(
+        options.firstWhere((option) => option.id == item.id),
+      ),
     );
   }
 }

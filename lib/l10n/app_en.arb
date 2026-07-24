@@ -3366,6 +3366,7 @@
   "linkedTasksOtherLinksSectionTitle": "Other links",
   "linkedTasksTitle": "Linked Tasks",
   "linkExistingTask": "Link existing task...",
+  "linkPhraseBasic": "Relates to",
   "linkPhraseBlocksInverse": "Is blocked by",
   "linkPhraseBlocksPrimary": "Blocks",
   "linkPhraseDuplicatesInverse": "Is duplicated by",

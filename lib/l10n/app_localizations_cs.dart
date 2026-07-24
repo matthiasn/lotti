@@ -6685,6 +6685,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkExistingTask => 'Propojit existující úkol...';
 
   @override
+  String get linkPhraseBasic => 'Souvisí s';
+
+  @override
   String get linkPhraseBlocksInverse => 'Je blokováno';
 
   @override

@@ -2796,6 +2796,7 @@
   "linkedTasksOtherLinksSectionTitle": "Další odkazy",
   "linkedTasksTitle": "Propojené úkoly",
   "linkExistingTask": "Propojit existující úkol...",
+  "linkPhraseBasic": "Souvisí s",
   "linkPhraseBlocksInverse": "Je blokováno",
   "linkPhraseBlocksPrimary": "Blokuje",
   "linkPhraseDuplicatesInverse": "Je duplikováno",

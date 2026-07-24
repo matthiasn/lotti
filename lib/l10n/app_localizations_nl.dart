@@ -6626,6 +6626,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get linkExistingTask => 'Bestaande taak koppelen...';
 
   @override
+  String get linkPhraseBasic => 'Relates to';
+
+  @override
   String get linkPhraseBlocksInverse => 'Is blocked by';
 
   @override

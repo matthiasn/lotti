@@ -2789,6 +2789,7 @@
   "linkedTasksOtherLinksSectionTitle": "Autres liens",
   "linkedTasksTitle": "Tâches liées",
   "linkExistingTask": "Lier une tâche existante...",
+  "linkPhraseBasic": "Est lié à",
   "linkPhraseBlocksInverse": "Est bloquée par",
   "linkPhraseBlocksPrimary": "Bloque",
   "linkPhraseDuplicatesInverse": "Est dupliquée par",

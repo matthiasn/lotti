@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/edit_link_type_modal.dart';
@@ -35,10 +35,18 @@ void main() {
         .setMockMethodCallHandler(SystemChannels.platform, null);
   });
 
-  // DsSegmentedToggle renders an invisible width-reserving ghost copy of each
-  // segment's label alongside the visible one — plain find.text matches two
-  // Texts; the visible one is the Stack's last child.
-  Finder visibleText(String label) => find.text(label).last;
+  DesignSystemDropdown relationDropdown(WidgetTester tester) =>
+      tester.widget<DesignSystemDropdown>(find.byType(DesignSystemDropdown));
+
+  // Drives the relationship dropdown by its own callback — the panel expands
+  // inline inside a Wolt-hosted modal, where hit-testing a row is unreliable.
+  Future<void> pickRelation(WidgetTester tester, String label) async {
+    final dropdown = relationDropdown(tester);
+    dropdown.onItemPressed!(
+      dropdown.items.firstWhere((item) => item.label == label),
+    );
+    await tester.pump();
+  }
 
   Finder saveButton() => find.widgetWithText(DesignSystemButton, 'Save');
   Finder closeButton() => find.byIcon(Icons.close_rounded);
@@ -93,13 +101,9 @@ void main() {
       await openModal(tester);
 
       expect(find.text('Edit relationship'), findsOneWidget);
-      // incoming -> the anchor is blocked by the other task -> inverse
-      // phrasing ("Is blocked by") is pre-selected.
-      final toggle = tester.widget<DsSegmentedToggle<bool>>(
-        find.byType(DsSegmentedToggle<bool>),
-      );
-      expect(toggle.selected, isTrue);
-      expect(visibleText('← Is blocked by'), findsOneWidget);
+      // incoming -> the anchor is blocked by the other task -> the inverse
+      // phrase is the control's current value.
+      expect(relationDropdown(tester).inputLabel, 'Is blocked by');
     });
 
     testWidgets(
@@ -109,12 +113,12 @@ void main() {
 
         await openModal(tester, currentDirection: TaskLinkDirection.outgoing);
 
-        final toggle = tester.widget<DsSegmentedToggle<bool>>(
-          find.byType(DsSegmentedToggle<bool>),
+        final dropdown = relationDropdown(tester);
+        expect(dropdown.inputLabel, 'Blocks');
+        expect(
+          dropdown.items.where((i) => i.selected).map((i) => i.label),
+          ['Blocks'],
         );
-        expect(toggle.selected, isFalse);
-        expect(toggle.segments[0].label, 'Blocks →');
-        expect(toggle.segments[1].label, '← Is blocked by');
       },
     );
 
@@ -153,8 +157,7 @@ void main() {
           currentDirection: TaskLinkDirection.outgoing,
         );
 
-        await tester.tap(find.text('Duplicates'));
-        await tester.pump();
+        await pickRelation(tester, 'Duplicates');
         await tester.tap(saveButton());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -170,23 +173,13 @@ void main() {
     );
 
     testWidgets(
-      'toggling the inverse phrasing before Save requests a direction flip',
+      'picking the inverse phrase before Save requests a direction flip',
       (tester) async {
         stubUpdateLinkType(result: true);
 
         await openModal(tester, currentDirection: TaskLinkDirection.outgoing);
 
-        // The toggle's own tap doesn't hit-test reliably under the Wolt
-        // sticky-footer overlay in the test harness (its InkWell region and
-        // the footer's glass surface overlap in the hit-test order) —
-        // invoke the callback directly, same as this repo's established
-        // pattern for other interaction tests.
-        tester
-            .widget<DsSegmentedToggle<bool>>(
-              find.byType(DsSegmentedToggle<bool>),
-            )
-            .onChanged(true);
-        await tester.pump();
+        await pickRelation(tester, 'Is blocked by');
         await tester.tap(saveButton());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));

@@ -59,9 +59,7 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
         ref.watch(taskLinkGroupsControllerProvider(taskId)).value ??
         TaskLinkGroups.empty;
 
-    if (linkGroups.totalCount == 0) {
-      return const SizedBox.shrink();
-    }
+    final hasLinks = linkGroups.totalCount > 0;
 
     final flatRows = linkGroups.flat
         .map((entry) => LinkedTaskRowData(task: entry.task))
@@ -89,11 +87,13 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                 taskId: taskId,
                 count: linkGroups.totalCount,
                 expanded: _expanded,
-                hasLinkedTasks: true,
+                hasLinkedTasks: hasLinks,
                 manageMode: uiState.manageMode,
-                onToggleExpanded: () => setState(() => _expanded = !_expanded),
+                onToggleExpanded: hasLinks
+                    ? () => setState(() => _expanded = !_expanded)
+                    : null,
               ),
-              if (_expanded) ...[
+              if (_expanded && hasLinks) ...[
                 if (linkGroups.typed.isNotEmpty)
                   TaskRelationshipSections(
                     taskId: taskId,
@@ -164,7 +164,10 @@ class _LinkedTasksHeader extends ConsumerWidget {
   final bool expanded;
   final bool hasLinkedTasks;
   final bool manageMode;
-  final VoidCallback onToggleExpanded;
+
+  /// Null when there is nothing to expand — the card still renders its header
+  /// so the link action stays reachable on a task with no links yet.
+  final VoidCallback? onToggleExpanded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -190,14 +193,31 @@ class _LinkedTasksHeader extends ConsumerWidget {
                 color: tokens.colors.text.highEmphasis,
               ),
             ),
-            SizedBox(width: tokens.spacing.step3),
-            _CountBadge(count: count),
+            if (hasLinkedTasks) ...[
+              SizedBox(width: tokens.spacing.step3),
+              _CountBadge(count: count),
+            ],
             const Spacer(),
-            Icon(
-              expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
-              size: 24,
-              color: tokens.colors.text.highEmphasis,
+            // Explicit, always-present link action. Burying it in the overflow
+            // menu meant a task with no links had no reachable entry point to
+            // the feature at all, since the card itself used to render nothing
+            // at zero links.
+            IconButton(
+              tooltip: context.messages.linkExistingTask,
+              onPressed: () => _showLinkTaskModal(context, ref),
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                Icons.add_link,
+                size: 20,
+                color: tokens.colors.text.highEmphasis,
+              ),
             ),
+            if (hasLinkedTasks)
+              Icon(
+                expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
+                size: 24,
+                color: tokens.colors.text.highEmphasis,
+              ),
             SizedBox(width: tokens.spacing.step3),
             Theme(
               data: Theme.of(context).copyWith(
@@ -341,20 +361,11 @@ class _LinkedTasksHeader extends ConsumerWidget {
   }
 }
 
-/// Relationship type + direction chosen for a newly-created linked task.
-class _RelationshipSelection {
-  const _RelationshipSelection({required this.type, required this.inverse});
-  final EntryLinkType type;
-  final bool inverse;
-}
-
 /// Prompts for the relationship the new task will have to the current one,
-/// or null if cancelled. The new task always defaults to today's plain-link
-/// direction (current task → new task); the inverse toggle swaps it.
-Future<_RelationshipSelection?> _pickRelationshipType(
-  BuildContext context,
-) async {
-  return showDialog<_RelationshipSelection>(
+/// or null if cancelled. Defaults to today's plain-link direction (current
+/// task → new task); picking an inverse phrase swaps it.
+Future<DirectedRelation?> _pickRelationshipType(BuildContext context) async {
+  return showDialog<DirectedRelation>(
     context: context,
     builder: (context) => const _RelationshipPickerDialog(),
   );
@@ -369,21 +380,15 @@ class _RelationshipPickerDialog extends StatefulWidget {
 }
 
 class _RelationshipPickerDialogState extends State<_RelationshipPickerDialog> {
-  EntryLinkType _selectedType = EntryLinkType.basic;
-  bool _inverse = false;
+  DirectedRelation _relation = const DirectedRelation(EntryLinkType.basic);
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(context.messages.createNewLinkedTask),
       content: RelationshipTypeSelector(
-        selectedType: _selectedType,
-        inverse: _inverse,
-        onTypeChanged: (type) => setState(() {
-          _selectedType = type;
-          _inverse = false;
-        }),
-        onInverseChanged: (value) => setState(() => _inverse = value),
+        selected: _relation,
+        onChanged: (relation) => setState(() => _relation = relation),
       ),
       actions: [
         TextButton(
@@ -391,9 +396,7 @@ class _RelationshipPickerDialogState extends State<_RelationshipPickerDialog> {
           child: Text(context.messages.cancelButton),
         ),
         FilledButton(
-          onPressed: () => Navigator.of(context).pop(
-            _RelationshipSelection(type: _selectedType, inverse: _inverse),
-          ),
+          onPressed: () => Navigator.of(context).pop(_relation),
           child: Text(context.messages.createButton),
         ),
       ],

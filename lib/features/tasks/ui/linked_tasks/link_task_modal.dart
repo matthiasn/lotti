@@ -53,15 +53,14 @@ class LinkTaskModal extends ConsumerStatefulWidget {
 }
 
 class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
-  EntryLinkType _selectedType = EntryLinkType.basic;
-  bool _inverse = false;
+  DirectedRelation _relation = const DirectedRelation(EntryLinkType.basic);
 
   Future<void> _selectTask(Task task) async {
-    final swap = _selectedType != EntryLinkType.basic && _inverse;
+    final swap = _relation.inverse;
     final created = await getIt<PersistenceLogic>().createLink(
       fromId: swap ? task.meta.id : widget.currentTaskId,
       toId: swap ? widget.currentTaskId : task.meta.id,
-      linkType: _selectedType,
+      linkType: _relation.type,
     );
 
     if (!created) {
@@ -96,13 +95,8 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
             tokens.spacing.step4,
           ),
           child: RelationshipTypeSelector(
-            selectedType: _selectedType,
-            inverse: _inverse,
-            onTypeChanged: (type) => setState(() {
-              _selectedType = type;
-              _inverse = false;
-            }),
-            onInverseChanged: (value) => setState(() => _inverse = value),
+            selected: _relation,
+            onChanged: (relation) => setState(() => _relation = relation),
           ),
         ),
         TaskSearchPickerBody(

@@ -10,6 +10,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
@@ -247,12 +248,30 @@ void main() {
   });
 
   group('LinkedTasksWidget rendering', () {
-    testWidgets('hides entirely when no linked tasks', (tester) async {
-      await pumpWidget(tester, incoming: [], outgoing: []);
+    testWidgets(
+      'with no links it still renders a header carrying the link action — '
+      'otherwise the feature has no reachable entry point at all',
+      (tester) async {
+        await pumpWidget(tester, incoming: [], outgoing: []);
 
-      expect(find.text('Linked Tasks'), findsNothing);
-      expect(find.byType(SvgPicture), findsNothing);
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+        expect(find.text('Linked Tasks'), findsOneWidget);
+        expect(find.byIcon(Icons.add_link), findsOneWidget);
+        // Nothing to count, expand, or list yet.
+        expect(find.text('0'), findsNothing);
+        expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
+        expect(find.byType(LinkedTaskRow), findsNothing);
+      },
+    );
+
+    testWidgets('exposes the link action alongside links too', (tester) async {
+      await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+      );
+
+      expect(find.byIcon(Icons.add_link), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
 
     testWidgets('shows title and count badge for linked tasks', (

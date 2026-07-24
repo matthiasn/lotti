@@ -6666,6 +6666,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get linkExistingTask => 'Vincular tarefa existente...';
 
   @override
+  String get linkPhraseBasic => 'Relates to';
+
+  @override
   String get linkPhraseBlocksInverse => 'Is blocked by';
 
   @override

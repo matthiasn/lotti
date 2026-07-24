@@ -2789,6 +2789,7 @@
   "linkedTasksOtherLinksSectionTitle": "Weitere Links",
   "linkedTasksTitle": "Verknüpfte Aufgaben",
   "linkExistingTask": "Vorhandene Aufgabe verknüpfen...",
+  "linkPhraseBasic": "Bezieht sich auf",
   "linkPhraseBlocksInverse": "Wird blockiert von",
   "linkPhraseBlocksPrimary": "Blockiert",
   "linkPhraseDuplicatesInverse": "Duplikat von",

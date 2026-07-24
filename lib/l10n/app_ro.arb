@@ -2789,6 +2789,7 @@
   "linkedTasksOtherLinksSectionTitle": "Alte legături",
   "linkedTasksTitle": "Sarcini legate",
   "linkExistingTask": "Leagă o sarcină existentă...",
+  "linkPhraseBasic": "Are legătură cu",
   "linkPhraseBlocksInverse": "Este blocată de",
   "linkPhraseBlocksPrimary": "Blochează",
   "linkPhraseDuplicatesInverse": "Este duplicată de",

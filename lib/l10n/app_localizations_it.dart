@@ -6690,6 +6690,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get linkExistingTask => 'Collegare il compito esistente...';
 
   @override
+  String get linkPhraseBasic => 'Relates to';
+
+  @override
   String get linkPhraseBlocksInverse => 'Is blocked by';
 
   @override

@@ -6608,6 +6608,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get linkExistingTask => 'Länka befintlig uppgift...';
 
   @override
+  String get linkPhraseBasic => 'Relates to';
+
+  @override
   String get linkPhraseBlocksInverse => 'Is blocked by';
 
   @override
