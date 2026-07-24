@@ -23,50 +23,31 @@ void main() {
     await getIt.reset();
   });
 
-  LinkedTaskRowData buildRowData({
-    String? caption,
-    LinkDirection direction = LinkDirection.outgoing,
-  }) => LinkedTaskRowData(
+  LinkedTaskRowData buildRowData() => LinkedTaskRowData(
     task: TestTaskFactory.create(id: 'other-task', title: 'Other Task'),
-    direction: direction,
-    caption: caption,
   );
 
   group('LinkedTaskRow', () {
-    testWidgets('renders the direction glyph and caption when supplied', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: LinkedTaskRow(
-            taskId: 'anchor-task',
-            data: buildRowData(caption: 'to'),
-            manageMode: false,
+    testWidgets(
+      'renders one template — status glyph, title, chevron — with no per-row '
+      'direction glyph or caption (the section header states the relationship)',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: false,
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('to'), findsOneWidget);
-      expect(find.byType(SvgPicture), findsOneWidget);
-      expect(find.text('Other Task'), findsOneWidget);
-    });
-
-    testWidgets('omits the direction glyph and caption when caption is null', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: LinkedTaskRow(
-            taskId: 'anchor-task',
-            data: buildRowData(),
-            manageMode: false,
-          ),
-        ),
-      );
-
-      expect(find.byType(SvgPicture), findsNothing);
-      expect(find.text('Other Task'), findsOneWidget);
-    });
+        expect(find.text('Other Task'), findsOneWidget);
+        expect(find.byType(StatusGlyph), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+        expect(find.byType(SvgPicture), findsNothing);
+      },
+    );
 
     testWidgets(
       'shows the plain chevron in manage mode when onUnlink is null',

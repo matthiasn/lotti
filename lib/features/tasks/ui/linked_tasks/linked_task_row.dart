@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -7,40 +6,26 @@ import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Which side of a link the row's anchor task is on. `outgoing` means the
-/// anchor task is the link's `fromId`.
-enum LinkDirection { outgoing, incoming }
-
 /// Size of the "this navigates somewhere" chevron, shared by [LinkedTaskRow]
 /// and the header's blocked-by chip so the same affordance is the same glyph
 /// at the same size everywhere it appears in this feature.
 const double linkedRowChevronSize = 14;
 
-/// One row's content: the other task in the link, its direction relative to
-/// the anchor task, and an optional direction caption.
+/// One row's content: the other task in the link.
+///
+/// Deliberately just the task — direction and relationship kind are stated by
+/// the section header the row sits under, never repeated per row.
 class LinkedTaskRowData {
-  const LinkedTaskRowData({
-    required this.task,
-    required this.direction,
-    this.caption,
-  });
+  const LinkedTaskRowData({required this.task});
 
   final Task task;
-  final LinkDirection direction;
-
-  /// Direction caption shown next to the direction glyph (e.g. "to"/"from"
-  /// for the flat plain-link list, or a relationship phrase like "Follows up
-  /// on" for a merged bidirectional section). Null omits the glyph+caption
-  /// unit entirely — used when a section header already disambiguates
-  /// direction (the split "Blocks"/"Blocked by" sections).
-  final String? caption;
 }
 
-/// A single row in the linked-tasks card: direction glyph + caption (if any),
-/// status glyph, title, and either a chevron (browse mode) or edit/unlink
-/// buttons (manage mode, only for whichever of [onEdit]/[onUnlink] is
-/// supplied). Shared by the flat plain-link list and the typed relationship
-/// sections.
+/// A single row in the linked-tasks card: status glyph, title, and either a
+/// chevron (browse mode) or edit/unlink buttons (manage mode, only for
+/// whichever of [onEdit]/[onUnlink] is supplied). Shared by the flat
+/// plain-link list and the typed relationship sections — one template for
+/// every row on the card.
 class LinkedTaskRow extends StatelessWidget {
   const LinkedTaskRow({
     required this.taskId,
@@ -71,17 +56,6 @@ class LinkedTaskRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final task = data.task;
-    final isOutgoing = data.direction == LinkDirection.outgoing;
-    // Neutral, not alert.info/alert.success: those two are already spoken for
-    // as *task-status* colors on this same card, so tinting a link's
-    // direction with them made an editorial relationship read as a status
-    // (design-review-panel round 3, colour-contrast + hierarchy findings).
-    // The left/right glyph already encodes direction without colour.
-    final directionColor = tokens.colors.text.mediumEmphasis;
-    final glyph = isOutgoing
-        ? 'assets/icons/subdirectory_arrow_right.svg'
-        : 'assets/icons/subdirectory_arrow_left.svg';
-    final caption = data.caption;
 
     return InkWell(
       onTap: manageMode
@@ -94,22 +68,6 @@ class LinkedTaskRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            if (caption != null) ...[
-              SvgPicture.asset(
-                glyph,
-                width: 16,
-                height: 16,
-                colorFilter: ColorFilter.mode(directionColor, BlendMode.srcIn),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                caption,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: directionColor,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-            ],
             StatusGlyph(status: task.data.status),
             SizedBox(width: tokens.spacing.step2),
             Expanded(
@@ -118,11 +76,7 @@ class LinkedTaskRow extends StatelessWidget {
                 style: tokens.typography.styles.body.bodySmall.copyWith(
                   color: tokens.colors.text.highEmphasis,
                 ),
-                // A caption eats horizontal room on the same line, so a
-                // captioned row gets one more line before ellipsizing —
-                // otherwise long titles truncate mid-word on phone widths
-                // (design-review-panel round 3, typography finding).
-                maxLines: caption == null ? 2 : 3,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),

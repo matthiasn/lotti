@@ -64,20 +64,7 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
     }
 
     final flatRows = linkGroups.flat
-        .map(
-          (entry) => LinkedTaskRowData(
-            task: entry.task,
-            direction: entry.direction == TaskLinkDirection.outgoing
-                ? LinkDirection.outgoing
-                : LinkDirection.incoming,
-            // No caption: a plain link carries no relationship semantics, so
-            // the glyph + "to"/"from" treatment made it mimic a real typed
-            // relationship row with a content-free verb. The "Other links"
-            // section header carries all the meaning there is
-            // (design-review-panel round 3, top consensus finding), matching
-            // how the split Blocks/Blocked-by sections also render captionless.
-          ),
-        )
+        .map((entry) => LinkedTaskRowData(task: entry.task))
         .toList();
 
     final tokens = context.designTokens;
@@ -139,18 +126,18 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                       currentType: EntryLinkType.basic,
                       currentDirection: linkGroups.flat[i].direction,
                     ),
-                    onUnlink: () => ref
-                        .read(journalRepositoryProvider)
-                        .removeTypedLink(
-                          fromId:
-                              flatRows[i].direction == LinkDirection.outgoing
-                              ? taskId
-                              : flatRows[i].task.meta.id,
-                          toId: flatRows[i].direction == LinkDirection.outgoing
-                              ? flatRows[i].task.meta.id
-                              : taskId,
-                          linkType: 'BasicLink',
-                        ),
+                    onUnlink: () {
+                      final entry = linkGroups.flat[i];
+                      final isOutgoing =
+                          entry.direction == TaskLinkDirection.outgoing;
+                      return ref
+                          .read(journalRepositoryProvider)
+                          .removeTypedLink(
+                            fromId: isOutgoing ? taskId : entry.task.meta.id,
+                            toId: isOutgoing ? entry.task.meta.id : taskId,
+                            linkType: 'BasicLink',
+                          );
+                    },
                   ),
                 ],
               ],
@@ -422,18 +409,21 @@ class _CountBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // Neutral, not alert.info: blue is already the In-Progress status colour
+    // on this same card, and a count is not a status. Keeping it quiet also
+    // stops the badge out-shouting the section headers below it.
     return Container(
-      width: 20,
-      height: 20,
+      width: tokens.spacing.step6,
+      height: tokens.spacing.step6,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: tokens.colors.alert.info.defaultColor,
+        color: tokens.colors.background.level03,
         shape: BoxShape.circle,
       ),
       child: Text(
         '$count',
         style: tokens.typography.styles.others.caption.copyWith(
-          color: tokens.colors.text.onInteractiveAlert,
+          color: tokens.colors.text.mediumEmphasis,
           height: 1,
         ),
       ),

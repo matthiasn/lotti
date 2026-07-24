@@ -11483,12 +11483,6 @@ abstract class AppLocalizations {
   /// **'This task…'**
   String get linkDirectionLabel;
 
-  /// No description provided for @linkedFromCaption.
-  ///
-  /// In en, this message translates to:
-  /// **'from'**
-  String get linkedFromCaption;
-
   /// No description provided for @linkedTaskImageBadge.
   ///
   /// In en, this message translates to:
@@ -11507,24 +11501,6 @@ abstract class AppLocalizations {
   /// **'Blocks'**
   String get linkedTasksBlocksSectionTitle;
 
-  /// No description provided for @linkedTasksDuplicatesSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Duplicates'**
-  String get linkedTasksDuplicatesSectionTitle;
-
-  /// No description provided for @linkedTasksFixesSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Fixes'**
-  String get linkedTasksFixesSectionTitle;
-
-  /// No description provided for @linkedTasksFollowUpsSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Follow-ups'**
-  String get linkedTasksFollowUpsSectionTitle;
-
   /// No description provided for @linkedTasksMenuTooltip.
   ///
   /// In en, this message translates to:
@@ -11537,23 +11513,11 @@ abstract class AppLocalizations {
   /// **'Other links'**
   String get linkedTasksOtherLinksSectionTitle;
 
-  /// No description provided for @linkedTasksSupersedesSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Supersedes'**
-  String get linkedTasksSupersedesSectionTitle;
-
   /// No description provided for @linkedTasksTitle.
   ///
   /// In en, this message translates to:
   /// **'Linked Tasks'**
   String get linkedTasksTitle;
-
-  /// No description provided for @linkedToCaption.
-  ///
-  /// In en, this message translates to:
-  /// **'to'**
-  String get linkedToCaption;
 
   /// No description provided for @linkExistingTask.
   ///

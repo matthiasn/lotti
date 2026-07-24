@@ -3206,11 +3206,9 @@
       }
     }
   },
-  "linkedFromCaption": "de",
   "linkedTaskImageBadge": "Da tarefa vinculada",
   "linkedTasksMenuTooltip": "Opções de tarefas vinculadas",
   "linkedTasksTitle": "Tarefas Vinculadas",
-  "linkedToCaption": "para",
   "linkExistingTask": "Vincular tarefa existente...",
   "loggingDomainAgentRuntime": "Tempo de execução do agente",
   "loggingDomainAgentWorkflow": "Fluxo de trabalho do agente",

@@ -6705,9 +6705,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkDirectionLabel => 'Această sarcină…';
 
   @override
-  String get linkedFromCaption => 'de la';
-
-  @override
   String get linkedTaskImageBadge => 'Din sarcina legată';
 
   @override
@@ -6717,28 +6714,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkedTasksBlocksSectionTitle => 'Blochează';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Duplicate';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Remediază';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Continuări';
-
-  @override
   String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
 
   @override
   String get linkedTasksOtherLinksSectionTitle => 'Alte legături';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Înlocuiește';
-
-  @override
   String get linkedTasksTitle => 'Sarcini legate';
-
-  @override
-  String get linkedToCaption => 'la';
 
   @override
   String get linkExistingTask => 'Leagă o sarcină existentă...';

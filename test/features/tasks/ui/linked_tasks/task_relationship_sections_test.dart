@@ -137,7 +137,8 @@ void main() {
     );
 
     testWidgets(
-      'renders a merged Follow-ups section with per-row phrase captions',
+      'splits a bidirectional kind into one section per direction, each '
+      'titled with that direction own phrase',
       (tester) async {
         await pumpSections(
           tester,
@@ -160,15 +161,19 @@ void main() {
           ),
         );
 
-        expect(find.text('Follow-ups'), findsOneWidget);
+        // Two direction-specific headers, not one merged "Follow-ups" group.
         expect(find.text('Follows up on'), findsOneWidget);
         expect(find.text('Has follow-up'), findsOneWidget);
+        expect(find.text('Follow-ups'), findsNothing);
+        // Each row sits under its own header, so no row repeats the phrase.
+        expect(find.text('Outgoing Follow-up'), findsOneWidget);
+        expect(find.text('Incoming Follow-up'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'orders sections Blocked by, Blocks, Follow-ups, Duplicates, Fixes, '
-      'Supersedes',
+      'orders sections Blocked by first, then by kind and direction, '
+      'skipping every empty one',
       (tester) async {
         await pumpSections(
           tester,
@@ -176,10 +181,6 @@ void main() {
             flat: const [],
             typed: [
               entry(
-                // Incoming direction, so its row caption reads the inverse
-                // phrase ("Is superseded by") rather than "Supersedes" —
-                // avoiding a text collision with this section's own header
-                // in the assertion below.
                 id: 'supersedes-1',
                 title: 'Supersedes entry',
                 kind: TaskLinkKind.supersedes,
@@ -192,8 +193,6 @@ void main() {
                 direction: TaskLinkDirection.incoming,
               ),
               entry(
-                // Incoming direction for the same reason ("Is fixed by" vs.
-                // the "Fixes" section header).
                 id: 'fixes-1',
                 title: 'Fixes entry',
                 kind: TaskLinkKind.fixes,
@@ -203,22 +202,68 @@ void main() {
           ),
         );
 
+        const allHeaders = [
+          'Blocked by',
+          'Blocks',
+          'Follows up on',
+          'Has follow-up',
+          'Duplicates',
+          'Is duplicated by',
+          'Fixes',
+          'Is fixed by',
+          'Supersedes',
+          'Is superseded by',
+        ];
         final headers = tester
             .widgetList<Text>(find.byType(Text))
             .map((t) => t.data)
-            .where(
-              (text) => [
-                'Blocked by',
-                'Blocks',
-                'Follow-ups',
-                'Duplicates',
-                'Fixes',
-                'Supersedes',
-              ].contains(text),
-            )
+            .where(allHeaders.contains)
             .toList();
 
-        expect(headers, ['Blocked by', 'Fixes', 'Supersedes']);
+        // Blocked-by leads; the two incoming entries render their inverse
+        // phrases; the outgoing counterpart sections stay absent.
+        expect(headers, ['Blocked by', 'Is fixed by', 'Is superseded by']);
+      },
+    );
+
+    testWidgets(
+      'accents only the Blocked-by header, leaving every other section and '
+      'row neutral',
+      (tester) async {
+        await pumpSections(
+          tester,
+          TaskLinkGroups(
+            flat: const [],
+            typed: [
+              entry(
+                id: 'blocker',
+                title: 'Blocker Task',
+                kind: TaskLinkKind.blocks,
+                direction: TaskLinkDirection.incoming,
+              ),
+              entry(
+                id: 'blocked',
+                title: 'Blocked Task',
+                kind: TaskLinkKind.blocks,
+                direction: TaskLinkDirection.outgoing,
+              ),
+            ],
+          ),
+        );
+
+        final headers = tester
+            .widgetList<LinkedTaskSectionHeader>(
+              find.byType(LinkedTaskSectionHeader),
+            )
+            .toList();
+        final blockedBy = headers.firstWhere((h) => h.title == 'Blocked by');
+        final blocks = headers.firstWhere((h) => h.title == 'Blocks');
+
+        expect(blockedBy.accent, isNotNull);
+        expect(blocks.accent, isNull);
+        // The accent brings a leading glyph tying the section to the header
+        // chip; it is the only one on the card.
+        expect(find.byIcon(Icons.block), findsOneWidget);
       },
     );
 

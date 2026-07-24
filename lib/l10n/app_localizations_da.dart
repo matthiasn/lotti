@@ -6586,9 +6586,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkDirectionLabel => 'This task…';
 
   @override
-  String get linkedFromCaption => 'fra';
-
-  @override
   String get linkedTaskImageBadge => 'Fra linket opgave';
 
   @override
@@ -6598,28 +6595,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkedTasksBlocksSectionTitle => 'Blocks';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Duplicates';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Fixes';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Follow-ups';
-
-  @override
   String get linkedTasksMenuTooltip => 'Muligheder for tilknyttede opgaver';
 
   @override
   String get linkedTasksOtherLinksSectionTitle => 'Other links';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Supersedes';
-
-  @override
   String get linkedTasksTitle => 'Sammenkoblede opgaver';
-
-  @override
-  String get linkedToCaption => 'til';
 
   @override
   String get linkExistingTask => 'Link eksisterende opgave...';

@@ -6587,9 +6587,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get linkDirectionLabel => 'This task…';
 
   @override
-  String get linkedFromCaption => 'från';
-
-  @override
   String get linkedTaskImageBadge => 'Från länkad uppgift';
 
   @override
@@ -6599,28 +6596,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get linkedTasksBlocksSectionTitle => 'Blocks';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Duplicates';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Fixes';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Follow-ups';
-
-  @override
   String get linkedTasksMenuTooltip => 'Länkade uppgifter alternativ';
 
   @override
   String get linkedTasksOtherLinksSectionTitle => 'Other links';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Supersedes';
-
-  @override
   String get linkedTasksTitle => 'Länkade uppgifter';
-
-  @override
-  String get linkedToCaption => 'att';
 
   @override
   String get linkExistingTask => 'Länka befintlig uppgift...';

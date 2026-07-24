@@ -523,10 +523,7 @@ class _TaskBlockedByChip extends ConsumerWidget {
           for (final blocker in blockers)
             LinkedTaskRow(
               taskId: taskId,
-              data: LinkedTaskRowData(
-                task: blocker,
-                direction: LinkDirection.incoming,
-              ),
+              data: LinkedTaskRowData(task: blocker),
               manageMode: false,
             ),
         ],

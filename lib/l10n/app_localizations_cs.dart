@@ -6664,9 +6664,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkDirectionLabel => 'Tento úkol…';
 
   @override
-  String get linkedFromCaption => 'z';
-
-  @override
   String get linkedTaskImageBadge => 'Z propojené úlohy';
 
   @override
@@ -6676,28 +6673,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedTasksBlocksSectionTitle => 'Blokuje';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Duplikáty';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Opravuje';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Navazující úkoly';
-
-  @override
   String get linkedTasksMenuTooltip => 'Možnosti propojených úkolů';
 
   @override
   String get linkedTasksOtherLinksSectionTitle => 'Další odkazy';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Nahrazuje';
-
-  @override
   String get linkedTasksTitle => 'Propojené úkoly';
-
-  @override
-  String get linkedToCaption => 'na';
 
   @override
   String get linkExistingTask => 'Propojit existující úkol...';

@@ -6605,9 +6605,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get linkDirectionLabel => 'This task…';
 
   @override
-  String get linkedFromCaption => 'van';
-
-  @override
   String get linkedTaskImageBadge => 'Van verbonden taak';
 
   @override
@@ -6617,28 +6614,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get linkedTasksBlocksSectionTitle => 'Blocks';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Duplicates';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Fixes';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Follow-ups';
-
-  @override
   String get linkedTasksMenuTooltip => 'Gekoppelde takenopties';
 
   @override
   String get linkedTasksOtherLinksSectionTitle => 'Other links';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Supersedes';
-
-  @override
   String get linkedTasksTitle => 'Gekoppelde taken';
-
-  @override
-  String get linkedToCaption => 'tot';
 
   @override
   String get linkExistingTask => 'Bestaande taak koppelen...';

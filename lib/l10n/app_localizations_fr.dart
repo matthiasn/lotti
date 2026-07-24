@@ -6698,9 +6698,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkDirectionLabel => 'Cette tâche…';
 
   @override
-  String get linkedFromCaption => 'depuis';
-
-  @override
   String get linkedTaskImageBadge => 'De la tâche liée';
 
   @override
@@ -6710,28 +6707,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkedTasksBlocksSectionTitle => 'Bloque';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Doublons';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Corrige';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Suivis';
-
-  @override
   String get linkedTasksMenuTooltip => 'Options des tâches liées';
 
   @override
   String get linkedTasksOtherLinksSectionTitle => 'Autres liens';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Remplace';
-
-  @override
   String get linkedTasksTitle => 'Tâches liées';
-
-  @override
-  String get linkedToCaption => 'vers';
 
   @override
   String get linkExistingTask => 'Lier une tâche existante...';

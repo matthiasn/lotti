@@ -6645,9 +6645,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get linkDirectionLabel => 'This task…';
 
   @override
-  String get linkedFromCaption => 'de';
-
-  @override
   String get linkedTaskImageBadge => 'Da tarefa vinculada';
 
   @override
@@ -6657,28 +6654,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get linkedTasksBlocksSectionTitle => 'Blocks';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Duplicates';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Fixes';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Follow-ups';
-
-  @override
   String get linkedTasksMenuTooltip => 'Opções de tarefas vinculadas';
 
   @override
   String get linkedTasksOtherLinksSectionTitle => 'Other links';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Supersedes';
-
-  @override
   String get linkedTasksTitle => 'Tarefas Vinculadas';
-
-  @override
-  String get linkedToCaption => 'para';
 
   @override
   String get linkExistingTask => 'Vincular tarefa existente...';

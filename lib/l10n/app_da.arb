@@ -3207,11 +3207,9 @@
       }
     }
   },
-  "linkedFromCaption": "fra",
   "linkedTaskImageBadge": "Fra linket opgave",
   "linkedTasksMenuTooltip": "Muligheder for tilknyttede opgaver",
   "linkedTasksTitle": "Sammenkoblede opgaver",
-  "linkedToCaption": "til",
   "linkExistingTask": "Link eksisterende opgave...",
   "loggingDomainAgentRuntime": "Agentens runtime",
   "loggingDomainAgentWorkflow": "Agentarbejdsgang",
