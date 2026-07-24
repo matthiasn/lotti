@@ -6670,17 +6670,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blokováno';
 
   @override
-  String get linkedTasksMenuTooltip => 'Možnosti propojených úkolů';
-
-  @override
-  String get linkedTasksTitle => 'Propojené úkoly';
-
-  @override
   String get linkedTasksEmptyAction => 'Propojit úkol…';
 
   @override
   String get linkedTasksEmptyHint =>
       'Propoj tento úkol s jiným — blokátorem, navazujícím nebo duplicitou.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Možnosti propojených úkolů';
+
+  @override
+  String get linkedTasksTitle => 'Propojené úkoly';
 
   @override
   String get linkExistingTask => 'Propojit existující úkol...';
@@ -10264,7 +10264,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => 'Co to blokuje?';
+  String get taskBlockerPickerTitle => 'Co ho blokuje?';
 
   @override
   String get taskCategoryAllLabel => 'vše';

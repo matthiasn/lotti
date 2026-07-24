@@ -6677,17 +6677,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Bloqueada por';
 
   @override
-  String get linkedTasksMenuTooltip => 'Opciones de tareas vinculadas';
-
-  @override
-  String get linkedTasksTitle => 'Tareas vinculadas';
-
-  @override
   String get linkedTasksEmptyAction => 'Vincular una tarea…';
 
   @override
   String get linkedTasksEmptyHint =>
       'Conecta esta tarea con otra: un bloqueo, un seguimiento o un duplicado.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Opciones de tareas vinculadas';
+
+  @override
+  String get linkedTasksTitle => 'Tareas vinculadas';
 
   @override
   String get linkExistingTask => 'Vincular tarea existente...';
@@ -10275,7 +10275,7 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Toca para ver $count bloqueos',
-      one: 'Esperando a $title',
+      one: 'Esperando $title',
     );
     return '$_temp0';
   }
@@ -10290,7 +10290,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => '¿Qué está bloqueando esto?';
+  String get taskBlockerPickerTitle => '¿Qué la está bloqueando?';
 
   @override
   String get taskCategoryAllLabel => 'todos';

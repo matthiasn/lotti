@@ -208,6 +208,11 @@ class LinkedTaskSectionHeader extends StatelessWidget {
     final accent = this.accent;
     final label = Text(
       title,
+      // Long localized phrases ("Is superseded by" and its translations) must
+      // ellipsize rather than overflow once the glyph column and both step5
+      // insets are taken off a phone-width card.
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
       style: tokens.typography.styles.others.caption.copyWith(
         color: accent ?? tokens.colors.text.mediumEmphasis,
         fontWeight: FontWeight.w600,
@@ -234,7 +239,7 @@ class LinkedTaskSectionHeader extends StatelessWidget {
                 : Icon(Icons.block, size: tokens.spacing.step4, color: accent),
           ),
           SizedBox(width: tokens.spacing.step2),
-          label,
+          Flexible(child: label),
         ],
       ),
     );

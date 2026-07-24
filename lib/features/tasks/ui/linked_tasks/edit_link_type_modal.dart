@@ -74,7 +74,7 @@ class _EditLinkTypeBody extends StatelessWidget {
   }
 }
 
-class _EditLinkTypeApplyFooter extends ConsumerWidget {
+class _EditLinkTypeApplyFooter extends ConsumerStatefulWidget {
   const _EditLinkTypeApplyFooter({
     required this.linkId,
     required this.currentDirection,
@@ -86,29 +86,45 @@ class _EditLinkTypeApplyFooter extends ConsumerWidget {
   final ValueNotifier<DirectedRelation> relation;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_EditLinkTypeApplyFooter> createState() =>
+      _EditLinkTypeApplyFooterState();
+}
+
+class _EditLinkTypeApplyFooterState
+    extends ConsumerState<_EditLinkTypeApplyFooter> {
+  /// `swapDirection` is computed against the link's *pre-edit* direction, so a
+  /// second Save while the first is still in flight would compute the same
+  /// flip again from the same stale baseline and reverse the link back.
+  bool _saving = false;
+
+  @override
+  Widget build(BuildContext context) {
     return buildPickerApplyFooter(
       context: context,
       label: context.messages.saveButton,
       onTap: () async {
+        if (_saving) return;
+        setState(() => _saving = true);
         final navigator = Navigator.of(context);
         final messenger = ScaffoldMessenger.of(context);
         final messages = context.messages;
 
-        final selected = relation.value;
+        final selected = widget.relation.value;
         final newIsOutgoing = !selected.inverse;
-        final oldIsOutgoing = currentDirection == TaskLinkDirection.outgoing;
+        final oldIsOutgoing =
+            widget.currentDirection == TaskLinkDirection.outgoing;
         final swapDirection = newIsOutgoing != oldIsOutgoing;
 
         final saved = await ref
             .read(journalRepositoryProvider)
             .updateLinkType(
-              linkId: linkId,
+              linkId: widget.linkId,
               newType: selected.type,
               swapDirection: swapDirection,
             );
 
-        if (!context.mounted) return;
+        if (!mounted) return;
+        setState(() => _saving = false);
         if (!saved) {
           messenger.showSnackBar(
             SnackBar(content: Text(messages.editLinkTypeFailedMessage)),

@@ -361,7 +361,9 @@ class JournalRepository {
     );
   }
 
-  /// Test-only seam for [_hasChange] — the pure six-field link comparator.
+  /// Test-only seam for [_hasChange] — the pure link comparator over the six
+  /// mutable fields plus the union variant's type name, so a retype is a
+  /// change even when every other field is identical.
   @visibleForTesting
   bool debugHasChange(EntryLink existing, EntryLink incoming) =>
       _hasChange(existing, incoming);

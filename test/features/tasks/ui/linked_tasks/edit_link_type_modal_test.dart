@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -181,6 +183,42 @@ void main() {
 
         await pickRelation(tester, 'Is blocked by');
         await tester.tap(saveButton());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => journalRepo.updateLinkType(
+            linkId: 'link-1',
+            newType: EntryLinkType.blocks,
+            swapDirection: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'a second Save while the first is in flight is ignored — swapDirection '
+      'is computed against the pre-edit direction, so a repeat would reverse '
+      'the link back',
+      (tester) async {
+        final gate = Completer<bool>();
+        when(
+          () => journalRepo.updateLinkType(
+            linkId: any(named: 'linkId'),
+            newType: any(named: 'newType'),
+            swapDirection: any(named: 'swapDirection'),
+          ),
+        ).thenAnswer((_) => gate.future);
+
+        await openModal(tester, currentDirection: TaskLinkDirection.outgoing);
+        await pickRelation(tester, 'Is blocked by');
+
+        await tester.tap(saveButton());
+        await tester.pump();
+        await tester.tap(saveButton());
+        await tester.pump();
+
+        gate.complete(true);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

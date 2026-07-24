@@ -6558,17 +6558,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blocked by';
 
   @override
-  String get linkedTasksMenuTooltip => 'Linked tasks options';
-
-  @override
-  String get linkedTasksTitle => 'Linked Tasks';
-
-  @override
   String get linkedTasksEmptyAction => 'Link a task…';
 
   @override
   String get linkedTasksEmptyHint =>
       'Connect this task to another — a blocker, a follow-up, a duplicate.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Linked tasks options';
+
+  @override
+  String get linkedTasksTitle => 'Linked Tasks';
 
   @override
   String get linkExistingTask => 'Link existing task...';

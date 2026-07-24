@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -12,6 +11,13 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// and the header's blocked-by chip so the same affordance is the same glyph
 /// at the same size everywhere it appears in this feature.
 const double linkedRowChevronSize = 14;
+
+/// Row width from which a status label can share the title's line without
+/// crowding it. Deliberately well below the detail reading measure the card is
+/// capped at on wide windows: a window-level desktop check would read true
+/// while the row it describes is narrower than the value it was compared
+/// against, so this is measured against the row's own constraints instead.
+const double _trailingStatusMinRowWidth = 520;
 
 /// One row's content: the other task in the link.
 ///
@@ -64,66 +70,72 @@ class LinkedTaskRow extends StatelessWidget {
       task.data.status.toDbString,
       context,
     );
-    // The status reads as a trailing anchor only where there is width to
-    // separate it from the title. On a phone it competed with the title for
-    // the same line and pushed every row to two lines, so there it drops to
-    // the subtitle slot instead — same token, same words, no wrap.
-    final wideEnoughForTrailingStatus =
-        MediaQuery.sizeOf(context).width >= kDesktopBreakpoint;
 
-    return DesignSystemListItem(
-      // Navigable in manage mode too: the edit/unlink buttons are additive,
-      // so nulling this only produced a row that looked tappable and wasn't.
-      onTap: () => openLinkedTaskDetail(context: context, taskId: task.id),
-      title: task.data.title,
-      titleMaxLines: 2,
-      size: DesignSystemListItemSize.small,
-      semanticsLabel: '${task.data.title}, $statusLabel',
-      leading: StatusGlyph(status: task.data.status),
-      // Status as a trailing anchor rather than a second line: it keeps the
-      // row one line tall, and on a wide detail pane it stops the trailing
-      // affordance floating alone at the far edge of an otherwise empty row.
-      subtitle: showActions || wideEnoughForTrailingStatus ? null : statusLabel,
-      trailing: showActions || !wideEnoughForTrailingStatus
-          ? null
-          : Text(
-              statusLabel,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-      trailingExtra: showActions
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (onEdit != null)
-                  _RowAction(
-                    tooltip: context.messages.editLinkTypeTooltip,
-                    onPressed: () => onEdit?.call(),
-                    // Not Icons.edit_outlined — that glyph is StatusGlyph's
-                    // own icon for TaskStatus.groomed, so a Groomed row in
-                    // manage mode would show the same pencil twice with two
-                    // different meanings right next to each other.
-                    icon: Icons.swap_horiz_rounded,
+    // Measured against the row's own constraints, not the window: the card is
+    // capped at the detail reading measure on wide windows, and it can also
+    // sit in a narrow column, so the window width says nothing about how much
+    // room this row actually has.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wideEnoughForTrailingStatus =
+            constraints.maxWidth >= _trailingStatusMinRowWidth;
+        return DesignSystemListItem(
+          // Navigable in manage mode too: the edit/unlink buttons are additive,
+          // so nulling this only produced a row that looked tappable and wasn't.
+          onTap: () => openLinkedTaskDetail(context: context, taskId: task.id),
+          title: task.data.title,
+          titleMaxLines: 2,
+          size: DesignSystemListItemSize.small,
+          semanticsLabel: '${task.data.title}, $statusLabel',
+          leading: StatusGlyph(status: task.data.status),
+          // Status as a trailing anchor rather than a second line: it keeps the
+          // row one line tall, and on a wide detail pane it stops the trailing
+          // affordance floating alone at the far edge of an otherwise empty row.
+          subtitle: showActions || wideEnoughForTrailingStatus
+              ? null
+              : statusLabel,
+          trailing: showActions || !wideEnoughForTrailingStatus
+              ? null
+              : Text(
+                  statusLabel,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
-                if (onEdit != null && onUnlink != null)
-                  SizedBox(width: tokens.spacing.step2),
-                if (onUnlink != null)
-                  _RowAction(
-                    tooltip: context.messages.unlinkButton,
-                    onPressed: () => _confirmUnlink(context),
-                    icon: Icons.close_rounded,
-                    // The destructive one carries more weight than its
-                    // neighbour so the two aren't interchangeable smudges.
-                    emphasis: tokens.colors.text.mediumEmphasis,
-                  ),
-              ],
-            )
-          : Icon(
-              Icons.arrow_forward_ios,
-              size: linkedRowChevronSize,
-              color: tokens.colors.text.lowEmphasis,
-            ),
+                ),
+          trailingExtra: showActions
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (onEdit != null)
+                      _RowAction(
+                        tooltip: context.messages.editLinkTypeTooltip,
+                        onPressed: () => onEdit?.call(),
+                        // Not Icons.edit_outlined — that glyph is StatusGlyph's
+                        // own icon for TaskStatus.groomed, so a Groomed row in
+                        // manage mode would show the same pencil twice with two
+                        // different meanings right next to each other.
+                        icon: Icons.swap_horiz_rounded,
+                      ),
+                    if (onEdit != null && onUnlink != null)
+                      SizedBox(width: tokens.spacing.step2),
+                    if (onUnlink != null)
+                      _RowAction(
+                        tooltip: context.messages.unlinkButton,
+                        onPressed: () => _confirmUnlink(context),
+                        icon: Icons.close_rounded,
+                        // The destructive one carries more weight than its
+                        // neighbour so the two aren't interchangeable smudges.
+                        emphasis: tokens.colors.text.mediumEmphasis,
+                      ),
+                  ],
+                )
+              : Icon(
+                  Icons.arrow_forward_ios,
+                  size: linkedRowChevronSize,
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+        );
+      },
     );
   }
 

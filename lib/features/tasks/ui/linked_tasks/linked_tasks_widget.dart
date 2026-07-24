@@ -378,19 +378,32 @@ Future<void> _createNewLinkedTask(
   if (newTask != null && selection.type != EntryLinkType.basic) {
     // createTask always makes a BasicLink; swap it for the chosen
     // relationship rather than leaving a redundant plain link alongside it.
-    await ref
-        .read(journalRepositoryProvider)
-        .removeTypedLink(
-          fromId: taskId,
-          toId: newTask.meta.id,
-          linkType: 'BasicLink',
-        );
+    //
+    // Create first, then remove — and only if the create succeeded.
+    // createLink returns false when the cycle guard rejects the edge, so
+    // removing first would leave the freshly created task with no link back
+    // to its parent at all.
     final swap = selection.inverse;
-    await getIt<PersistenceLogic>().createLink(
+    final created = await getIt<PersistenceLogic>().createLink(
       fromId: swap ? newTask.meta.id : taskId,
       toId: swap ? taskId : newTask.meta.id,
       linkType: selection.type,
     );
+    if (created) {
+      await ref
+          .read(journalRepositoryProvider)
+          .removeTypedLink(
+            fromId: taskId,
+            toId: newTask.meta.id,
+            linkType: 'BasicLink',
+          );
+    } else if (context.mounted) {
+      // The plain link createTask made is still there, so the new task is
+      // reachable; say why it didn't get the relationship that was asked for.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.messages.linkBlocksCycleErrorMessage)),
+      );
+    }
   }
 
   if (newTask != null && context.mounted) {

@@ -598,6 +598,65 @@ void main() {
     );
 
     testWidgets(
+      'a rejected typed link leaves the auto-created plain link in place, so '
+      'the new task is never left unlinked',
+      (tester) async {
+        final created = buildTask(id: 'new-task', title: 'New');
+        stubCreateTaskEntry(created);
+
+        final repo = await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          extraOverrides: createFlowOverrides(parentCategoryId: null),
+        );
+        when(
+          () => repo.removeTypedLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async => 1);
+        // The cycle guard rejects the blocks edge.
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => false);
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Create new linked task...'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await pickRelation(tester, 'Blocks');
+        await tester.tap(find.text('Create'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The BasicLink createTask made must survive, or the new task would
+        // have no link back to its parent at all.
+        verifyNever(
+          () => repo.removeTypedLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: 'BasicLink',
+          ),
+        );
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsWidgets,
+        );
+      },
+    );
+
+    testWidgets(
       'selecting "Blocks" swaps the auto-created basic link for a blocks '
       'edge in the primary direction',
       (tester) async {

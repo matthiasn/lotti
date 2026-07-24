@@ -627,7 +627,9 @@ flowchart LR
 The modal explicitly excludes:
 
 - the current task
-- already-linked tasks
+- tasks that already hold *the relationship currently selected* — recomputed
+  as that selection changes, so a task linked one way stays available to be
+  linked another (see "Typed relationships" below)
 
 which is a good example of the feature preferring guardrails over polite chaos.
 

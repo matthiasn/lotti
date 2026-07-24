@@ -6711,17 +6711,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blocată de';
 
   @override
-  String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
-
-  @override
-  String get linkedTasksTitle => 'Sarcini legate';
-
-  @override
   String get linkedTasksEmptyAction => 'Legați o sarcină…';
 
   @override
   String get linkedTasksEmptyHint =>
       'Conectați această sarcină cu alta — un blocaj, o continuare sau un duplicat.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
+
+  @override
+  String get linkedTasksTitle => 'Sarcini legate';
 
   @override
   String get linkExistingTask => 'Leagă o sarcină existentă...';
@@ -10323,7 +10323,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => 'Ce blochează asta?';
+  String get taskBlockerPickerTitle => 'Ce o blochează?';
 
   @override
   String get taskCategoryAllLabel => 'toate';

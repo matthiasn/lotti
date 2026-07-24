@@ -2784,10 +2784,10 @@
   "linkDirectionLabel": "Esta tarea…",
   "linkedTaskImageBadge": "De tarea vinculada",
   "linkedTasksBlockedBySectionTitle": "Bloqueada por",
-  "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
-  "linkedTasksTitle": "Tareas vinculadas",
   "linkedTasksEmptyAction": "Vincular una tarea…",
   "linkedTasksEmptyHint": "Conecta esta tarea con otra: un bloqueo, un seguimiento o un duplicado.",
+  "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
+  "linkedTasksTitle": "Tareas vinculadas",
   "linkExistingTask": "Vincular tarea existente...",
   "linkPhraseBasic": "Se relaciona con",
   "linkPhraseBlocksInverse": "Está bloqueada por",
@@ -4120,7 +4120,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Esperando a {title}} other{Toca para ver {count} bloqueos}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Esperando {title}} other{Toca para ver {count} bloqueos}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4133,7 +4133,7 @@
   },
   "taskBlockedByUnresolvedLabel": "El bloqueo aún no se ha sincronizado",
   "taskBlockedReason": "Bloqueada por: {title}",
-  "taskBlockerPickerTitle": "¿Qué está bloqueando esto?",
+  "taskBlockerPickerTitle": "¿Qué la está bloqueando?",
   "taskCategoryAllLabel": "todos",
   "taskCategoryLabel": "Categoría:",
   "taskCategoryUnassignedLabel": "sin asignar",

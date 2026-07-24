@@ -6704,12 +6704,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Bloquée par';
 
   @override
-  String get linkedTasksMenuTooltip => 'Options des tâches liées';
-
-  @override
-  String get linkedTasksTitle => 'Tâches liées';
-
-  @override
   String get linkedTasksEmptyAction => 'Lier une tâche…';
 
   @override
@@ -6717,10 +6711,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Relie cette tâche à une autre : un bloqueur, un suivi ou un doublon.';
 
   @override
+  String get linkedTasksMenuTooltip => 'Options des tâches liées';
+
+  @override
+  String get linkedTasksTitle => 'Tâches liées';
+
+  @override
   String get linkExistingTask => 'Lier une tâche existante...';
 
   @override
-  String get linkPhraseBasic => 'Est lié à';
+  String get linkPhraseBasic => 'Est liée à';
 
   @override
   String get linkPhraseBlocksInverse => 'Est bloquée par';
@@ -10331,7 +10331,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => 'Qu\'est-ce qui bloque ceci ?';
+  String get taskBlockerPickerTitle => 'Qu\'est-ce qui la bloque ?';
 
   @override
   String get taskCategoryAllLabel => 'tout';

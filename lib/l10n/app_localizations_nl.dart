@@ -6611,17 +6611,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blocked by';
 
   @override
-  String get linkedTasksMenuTooltip => 'Gekoppelde takenopties';
-
-  @override
-  String get linkedTasksTitle => 'Gekoppelde taken';
-
-  @override
   String get linkedTasksEmptyAction => 'Link a task…';
 
   @override
   String get linkedTasksEmptyHint =>
       'Connect this task to another — a blocker, a follow-up, a duplicate.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Gekoppelde takenopties';
+
+  @override
+  String get linkedTasksTitle => 'Gekoppelde taken';
 
   @override
   String get linkExistingTask => 'Bestaande taak koppelen...';

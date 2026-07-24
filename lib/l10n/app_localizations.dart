@@ -11495,18 +11495,6 @@ abstract class AppLocalizations {
   /// **'Blocked by'**
   String get linkedTasksBlockedBySectionTitle;
 
-  /// No description provided for @linkedTasksMenuTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Linked tasks options'**
-  String get linkedTasksMenuTooltip;
-
-  /// No description provided for @linkedTasksTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Linked Tasks'**
-  String get linkedTasksTitle;
-
   /// No description provided for @linkedTasksEmptyAction.
   ///
   /// In en, this message translates to:
@@ -11518,6 +11506,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connect this task to another — a blocker, a follow-up, a duplicate.'**
   String get linkedTasksEmptyHint;
+
+  /// No description provided for @linkedTasksMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked tasks options'**
+  String get linkedTasksMenuTooltip;
+
+  /// No description provided for @linkedTasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked Tasks'**
+  String get linkedTasksTitle;
 
   /// No description provided for @linkExistingTask.
   ///

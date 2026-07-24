@@ -6675,17 +6675,17 @@ class AppLocalizationsIt extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blocked by';
 
   @override
-  String get linkedTasksMenuTooltip => 'Opzioni di attività collegate';
-
-  @override
-  String get linkedTasksTitle => 'Compiti collegati';
-
-  @override
   String get linkedTasksEmptyAction => 'Link a task…';
 
   @override
   String get linkedTasksEmptyHint =>
       'Connect this task to another — a blocker, a follow-up, a duplicate.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Opzioni di attività collegate';
+
+  @override
+  String get linkedTasksTitle => 'Compiti collegati';
 
   @override
   String get linkExistingTask => 'Collegare il compito esistente...';

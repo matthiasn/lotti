@@ -6627,17 +6627,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blockiert von';
 
   @override
-  String get linkedTasksMenuTooltip => 'Optionen für verknüpfte Aufgaben';
-
-  @override
-  String get linkedTasksTitle => 'Verknüpfte Aufgaben';
-
-  @override
   String get linkedTasksEmptyAction => 'Aufgabe verknüpfen…';
 
   @override
   String get linkedTasksEmptyHint =>
       'Verknüpfe diese Aufgabe mit einer anderen — Blocker, Folgeaufgabe oder Duplikat.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Optionen für verknüpfte Aufgaben';
+
+  @override
+  String get linkedTasksTitle => 'Verknüpfte Aufgaben';
 
   @override
   String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
@@ -10193,7 +10193,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => 'Was blockiert das?';
+  String get taskBlockerPickerTitle => 'Was blockiert sie?';
 
   @override
   String get taskCategoryAllLabel => 'Alle';

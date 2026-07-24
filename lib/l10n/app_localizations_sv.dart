@@ -6593,17 +6593,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blocked by';
 
   @override
-  String get linkedTasksMenuTooltip => 'Länkade uppgifter alternativ';
-
-  @override
-  String get linkedTasksTitle => 'Länkade uppgifter';
-
-  @override
   String get linkedTasksEmptyAction => 'Link a task…';
 
   @override
   String get linkedTasksEmptyHint =>
       'Connect this task to another — a blocker, a follow-up, a duplicate.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Länkade uppgifter alternativ';
+
+  @override
+  String get linkedTasksTitle => 'Länkade uppgifter';
 
   @override
   String get linkExistingTask => 'Länka befintlig uppgift...';
