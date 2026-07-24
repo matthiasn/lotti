@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_attention_projection.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -305,6 +308,149 @@ void main() {
       );
 
       expect(rows.whereType<CaptureEntity>().single.id, 'capture-legacy');
+    });
+  });
+
+  group('schema v17 day-subtype backfill', () {
+    /// Writes a row straight to the table with a pre-v17 subtype, bypassing
+    /// the conversion layer that would now derive the day.
+    Future<void> insertStale({
+      required String id,
+      required String type,
+      required String subtype,
+      required String serialized,
+    }) => db.customInsert(
+      'INSERT INTO agent_entities '
+      '(id, agent_id, type, subtype, created_at, updated_at, serialized) '
+      'VALUES (?1, ?2, ?3, ?4, ?5, ?5, ?6)',
+      variables: [
+        Variable.withString(id),
+        Variable.withString('daily_os_planner'),
+        Variable.withString(type),
+        Variable.withString(subtype),
+        Variable.withDateTime(DateTime(2026, 5, 25, 9)),
+        Variable.withString(serialized),
+      ],
+    );
+
+    Future<String?> subtypeOf(String id) async {
+      final rows = await db
+          .customSelect(
+            'SELECT subtype FROM agent_entities WHERE id = ?1',
+            variables: [Variable.withString(id)],
+          )
+          .get();
+      return rows.single.readNullable<String>('subtype');
+    }
+
+    test('rewrites a capture from its own id to its day', () async {
+      final capture = AgentDomainEntity.capture(
+        id: 'capture-1',
+        agentId: 'daily_os_planner',
+        transcript: 'note',
+        capturedAt: DateTime(2026, 5, 25, 9),
+        createdAt: DateTime(2026, 5, 25, 9),
+        dayId: 'dayplan-2026-05-25',
+        vectorClock: null,
+      );
+      await insertStale(
+        id: 'capture-1',
+        type: AgentEntityTypes.capture,
+        subtype: 'capture-1',
+        serialized: jsonEncode(capture.toJson()),
+      );
+
+      await db.backfillDayScopedSubtypes();
+
+      expect(await subtypeOf('capture-1'), 'dayplan-2026-05-25');
+      // And the point of the rewrite: the day-scoped read now finds it.
+      final rows = await core.getEntitiesByAgentIdAndSubtype(
+        'daily_os_planner',
+        type: AgentEntityTypes.capture,
+        subtype: 'dayplan-2026-05-25',
+      );
+      expect(rows.single.id, 'capture-1');
+    });
+
+    test('derives the day for a legacy capture with no dayId', () async {
+      final capture = AgentDomainEntity.capture(
+        id: 'capture-legacy',
+        agentId: 'daily_os_planner',
+        transcript: 'from an old peer',
+        capturedAt: DateTime(2026, 5, 25, 9),
+        createdAt: DateTime(2026, 5, 25, 9),
+        vectorClock: null,
+      );
+      await insertStale(
+        id: 'capture-legacy',
+        type: AgentEntityTypes.capture,
+        subtype: 'capture-legacy',
+        serialized: jsonEncode(capture.toJson()),
+      );
+
+      await db.backfillDayScopedSubtypes();
+
+      expect(await subtypeOf('capture-legacy'), 'dayplan-2026-05-25');
+    });
+
+    test('rewrites a status event from its status name to its day', () async {
+      final event = makeTestDayStatusEvent(createdAt: DateTime(2026, 5, 25, 9));
+      await insertStale(
+        id: event.id,
+        type: AgentEntityTypes.dayStatusEvent,
+        subtype: 'attentionNeeded',
+        serialized: jsonEncode(event.toJson()),
+      );
+
+      await db.backfillDayScopedSubtypes();
+
+      expect(await subtypeOf(event.id), 'dayplan-2026-05-25');
+    });
+
+    test('skips an undecodable row instead of aborting the upgrade', () async {
+      final capture = AgentDomainEntity.capture(
+        id: 'capture-ok',
+        agentId: 'daily_os_planner',
+        transcript: 'note',
+        capturedAt: DateTime(2026, 5, 25, 9),
+        createdAt: DateTime(2026, 5, 25, 9),
+        dayId: 'dayplan-2026-05-25',
+        vectorClock: null,
+      );
+      await insertStale(
+        id: 'capture-broken',
+        type: AgentEntityTypes.capture,
+        subtype: 'capture-broken',
+        serialized: 'not json',
+      );
+      await insertStale(
+        id: 'capture-ok',
+        type: AgentEntityTypes.capture,
+        subtype: 'capture-ok',
+        serialized: jsonEncode(capture.toJson()),
+      );
+
+      await db.backfillDayScopedSubtypes();
+
+      // One unreadable row must not cost every other row its index entry.
+      expect(await subtypeOf('capture-ok'), 'dayplan-2026-05-25');
+      expect(await subtypeOf('capture-broken'), 'capture-broken');
+    });
+
+    test('leaves types it does not own alone', () async {
+      final plan = makeTestDayPlan(
+        id: 'day_agent_plan:dayplan-2026-05-25',
+        agentId: 'daily_os_planner',
+      );
+      await core.upsertEntity(plan);
+
+      await db.backfillDayScopedSubtypes();
+
+      expect(
+        await subtypeOf(plan.id),
+        'dayplan-2026-05-25',
+        reason: 'dayPlan already stored the day and is not rewritten',
+      );
     });
   });
 }

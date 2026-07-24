@@ -5,6 +5,7 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:meta/meta.dart';
 
 part 'agent_database.g.dart';
 
@@ -47,7 +48,8 @@ class AgentDatabase extends _$AgentDatabase {
   /// from `capturedAt` **in local time**, and the backfill must agree with the
   /// writer exactly. A row whose subtype disagreed would simply go missing
   /// from its day.
-  Future<void> _backfillDayScopedSubtypes() async {
+  @visibleForTesting
+  Future<void> backfillDayScopedSubtypes() async {
     const types = <String>[
       AgentEntityTypes.capture,
       AgentEntityTypes.dayStatusEvent,
@@ -431,7 +433,7 @@ class AgentDatabase extends _$AgentDatabase {
           await customStatement('ANALYZE');
         }
         if (from < 17) {
-          await _backfillDayScopedSubtypes();
+          await backfillDayScopedSubtypes();
           await customStatement('ANALYZE');
         }
       },
