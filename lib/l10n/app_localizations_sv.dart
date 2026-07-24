@@ -10117,6 +10117,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String taskBlockedReason(String title) {
+    return 'Blocked by: $title';
+  }
+
+  @override
   String taskBlockedByChipTooltip(int count, String title) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -10762,6 +10767,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       'Är du säker på att du vill koppla bort denna uppgift?';
+
+  @override
+  String get unlinkTaskFailedMessage =>
+      'Couldn\'t unlink the task. Please try again.';
 
   @override
   String get unlinkTaskTitle => 'Koppla bort uppgiften';

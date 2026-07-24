@@ -96,7 +96,7 @@ void main() {
               taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: true,
-              onUnlink: () => unlinkCalled = true,
+              onUnlink: () async => unlinkCalled = true,
             ),
           ),
         );
@@ -128,7 +128,7 @@ void main() {
             taskId: 'anchor-task',
             data: buildRowData(),
             manageMode: true,
-            onUnlink: () => unlinkCalled = true,
+            onUnlink: () async => unlinkCalled = true,
           ),
         ),
       );
@@ -142,6 +142,31 @@ void main() {
 
       expect(unlinkCalled, isFalse);
     });
+
+    testWidgets(
+      'shows a SnackBar when onUnlink throws',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: true,
+              onUnlink: () async => throw Exception('delete failed'),
+            ),
+          ),
+        );
+
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
 
     testWidgets('tapping the row in browse mode navigates to the other task', (
       tester,

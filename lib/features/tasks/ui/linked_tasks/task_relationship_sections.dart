@@ -152,7 +152,7 @@ class TaskRelationshipSections extends ConsumerWidget {
               final toId = entry.direction == TaskLinkDirection.outgoing
                   ? entry.task.meta.id
                   : taskId;
-              ref
+              return ref
                   .read(journalRepositoryProvider)
                   .removeTypedLink(
                     fromId: fromId,

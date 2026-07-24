@@ -2792,7 +2792,7 @@
   "linkPhraseDuplicatesPrimary": "Duplica",
   "linkPhraseFixesInverse": "Está corregida por",
   "linkPhraseFixesPrimary": "Corrige",
-  "linkPhraseFollowsUpInverse": "Tiene seguimiento",
+  "linkPhraseFollowsUpInverse": "Tiene seguimiento de",
   "linkPhraseFollowsUpPrimary": "Da seguimiento a",
   "linkPhraseSupersedesInverse": "Está reemplazada por",
   "linkPhraseSupersedesPrimary": "Reemplaza",
@@ -4136,6 +4136,7 @@
       }
     }
   },
+  "taskBlockedReason": "Bloqueada por: {title}",
   "taskBlockerPickerSkipButton": "Omitir",
   "taskBlockerPickerTitle": "¿Qué está bloqueando esta tarea?",
   "taskCategoryAllLabel": "todos",
@@ -4415,6 +4416,7 @@
   "transcriptModelLabel": "Modelo: {provider}, {model}",
   "unlinkButton": "Desvincular",
   "unlinkTaskConfirm": "¿Estás seguro de que quieres desvincular esta tarea?",
+  "unlinkTaskFailedMessage": "No se pudo desvincular la tarea. Inténtalo de nuevo.",
   "unlinkTaskTitle": "Desvincular tarea",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} resultado} other{{elapsed}ms, {count} resultados}}",
   "@vectorSearchTiming": {

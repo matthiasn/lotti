@@ -4125,7 +4125,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Bloquée par {title}} other{Toucher pour voir {count} blocages}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Bloquée par {title}} other{Ouvre pour voir {count} blocages}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4136,6 +4136,7 @@
       }
     }
   },
+  "taskBlockedReason": "Bloquée par : {title}",
   "taskBlockerPickerSkipButton": "Passer",
   "taskBlockerPickerTitle": "Qu'est-ce qui bloque cette tâche ?",
   "taskCategoryAllLabel": "tout",
@@ -4415,6 +4416,7 @@
   "transcriptModelLabel": "Modèle : {provider}, {model}",
   "unlinkButton": "Délier",
   "unlinkTaskConfirm": "Es-tu sûr de vouloir délier cette tâche ?",
+  "unlinkTaskFailedMessage": "Impossible de délier la tâche. Réessaie.",
   "unlinkTaskTitle": "Délier la tâche",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} résultat} other{{elapsed}ms, {count} résultats}}",
   "@vectorSearchTiming": {

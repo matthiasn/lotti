@@ -202,7 +202,9 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     final blockers = await ref.read(
       taskBlockersControllerProvider(taskId).future,
     );
-    if (blockers.openBlockers.isNotEmpty) return;
+    // isBlocked (not just openBlockers) so an unresolved-only blocker link
+    // also counts as "already named" — don't re-prompt over it.
+    if (blockers.isBlocked) return;
     if (!context.mounted) return;
 
     await BlockingTaskPickerModal.show(context: context, blockedTaskId: taskId);
@@ -458,6 +460,19 @@ class _TaskBlockedByChip extends ConsumerWidget {
 
     final accent = TaskShowcasePalette.error(context);
     final blockers = result.openBlockers;
+
+    if (blockers.isEmpty) {
+      // Blocked purely by a link whose blocker id didn't resolve to any
+      // entity (conservative default, ADR 0042 §4) — nothing to name or
+      // navigate to, so render a bare label with no tap affordance.
+      return DsPill(
+        variant: DsPillVariant.tinted,
+        color: accent,
+        leading: Icon(Icons.block, size: 12, color: accent),
+        label: context.messages.taskStatusBlocked,
+      );
+    }
+
     final single = blockers.length == 1;
 
     return Tooltip(

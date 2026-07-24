@@ -6745,19 +6745,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkTypeBasicOption => 'Legați';
 
   @override
-  String get linkTypeBlocksOption => 'Blochează';
+  String get linkTypeBlocksOption => 'Blocați';
 
   @override
-  String get linkTypeDuplicatesOption => 'Duplică';
+  String get linkTypeDuplicatesOption => 'Duplicați';
 
   @override
-  String get linkTypeFixesOption => 'Remediază';
+  String get linkTypeFixesOption => 'Remediați';
 
   @override
-  String get linkTypeFollowsUpOption => 'Continuă';
+  String get linkTypeFollowsUpOption => 'Continuați';
 
   @override
-  String get linkTypeSupersedesOption => 'Înlocuiește';
+  String get linkTypeSupersedesOption => 'Înlocuiți';
 
   @override
   String get logbookEmptyHint =>
@@ -10302,6 +10302,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String taskBlockedReason(String title) {
+    return 'Blocată de: $title';
+  }
+
+  @override
   String taskBlockedByChipTooltip(int count, String title) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -10951,6 +10956,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       'Sigur doriți să deconectați această sarcină?';
+
+  @override
+  String get unlinkTaskFailedMessage =>
+      'Nu s-a putut deconecta sarcina. Vă rugăm să încercați din nou.';
 
   @override
   String get unlinkTaskTitle => 'Deconectați sarcina';

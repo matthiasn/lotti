@@ -244,5 +244,40 @@ void main() {
         ),
       ).called(1);
     });
+
+    testWidgets('unlinking an outgoing row uses the anchor task as fromId', (
+      tester,
+    ) async {
+      final repo = await pumpSections(
+        tester,
+        TaskLinkGroups(
+          flat: const [],
+          typed: [
+            entry(
+              id: 'blocked',
+              title: 'Blocked Task',
+              kind: TaskLinkKind.blocks,
+              direction: TaskLinkDirection.outgoing,
+            ),
+          ],
+        ),
+        manageMode: true,
+      );
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verify(
+        () => repo.removeTypedLink(
+          fromId: anchorTaskId,
+          toId: 'blocked',
+          linkType: 'BlocksLink',
+        ),
+      ).called(1);
+    });
   });
 }

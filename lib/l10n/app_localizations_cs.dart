@@ -10235,11 +10235,16 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Blokováno $count úkoly',
+      other: 'Blokováno $count úkolů',
       few: 'Blokováno $count úkoly',
       one: 'Blokováno úkolem $title',
     );
     return '$_temp0';
+  }
+
+  @override
+  String taskBlockedReason(String title) {
+    return 'Blokováno úkolem: $title';
   }
 
   @override
@@ -10891,6 +10896,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       'Opravdu chcete zrušit propojení tohoto úkolu?';
+
+  @override
+  String get unlinkTaskFailedMessage =>
+      'Propojení úkolu se nepodařilo zrušit. Zkuste to prosím znovu.';
 
   @override
   String get unlinkTaskTitle => 'Zrušit propojení úkolu';

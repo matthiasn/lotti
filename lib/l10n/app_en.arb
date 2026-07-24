@@ -4920,6 +4920,14 @@
       }
     }
   },
+  "taskBlockedReason": "Blocked by: {title}",
+  "@taskBlockedReason": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "taskBlockerPickerSkipButton": "Skip",
   "taskBlockerPickerTitle": "What's blocking this task?",
   "taskCategoryAllLabel": "all",
@@ -5258,6 +5266,7 @@
   },
   "unlinkButton": "Unlink",
   "unlinkTaskConfirm": "Are you sure you want to unlink this task?",
+  "unlinkTaskFailedMessage": "Couldn't unlink the task. Please try again.",
   "unlinkTaskTitle": "Unlink Task",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}",
   "@vectorSearchTiming": {

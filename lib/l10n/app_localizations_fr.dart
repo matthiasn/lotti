@@ -10311,11 +10311,16 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String taskBlockedReason(String title) {
+    return 'Bloquée par : $title';
+  }
+
+  @override
   String taskBlockedByChipTooltip(int count, String title) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Toucher pour voir $count blocages',
+      other: 'Ouvre pour voir $count blocages',
       one: 'Bloquée par $title',
     );
     return '$_temp0';
@@ -10966,6 +10971,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get unlinkTaskConfirm => 'Es-tu sûr de vouloir délier cette tâche ?';
+
+  @override
+  String get unlinkTaskFailedMessage =>
+      'Impossible de délier la tâche. Réessaie.';
 
   @override
   String get unlinkTaskTitle => 'Délier la tâche';

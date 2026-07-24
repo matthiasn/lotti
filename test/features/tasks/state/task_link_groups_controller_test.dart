@@ -140,6 +140,74 @@ void main() {
     );
 
     test(
+      'buckets followsUp/duplicates/fixes/supersedes links into typed with '
+      'their own kind',
+      () async {
+        final linkBuilders = <TaskLinkKind, EntryLink Function()>{
+          TaskLinkKind.followsUp: () => EntryLink.followsUp(
+            id: 'link-followsUp',
+            fromId: currentTaskId,
+            toId: 'other',
+            createdAt: baseDate,
+            updatedAt: baseDate,
+            vectorClock: null,
+          ),
+          TaskLinkKind.duplicates: () => EntryLink.duplicates(
+            id: 'link-duplicates',
+            fromId: currentTaskId,
+            toId: 'other',
+            createdAt: baseDate,
+            updatedAt: baseDate,
+            vectorClock: null,
+          ),
+          TaskLinkKind.fixes: () => EntryLink.fixes(
+            id: 'link-fixes',
+            fromId: currentTaskId,
+            toId: 'other',
+            createdAt: baseDate,
+            updatedAt: baseDate,
+            vectorClock: null,
+          ),
+          TaskLinkKind.supersedes: () => EntryLink.supersedes(
+            id: 'link-supersedes',
+            fromId: currentTaskId,
+            toId: 'other',
+            createdAt: baseDate,
+            updatedAt: baseDate,
+            vectorClock: null,
+          ),
+        };
+        final otherTask = TestTaskFactory.create(id: 'other', title: 'Other');
+
+        for (final kind in linkBuilders.keys) {
+          when(
+            () => journalRepository.getTypedLinksForTaskIds(
+              {currentTaskId},
+              linkTypes: any(named: 'linkTypes'),
+            ),
+          ).thenAnswer((_) async => [linkBuilders[kind]!()]);
+          when(
+            () => journalRepository.getJournalEntitiesByIds(any()),
+          ).thenAnswer((_) async => [otherTask]);
+
+          final container = buildContainer();
+          addTearDown(container.dispose);
+          final result = await container.read(
+            taskLinkGroupsControllerProvider(currentTaskId).future,
+          );
+
+          expect(result.typed, hasLength(1), reason: '$kind');
+          expect(result.typed.single.kind, kind, reason: '$kind');
+          expect(
+            result.typed.single.direction,
+            TaskLinkDirection.outgoing,
+            reason: '$kind',
+          );
+        }
+      },
+    );
+
+    test(
       'a pair holding both a basic and a typed link lands in both buckets',
       () async {
         final otherTask = TestTaskFactory.create(id: 'other', title: 'Other');
@@ -268,39 +336,60 @@ void main() {
       expect(result.flat.map((e) => e.task.meta.id), ['b', 'a']);
     });
 
-    test('refetches when a notification intersects watched ids', () async {
-      final blockerTask = TestTaskFactory.create(
-        id: 'blocker',
-        title: 'Blocker',
-      );
-      var callCount = 0;
-      when(
-        () => journalRepository.getTypedLinksForTaskIds(
-          {currentTaskId},
-          linkTypes: any(named: 'linkTypes'),
-        ),
-      ).thenAnswer((_) async {
-        callCount++;
-        return [
-          blocksLink(id: 'link-1', fromId: 'blocker', toId: currentTaskId),
-        ];
-      });
-      when(
-        () => journalRepository.getJournalEntitiesByIds(any()),
-      ).thenAnswer((_) async => [blockerTask]);
+    test(
+      'refetches and updates state when a notification intersects watched '
+      'ids and the data actually changed',
+      () async {
+        final blockerTask = TestTaskFactory.create(
+          id: 'blocker',
+          title: 'Blocker',
+        );
+        var callCount = 0;
+        when(
+          () => journalRepository.getTypedLinksForTaskIds(
+            {currentTaskId},
+            linkTypes: any(named: 'linkTypes'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          // Second call adds a second live link, so the refetched groups
+          // genuinely differ from the cached state and the assignment
+          // branch (not just the refetch itself) gets exercised.
+          return [
+            blocksLink(id: 'link-1', fromId: 'blocker', toId: currentTaskId),
+            if (callCount > 1)
+              blocksLink(
+                id: 'link-2',
+                fromId: 'blocker',
+                toId: currentTaskId,
+                createdAt: baseDate.add(const Duration(days: 1)),
+              ),
+          ];
+        });
+        when(
+          () => journalRepository.getJournalEntitiesByIds(any()),
+        ).thenAnswer((_) async => [blockerTask]);
 
-      final container = buildContainer();
-      addTearDown(container.dispose);
-      await container.read(
-        taskLinkGroupsControllerProvider(currentTaskId).future,
-      );
-      expect(callCount, 1);
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        await container.read(
+          taskLinkGroupsControllerProvider(currentTaskId).future,
+        );
+        expect(callCount, 1);
 
-      updateStreamController.add({'blocker'});
-      await pumpEventQueue();
+        updateStreamController.add({'blocker'});
+        await pumpEventQueue();
 
-      expect(callCount, 2);
-    });
+        expect(callCount, 2);
+        expect(
+          container
+              .read(taskLinkGroupsControllerProvider(currentTaskId))
+              .value
+              ?.typed,
+          hasLength(2),
+        );
+      },
+    );
 
     test('does not refetch on an unrelated notification', () async {
       var callCount = 0;
@@ -325,6 +414,82 @@ void main() {
       await pumpEventQueue();
 
       expect(callCount, 1);
+    });
+  });
+
+  group('taskLinkKindDbType', () {
+    test('maps every kind to its linked_entries.type column string', () {
+      expect(taskLinkKindDbType(TaskLinkKind.basic), 'BasicLink');
+      expect(taskLinkKindDbType(TaskLinkKind.blocks), 'BlocksLink');
+      expect(taskLinkKindDbType(TaskLinkKind.followsUp), 'FollowsUpLink');
+      expect(taskLinkKindDbType(TaskLinkKind.duplicates), 'DuplicatesLink');
+      expect(taskLinkKindDbType(TaskLinkKind.fixes), 'FixesLink');
+      expect(taskLinkKindDbType(TaskLinkKind.supersedes), 'SupersedesLink');
+    });
+  });
+
+  group('TaskLinkEntry', () {
+    test('equals another entry with the same fields', () {
+      final task = TestTaskFactory.create(id: 'task', title: 'Task');
+      final a = TaskLinkEntry(
+        linkId: 'link-1',
+        task: task,
+        kind: TaskLinkKind.blocks,
+        direction: TaskLinkDirection.incoming,
+      );
+      final b = TaskLinkEntry(
+        linkId: 'link-1',
+        task: task,
+        kind: TaskLinkKind.blocks,
+        direction: TaskLinkDirection.incoming,
+      );
+
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+    });
+
+    test('differs when any field differs', () {
+      final task = TestTaskFactory.create(id: 'task', title: 'Task');
+      final base = TaskLinkEntry(
+        linkId: 'link-1',
+        task: task,
+        kind: TaskLinkKind.blocks,
+        direction: TaskLinkDirection.incoming,
+      );
+
+      expect(
+        base,
+        isNot(
+          TaskLinkEntry(
+            linkId: 'link-2',
+            task: task,
+            kind: TaskLinkKind.blocks,
+            direction: TaskLinkDirection.incoming,
+          ),
+        ),
+      );
+      expect(
+        base,
+        isNot(
+          TaskLinkEntry(
+            linkId: 'link-1',
+            task: task,
+            kind: TaskLinkKind.followsUp,
+            direction: TaskLinkDirection.incoming,
+          ),
+        ),
+      );
+      expect(
+        base,
+        isNot(
+          TaskLinkEntry(
+            linkId: 'link-1',
+            task: task,
+            kind: TaskLinkKind.blocks,
+            direction: TaskLinkDirection.outgoing,
+          ),
+        ),
+      );
     });
   });
 }

@@ -4121,7 +4121,7 @@
   "taskAgentUseCategoryDefaultDescription": "Zkopíruje aktuální nastavení kategorie. Pozdější změny kategorie tohoto agenta neovlivní.",
   "taskAgentUseProfileDefault": "Použít výchozí model profilu",
   "taskAgentWakeAgent": "Probudit agenta",
-  "taskBlockedByChipLabel": "{count, plural, =1{Blokováno úkolem {title}} few{Blokováno {count} úkoly} other{Blokováno {count} úkoly}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Blokováno úkolem {title}} few{Blokováno {count} úkoly} other{Blokováno {count} úkolů}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4143,6 +4143,7 @@
       }
     }
   },
+  "taskBlockedReason": "Blokováno úkolem: {title}",
   "taskBlockerPickerSkipButton": "Přeskočit",
   "taskBlockerPickerTitle": "Co blokuje tento úkol?",
   "taskCategoryAllLabel": "vše",
@@ -4422,6 +4423,7 @@
   "transcriptModelLabel": "Model: {provider}, {model}",
   "unlinkButton": "Zrušit propojení",
   "unlinkTaskConfirm": "Opravdu chcete zrušit propojení tohoto úkolu?",
+  "unlinkTaskFailedMessage": "Propojení úkolu se nepodařilo zrušit. Zkuste to prosím znovu.",
   "unlinkTaskTitle": "Zrušit propojení úkolu",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} výsledek} few{{elapsed}ms, {count} výsledky} other{{elapsed}ms, {count} výsledků}}",
   "@vectorSearchTiming": {

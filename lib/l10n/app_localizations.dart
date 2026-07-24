@@ -17484,6 +17484,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Blocked by {title}} other{Blocked by {count} tasks}}'**
   String taskBlockedByChipLabel(int count, String title);
 
+  /// No description provided for @taskBlockedReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked by: {title}'**
+  String taskBlockedReason(String title);
+
   /// No description provided for @taskBlockedByChipTooltip.
   ///
   /// In en, this message translates to:
@@ -18587,6 +18593,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to unlink this task?'**
   String get unlinkTaskConfirm;
+
+  /// No description provided for @unlinkTaskFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t unlink the task. Please try again.'**
+  String get unlinkTaskFailedMessage;
 
   /// No description provided for @unlinkTaskTitle.
   ///

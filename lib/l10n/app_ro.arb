@@ -2797,11 +2797,11 @@
   "linkPhraseSupersedesInverse": "Este înlocuită de",
   "linkPhraseSupersedesPrimary": "Înlocuiește",
   "linkTypeBasicOption": "Legați",
-  "linkTypeBlocksOption": "Blochează",
-  "linkTypeDuplicatesOption": "Duplică",
-  "linkTypeFixesOption": "Remediază",
-  "linkTypeFollowsUpOption": "Continuă",
-  "linkTypeSupersedesOption": "Înlocuiește",
+  "linkTypeBlocksOption": "Blocați",
+  "linkTypeDuplicatesOption": "Duplicați",
+  "linkTypeFixesOption": "Remediați",
+  "linkTypeFollowsUpOption": "Continuați",
+  "linkTypeSupersedesOption": "Înlocuiți",
   "logbookEmptyHint": "Creați prima dvs. intrare pentru a începe jurnalul.",
   "logbookEmptyTitle": "Jurnalul dvs. este gol",
   "logbookNewEntriesHint": "Intrările noi se vor deschide aici.",
@@ -4136,6 +4136,7 @@
       }
     }
   },
+  "taskBlockedReason": "Blocată de: {title}",
   "taskBlockerPickerSkipButton": "Omiteți",
   "taskBlockerPickerTitle": "Ce blochează această sarcină?",
   "taskCategoryAllLabel": "toate",
@@ -4415,6 +4416,7 @@
   "transcriptModelLabel": "Model: {provider}, {model}",
   "unlinkButton": "Dezleagă",
   "unlinkTaskConfirm": "Sigur doriți să deconectați această sarcină?",
+  "unlinkTaskFailedMessage": "Nu s-a putut deconecta sarcina. Vă rugăm să încercați din nou.",
   "unlinkTaskTitle": "Deconectați sarcina",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} rezultat} other{{elapsed}ms, {count} rezultate}}",
   "@vectorSearchTiming": {

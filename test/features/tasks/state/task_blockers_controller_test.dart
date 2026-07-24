@@ -263,5 +263,122 @@ void main() {
       expect(resultA.openBlockers.map((t) => t.meta.id), [taskB]);
       expect(resultB.openBlockers.map((t) => t.meta.id), [taskA]);
     });
+
+    test(
+      'refetches and updates state when a watched id is affected and the '
+      'result actually changed',
+      () async {
+        final blocker = TestTaskFactory.create(id: 'blocker', title: 'Blocker');
+        final doneStatus = TaskStatus.done(
+          id: 'status-done',
+          createdAt: baseDate,
+          utcOffset: 0,
+        );
+        var callCount = 0;
+        when(
+          () => journalRepository.getTypedLinksForTaskIds(
+            {blockedTaskId},
+            linkTypes: {'BlocksLink'},
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          return [
+            blocksLink(id: 'l1', fromId: 'blocker', toId: blockedTaskId),
+          ];
+        });
+        // First fetch sees an open blocker; the notification-triggered
+        // refetch sees it closed — a real state change, not just a re-run.
+        when(
+          () =>
+              journalRepository.getJournalEntitiesByIdsIncludingDeleted(any()),
+        ).thenAnswer(
+          (_) async => [
+            if (callCount > 1)
+              blocker.copyWith(data: blocker.data.copyWith(status: doneStatus))
+            else
+              blocker,
+          ],
+        );
+
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        final initial = await container.read(
+          taskBlockersControllerProvider(blockedTaskId).future,
+        );
+        expect(callCount, 1);
+        expect(initial.isBlocked, isTrue);
+
+        updateStreamController.add({'blocker'});
+        await pumpEventQueue();
+
+        expect(callCount, 2);
+        expect(
+          container
+              .read(taskBlockersControllerProvider(blockedTaskId))
+              .value
+              ?.isBlocked,
+          isFalse,
+        );
+      },
+    );
+
+    test('does not refetch on an unrelated notification', () async {
+      var callCount = 0;
+      when(
+        () => journalRepository.getTypedLinksForTaskIds(
+          {blockedTaskId},
+          linkTypes: {'BlocksLink'},
+        ),
+      ).thenAnswer((_) async {
+        callCount++;
+        return <EntryLink>[];
+      });
+
+      final container = buildContainer();
+      addTearDown(container.dispose);
+      await container.read(
+        taskBlockersControllerProvider(blockedTaskId).future,
+      );
+      expect(callCount, 1);
+
+      updateStreamController.add({'totally-unrelated-id'});
+      await pumpEventQueue();
+
+      expect(callCount, 1);
+    });
+  });
+
+  group('TaskBlockersResult', () {
+    test('equals another result with the same fields', () {
+      final blocker = TestTaskFactory.create(id: 'blocker', title: 'Blocker');
+      const a = TaskBlockersResult.empty;
+      const b = TaskBlockersResult.empty;
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+
+      final withBlocker1 = TaskBlockersResult(
+        openBlockers: [blocker],
+        unresolvedCount: 1,
+      );
+      final withBlocker2 = TaskBlockersResult(
+        openBlockers: [blocker],
+        unresolvedCount: 1,
+      );
+      expect(withBlocker1, withBlocker2);
+      expect(withBlocker1.hashCode, withBlocker2.hashCode);
+    });
+
+    test('differs when openBlockers or unresolvedCount differ', () {
+      final blocker = TestTaskFactory.create(id: 'blocker', title: 'Blocker');
+      final withBlocker = TaskBlockersResult(
+        openBlockers: [blocker],
+        unresolvedCount: 0,
+      );
+      expect(withBlocker, isNot(TaskBlockersResult.empty));
+      expect(
+        withBlocker,
+        isNot(TaskBlockersResult(openBlockers: [blocker], unresolvedCount: 1)),
+      );
+    });
   });
 }

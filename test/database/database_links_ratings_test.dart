@@ -812,6 +812,58 @@ void main() {
       );
     });
 
+    group('deleteTypedLink -', () {
+      test(
+        'deletes only the matching type, leaving a coexisting '
+        'different-typed link between the same pair intact',
+        () async {
+          await db!.upsertEntryLink(
+            buildEntryLink(
+              id: 'basic-e',
+              fromId: 'blocker-e',
+              toId: 'blocked-e',
+              timestamp: DateTime(2024, 10, 7),
+            ),
+          );
+          await db!.upsertEntryLink(
+            EntryLink.blocks(
+              id: 'blocks-e',
+              fromId: 'blocker-e',
+              toId: 'blocked-e',
+              createdAt: DateTime(2024, 10, 7),
+              updatedAt: DateTime(2024, 10, 7),
+              vectorClock: const VectorClock({'db': 1}),
+            ),
+          );
+
+          final deletedCount = await db!.deleteTypedLink(
+            'blocker-e',
+            'blocked-e',
+            'BlocksLink',
+          );
+          expect(deletedCount, 1);
+
+          final remaining = await db!.typedLinksForTaskIds(
+            {'blocked-e'},
+            types: {'BasicLink', 'BlocksLink'},
+          );
+          expect(remaining.map((l) => l.id), ['basic-e']);
+        },
+      );
+
+      test(
+        'is a no-op when no link of that type exists for the pair',
+        () async {
+          final deletedCount = await db!.deleteTypedLink(
+            'no-such-from',
+            'no-such-to',
+            'BlocksLink',
+          );
+          expect(deletedCount, 0);
+        },
+      );
+    });
+
     group('Rating queries -', () {
       final base = DateTime(2024, 9, 1, 10);
 

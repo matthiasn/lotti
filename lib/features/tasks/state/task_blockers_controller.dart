@@ -79,7 +79,7 @@ class TaskBlockersController extends AsyncNotifier<TaskBlockersResult> {
     ) {
       if (affectedIds.intersection(_watchedIds).isNotEmpty) {
         _fetch().then((latest) {
-          if (latest != state.value) {
+          if (ref.mounted && latest != state.value) {
             state = AsyncData(latest);
           }
         });

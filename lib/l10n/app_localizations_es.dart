@@ -6696,7 +6696,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkPhraseFixesPrimary => 'Corrige';
 
   @override
-  String get linkPhraseFollowsUpInverse => 'Tiene seguimiento';
+  String get linkPhraseFollowsUpInverse => 'Tiene seguimiento de';
 
   @override
   String get linkPhraseFollowsUpPrimary => 'Da seguimiento a';
@@ -10270,6 +10270,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String taskBlockedReason(String title) {
+    return 'Bloqueada por: $title';
+  }
+
+  @override
   String taskBlockedByChipTooltip(int count, String title) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -10920,6 +10925,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       '¿Estás seguro de que quieres desvincular esta tarea?';
+
+  @override
+  String get unlinkTaskFailedMessage =>
+      'No se pudo desvincular la tarea. Inténtalo de nuevo.';
 
   @override
   String get unlinkTaskTitle => 'Desvincular tarea';

@@ -126,7 +126,7 @@ class TaskLinkGroupsController extends AsyncNotifier<TaskLinkGroups> {
     ) {
       if (affectedIds.intersection(_watchedIds).isNotEmpty) {
         _fetch().then((latest) {
-          if (!_equals(latest, state.value)) {
+          if (ref.mounted && !_equals(latest, state.value)) {
             state = AsyncData(latest);
           }
         });

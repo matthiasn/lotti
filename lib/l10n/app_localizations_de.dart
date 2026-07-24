@@ -6628,19 +6628,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
 
   @override
-  String get linkPhraseBlocksInverse => 'Ist blockiert von';
+  String get linkPhraseBlocksInverse => 'Wird blockiert von';
 
   @override
   String get linkPhraseBlocksPrimary => 'Blockiert';
 
   @override
-  String get linkPhraseDuplicatesInverse => 'Ist dupliziert von';
+  String get linkPhraseDuplicatesInverse => 'Duplikat von';
 
   @override
   String get linkPhraseDuplicatesPrimary => 'Dupliziert';
 
   @override
-  String get linkPhraseFixesInverse => 'Ist behoben von';
+  String get linkPhraseFixesInverse => 'Wird behoben durch';
 
   @override
   String get linkPhraseFixesPrimary => 'Behebt';
@@ -6652,7 +6652,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkPhraseFollowsUpPrimary => 'Folgt auf';
 
   @override
-  String get linkPhraseSupersedesInverse => 'Ist ersetzt von';
+  String get linkPhraseSupersedesInverse => 'Wird ersetzt durch';
 
   @override
   String get linkPhraseSupersedesPrimary => 'Ersetzt';
@@ -10173,6 +10173,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String taskBlockedReason(String title) {
+    return 'Blockiert von: $title';
+  }
+
+  @override
   String taskBlockedByChipTooltip(int count, String title) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -10822,6 +10827,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       'Bist du sicher, dass du die Verknüpfung zu dieser Aufgabe aufheben möchtest?';
+
+  @override
+  String get unlinkTaskFailedMessage =>
+      'Die Verknüpfung konnte nicht aufgehoben werden. Bitte versuch es erneut.';
 
   @override
   String get unlinkTaskTitle => 'Verknüpfung aufheben';

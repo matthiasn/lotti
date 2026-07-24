@@ -48,10 +48,12 @@ class LinkedTaskRow extends StatelessWidget {
   final LinkedTaskRowData data;
   final bool manageMode;
 
-  /// Invoked after the user confirms the unlink dialog. Null hides the
-  /// unlink affordance even in manage mode (falls back to the plain chevron)
-  /// rather than showing a control that does nothing.
-  final VoidCallback? onUnlink;
+  /// Invoked after the user confirms the unlink dialog; awaited so a failure
+  /// can be surfaced via a SnackBar instead of silently leaving the row
+  /// displayed with no feedback. Null hides the unlink affordance even in
+  /// manage mode (falls back to the plain chevron) rather than showing a
+  /// control that does nothing.
+  final Future<void> Function()? onUnlink;
 
   @override
   Widget build(BuildContext context) {
@@ -152,8 +154,16 @@ class LinkedTaskRow extends StatelessWidget {
         ],
       ),
     );
-    if (confirmed == true) {
-      onUnlink?.call();
+    if (confirmed != true) return;
+
+    try {
+      await onUnlink?.call();
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.messages.unlinkTaskFailedMessage)),
+        );
+      }
     }
   }
 }

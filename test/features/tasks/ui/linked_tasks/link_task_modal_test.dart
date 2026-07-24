@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -88,6 +91,14 @@ void main() {
     }
 
     setUp(() async {
+      // _selectTask awaits a HapticFeedback call before popping — under the
+      // test binding that never resolves without a mock handler (see
+      // test/README.md's "Platform-channel calls in widgets" section).
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            return null;
+          });
+
       await getIt.reset();
 
       mockJournalDb = MockJournalDb();
@@ -122,6 +133,8 @@ void main() {
     });
 
     tearDown(() async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
       await getIt.reset();
     });
 
@@ -761,6 +774,11 @@ void main() {
           linkType: EntryLinkType.basic,
         ),
       ).called(1);
+      // The modal actually pops on success, not just createLink firing.
+      expect(
+        find.byKey(const Key('link_task_modal_handle')),
+        findsNothing,
+      );
     });
 
     testWidgets(
@@ -1171,6 +1189,53 @@ void main() {
       // Should fallback to title matching
       expect(find.text('Test Task'), findsOneWidget);
     });
+
+    testWidgets(
+      'ignores a stale FTS5 result that resolves after a newer query',
+      (tester) async {
+        final testTasks = [
+          buildTask(title: 'Apple Task'),
+          buildTask(id: 'task-2', title: 'Banana Task'),
+        ];
+
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => testTasks);
+
+        final staleController = StreamController<List<String>>();
+        when(
+          () => mockFts5Db.watchFullTextMatches('stale'),
+        ).thenAnswer((_) => staleController.stream);
+        when(
+          () => mockFts5Db.watchFullTextMatches('fresh'),
+        ).thenAnswer((_) => Stream.value(['task-2']));
+
+        await openModal(tester);
+
+        // Type the query whose FTS5 lookup will resolve LATE...
+        await tester.enterText(find.byType(TextField), 'stale');
+        await tester.pump();
+        // ...then type a newer query whose lookup resolves immediately.
+        await tester.enterText(find.byType(TextField), 'fresh');
+        await tester.pump();
+        await tester.pump();
+
+        // Now let the stale lookup resolve, after the fresh one already did.
+        staleController.add(['task-1']);
+        await staleController.close();
+        await tester.pump();
+
+        // The fresh query's match must win — the stale result must not
+        // overwrite it.
+        expect(find.text('Banana Task'), findsOneWidget);
+        expect(find.text('Apple Task'), findsNothing);
+      },
+    );
 
     testWidgets(
       'shows no-tasks message when loading tasks throws (catch branch)',

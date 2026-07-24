@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -359,7 +361,11 @@ class EntryController extends AsyncNotifier<EntryState?> {
               id: uuid.v1(),
               createdAt: DateTime.now(),
               utcOffset: DateTime.now().timeZoneOffset.inMinutes,
-              reason: 'Blocked by: $blockerTaskTitle',
+              // No BuildContext here — resolve the platform locale directly,
+              // same pattern as change_set_builder.dart's notification copy.
+              reason: lookupAppLocalizations(
+                ui.PlatformDispatcher.instance.locale,
+              ).taskBlockedReason(blockerTaskTitle),
             )
           : taskStatusFromString(status);
 

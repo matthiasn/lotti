@@ -1564,6 +1564,35 @@ void main() {
         expect(find.text('Blocked by'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'shows a bare Blocked pill with no tap target when the only blocker '
+      'is unresolved',
+      (tester) async {
+        final task = buildTask();
+        stubBlockers(task.id, [
+          blocksLink(id: 'l1', fromId: 'missing-blocker', toId: task.id),
+        ]);
+        when(
+          () => mockJournalDb.entriesForIds(['missing-blocker']),
+        ).thenReturn(MockSelectable(const []));
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byIcon(Icons.block), findsOneWidget);
+        expect(find.text('Blocked'), findsOneWidget);
+
+        final pill = tester.widget<DsPill>(
+          find.ancestor(
+            of: find.byIcon(Icons.block),
+            matching: find.byType(DsPill),
+          ),
+        );
+        expect(pill.onTap, isNull);
+      },
+    );
   });
 
   group('DesktopTaskHeaderConnector — status-enrichment blocker prompt', () {
@@ -1686,6 +1715,27 @@ void main() {
           task,
           currentStatusLabel: 'Blocked',
         );
+
+        expect(
+          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'does not prompt when the task is already blocked by an unresolved '
+      'link',
+      (tester) async {
+        final task = buildTask();
+        stubBlockers(task.id, [
+          blocksLink(id: 'l1', fromId: 'missing-blocker', toId: task.id),
+        ]);
+        when(
+          () => mockJournalDb.entriesForIds(['missing-blocker']),
+        ).thenReturn(MockSelectable(const []));
+
+        await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
 
         expect(
           find.byKey(const Key('blocking_task_picker_modal_handle')),

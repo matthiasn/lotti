@@ -91,6 +91,8 @@ void main() {
     required String taskId,
     required List<JournalEntity> incoming,
     required List<Task> outgoing,
+    List<EntryLink> extraTypedLinks = const [],
+    List<Task> extraTypedTasks = const [],
   }) {
     final journalRepo = MockJournalRepository();
     when(
@@ -137,10 +139,14 @@ void main() {
         {taskId},
         linkTypes: any(named: 'linkTypes'),
       ),
-    ).thenAnswer((_) async => [...outgoingLinks, ...incomingLinks]);
+    ).thenAnswer(
+      (_) async => [...outgoingLinks, ...incomingLinks, ...extraTypedLinks],
+    );
     when(
       () => journalRepo.getJournalEntitiesByIds(any()),
-    ).thenAnswer((_) async => [...outgoing, ...incoming]);
+    ).thenAnswer(
+      (_) async => [...outgoing, ...incoming, ...extraTypedTasks],
+    );
 
     return journalRepo;
   }
@@ -152,11 +158,15 @@ void main() {
     bool manageMode = false,
     MediaQueryData? mediaQueryData,
     List<Override> extraOverrides = const [],
+    List<EntryLink> extraTypedLinks = const [],
+    List<Task> extraTypedTasks = const [],
   }) async {
     final journalRepo = stubLinkGroupsRepository(
       taskId: 'task-main',
       incoming: incoming,
       outgoing: outgoing,
+      extraTypedLinks: extraTypedLinks,
+      extraTypedTasks: extraTypedTasks,
     );
 
     await tester.pumpWidget(
@@ -433,6 +443,37 @@ void main() {
       expect(titleWidget.maxLines, 2);
       expect(titleWidget.overflow, TextOverflow.ellipsis);
     });
+
+    testWidgets(
+      'renders the typed-relationship sections above the flat list, with a '
+      'divider between them, when both are present',
+      (tester) async {
+        final blocker = buildTask(id: 'blocker-1', title: 'Blocker Task');
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          extraTypedLinks: [
+            EntryLink.blocks(
+              id: 'link-blocks',
+              fromId: 'blocker-1',
+              toId: 'task-main',
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+          ],
+          extraTypedTasks: [blocker],
+        );
+
+        expect(find.text('Blocked by'), findsOneWidget);
+        expect(find.text('Blocker Task'), findsOneWidget);
+        expect(find.text('Outgoing Task'), findsOneWidget);
+        // One divider between the typed sections and the flat list — the
+        // flat list itself has only one row, so no additional dividers.
+        expect(find.byType(Divider), findsOneWidget);
+      },
+    );
   });
 
   group('LinkedTasksWidget expand/collapse', () {

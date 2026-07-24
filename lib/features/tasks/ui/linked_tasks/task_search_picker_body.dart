@@ -53,6 +53,11 @@ class _TaskSearchPickerBodyState extends ConsumerState<TaskSearchPickerBody> {
   final JournalDb _db = getIt<JournalDb>();
   final Fts5Db _fts5Db = getIt<Fts5Db>();
 
+  // Guards against out-of-order FTS5 resolution: typing isn't debounced, so
+  // an older keystroke's lookup can resolve after a newer one's and overwrite
+  // fresh matches with stale ones.
+  int _searchGeneration = 0;
+
   @override
   void initState() {
     super.initState();
@@ -95,6 +100,7 @@ class _TaskSearchPickerBodyState extends ConsumerState<TaskSearchPickerBody> {
 
   Future<void> _onSearchChanged(String query) async {
     _query = query.trim();
+    final generation = ++_searchGeneration;
 
     if (_query.isEmpty) {
       setState(() => _fts5Matches = {});
@@ -103,11 +109,11 @@ class _TaskSearchPickerBodyState extends ConsumerState<TaskSearchPickerBody> {
 
     try {
       final matches = await _fts5Db.watchFullTextMatches(_query).first;
-      if (mounted) {
+      if (mounted && generation == _searchGeneration) {
         setState(() => _fts5Matches = matches.toSet());
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && generation == _searchGeneration) {
         setState(() => _fts5Matches = {});
       }
     }
