@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_diff.dart';
@@ -259,7 +260,13 @@ class DayAgentPlanWriter {
     }
     if (captureId != null) {
       final capture = await reads.captureOrNull(captureId);
-      if (capture == null || capture.agentId != agentId) {
+      // Ownership spans the ADR 0032 cutover (see persistParsedItems).
+      if (capture == null ||
+          !canReadDailyOsDayArtifact(
+            readerAgentId: agentId,
+            ownerAgentId: capture.agentId,
+            dayId: captureDayId(capture),
+          )) {
         throw DayAgentCaptureException('capture $captureId not found');
       }
     }

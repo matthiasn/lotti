@@ -57,4 +57,87 @@ void main() {
       expect(isDailyOsDayOwner('someone-else'), isFalse);
     });
   });
+
+  group('ownsDailyOsDay', () {
+    test("accepts the coordinator and exactly this day's agent", () {
+      const dayId = 'dayplan-2026-07-22';
+      expect(ownsDailyOsDay(dailyOsPlannerAgentId, dayId), isTrue);
+      expect(ownsDailyOsDay('day_agent:$dayId', dayId), isTrue);
+    });
+
+    test('rejects sibling day agents, legacy ids, and foreign agents', () {
+      const dayId = 'dayplan-2026-07-22';
+      expect(ownsDailyOsDay('day_agent:dayplan-2026-07-21', dayId), isFalse);
+      expect(ownsDailyOsDay(dayId, dayId), isFalse);
+      expect(ownsDailyOsDay('task-agent-1', dayId), isFalse);
+    });
+  });
+
+  group('canReadDailyOsDayArtifact', () {
+    const dayId = 'dayplan-2026-07-22';
+    const dayAgent = 'day_agent:$dayId';
+
+    test('exact ownership always passes, even for foreign agents', () {
+      expect(
+        canReadDailyOsDayArtifact(
+          readerAgentId: 'task-agent-1',
+          ownerAgentId: 'task-agent-1',
+          dayId: dayId,
+        ),
+        isTrue,
+      );
+    });
+
+    test('a Daily OS reader spans the ownership cutover both ways', () {
+      expect(
+        canReadDailyOsDayArtifact(
+          readerAgentId: dayAgent,
+          ownerAgentId: dailyOsPlannerAgentId,
+          dayId: dayId,
+        ),
+        isTrue,
+      );
+      expect(
+        canReadDailyOsDayArtifact(
+          readerAgentId: dailyOsPlannerAgentId,
+          ownerAgentId: dayAgent,
+          dayId: dayId,
+        ),
+        isTrue,
+      );
+    });
+
+    test("a sibling day agent's artifact stays invisible", () {
+      expect(
+        canReadDailyOsDayArtifact(
+          readerAgentId: dayAgent,
+          ownerAgentId: 'day_agent:dayplan-2026-07-21',
+          dayId: dayId,
+        ),
+        isFalse,
+      );
+    });
+
+    test('a foreign reader never gains cross-owner reads', () {
+      expect(
+        canReadDailyOsDayArtifact(
+          readerAgentId: 'task-agent-1',
+          ownerAgentId: dailyOsPlannerAgentId,
+          dayId: dayId,
+        ),
+        isFalse,
+      );
+    });
+
+    test("a foreign owner's artifact stays invisible to Daily OS readers", () {
+      expect(
+        canReadDailyOsDayArtifact(
+          readerAgentId: dayAgent,
+          ownerAgentId: 'task-agent-1',
+          dayId: dayId,
+        ),
+        isFalse,
+      );
+    });
+  });
 }

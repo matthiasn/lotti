@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
@@ -135,12 +136,13 @@ void main() {
     int capacityMinutes = 360,
     int? scheduledMinutes,
     DateTime? deletedAt,
+    String agentId = _agentId,
   }) {
     final resolvedBlocks = blocks ?? defaultSeedBlocks();
     final plan =
         AgentDomainEntity.dayPlan(
               id: 'day_agent_plan:$_dayId',
-              agentId: _agentId,
+              agentId: agentId,
               dayId: _dayId,
               planDate: DateTime(2026, 5, 25),
               data: DayPlanData(
@@ -348,6 +350,111 @@ void main() {
         expect(agentEntities[committed.id], same(committed));
       },
     );
+
+    group('ownership-cutover spanning (ADR 0032)', () {
+      final perDayReaderId = perDayAgentId(_dayId);
+
+      test(
+        "draftPlanForDay returns the coordinator's plan when read by the "
+        "day's own agent (cross-device ownership race)",
+        () async {
+          final plan = seedPlanEntity(agentId: dailyOsPlannerAgentId);
+
+          final result = await createService().draftPlanForDay(
+            agentId: perDayReaderId,
+            dayId: _dayId,
+          );
+
+          expect(result?.id, plan.id);
+          expect(result?.agentId, dailyOsPlannerAgentId);
+        },
+      );
+
+      test(
+        "draftPlanForDay returns the day agent's plan when read by the "
+        'coordinator',
+        () async {
+          seedPlanEntity(agentId: perDayReaderId);
+
+          final result = await createService().draftPlanForDay(
+            agentId: dailyOsPlannerAgentId,
+            dayId: _dayId,
+          );
+
+          expect(result?.agentId, perDayReaderId);
+        },
+      );
+
+      test(
+        "draftPlanForDay never accepts a sibling day agent's plan on this "
+        "day's register",
+        () async {
+          seedPlanEntity(agentId: perDayAgentId('dayplan-2026-05-24'));
+
+          final result = await createService().draftPlanForDay(
+            agentId: perDayReaderId,
+            dayId: _dayId,
+          );
+
+          expect(result, isNull);
+        },
+      );
+
+      test(
+        'draftPlanForDay keeps the exact-owner read for a non-Daily-OS '
+        'reader',
+        () async {
+          seedPlanEntity(agentId: dailyOsPlannerAgentId);
+
+          final result = await createService().draftPlanForDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+
+          expect(result, isNull);
+        },
+      );
+
+      test(
+        "pendingPlanDiffsForDay includes the coordinator's pending diff "
+        "when read by the day's own agent",
+        () async {
+          final coordinatorDiff =
+              AgentDomainEntity.changeSet(
+                    id: 'plan_diff:coordinator-1',
+                    agentId: dailyOsPlannerAgentId,
+                    taskId: 'day_agent_plan:$_dayId',
+                    threadId: _threadId,
+                    runKey: _runKey,
+                    status: ChangeSetStatus.pending,
+                    items: [moveBlockItem()],
+                    createdAt: _now,
+                    vectorClock: null,
+                  )
+                  as ChangeSetEntity;
+          when(
+            () => agentRepository.getEntitiesByAgentId(
+              any(),
+              type: any(named: 'type'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((invocation) async {
+            final owner = invocation.positionalArguments.single as String;
+            return owner == dailyOsPlannerAgentId
+                ? <AgentDomainEntity>[coordinatorDiff]
+                : <AgentDomainEntity>[];
+          });
+
+          final result = await createService().pendingPlanDiffsForDay(
+            agentId: perDayReaderId,
+            dayId: _dayId,
+          );
+
+          expect(result, hasLength(1));
+          expect(result.single.id, 'plan_diff:coordinator-1');
+        },
+      );
+    });
 
     test('persistDraftPlan rejects AI blocks without reasons', () async {
       await expectLater(

@@ -566,10 +566,16 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
 
     // The IDs are pre-sorted, so under a merged multi-capture token set the
     // same capture wins deterministically. The first capture that loads and
-    // belongs to this agent becomes the wake's capture context.
+    // belongs to a legitimate day owner (spanning the ADR 0032 ownership
+    // cutover) becomes the wake's capture context.
     for (final captureId in wakeContext.captureIds) {
       final capture = await service.getCapture(captureId);
-      if (capture == null || capture.agentId != agentIdentity.agentId) {
+      if (capture == null ||
+          !canReadDailyOsDayArtifact(
+            readerAgentId: agentIdentity.agentId,
+            ownerAgentId: capture.agentId,
+            dayId: captureDayId(capture),
+          )) {
         continue;
       }
 
