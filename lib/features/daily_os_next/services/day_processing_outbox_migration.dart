@@ -1,8 +1,11 @@
 import 'package:drift/drift.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_job_row.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_legacy_file_store.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// One-off cutover from the ADR 0031 file-per-job outbox to the ADR 0044
 /// device-local table.
@@ -67,10 +70,31 @@ class DayProcessingOutboxMigration {
       await db.transaction(() => _importAll(missing));
       imported += missing.length;
     }
-    // Left unmarked deliberately: the filesystem is still authoritative, the
-    // repository keeps reading the table it has been given, and the next start
-    // retries the cutover.
+    // Verification never stabilized, which with writers quiesced should be
+    // impossible. The sentinel is withheld so the next start retries the
+    // cutover, and the job files are still on disk — but be precise about what
+    // that costs: the repository reads only the table, so anything not yet
+    // imported is invisible for *this* session. Nothing is lost; some work may
+    // be delayed by one app run.
+    //
+    // Deliberately not thrown: failing here would block app startup entirely
+    // over a store that is already fully recoverable on the next launch, and
+    // startup repair rebuilds transcription jobs from journal provenance
+    // regardless.
+    _logUnstable(imported);
     return imported;
+  }
+
+  void _logUnstable(int imported) {
+    if (!getIt.isRegistered<DomainLogger>()) return;
+    getIt<DomainLogger>().log(
+      LogDomain.agentWorkflow,
+      'day-processing outbox migration did not stabilize after '
+      '$_maxVerificationPasses passes; imported $imported job(s), retrying '
+      'next start',
+      subDomain: 'dayProcessing.migration',
+      level: InsightLevel.error,
+    );
   }
 
   Future<bool> isComplete() async {

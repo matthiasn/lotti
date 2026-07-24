@@ -11,11 +11,10 @@ import 'package:path/path.dart' as path;
 /// one-off migration can drain the old directory, and it is deleted once the
 /// job files are removed a release later.
 ///
-/// It deliberately keeps the integrity machinery the table does not need:
-/// interrupted atomic writes leave `.json.part` files that hold the newest
-/// state of a job, and a file whose checksum fails must be set aside rather
-/// than aborting the whole import. Both only matter while reading a store that
-/// was written by the old code.
+/// Being the *last* read of that directory, it is deliberately more thorough
+/// than the live repository ever was: it considers every encoding of a job the
+/// old store could leave behind and keeps the newest readable state of each,
+/// rather than trusting one filename convention.
 class DayProcessingLegacyFileStore {
   DayProcessingLegacyFileStore({required this.rootDirectory});
 
@@ -27,29 +26,45 @@ class DayProcessingLegacyFileStore {
   /// without touching the filesystem.
   bool get exists => rootDirectory.existsSync();
 
-  /// Every job readable from the directory, newest state first resolved.
+  /// The newest readable state of every job in the directory, oldest first.
   ///
-  /// Recovers orphaned partials before reading so a job whose last write was
-  /// interrupted is imported at its newest state rather than its previous one.
-  /// Unreadable files are quarantined and omitted — the same outcome the live
-  /// repository produced for them, and safe because a job that cannot be read
-  /// cannot be executed either.
+  /// A job can appear on disk more than once:
+  ///
+  /// - `<id>.json` — the published file.
+  /// - `<id>.json.part` — an unpublished write from a store version that used
+  ///   that suffix.
+  /// - `<id>.json.tmp.<micros>.<pid>.media` — what `atomicWriteBytes` actually
+  ///   writes before renaming over the destination. A crash in that window
+  ///   leaves it behind, holding a *newer* state than the published file — and
+  ///   for a job's very first write, holding the only copy.
+  ///
+  /// Rather than deciding by filename which one wins, every candidate is
+  /// decoded and the highest `generation` (then `updatedAt`) per job id is
+  /// kept. Unreadable files are quarantined and skipped, since a job that
+  /// cannot be read cannot be executed either.
   Future<List<DayProcessingJob>> readAll() async {
     if (!exists) return const [];
-    await _recoverPartials();
-    final jobs = <DayProcessingJob>[];
+    final newest = <String, DayProcessingJob>{};
     for (final file in rootDirectory.listSync().whereType<File>()) {
-      if (!file.path.endsWith('.json')) continue;
+      if (!_isJobCandidate(file.path)) continue;
+      final DayProcessingJob job;
       try {
-        jobs.add(await readFile(file));
+        job = await readFile(file);
       } catch (_) {
-        await quarantine(file);
+        // Scratch files are expected to be truncated or half-written; only
+        // something that claims to be a published job is worth setting aside
+        // for inspection.
+        if (!_isScratch(file.path)) await quarantine(file);
+        continue;
       }
+      final existing = newest[job.id];
+      if (existing == null || _isNewer(job, existing)) newest[job.id] = job;
     }
-    jobs.sort((a, b) {
-      final byCreated = a.createdAt.compareTo(b.createdAt);
-      return byCreated != 0 ? byCreated : a.id.compareTo(b.id);
-    });
+    final jobs = newest.values.toList()
+      ..sort((a, b) {
+        final byCreated = a.createdAt.compareTo(b.createdAt);
+        return byCreated != 0 ? byCreated : a.id.compareTo(b.id);
+      });
     return List<DayProcessingJob>.unmodifiable(jobs);
   }
 
@@ -79,24 +94,21 @@ class DayProcessingLegacyFileStore {
     await file.rename(destination.path);
   }
 
-  Future<void> _recoverPartials() async {
-    for (final partial in rootDirectory.listSync().whereType<File>().where(
-      (file) => file.path.endsWith('.json.part'),
-    )) {
-      final destination = File(
-        partial.path.substring(0, partial.path.length - '.part'.length),
-      );
-      // The published file won the race; the partial is leftover scratch.
-      if (destination.existsSync()) {
-        await partial.delete();
-        continue;
-      }
-      try {
-        await readFile(partial);
-        await partial.rename(destination.path);
-      } catch (_) {
-        await quarantine(partial);
-      }
+  /// Every write the old store could have produced for a job.
+  static bool _isJobCandidate(String filePath) =>
+      filePath.endsWith('.json') || _isScratch(filePath);
+
+  /// An unpublished write: either suffix the store has used for one.
+  static bool _isScratch(String filePath) =>
+      filePath.endsWith('.json.part') ||
+      (filePath.endsWith('.media') && filePath.contains('.json.tmp.'));
+
+  /// `generation` is the store's own monotonic counter and is authoritative;
+  /// `updatedAt` only breaks ties between writes that never diverged.
+  static bool _isNewer(DayProcessingJob candidate, DayProcessingJob current) {
+    if (candidate.generation != current.generation) {
+      return candidate.generation > current.generation;
     }
+    return candidate.updatedAt.isAfter(current.updatedAt);
   }
 }

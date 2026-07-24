@@ -104,32 +104,81 @@ void main() {
     );
   });
 
-  test("publishes an orphaned partial as the job's newest state", () async {
+  test('reads an orphaned partial that has no published file', () async {
     final source = job('session-1');
     final target = writeLegacy(source);
-    final partial = File('${target.path}.part');
-    target.renameSync(partial.path);
+    target.renameSync('${target.path}.part');
 
     final jobs = await store.readAll();
 
     expect(jobs.single.id, source.id);
-    expect(target.existsSync(), isTrue, reason: 'partial was promoted');
-    expect(partial.existsSync(), isFalse);
   });
 
-  test('drops a stale partial beside its already-published job', () async {
-    final target = writeLegacy(job('session-1'));
-    final partial = File('${target.path}.part')
-      ..writeAsBytesSync(target.readAsBytesSync());
+  test('prefers the newer generation when both copies exist', () async {
+    // A crash between the scratch write and the rename leaves both files, and
+    // the scratch one holds the newer state.
+    final published = writeLegacy(job('session-1'));
+    writeLegacy(
+      job('session-1').copyWith(
+        generation: 4,
+        attempts: 2,
+        status: DayProcessingJobStatus.waitingForNetwork,
+      ),
+      suffix: '.json.part',
+    );
 
-    final jobs = await store.readAll();
+    final restored = (await store.readAll()).single;
 
-    expect(jobs, hasLength(1));
-    expect(target.existsSync(), isTrue);
-    expect(partial.existsSync(), isFalse, reason: 'published file wins');
+    expect(restored.generation, 4);
+    expect(restored.attempts, 2);
+    expect(restored.status, DayProcessingJobStatus.waitingForNetwork);
+    expect(published.existsSync(), isTrue, reason: 'the read is read-only');
   });
 
-  test('quarantines a corrupt orphan partial instead of failing', () async {
+  test('keeps the published copy when the scratch one is older', () async {
+    writeLegacy(job('session-1').copyWith(generation: 6));
+    writeLegacy(job('session-1'), suffix: '.json.part');
+
+    expect((await store.readAll()).single.generation, 6);
+  });
+
+  test(
+    'recovers the atomic-write scratch file the store really uses',
+    () async {
+      // atomicWriteBytes writes `<path>.tmp.<micros>.<pid>.media` and renames
+      // over the destination. A crash in that window on a job's first write
+      // leaves this as the only copy.
+      writeLegacy(
+        job('session-1').copyWith(generation: 3),
+        suffix: '.json.tmp.1737000000000000.4242.media',
+      );
+
+      final restored = (await store.readAll()).single;
+
+      expect(restored.id, 'transcribe_session-1');
+      expect(restored.generation, 3);
+    },
+  );
+
+  test('breaks a generation tie on updatedAt', () async {
+    final base = job('session-1');
+    writeLegacy(base);
+    writeLegacy(
+      base.copyWith(updatedAt: base.updatedAt.add(const Duration(minutes: 5))),
+      suffix: '.json.part',
+    );
+
+    final restored = (await store.readAll()).single;
+
+    expect(
+      restored.updatedAt,
+      DateTime.utc(2026, 7, 18, 7, 45),
+    );
+  });
+
+  test('skips an unreadable scratch file without quarantining it', () async {
+    // Half-written scratch is expected after a crash, not evidence of
+    // corruption, so it is passed over rather than filed for inspection.
     File(
       path.join(root.path, 'corrupt.json.part'),
     ).writeAsStringSync('not an envelope');
@@ -146,7 +195,7 @@ void main() {
       File(
         path.join(root.path, 'quarantine', 'corrupt.json.part'),
       ).existsSync(),
-      isTrue,
+      isFalse,
     );
   });
 

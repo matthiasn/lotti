@@ -259,8 +259,10 @@ lives outside the journal and agent databases because every column describes
 never sync.
 
 Terminal jobs are retained deliberately: Activity and startup repair read them
-as the local processing ledger. That ledger grows for the life of the install,
-so it is kept off every hot path by partial indexes rather than by pruning:
+as the local processing ledger. Two independent mechanisms bound its cost —
+retention caps how far back it reaches (90 days, below), while partial indexes
+keep even the rows still inside that window off every hot path, so query cost
+never depends on ledger size:
 
 | Index | Covers | Serves |
 | --- | --- | --- |

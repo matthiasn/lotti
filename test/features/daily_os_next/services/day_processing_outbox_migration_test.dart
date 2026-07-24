@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,8 +9,12 @@ import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_legacy_file_store.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_migration.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
+import '../../../mocks/mocks.dart';
 import 'day_processing_test_db.dart';
 
 void main() {
@@ -197,4 +202,90 @@ void main() {
     expect(restored.id, 'transcribe_session-1');
     expect(restored.attempts, 2);
   });
+
+  group('verification that never stabilizes', () {
+    test('withholds the sentinel so the next start retries', () async {
+      final store = _EndlesslyGrowingStore(root);
+
+      final imported = await migration(store: store).run();
+
+      // Every pass imports the one job it can see, then the store produces
+      // another — the shape of a writer that was not quiesced.
+      expect(imported, 5);
+      expect(
+        await migration(store: store).isComplete(),
+        isFalse,
+        reason: 'an unverified cutover must not be published',
+      );
+    });
+
+    test('reports the stall rather than failing silently', () async {
+      final logger = MockDomainLogger();
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
+      }
+      getIt.registerSingleton<DomainLogger>(logger);
+      addTearDown(() => getIt.unregister<DomainLogger>());
+
+      await migration(store: _EndlesslyGrowingStore(root)).run();
+
+      final logged = verify(
+        () => logger.log(
+          any(),
+          captureAny(),
+          subDomain: any(named: 'subDomain'),
+          level: any(named: 'level'),
+        ),
+      ).captured;
+      expect(
+        logged.single,
+        contains('did not stabilize'),
+      );
+    });
+  });
+}
+
+/// A legacy store that reveals one more job on every read, so verification can
+/// never reach a stable pass.
+class _EndlesslyGrowingStore extends DayProcessingLegacyFileStore {
+  _EndlesslyGrowingStore(Directory root) : super(rootDirectory: root);
+
+  int _reads = 0;
+
+  @override
+  bool get exists => true;
+
+  @override
+  Future<List<DayProcessingJob>> readAll() async {
+    _reads += 1;
+    final at = DateTime.utc(2026, 7, 18, 7, 40);
+    return [
+      for (var i = 0; i < _reads; i++)
+        DayProcessingJob(
+          id: 'transcribe_session-$i',
+          status: DayProcessingJobStatus.queued,
+          dayId: 'dayplan-2026-07-18',
+          payload: ParseCapturePayload(captureId: 'cap-$i'),
+          createdAt: at,
+          updatedAt: at,
+          requestedAt: at,
+          nextAttemptAt: at,
+          attempts: 0,
+          generation: 0,
+        ),
+    ]..shuffle(_FixedRandom());
+  }
+}
+
+/// Deterministic no-op shuffle: order is irrelevant here and the repo bans
+/// real randomness in tests.
+class _FixedRandom implements Random {
+  @override
+  bool nextBool() => false;
+
+  @override
+  double nextDouble() => 0;
+
+  @override
+  int nextInt(int max) => 0;
 }
