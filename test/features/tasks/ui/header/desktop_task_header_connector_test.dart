@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -8,10 +9,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -30,6 +34,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
@@ -55,6 +60,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockUpdateNotifications mockUpdateNotifications;
   late MockPersistenceLogic mockPersistenceLogic;
+  late MockNavService mockNavService;
 
   final now = DateTime(2026, 4, 20, 12);
 
@@ -64,6 +70,16 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
     mockPersistenceLogic = MockPersistenceLogic();
+    mockNavService = MockNavService();
+
+    // Default: task has no blocking links. Individual tests override this
+    // to exercise the "Blocked by" chip.
+    when(
+      () => mockJournalDb.typedLinksForTaskIds(
+        any(),
+        types: any(named: 'types'),
+      ),
+    ).thenAnswer((_) async => <EntryLink>[]);
 
     when(
       () => mockUpdateNotifications.updateStream,
@@ -97,7 +113,8 @@ void main() {
           // TaskProgressController resolves TimeService in a field
           // initialiser, so every test that touches the estimate chip needs
           // it registered even when it is never exercised.
-          ..registerSingleton<TimeService>(MockTimeService());
+          ..registerSingleton<TimeService>(MockTimeService())
+          ..registerSingleton<NavService>(mockNavService);
       },
     );
   });
@@ -199,6 +216,28 @@ void main() {
       ),
     );
   }
+
+  void stubBlockers(String taskId, List<EntryLink> links) {
+    when(
+      () => mockJournalDb.typedLinksForTaskIds(
+        {taskId},
+        types: {'BlocksLink'},
+      ),
+    ).thenAnswer((_) async => links);
+  }
+
+  EntryLink blocksLink({
+    required String id,
+    required String fromId,
+    required String toId,
+  }) => EntryLink.blocks(
+    id: id,
+    fromId: fromId,
+    toId: toId,
+    createdAt: now,
+    updatedAt: now,
+    vectorClock: null,
+  );
 
   Widget pumpConnector({
     required Task task,
@@ -1381,4 +1420,328 @@ void main() {
       );
     },
   );
+
+  group('DesktopTaskHeaderConnector — blocked-by chip', () {
+    testWidgets('renders nothing when the task has no blockers', (
+      tester,
+    ) async {
+      final task = buildTask();
+      stubBlockers(task.id, []);
+
+      await tester.pumpWidget(pumpConnector(task: task));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byIcon(Icons.block), findsNothing);
+    });
+
+    testWidgets(
+      'shows the blocker title and navigates to it when there is exactly '
+      'one open blocker',
+      (tester) async {
+        final task = buildTask();
+        final blocker = Task(
+          meta: Metadata(
+            id: 'blocker-1',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+            dateFrom: now,
+            dateTo: now,
+            statusHistory: const [],
+            title: 'Fix the outage',
+          ),
+        );
+        stubBlockers(task.id, [
+          blocksLink(id: 'l1', fromId: 'blocker-1', toId: task.id),
+        ]);
+        when(
+          () => mockJournalDb.entriesForIds([blocker.meta.id]),
+        ).thenReturn(MockSelectable([toDbEntity(blocker)]));
+
+        // openLinkedTaskDetail only routes through NavService on desktop
+        // layouts — below kDesktopBreakpoint it pushes a real MaterialPageRoute
+        // to TaskDetailsPage instead, which needs a lot more test scaffolding.
+        // MediaQuery reads tester.view.physicalSize/devicePixelRatio, not
+        // binding.setSurfaceSize (which only constrains render-object layout).
+        tester.view.physicalSize = const Size(1280, 720);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.textContaining('Fix the outage'), findsOneWidget);
+        final tooltip = tester.widget<Tooltip>(
+          find.ancestor(
+            of: find.byIcon(Icons.block),
+            matching: find.byType(Tooltip),
+          ),
+        );
+        expect(tooltip.message, 'Blocked by Fix the outage');
+
+        await tester.tap(find.byIcon(Icons.block));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => mockNavService.pushDesktopTaskDetail('blocker-1'),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'opens a read-only blockers sheet when there is more than one open '
+      'blocker',
+      (tester) async {
+        final task = buildTask();
+        final blockerA = Task(
+          meta: Metadata(
+            id: 'blocker-a',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+            dateFrom: now,
+            dateTo: now,
+            statusHistory: const [],
+            title: 'Blocker A',
+          ),
+        );
+        final blockerB = Task(
+          meta: Metadata(
+            id: 'blocker-b',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+            dateFrom: now,
+            dateTo: now,
+            statusHistory: const [],
+            title: 'Blocker B',
+          ),
+        );
+        stubBlockers(task.id, [
+          blocksLink(id: 'l1', fromId: 'blocker-a', toId: task.id),
+          blocksLink(id: 'l2', fromId: 'blocker-b', toId: task.id),
+        ]);
+        when(
+          () => mockJournalDb.entriesForIds(['blocker-a', 'blocker-b']),
+        ).thenReturn(
+          MockSelectable([toDbEntity(blockerA), toDbEntity(blockerB)]),
+        );
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final tooltip = tester.widget<Tooltip>(
+          find.ancestor(
+            of: find.byIcon(Icons.block),
+            matching: find.byType(Tooltip),
+          ),
+        );
+        expect(tooltip.message, 'Tap to see 2 blockers');
+
+        await tester.tap(find.byIcon(Icons.block));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verifyNever(() => mockNavService.pushDesktopTaskDetail(any()));
+        expect(find.text('Blocker A'), findsOneWidget);
+        expect(find.text('Blocker B'), findsOneWidget);
+        expect(find.text('Blocked by'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'shows a bare Blocked pill with no tap target when the only blocker '
+      'is unresolved',
+      (tester) async {
+        final task = buildTask();
+        stubBlockers(task.id, [
+          blocksLink(id: 'l1', fromId: 'missing-blocker', toId: task.id),
+        ]);
+        when(
+          () => mockJournalDb.entriesForIds(['missing-blocker']),
+        ).thenReturn(MockSelectable(const []));
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byIcon(Icons.block), findsOneWidget);
+        expect(find.text('Blocked'), findsOneWidget);
+
+        final pill = tester.widget<DsPill>(
+          find.ancestor(
+            of: find.byIcon(Icons.block),
+            matching: find.byType(DsPill),
+          ),
+        );
+        expect(pill.onTap, isNull);
+      },
+    );
+  });
+
+  group('DesktopTaskHeaderConnector — status-enrichment blocker prompt', () {
+    late MockFts5Db mockFts5Db;
+
+    setUp(() {
+      mockFts5Db = MockFts5Db();
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <JournalEntity>[]);
+      when(
+        () => mockFts5Db.watchFullTextMatches(any()),
+      ).thenAnswer((_) => Stream.value(<String>[]));
+      getIt.registerSingleton<Fts5Db>(mockFts5Db);
+
+      // BlockingTaskPickerModal's onTaskSelected awaits a HapticFeedback
+      // call before popping — never resolves under the test binding without
+      // a mock handler (see test/README.md's platform-channel section).
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            return null;
+          });
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
+    Future<void> selectBlockedStatus(
+      WidgetTester tester,
+      Task task, {
+      required String currentStatusLabel,
+    }) async {
+      await tester.pumpWidget(pumpConnector(task: task));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text(currentStatusLabel).first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byKey(const ValueKey('task-status-BLOCKED')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    testWidgets(
+      'prompts for a blocker when a task becomes Blocked with no existing '
+      'blocker',
+      (tester) async {
+        final task = buildTask();
+        stubBlockers(task.id, []);
+
+        await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
+
+        expect(
+          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'does not prompt when the task already has an open blocker',
+      (tester) async {
+        final task = buildTask();
+        final blocker = Task(
+          meta: Metadata(
+            id: 'blocker-1',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+            dateFrom: now,
+            dateTo: now,
+            statusHistory: const [],
+            title: 'Existing Blocker',
+          ),
+        );
+        stubBlockers(task.id, [
+          blocksLink(id: 'l1', fromId: 'blocker-1', toId: task.id),
+        ]);
+        when(
+          () => mockJournalDb.entriesForIds([blocker.meta.id]),
+        ).thenReturn(MockSelectable([toDbEntity(blocker)]));
+
+        await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
+
+        expect(
+          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'does not re-prompt when reconfirming an already-Blocked status',
+      (tester) async {
+        final task = buildTask(
+          status: TaskStatus.blocked(
+            id: 's',
+            createdAt: now,
+            utcOffset: 0,
+            reason: 'Blocked by: something',
+          ),
+        );
+        stubBlockers(task.id, []);
+
+        await selectBlockedStatus(
+          tester,
+          task,
+          currentStatusLabel: 'Blocked',
+        );
+
+        expect(
+          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'does not prompt when the task is already blocked by an unresolved '
+      'link',
+      (tester) async {
+        final task = buildTask();
+        stubBlockers(task.id, [
+          blocksLink(id: 'l1', fromId: 'missing-blocker', toId: task.id),
+        ]);
+        when(
+          () => mockJournalDb.entriesForIds(['missing-blocker']),
+        ).thenReturn(MockSelectable(const []));
+
+        await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
+
+        expect(
+          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          findsNothing,
+        );
+      },
+    );
+  });
 }

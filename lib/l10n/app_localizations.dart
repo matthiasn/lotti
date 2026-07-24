@@ -11429,6 +11429,12 @@ abstract class AppLocalizations {
   /// **'Tap a node to walk · {count, plural, =1{1 node} other{{count} nodes}}'**
   String knowledgeGraphWalkHint(int count);
 
+  /// No description provided for @linkBlocksCycleErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This would create a blocking cycle — choose a different task.'**
+  String get linkBlocksCycleErrorMessage;
+
   /// No description provided for @linkedFromCaption.
   ///
   /// In en, this message translates to:
@@ -11441,11 +11447,47 @@ abstract class AppLocalizations {
   /// **'From linked task'**
   String get linkedTaskImageBadge;
 
+  /// No description provided for @linkedTasksBlockedBySectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked by'**
+  String get linkedTasksBlockedBySectionTitle;
+
+  /// No description provided for @linkedTasksBlocksSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocks'**
+  String get linkedTasksBlocksSectionTitle;
+
+  /// No description provided for @linkedTasksDuplicatesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicates'**
+  String get linkedTasksDuplicatesSectionTitle;
+
+  /// No description provided for @linkedTasksFixesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixes'**
+  String get linkedTasksFixesSectionTitle;
+
+  /// No description provided for @linkedTasksFollowUpsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-ups'**
+  String get linkedTasksFollowUpsSectionTitle;
+
   /// No description provided for @linkedTasksMenuTooltip.
   ///
   /// In en, this message translates to:
   /// **'Linked tasks options'**
   String get linkedTasksMenuTooltip;
+
+  /// No description provided for @linkedTasksSupersedesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supersedes'**
+  String get linkedTasksSupersedesSectionTitle;
 
   /// No description provided for @linkedTasksTitle.
   ///
@@ -11464,6 +11506,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Link existing task...'**
   String get linkExistingTask;
+
+  /// No description provided for @linkPhraseBlocksInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'Is blocked by'**
+  String get linkPhraseBlocksInverse;
+
+  /// No description provided for @linkPhraseBlocksPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocks'**
+  String get linkPhraseBlocksPrimary;
+
+  /// No description provided for @linkPhraseDuplicatesInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'Is duplicated by'**
+  String get linkPhraseDuplicatesInverse;
+
+  /// No description provided for @linkPhraseDuplicatesPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicates'**
+  String get linkPhraseDuplicatesPrimary;
+
+  /// No description provided for @linkPhraseFixesInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'Is fixed by'**
+  String get linkPhraseFixesInverse;
+
+  /// No description provided for @linkPhraseFixesPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixes'**
+  String get linkPhraseFixesPrimary;
+
+  /// No description provided for @linkPhraseFollowsUpInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'Has follow-up'**
+  String get linkPhraseFollowsUpInverse;
+
+  /// No description provided for @linkPhraseFollowsUpPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows up on'**
+  String get linkPhraseFollowsUpPrimary;
+
+  /// No description provided for @linkPhraseSupersedesInverse.
+  ///
+  /// In en, this message translates to:
+  /// **'Is superseded by'**
+  String get linkPhraseSupersedesInverse;
+
+  /// No description provided for @linkPhraseSupersedesPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Supersedes'**
+  String get linkPhraseSupersedesPrimary;
+
+  /// No description provided for @linkTypeBasicOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get linkTypeBasicOption;
+
+  /// No description provided for @linkTypeBlocksOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocks'**
+  String get linkTypeBlocksOption;
+
+  /// No description provided for @linkTypeDuplicatesOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicates'**
+  String get linkTypeDuplicatesOption;
+
+  /// No description provided for @linkTypeFixesOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixes'**
+  String get linkTypeFixesOption;
+
+  /// No description provided for @linkTypeFollowsUpOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows up'**
+  String get linkTypeFollowsUpOption;
+
+  /// No description provided for @linkTypeSupersedesOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Supersedes'**
+  String get linkTypeSupersedesOption;
 
   /// No description provided for @logbookEmptyHint.
   ///
@@ -17340,6 +17478,36 @@ abstract class AppLocalizations {
   /// **'Wake agent'**
   String get taskAgentWakeAgent;
 
+  /// No description provided for @taskBlockedByChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Blocked by {title}} other{Blocked by {count} tasks}}'**
+  String taskBlockedByChipLabel(int count, String title);
+
+  /// No description provided for @taskBlockedReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked by: {title}'**
+  String taskBlockedReason(String title);
+
+  /// No description provided for @taskBlockedByChipTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Blocked by {title}} other{Tap to see {count} blockers}}'**
+  String taskBlockedByChipTooltip(int count, String title);
+
+  /// No description provided for @taskBlockerPickerSkipButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get taskBlockerPickerSkipButton;
+
+  /// No description provided for @taskBlockerPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s blocking this task?'**
+  String get taskBlockerPickerTitle;
+
   /// No description provided for @taskCategoryAllLabel.
   ///
   /// In en, this message translates to:
@@ -18425,6 +18593,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to unlink this task?'**
   String get unlinkTaskConfirm;
+
+  /// No description provided for @unlinkTaskFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t unlink the task. Please try again.'**
+  String get unlinkTaskFailedMessage;
 
   /// No description provided for @unlinkTaskTitle.
   ///

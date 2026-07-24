@@ -2780,12 +2780,35 @@
   "knowledgeGraphTitle": "Graf znalostí",
   "knowledgeGraphTooltip": "Prozkoumat odkazy",
   "knowledgeGraphWalkHint": "Klepni na uzel a přejdi dál · {count, plural, one{1 uzel} few{{count} uzly} other{{count} uzlů}}",
+  "linkBlocksCycleErrorMessage": "Tím by vznikl blokující cyklus — vyber jiný úkol.",
   "linkedFromCaption": "z",
   "linkedTaskImageBadge": "Z propojené úlohy",
+  "linkedTasksBlockedBySectionTitle": "Blokováno",
+  "linkedTasksBlocksSectionTitle": "Blokuje",
+  "linkedTasksDuplicatesSectionTitle": "Duplikáty",
+  "linkedTasksFixesSectionTitle": "Opravuje",
+  "linkedTasksFollowUpsSectionTitle": "Navazující úkoly",
   "linkedTasksMenuTooltip": "Možnosti propojených úkolů",
+  "linkedTasksSupersedesSectionTitle": "Nahrazuje",
   "linkedTasksTitle": "Propojené úkoly",
   "linkedToCaption": "na",
   "linkExistingTask": "Propojit existující úkol...",
+  "linkPhraseBlocksInverse": "Je blokováno",
+  "linkPhraseBlocksPrimary": "Blokuje",
+  "linkPhraseDuplicatesInverse": "Je duplikováno",
+  "linkPhraseDuplicatesPrimary": "Duplikuje",
+  "linkPhraseFixesInverse": "Je opraveno",
+  "linkPhraseFixesPrimary": "Opravuje",
+  "linkPhraseFollowsUpInverse": "Má návaznost",
+  "linkPhraseFollowsUpPrimary": "Navazuje na",
+  "linkPhraseSupersedesInverse": "Je nahrazeno",
+  "linkPhraseSupersedesPrimary": "Nahrazuje",
+  "linkTypeBasicOption": "Propojit",
+  "linkTypeBlocksOption": "Blokuje",
+  "linkTypeDuplicatesOption": "Duplikuje",
+  "linkTypeFixesOption": "Opravuje",
+  "linkTypeFollowsUpOption": "Navazuje",
+  "linkTypeSupersedesOption": "Nahrazuje",
   "logbookEmptyHint": "Vytvoř svůj první záznam a začni si psát deník.",
   "logbookEmptyTitle": "Tvůj deník je prázdný",
   "logbookNewEntriesHint": "Nové záznamy se otevřou tady.",
@@ -4098,6 +4121,31 @@
   "taskAgentUseCategoryDefaultDescription": "Zkopíruje aktuální nastavení kategorie. Pozdější změny kategorie tohoto agenta neovlivní.",
   "taskAgentUseProfileDefault": "Použít výchozí model profilu",
   "taskAgentWakeAgent": "Probudit agenta",
+  "taskBlockedByChipLabel": "{count, plural, =1{Blokováno úkolem {title}} few{Blokováno {count} úkoly} other{Blokováno {count} úkolů}}",
+  "@taskBlockedByChipLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedByChipTooltip": "{count, plural, =1{Blokováno úkolem {title}} few{Klepnutím zobrazíte {count} blokující úkoly} other{Klepnutím zobrazíte {count} blokujících úkolů}}",
+  "@taskBlockedByChipTooltip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedReason": "Blokováno úkolem: {title}",
+  "taskBlockerPickerSkipButton": "Přeskočit",
+  "taskBlockerPickerTitle": "Co blokuje tento úkol?",
   "taskCategoryAllLabel": "vše",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "nepřiřazeno",
@@ -4375,6 +4423,7 @@
   "transcriptModelLabel": "Model: {provider}, {model}",
   "unlinkButton": "Zrušit propojení",
   "unlinkTaskConfirm": "Opravdu chcete zrušit propojení tohoto úkolu?",
+  "unlinkTaskFailedMessage": "Propojení úkolu se nepodařilo zrušit. Zkuste to prosím znovu.",
   "unlinkTaskTitle": "Zrušit propojení úkolu",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} výsledek} few{{elapsed}ms, {count} výsledky} other{{elapsed}ms, {count} výsledků}}",
   "@vectorSearchTiming": {

@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
@@ -37,6 +43,12 @@ void main() {
       dateFrom: now,
       dateTo: now,
     );
+
+    // DsSegmentedToggle renders an invisible width-reserving ghost copy of
+    // each segment's label alongside the visible one (see its doc comment) —
+    // plain find.text matches two Texts; the visible one is the Stack's last
+    // child.
+    Finder visibleText(String label) => find.text(label).last;
 
     // Pumps a button that opens the modal, taps it, and settles.
     Future<void> openModal(
@@ -79,6 +91,14 @@ void main() {
     }
 
     setUp(() async {
+      // _selectTask awaits a HapticFeedback call before popping — under the
+      // test binding that never resolves without a mock handler (see
+      // test/README.md's "Platform-channel calls in widgets" section).
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            return null;
+          });
+
       await getIt.reset();
 
       mockJournalDb = MockJournalDb();
@@ -113,6 +133,8 @@ void main() {
     });
 
     tearDown(() async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
       await getIt.reset();
     });
 
@@ -710,6 +732,8 @@ void main() {
         () => mockPersistenceLogic.createLink(
           fromId: any(named: 'fromId'),
           toId: any(named: 'toId'),
+          // ignore: avoid_redundant_argument_values
+          linkType: EntryLinkType.basic,
         ),
       ).thenAnswer((_) async => true);
 
@@ -741,14 +765,193 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      // Verify link was created
+      // Verify link was created as a plain (basic) link, the default
       verify(
         () => mockPersistenceLogic.createLink(
           fromId: 'current-task',
           toId: 'task-to-link',
+          // ignore: avoid_redundant_argument_values
+          linkType: EntryLinkType.basic,
         ),
       ).called(1);
+      // The modal actually pops on success, not just createLink firing.
+      expect(
+        find.byKey(const Key('link_task_modal_handle')),
+        findsNothing,
+      );
     });
+
+    testWidgets(
+      'defaults to "Link" selected and shows no phrasing toggle',
+      (tester) async {
+        await openModal(tester);
+
+        final linkPill = tester.widget<DsPill>(
+          find.ancestor(
+            of: find.text('Link'),
+            matching: find.byType(DsPill),
+          ),
+        );
+        expect(linkPill.selected, isTrue);
+        expect(find.byType(DsSegmentedToggle<bool>), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'selecting "Blocks" reveals the phrasing toggle; "Link" does not',
+      (tester) async {
+        await openModal(tester);
+
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+
+        expect(find.byType(DsSegmentedToggle<bool>), findsOneWidget);
+        expect(visibleText('Is blocked by'), findsOneWidget);
+
+        await tester.tap(find.text('Link'));
+        await tester.pump();
+
+        expect(find.byType(DsSegmentedToggle<bool>), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'switching relationship type resets the phrasing toggle to primary',
+      (tester) async {
+        await openModal(tester);
+
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+        await tester.tap(visibleText('Is blocked by'));
+        await tester.pump();
+
+        var toggle = tester.widget<DsSegmentedToggle<bool>>(
+          find.byType(DsSegmentedToggle<bool>),
+        );
+        expect(toggle.selected, isTrue);
+
+        await tester.tap(find.text('Fixes'));
+        await tester.pump();
+
+        toggle = tester.widget<DsSegmentedToggle<bool>>(
+          find.byType(DsSegmentedToggle<bool>),
+        );
+        expect(toggle.selected, isFalse);
+      },
+    );
+
+    testWidgets(
+      'selecting "Blocks" creates a blocks link in the primary direction',
+      (tester) async {
+        final testTask = buildTask(id: 'blocker-task', title: 'Blocker Task');
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [testTask]);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await openModal(tester);
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+
+        await tester.tap(find.text('Blocker Task'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'current-task',
+            toId: 'blocker-task',
+            linkType: EntryLinkType.blocks,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'selecting the inverse phrasing swaps fromId/toId before persisting',
+      (tester) async {
+        final testTask = buildTask(id: 'blocker-task', title: 'Blocker Task');
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [testTask]);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await openModal(tester);
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+        await tester.tap(visibleText('Is blocked by'));
+        await tester.pump();
+
+        await tester.tap(find.text('Blocker Task'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // "Is blocked by" + picking blocker-task ⇒ blocker-task is the
+        // blocker (fromId), current-task is blocked (toId).
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'blocker-task',
+            toId: 'current-task',
+            linkType: EntryLinkType.blocks,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'a rejected cycle guard shows an error and keeps the modal open',
+      (tester) async {
+        final testTask = buildTask(id: 'blocker-task', title: 'Blocker Task');
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [testTask]);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => false);
+
+        await openModal(tester);
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+
+        await tester.tap(find.text('Blocker Task'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('Blocker Task'), findsOneWidget);
+        expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
 
     testWidgets('shows status labels for blocked tasks', (tester) async {
       final blockedTask = buildTask(
@@ -986,6 +1189,53 @@ void main() {
       // Should fallback to title matching
       expect(find.text('Test Task'), findsOneWidget);
     });
+
+    testWidgets(
+      'ignores a stale FTS5 result that resolves after a newer query',
+      (tester) async {
+        final testTasks = [
+          buildTask(title: 'Apple Task'),
+          buildTask(id: 'task-2', title: 'Banana Task'),
+        ];
+
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => testTasks);
+
+        final staleController = StreamController<List<String>>();
+        when(
+          () => mockFts5Db.watchFullTextMatches('stale'),
+        ).thenAnswer((_) => staleController.stream);
+        when(
+          () => mockFts5Db.watchFullTextMatches('fresh'),
+        ).thenAnswer((_) => Stream.value(['task-2']));
+
+        await openModal(tester);
+
+        // Type the query whose FTS5 lookup will resolve LATE...
+        await tester.enterText(find.byType(TextField), 'stale');
+        await tester.pump();
+        // ...then type a newer query whose lookup resolves immediately.
+        await tester.enterText(find.byType(TextField), 'fresh');
+        await tester.pump();
+        await tester.pump();
+
+        // Now let the stale lookup resolve, after the fresh one already did.
+        staleController.add(['task-1']);
+        await staleController.close();
+        await tester.pump();
+
+        // The fresh query's match must win — the stale result must not
+        // overwrite it.
+        expect(find.text('Banana Task'), findsOneWidget);
+        expect(find.text('Apple Task'), findsNothing);
+      },
+    );
 
     testWidgets(
       'shows no-tasks message when loading tasks throws (catch branch)',

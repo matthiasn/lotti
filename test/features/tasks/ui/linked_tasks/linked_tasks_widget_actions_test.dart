@@ -9,9 +9,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/journal/state/linked_entries_controller.dart';
-import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
@@ -77,6 +76,13 @@ void main() {
         toId: any(named: 'toId'),
       ),
     ).thenAnswer((_) async => 1);
+    when(
+      () => journalRepo.removeTypedLink(
+        fromId: any(named: 'fromId'),
+        toId: any(named: 'toId'),
+        linkType: any(named: 'linkType'),
+      ),
+    ).thenAnswer((_) async => 1);
 
     final outgoingLinks = outgoing
         .map(
@@ -90,6 +96,28 @@ void main() {
           ),
         )
         .toList();
+    final incomingLinks = incoming
+        .map(
+          (e) => EntryLink.basic(
+            id: 'link-in-${e.id}',
+            fromId: e.id,
+            toId: 'task-main',
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        )
+        .toList();
+
+    when(
+      () => journalRepo.getTypedLinksForTaskIds(
+        {'task-main'},
+        linkTypes: any(named: 'linkTypes'),
+      ),
+    ).thenAnswer((_) async => [...outgoingLinks, ...incomingLinks]);
+    when(
+      () => journalRepo.getJournalEntitiesByIds(any()),
+    ).thenAnswer((_) async => [...outgoing, ...incoming]);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -98,15 +126,6 @@ void main() {
             manageMode
                 ? () => MockLinkedTasksControllerManageMode('task-main')
                 : LinkedTasksController.new,
-          ),
-          outgoingLinkedTasksProvider('task-main').overrideWith(
-            (ref) => outgoing,
-          ),
-          linkedFromEntriesControllerProvider('task-main').overrideWith(
-            () => MockLinkedFromEntriesController(incoming),
-          ),
-          linkedEntriesControllerProvider('task-main').overrideWith(
-            () => MockLinkedEntriesController(outgoingLinks, 'task-main'),
           ),
           journalRepositoryProvider.overrideWithValue(journalRepo),
           ...extraOverrides,
@@ -325,11 +344,18 @@ void main() {
       ];
     }
 
+    // Opens the create-new-linked-task flow and confirms the relationship
+    // picker dialog with its default ("Link", the plain-link type) selection
+    // — matching today's exact behavior for tests that don't care about the
+    // new relationship-picker UI itself (see the dedicated group below).
     Future<void> tapCreateNewLinkedTask(WidgetTester tester) async {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Create new linked task...'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Create'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
     }
@@ -482,6 +508,157 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'relationship picker dialog defaults to "Link" and cancel does not '
+      'create a task',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          extraOverrides: createFlowOverrides(parentCategoryId: null),
+        );
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Create new linked task...'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final linkPill = tester.widget<DsPill>(
+          find.ancestor(of: find.text('Link'), matching: find.byType(DsPill)),
+        );
+        expect(linkPill.selected, isTrue);
+
+        await tester.tap(find.text('Cancel'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verifyNever(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'selecting "Blocks" swaps the auto-created basic link for a blocks '
+      'edge in the primary direction',
+      (tester) async {
+        final created = buildTask(id: 'new-task', title: 'New');
+        stubCreateTaskEntry(created);
+
+        final repo = await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          extraOverrides: createFlowOverrides(parentCategoryId: null),
+        );
+        when(
+          () => repo.removeTypedLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Create new linked task...'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+        await tester.tap(find.text('Create'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => repo.removeTypedLink(
+            fromId: 'task-main',
+            toId: 'new-task',
+            linkType: 'BasicLink',
+          ),
+        ).called(1);
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'task-main',
+            toId: 'new-task',
+            linkType: EntryLinkType.blocks,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'the inverse phrasing swaps fromId/toId before persisting the new '
+      "task's relationship",
+      (tester) async {
+        final created = buildTask(id: 'new-task', title: 'New');
+        stubCreateTaskEntry(created);
+
+        final repo = await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          extraOverrides: createFlowOverrides(parentCategoryId: null),
+        );
+        when(
+          () => repo.removeTypedLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => true);
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Create new linked task...'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Blocks'));
+        await tester.pump();
+        await tester.tap(find.text('Is blocked by').last);
+        await tester.pump();
+        await tester.tap(find.text('Create'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // "Is blocked by" ⇒ the new task is the blocker (fromId), the
+        // current task is blocked (toId).
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'new-task',
+            toId: 'task-main',
+            linkType: EntryLinkType.blocks,
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('LinkedTasksWidget unlink flows', () {
@@ -505,7 +682,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       verify(
-        () => repo.removeLink(fromId: 'task-main', toId: 'out-1'),
+        () => repo.removeTypedLink(
+          fromId: 'task-main',
+          toId: 'out-1',
+          linkType: 'BasicLink',
+        ),
       ).called(1);
     });
 
@@ -527,7 +708,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       verify(
-        () => repo.removeLink(fromId: 'in-1', toId: 'task-main'),
+        () => repo.removeTypedLink(
+          fromId: 'in-1',
+          toId: 'task-main',
+          linkType: 'BasicLink',
+        ),
       ).called(1);
     });
 
@@ -569,9 +754,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       verifyNever(
-        () => repo.removeLink(
+        () => repo.removeTypedLink(
           fromId: any(named: 'fromId'),
           toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
         ),
       );
     });

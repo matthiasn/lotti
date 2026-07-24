@@ -40,6 +40,7 @@ class MetaRow extends StatefulWidget {
     required this.labels,
     required this.estimateSlot,
     required this.consumptionSlot,
+    required this.blockedBySlot,
     required this.onPriorityTap,
     required this.onStatusTap,
     required this.onDueDateTap,
@@ -53,6 +54,12 @@ class MetaRow extends StatefulWidget {
   final DesktopTaskHeaderDueDate? dueDate;
   final List<LabelDefinition> labels;
   final Widget? estimateSlot;
+
+  /// Optional "Blocked by" chip (link-derived readiness, ADR 0042 §4 —
+  /// independent of [status]). Rendered right after the status pill, part of
+  /// the "what state" cluster, ahead of priority/due/estimate. Null (or a
+  /// chip that renders nothing) keeps the lane unchanged for unblocked tasks.
+  final Widget? blockedBySlot;
 
   /// Optional AI-consumption pill (cost/energy/CO₂e), rendered after the time
   /// group. Null (or a chip that renders nothing) keeps the lane unchanged for
@@ -97,6 +104,7 @@ class _MetaRowState extends State<MetaRow> {
     final labels = widget.labels;
     final attributes = <Widget>[
       TaskHeaderStatusPill(status: widget.status, onTap: widget.onStatusTap),
+      if (widget.blockedBySlot != null) widget.blockedBySlot!,
       _PriorityPill(priority: widget.priority, onTap: widget.onPriorityTap),
       _timeGroup(chipGap),
       if (widget.consumptionSlot != null) widget.consumptionSlot!,

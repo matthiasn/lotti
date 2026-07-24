@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/features/design_system/components/search/design_system_search.dart';
-import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Modal for searching and selecting a task to link to the current task.
+/// Modal for searching and selecting a task to link to the current task, with
+/// a relationship-type + direction picker (defaults to a plain "Link", today's
+/// behavior, unchanged when untouched).
 ///
 /// Shows a search field and list of available tasks. Excludes:
 /// - The current task itself
@@ -57,111 +57,25 @@ class LinkTaskModal extends ConsumerStatefulWidget {
 }
 
 class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
-  final _searchController = TextEditingController();
-  final _focusNode = FocusNode();
-  List<Task> _tasks = [];
-  Set<String> _fts5Matches = {};
-  bool _isLoading = true;
-  String _query = '';
-
-  final JournalDb _db = getIt<JournalDb>();
-  final Fts5Db _fts5Db = getIt<Fts5Db>();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTasks();
-    // Auto-focus the search field
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusNode.requestFocus();
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadTasks() async {
-    setState(() => _isLoading = true);
-
-    try {
-      // Fetch all non-completed tasks
-      final tasks = await _db.getTasks(
-        starredStatuses: [false, true],
-        taskStatuses: openTaskStatuses,
-        categoryIds: [],
-        limit: 200,
-      );
-
-      // Filter to Task type and exclude current and already-linked
-      final excludeIds = {widget.currentTaskId, ...widget.existingLinkedIds};
-      final filteredTasks = tasks
-          .whereType<Task>()
-          .where((task) => !excludeIds.contains(task.meta.id))
-          .toList();
-
-      if (mounted) {
-        setState(() {
-          _tasks = filteredTasks;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _onSearchChanged(String query) async {
-    _query = query.trim();
-
-    if (_query.isEmpty) {
-      setState(() => _fts5Matches = {});
-      return;
-    }
-
-    // Use FTS5 for search
-    try {
-      final matches = await _fts5Db.watchFullTextMatches(_query).first;
-      if (mounted) {
-        setState(() => _fts5Matches = matches.toSet());
-      }
-    } catch (e) {
-      // Fallback to empty if FTS5 fails
-      if (mounted) {
-        setState(() => _fts5Matches = {});
-      }
-    }
-  }
-
-  List<Task> get _filteredTasks {
-    if (_query.isEmpty) {
-      return _tasks;
-    }
-
-    // Filter by FTS5 matches or title substring
-    final queryLower = _query.toLowerCase();
-    return _tasks.where((task) {
-      // Match by FTS5
-      if (_fts5Matches.contains(task.meta.id)) {
-        return true;
-      }
-      // Fallback to title substring match
-      return task.data.title.toLowerCase().contains(queryLower);
-    }).toList();
-  }
+  EntryLinkType _selectedType = EntryLinkType.basic;
+  bool _inverse = false;
 
   Future<void> _selectTask(Task task) async {
-    // Create link from current task to selected task
-    final persistenceLogic = getIt<PersistenceLogic>();
-    await persistenceLogic.createLink(
-      fromId: widget.currentTaskId,
-      toId: task.meta.id,
+    final swap = _selectedType != EntryLinkType.basic && _inverse;
+    final created = await getIt<PersistenceLogic>().createLink(
+      fromId: swap ? task.meta.id : widget.currentTaskId,
+      toId: swap ? widget.currentTaskId : task.meta.id,
+      linkType: _selectedType,
     );
+
+    if (!created) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.messages.linkBlocksCycleErrorMessage)),
+        );
+      }
+      return;
+    }
 
     await HapticFeedback.mediumImpact();
 
@@ -172,8 +86,6 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filteredTasks;
-
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.4,
@@ -204,92 +116,32 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
               ),
             ),
             const SizedBox(height: 12),
-            // Search field
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: DesignSystemSearch(
-                controller: _searchController,
-                focusNode: _focusNode,
-                hintText: context.messages.searchTasksHint,
-                onChanged: _onSearchChanged,
-                onClear: () => _onSearchChanged(''),
+              child: RelationshipTypeSelector(
+                selectedType: _selectedType,
+                inverse: _inverse,
+                onTypeChanged: (type) => setState(() {
+                  _selectedType = type;
+                  _inverse = false;
+                }),
+                onInverseChanged: (value) => setState(() => _inverse = value),
               ),
             ),
-            const SizedBox(height: 8),
-            // Results
+            const SizedBox(height: 12),
             Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : filtered.isEmpty
-                  ? Center(
-                      child: Text(
-                        _query.isEmpty
-                            ? context.messages.noTasksToLink
-                            : context.messages.noTasksFound,
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: context.colorScheme.outline,
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final task = filtered[index];
-                        return _TaskListTile(
-                          task: task,
-                          onTap: () => _selectTask(task),
-                        );
-                      },
-                    ),
+              child: TaskSearchPickerBody(
+                excludeIds: {
+                  widget.currentTaskId,
+                  ...widget.existingLinkedIds,
+                },
+                onTaskSelected: _selectTask,
+                scrollController: scrollController,
+              ),
             ),
           ],
         );
       },
-    );
-  }
-}
-
-/// List tile for displaying a task in the search results.
-class _TaskListTile extends StatelessWidget {
-  const _TaskListTile({
-    required this.task,
-    required this.onTap,
-  });
-
-  final Task task;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final status = task.data.status;
-    final statusString = status.toDbString;
-    final statusColor = taskColorFromStatusString(
-      statusString,
-      brightness: Theme.of(context).brightness,
-    );
-
-    return ListTile(
-      onTap: onTap,
-      leading: Icon(
-        taskIconFromStatusString(statusString),
-        color: statusColor,
-        size: 20,
-      ),
-      title: Text(
-        task.data.title,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        taskLabelFromStatusString(statusString, context),
-        style: TextStyle(
-          color: statusColor,
-          fontSize: 12,
-        ),
-      ),
-      trailing: const Icon(Icons.add_link_rounded, size: 20),
     );
   }
 }

@@ -2773,12 +2773,35 @@
   "knowledgeGraphTitle": "Graphe de connaissances",
   "knowledgeGraphTooltip": "Explorer les liens",
   "knowledgeGraphWalkHint": "Touche un nœud pour avancer · {count, plural, =1{1 nœud} other{{count} nœuds}}",
+  "linkBlocksCycleErrorMessage": "Cela créerait un cycle de blocage — choisis une autre tâche.",
   "linkedFromCaption": "depuis",
   "linkedTaskImageBadge": "De la tâche liée",
+  "linkedTasksBlockedBySectionTitle": "Bloquée par",
+  "linkedTasksBlocksSectionTitle": "Bloque",
+  "linkedTasksDuplicatesSectionTitle": "Doublons",
+  "linkedTasksFixesSectionTitle": "Corrige",
+  "linkedTasksFollowUpsSectionTitle": "Suivis",
   "linkedTasksMenuTooltip": "Options des tâches liées",
+  "linkedTasksSupersedesSectionTitle": "Remplace",
   "linkedTasksTitle": "Tâches liées",
   "linkedToCaption": "vers",
   "linkExistingTask": "Lier une tâche existante...",
+  "linkPhraseBlocksInverse": "Est bloquée par",
+  "linkPhraseBlocksPrimary": "Bloque",
+  "linkPhraseDuplicatesInverse": "Est dupliquée par",
+  "linkPhraseDuplicatesPrimary": "Duplique",
+  "linkPhraseFixesInverse": "Est corrigée par",
+  "linkPhraseFixesPrimary": "Corrige",
+  "linkPhraseFollowsUpInverse": "A un suivi",
+  "linkPhraseFollowsUpPrimary": "Fait suite à",
+  "linkPhraseSupersedesInverse": "Est remplacée par",
+  "linkPhraseSupersedesPrimary": "Remplace",
+  "linkTypeBasicOption": "Lier",
+  "linkTypeBlocksOption": "Bloque",
+  "linkTypeDuplicatesOption": "Duplique",
+  "linkTypeFixesOption": "Corrige",
+  "linkTypeFollowsUpOption": "Fait suite à",
+  "linkTypeSupersedesOption": "Remplace",
   "logbookEmptyHint": "Crée ta première entrée pour commencer ton journal.",
   "logbookEmptyTitle": "Ton journal est vide",
   "logbookNewEntriesHint": "Les nouvelles entrées s’ouvriront ici.",
@@ -4091,6 +4114,31 @@
   "taskAgentUseCategoryDefaultDescription": "Copie la configuration actuelle de la catégorie. Ses changements ultérieurs n’affecteront pas cet agent.",
   "taskAgentUseProfileDefault": "Utiliser le réglage du profil",
   "taskAgentWakeAgent": "Réveiller l’agent",
+  "taskBlockedByChipLabel": "{count, plural, =1{Bloquée par {title}} other{Bloquée par {count} tâches}}",
+  "@taskBlockedByChipLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedByChipTooltip": "{count, plural, =1{Bloquée par {title}} other{Ouvre pour voir {count} blocages}}",
+  "@taskBlockedByChipTooltip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskBlockedReason": "Bloquée par : {title}",
+  "taskBlockerPickerSkipButton": "Passer",
+  "taskBlockerPickerTitle": "Qu'est-ce qui bloque cette tâche ?",
   "taskCategoryAllLabel": "tout",
   "taskCategoryLabel": "Catégorie :",
   "taskCategoryUnassignedLabel": "non attribué",
@@ -4368,6 +4416,7 @@
   "transcriptModelLabel": "Modèle : {provider}, {model}",
   "unlinkButton": "Délier",
   "unlinkTaskConfirm": "Es-tu sûr de vouloir délier cette tâche ?",
+  "unlinkTaskFailedMessage": "Impossible de délier la tâche. Réessaie.",
   "unlinkTaskTitle": "Délier la tâche",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} résultat} other{{elapsed}ms, {count} résultats}}",
   "@vectorSearchTiming": {

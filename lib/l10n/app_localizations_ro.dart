@@ -6672,13 +6672,35 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get linkBlocksCycleErrorMessage =>
+      'Aceasta ar crea un ciclu de blocare — alegeți o altă sarcină.';
+
+  @override
   String get linkedFromCaption => 'de la';
 
   @override
   String get linkedTaskImageBadge => 'Din sarcina legată';
 
   @override
+  String get linkedTasksBlockedBySectionTitle => 'Blocată de';
+
+  @override
+  String get linkedTasksBlocksSectionTitle => 'Blochează';
+
+  @override
+  String get linkedTasksDuplicatesSectionTitle => 'Duplicate';
+
+  @override
+  String get linkedTasksFixesSectionTitle => 'Remediază';
+
+  @override
+  String get linkedTasksFollowUpsSectionTitle => 'Continuări';
+
+  @override
   String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
+
+  @override
+  String get linkedTasksSupersedesSectionTitle => 'Înlocuiește';
 
   @override
   String get linkedTasksTitle => 'Sarcini legate';
@@ -6688,6 +6710,54 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Leagă o sarcină existentă...';
+
+  @override
+  String get linkPhraseBlocksInverse => 'Este blocată de';
+
+  @override
+  String get linkPhraseBlocksPrimary => 'Blochează';
+
+  @override
+  String get linkPhraseDuplicatesInverse => 'Este duplicată de';
+
+  @override
+  String get linkPhraseDuplicatesPrimary => 'Duplică';
+
+  @override
+  String get linkPhraseFixesInverse => 'Este remediată de';
+
+  @override
+  String get linkPhraseFixesPrimary => 'Remediază';
+
+  @override
+  String get linkPhraseFollowsUpInverse => 'Are o continuare';
+
+  @override
+  String get linkPhraseFollowsUpPrimary => 'Continuă';
+
+  @override
+  String get linkPhraseSupersedesInverse => 'Este înlocuită de';
+
+  @override
+  String get linkPhraseSupersedesPrimary => 'Înlocuiește';
+
+  @override
+  String get linkTypeBasicOption => 'Legați';
+
+  @override
+  String get linkTypeBlocksOption => 'Blocați';
+
+  @override
+  String get linkTypeDuplicatesOption => 'Duplicați';
+
+  @override
+  String get linkTypeFixesOption => 'Remediați';
+
+  @override
+  String get linkTypeFollowsUpOption => 'Continuați';
+
+  @override
+  String get linkTypeSupersedesOption => 'Înlocuiți';
 
   @override
   String get logbookEmptyHint =>
@@ -10220,6 +10290,41 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentWakeAgent => 'Treziți agentul';
 
   @override
+  String taskBlockedByChipLabel(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Blocată de $count de sarcini',
+      few: 'Blocată de $count sarcini',
+      one: 'Blocată de $title',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String taskBlockedReason(String title) {
+    return 'Blocată de: $title';
+  }
+
+  @override
+  String taskBlockedByChipTooltip(int count, String title) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Atingeți pentru a vedea $count de blocaje',
+      few: 'Atingeți pentru a vedea $count blocaje',
+      one: 'Blocată de $title',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskBlockerPickerSkipButton => 'Omiteți';
+
+  @override
+  String get taskBlockerPickerTitle => 'Ce blochează această sarcină?';
+
+  @override
   String get taskCategoryAllLabel => 'toate';
 
   @override
@@ -10851,6 +10956,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       'Sigur doriți să deconectați această sarcină?';
+
+  @override
+  String get unlinkTaskFailedMessage =>
+      'Nu s-a putut deconecta sarcina. Vă rugăm să încercați din nou.';
 
   @override
   String get unlinkTaskTitle => 'Deconectați sarcina';

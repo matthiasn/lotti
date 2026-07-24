@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   also drop their heavy card-on-card look for the app's tinted AI surface —
   the same color family as the agent report cards, with a soft accent
   hairline, in both light and dark themes.
+- **Task links now carry real relationships, not just a plain connection.**
+  When linking two tasks you can now pick what they mean to each other —
+  Blocks, Follows up, Duplicates, Fixes, or Supersedes — in either direction,
+  both when linking an existing task and when creating a new linked task. The
+  Linked Tasks section groups these by relationship instead of one flat list,
+  and a task that's blocked shows a "Blocked by" chip right next to its status
+  in the header — tap it to jump to the blocker, or see all of them when
+  there's more than one. Marking a task Blocked now optionally prompts you to
+  name what's blocking it on the spot.
 
 ## [0.9.1061]
 ### Added
