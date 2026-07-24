@@ -6,6 +6,7 @@ import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
@@ -182,6 +183,56 @@ void main() {
 
       verifyZeroInteractions(notifications);
     });
+  });
+
+  group('delivery failures are contained (fire-and-forget contract)', () {
+    test(
+      'a throwing notification service does not escape onJobFinished',
+      () async {
+        when(
+          () => notifications.showNotificationNow(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationId: any(named: 'notificationId'),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        ).thenThrow(StateError('notification plugin unavailable'));
+
+        // Must complete normally: the hook runs unawaited from the outbox
+        // processor's completion path, so a throw here would surface as an
+        // unhandled async error on job completion.
+        await makeNotifier().onJobFinished(
+          job(payload: const DraftPlanPayload()),
+        );
+      },
+    );
+
+    test(
+      'the error-log path itself cannot escape either (DomainLogger '
+      'registered)',
+      () async {
+        await setUpTestGetIt();
+        addTearDown(tearDownTestGetIt);
+        when(
+          () => notifications.showNotificationNow(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationId: any(named: 'notificationId'),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        ).thenThrow(StateError('notification plugin unavailable'));
+
+        // With a registered DomainLogger the catch block takes the logging
+        // branch; the call must still complete normally.
+        await makeNotifier().onJobFinished(
+          job(payload: const DraftPlanPayload()),
+        );
+      },
+    );
   });
 
   test('transcription and parse jobs raise no banner', () async {

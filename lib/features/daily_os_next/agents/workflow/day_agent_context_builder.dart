@@ -66,11 +66,12 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         dayAudioEntries.isEmpty
             ? null
             : [
-                for (final entry in dayAudioEntries.length > _dayEntriesLimit
-                    ? dayAudioEntries.sublist(
-                        dayAudioEntries.length - _dayEntriesLimit,
-                      )
-                    : dayAudioEntries)
+                for (final entry
+                    in dayAudioEntries.length > _dayEntriesLimit
+                        ? dayAudioEntries.sublist(
+                            dayAudioEntries.length - _dayEntriesLimit,
+                          )
+                        : dayAudioEntries)
                   entry.toJson(),
                 if (dayAudioEntries.length > _dayEntriesLimit)
                   {

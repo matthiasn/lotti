@@ -54,7 +54,10 @@ class AgentRepoQueries {
         .customSelect(
           'SELECT * FROM agent_entities '
           "WHERE type = 'day_status_event' AND deleted_at IS NULL "
-          'AND created_at > ?1 ORDER BY created_at DESC LIMIT ?2',
+          // `id DESC` tiebreak: without it, which of two equal-createdAt
+          // rows lands inside the LIMIT cutoff is unstable — exactly the
+          // boundary this method exists to protect.
+          'AND created_at > ?1 ORDER BY created_at DESC, id DESC LIMIT ?2',
           variables: [Variable<DateTime>(since), Variable<int>(limit)],
           readsFrom: {_db.agentEntities},
         )

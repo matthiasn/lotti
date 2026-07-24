@@ -131,7 +131,12 @@ class InMemoryAgentRepository extends MockAgentRepository {
             .whereType<DayStatusEventEntity>()
             .where((e) => e.deletedAt == null && e.createdAt.isAfter(since))
             .toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          // Mirror the real query's `created_at DESC, id DESC` tiebreak.
+          ..sort((a, b) {
+            final byCreatedAt = b.createdAt.compareTo(a.createdAt);
+            if (byCreatedAt != 0) return byCreatedAt;
+            return b.id.compareTo(a.id);
+          });
     if (limit >= 0 && matching.length > limit) {
       return matching.sublist(0, limit);
     }

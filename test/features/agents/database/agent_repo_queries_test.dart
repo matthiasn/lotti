@@ -156,6 +156,39 @@ void main() {
         );
       },
     );
+
+    test(
+      'getDayStatusEventsSinceNewestFirst breaks equal-createdAt ties by '
+      'id DESC so the LIMIT cutoff is deterministic',
+      () async {
+        final watermark = DateTime(2026, 3, 15, 6);
+        final sharedCreatedAt = watermark.add(const Duration(hours: 1));
+        for (final suffix in ['a', 'b', 'c']) {
+          await core.upsertEntity(
+            makeTestDayStatusEvent(
+              id: 'day_status:dayplan-2026-03-15:tie-$suffix',
+              createdAt: sharedCreatedAt,
+            ),
+          );
+        }
+
+        final events = await queries.getDayStatusEventsSinceNewestFirst(
+          watermark,
+          limit: 2,
+        );
+
+        expect(
+          [for (final event in events) event.id],
+          [
+            'day_status:dayplan-2026-03-15:tie-c',
+            'day_status:dayplan-2026-03-15:tie-b',
+          ],
+          reason:
+              'Without the id DESC tiebreak, which equal-timestamp row '
+              'lands inside the limit would be unstable.',
+        );
+      },
+    );
   });
 
   Future<void> seedReportWithHead({

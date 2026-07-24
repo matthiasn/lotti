@@ -3,6 +3,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 
 /// Raises the ADR 0032 §5 "your plan is ready" OS notification when a durable
@@ -59,6 +60,11 @@ class DayPlanReadyNotifier {
       _notificationService ?? getIt<NotificationService>();
 
   /// Handles one terminal job from the outbox processor.
+  ///
+  /// Never throws: the hook is invoked fire-and-forget from the processor's
+  /// completion path, so a delivery failure (service resolution, locale
+  /// lookup, platform plugin) must stay a contained best-effort miss instead
+  /// of surfacing as an unhandled async error on job completion.
   Future<void> onJobFinished(DayProcessingJob job) async {
     if (job.status != DayProcessingJobStatus.succeeded) return;
     final isPlanJob =
@@ -67,19 +73,30 @@ class DayPlanReadyNotifier {
     if (!isPlanJob) return;
     if (_isAppInForeground()) return;
 
-    final messages = _messages();
-    final isDraft = job.kind == DayProcessingJobKind.draftPlan;
-    await _notifications.showNotificationNow(
-      title: isDraft
-          ? messages.dailyOsNextPlanReadyNotificationTitle
-          : messages.dailyOsNextPlanChangesReadyNotificationTitle,
-      body: isDraft
-          ? messages.dailyOsNextPlanReadyNotificationBody
-          : messages.dailyOsNextPlanChangesReadyNotificationBody,
-      notificationId: notificationId,
-      showOnMobile: true,
-      showOnDesktop: true,
-      deepLink: deepLink,
-    );
+    try {
+      final messages = _messages();
+      final isDraft = job.kind == DayProcessingJobKind.draftPlan;
+      await _notifications.showNotificationNow(
+        title: isDraft
+            ? messages.dailyOsNextPlanReadyNotificationTitle
+            : messages.dailyOsNextPlanChangesReadyNotificationTitle,
+        body: isDraft
+            ? messages.dailyOsNextPlanReadyNotificationBody
+            : messages.dailyOsNextPlanChangesReadyNotificationBody,
+        notificationId: notificationId,
+        showOnMobile: true,
+        showOnDesktop: true,
+        deepLink: deepLink,
+      );
+    } catch (e, s) {
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomain.agentWorkflow,
+          e,
+          message: 'failed to raise plan-ready notification',
+          stackTrace: s,
+        );
+      }
+    }
   }
 }
