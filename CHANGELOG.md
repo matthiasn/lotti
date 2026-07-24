@@ -26,14 +26,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the same color family as the agent report cards, with a soft accent
   hairline, in both light and dark themes.
 - **Task links now carry real relationships, not just a plain connection.**
-  When linking two tasks you can now pick what they mean to each other —
-  Blocks, Follows up, Duplicates, Fixes, or Supersedes — in either direction,
-  both when linking an existing task and when creating a new linked task. The
-  Linked Tasks section groups these by relationship instead of one flat list,
-  and a task that's blocked shows a "Blocked by" chip right next to its status
-  in the header — tap it to jump to the blocker, or see all of them when
-  there's more than one. Marking a task Blocked now optionally prompts you to
-  name what's blocking it on the spot.
+  When linking two tasks you pick what they mean to each other from one list —
+  Relates to, Blocks, Is blocked by, Follows up on, Has follow-up, Duplicates,
+  Fixes, Supersedes, and their reverses — completing the sentence "This
+  task…". It works when linking an existing task and when creating a new
+  linked task, and you can change a relationship afterwards, including
+  reversing which task is the blocker, without unlinking and starting over.
+  The same two tasks can hold more than one relationship.
+  The Linked Tasks section groups links under the exact phrase you picked
+  rather than one flat list, with what's blocking the task listed first and
+  called out. A blocked task shows a "Waiting on …" chip next to its status in
+  the header — tap it to jump to the blocker, or see all of them when there's
+  more than one. Marking a task Blocked optionally prompts you to name what's
+  blocking it on the spot. A task with no links yet now offers a "Link a
+  task…" action instead of hiding the section entirely.
 - **"Your plan is ready" as a system notification.** When a Daily OS plan
   draft or refinement finishes while the app is in the background, Lotti now
   raises a notification instead of completing silently — tap it to jump back
