@@ -879,6 +879,55 @@ the decoder-bars thinking shader in the task action bar while inference is
 running, and Daily OS Next uses the voice tension-loop shader around the record
 button while capture or refine listening is active.
 
+`AiRunningDecoderBars` is the provider-driven adapter. It watches
+`inferenceRunningControllerProvider` for one entity and a set of response types,
+listens to the matching `inferenceErrorControllerProvider` instances, and
+delegates its visual lifecycle to `AiThinkingShaderPresence`. Interactive hosts
+also use it as the labelled tap target that resolves the active prompt and opens
+`UnifiedAiProgressContent`.
+
+Provider-driven decoder bars appear in:
+
+- `TaskDetailsPage`, above the sticky task action row;
+- `UnifiedAiProgressContent`, while an inference is running but has not emitted
+  progress text, and `UnifiedAiProgressUtils.progressPage`, in the sticky modal
+  action bar;
+- `EntryDetailsPage`, as the interactive bottom overlay for image analysis,
+  audio transcription, and prompt generation.
+
+`AiThinkingShaderPresence` is the local-state adapter for surfaces that already
+own a busy flag and therefore must not depend on an entry inference provider.
+It drives the cover-art generation modal, the Daily OS draft/refinement
+surfaces (`DraftingPage` and `DayPlanningThinkingShader`), and the onboarding
+hero. The cover-art modal keeps the presence widget mounted in a fixed status
+region while its local `isRunning` value changes, so the shader can complete its
+exit envelope as the error or completion icon appears.
+
+```mermaid
+flowchart LR
+  Status["InferenceStatus per entity + response type"] --> Running["inferenceRunningControllerProvider"]
+  Error["inferenceErrorControllerProvider"] --> Decoder["AiRunningDecoderBars"]
+  Running --> Decoder
+  Decoder --> Presence["AiThinkingShaderPresence"]
+  Local["Surface-owned busy state"] --> Presence
+  Presence --> Shader["AiThinkingLineShader<br/>decoderBars route"]
+  Decoder -->|"interactive tap + active prompt"| Progress["UnifiedAiProgressContent modal"]
+```
+
+The presence envelope is a concrete lifecycle rather than a visibility toggle:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Hidden
+  Hidden --> Entering: isRunning becomes true
+  Entering --> Visible: forward animation completes
+  Entering --> Exiting: isRunning becomes false
+  Visible --> Exiting: isRunning becomes false
+  Exiting --> Entering: isRunning becomes true
+  Exiting --> Hidden: reverse animation completes
+  Hidden --> [*]
+```
+
 Skill inference failures are retained separately from the coarse
 `InferenceStatus` lifecycle by `inferenceErrorControllerProvider`. The task and
 entry activity widgets listen for that detail: when the running animation ends
@@ -908,10 +957,10 @@ Two Flutter runtime-effect shaders are registered in `pubspec.yaml`:
 - `shaders/ai_thinking_line.frag` renders five horizontal thinking routes:
   quiet thread, packet scan, circuit trace, probability band, and decoder bars,
   sized for action-bar use. `AiRunningDecoderBars` selects the decoder-bars
-  route and feeds it the same `inferenceRunningControllerProvider` state as the
-  legacy Siri-wave wrapper. It animates both the reserved vertical height and
-  shader amplitude and opacity when activity starts or stops, then removes the
-  shader subtree once the exit animation is fully collapsed.
+  route and feeds it `inferenceRunningControllerProvider` state. It animates
+  both the reserved vertical height and shader amplitude and opacity when
+  activity starts or stops, then removes the shader subtree once the exit
+  animation is fully collapsed.
 
 The Widgetbook use cases expose knobs for speed, intensity,
 geometry, colors, randomness, and dBFS. The thinking matrix renders every

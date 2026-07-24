@@ -97,8 +97,8 @@ The `HighlightScrollMixin` is tested directly in `test/features/journal/ui/mixin
 - [x] **[LOW]** `infinite_journal_page.dart:19-23` — the `selectedCategoryIds.length == 1` → single `categoryId` logic is tested in `infinite_journal_page_bottom_padding_test.dart:127-170`, which is good. The `length > 1` → `null` branch is also covered implicitly (multi-select → null FAB categoryId). Coverage appears adequate here.
   **RESOLVED:** done — the `length > 1` branch was only "covered implicitly" with no explicit assertion. Added a sibling test in `infinite_journal_page_test.dart` ('passes null categoryId to FloatingAddActionButton when multiple categories are selected') that drives the page with two `selectedCategoryIds` and asserts `fab.categoryId` is `null`, mirroring the existing single-id test and making the ternary's else branch explicitly verified.
 
-- [x] **[LOW]** `entry_details_page.dart:114-186` — the `AiRunningAnimationWrapperCard` at the bottom of the Stack is never directly asserted in any test. Any regression in its placement or configuration would be invisible.
-  **RESOLVED:** done — the 'Text Entry is rendered' test now asserts `find.byType(AiRunningAnimationWrapperCard)` is present, so a regression that drops the card from the page Stack (source lines 171-183) would fail the test.
+- [x] **[LOW]** `entry_details_page.dart:114-186` — the AI activity indicator at the bottom of the Stack was never directly asserted in any test. Any regression in its placement or configuration would be invisible.
+  **RESOLVED:** done — the 'Text Entry is rendered' test asserts the interactive `AiRunningDecoderBars` configuration, including the entry ID and image-analysis, transcription, and prompt-generation response types.
 
 ---
 

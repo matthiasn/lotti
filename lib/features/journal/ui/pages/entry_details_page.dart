@@ -244,9 +244,8 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
               ),
               Align(
                 alignment: Alignment.bottomCenter,
-                child: AiRunningAnimationWrapperCard(
+                child: AiRunningDecoderBars(
                   entryId: widget.itemId,
-                  height: 50,
                   isInteractive: true,
                   responseTypes: const {
                     AiResponseType.imageAnalysis,

@@ -2646,14 +2646,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.4"
-  siri_wave:
-    dependency: "direct main"
-    description:
-      name: siri_wave
-      sha256: ea815d6627dc297f6be883bb0dd7a579a5f5f9729242d47c10e95850cccf169a
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.1"
   sky_engine:
     dependency: transitive
     description: flutter

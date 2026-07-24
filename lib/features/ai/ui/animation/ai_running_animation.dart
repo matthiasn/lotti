@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -13,9 +12,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:siri_wave/siri_wave.dart';
 
 void _listenForInferenceErrors({
   required BuildContext context,
@@ -49,91 +46,6 @@ void _listenForInferenceErrors({
         }
       });
     });
-  }
-}
-
-/// Bare iOS-9-style Siri waveform sized to [height].
-///
-/// The visual primitive only — it carries no inference state. Wrap it in
-/// [AiRunningAnimationWrapper] to gate it on a running entry, or use
-/// [AiRunningDecoderBars] for the shader-based variant.
-class AiRunningAnimation extends ConsumerStatefulWidget {
-  const AiRunningAnimation({
-    required this.height,
-    super.key,
-  });
-
-  final double height;
-
-  @override
-  ConsumerState<AiRunningAnimation> createState() => _AIRunningAnimationState();
-}
-
-class _AIRunningAnimationState extends ConsumerState<AiRunningAnimation> {
-  SiriWaveformController controller = IOS9SiriWaveformController();
-
-  @override
-  Widget build(BuildContext context) {
-    controller.speed = 0.02;
-    controller.amplitude = 1;
-
-    return SiriWaveform.ios9(
-      controller: controller as IOS9SiriWaveformController,
-      options: IOS9SiriWaveformOptions(height: widget.height),
-    );
-  }
-}
-
-/// [AiRunningAnimation] gated on whether inference is running for an entry.
-///
-/// Watches the inference-running signal for [entryId] / [responseTypes] and
-/// renders nothing when idle. When [isInteractive] is true, tapping the
-/// waveform opens the AI progress view for that entry.
-class AiRunningAnimationWrapper extends ConsumerWidget {
-  const AiRunningAnimationWrapper({
-    required this.entryId,
-    required this.height,
-    required this.responseTypes,
-    this.isInteractive = false,
-    super.key,
-  });
-
-  final String entryId;
-  final double height;
-  final Set<AiResponseType> responseTypes;
-  final bool isInteractive;
-
-  Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
-    await _handleAiActivityTap(
-      context: context,
-      ref: ref,
-      entryId: entryId,
-      responseTypes: responseTypes,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = inferenceRunningControllerProvider((
-      id: entryId,
-      responseTypes: responseTypes,
-    ));
-    final isRunning = ref.watch(provider);
-
-    if (!isRunning) {
-      return const SizedBox.shrink();
-    }
-
-    final animation = AiRunningAnimation(height: height);
-
-    if (isInteractive) {
-      return GestureDetector(
-        onTap: () => _handleTap(context, ref),
-        child: animation,
-      );
-    }
-
-    return animation;
   }
 }
 
@@ -441,60 +353,4 @@ Future<void> _handleAiActivityTap({
       showExisting: true,
     ),
   );
-}
-
-/// [AiRunningAnimationWrapper] wrapped in a glass card.
-///
-/// Same per-entry gating as [AiRunningAnimationWrapper] (renders nothing when
-/// idle), but presents the waveform inside a frosted-glass container for
-/// surfaces that need a self-contained card rather than an inline indicator.
-class AiRunningAnimationWrapperCard extends ConsumerWidget {
-  const AiRunningAnimationWrapperCard({
-    required this.entryId,
-    required this.height,
-    required this.responseTypes,
-    this.isInteractive = false,
-    super.key,
-  });
-
-  final String entryId;
-  final double height;
-  final Set<AiResponseType> responseTypes;
-  final bool isInteractive;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    _listenForInferenceErrors(
-      context: context,
-      ref: ref,
-      entryId: entryId,
-      responseTypes: responseTypes,
-    );
-    final provider = inferenceRunningControllerProvider((
-      id: entryId,
-      responseTypes: responseTypes,
-    ));
-    final isRunning = ref.watch(provider);
-
-    if (!isRunning) {
-      return const SizedBox.shrink();
-    }
-
-    return GlassContainer.clearGlass(
-      elevation: 0,
-      height: height,
-      width: double.infinity,
-      blur: 12,
-      color: context.colorScheme.surface.withAlpha(128),
-      borderWidth: 0,
-      child: Center(
-        child: AiRunningAnimationWrapper(
-          entryId: entryId,
-          height: height,
-          responseTypes: responseTypes,
-          isInteractive: isInteractive,
-        ),
-      ),
-    );
-  }
 }

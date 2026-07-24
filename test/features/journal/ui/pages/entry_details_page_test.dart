@@ -12,6 +12,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -199,10 +200,18 @@ void main() {
       // test text entry is starred
       expect(find.byIcon(Icons.star_rounded), findsOneWidget);
 
-      // The AI running animation card is mounted at the bottom of the page
-      // Stack (source lines 171-183); a regression in its placement would
-      // remove it from the tree.
-      expect(find.byType(AiRunningAnimationWrapperCard), findsOneWidget);
+      // Decoder bars are mounted at the bottom of the page Stack and retain
+      // the three entry-processing routes plus tap-to-progress behavior.
+      final decoderBars = tester.widget<AiRunningDecoderBars>(
+        find.byType(AiRunningDecoderBars),
+      );
+      expect(decoderBars.entryId, testTextEntry.meta.id);
+      expect(decoderBars.isInteractive, isTrue);
+      expect(decoderBars.responseTypes, {
+        AiResponseType.imageAnalysis,
+        AiResponseType.audioTranscription,
+        AiResponseType.promptGeneration,
+      });
     });
 
     testWidgets('save command persists the current text entry', (tester) async {
