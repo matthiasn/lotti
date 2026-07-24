@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -57,76 +58,64 @@ class LinkedTaskRow extends StatelessWidget {
     final tokens = context.designTokens;
     final task = data.task;
 
-    return InkWell(
+    final showActions = manageMode && (onEdit != null || onUnlink != null);
+    final statusLabel = taskLabelFromStatusString(
+      task.data.status.toDbString,
+      context,
+    );
+
+    return DesignSystemListItem(
       // Navigable in manage mode too: the edit/unlink buttons are additive,
       // so nulling this only produced a row that looked tappable and wasn't.
       onTap: () => openLinkedTaskDetail(context: context, taskId: task.id),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step5,
-          vertical: tokens.spacing.step3,
-        ),
-        child: Row(
-          children: [
-            StatusGlyph(status: task.data.status),
-            SizedBox(width: tokens.spacing.step2),
-            Expanded(
-              child: Text(
-                task.data.title,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+      title: task.data.title,
+      titleMaxLines: 2,
+      size: DesignSystemListItemSize.small,
+      semanticsLabel: '${task.data.title}, $statusLabel',
+      leading: StatusGlyph(status: task.data.status),
+      // Status as a trailing anchor rather than a second line: it keeps the
+      // row one line tall, and on a wide detail pane it stops the trailing
+      // affordance floating alone at the far edge of an otherwise empty row.
+      trailing: showActions
+          ? null
+          : Text(
+              statusLabel,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
-            SizedBox(width: tokens.spacing.step3),
-            if (manageMode && (onEdit != null || onUnlink != null)) ...[
-              if (onEdit != null)
-                IconButton(
-                  tooltip: context.messages.editLinkTypeTooltip,
-                  onPressed: onEdit,
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
+      trailingExtra: showActions
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onEdit != null)
+                  _RowAction(
+                    tooltip: context.messages.editLinkTypeTooltip,
+                    onPressed: () => onEdit?.call(),
+                    // Not Icons.edit_outlined — that glyph is StatusGlyph's
+                    // own icon for TaskStatus.groomed, so a Groomed row in
+                    // manage mode would show the same pencil twice with two
+                    // different meanings right next to each other.
+                    icon: Icons.swap_horiz_rounded,
                   ),
-                  // Not Icons.edit_outlined — that glyph is StatusGlyph's own
-                  // icon for TaskStatus.groomed, so a Groomed row in manage
-                  // mode would show the same pencil twice with two different
-                  // meanings right next to each other.
-                  icon: Icon(
-                    Icons.swap_horiz_rounded,
-                    size: 16,
-                    color: tokens.colors.text.lowEmphasis,
+                if (onEdit != null && onUnlink != null)
+                  SizedBox(width: tokens.spacing.step2),
+                if (onUnlink != null)
+                  _RowAction(
+                    tooltip: context.messages.unlinkButton,
+                    onPressed: () => _confirmUnlink(context),
+                    icon: Icons.close_rounded,
+                    // The destructive one carries more weight than its
+                    // neighbour so the two aren't interchangeable smudges.
+                    emphasis: tokens.colors.text.mediumEmphasis,
                   ),
-                ),
-              if (onUnlink != null)
-                IconButton(
-                  tooltip: context.messages.unlinkButton,
-                  onPressed: () => _confirmUnlink(context),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  icon: Icon(
-                    Icons.close_rounded,
-                    size: 16,
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-            ] else
-              Icon(
-                Icons.arrow_forward_ios,
-                size: linkedRowChevronSize,
-                color: tokens.colors.text.lowEmphasis,
-              ),
-          ],
-        ),
-      ),
+              ],
+            )
+          : Icon(
+              Icons.arrow_forward_ios,
+              size: linkedRowChevronSize,
+              color: tokens.colors.text.lowEmphasis,
+            ),
     );
   }
 
@@ -159,6 +148,41 @@ class LinkedTaskRow extends StatelessWidget {
         );
       }
     }
+  }
+}
+
+/// One manage-mode action on a [LinkedTaskRow]. Sized from the design
+/// system's own minimum interactive target rather than a 32px literal, so the
+/// edit and unlink glyphs are comfortably hittable.
+class _RowAction extends StatelessWidget {
+  const _RowAction({
+    required this.tooltip,
+    required this.onPressed,
+    required this.icon,
+    this.emphasis,
+  });
+
+  final String tooltip;
+  final VoidCallback onPressed;
+  final IconData icon;
+  final Color? emphasis;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final target = tokens.spacing.step9;
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: BoxConstraints(minWidth: target, minHeight: target),
+      icon: Icon(
+        icon,
+        size: tokens.spacing.step5,
+        color: emphasis ?? tokens.colors.text.lowEmphasis,
+      ),
+    );
   }
 }
 

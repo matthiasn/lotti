@@ -136,6 +136,48 @@ void main() {
       expect(find.byType(DesignSystemDropdown), findsOneWidget);
     });
 
+    testWidgets(
+      'a single-choice list marks its current value, so an open list of '
+      'similar options still states what is already chosen',
+      (tester) async {
+        await _pumpDropdown(
+          tester,
+          const SizedBox(
+            width: 320,
+            child: DesignSystemDropdown(
+              label: 'Label',
+              inputLabel: 'Blocks',
+              initiallyExpanded: true,
+              items: [
+                DesignSystemDropdownItem(id: 'a', label: 'Blocks'),
+                DesignSystemDropdownItem(
+                  id: 'b',
+                  label: 'Is blocked by',
+                  selected: true,
+                ),
+                DesignSystemDropdownItem(id: 'c', label: 'Relates to'),
+              ],
+            ),
+          ),
+        );
+
+        // Exactly one mark, on the selected row — not a checkbox column.
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find
+                .ancestor(
+                  of: find.text('Is blocked by'),
+                  matching: find.byType(Row),
+                )
+                .first,
+            matching: find.byIcon(Icons.check_rounded),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('applies token-driven disabled opacity and blocks taps', (
       tester,
     ) async {
