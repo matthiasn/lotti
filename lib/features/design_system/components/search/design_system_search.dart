@@ -24,6 +24,7 @@ class DesignSystemSearch extends StatefulWidget {
     this.size = DesignSystemSearchSize.medium,
     this.controller,
     this.focusNode,
+    this.autofocus = false,
     this.initialText,
     this.enabled = true,
     this.semanticsLabel,
@@ -41,6 +42,11 @@ class DesignSystemSearch extends StatefulWidget {
   final DesignSystemSearchSize size;
   final TextEditingController? controller;
   final FocusNode? focusNode;
+
+  /// Requests focus on first build. Callers should gate this on a pointer/
+  /// wide-window check: on a touch device it raises the keyboard over the
+  /// results the field is meant to filter.
+  final bool autofocus;
   final String? initialText;
   final bool enabled;
   final String? semanticsLabel;
@@ -181,6 +187,7 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
                       child: TextField(
                         controller: _controller,
                         focusNode: widget.focusNode,
+                        autofocus: widget.autofocus,
                         enabled: widget.enabled,
                         onChanged: widget.onChanged,
                         onSubmitted: widget.onSubmitted,

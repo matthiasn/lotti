@@ -2788,6 +2788,18 @@
   "knowledgeGraphTooltip": "Prozkoumat odkazy",
   "knowledgeGraphWalkHint": "Klepni na uzel a přejdi dál · {count, plural, one{1 uzel} few{{count} uzly} other{{count} uzlů}}",
   "linkBlocksCycleErrorMessage": "Tím by vznikl blokující cyklus — vyber jiný úkol.",
+  "linkCreatedMessage": "{relation}: {title}",
+  "@linkCreatedMessage": {
+    "placeholders": {
+      "relation": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "linkCreatedUndo": "Zpět",
   "linkDirectionLabel": "Tento úkol…",
   "linkedTaskImageBadge": "Z propojené úlohy",
   "linkedTasksBlockedBySectionTitle": "Blokováno",

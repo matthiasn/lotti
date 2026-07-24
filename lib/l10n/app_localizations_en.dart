@@ -6549,6 +6549,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'This would create a blocking cycle — choose a different task.';
 
   @override
+  String linkCreatedMessage(String relation, String title) {
+    return '$relation: $title';
+  }
+
+  @override
+  String get linkCreatedUndo => 'Undo';
+
+  @override
   String get linkDirectionLabel => 'This task…';
 
   @override

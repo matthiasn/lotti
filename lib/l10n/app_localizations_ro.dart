@@ -6702,6 +6702,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Aceasta ar crea un ciclu de blocare — alegeți o altă sarcină.';
 
   @override
+  String linkCreatedMessage(String relation, String title) {
+    return '$relation: $title';
+  }
+
+  @override
+  String get linkCreatedUndo => 'Anulați';
+
+  @override
   String get linkDirectionLabel => 'Această sarcină…';
 
   @override

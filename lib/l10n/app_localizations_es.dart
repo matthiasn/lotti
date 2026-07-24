@@ -6668,6 +6668,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esto crearía un ciclo de bloqueo — elige otra tarea.';
 
   @override
+  String linkCreatedMessage(String relation, String title) {
+    return '$relation: $title';
+  }
+
+  @override
+  String get linkCreatedUndo => 'Deshacer';
+
+  @override
   String get linkDirectionLabel => 'Esta tarea…';
 
   @override

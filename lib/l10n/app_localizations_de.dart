@@ -6618,6 +6618,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das würde einen blockierenden Kreislauf erzeugen — wähle eine andere Aufgabe.';
 
   @override
+  String linkCreatedMessage(String relation, String title) {
+    return '$relation: $title';
+  }
+
+  @override
+  String get linkCreatedUndo => 'Rückgängig';
+
+  @override
   String get linkDirectionLabel => 'Diese Aufgabe…';
 
   @override
