@@ -9,6 +9,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/edit_link_type_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
@@ -125,6 +126,14 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                     taskId: taskId,
                     data: flatRows[i],
                     manageMode: uiState.manageMode,
+                    onEdit: () => EditLinkTypeModal.show(
+                      context: context,
+                      linkId: linkGroups.flat[i].linkId,
+                      anchorTaskId: taskId,
+                      otherTaskId: flatRows[i].task.meta.id,
+                      currentType: EntryLinkType.basic,
+                      currentDirection: linkGroups.flat[i].direction,
+                    ),
                     onUnlink: () => ref
                         .read(journalRepositoryProvider)
                         .removeTypedLink(

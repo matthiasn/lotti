@@ -2331,6 +2331,9 @@
     }
   },
   "doneButton": "Hotovo",
+  "editLinkTypeFailedMessage": "Vztah se nepodařilo upravit. Zkuste to prosím znovu.",
+  "editLinkTypeTitle": "Upravit vztah",
+  "editLinkTypeTooltip": "Upravit vztah",
   "editMenuTitle": "Upravit",
   "editorDiscardChanges": "Zahodit změny",
   "editorInsertDivider": "Vložit oddělovač",
@@ -4125,7 +4128,7 @@
   "taskAgentUseCategoryDefaultDescription": "Zkopíruje aktuální nastavení kategorie. Pozdější změny kategorie tohoto agenta neovlivní.",
   "taskAgentUseProfileDefault": "Použít výchozí model profilu",
   "taskAgentWakeAgent": "Probudit agenta",
-  "taskBlockedByChipLabel": "{count, plural, =1{Blokováno úkolem {title}} few{Blokováno {count} úkoly} other{Blokováno {count} úkolů}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Čeká se na {title}} few{Čeká se na {count} úkoly} other{Čeká se na {count} úkolů}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4136,7 +4139,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Blokováno úkolem {title}} few{Klepnutím zobrazíte {count} blokující úkoly} other{Klepnutím zobrazíte {count} blokujících úkolů}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Čeká se na {title}} few{Klepnutím zobrazíte {count} blokující úkoly} other{Klepnutím zobrazíte {count} blokujících úkolů}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4147,6 +4150,7 @@
       }
     }
   },
+  "taskBlockedByUnresolvedLabel": "Blokující úkol není synchronizován",
   "taskBlockedReason": "Blokováno úkolem: {title}",
   "taskBlockerPickerSkipButton": "Přeskočit",
   "taskBlockerPickerTitle": "Co blokuje tento úkol?",

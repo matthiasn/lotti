@@ -5303,6 +5303,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get doneButton => 'Gata';
 
   @override
+  String get editLinkTypeFailedMessage =>
+      'Relația nu a putut fi actualizată. Vă rugăm să încercați din nou.';
+
+  @override
+  String get editLinkTypeTitle => 'Editați relația';
+
+  @override
+  String get editLinkTypeTooltip => 'Editați relația';
+
+  @override
   String get editMenuTitle => 'Editați';
 
   @override
@@ -10310,16 +10320,11 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Blocată de $count de sarcini',
-      few: 'Blocată de $count sarcini',
-      one: 'Blocată de $title',
+      other: 'Se așteaptă $count de sarcini',
+      few: 'Se așteaptă $count sarcini',
+      one: 'Se așteaptă $title',
     );
     return '$_temp0';
-  }
-
-  @override
-  String taskBlockedReason(String title) {
-    return 'Blocată de: $title';
   }
 
   @override
@@ -10329,9 +10334,18 @@ class AppLocalizationsRo extends AppLocalizations {
       locale: localeName,
       other: 'Atingeți pentru a vedea $count de blocaje',
       few: 'Atingeți pentru a vedea $count blocaje',
-      one: 'Blocată de $title',
+      one: 'Se așteaptă $title',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get taskBlockedByUnresolvedLabel =>
+      'Sarcina blocantă nu a fost încă sincronizată';
+
+  @override
+  String taskBlockedReason(String title) {
+    return 'Blocată de: $title';
   }
 
   @override

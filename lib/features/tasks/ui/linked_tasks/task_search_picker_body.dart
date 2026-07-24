@@ -20,7 +20,6 @@ class TaskSearchPickerBody extends ConsumerStatefulWidget {
   const TaskSearchPickerBody({
     required this.excludeIds,
     required this.onTaskSelected,
-    this.scrollController,
     super.key,
   });
 
@@ -31,11 +30,6 @@ class TaskSearchPickerBody extends ConsumerStatefulWidget {
   /// Called when the user taps a result. The body does not close itself or
   /// persist anything — the caller decides what selecting a task means.
   final ValueChanged<Task> onTaskSelected;
-
-  /// Forwarded to the results `ListView` so a host `DraggableScrollableSheet`
-  /// can coordinate drag-to-resize with list scrolling. Optional — omit when
-  /// the body isn't hosted inside a draggable sheet.
-  final ScrollController? scrollController;
 
   @override
   ConsumerState<TaskSearchPickerBody> createState() =>
@@ -173,7 +167,6 @@ class _TaskSearchPickerBodyState extends ConsumerState<TaskSearchPickerBody> {
                   ),
                 )
               : ListView.builder(
-                  controller: widget.scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {

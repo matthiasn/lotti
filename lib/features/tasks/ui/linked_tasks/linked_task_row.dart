@@ -32,14 +32,16 @@ class LinkedTaskRowData {
 }
 
 /// A single row in the linked-tasks card: direction glyph + caption (if any),
-/// status glyph, title, and either a chevron (browse mode) or an unlink
-/// button (manage mode, only when [onUnlink] is supplied). Shared by the flat
-/// plain-link list and the typed relationship sections.
+/// status glyph, title, and either a chevron (browse mode) or edit/unlink
+/// buttons (manage mode, only for whichever of [onEdit]/[onUnlink] is
+/// supplied). Shared by the flat plain-link list and the typed relationship
+/// sections.
 class LinkedTaskRow extends StatelessWidget {
   const LinkedTaskRow({
     required this.taskId,
     required this.data,
     required this.manageMode,
+    this.onEdit,
     this.onUnlink,
     super.key,
   });
@@ -47,6 +49,11 @@ class LinkedTaskRow extends StatelessWidget {
   final String taskId;
   final LinkedTaskRowData data;
   final bool manageMode;
+
+  /// Opens the edit-relationship modal for this row's link. Null hides the
+  /// edit affordance even in manage mode (used for rows with no relationship
+  /// to retype, e.g. none today, but kept optional for forward compat).
+  final Future<void> Function()? onEdit;
 
   /// Invoked after the user confirms the unlink dialog; awaited so a failure
   /// can be surfaced via a SnackBar instead of silently leaving the row
@@ -108,23 +115,44 @@ class LinkedTaskRow extends StatelessWidget {
               ),
             ),
             SizedBox(width: tokens.spacing.step3),
-            if (manageMode && onUnlink != null)
-              IconButton(
-                tooltip: context.messages.unlinkButton,
-                onPressed: () => _confirmUnlink(context),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 32,
-                  minHeight: 32,
+            if (manageMode && (onEdit != null || onUnlink != null)) ...[
+              if (onEdit != null)
+                IconButton(
+                  tooltip: context.messages.editLinkTypeTooltip,
+                  onPressed: onEdit,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  // Not Icons.edit_outlined — that glyph is StatusGlyph's own
+                  // icon for TaskStatus.groomed, so a Groomed row in manage
+                  // mode would show the same pencil twice with two different
+                  // meanings right next to each other.
+                  icon: Icon(
+                    Icons.swap_horiz_rounded,
+                    size: 16,
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
                 ),
-                icon: Icon(
-                  Icons.close_rounded,
-                  size: 16,
-                  color: tokens.colors.text.lowEmphasis,
+              if (onUnlink != null)
+                IconButton(
+                  tooltip: context.messages.unlinkButton,
+                  onPressed: () => _confirmUnlink(context),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 16,
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
                 ),
-              )
-            else
+            ] else
               Icon(
                 Icons.arrow_forward_ios,
                 size: 14,

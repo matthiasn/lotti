@@ -2324,6 +2324,9 @@
     }
   },
   "doneButton": "Fertig",
+  "editLinkTypeFailedMessage": "Die Beziehung konnte nicht aktualisiert werden. Bitte versuch es erneut.",
+  "editLinkTypeTitle": "Beziehung bearbeiten",
+  "editLinkTypeTooltip": "Beziehung bearbeiten",
   "editMenuTitle": "Bearbeiten",
   "editorDiscardChanges": "Änderungen verwerfen",
   "editorInsertDivider": "Trennlinie einfügen",
@@ -4118,7 +4121,7 @@
   "taskAgentUseCategoryDefaultDescription": "Kopiert das aktuelle Setup der Kategorie. Spätere Kategorieänderungen wirken sich nicht auf diesen Agenten aus.",
   "taskAgentUseProfileDefault": "Profilstandard verwenden",
   "taskAgentWakeAgent": "Agenten aufwecken",
-  "taskBlockedByChipLabel": "{count, plural, =1{Blockiert von {title}} other{Blockiert von {count} Aufgaben}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Wartet auf {title}} other{Wartet auf {count} Aufgaben}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4129,7 +4132,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Blockiert von {title}} other{Tippen, um {count} Blockierer zu sehen}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Wartet auf {title}} other{Tippen, um {count} Blockierer zu sehen}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4140,6 +4143,7 @@
       }
     }
   },
+  "taskBlockedByUnresolvedLabel": "Blockierende Aufgabe noch nicht synchronisiert",
   "taskBlockedReason": "Blockiert von: {title}",
   "taskBlockerPickerSkipButton": "Überspringen",
   "taskBlockerPickerTitle": "Was blockiert diese Aufgabe?",

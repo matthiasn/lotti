@@ -118,6 +118,54 @@ void main() {
       },
     );
 
+    testWidgets(
+      'shows the edit button in manage mode when onEdit is supplied, '
+      'alongside the unlink button',
+      (tester) async {
+        var editCalled = false;
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: true,
+              onEdit: () async => editCalled = true,
+              onUnlink: () async {},
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.pump();
+
+        expect(editCalled, isTrue);
+      },
+    );
+
+    testWidgets(
+      'shows only the edit button in manage mode when onUnlink is null',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: true,
+              onEdit: () async {},
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
+      },
+    );
+
     testWidgets('cancelling the unlink dialog does not invoke onUnlink', (
       tester,
     ) async {

@@ -2324,6 +2324,9 @@
     }
   },
   "doneButton": "Listo",
+  "editLinkTypeFailedMessage": "No se pudo actualizar la relación. Inténtalo de nuevo.",
+  "editLinkTypeTitle": "Editar relación",
+  "editLinkTypeTooltip": "Editar relación",
   "editMenuTitle": "Editar",
   "editorDiscardChanges": "Descartar cambios",
   "editorInsertDivider": "Insertar separador",
@@ -4118,7 +4121,7 @@
   "taskAgentUseCategoryDefaultDescription": "Copia la configuración actual de la categoría. Los cambios posteriores de la categoría no afectarán a este agente.",
   "taskAgentUseProfileDefault": "Usar el valor predeterminado del perfil",
   "taskAgentWakeAgent": "Ejecutar agente",
-  "taskBlockedByChipLabel": "{count, plural, =1{Bloqueada por {title}} other{Bloqueada por {count} tareas}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Esperando a {title}} other{Esperando a {count} tareas}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4129,7 +4132,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Bloqueada por {title}} other{Toca para ver {count} bloqueos}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Esperando a {title}} other{Toca para ver {count} bloqueos}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4140,6 +4143,7 @@
       }
     }
   },
+  "taskBlockedByUnresolvedLabel": "El bloqueo aún no se ha sincronizado",
   "taskBlockedReason": "Bloqueada por: {title}",
   "taskBlockerPickerSkipButton": "Omitir",
   "taskBlockerPickerTitle": "¿Qué está bloqueando esta tarea?",

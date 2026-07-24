@@ -5277,6 +5277,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get doneButton => 'Hotovo';
 
   @override
+  String get editLinkTypeFailedMessage =>
+      'Vztah se nepodařilo upravit. Zkuste to prosím znovu.';
+
+  @override
+  String get editLinkTypeTitle => 'Upravit vztah';
+
+  @override
+  String get editLinkTypeTooltip => 'Upravit vztah';
+
+  @override
   String get editMenuTitle => 'Upravit';
 
   @override
@@ -10251,16 +10261,11 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Blokováno $count úkolů',
-      few: 'Blokováno $count úkoly',
-      one: 'Blokováno úkolem $title',
+      other: 'Čeká se na $count úkolů',
+      few: 'Čeká se na $count úkoly',
+      one: 'Čeká se na $title',
     );
     return '$_temp0';
-  }
-
-  @override
-  String taskBlockedReason(String title) {
-    return 'Blokováno úkolem: $title';
   }
 
   @override
@@ -10270,9 +10275,18 @@ class AppLocalizationsCs extends AppLocalizations {
       locale: localeName,
       other: 'Klepnutím zobrazíte $count blokujících úkolů',
       few: 'Klepnutím zobrazíte $count blokující úkoly',
-      one: 'Blokováno úkolem $title',
+      one: 'Čeká se na $title',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get taskBlockedByUnresolvedLabel =>
+      'Blokující úkol není synchronizován';
+
+  @override
+  String taskBlockedReason(String title) {
+    return 'Blokováno úkolem: $title';
   }
 
   @override

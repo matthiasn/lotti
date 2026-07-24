@@ -9,6 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/blocks_cycle_guard.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -376,7 +377,8 @@ class JournalRepository {
         existing.createdAt != incoming.createdAt ||
         existing.deletedAt != incoming.deletedAt ||
         existingHidden != incomingHidden ||
-        existingCollapsed != incomingCollapsed;
+        existingCollapsed != incomingCollapsed ||
+        entryLinkTypeName(existing) != entryLinkTypeName(incoming);
   }
 
   /// Deletes the link from `fromId` to `toId` and notifies both endpoints so
@@ -406,6 +408,50 @@ class JournalRepository {
     );
     getIt<UpdateNotifications>().notify({fromId, toId, linkNotification});
     return res;
+  }
+
+  /// Retypes and/or flips the direction of an existing typed relationship
+  /// link, preserving its `id` (and therefore its identity across the
+  /// notification stream and any future edits) rather than deleting and
+  /// recreating it.
+  ///
+  /// Returns `false` when [linkId] no longer resolves to a link, or when
+  /// [newType] is `blocks` and the retype would close a cycle (ADR 0042 §5)
+  /// — the existing link's own row is excluded from that check so a
+  /// same-edge direction flip is never rejected against its own stale state.
+  Future<bool> updateLinkType({
+    required String linkId,
+    required EntryLinkType newType,
+    required bool swapDirection,
+  }) async {
+    final existing = await getIt<JournalDb>().entryLinkById(linkId);
+    if (existing == null) return false;
+
+    final newFromId = swapDirection ? existing.toId : existing.fromId;
+    final newToId = swapDirection ? existing.fromId : existing.toId;
+
+    if (newType == EntryLinkType.blocks &&
+        await wouldCreateBlocksCycle(
+          fromId: newFromId,
+          toId: newToId,
+          excludeLinkId: linkId,
+        )) {
+      return false;
+    }
+
+    return updateLink(
+      newType.buildLink(
+        id: existing.id,
+        fromId: newFromId,
+        toId: newToId,
+        createdAt: existing.createdAt,
+        updatedAt: DateTime.now(),
+        vectorClock: existing.vectorClock,
+        hidden: existing.hidden,
+        collapsed: existing.collapsed,
+        deletedAt: existing.deletedAt,
+      ),
+    );
   }
 
   /// Returns the entities that link *to* `linkedTo` (incoming / "linked from"

@@ -2720,6 +2720,9 @@
     }
   },
   "doneButton": "Done",
+  "editLinkTypeFailedMessage": "Couldn't update the relationship. Please try again.",
+  "editLinkTypeTitle": "Edit relationship",
+  "editLinkTypeTooltip": "Edit relationship",
   "editMenuTitle": "Edit",
   "editorDiscardChanges": "Discard changes",
   "editorInsertDivider": "Insert divider",
@@ -4902,7 +4905,7 @@
   "taskAgentUseCategoryDefaultDescription": "Copies the category’s current setup. Later category changes won’t affect this agent.",
   "taskAgentUseProfileDefault": "Use profile default",
   "taskAgentWakeAgent": "Wake agent",
-  "taskBlockedByChipLabel": "{count, plural, =1{Blocked by {title}} other{Blocked by {count} tasks}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Waiting on {title}} other{Waiting on {count} tasks}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4913,7 +4916,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Blocked by {title}} other{Tap to see {count} blockers}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Waiting on {title}} other{Tap to see {count} blockers}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4924,6 +4927,7 @@
       }
     }
   },
+  "taskBlockedByUnresolvedLabel": "Blocker not synced yet",
   "taskBlockedReason": "Blocked by: {title}",
   "@taskBlockedReason": {
     "placeholders": {

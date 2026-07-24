@@ -5308,6 +5308,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get doneButton => 'Terminé';
 
   @override
+  String get editLinkTypeFailedMessage =>
+      'Impossible de mettre à jour la relation. Réessaie.';
+
+  @override
+  String get editLinkTypeTitle => 'Modifier la relation';
+
+  @override
+  String get editLinkTypeTooltip => 'Modifier la relation';
+
+  @override
   String get editMenuTitle => 'Modifier';
 
   @override
@@ -10320,15 +10330,10 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Bloquée par $count tâches',
-      one: 'Bloquée par $title',
+      other: 'En attente de $count tâches',
+      one: 'En attente de $title',
     );
     return '$_temp0';
-  }
-
-  @override
-  String taskBlockedReason(String title) {
-    return 'Bloquée par : $title';
   }
 
   @override
@@ -10337,9 +10342,18 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Ouvre pour voir $count blocages',
-      one: 'Bloquée par $title',
+      one: 'En attente de $title',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get taskBlockedByUnresolvedLabel =>
+      'Le blocage n\'est pas encore synchronisé';
+
+  @override
+  String taskBlockedReason(String title) {
+    return 'Bloquée par : $title';
   }
 
   @override

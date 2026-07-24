@@ -2324,6 +2324,9 @@
     }
   },
   "doneButton": "Terminé",
+  "editLinkTypeFailedMessage": "Impossible de mettre à jour la relation. Réessaie.",
+  "editLinkTypeTitle": "Modifier la relation",
+  "editLinkTypeTooltip": "Modifier la relation",
   "editMenuTitle": "Modifier",
   "editorDiscardChanges": "Annuler les modifications",
   "editorInsertDivider": "Insérer un séparateur",
@@ -4118,7 +4121,7 @@
   "taskAgentUseCategoryDefaultDescription": "Copie la configuration actuelle de la catégorie. Ses changements ultérieurs n’affecteront pas cet agent.",
   "taskAgentUseProfileDefault": "Utiliser le réglage du profil",
   "taskAgentWakeAgent": "Réveiller l’agent",
-  "taskBlockedByChipLabel": "{count, plural, =1{Bloquée par {title}} other{Bloquée par {count} tâches}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{En attente de {title}} other{En attente de {count} tâches}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4129,7 +4132,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Bloquée par {title}} other{Ouvre pour voir {count} blocages}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{En attente de {title}} other{Ouvre pour voir {count} blocages}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4140,6 +4143,7 @@
       }
     }
   },
+  "taskBlockedByUnresolvedLabel": "Le blocage n'est pas encore synchronisé",
   "taskBlockedReason": "Bloquée par : {title}",
   "taskBlockerPickerSkipButton": "Passer",
   "taskBlockerPickerTitle": "Qu'est-ce qui bloque cette tâche ?",

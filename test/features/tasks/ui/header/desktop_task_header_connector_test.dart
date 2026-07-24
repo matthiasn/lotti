@@ -1483,7 +1483,7 @@ void main() {
             matching: find.byType(Tooltip),
           ),
         );
-        expect(tooltip.message, 'Blocked by Fix the outage');
+        expect(tooltip.message, 'Waiting on Fix the outage');
 
         await tester.tap(find.byIcon(Icons.block));
         await tester.pump();
@@ -1582,7 +1582,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byIcon(Icons.block), findsOneWidget);
-        expect(find.text('Blocked'), findsOneWidget);
+        expect(find.text('Blocker not synced yet'), findsOneWidget);
 
         final pill = tester.widget<DsPill>(
           find.ancestor(

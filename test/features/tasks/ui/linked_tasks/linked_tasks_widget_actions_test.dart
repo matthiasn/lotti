@@ -83,6 +83,13 @@ void main() {
         linkType: any(named: 'linkType'),
       ),
     ).thenAnswer((_) async => 1);
+    when(
+      () => journalRepo.updateLinkType(
+        linkId: any(named: 'linkId'),
+        newType: any(named: 'newType'),
+        swapDirection: any(named: 'swapDirection'),
+      ),
+    ).thenAnswer((_) async => true);
 
     final outgoingLinks = outgoing
         .map(
@@ -761,5 +768,36 @@ void main() {
         ),
       );
     });
+
+    testWidgets(
+      'editing a flat outgoing row opens the edit modal pre-selected to '
+      'Link, and Save round-trips it unchanged',
+      (tester) async {
+        final repo = await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          manageMode: true,
+        );
+
+        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Edit relationship'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => repo.updateLinkType(
+            linkId: 'link-out-1',
+            newType: EntryLinkType.basic,
+            swapDirection: false,
+          ),
+        ).called(1);
+      },
+    );
   });
 }

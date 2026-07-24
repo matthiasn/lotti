@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/blocks_cycle_guard.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/services/metadata_service.dart'
@@ -16,12 +17,6 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/file_utils.dart';
-
-/// Depth cap for [PersistenceEntries._wouldCreateBlocksCycle]'s local
-/// traversal. Task-relationship chains are short in practice (ADR 0042 §4:
-/// readiness is one hop, chains are the exception); this bounds the
-/// best-effort creation-time guard without needing a real graph size limit.
-const _blocksCycleGuardMaxHops = 64;
 
 /// Metadata, link and entry-creation entry points of [PersistenceLogic].
 ///
@@ -187,7 +182,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     // read-time traversal must tolerate cycles regardless — this only stops
     // the common single-device case from creating one in the first place.
     if (linkType == EntryLinkType.blocks &&
-        await _wouldCreateBlocksCycle(fromId: fromId, toId: toId)) {
+        await wouldCreateBlocksCycle(fromId: fromId, toId: toId)) {
       return false;
     }
 
@@ -245,42 +240,6 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
       },
       commitWhen: (created) => created,
     );
-  }
-
-  /// Whether inserting `blocks` edge `fromId -> toId` would close a cycle
-  /// already visible on this device (ADR 0042 §5): true iff [fromId] is
-  /// reachable by following existing `blocks` edges forward from [toId].
-  ///
-  /// Bounded breadth-first traversal via `JournalDb.typedLinksForTaskIds` —
-  /// batched per hop rather than per-node, and capped at
-  /// `_blocksCycleGuardMaxHops` hops so a pathological chain cannot make
-  /// link creation hang.
-  Future<bool> _wouldCreateBlocksCycle({
-    required String fromId,
-    required String toId,
-  }) async {
-    if (fromId == toId) return true;
-
-    final visited = <String>{toId};
-    var frontier = <String>{toId};
-
-    for (var hop = 0; hop < _blocksCycleGuardMaxHops && frontier.isNotEmpty;
-        hop++) {
-      final links = await journalDb.typedLinksForTaskIds(
-        frontier,
-        types: const {'BlocksLink'},
-      );
-
-      final next = <String>{};
-      for (final link in links) {
-        if (!frontier.contains(link.fromId)) continue;
-        final blocked = link.toId;
-        if (blocked == fromId) return true;
-        if (visited.add(blocked)) next.add(blocked);
-      }
-      frontier = next;
-    }
-    return false;
   }
 
   Future<bool?> createDbEntity(

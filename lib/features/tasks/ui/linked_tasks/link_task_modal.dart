@@ -86,62 +86,60 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                key: const Key('link_task_modal_handle'),
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+    // A fixed, generous fraction of the screen — not a DraggableScrollableSheet
+    // reveal — so the sheet's surface fills exactly this height with no dead
+    // space above it. Search-and-pick content is expected to fill the space
+    // rather than shrink-wrap to a handful of results.
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.85,
+      child: Column(
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              key: const Key('link_task_modal_handle'),
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: context.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                context.messages.linkExistingTask,
-                style: context.textTheme.titleMedium,
-              ),
+          ),
+          // Title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              context.messages.linkExistingTask,
+              style: context.textTheme.titleMedium,
             ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: RelationshipTypeSelector(
-                selectedType: _selectedType,
-                inverse: _inverse,
-                onTypeChanged: (type) => setState(() {
-                  _selectedType = type;
-                  _inverse = false;
-                }),
-                onInverseChanged: (value) => setState(() => _inverse = value),
-              ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: RelationshipTypeSelector(
+              selectedType: _selectedType,
+              inverse: _inverse,
+              onTypeChanged: (type) => setState(() {
+                _selectedType = type;
+                _inverse = false;
+              }),
+              onInverseChanged: (value) => setState(() => _inverse = value),
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: TaskSearchPickerBody(
-                excludeIds: {
-                  widget.currentTaskId,
-                  ...widget.existingLinkedIds,
-                },
-                onTaskSelected: _selectTask,
-                scrollController: scrollController,
-              ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: TaskSearchPickerBody(
+              excludeIds: {
+                widget.currentTaskId,
+                ...widget.existingLinkedIds,
+              },
+              onTaskSelected: _selectTask,
             ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }

@@ -196,32 +196,49 @@ void main() {
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     });
 
-    testWidgets('modal uses DraggableScrollableSheet', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () async {
-                  await LinkTaskModal.show(
-                    context: context,
-                    currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
-                  );
-                },
-                child: const Text('Open Modal'),
+    testWidgets(
+      'modal sizes itself to a fixed, generous fraction of the screen '
+      'height rather than a DraggableScrollableSheet reveal (no dead space '
+      'above the sheet)',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              child: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await LinkTaskModal.show(
+                      context: context,
+                      currentTaskId: 'current-task',
+                      existingLinkedIds: const {},
+                    );
+                  },
+                  child: const Text('Open Modal'),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Open Modal'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+        await tester.tap(find.text('Open Modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
-      expect(find.byType(DraggableScrollableSheet), findsOneWidget);
-    });
+        expect(find.byType(DraggableScrollableSheet), findsNothing);
+        final sizedBox = tester.widget<SizedBox>(
+          find
+              .ancestor(
+                of: find.byKey(const Key('link_task_modal_handle')),
+                matching: find.byType(SizedBox),
+              )
+              .first,
+        );
+        // phoneMediaQueryData's default height (test/widget_test_utils.dart)
+        // is 844 — the sheet fills 85% of it, no matter how many results
+        // the search list contains.
+        expect(sizedBox.height, 844 * 0.85);
+      },
+    );
 
     testWidgets('displays tasks from database', (tester) async {
       final testTasks = [

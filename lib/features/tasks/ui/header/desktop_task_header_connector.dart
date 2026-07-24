@@ -469,7 +469,7 @@ class _TaskBlockedByChip extends ConsumerWidget {
         variant: DsPillVariant.tinted,
         color: accent,
         leading: Icon(Icons.block, size: 12, color: accent),
-        label: context.messages.taskStatusBlocked,
+        label: context.messages.taskBlockedByUnresolvedLabel,
       );
     }
 

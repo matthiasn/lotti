@@ -84,54 +84,52 @@ class BlockingTaskPickerModal extends ConsumerWidget {
             .toSet() ??
         const <String>{};
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            Center(
-              child: Container(
-                key: const Key('blocking_task_picker_modal_handle'),
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
+    // A fixed, generous fraction of the screen — not a DraggableScrollableSheet
+    // reveal — so the sheet's surface fills exactly this height with no dead
+    // space above it. Search-and-pick content is expected to fill the space
+    // rather than shrink-wrap to a handful of results.
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.85,
+      child: Column(
+        children: [
+          Center(
+            child: Container(
+              key: const Key('blocking_task_picker_modal_handle'),
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: context.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.messages.taskBlockerPickerTitle,
+                    style: context.textTheme.titleMedium,
+                  ),
                 ),
-              ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(context.messages.taskBlockerPickerSkipButton),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      context.messages.taskBlockerPickerTitle,
-                      style: context.textTheme.titleMedium,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(context.messages.taskBlockerPickerSkipButton),
-                  ),
-                ],
-              ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: TaskSearchPickerBody(
+              excludeIds: {blockedTaskId, ...existingBlockerIds},
+              onTaskSelected: (task) => _selectBlocker(context, task),
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: TaskSearchPickerBody(
-                excludeIds: {blockedTaskId, ...existingBlockerIds},
-                onTaskSelected: (task) => _selectBlocker(context, task),
-                scrollController: scrollController,
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }

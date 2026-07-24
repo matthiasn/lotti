@@ -9065,6 +9065,24 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get doneButton;
 
+  /// No description provided for @editLinkTypeFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the relationship. Please try again.'**
+  String get editLinkTypeFailedMessage;
+
+  /// No description provided for @editLinkTypeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit relationship'**
+  String get editLinkTypeTitle;
+
+  /// No description provided for @editLinkTypeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit relationship'**
+  String get editLinkTypeTooltip;
+
   /// No description provided for @editMenuTitle.
   ///
   /// In en, this message translates to:
@@ -17505,20 +17523,26 @@ abstract class AppLocalizations {
   /// No description provided for @taskBlockedByChipLabel.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Blocked by {title}} other{Blocked by {count} tasks}}'**
+  /// **'{count, plural, =1{Waiting on {title}} other{Waiting on {count} tasks}}'**
   String taskBlockedByChipLabel(int count, String title);
+
+  /// No description provided for @taskBlockedByChipTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Waiting on {title}} other{Tap to see {count} blockers}}'**
+  String taskBlockedByChipTooltip(int count, String title);
+
+  /// No description provided for @taskBlockedByUnresolvedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocker not synced yet'**
+  String get taskBlockedByUnresolvedLabel;
 
   /// No description provided for @taskBlockedReason.
   ///
   /// In en, this message translates to:
   /// **'Blocked by: {title}'**
   String taskBlockedReason(String title);
-
-  /// No description provided for @taskBlockedByChipTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Blocked by {title}} other{Tap to see {count} blockers}}'**
-  String taskBlockedByChipTooltip(int count, String title);
 
   /// No description provided for @taskBlockerPickerSkipButton.
   ///

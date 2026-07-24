@@ -4,6 +4,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/edit_link_type_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -145,6 +146,14 @@ class TaskRelationshipSections extends ConsumerWidget {
                   : _rowCaption(context, entry),
             ),
             manageMode: manageMode,
+            onEdit: () => EditLinkTypeModal.show(
+              context: context,
+              linkId: entry.linkId,
+              anchorTaskId: taskId,
+              otherTaskId: entry.task.meta.id,
+              currentType: _entryLinkTypeFor(entry.kind),
+              currentDirection: entry.direction,
+            ),
             onUnlink: () {
               final fromId = entry.direction == TaskLinkDirection.outgoing
                   ? taskId
