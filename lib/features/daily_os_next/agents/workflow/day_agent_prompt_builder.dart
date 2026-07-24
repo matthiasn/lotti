@@ -122,7 +122,17 @@ Refine rules:
   your own. After the user commits, the plan is in shepherding mode and
   further edits require an explicit refine.
 - Shutdown and agenda mutation tools are not available yet. Do not claim you
-  shut down a day.${directiveService != null && agentId == dailyOsPlannerAgentId ? '''
+  shut down a day.${dependencyResolver == null ? '' : '''
+
+
+Blocked-work rules (ADR 0043):
+- A task is blocked for planning when its corpus row shows `"status":
+  "BLOCKED"` or carries a non-empty `blockedBy`. Place it only if (a) this
+  same plan schedules its blocker earlier the same day, or (b) the block's
+  `reason` explicitly names the blocker and states why the work can proceed
+  despite it.
+- When a decided/committed task is blocked, prefer placing the blocker
+  instead and say so in the block's reason.'''}${directiveService != null && agentId == dailyOsPlannerAgentId ? '''
 
 
 Digest rules (`<digest>` present — your coordinator ritual, ADR 0032):
@@ -141,7 +151,12 @@ Digest rules (`<digest>` present — your coordinator ritual, ADR 0032):
   days-with-plans count is a trend worth a directive note or a durable
   learning, not something to re-litigate daily.
 - The next digest is scheduled automatically — use `set_next_wake` only for
-  additional day-scoped pre-warms.''' : ''}${weekContextService == null ? '' : '''
+  additional day-scoped pre-warms.${dependencyResolver == null ? '' : '''
+
+- A directive commitment on a task blocked for planning should target its
+  blocker instead, or name the blocker explicitly in an attention note so
+  the per-day agent inherits the dependency context from the directive
+  itself.'''}''' : ''}${weekContextService == null ? '' : '''
 
 
 Week context (`<recent_days>` / `<week_ahead>`):

@@ -23,6 +23,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_triage_ser
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/task_agent_assignment.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -285,10 +286,12 @@ class DayAgentCaptureService {
     required Set<String> allowedCategoryIds,
     required DateTime day,
     int limit = DayAgentCorpusService.maxCorpusTasks,
+    TaskDependencyResolver? dependencyResolver,
   }) => _corpus.buildTaskCorpusSnapshot(
     allowedCategoryIds: allowedCategoryIds,
     day: day,
     limit: limit,
+    dependencyResolver: dependencyResolver,
   );
 
   /// Finds existing tasks that may match a capture phrase;

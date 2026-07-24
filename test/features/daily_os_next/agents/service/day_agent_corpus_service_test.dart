@@ -4,6 +4,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_corpus_service.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -134,6 +135,162 @@ void main() {
 
       expect(snapshot, hasLength(1));
     });
+
+    test(
+      'no dependencyResolver supplied — no row gains a blockedBy key '
+      '(byte-stability for dependency-free corpora)',
+      () async {
+        when(
+          () => journalDb.getOpenTasksForDayAgentCorpus(
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _task(id: 't-open', title: 'Open', status: _openStatus()),
+          ],
+        );
+        when(
+          () => journalDb.getTasksDueOnOrBefore(any()),
+        ).thenAnswer((_) async => const <Task>[]);
+
+        final snapshot = await createService().buildTaskCorpusSnapshot(
+          allowedCategoryIds: {'work'},
+          day: _day,
+        );
+
+        expect(snapshot.single.containsKey('blockedBy'), isFalse);
+      },
+    );
+
+    test(
+      'dependencyResolver supplied — only the blocked row gains blockedBy',
+      () async {
+        when(
+          () => journalDb.getOpenTasksForDayAgentCorpus(
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _task(id: 't-open', title: 'Open', status: _openStatus()),
+            _task(id: 't-blocked', title: 'Blocked', status: _openStatus()),
+          ],
+        );
+        when(
+          () => journalDb.getTasksDueOnOrBefore(any()),
+        ).thenAnswer((_) async => const <Task>[]);
+
+        final resolver = MockTaskDependencyResolver();
+        when(
+          () => resolver.resolveBlockedStatus({'t-open', 't-blocked'}),
+        ).thenAnswer(
+          (_) async => {
+            't-blocked': [
+              const ResolvedBlocker(
+                taskId: 'blocker-1',
+                title: 'Blocker',
+                status: 'OPEN',
+              ),
+            ],
+          },
+        );
+
+        final snapshot = await createService().buildTaskCorpusSnapshot(
+          allowedCategoryIds: {'work'},
+          day: _day,
+          dependencyResolver: resolver,
+        );
+
+        final byId = {for (final row in snapshot) row['taskId']: row};
+        expect(byId['t-open']!.containsKey('blockedBy'), isFalse);
+        expect(byId['t-blocked']!['blockedBy'], [
+          {'taskId': 'blocker-1', 'title': 'Blocker', 'status': 'OPEN'},
+        ]);
+        verify(
+          () => resolver.resolveBlockedStatus({'t-open', 't-blocked'}),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a manually-BLOCKED task with no resolver entry keeps status BLOCKED '
+      'and no blockedBy key',
+      () async {
+        final blockedStatus = TaskStatus.blocked(
+          id: 'status-blocked',
+          createdAt: DateTime(2026, 5, 20),
+          utcOffset: 120,
+          reason: 'needs a reason',
+        );
+        when(
+          () => journalDb.getOpenTasksForDayAgentCorpus(
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _task(id: 't-manual', title: 'Manual', status: blockedStatus),
+          ],
+        );
+        when(
+          () => journalDb.getTasksDueOnOrBefore(any()),
+        ).thenAnswer((_) async => const <Task>[]);
+
+        final resolver = MockTaskDependencyResolver();
+        when(
+          () => resolver.resolveBlockedStatus({'t-manual'}),
+        ).thenAnswer((_) async => const {});
+
+        final snapshot = await createService().buildTaskCorpusSnapshot(
+          allowedCategoryIds: {'work'},
+          day: _day,
+          dependencyResolver: resolver,
+        );
+
+        expect(snapshot.single['status'], 'BLOCKED');
+        expect(snapshot.single.containsKey('blockedBy'), isFalse);
+      },
+    );
+
+    test(
+      'resolver-returned unresolved-only entry serializes with no title or '
+      'status keys',
+      () async {
+        when(
+          () => journalDb.getOpenTasksForDayAgentCorpus(
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _task(id: 't-blocked', title: 'Blocked', status: _openStatus()),
+          ],
+        );
+        when(
+          () => journalDb.getTasksDueOnOrBefore(any()),
+        ).thenAnswer((_) async => const <Task>[]);
+
+        final resolver = MockTaskDependencyResolver();
+        when(
+          () => resolver.resolveBlockedStatus({'t-blocked'}),
+        ).thenAnswer(
+          (_) async => {
+            't-blocked': [const ResolvedBlocker(taskId: 'missing-blocker')],
+          },
+        );
+
+        final snapshot = await createService().buildTaskCorpusSnapshot(
+          allowedCategoryIds: {'work'},
+          day: _day,
+          dependencyResolver: resolver,
+        );
+
+        expect(snapshot.single['blockedBy'], [
+          {'taskId': 'missing-blocker'},
+        ]);
+      },
+    );
   });
 
   group('matchToCorpus', () {

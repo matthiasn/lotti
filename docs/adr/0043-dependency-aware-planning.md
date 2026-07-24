@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (depends on ADR 0042)
+Accepted
 
 ## Date
 

@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart'
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 
 /// FTS corpus matching + corpus-snapshot logic for the day-agent capture
 /// flow. The capture service keeps thin delegators so mocks of the service
@@ -35,10 +36,17 @@ class DayAgentCorpusService {
   final DayAgentCaptureReads reads;
 
   /// Build the bounded task corpus embedded in capture-triggered wakes.
+  ///
+  /// When [dependencyResolver] is supplied, blocked rows gain a `blockedBy`
+  /// key (ADR 0043 §1-2) — resolved once against the already-capped id set,
+  /// never per task. Omitting it (the default) keeps every row byte-identical
+  /// to the pre-ADR-0043 shape, which is what makes a dependency-free corpus
+  /// byte-stable.
   Future<List<Map<String, Object?>>> buildTaskCorpusSnapshot({
     required Set<String> allowedCategoryIds,
     required DateTime day,
     int limit = maxCorpusTasks,
+    TaskDependencyResolver? dependencyResolver,
   }) async {
     final dayStart = localDay(day);
     final openTasks = await journalDb.getOpenTasksForDayAgentCorpus(
@@ -60,6 +68,10 @@ class DayAgentCorpusService {
       if (byId.length >= limit) break;
     }
 
+    final blockedBy = dependencyResolver == null
+        ? const <String, List<ResolvedBlocker>>{}
+        : await dependencyResolver.resolveBlockedStatus(byId.keys.toSet());
+
     return [
       for (final task in byId.values)
         {
@@ -70,6 +82,8 @@ class DayAgentCorpusService {
           'due': task.data.due?.toIso8601String(),
           'estimateMinutes': task.data.estimate?.inMinutes,
           'priority': task.data.priority.short,
+          if (blockedBy[task.id] case final blockers?)
+            'blockedBy': [for (final b in blockers) b.toJson()],
         },
     ];
   }

@@ -131,6 +131,17 @@ preferred-name prompt when inference is ready but personalization is missing.
   statements), recent private observations, the day's `day_log`, and — for
   `capture_submitted:<captureId>` wakes — the submitted capture plus a bounded
   task corpus snapshot.
+- **Task corpus snapshot** (`DayAgentCorpusService.buildTaskCorpusSnapshot`,
+  ≤`maxCorpusTasks` rows): open tasks for the wake's allowed categories plus
+  every task due on or before the plan date, deduped and capped, projected to
+  `{taskId, title, status, categoryId, due, estimateMinutes, priority}`. It
+  serves two masters — capture matching (`match_to_corpus`) needs blocked
+  tasks to stay matchable, so the corpus never excludes anything, only
+  annotates it (ADR 0043 §1). When a `TaskDependencyResolver` is configured
+  (see "Dependency-aware planning" below), a row for a task with a live
+  `blocks` link gains a `blockedBy` array; a row with none gains no extra key
+  at all, so a dependency-free plan's corpus stays byte-identical to before —
+  important for prompt-prefix caching.
 - **The user message is tagged plaintext, not a JSON document.** The payload is
   a set of `<snake_case>` sections (`day_agent_prompt_sections.dart`) rather
   than one `jsonEncode`d map: tags keep JSON's named sections and boundary
@@ -1200,6 +1211,85 @@ dot (`dailyOsPlanDaysProvider` — one batched `getEntitiesByIds` lookup over th
 month's deterministic `day_agent_plan:<dayId>` ids), and tapping a day selects
 it via `dailyOsNextSelectedDateProvider`, which the already visible Daily OS
 surface reacts to directly.
+
+### Dependency-aware planning (ADR 0043)
+
+ADR 0042 gives tasks typed `blocks` links (see
+[`tasks/README.md`](../tasks/README.md#typed-relationships-adr-0042)); this
+section covers how the day-agent planning surfaces consume that substrate,
+per ADR 0043.
+
+`TaskDependencyResolver`
+(`lib/features/tasks/repository/task_dependency_resolver.dart`) answers
+"which of these task ids are blocked, and by what" in two bounded batch
+queries — one type-scoped `blocks`-link fetch, one batch status load for the
+distinct blocker ids — mirroring the batch-read discipline used elsewhere in
+this feature (e.g. the week-context service): never per-task fan-out, always
+one call against the whole id set. It is independent of, and not shared code
+with, the task feature's own `TaskBlockersController` (single-task, UI-facing,
+autoDispose-Riverpod-backed); the resolver is stateless, plain-Dart, and
+batch-shaped for a corpus of up to `maxCorpusTasks` ids.
+
+A blocker that resolves to a real, open task serializes with its title and
+status; a blocker link whose target can't be loaded (a sync gap) serializes
+as `{"taskId": "<id>"}` with no `title`/`status` keys — still a non-empty
+`blockedBy` entry, so "still blocked" is never silently downgraded to "ready"
+just because the blocker hasn't synced yet. This deliberately differs from
+the task detail header's `_TaskBlockedByChip`, which renders a bare
+untappable "Blocked" pill for the same case: the corpus is model-facing,
+where a bare id is a usable token, while the chip is human-facing, where a
+raw id is not.
+
+`dependencyResolver` is a single nullable field on `DayAgentWorkflow`
+(`ref.watch(taskDependencyResolverProvider)` in
+`agent_workflow_providers.dart`), threaded through
+`day_agent_context_builder.dart`'s capture-context assembly into
+`DayAgentCorpusService.buildTaskCorpusSnapshot`. One field drives both the
+corpus annotation and the prompt gates below, so they can never drift out of
+sync — there is no separate "is this feature on" flag.
+
+`day_agent_prompt_builder.dart` gates two prompt-contract additions on that
+same field, both empty-string when it's null (so a wake with no
+`TaskDependencyResolver` renders byte-identical to pre-ADR-0043):
+
+- **Blocked-work rules**, appended after the Refine rules, for any drafting or
+  refine wake: a task is "blocked for planning" when its corpus row shows
+  `"status": "BLOCKED"` (self-declared, ADR 0042 §4) **or** carries a
+  non-empty `blockedBy` (computed). Place it only if the same plan schedules
+  its blocker earlier the same day, or the block's `reason` explicitly names
+  the blocker and why the work can proceed anyway; prefer placing the
+  blocker itself when a decided/committed task turns out to be blocked.
+- **A digest-rule bullet**, appended to the ADR 0032 digest rules (coordinator
+  wakes only, and only when `directiveService` is also configured): a
+  directive commitment on blocked-for-planning work should target the
+  blocker instead, or name the blocker in an attention note so the per-day
+  agent inherits the dependency context from the directive itself.
+
+```mermaid
+flowchart LR
+  subgraph links [ADR 0042 substrate]
+    BL[blocks edges<br/>linked_entries]
+  end
+  subgraph reads [bounded batch reads]
+    DR[TaskDependencyResolver<br/>links + blocker statuses]
+  end
+  subgraph consumers
+    CS[corpus snapshot<br/>blockedBy annotation]
+    TD[task detail UI<br/>Blocked by / Blocks]
+  end
+  BL --> DR --> CS
+  BL --> TD
+  CS --> DA[day agent drafting/refine<br/>prompt rules]
+  CS --> CO[coordinator digest<br/>directive rules]
+```
+
+No topological scheduler and no automatic `TaskStatus` writes: ordering same-day
+blocks stays a judgment call the model makes through block `reasons`, and
+computed blockedness never mutates the task's stored status (ADR 0042 §4).
+Non-goals explicitly deferred: dependency-driven wake triggers (waking a day
+agent because a blocker just closed — the daily digest and normal planning
+cadence pick up released work instead), blocker-released notifications, and a
+`link_tasks` agent tool letting capture parsing assert dependencies directly.
 
 ## Keyboard and Accessible Commit Confirmation
 

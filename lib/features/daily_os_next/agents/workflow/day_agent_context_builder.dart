@@ -576,6 +576,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       final corpus = await service.buildTaskCorpusSnapshot(
         allowedCategoryIds: agentIdentity.allowedCategoryIds,
         day: planDate,
+        dependencyResolver: dependencyResolver,
       );
       return CaptureContext(capture: capture, taskCorpus: corpus);
     }

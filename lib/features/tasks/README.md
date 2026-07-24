@@ -631,6 +631,114 @@ The modal explicitly excludes:
 
 which is a good example of the feature preferring guardrails over polite chaos.
 
+### Typed relationships (ADR 0042)
+
+Beyond the plain "belongs with" `BasicLink`, a task-to-task link can carry one
+of five typed semantics, each an `EntryLink` union variant with the same shape
+as `BasicLink` (id, `fromId`, `toId`, timestamps, vector clock) — the
+relationship lives entirely in the `type` column, so every existing
+`type = 'BasicLink'` consumer (recorded-time attribution, capture attachment)
+stays structurally blind to typed edges. One row is stored per relationship;
+"is blocked by" / "has follow-up" / etc. are rendering labels for the reverse
+direction of that same row, never separate rows:
+
+| Variant      | Reading (from → to)                | Inverse rendering          |
+| ------------ | ----------------------------------- | --------------------------- |
+| `blocks`     | *from* blocks *to*                  | *to* is blocked by *from*   |
+| `followsUp`  | *from* follows up on *to*           | *to* has follow-up *from*   |
+| `duplicates` | *from* duplicates *to* (canonical)  | *to* is duplicated by *from*|
+| `fixes`      | *from* fixes *to* (the defect)      | *to* is fixed by *from*     |
+| `supersedes` | *from* supersedes *to* (obsolete)   | *to* is superseded by *from*|
+
+`RelationshipTypeSelector` (shared by `LinkTaskModal` and
+`BlockingTaskPickerModal`'s callers) renders these as six chips — Link, Blocks,
+Follows up, Duplicates, Fixes, Supersedes — defaulting to plain Link
+(today's behavior, unchanged when untouched). Picking a directional type
+reveals a second segmented toggle for the two phrasings (e.g. "Blocks" / "Is
+blocked by"); picking the inverse phrasing swaps `fromId`/`toId` in
+`LinkTaskModal._selectTask` before persisting, so the canonical stored
+direction is always the one the table above lists (e.g. `blocks`'s `fromId`
+is always the blocker, never the blocked task). `PersistenceLogic.createLink`
+runs a best-effort local cycle guard for `EntryLinkType.blocks` only (surfaced
+as a snackbar via `linkBlocksCycleErrorMessage` on rejection); read-time
+traversal tolerates cycles regardless, since two offline devices can always
+race one into existence.
+
+`TaskLinkGroupsController` (`taskLinkGroupsControllerProvider(taskId)`)
+resolves every plain and typed link touching a task, both directions, from one
+batched `JournalRepository.getTypedLinksForTaskIds` call, and buckets the
+result into `flat` (today's plain-link list) and `typed` (the five
+relationship kinds). `TaskRelationshipSections` renders the `typed` bucket as
+six grouped sections above the flat list: **Blocked by** and **Blocks** are
+`blocks` split by direction (each header alone disambiguates direction, so
+rows carry no caption — this is also the highest-signal relationship, feeding
+the header chip and the status-enrichment flow below); **Follow-ups**,
+**Duplicates**, **Fixes**, and **Supersedes** merge both directions into one
+section, with each row captioned via `relationshipPhrasePair` so a reader
+still knows which way the relationship points. A section renders only when it
+has entries — an empty relationship type is invisible, not an empty header.
+
+### Blockedness: a derived fact, not a stored flag
+
+Readiness is computed at read time from live `blocks` links, never stored
+(ADR 0042 §4): a task is blocked iff a non-deleted `blocks` link exists with
+`toId == task` whose blocker (`fromId`) is neither tombstoned nor closed
+(`DONE`/`REJECTED`). Closing or deleting a blocker therefore "releases" every
+dependent implicitly, on every device, with no unlock write and no sync race.
+An unresolvable blocker (the link row exists but its `fromId` task can't be
+loaded — typically a sync gap) keeps the dependent blocked conservatively,
+distinct from a tombstoned blocker (`deletedAt` set), which releases it.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Ready: no live blocks-link
+  Ready --> Blocked: blocks edge created to an open blocker
+  Blocked --> Ready: blocker closes (DONE/REJECTED) or link tombstoned
+  Blocked --> Blocked: blocker link unresolved (conservative, ADR 0042 §4)
+```
+
+`TaskBlockersController` (`taskBlockersControllerProvider(taskId)`) is the
+dedicated resolver for this: unlike `TaskLinkGroupsController` (which drops a
+tombstoned and an unresolvable blocker identically — fine for display), it
+distinguishes the two cases and reports `TaskBlockersResult(openBlockers,
+unresolvedCount)`, with `isBlocked = openBlockers.isNotEmpty ||
+unresolvedCount > 0`. It runs two bounded queries — one type-scoped link fetch,
+one batch status load for the distinct blocker ids — no transitive closure and
+no per-task fan-out.
+
+Blockedness surfaces in two places, both backed by `TaskBlockersController`:
+
+- `_TaskBlockedByChip` in the task detail header (next to the status pill):
+  hidden when not blocked; a bare "Blocked" pill with no tap target when every
+  blocker is unresolved (nothing to name or navigate to); otherwise a tappable
+  pill naming the single blocker or the count, opening the blocker's detail
+  page directly (single) or a list sheet (multiple).
+- **Status-enrichment prompt**: when `DesktopTaskHeaderConnector` sets a
+  task's status to `BLOCKED` (a change, not a no-op) and `TaskBlockersResult`
+  shows it isn't already named-blocked, it opens `BlockingTaskPickerModal` —
+  a search picker fixed to the `blocks` relationship (no type selector, unlike
+  `LinkTaskModal`) that creates a `blocks` link from the chosen task to this
+  one. Fully skippable: the status write already committed before the modal
+  opens, so dismissing or tapping Skip persists nothing further.
+
+The manual `TaskStatus.blocked` and link-derived blockedness intentionally
+never write to each other automatically — the link layer only *offers* the
+picker after a manual status change, and only when the task isn't already
+named-blocked. Many real blocks are external (a person, a delivery, a
+decision) and have no task to link.
+
+### Phase 3: planning sees blockedness too
+
+The day-agent task corpus (`DayAgentCorpusService.buildTaskCorpusSnapshot`,
+see [`daily_os_next/README.md`](../daily_os_next/README.md)) annotates each
+blocked row with a `blockedBy` list via an independent, read-only
+`TaskDependencyResolver` (`lib/features/tasks/repository/task_dependency_resolver.dart`)
+— the same one-hop `blocks`-link resolution as `TaskBlockersController`
+above, generalized for a batch of tasks instead of one, and deliberately not
+shared code with it (a UI-facing single-task controller and a model-facing
+batch resolver have different call shapes and failure-representation needs).
+See ADR 0043 for the planning-side prompt rules this feeds.
+
 ## Task Progress Calculation
 
 Task progress is calculated from linked work, not from optimism.
