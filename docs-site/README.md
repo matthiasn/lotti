@@ -128,6 +128,34 @@ from MDX with `ManualScreenshot`. Direct one-off app images are rejected: every
 displayed app screenshot must have the complete four-variant matrix in every
 manual locale.
 
+## Dependency advisories
+
+CI gates production dependencies with `npm run audit:gate`
+(`scripts/audit-gate.mjs`) rather than `npm audit --audit-level=high`
+directly. Same data and same threshold, with one addition: advisories listed
+in `audit-allowlist.json` are reported and skipped instead of failing.
+
+That exists because `npm audit` cannot express *"this advisory has no
+reachable fix"*. When an advisory's vulnerable range covers every published
+version of a transitive package, the audit fails on every branch indefinitely
+and no dependency change clears it — including the bump `npm audit fix
+--force` suggests. Failing forever teaches people to ignore the gate; a
+blanket `|| true` removes it. The allowlist keeps it meaningful:
+
+- An entry waives **one GHSA id**, not a package or a severity level.
+- Every entry needs a `reason` explaining why no fix is reachable, and an
+  `expires` date. Past that date the gate fails on the entry itself, so a
+  waiver cannot quietly become permanent.
+- Anything else at high or above still fails, including a new advisory on an
+  already-waived package.
+- Severity is judged per advisory root, not on npm's rolled-up parent
+  severity, so a moderate root never needs a waiver just because something
+  high sits elsewhere under the same parent.
+
+Before extending an expiry, re-check whether upstream has adopted a patched
+version. `tests/audit-gate.test.mjs` covers the logic against fixture reports
+and asserts the committed allowlist is justified, dated, and not expired.
+
 ## Release model
 
 For app version `1.0.0`, a release build must check out the app's `1.0.0` tag and

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "audit:gate": "node scripts/audit-gate.mjs",
     "build": "docusaurus build",
     "check": "npm run typecheck && npm run validate && npm run test && npm run build && npm run smoke",
     "clear": "docusaurus clear",
