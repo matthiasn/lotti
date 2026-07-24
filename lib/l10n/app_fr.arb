@@ -2786,6 +2786,8 @@
   "linkedTasksBlockedBySectionTitle": "Bloquée par",
   "linkedTasksMenuTooltip": "Options des tâches liées",
   "linkedTasksTitle": "Tâches liées",
+  "linkedTasksEmptyAction": "Lier une tâche…",
+  "linkedTasksEmptyHint": "Relie cette tâche à une autre : un bloqueur, un suivi ou un doublon.",
   "linkExistingTask": "Lier une tâche existante...",
   "linkPhraseBasic": "Est lié à",
   "linkPhraseBlocksInverse": "Est bloquée par",

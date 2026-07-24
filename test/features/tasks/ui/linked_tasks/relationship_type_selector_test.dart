@@ -119,6 +119,50 @@ void main() {
     });
   });
 
+  group('ExistingRelation', () {
+    test('identity spans both the task and the exact relation it holds', () {
+      const plainLink = ExistingRelation(
+        taskId: 'a',
+        relation: DirectedRelation(EntryLinkType.basic),
+      );
+
+      expect(
+        plainLink,
+        const ExistingRelation(
+          taskId: 'a',
+          relation: DirectedRelation(EntryLinkType.basic),
+        ),
+      );
+      expect(
+        plainLink.hashCode,
+        const ExistingRelation(
+          taskId: 'a',
+          relation: DirectedRelation(EntryLinkType.basic),
+        ).hashCode,
+      );
+      // Same task, different relation — a pair may hold both.
+      expect(
+        plainLink,
+        isNot(
+          const ExistingRelation(
+            taskId: 'a',
+            relation: DirectedRelation(EntryLinkType.blocks),
+          ),
+        ),
+      );
+      // Different task, same relation.
+      expect(
+        plainLink,
+        isNot(
+          const ExistingRelation(
+            taskId: 'b',
+            relation: DirectedRelation(EntryLinkType.basic),
+          ),
+        ),
+      );
+    });
+  });
+
   group('RelationshipTypeSelector', () {
     Future<DirectedRelation?> pumpSelector(
       WidgetTester tester, {

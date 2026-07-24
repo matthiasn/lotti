@@ -12,6 +12,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -48,7 +49,7 @@ void main() {
     // Pumps a button that opens the modal, taps it, and settles.
     Future<void> openModal(
       WidgetTester tester, {
-      Set<String> existingLinkedIds = const {},
+      Set<ExistingRelation> existingRelations = const {},
       MediaQueryData? mediaQueryData,
     }) async {
       await tester.pumpWidget(
@@ -61,7 +62,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: existingLinkedIds,
+                    existingRelations: existingRelations,
                   );
                 },
                 child: const Text('Open Modal'),
@@ -158,7 +159,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -186,7 +187,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -260,7 +261,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -302,7 +303,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -345,7 +346,12 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {'linked-task'},
+                    existingRelations: {
+                      const ExistingRelation(
+                        taskId: 'linked-task',
+                        relation: DirectedRelation(EntryLinkType.basic),
+                      ),
+                    },
                   );
                 },
                 child: const Text('Open Modal'),
@@ -395,7 +401,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -430,7 +436,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -475,7 +481,7 @@ void main() {
                     await LinkTaskModal.show(
                       context: context,
                       currentTaskId: 'current-task',
-                      existingLinkedIds: const {},
+                      existingRelations: const {},
                     );
                   },
                   child: const Text('Open Modal'),
@@ -532,7 +538,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -603,7 +609,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -664,7 +670,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -695,6 +701,55 @@ void main() {
       // The modal actually pops on success, not just createLink firing.
       expect(find.text('Link existing task...'), findsNothing);
     });
+
+    testWidgets(
+      'a task already linked by one relation stays a candidate for a '
+      'different one — a pair may hold several relationships',
+      (tester) async {
+        stubTasks([buildTask(id: 'linked-task', title: 'Already Linked')]);
+
+        await openModal(
+          tester,
+          existingRelations: {
+            const ExistingRelation(
+              taskId: 'linked-task',
+              relation: DirectedRelation(EntryLinkType.basic),
+            ),
+          },
+        );
+
+        // Excluded while the duplicate relation is selected...
+        expect(find.text('Already Linked'), findsNothing);
+
+        // ...and offered again as soon as a different one is.
+        await pickRelation(tester, 'Blocks');
+        expect(find.text('Already Linked'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'direction counts as part of the relation — the inverse of an existing '
+      'link is still offerable',
+      (tester) async {
+        stubTasks([buildTask(id: 'blocker-task', title: 'Blocker Task')]);
+
+        await openModal(
+          tester,
+          existingRelations: {
+            const ExistingRelation(
+              taskId: 'blocker-task',
+              relation: DirectedRelation(EntryLinkType.blocks),
+            ),
+          },
+        );
+
+        await pickRelation(tester, 'Blocks');
+        expect(find.text('Blocker Task'), findsNothing);
+
+        await pickRelation(tester, 'Is blocked by');
+        expect(find.text('Blocker Task'), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'defaults to the plain link, offered as one directed-relation control',
@@ -871,7 +926,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -918,7 +973,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -960,7 +1015,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -1007,7 +1062,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -1062,7 +1117,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),

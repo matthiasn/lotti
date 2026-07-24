@@ -141,7 +141,8 @@ void main() {
       (_) async => [blockerTask, followUpTask, flatLinkedTask],
     );
     when(
-      () => mockJournalDb.typedLinksForTaskIds(any(), types: any(named: 'types')),
+      () =>
+          mockJournalDb.typedLinksForTaskIds(any(), types: any(named: 'types')),
     ).thenAnswer((_) async => <EntryLink>[]);
     when(
       () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
@@ -150,14 +151,19 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  for (final viewport in [ScreenshotViewport.phone, ScreenshotViewport.desktop]) {
+  for (final viewport in [
+    ScreenshotViewport.phone,
+    ScreenshotViewport.desktop,
+  ]) {
     final label = viewport == ScreenshotViewport.phone ? 'phone' : 'desktop';
 
     testWidgets('link task modal — $label', (tester) async {
       await captureInApp(
         tester,
         child: Scaffold(
-          appBar: AppBar(title: const Text('Confirm interplanetary sardine cargo pods')),
+          appBar: AppBar(
+            title: const Text('Confirm interplanetary sardine cargo pods'),
+          ),
           body: const SizedBox.shrink(),
         ),
         name: 'link_task_modal_$label',
@@ -168,7 +174,7 @@ void main() {
             LinkTaskModal.show(
               context: context,
               currentTaskId: mainTaskId,
-              existingLinkedIds: const {},
+              existingRelations: const {},
             ),
           );
           await tester.pumpAndSettle();
@@ -302,7 +308,9 @@ void main() {
       await captureInApp(
         tester,
         child: Scaffold(
-          appBar: AppBar(title: const Text('Confirm interplanetary sardine cargo pods')),
+          appBar: AppBar(
+            title: const Text('Confirm interplanetary sardine cargo pods'),
+          ),
           body: const SizedBox.shrink(),
         ),
         name: 'blocking_task_picker_modal_$label',

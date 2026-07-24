@@ -2786,6 +2786,8 @@
   "linkedTasksBlockedBySectionTitle": "Blocată de",
   "linkedTasksMenuTooltip": "Opțiuni sarcini legate",
   "linkedTasksTitle": "Sarcini legate",
+  "linkedTasksEmptyAction": "Legați o sarcină…",
+  "linkedTasksEmptyHint": "Conectați această sarcină cu alta — un blocaj, o continuare sau un duplicat.",
   "linkExistingTask": "Leagă o sarcină existentă...",
   "linkPhraseBasic": "Are legătură cu",
   "linkPhraseBlocksInverse": "Este blocată de",

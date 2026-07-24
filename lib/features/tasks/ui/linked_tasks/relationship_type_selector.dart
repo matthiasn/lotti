@@ -47,6 +47,31 @@ class DirectedRelation {
   int get hashCode => Object.hash(type, inverse);
 }
 
+/// One relationship that already exists between the anchor task and another
+/// task.
+///
+/// Exclusion from the link picker is per-relation, not per-task: the schema's
+/// `UNIQUE(from_id, to_id, type)` lets one pair of tasks hold several
+/// different relationships, so excluding every task the anchor already touches
+/// made a legitimate second relationship impossible to create — and reported
+/// it as "No tasks found".
+@immutable
+class ExistingRelation {
+  const ExistingRelation({required this.taskId, required this.relation});
+
+  final String taskId;
+  final DirectedRelation relation;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ExistingRelation &&
+      other.taskId == taskId &&
+      other.relation == relation;
+
+  @override
+  int get hashCode => Object.hash(taskId, relation);
+}
+
 /// Every relationship a user can pick, in display order: the symmetric plain
 /// link first (today's default, unchanged when untouched), then each
 /// directional type in both directions.

@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
@@ -158,6 +159,9 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       // real words away on the row whose tap immediately commits the link.
       titleMaxLines: 2,
       topInset: widget.topInset,
+      // Same rank as the linked-tasks card row: one task title, one size,
+      // whether it is read on the card or in this modal one tap away.
+      rowSize: DesignSystemListItemSize.small,
       searchHintText: context.messages.searchTasksHint,
       emptyMessage: hasCandidates
           ? context.messages.noTasksFound

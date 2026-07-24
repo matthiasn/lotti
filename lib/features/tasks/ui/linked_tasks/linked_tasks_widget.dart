@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -92,6 +93,10 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                     ? () => setState(() => _expanded = !_expanded)
                     : null,
               ),
+              if (!hasLinks)
+                _LinkedTasksEmptyAction(
+                  onTap: () => _showLinkTaskModal(context, ref, taskId),
+                ),
               if (_expanded && hasLinks) ...[
                 if (linkGroups.typed.isNotEmpty)
                   TaskRelationshipSections(
@@ -151,6 +156,32 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
   }
 }
 
+/// The card's body when the task holds no links: a worded, full-width action
+/// with a one-line explanation. An icon-only affordance in an otherwise empty
+/// bordered box read as a card that had failed to load.
+class _LinkedTasksEmptyAction extends StatelessWidget {
+  const _LinkedTasksEmptyAction({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DesignSystemListItem(
+      onTap: onTap,
+      title: context.messages.linkedTasksEmptyAction,
+      subtitle: context.messages.linkedTasksEmptyHint,
+      subtitleMaxLines: 2,
+      size: DesignSystemListItemSize.small,
+      leading: Icon(
+        Icons.add_link,
+        size: tokens.spacing.step5,
+        color: tokens.colors.interactive.enabled,
+      ),
+    );
+  }
+}
+
 class _LinkedTasksHeader extends ConsumerWidget {
   const _LinkedTasksHeader({
     required this.taskId,
@@ -200,26 +231,26 @@ class _LinkedTasksHeader extends ConsumerWidget {
               _CountBadge(count: count),
             ],
             const Spacer(),
-            // Explicit, always-present link action. Burying it in the overflow
-            // menu meant a task with no links had no reachable entry point to
-            // the feature at all, since the card itself used to render nothing
-            // at zero links.
-            IconButton(
-              tooltip: context.messages.linkExistingTask,
-              onPressed: () => _showLinkTaskModal(context, ref),
-              visualDensity: VisualDensity.compact,
-              icon: Icon(
-                Icons.add_link,
-                size: 20,
-                color: tokens.colors.text.highEmphasis,
+            // The link action is worded in the empty state's own row, so the
+            // header only carries it once there is a list to add to.
+            if (hasLinkedTasks) ...[
+              IconButton(
+                tooltip: context.messages.linkExistingTask,
+                onPressed: () => _showLinkTaskModal(context, ref, taskId),
+                visualDensity: VisualDensity.compact,
+                icon: Icon(
+                  Icons.add_link,
+                  size: tokens.spacing.step5,
+                  color: tokens.colors.text.highEmphasis,
+                ),
               ),
-            ),
-            if (hasLinkedTasks)
               Icon(
                 expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
-                size: 24,
-                color: tokens.colors.text.highEmphasis,
+                // Least important control, so not the heaviest mark.
+                size: tokens.spacing.step5,
+                color: tokens.colors.text.mediumEmphasis,
               ),
+            ],
             SizedBox(width: tokens.spacing.step3),
             Theme(
               data: Theme.of(context).copyWith(
@@ -249,7 +280,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
                 onSelected: (value) async {
                   switch (value) {
                     case 'create_new':
-                      await _createNewLinkedTask(context, ref);
+                      await _createNewLinkedTask(context, ref, taskId);
                     case 'manage':
                       notifier.toggleManageMode();
                   }
@@ -297,55 +328,74 @@ class _LinkedTasksHeader extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Future<void> _showLinkTaskModal(BuildContext context, WidgetRef ref) async {
-    final linkGroups = ref.read(taskLinkGroupsControllerProvider(taskId)).value;
-    final existingLinkedIds = <String>{
-      ...?linkGroups?.flat.map((e) => e.task.meta.id),
-      ...?linkGroups?.typed.map((e) => e.task.meta.id),
-    };
+/// Opens the link picker for [taskId], seeding it with the relationships that
+/// task already holds so the candidate list can exclude only true duplicates.
+Future<void> _showLinkTaskModal(
+  BuildContext context,
+  WidgetRef ref,
+  String taskId,
+) async {
+  final linkGroups = ref.read(taskLinkGroupsControllerProvider(taskId)).value;
+  final existingRelations = {
+    for (final entry in [
+      ...?linkGroups?.flat,
+      ...?linkGroups?.typed,
+    ])
+      ExistingRelation(
+        taskId: entry.task.meta.id,
+        relation: DirectedRelation(
+          entryLinkTypeForTaskLinkKind(entry.kind),
+          inverse: entry.direction == TaskLinkDirection.incoming,
+        ),
+      ),
+  };
 
-    await LinkTaskModal.show(
-      context: context,
-      currentTaskId: taskId,
-      existingLinkedIds: existingLinkedIds,
+  await LinkTaskModal.show(
+    context: context,
+    currentTaskId: taskId,
+    existingRelations: existingRelations,
+  );
+}
+
+Future<void> _createNewLinkedTask(
+  BuildContext context,
+  WidgetRef ref,
+  String taskId,
+) async {
+  final selection = await _pickRelationshipType(context);
+  if (selection == null || !context.mounted) return;
+
+  final entryState = ref.read(entryControllerProvider(taskId)).value;
+  final categoryId = entryState?.entry?.meta.categoryId;
+
+  final newTask = await createTask(
+    linkedId: taskId,
+    categoryId: categoryId,
+  );
+
+  if (newTask != null && selection.type != EntryLinkType.basic) {
+    // createTask always makes a BasicLink; swap it for the chosen
+    // relationship rather than leaving a redundant plain link alongside it.
+    await ref
+        .read(journalRepositoryProvider)
+        .removeTypedLink(
+          fromId: taskId,
+          toId: newTask.meta.id,
+          linkType: 'BasicLink',
+        );
+    final swap = selection.inverse;
+    await getIt<PersistenceLogic>().createLink(
+      fromId: swap ? newTask.meta.id : taskId,
+      toId: swap ? taskId : newTask.meta.id,
+      linkType: selection.type,
     );
   }
 
-  Future<void> _createNewLinkedTask(BuildContext context, WidgetRef ref) async {
-    final selection = await _pickRelationshipType(context);
-    if (selection == null || !context.mounted) return;
-
-    final entryState = ref.read(entryControllerProvider(taskId)).value;
-    final categoryId = entryState?.entry?.meta.categoryId;
-
-    final newTask = await createTask(
-      linkedId: taskId,
-      categoryId: categoryId,
-    );
-
-    if (newTask != null && selection.type != EntryLinkType.basic) {
-      // createTask always makes a BasicLink; swap it for the chosen
-      // relationship rather than leaving a redundant plain link alongside it.
-      await ref
-          .read(journalRepositoryProvider)
-          .removeTypedLink(
-            fromId: taskId,
-            toId: newTask.meta.id,
-            linkType: 'BasicLink',
-          );
-      final swap = selection.inverse;
-      await getIt<PersistenceLogic>().createLink(
-        fromId: swap ? newTask.meta.id : taskId,
-        toId: swap ? taskId : newTask.meta.id,
-        linkType: selection.type,
-      );
-    }
-
-    if (newTask != null && context.mounted) {
-      unawaited(autoAssignCategoryAgent(ref, newTask));
-      tasksBeamerDelegate.beamToNamed('/tasks/${newTask.meta.id}');
-    }
+  if (newTask != null && context.mounted) {
+    unawaited(autoAssignCategoryAgent(ref, newTask));
+    tasksBeamerDelegate.beamToNamed('/tasks/${newTask.meta.id}');
   }
 }
 

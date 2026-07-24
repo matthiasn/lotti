@@ -6598,6 +6598,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkedTasksTitle => 'Sammenkoblede opgaver';
 
   @override
+  String get linkedTasksEmptyAction => 'Link a task…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Connect this task to another — a blocker, a follow-up, a duplicate.';
+
+  @override
   String get linkExistingTask => 'Link eksisterende opgave...';
 
   @override

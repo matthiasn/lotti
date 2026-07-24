@@ -15,27 +15,29 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 /// a relationship-type + direction picker (defaults to a plain "Link", today's
 /// behavior, unchanged when untouched).
 ///
-/// Shows a search field and list of available tasks. Excludes:
-/// - The current task itself
-/// - Tasks already linked (both incoming and outgoing)
+/// Shows a relationship picker plus a search field and list of candidate
+/// tasks. Excludes the current task, and any task that already holds the
+/// relationship currently selected — but not tasks linked by some *other*
+/// relationship, which remain valid candidates.
 class LinkTaskModal extends ConsumerStatefulWidget {
   const LinkTaskModal({
     required this.currentTaskId,
-    required this.existingLinkedIds,
+    required this.existingRelations,
     super.key,
   });
 
   /// The ID of the current task (to exclude from results).
   final String currentTaskId;
 
-  /// IDs of tasks already linked (to exclude from results).
-  final Set<String> existingLinkedIds;
+  /// Relationships the current task already holds, so the candidate list can
+  /// exclude only the ones that would duplicate the selected relation.
+  final Set<ExistingRelation> existingRelations;
 
   /// Shows the modal and returns the selected task, or null if cancelled.
   static Future<Task?> show({
     required BuildContext context,
     required String currentTaskId,
-    required Set<String> existingLinkedIds,
+    required Set<ExistingRelation> existingRelations,
   }) {
     return ModalUtils.showSinglePageModal<Task>(
       context: context,
@@ -43,7 +45,7 @@ class LinkTaskModal extends ConsumerStatefulWidget {
       padding: EdgeInsets.zero,
       builder: (_) => LinkTaskModal(
         currentTaskId: currentTaskId,
-        existingLinkedIds: existingLinkedIds,
+        existingRelations: existingRelations,
       ),
     );
   }
@@ -103,7 +105,10 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
           topInset: false,
           excludeIds: {
             widget.currentTaskId,
-            ...widget.existingLinkedIds,
+            // Only the tasks that already hold *this* relation — a pair may
+            // legitimately hold several different ones.
+            for (final existing in widget.existingRelations)
+              if (existing.relation == _relation) existing.taskId,
           },
           onTaskSelected: _selectTask,
         ),

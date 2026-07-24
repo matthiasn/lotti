@@ -6683,6 +6683,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkedTasksTitle => 'Tareas vinculadas';
 
   @override
+  String get linkedTasksEmptyAction => 'Vincular una tarea…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Conecta esta tarea con otra: un bloqueo, un seguimiento o un duplicado.';
+
+  @override
   String get linkExistingTask => 'Vincular tarea existente...';
 
   @override

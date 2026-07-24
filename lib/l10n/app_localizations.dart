@@ -11507,6 +11507,18 @@ abstract class AppLocalizations {
   /// **'Linked Tasks'**
   String get linkedTasksTitle;
 
+  /// No description provided for @linkedTasksEmptyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a task…'**
+  String get linkedTasksEmptyAction;
+
+  /// No description provided for @linkedTasksEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect this task to another — a blocker, a follow-up, a duplicate.'**
+  String get linkedTasksEmptyHint;
+
   /// No description provided for @linkExistingTask.
   ///
   /// In en, this message translates to:

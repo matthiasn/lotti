@@ -6564,6 +6564,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedTasksTitle => 'Linked Tasks';
 
   @override
+  String get linkedTasksEmptyAction => 'Link a task…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Connect this task to another — a blocker, a follow-up, a duplicate.';
+
+  @override
   String get linkExistingTask => 'Link existing task...';
 
   @override

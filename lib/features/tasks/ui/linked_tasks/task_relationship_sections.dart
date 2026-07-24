@@ -33,7 +33,8 @@ class _Section {
   final Color? accent;
 }
 
-EntryLinkType _entryLinkTypeFor(TaskLinkKind kind) {
+/// The [EntryLinkType] a resolved [TaskLinkKind] represents.
+EntryLinkType entryLinkTypeForTaskLinkKind(TaskLinkKind kind) {
   switch (kind) {
     case TaskLinkKind.blocks:
       return EntryLinkType.blocks;
@@ -142,7 +143,7 @@ class TaskRelationshipSections extends ConsumerWidget {
             onEdit: () => EditLinkTypeModal.show(
               context: context,
               linkId: entry.linkId,
-              currentType: _entryLinkTypeFor(entry.kind),
+              currentType: entryLinkTypeForTaskLinkKind(entry.kind),
               currentDirection: entry.direction,
             ),
             onUnlink: () {
@@ -180,7 +181,10 @@ String _directionTitle(
   TaskLinkKind kind,
   TaskLinkDirection direction,
 ) {
-  final pair = relationshipPhrasePair(context, _entryLinkTypeFor(kind))!;
+  final pair = relationshipPhrasePair(
+    context,
+    entryLinkTypeForTaskLinkKind(kind),
+  )!;
   return direction == TaskLinkDirection.outgoing ? pair.$1 : pair.$2;
 }
 
@@ -213,20 +217,26 @@ class LinkedTaskSectionHeader extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step5,
         // Bound to the rows below it, not floated between two sections.
-        tokens.spacing.step5,
+        tokens.spacing.step6,
         tokens.spacing.step5,
         tokens.spacing.step1,
       ),
-      child: accent == null
-          ? label
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.block, size: 12, color: accent),
-                SizedBox(width: tokens.spacing.step2),
-                label,
-              ],
-            ),
+      // The accent glyph occupies a reserved column that plain headers leave
+      // empty, so every section label starts on the same left rail rather
+      // than the accented one sitting alone off-grid.
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: tokens.spacing.step5,
+            child: accent == null
+                ? null
+                : Icon(Icons.block, size: tokens.spacing.step4, color: accent),
+          ),
+          SizedBox(width: tokens.spacing.step2),
+          label,
+        ],
+      ),
     );
   }
 }

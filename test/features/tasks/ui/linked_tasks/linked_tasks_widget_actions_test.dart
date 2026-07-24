@@ -287,6 +287,20 @@ void main() {
     });
 
     testWidgets(
+      'the empty state worded action opens LinkTaskModal — the only entry '
+      'point on a task with no links',
+      (tester) async {
+        await pumpWidget(tester, incoming: [], outgoing: []);
+
+        await tester.tap(find.text('Link a task…'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(LinkTaskModal), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'the header link action opens LinkTaskModal directly, without going '
       'through the overflow menu',
       (tester) async {

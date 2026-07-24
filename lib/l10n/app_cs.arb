@@ -2793,6 +2793,8 @@
   "linkedTasksBlockedBySectionTitle": "Blokováno",
   "linkedTasksMenuTooltip": "Možnosti propojených úkolů",
   "linkedTasksTitle": "Propojené úkoly",
+  "linkedTasksEmptyAction": "Propojit úkol…",
+  "linkedTasksEmptyHint": "Propoj tento úkol s jiným — blokátorem, navazujícím nebo duplicitou.",
   "linkExistingTask": "Propojit existující úkol...",
   "linkPhraseBasic": "Souvisí s",
   "linkPhraseBlocksInverse": "Je blokováno",

@@ -6633,6 +6633,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkedTasksTitle => 'Verknüpfte Aufgaben';
 
   @override
+  String get linkedTasksEmptyAction => 'Aufgabe verknüpfen…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Verknüpfe diese Aufgabe mit einer anderen — Blocker, Folgeaufgabe oder Duplikat.';
+
+  @override
   String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
 
   @override

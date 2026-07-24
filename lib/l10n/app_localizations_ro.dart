@@ -6717,6 +6717,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkedTasksTitle => 'Sarcini legate';
 
   @override
+  String get linkedTasksEmptyAction => 'Legați o sarcină…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Conectați această sarcină cu alta — un blocaj, o continuare sau un duplicat.';
+
+  @override
   String get linkExistingTask => 'Leagă o sarcină existentă...';
 
   @override

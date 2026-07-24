@@ -6710,6 +6710,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkedTasksTitle => 'Tâches liées';
 
   @override
+  String get linkedTasksEmptyAction => 'Lier une tâche…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Relie cette tâche à une autre : un bloqueur, un suivi ou un doublon.';
+
+  @override
   String get linkExistingTask => 'Lier une tâche existante...';
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -63,6 +64,12 @@ class LinkedTaskRow extends StatelessWidget {
       task.data.status.toDbString,
       context,
     );
+    // The status reads as a trailing anchor only where there is width to
+    // separate it from the title. On a phone it competed with the title for
+    // the same line and pushed every row to two lines, so there it drops to
+    // the subtitle slot instead — same token, same words, no wrap.
+    final wideEnoughForTrailingStatus =
+        MediaQuery.sizeOf(context).width >= kDesktopBreakpoint;
 
     return DesignSystemListItem(
       // Navigable in manage mode too: the edit/unlink buttons are additive,
@@ -76,7 +83,8 @@ class LinkedTaskRow extends StatelessWidget {
       // Status as a trailing anchor rather than a second line: it keeps the
       // row one line tall, and on a wide detail pane it stops the trailing
       // affordance floating alone at the far edge of an otherwise empty row.
-      trailing: showActions
+      subtitle: showActions || wideEnoughForTrailingStatus ? null : statusLabel,
+      trailing: showActions || !wideEnoughForTrailingStatus
           ? null
           : Text(
               statusLabel,

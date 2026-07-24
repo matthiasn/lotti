@@ -6676,6 +6676,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedTasksTitle => 'Propojené úkoly';
 
   @override
+  String get linkedTasksEmptyAction => 'Propojit úkol…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Propoj tento úkol s jiným — blokátorem, navazujícím nebo duplicitou.';
+
+  @override
   String get linkExistingTask => 'Propojit existující úkol...';
 
   @override

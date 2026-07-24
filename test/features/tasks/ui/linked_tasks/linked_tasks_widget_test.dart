@@ -255,6 +255,15 @@ void main() {
         await pumpWidget(tester, incoming: [], outgoing: []);
 
         expect(find.text('Linked Tasks'), findsOneWidget);
+        // A worded action, not a bare icon in an empty bordered box.
+        expect(find.text('Link a task…'), findsOneWidget);
+        expect(
+          find.text(
+            'Connect this task to another — a blocker, a follow-up, a '
+            'duplicate.',
+          ),
+          findsOneWidget,
+        );
         expect(find.byIcon(Icons.add_link), findsOneWidget);
         // Nothing to count, expand, or list yet.
         expect(find.text('0'), findsNothing);
@@ -270,7 +279,10 @@ void main() {
         outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
       );
 
+      // With a list to add to, the header carries the action and the empty
+      // state's worded row is gone.
       expect(find.byIcon(Icons.add_link), findsOneWidget);
+      expect(find.text('Link a task…'), findsNothing);
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
 

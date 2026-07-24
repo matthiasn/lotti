@@ -3363,6 +3363,8 @@
   "linkedTasksBlockedBySectionTitle": "Blocked by",
   "linkedTasksMenuTooltip": "Linked tasks options",
   "linkedTasksTitle": "Linked Tasks",
+  "linkedTasksEmptyAction": "Link a task…",
+  "linkedTasksEmptyHint": "Connect this task to another — a blocker, a follow-up, a duplicate.",
   "linkExistingTask": "Link existing task...",
   "linkPhraseBasic": "Relates to",
   "linkPhraseBlocksInverse": "Is blocked by",

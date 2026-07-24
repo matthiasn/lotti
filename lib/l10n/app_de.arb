@@ -2786,6 +2786,8 @@
   "linkedTasksBlockedBySectionTitle": "Blockiert von",
   "linkedTasksMenuTooltip": "Optionen für verknüpfte Aufgaben",
   "linkedTasksTitle": "Verknüpfte Aufgaben",
+  "linkedTasksEmptyAction": "Aufgabe verknüpfen…",
+  "linkedTasksEmptyHint": "Verknüpfe diese Aufgabe mit einer anderen — Blocker, Folgeaufgabe oder Duplikat.",
   "linkExistingTask": "Vorhandene Aufgabe verknüpfen...",
   "linkPhraseBasic": "Bezieht sich auf",
   "linkPhraseBlocksInverse": "Wird blockiert von",
