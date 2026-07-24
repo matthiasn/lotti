@@ -113,6 +113,13 @@ final Provider<DayProcessingRuntime> dayProcessingRuntimeProvider = Provider((
       return counts[0] + counts[1];
     },
     repair: () async {
+      // Retention (ADR 0044 decision 5) rides the once-per-start repair pass
+      // rather than owning a scheduler: terminal ledger rows past the window
+      // go, pending work never does regardless of age. A partial prune is
+      // harmless — the remainder is collected on the next start.
+      await outbox.pruneTerminalBefore(
+        DateTime.now().subtract(dayProcessingLedgerRetention),
+      );
       final currentHostId = await getIt<VectorClockService>().getHost();
       return DayProcessingOutboxRepair(
         repository: outbox,

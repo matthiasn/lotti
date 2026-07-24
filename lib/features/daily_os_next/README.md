@@ -250,6 +250,57 @@ device-local processing outbox that transcription uses (`services/day_processing
 a sealed `DayProcessingPayload` per kind (`TranscribeAudioPayload`,
 `ParseCapturePayload`, `DraftPlanPayload`, `RefinePlanPayload`).
 
+### Outbox storage: a device-local table (ADR 0044)
+
+The outbox is a table in its own database (`database/day_processing_db.drift`,
+`day_processing.sqlite`), not the file-per-job store ADR 0031 introduced. It
+lives outside the journal and agent databases because every column describes
+*this* device's progress — claim tokens, leases, attempt counters — and must
+never sync.
+
+Terminal jobs are retained deliberately: Activity and startup repair read them
+as the local processing ledger. That ledger grows for the life of the install,
+so it is kept off every hot path by partial indexes rather than by pruning:
+
+| Index | Covers | Serves |
+| --- | --- | --- |
+| `idx_day_processing_jobs_pending` | `status NOT IN ('succeeded','cancelled')`, keyed `(created_at, id)` | claim selection, the review fence, the runtime's schedule probe |
+| `idx_day_processing_jobs_day` | `(day_id, kind, created_at)` | Activity's day-scoped read |
+| `idx_day_processing_jobs_retention` | terminal rows by `completed_at` | the retention sweep |
+
+Consequently there is no `getAll()`. The three readers that once scanned
+everything are bounded: `DayActivityRepository` calls `getForDay(dayId, kinds:
+…)`, `DayAudioReviewFence` calls `getPendingByKind(transcribeAudio)`, and
+`DayProcessingRuntime` calls `getSchedulable()`. Claim cost tracks outstanding
+work rather than install age.
+
+**Claiming** is one atomic statement — `UPDATE … WHERE id = (SELECT … ORDER BY
+created_at, id LIMIT 1) RETURNING …` — so there is no window in which a second
+claimer can take a row between it being chosen and owned. FIFO by creation
+time with the id as tie-break, filtered by the SQL form of
+`DayProcessingJob.isDue`. Mutations by a claim holder are fenced on
+`claim_token`, so a worker whose claim was revoked (reviewed text satisfied the
+job, or its recording was deleted) cannot overwrite the terminal state.
+
+**Retention** removes terminal rows whose `completed_at` is older than
+`dayProcessingLedgerRetention` (90 days) on the once-per-start repair pass. No
+non-terminal row is ever eligible regardless of age: a job parked in `failed`,
+`waitingForUser` or `waitingForNetwork` is outstanding user intent that
+`retryNow` or a re-enqueue can still resurrect.
+
+**Migration.** `initializeDayProcessingOutbox` runs the one-off cutover during
+app start, before the runtime starts and before any enqueue path is wired up —
+that quiescing is the write barrier, since a transaction cannot span the
+filesystem. It imports every job file, verifies by *identity* (the set of ids
+on disk, re-scanned until stable — a row count can match while the ids differ),
+and commits the sentinel into `day_processing_migrations` in the same
+transaction as the confirming scan, so the import and the cutover marker share
+one durability domain. Verification is one-directional: a table row with no
+file behind it is kept, because no code path deletes a job file to express
+intent. `DayProcessingLegacyFileStore` is the read-only remnant of the old
+store — it keeps the partial-recovery and quarantine logic the table does not
+need — and goes when the job files are deleted a release later.
+
 ```mermaid
 sequenceDiagram
   participant UI as RealDayAgent

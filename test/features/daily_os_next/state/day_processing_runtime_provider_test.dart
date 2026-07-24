@@ -26,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../services/day_processing_test_db.dart';
 
 /// Overrides for the agent-service providers `dayProcessingOutboxProcessorProvider`
 /// pulls in to build its `DayAgentJobExecutor` (ADR 0032 phase 1). None of
@@ -58,7 +59,7 @@ void main() {
 
   setUp(() async {
     root = Directory.systemTemp.createTempSync('day-runtime-provider-test-');
-    outbox = DayProcessingOutboxRepository(rootDirectory: root);
+    outbox = DayProcessingOutboxRepository(db: createTestDayProcessingDb());
     persistenceLogic = MockPersistenceLogic();
     vectorClock = MockVectorClockService();
     when(vectorClock.getHost).thenAnswer((_) async => 'host-1');

@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
 import '../../../mocks/mocks.dart';
+import 'day_processing_test_db.dart';
 
 void main() {
   final now = DateTime.utc(2026, 7, 18, 8);
@@ -25,7 +26,7 @@ void main() {
   setUp(() async {
     root = Directory.systemTemp.createTempSync('day-review-fence-');
     repository = DayProcessingOutboxRepository(
-      rootDirectory: Directory(path.join(root.path, 'outbox')),
+      db: createTestDayProcessingDb(),
       now: () => now,
       tokenFactory: () => 'claim-token',
     );
