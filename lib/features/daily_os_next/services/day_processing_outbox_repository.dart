@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:drift/drift.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_job_row.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
@@ -16,6 +16,33 @@ import 'package:uuid/uuid.dart';
 /// already keeps the ledger off the drain path, so this bounds disk footprint
 /// rather than query cost.
 const Duration dayProcessingLedgerRetention = Duration(days: 90);
+
+/// How long a job may wait behind higher-priority days before it outranks
+/// them (ADR 0044 follow-up: head-of-line blocking).
+///
+/// Short enough that a backlog cannot park a job indefinitely, long enough
+/// that ordinary interactive work still wins while the user is looking at it.
+const Duration dayProcessingPriorityAging = Duration(minutes: 15);
+
+/// Ordering hint for [DayProcessingOutboxRepository.claimNext].
+///
+/// Priority is *viewer-relative*, so it cannot be a stored column — the answer
+/// changes as the user navigates. It is applied as a query-time expression
+/// over the candidate set the pending partial index already bounds.
+@immutable
+class DayProcessingClaimPriority {
+  const DayProcessingClaimPriority({
+    required this.dayIds,
+    required this.agingCutoff,
+  });
+
+  /// Day ids in descending priority — typically viewed day, today, tomorrow.
+  final List<String> dayIds;
+
+  /// Jobs enqueued at or before this instant outrank every day tier, so a
+  /// day nobody is looking at cannot be starved by a busy foreground.
+  final DateTime agingCutoff;
+}
 
 class DayProcessingClaim {
   const DayProcessingClaim({required this.job, required this.token});
@@ -506,9 +533,15 @@ class DayProcessingOutboxRepository {
   Future<DayProcessingClaim?> claimNext({
     Duration lease = const Duration(minutes: 3),
     Set<DayProcessingJobKind>? kinds,
+    DayProcessingClaimPriority? priority,
   }) async {
     if (kinds != null && kinds.isEmpty) return null;
-    final claim = await _claim(now: _now(), lease: lease, kinds: kinds);
+    final claim = await _claim(
+      now: _now(),
+      lease: lease,
+      kinds: kinds,
+      priority: priority,
+    );
     if (claim != null) _notify();
     return claim;
   }
@@ -543,6 +576,7 @@ class DayProcessingOutboxRepository {
     required Duration lease,
     String? jobId,
     Set<DayProcessingJobKind>? kinds,
+    DayProcessingClaimPriority? priority,
   }) async {
     final token = _tokenFactory();
     final variables = <Variable<Object>>[
@@ -556,7 +590,9 @@ class DayProcessingOutboxRepository {
       selector += ' AND id = ?${variables.length}';
     }
     if (kinds != null) selector += ' AND ${_kindFilter(kinds, variables)}';
-    selector += ' ORDER BY created_at, id LIMIT 1';
+    selector +=
+        ' ORDER BY ${_priorityOrder(priority, variables)}created_at, id '
+        'LIMIT 1';
 
     final rows = await db.customWriteReturning(
       'UPDATE day_processing_jobs SET '
@@ -816,6 +852,41 @@ class DayProcessingOutboxRepository {
   ) async {
     final rows = await db.customSelect(sql, variables: variables).get();
     return List<DayProcessingJob>.unmodifiable(rows.map(_fromRow));
+  }
+
+  /// Leading `ORDER BY` term that puts the days the user cares about first,
+  /// or an empty string for plain FIFO.
+  ///
+  /// Tiers, in order: anything that has already waited past the aging cutoff,
+  /// then each day in [DayProcessingClaimPriority.dayIds], then everything
+  /// else. Ties fall through to the caller's `created_at, id`, so ordering
+  /// *within* a day — a capture's parse before that day's draft — is
+  /// unchanged.
+  static String _priorityOrder(
+    DayProcessingClaimPriority? priority,
+    List<Variable<Object>> variables,
+  ) {
+    if (priority == null || priority.dayIds.isEmpty) return '';
+    variables.add(
+      Variable<int>(priority.agingCutoff.millisecondsSinceEpoch),
+    );
+    final buffer = StringBuffer('CASE WHEN created_at <= ?')
+      ..write(variables.length)
+      ..write(' THEN 0');
+    var tier = 0;
+    for (final dayId in priority.dayIds) {
+      variables.add(Variable<String>(dayId));
+      buffer
+        ..write(' WHEN day_id = ?')
+        ..write(variables.length)
+        ..write(' THEN ')
+        ..write(++tier);
+    }
+    buffer
+      ..write(' ELSE ')
+      ..write(tier + 1)
+      ..write(' END, ');
+    return buffer.toString();
   }
 
   /// Appends `kind IN (…)` to a query, extending [variables] in place so the

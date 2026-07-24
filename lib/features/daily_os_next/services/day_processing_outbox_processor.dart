@@ -32,6 +32,7 @@ class DayProcessingOutboxProcessor {
     required this.attachTranscript,
     this.agentJobExecutor,
     this.onJobFinished,
+    this.priority,
     Future<bool> Function()? isOnline,
     double Function()? randomUnit,
   }) : _isOnline = isOnline ?? (() async => true),
@@ -52,6 +53,11 @@ class DayProcessingOutboxProcessor {
   /// "your plan is ready" notification).
   final void Function(DayProcessingJob terminalJob)? onJobFinished;
 
+  /// Supplies the current day-ordering preference, re-evaluated per claim so
+  /// navigating to another day takes effect on the very next job rather than
+  /// after the drain finishes.
+  final DayProcessingClaimPriority Function()? priority;
+
   final Future<bool> Function() _isOnline;
   final double Function() _randomUnit;
 
@@ -61,7 +67,10 @@ class DayProcessingOutboxProcessor {
   Future<DayProcessingRunResult> processNext({
     Set<DayProcessingJobKind>? kinds,
   }) async {
-    final claim = await repository.claimNext(kinds: kinds);
+    final claim = await repository.claimNext(
+      kinds: kinds,
+      priority: priority?.call(),
+    );
     if (claim == null) return DayProcessingRunResult.idle;
     return switch (claim.job.kind) {
       DayProcessingJobKind.transcribeAudio => _processTranscription(claim),
