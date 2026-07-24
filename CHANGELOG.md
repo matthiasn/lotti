@@ -30,6 +30,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in the header — tap it to jump to the blocker, or see all of them when
   there's more than one. Marking a task Blocked now optionally prompts you to
   name what's blocking it on the spot.
+- **"Your plan is ready" as a system notification.** When a Daily OS plan
+  draft or refinement finishes while the app is in the background, Lotti now
+  raises a notification instead of completing silently — tap it to jump back
+  to your day.
+
+### Fixed
+- **Day-plan processing can no longer retry forever in the background.** A
+  draft or refinement whose AI call completed without producing the expected
+  result used to re-run a full model request every few seconds, indefinitely
+  and invisibly. Such failures now count toward the retry cap and stop with
+  a visible failure after a few attempts. A refinement waiting for a plan
+  that will never be drafted also fails fast instead of spinning forever.
+- **A committed day plan can no longer be silently replaced.** The planning
+  agent could overwrite a plan you had already committed — including block
+  progress — with a fresh draft, bypassing the change-approval flow. It is
+  now told to propose changes for your approval instead.
+- **Two quick plan refinements no longer swallow the second one.** Asking
+  for a second change while the first was still processing could mark the
+  second request as done using the first one's proposed changes, silently
+  dropping your instruction. Results are now matched to the exact request
+  that produced them.
+- **Rebuilding your day after a crash uses your latest selections.** If the
+  app was killed mid-draft, tapping "Build my day" with new decisions used
+  to silently run the old ones; the stale attempt is now replaced.
+- **The day's Activity timeline reflects processing state live.** Cards
+  could freeze on "Transcribing…" or miss retry/waiting-for-network/failure
+  transitions until something unrelated refreshed the screen; every
+  processing state change now updates the timeline, and cancelling a
+  recording's processing is reflected immediately.
+- **Two devices working on the same day no longer strand its plan.** When
+  one device created the day's dedicated agent before another device's work
+  on that day had synced in, the day's plan and pending changes could become
+  permanently invisible and a check-in could get stuck retrying its parsing
+  forever. All day reads now accept both legitimate writers of a day.
 
 ## [0.9.1061]
 ### Added

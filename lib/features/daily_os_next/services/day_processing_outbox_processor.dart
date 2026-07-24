@@ -169,6 +169,21 @@ class DayProcessingOutboxProcessor {
       );
       return DayProcessingRunResult.failed;
     }
+    if (!await _isOnline()) {
+      // Same cheap preflight as the transcription lane: without it, every
+      // offline probe cycle ran a FULL wake attempt (state fold + prompt
+      // assembly) per waiting job just to hit a SocketException.
+      await repository.markFailure(
+        jobId: job.id,
+        claimToken: claim.token,
+        failureClass: DayProcessingFailureClass.network,
+        error: 'Offline',
+      );
+      _finished(
+        job.copyWith(status: DayProcessingJobStatus.waitingForNetwork),
+      );
+      return DayProcessingRunResult.deferred;
+    }
     try {
       final outcome = await executor(job);
       switch (outcome) {

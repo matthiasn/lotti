@@ -227,6 +227,7 @@ void main() {
       () => repository.getMessagesByKind(
         dailyOsPlannerAgentId,
         AgentMessageKind.observation,
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
     when(
@@ -372,7 +373,11 @@ void main() {
       (_) async => currentState,
     );
     when(
-      () => repository.getMessagesByKind(agentId, AgentMessageKind.observation),
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.observation,
+        limit: any(named: 'limit'),
+      ),
     ).thenAnswer((_) async => []);
     when(() => repository.getEntitiesByIds(any())).thenAnswer(
       (_) async => const <String, AgentDomainEntity>{},
@@ -978,6 +983,7 @@ void main() {
           () => repository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer(
           (_) async => [
@@ -1059,6 +1065,7 @@ void main() {
           () => repository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer(
           (_) async => [
@@ -2575,6 +2582,7 @@ void main() {
           () => repository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => [observationMessage]);
         when(
@@ -4259,6 +4267,7 @@ void main() {
           () => repository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => observations);
         when(() => repository.getEntitiesByIds(any())).thenAnswer(
@@ -4355,6 +4364,7 @@ void main() {
         () => repository.getMessagesByKind(
           agentId,
           AgentMessageKind.observation,
+          limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observationB, observationA]);
       when(

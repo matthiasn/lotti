@@ -56,11 +56,29 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       ..addText(DayAgentPromptTags.dayLog, compactedLog)
       // Durable recording receipts are independent of CaptureEntity creation,
       // so a later wake can recover a completed offline check-in immediately.
+      // Capped to the newest entries (ADR 0032 §4 sizes this slot as a
+      // provenance/status INDEX, ~32 items): a heavy capture day must not
+      // inflate a section that sits ahead of everything behind it in the
+      // prompt. The marker keeps truncation explicit instead of reading as
+      // "this was everything".
       ..addJson(
         DayAgentPromptTags.dayEntries,
         dayAudioEntries.isEmpty
             ? null
-            : [for (final entry in dayAudioEntries) entry.toJson()],
+            : [
+                for (final entry in dayAudioEntries.length > _dayEntriesLimit
+                    ? dayAudioEntries.sublist(
+                        dayAudioEntries.length - _dayEntriesLimit,
+                      )
+                    : dayAudioEntries)
+                  entry.toJson(),
+                if (dayAudioEntries.length > _dayEntriesLimit)
+                  {
+                    'truncated': true,
+                    'omittedOlderEntries':
+                        dayAudioEntries.length - _dayEntriesLimit,
+                  },
+              ],
       )
       // Day-stable attention claims/agreements precede the per-wake mode blocks.
       ..addJson(
@@ -338,6 +356,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required DailyOsPlannerWakeContext wakeContext,
     required DateTime dayDate,
     required DateTime now,
+    DayDirectiveEntity? preloadedTodayDirective,
   }) async {
     if (!wakeContext.isDigestWake ||
         agentId != dailyOsPlannerAgentId ||
@@ -416,9 +435,13 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         limit: _digestStatusEventLimit,
       );
       final statusEvents = selected;
-      final todayDirective = await directiveService!.directiveForDay(
-        wakeContext.dayId,
-      );
+      // Reuse the standalone <day_directive> load when it is this day's —
+      // the digest previously re-read the identical register.
+      final todayDirective =
+          preloadedTodayDirective != null &&
+              preloadedTodayDirective.dayId == wakeContext.dayId
+          ? preloadedTodayDirective
+          : await directiveService!.directiveForDay(wakeContext.dayId);
       final tomorrowDirective = await directiveService!.directiveForDay(
         tomorrowId,
       );
@@ -474,6 +497,11 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   /// Sync-lag overlap subtracted from the digest watermark before reading
   /// status events (see `_digestContext`).
   static const _digestStatusEventSyncLagSlack = Duration(hours: 12);
+
+  /// Cap on `<day_entries>` items rendered into the prompt — the ADR 0032
+  /// §4 sizing of this slot as a bounded provenance/status index. The list
+  /// is ascending by capture time, so the cap keeps the NEWEST entries.
+  static const _dayEntriesLimit = 32;
 
   /// Initial candidate-pool fetch for ranked selection — larger than the
   /// render cap so severity decides what survives truncation instead of
