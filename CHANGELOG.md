@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1063]
+### Changed
+- **Picking what two tasks mean to each other is now one choice, not two.**
+  The relationship picker was a row of type chips plus a separate direction
+  switch, which put the same word on screen twice — a chip reading "Blocks"
+  directly above a switch whose first option also read "Blocks". You now pick
+  from a single list that completes the sentence "This task…": Relates to,
+  Blocks, Is blocked by, Follows up on, Has follow-up, Duplicates, Is
+  duplicated by, Fixes, Is fixed by, Supersedes, Is superseded by.
+- **You can change a relationship after creating it.** Turn a plain link into
+  a blocker, or reverse which of the two tasks is the blocker, without
+  unlinking and starting over.
+- **The Linked Tasks card groups links under the exact phrase you picked**, so
+  it reads back the words you chose. What the task is waiting on comes first
+  and is the one thing called out; everything else stays quiet. Each row shows
+  the linked task's status.
+- **The "waiting on" chip in the task header is compact.** It states that the
+  task is waiting and how many tasks it waits on; scroll to Linked Tasks to
+  see which. Previously it embedded the blocker's full title and could span
+  the whole header.
+- **Linking, blocking and editing sheets now adapt to the window** — a bottom
+  sheet on a phone, a centred dialog on a wide window, matching every other
+  task picker — and size themselves to their content instead of leaving a
+  large empty area below a short list.
+
+### Fixed
+- **Two tasks can hold more than one relationship.** A task already linked to
+  another could not be linked again with a different relationship — the second
+  one silently reported "No tasks found".
+- **A task with no links can now be linked.** The Linked Tasks section was
+  hidden entirely until a task already had a link, and the only way to add one
+  lived inside that hidden section. It now always offers a "Link a task…"
+  action.
+- Long task titles no longer truncate mid-word when picking a task to link.
+
 ## [0.9.1062]
 ### Added
 - **AI activity now uses one consistent decoder-bars animation.** Unified AI
@@ -26,20 +61,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the same color family as the agent report cards, with a soft accent
   hairline, in both light and dark themes.
 - **Task links now carry real relationships, not just a plain connection.**
-  When linking two tasks you pick what they mean to each other from one list —
-  Relates to, Blocks, Is blocked by, Follows up on, Has follow-up, Duplicates,
-  Fixes, Supersedes, and their reverses — completing the sentence "This
-  task…". It works when linking an existing task and when creating a new
-  linked task, and you can change a relationship afterwards, including
-  reversing which task is the blocker, without unlinking and starting over.
-  The same two tasks can hold more than one relationship.
-  The Linked Tasks section groups links under the exact phrase you picked
-  rather than one flat list, with what's blocking the task listed first and
-  called out. A task that's waiting shows a compact "Waiting on 1 task" chip
-  next to its status in the header — tap it to jump to the blocker, or see all
-  of them when there's more than one. Marking a task Blocked optionally prompts you to name what's
-  blocking it on the spot. A task with no links yet now offers a "Link a
-  task…" action instead of hiding the section entirely.
+  When linking two tasks you can now pick what they mean to each other —
+  Blocks, Follows up, Duplicates, Fixes, or Supersedes — in either direction,
+  both when linking an existing task and when creating a new linked task. The
+  Linked Tasks section groups these by relationship instead of one flat list,
+  and a task that's blocked shows a "Blocked by" chip right next to its status
+  in the header — tap it to jump to the blocker, or see all of them when
+  there's more than one. Marking a task Blocked now optionally prompts you to
+  name what's blocking it on the spot.
 - **"Your plan is ready" as a system notification.** When a Daily OS plan
   draft or refinement finishes while the app is in the background, Lotti now
   raises a notification instead of completing silently — tap it to jump back
