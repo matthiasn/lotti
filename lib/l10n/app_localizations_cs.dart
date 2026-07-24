@@ -5277,6 +5277,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get doneButton => 'Hotovo';
 
   @override
+  String get editLinkTypeFailedMessage =>
+      'Vztah se nepodařilo upravit. Zkuste to prosím znovu.';
+
+  @override
+  String get editLinkTypeTitle => 'Upravit vztah';
+
+  @override
+  String get editLinkTypeTooltip => 'Upravit vztah';
+
+  @override
   String get editMenuTitle => 'Upravit';
 
   @override
@@ -6651,7 +6661,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tím by vznikl blokující cyklus — vyber jiný úkol.';
 
   @override
-  String get linkedFromCaption => 'z';
+  String get linkDirectionLabel => 'Tento úkol…';
 
   @override
   String get linkedTaskImageBadge => 'Z propojené úlohy';
@@ -6660,31 +6670,23 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blokováno';
 
   @override
-  String get linkedTasksBlocksSectionTitle => 'Blokuje';
+  String get linkedTasksEmptyAction => 'Propojit úkol…';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Duplikáty';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Opravuje';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Navazující úkoly';
+  String get linkedTasksEmptyHint =>
+      'Propoj tento úkol s jiným — blokátorem, navazujícím nebo duplicitou.';
 
   @override
   String get linkedTasksMenuTooltip => 'Možnosti propojených úkolů';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Nahrazuje';
-
-  @override
   String get linkedTasksTitle => 'Propojené úkoly';
 
   @override
-  String get linkedToCaption => 'na';
+  String get linkExistingTask => 'Propojit existující úkol...';
 
   @override
-  String get linkExistingTask => 'Propojit existující úkol...';
+  String get linkPhraseBasic => 'Souvisí s';
 
   @override
   String get linkPhraseBlocksInverse => 'Je blokováno';
@@ -6715,24 +6717,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Nahrazuje';
-
-  @override
-  String get linkTypeBasicOption => 'Propojit';
-
-  @override
-  String get linkTypeBlocksOption => 'Blokuje';
-
-  @override
-  String get linkTypeDuplicatesOption => 'Duplikuje';
-
-  @override
-  String get linkTypeFixesOption => 'Opravuje';
-
-  @override
-  String get linkTypeFollowsUpOption => 'Navazuje';
-
-  @override
-  String get linkTypeSupersedesOption => 'Nahrazuje';
 
   @override
   String get logbookEmptyHint =>
@@ -10247,20 +10231,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentWakeAgent => 'Probudit agenta';
 
   @override
-  String taskBlockedByChipLabel(int count, String title) {
+  String taskBlockedByChipLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Blokováno $count úkolů',
-      few: 'Blokováno $count úkoly',
-      one: 'Blokováno úkolem $title',
+      other: 'Čeká na $count úkolů',
+      few: 'Čeká na $count úkoly',
+      one: 'Čeká na 1 úkol',
     );
     return '$_temp0';
-  }
-
-  @override
-  String taskBlockedReason(String title) {
-    return 'Blokováno úkolem: $title';
   }
 
   @override
@@ -10270,16 +10249,22 @@ class AppLocalizationsCs extends AppLocalizations {
       locale: localeName,
       other: 'Klepnutím zobrazíte $count blokujících úkolů',
       few: 'Klepnutím zobrazíte $count blokující úkoly',
-      one: 'Blokováno úkolem $title',
+      one: 'Čeká se na $title',
     );
     return '$_temp0';
   }
 
   @override
-  String get taskBlockerPickerSkipButton => 'Přeskočit';
+  String get taskBlockedByUnresolvedLabel =>
+      'Blokující úkol není synchronizován';
 
   @override
-  String get taskBlockerPickerTitle => 'Co blokuje tento úkol?';
+  String taskBlockedReason(String title) {
+    return 'Blokováno úkolem: $title';
+  }
+
+  @override
+  String get taskBlockerPickerTitle => 'Co ho blokuje?';
 
   @override
   String get taskCategoryAllLabel => 'vše';

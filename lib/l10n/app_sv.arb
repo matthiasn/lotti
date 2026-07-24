@@ -3207,11 +3207,9 @@
       }
     }
   },
-  "linkedFromCaption": "från",
   "linkedTaskImageBadge": "Från länkad uppgift",
   "linkedTasksMenuTooltip": "Länkade uppgifter alternativ",
   "linkedTasksTitle": "Länkade uppgifter",
-  "linkedToCaption": "att",
   "linkExistingTask": "Länka befintlig uppgift...",
   "loggingDomainAgentRuntime": "Agentens runtime",
   "loggingDomainAgentWorkflow": "Agentens arbetsflöde",

@@ -35,6 +35,16 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1063" date="2026-07-25">
+      <description>
+        <p>Picking what two tasks mean to each other is now one choice, not two. The relationship picker was a row of type chips plus a separate direction switch, which put the same word on screen twice — a chip reading "Blocks" directly above a switch whose first option also read "Blocks". You now pick from a single list that completes the sentence "This task…": Relates to, Blocks, Is blocked by, Follows up on, Has follow-up, Duplicates, Is duplicated by, Fixes, Is fixed by, Supersedes, Is superseded by.</p>
+        <p>You can change a relationship after creating it — turn a plain link into a blocker, or reverse which of the two tasks is the blocker, without unlinking and starting over.</p>
+        <p>The Linked Tasks card groups links under the exact phrase you picked, so it reads back the words you chose. What the task is waiting on comes first and is the one thing called out, and each row shows the linked task's status. The "waiting on" chip in the task header is now compact: it states that the task is waiting and how many tasks it waits on, rather than embedding the blocker's full title and spanning the header.</p>
+        <p>Linking, blocking and editing sheets adapt to the window — a bottom sheet on a phone, a centred dialog on a wide window, matching every other task picker — and size themselves to their content instead of leaving a large empty area below a short list.</p>
+        <p>Fixed: two tasks can hold more than one relationship. A task already linked to another could not be linked again with a different relationship; the second attempt silently reported "No tasks found".</p>
+        <p>Fixed: a task with no links can now be linked. The Linked Tasks section was hidden until a task already had a link, and the only way to add one lived inside that hidden section. It now always offers a "Link a task…" action. Long task titles also no longer truncate mid-word when picking a task to link.</p>
+      </description>
+    </release>
     <release version="0.9.1062" date="2026-07-23">
       <description>
         <p>AI activity now uses one consistent decoder-bars animation across Unified AI progress, entry details, cover-art generation, task details, and Daily OS, with smooth entry and exit transitions and tap-to-open progress where available.</p>

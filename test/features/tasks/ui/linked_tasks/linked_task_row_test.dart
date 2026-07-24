@@ -23,50 +23,31 @@ void main() {
     await getIt.reset();
   });
 
-  LinkedTaskRowData buildRowData({
-    String? caption,
-    LinkDirection direction = LinkDirection.outgoing,
-  }) => LinkedTaskRowData(
+  LinkedTaskRowData buildRowData() => LinkedTaskRowData(
     task: TestTaskFactory.create(id: 'other-task', title: 'Other Task'),
-    direction: direction,
-    caption: caption,
   );
 
   group('LinkedTaskRow', () {
-    testWidgets('renders the direction glyph and caption when supplied', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: LinkedTaskRow(
-            taskId: 'anchor-task',
-            data: buildRowData(caption: 'to'),
-            manageMode: false,
+    testWidgets(
+      'renders one template — status glyph, title, chevron — with no per-row '
+      'direction glyph or caption (the section header states the relationship)',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: false,
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('to'), findsOneWidget);
-      expect(find.byType(SvgPicture), findsOneWidget);
-      expect(find.text('Other Task'), findsOneWidget);
-    });
-
-    testWidgets('omits the direction glyph and caption when caption is null', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: LinkedTaskRow(
-            taskId: 'anchor-task',
-            data: buildRowData(),
-            manageMode: false,
-          ),
-        ),
-      );
-
-      expect(find.byType(SvgPicture), findsNothing);
-      expect(find.text('Other Task'), findsOneWidget);
-    });
+        expect(find.text('Other Task'), findsOneWidget);
+        expect(find.byType(StatusGlyph), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+        expect(find.byType(SvgPicture), findsNothing);
+      },
+    );
 
     testWidgets(
       'shows the plain chevron in manage mode when onUnlink is null',
@@ -115,6 +96,54 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(unlinkCalled, isTrue);
+      },
+    );
+
+    testWidgets(
+      'shows the edit button in manage mode when onEdit is supplied, '
+      'alongside the unlink button',
+      (tester) async {
+        var editCalled = false;
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: true,
+              onEdit: () async => editCalled = true,
+              onUnlink: () async {},
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.pump();
+
+        expect(editCalled, isTrue);
+      },
+    );
+
+    testWidgets(
+      'shows only the edit button in manage mode when onUnlink is null',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: true,
+              onEdit: () async {},
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
       },
     );
 
@@ -193,21 +222,25 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('row tap is disabled in manage mode', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
-          child: LinkedTaskRow(
-            taskId: 'anchor-task',
-            data: buildRowData(),
-            manageMode: true,
+    testWidgets(
+      'the row stays navigable in manage mode — the edit/unlink buttons are '
+      'additive, so a live-looking row is never a dead tap target',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: true,
+            ),
           ),
-        ),
-      );
+        );
 
-      final rowInkWell = tester.widget<InkWell>(find.byType(InkWell));
-      expect(rowInkWell.onTap, isNull);
-    });
+        final rowInkWell = tester.widget<InkWell>(find.byType(InkWell).first);
+        expect(rowInkWell.onTap, isNotNull);
+      },
+    );
   });
 
   group('StatusGlyph', () {

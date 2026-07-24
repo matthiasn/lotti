@@ -123,6 +123,18 @@ class _DropdownMenuRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                // Single-choice lists mark their current value too: without
+                // it an open list of similar-sounding options says nothing
+                // about what is already chosen, which is worst when the list
+                // is opened precisely to read that state back.
+                if (!hasCheckbox && item.selected) ...[
+                  SizedBox(width: sizeSpec.menuCheckboxGap),
+                  Icon(
+                    Icons.check_rounded,
+                    size: sizeSpec.checkboxGlyphSize,
+                    color: styleSpec.checkboxGlyphColor,
+                  ),
+                ],
               ],
             ),
           ),
@@ -130,7 +142,7 @@ class _DropdownMenuRow extends StatelessWidget {
       ),
     );
 
-    return hasCheckbox ? Semantics(selected: item.selected, child: row) : row;
+    return Semantics(selected: item.selected, child: row);
   }
 }
 

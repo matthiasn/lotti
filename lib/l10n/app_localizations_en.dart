@@ -5192,6 +5192,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get doneButton => 'Done';
 
   @override
+  String get editLinkTypeFailedMessage =>
+      'Couldn\'t update the relationship. Please try again.';
+
+  @override
+  String get editLinkTypeTitle => 'Edit relationship';
+
+  @override
+  String get editLinkTypeTooltip => 'Edit relationship';
+
+  @override
   String get editMenuTitle => 'Edit';
 
   @override
@@ -6539,7 +6549,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'This would create a blocking cycle — choose a different task.';
 
   @override
-  String get linkedFromCaption => 'from';
+  String get linkDirectionLabel => 'This task…';
 
   @override
   String get linkedTaskImageBadge => 'From linked task';
@@ -6548,31 +6558,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blocked by';
 
   @override
-  String get linkedTasksBlocksSectionTitle => 'Blocks';
+  String get linkedTasksEmptyAction => 'Link a task…';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Duplicates';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Fixes';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Follow-ups';
+  String get linkedTasksEmptyHint =>
+      'Connect this task to another — a blocker, a follow-up, a duplicate.';
 
   @override
   String get linkedTasksMenuTooltip => 'Linked tasks options';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Supersedes';
-
-  @override
   String get linkedTasksTitle => 'Linked Tasks';
 
   @override
-  String get linkedToCaption => 'to';
+  String get linkExistingTask => 'Link existing task...';
 
   @override
-  String get linkExistingTask => 'Link existing task...';
+  String get linkPhraseBasic => 'Relates to';
 
   @override
   String get linkPhraseBlocksInverse => 'Is blocked by';
@@ -6603,24 +6605,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Supersedes';
-
-  @override
-  String get linkTypeBasicOption => 'Link';
-
-  @override
-  String get linkTypeBlocksOption => 'Blocks';
-
-  @override
-  String get linkTypeDuplicatesOption => 'Duplicates';
-
-  @override
-  String get linkTypeFixesOption => 'Fixes';
-
-  @override
-  String get linkTypeFollowsUpOption => 'Follows up';
-
-  @override
-  String get linkTypeSupersedesOption => 'Supersedes';
 
   @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
@@ -10045,19 +10029,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentWakeAgent => 'Wake agent';
 
   @override
-  String taskBlockedByChipLabel(int count, String title) {
+  String taskBlockedByChipLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Blocked by $count tasks',
-      one: 'Blocked by $title',
+      other: 'Waiting on $count tasks',
+      one: 'Waiting on 1 task',
     );
     return '$_temp0';
-  }
-
-  @override
-  String taskBlockedReason(String title) {
-    return 'Blocked by: $title';
   }
 
   @override
@@ -10066,16 +10045,21 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Tap to see $count blockers',
-      one: 'Blocked by $title',
+      one: 'Waiting on $title',
     );
     return '$_temp0';
   }
 
   @override
-  String get taskBlockerPickerSkipButton => 'Skip';
+  String get taskBlockedByUnresolvedLabel => 'Blocker not synced yet';
 
   @override
-  String get taskBlockerPickerTitle => 'What\'s blocking this task?';
+  String taskBlockedReason(String title) {
+    return 'Blocked by: $title';
+  }
+
+  @override
+  String get taskBlockerPickerTitle => 'What\'s blocking this?';
 
   @override
   String get taskCategoryAllLabel => 'all';

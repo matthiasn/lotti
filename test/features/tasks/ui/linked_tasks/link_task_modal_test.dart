@@ -10,12 +10,14 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
@@ -44,27 +46,23 @@ void main() {
       dateTo: now,
     );
 
-    // DsSegmentedToggle renders an invisible width-reserving ghost copy of
-    // each segment's label alongside the visible one (see its doc comment) —
-    // plain find.text matches two Texts; the visible one is the Stack's last
-    // child.
-    Finder visibleText(String label) => find.text(label).last;
-
     // Pumps a button that opens the modal, taps it, and settles.
     Future<void> openModal(
       WidgetTester tester, {
-      Set<String> existingLinkedIds = const {},
+      Set<ExistingRelation> existingRelations = const {},
+      MediaQueryData? mediaQueryData,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: mediaQueryData,
             child: Builder(
               builder: (context) => ElevatedButton(
                 onPressed: () async {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: existingLinkedIds,
+                    existingRelations: existingRelations,
                   );
                 },
                 child: const Text('Open Modal'),
@@ -77,6 +75,19 @@ void main() {
       await tester.tap(find.text('Open Modal'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    // Drives the relationship dropdown by its own callback. The panel expands
+    // inline inside a Wolt-hosted modal, where hit-testing an expanded row is
+    // unreliable — this repo's established pattern for such controls.
+    Future<void> pickRelation(WidgetTester tester, String label) async {
+      final dropdown = tester.widget<DesignSystemDropdown>(
+        find.byType(DesignSystemDropdown),
+      );
+      dropdown.onItemPressed!(
+        dropdown.items.firstWhere((item) => item.label == label),
+      );
+      await tester.pump();
     }
 
     void stubTasks(List<Task> tasks) {
@@ -148,7 +159,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -176,7 +187,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -196,32 +207,35 @@ void main() {
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     });
 
-    testWidgets('modal uses DraggableScrollableSheet', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () async {
-                  await LinkTaskModal.show(
-                    context: context,
-                    currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
-                  );
-                },
-                child: const Text('Open Modal'),
-              ),
-            ),
-          ),
-        ),
-      );
+    testWidgets(
+      'opens via the shared Wolt responsive modal, not a '
+      'DraggableScrollableSheet reveal',
+      (tester) async {
+        await openModal(tester);
 
-      await tester.tap(find.text('Open Modal'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+        // ModalUtils.showSinglePageModal's own responsive dialog/bottom-sheet
+        // breakpoint logic is covered by test/widgets/modal/modal_utils_test.dart
+        // — this just confirms LinkTaskModal no longer sizes itself via the
+        // old, unprecedented DraggableScrollableSheet reveal.
+        expect(find.byType(DraggableScrollableSheet), findsNothing);
+      },
+    );
 
-      expect(find.byType(DraggableScrollableSheet), findsOneWidget);
-    });
+    testWidgets(
+      'renders correctly on a wide desktop viewport too — the same '
+      'responsive modal path every other task-page picker uses',
+      (tester) async {
+        // Desktop sizing crosses WoltModalConfig.pageBreakpoint (560), so
+        // ModalUtils.showSinglePageModal resolves to its dialog variant.
+        await openModal(
+          tester,
+          mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
+        );
+
+        expect(find.text('Link existing task...'), findsOneWidget);
+        expect(find.byType(DraggableScrollableSheet), findsNothing);
+      },
+    );
 
     testWidgets('displays tasks from database', (tester) async {
       final testTasks = [
@@ -247,7 +261,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -289,7 +303,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -332,7 +346,12 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {'linked-task'},
+                    existingRelations: {
+                      const ExistingRelation(
+                        taskId: 'linked-task',
+                        relation: DirectedRelation(EntryLinkType.basic),
+                      ),
+                    },
                   );
                 },
                 child: const Text('Open Modal'),
@@ -349,34 +368,6 @@ void main() {
       // Already linked task should be filtered out
       expect(find.text('Already Linked'), findsNothing);
       expect(find.text('Available Task'), findsOneWidget);
-    });
-
-    testWidgets('has a handle bar for dragging', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () async {
-                  await LinkTaskModal.show(
-                    context: context,
-                    currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
-                  );
-                },
-                child: const Text('Open Modal'),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open Modal'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-
-      // Handle bar is rendered with a specific key
-      expect(find.byKey(const Key('link_task_modal_handle')), findsOneWidget);
     });
 
     testWidgets('shows status icons for tasks', (tester) async {
@@ -410,7 +401,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -432,73 +423,6 @@ void main() {
       );
     });
 
-    testWidgets('shows link icon for each task item', (tester) async {
-      final testTasks = [buildTask(title: 'Some Task')];
-
-      when(
-        () => mockJournalDb.getTasks(
-          starredStatuses: any(named: 'starredStatuses'),
-          taskStatuses: any(named: 'taskStatuses'),
-          categoryIds: any(named: 'categoryIds'),
-          limit: any(named: 'limit'),
-        ),
-      ).thenAnswer((_) async => testTasks);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () async {
-                  await LinkTaskModal.show(
-                    context: context,
-                    currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
-                  );
-                },
-                child: const Text('Open Modal'),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open Modal'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-
-      // Each task shows add_link icon as trailing
-      expect(find.byIcon(Icons.add_link_rounded), findsOneWidget);
-    });
-
-    testWidgets('modal opens as bottom sheet', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () async {
-                  await LinkTaskModal.show(
-                    context: context,
-                    currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
-                  );
-                },
-                child: const Text('Open Modal'),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open Modal'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-
-      // Verify modal is open as a BottomSheet
-      expect(find.byType(BottomSheet), findsOneWidget);
-    });
-
     testWidgets('shows no tasks message when no tasks available', (
       tester,
     ) async {
@@ -512,7 +436,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -557,7 +481,7 @@ void main() {
                     await LinkTaskModal.show(
                       context: context,
                       currentTaskId: 'current-task',
-                      existingLinkedIds: const {},
+                      existingRelations: const {},
                     );
                   },
                   child: const Text('Open Modal'),
@@ -614,7 +538,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -685,7 +609,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -746,7 +670,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -775,68 +699,85 @@ void main() {
         ),
       ).called(1);
       // The modal actually pops on success, not just createLink firing.
-      expect(
-        find.byKey(const Key('link_task_modal_handle')),
-        findsNothing,
-      );
+      expect(find.text('Link existing task...'), findsNothing);
     });
 
     testWidgets(
-      'defaults to "Link" selected and shows no phrasing toggle',
+      'a task already linked by one relation stays a candidate for a '
+      'different one — a pair may hold several relationships',
+      (tester) async {
+        stubTasks([buildTask(id: 'linked-task', title: 'Already Linked')]);
+
+        await openModal(
+          tester,
+          existingRelations: {
+            const ExistingRelation(
+              taskId: 'linked-task',
+              relation: DirectedRelation(EntryLinkType.basic),
+            ),
+          },
+        );
+
+        // Excluded while the duplicate relation is selected...
+        expect(find.text('Already Linked'), findsNothing);
+
+        // ...and offered again as soon as a different one is.
+        await pickRelation(tester, 'Blocks');
+        expect(find.text('Already Linked'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'direction counts as part of the relation — the inverse of an existing '
+      'link is still offerable',
+      (tester) async {
+        stubTasks([buildTask(id: 'blocker-task', title: 'Blocker Task')]);
+
+        await openModal(
+          tester,
+          existingRelations: {
+            const ExistingRelation(
+              taskId: 'blocker-task',
+              relation: DirectedRelation(EntryLinkType.blocks),
+            ),
+          },
+        );
+
+        await pickRelation(tester, 'Blocks');
+        expect(find.text('Blocker Task'), findsNothing);
+
+        await pickRelation(tester, 'Is blocked by');
+        expect(find.text('Blocker Task'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'defaults to the plain link, offered as one directed-relation control',
       (tester) async {
         await openModal(tester);
 
-        final linkPill = tester.widget<DsPill>(
-          find.ancestor(
-            of: find.text('Link'),
-            matching: find.byType(DsPill),
-          ),
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
         );
-        expect(linkPill.selected, isTrue);
+        expect(dropdown.inputLabel, 'Relates to');
+        // Type and direction are a single list, so there is no second control.
+        expect(find.byType(DesignSystemDropdown), findsOneWidget);
         expect(find.byType(DsSegmentedToggle<bool>), findsNothing);
       },
     );
 
     testWidgets(
-      'selecting "Blocks" reveals the phrasing toggle; "Link" does not',
+      'picking a directed relation updates the control value in place',
       (tester) async {
         await openModal(tester);
 
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
+        await pickRelation(tester, 'Is blocked by');
 
-        expect(find.byType(DsSegmentedToggle<bool>), findsOneWidget);
-        expect(visibleText('Is blocked by'), findsOneWidget);
-
-        await tester.tap(find.text('Link'));
-        await tester.pump();
-
-        expect(find.byType(DsSegmentedToggle<bool>), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'switching relationship type resets the phrasing toggle to primary',
-      (tester) async {
-        await openModal(tester);
-
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
-        await tester.tap(visibleText('Is blocked by'));
-        await tester.pump();
-
-        var toggle = tester.widget<DsSegmentedToggle<bool>>(
-          find.byType(DsSegmentedToggle<bool>),
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
         );
-        expect(toggle.selected, isTrue);
-
-        await tester.tap(find.text('Fixes'));
-        await tester.pump();
-
-        toggle = tester.widget<DsSegmentedToggle<bool>>(
-          find.byType(DsSegmentedToggle<bool>),
-        );
-        expect(toggle.selected, isFalse);
+        expect(dropdown.inputLabel, 'Is blocked by');
+        expect(find.byType(DesignSystemDropdown), findsOneWidget);
       },
     );
 
@@ -861,8 +802,7 @@ void main() {
         ).thenAnswer((_) async => true);
 
         await openModal(tester);
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
+        await pickRelation(tester, 'Blocks');
 
         await tester.tap(find.text('Blocker Task'));
         await tester.pump();
@@ -899,10 +839,7 @@ void main() {
         ).thenAnswer((_) async => true);
 
         await openModal(tester);
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
-        await tester.tap(visibleText('Is blocked by'));
-        await tester.pump();
+        await pickRelation(tester, 'Is blocked by');
 
         await tester.tap(find.text('Blocker Task'));
         await tester.pump();
@@ -941,15 +878,22 @@ void main() {
         ).thenAnswer((_) async => false);
 
         await openModal(tester);
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
+        await pickRelation(tester, 'Blocks');
 
         await tester.tap(find.text('Blocker Task'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('Blocker Task'), findsOneWidget);
-        expect(find.byType(SnackBar), findsOneWidget);
+        // The Wolt-hosted picker can transiently mount two SnackBar widget
+        // instances for a single logical show (a benign rendering artifact
+        // also seen in edit_link_type_modal_test.dart) — assert on content.
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsWidgets,
+        );
       },
     );
 
@@ -982,7 +926,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -1029,7 +973,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -1071,7 +1015,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -1118,7 +1062,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -1132,8 +1076,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      // Enter search that matches via FTS5
+      // Enter search that matches via FTS5. Unlike the plain-substring case,
+      // this needs a second pump: the FTS5 fetch is now kicked off as a
+      // build-time side effect of TaskSearchPickerBody's entriesBuilder (one
+      // rebuild hop further from the keystroke than the old direct
+      // onChanged-triggered fetch), so the result lands one frame later.
       await tester.enterText(find.byType(TextField), 'special');
+      await tester.pump();
       await tester.pump();
 
       // Task-2 should be visible because FTS5 matched it
@@ -1168,7 +1117,7 @@ void main() {
                   await LinkTaskModal.show(
                     context: context,
                     currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
+                    existingRelations: const {},
                   );
                 },
                 child: const Text('Open Modal'),
@@ -1288,7 +1237,15 @@ void main() {
         await openModal(tester);
 
         expect(find.text(label), findsOneWidget);
-        expect(find.byIcon(icon), findsOneWidget);
+        // Rejected's icon (Icons.close_rounded) is also the Wolt modal's own
+        // close button — scope to the picker list so the two don't collide.
+        expect(
+          find.descendant(
+            of: find.byType(EntityPickerSheet),
+            matching: find.byIcon(icon),
+          ),
+          findsOneWidget,
+        );
       });
     }
   });

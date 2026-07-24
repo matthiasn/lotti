@@ -5303,6 +5303,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get doneButton => 'Gata';
 
   @override
+  String get editLinkTypeFailedMessage =>
+      'Relația nu a putut fi actualizată. Vă rugăm să încercați din nou.';
+
+  @override
+  String get editLinkTypeTitle => 'Editați relația';
+
+  @override
+  String get editLinkTypeTooltip => 'Editați relația';
+
+  @override
   String get editMenuTitle => 'Editați';
 
   @override
@@ -6692,7 +6702,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Aceasta ar crea un ciclu de blocare — alegeți o altă sarcină.';
 
   @override
-  String get linkedFromCaption => 'de la';
+  String get linkDirectionLabel => 'Această sarcină…';
 
   @override
   String get linkedTaskImageBadge => 'Din sarcina legată';
@@ -6701,31 +6711,23 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blocată de';
 
   @override
-  String get linkedTasksBlocksSectionTitle => 'Blochează';
+  String get linkedTasksEmptyAction => 'Legați o sarcină…';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Duplicate';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Remediază';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Continuări';
+  String get linkedTasksEmptyHint =>
+      'Conectați această sarcină cu alta — un blocaj, o continuare sau un duplicat.';
 
   @override
   String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Înlocuiește';
-
-  @override
   String get linkedTasksTitle => 'Sarcini legate';
 
   @override
-  String get linkedToCaption => 'la';
+  String get linkExistingTask => 'Leagă o sarcină existentă...';
 
   @override
-  String get linkExistingTask => 'Leagă o sarcină existentă...';
+  String get linkPhraseBasic => 'Are legătură cu';
 
   @override
   String get linkPhraseBlocksInverse => 'Este blocată de';
@@ -6756,24 +6758,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Înlocuiește';
-
-  @override
-  String get linkTypeBasicOption => 'Legați';
-
-  @override
-  String get linkTypeBlocksOption => 'Blocați';
-
-  @override
-  String get linkTypeDuplicatesOption => 'Duplicați';
-
-  @override
-  String get linkTypeFixesOption => 'Remediați';
-
-  @override
-  String get linkTypeFollowsUpOption => 'Continuați';
-
-  @override
-  String get linkTypeSupersedesOption => 'Înlocuiți';
 
   @override
   String get logbookEmptyHint =>
@@ -10306,20 +10290,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentWakeAgent => 'Treziți agentul';
 
   @override
-  String taskBlockedByChipLabel(int count, String title) {
+  String taskBlockedByChipLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Blocată de $count de sarcini',
-      few: 'Blocată de $count sarcini',
-      one: 'Blocată de $title',
+      other: 'În așteptarea a $count de sarcini',
+      few: 'În așteptarea a $count sarcini',
+      one: 'În așteptarea unei sarcini',
     );
     return '$_temp0';
-  }
-
-  @override
-  String taskBlockedReason(String title) {
-    return 'Blocată de: $title';
   }
 
   @override
@@ -10329,16 +10308,22 @@ class AppLocalizationsRo extends AppLocalizations {
       locale: localeName,
       other: 'Atingeți pentru a vedea $count de blocaje',
       few: 'Atingeți pentru a vedea $count blocaje',
-      one: 'Blocată de $title',
+      one: 'Se așteaptă $title',
     );
     return '$_temp0';
   }
 
   @override
-  String get taskBlockerPickerSkipButton => 'Omiteți';
+  String get taskBlockedByUnresolvedLabel =>
+      'Sarcina blocantă nu a fost încă sincronizată';
 
   @override
-  String get taskBlockerPickerTitle => 'Ce blochează această sarcină?';
+  String taskBlockedReason(String title) {
+    return 'Blocată de: $title';
+  }
+
+  @override
+  String get taskBlockerPickerTitle => 'Ce o blochează?';
 
   @override
   String get taskCategoryAllLabel => 'toate';

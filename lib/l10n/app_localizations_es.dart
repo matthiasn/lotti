@@ -5290,6 +5290,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get doneButton => 'Listo';
 
   @override
+  String get editLinkTypeFailedMessage =>
+      'No se pudo actualizar la relación. Inténtalo de nuevo.';
+
+  @override
+  String get editLinkTypeTitle => 'Editar relación';
+
+  @override
+  String get editLinkTypeTooltip => 'Editar relación';
+
+  @override
   String get editMenuTitle => 'Editar';
 
   @override
@@ -6658,7 +6668,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esto crearía un ciclo de bloqueo — elige otra tarea.';
 
   @override
-  String get linkedFromCaption => 'desde';
+  String get linkDirectionLabel => 'Esta tarea…';
 
   @override
   String get linkedTaskImageBadge => 'De tarea vinculada';
@@ -6667,31 +6677,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Bloqueada por';
 
   @override
-  String get linkedTasksBlocksSectionTitle => 'Bloquea';
+  String get linkedTasksEmptyAction => 'Vincular una tarea…';
 
   @override
-  String get linkedTasksDuplicatesSectionTitle => 'Duplicados';
-
-  @override
-  String get linkedTasksFixesSectionTitle => 'Corrige';
-
-  @override
-  String get linkedTasksFollowUpsSectionTitle => 'Seguimientos';
+  String get linkedTasksEmptyHint =>
+      'Conecta esta tarea con otra: un bloqueo, un seguimiento o un duplicado.';
 
   @override
   String get linkedTasksMenuTooltip => 'Opciones de tareas vinculadas';
 
   @override
-  String get linkedTasksSupersedesSectionTitle => 'Reemplaza';
-
-  @override
   String get linkedTasksTitle => 'Tareas vinculadas';
 
   @override
-  String get linkedToCaption => 'a';
+  String get linkExistingTask => 'Vincular tarea existente...';
 
   @override
-  String get linkExistingTask => 'Vincular tarea existente...';
+  String get linkPhraseBasic => 'Se relaciona con';
 
   @override
   String get linkPhraseBlocksInverse => 'Está bloqueada por';
@@ -6722,24 +6724,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Reemplaza';
-
-  @override
-  String get linkTypeBasicOption => 'Vincular';
-
-  @override
-  String get linkTypeBlocksOption => 'Bloquea';
-
-  @override
-  String get linkTypeDuplicatesOption => 'Duplica';
-
-  @override
-  String get linkTypeFixesOption => 'Corrige';
-
-  @override
-  String get linkTypeFollowsUpOption => 'Da seguimiento';
-
-  @override
-  String get linkTypeSupersedesOption => 'Reemplaza';
 
   @override
   String get logbookEmptyHint =>
@@ -10275,19 +10259,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskAgentWakeAgent => 'Ejecutar agente';
 
   @override
-  String taskBlockedByChipLabel(int count, String title) {
+  String taskBlockedByChipLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Bloqueada por $count tareas',
-      one: 'Bloqueada por $title',
+      other: 'Esperando $count tareas',
+      one: 'Esperando 1 tarea',
     );
     return '$_temp0';
-  }
-
-  @override
-  String taskBlockedReason(String title) {
-    return 'Bloqueada por: $title';
   }
 
   @override
@@ -10296,16 +10275,22 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Toca para ver $count bloqueos',
-      one: 'Bloqueada por $title',
+      one: 'Esperando $title',
     );
     return '$_temp0';
   }
 
   @override
-  String get taskBlockerPickerSkipButton => 'Omitir';
+  String get taskBlockedByUnresolvedLabel =>
+      'El bloqueo aún no se ha sincronizado';
 
   @override
-  String get taskBlockerPickerTitle => '¿Qué está bloqueando esta tarea?';
+  String taskBlockedReason(String title) {
+    return 'Bloqueada por: $title';
+  }
+
+  @override
+  String get taskBlockerPickerTitle => '¿Qué la está bloqueando?';
 
   @override
   String get taskCategoryAllLabel => 'todos';

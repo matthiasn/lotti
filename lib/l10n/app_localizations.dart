@@ -9065,6 +9065,24 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get doneButton;
 
+  /// No description provided for @editLinkTypeFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the relationship. Please try again.'**
+  String get editLinkTypeFailedMessage;
+
+  /// No description provided for @editLinkTypeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit relationship'**
+  String get editLinkTypeTitle;
+
+  /// No description provided for @editLinkTypeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit relationship'**
+  String get editLinkTypeTooltip;
+
   /// No description provided for @editMenuTitle.
   ///
   /// In en, this message translates to:
@@ -11459,11 +11477,11 @@ abstract class AppLocalizations {
   /// **'This would create a blocking cycle — choose a different task.'**
   String get linkBlocksCycleErrorMessage;
 
-  /// No description provided for @linkedFromCaption.
+  /// No description provided for @linkDirectionLabel.
   ///
   /// In en, this message translates to:
-  /// **'from'**
-  String get linkedFromCaption;
+  /// **'This task…'**
+  String get linkDirectionLabel;
 
   /// No description provided for @linkedTaskImageBadge.
   ///
@@ -11477,29 +11495,17 @@ abstract class AppLocalizations {
   /// **'Blocked by'**
   String get linkedTasksBlockedBySectionTitle;
 
-  /// No description provided for @linkedTasksBlocksSectionTitle.
+  /// No description provided for @linkedTasksEmptyAction.
   ///
   /// In en, this message translates to:
-  /// **'Blocks'**
-  String get linkedTasksBlocksSectionTitle;
+  /// **'Link a task…'**
+  String get linkedTasksEmptyAction;
 
-  /// No description provided for @linkedTasksDuplicatesSectionTitle.
+  /// No description provided for @linkedTasksEmptyHint.
   ///
   /// In en, this message translates to:
-  /// **'Duplicates'**
-  String get linkedTasksDuplicatesSectionTitle;
-
-  /// No description provided for @linkedTasksFixesSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Fixes'**
-  String get linkedTasksFixesSectionTitle;
-
-  /// No description provided for @linkedTasksFollowUpsSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Follow-ups'**
-  String get linkedTasksFollowUpsSectionTitle;
+  /// **'Connect this task to another — a blocker, a follow-up, a duplicate.'**
+  String get linkedTasksEmptyHint;
 
   /// No description provided for @linkedTasksMenuTooltip.
   ///
@@ -11507,29 +11513,23 @@ abstract class AppLocalizations {
   /// **'Linked tasks options'**
   String get linkedTasksMenuTooltip;
 
-  /// No description provided for @linkedTasksSupersedesSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Supersedes'**
-  String get linkedTasksSupersedesSectionTitle;
-
   /// No description provided for @linkedTasksTitle.
   ///
   /// In en, this message translates to:
   /// **'Linked Tasks'**
   String get linkedTasksTitle;
 
-  /// No description provided for @linkedToCaption.
-  ///
-  /// In en, this message translates to:
-  /// **'to'**
-  String get linkedToCaption;
-
   /// No description provided for @linkExistingTask.
   ///
   /// In en, this message translates to:
   /// **'Link existing task...'**
   String get linkExistingTask;
+
+  /// No description provided for @linkPhraseBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'Relates to'**
+  String get linkPhraseBasic;
 
   /// No description provided for @linkPhraseBlocksInverse.
   ///
@@ -11590,42 +11590,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Supersedes'**
   String get linkPhraseSupersedesPrimary;
-
-  /// No description provided for @linkTypeBasicOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Link'**
-  String get linkTypeBasicOption;
-
-  /// No description provided for @linkTypeBlocksOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Blocks'**
-  String get linkTypeBlocksOption;
-
-  /// No description provided for @linkTypeDuplicatesOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Duplicates'**
-  String get linkTypeDuplicatesOption;
-
-  /// No description provided for @linkTypeFixesOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Fixes'**
-  String get linkTypeFixesOption;
-
-  /// No description provided for @linkTypeFollowsUpOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Follows up'**
-  String get linkTypeFollowsUpOption;
-
-  /// No description provided for @linkTypeSupersedesOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Supersedes'**
-  String get linkTypeSupersedesOption;
 
   /// No description provided for @logbookEmptyHint.
   ///
@@ -17505,8 +17469,20 @@ abstract class AppLocalizations {
   /// No description provided for @taskBlockedByChipLabel.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Blocked by {title}} other{Blocked by {count} tasks}}'**
-  String taskBlockedByChipLabel(int count, String title);
+  /// **'{count, plural, =1{Waiting on 1 task} other{Waiting on {count} tasks}}'**
+  String taskBlockedByChipLabel(int count);
+
+  /// No description provided for @taskBlockedByChipTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Waiting on {title}} other{Tap to see {count} blockers}}'**
+  String taskBlockedByChipTooltip(int count, String title);
+
+  /// No description provided for @taskBlockedByUnresolvedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocker not synced yet'**
+  String get taskBlockedByUnresolvedLabel;
 
   /// No description provided for @taskBlockedReason.
   ///
@@ -17514,22 +17490,10 @@ abstract class AppLocalizations {
   /// **'Blocked by: {title}'**
   String taskBlockedReason(String title);
 
-  /// No description provided for @taskBlockedByChipTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Blocked by {title}} other{Tap to see {count} blockers}}'**
-  String taskBlockedByChipTooltip(int count, String title);
-
-  /// No description provided for @taskBlockerPickerSkipButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Skip'**
-  String get taskBlockerPickerSkipButton;
-
   /// No description provided for @taskBlockerPickerTitle.
   ///
   /// In en, this message translates to:
-  /// **'What\'s blocking this task?'**
+  /// **'What\'s blocking this?'**
   String get taskBlockerPickerTitle;
 
   /// No description provided for @taskCategoryAllLabel.

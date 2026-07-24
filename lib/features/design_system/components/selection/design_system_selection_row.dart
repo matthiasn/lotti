@@ -34,6 +34,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
     required this.onTap,
     this.subtitle,
     this.subtitleMaxLines = 2,
+    this.titleMaxLines = 1,
     this.size = DesignSystemListItemSize.medium,
     this.leading,
     this.trailing,
@@ -49,6 +50,12 @@ class DesignSystemSelectionRow extends StatelessWidget {
   final String title;
   final String? subtitle;
   final int? subtitleMaxLines;
+
+  /// Title line cap at normal text scale. Rows whose title is long-form
+  /// content rather than a short entity name (task titles, say) should raise
+  /// this so a real word is never reduced to an ellipsis mid-tap. Large
+  /// accessibility text un-caps the title regardless.
+  final int titleMaxLines;
   final DesignSystemListItemSize size;
   final Widget? leading;
 
@@ -96,7 +103,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
           title: title,
           titleMaxLines: MediaQuery.textScalerOf(context).scale(1) > 1.3
               ? null
-              : 1,
+              : titleMaxLines,
           subtitle: subtitle,
           subtitleMaxLines: subtitleMaxLines,
           size: size,

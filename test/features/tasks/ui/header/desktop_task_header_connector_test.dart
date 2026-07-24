@@ -1436,8 +1436,8 @@ void main() {
     });
 
     testWidgets(
-      'shows the blocker title and navigates to it when there is exactly '
-      'one open blocker',
+      'states only that the task is waiting, naming the blocker in the '
+      'tooltip, and navigates to it when there is exactly one open blocker',
       (tester) async {
         final task = buildTask();
         final blocker = Task(
@@ -1476,14 +1476,18 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.textContaining('Fix the outage'), findsOneWidget);
+        // The chip is count-only: embedding the title made it grow with the
+        // title and out-shout the status pill beside it.
+        expect(find.text('Waiting on 1 task'), findsOneWidget);
+        expect(find.textContaining('Fix the outage'), findsNothing);
         final tooltip = tester.widget<Tooltip>(
           find.ancestor(
             of: find.byIcon(Icons.block),
             matching: find.byType(Tooltip),
           ),
         );
-        expect(tooltip.message, 'Blocked by Fix the outage');
+        // ...but the tooltip still names it, at no layout cost.
+        expect(tooltip.message, 'Waiting on Fix the outage');
 
         await tester.tap(find.byIcon(Icons.block));
         await tester.pump();
@@ -1582,7 +1586,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byIcon(Icons.block), findsOneWidget);
-        expect(find.text('Blocked'), findsOneWidget);
+        expect(find.text('Blocker not synced yet'), findsOneWidget);
 
         final pill = tester.widget<DsPill>(
           find.ancestor(
@@ -1655,7 +1659,7 @@ void main() {
         await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
 
         expect(
-          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          find.text("What's blocking this?"),
           findsOneWidget,
         );
       },
@@ -1691,7 +1695,7 @@ void main() {
         await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
 
         expect(
-          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          find.text("What's blocking this?"),
           findsNothing,
         );
       },
@@ -1717,7 +1721,7 @@ void main() {
         );
 
         expect(
-          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          find.text("What's blocking this?"),
           findsNothing,
         );
       },
@@ -1738,7 +1742,7 @@ void main() {
         await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
 
         expect(
-          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          find.text("What's blocking this?"),
           findsNothing,
         );
       },

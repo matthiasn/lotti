@@ -2324,6 +2324,9 @@
     }
   },
   "doneButton": "Fertig",
+  "editLinkTypeFailedMessage": "Die Beziehung konnte nicht aktualisiert werden. Bitte versuch es erneut.",
+  "editLinkTypeTitle": "Beziehung bearbeiten",
+  "editLinkTypeTooltip": "Beziehung bearbeiten",
   "editMenuTitle": "Bearbeiten",
   "editorDiscardChanges": "Änderungen verwerfen",
   "editorInsertDivider": "Trennlinie einfügen",
@@ -2778,18 +2781,15 @@
   "knowledgeGraphTooltip": "Verknüpfungen erkunden",
   "knowledgeGraphWalkHint": "Tippe auf einen Knoten · Knoten: {count}",
   "linkBlocksCycleErrorMessage": "Das würde einen blockierenden Kreislauf erzeugen — wähle eine andere Aufgabe.",
-  "linkedFromCaption": "von",
+  "linkDirectionLabel": "Diese Aufgabe…",
   "linkedTaskImageBadge": "Von verknüpfter Aufgabe",
   "linkedTasksBlockedBySectionTitle": "Blockiert von",
-  "linkedTasksBlocksSectionTitle": "Blockiert",
-  "linkedTasksDuplicatesSectionTitle": "Duplikate",
-  "linkedTasksFixesSectionTitle": "Behebt",
-  "linkedTasksFollowUpsSectionTitle": "Folgeaufgaben",
+  "linkedTasksEmptyAction": "Aufgabe verknüpfen…",
+  "linkedTasksEmptyHint": "Verknüpfe diese Aufgabe mit einer anderen — Blocker, Folgeaufgabe oder Duplikat.",
   "linkedTasksMenuTooltip": "Optionen für verknüpfte Aufgaben",
-  "linkedTasksSupersedesSectionTitle": "Ersetzt",
   "linkedTasksTitle": "Verknüpfte Aufgaben",
-  "linkedToCaption": "zu",
   "linkExistingTask": "Vorhandene Aufgabe verknüpfen...",
+  "linkPhraseBasic": "Bezieht sich auf",
   "linkPhraseBlocksInverse": "Wird blockiert von",
   "linkPhraseBlocksPrimary": "Blockiert",
   "linkPhraseDuplicatesInverse": "Duplikat von",
@@ -2800,12 +2800,6 @@
   "linkPhraseFollowsUpPrimary": "Folgt auf",
   "linkPhraseSupersedesInverse": "Wird ersetzt durch",
   "linkPhraseSupersedesPrimary": "Ersetzt",
-  "linkTypeBasicOption": "Verknüpfen",
-  "linkTypeBlocksOption": "Blockiert",
-  "linkTypeDuplicatesOption": "Dupliziert",
-  "linkTypeFixesOption": "Behebt",
-  "linkTypeFollowsUpOption": "Folgt auf",
-  "linkTypeSupersedesOption": "Ersetzt",
   "logbookEmptyHint": "Erstelle deinen ersten Eintrag, um mit dem Logbuch zu starten.",
   "logbookEmptyTitle": "Dein Logbuch ist leer",
   "logbookNewEntriesHint": "Neue Einträge erscheinen hier.",
@@ -4118,18 +4112,15 @@
   "taskAgentUseCategoryDefaultDescription": "Kopiert das aktuelle Setup der Kategorie. Spätere Kategorieänderungen wirken sich nicht auf diesen Agenten aus.",
   "taskAgentUseProfileDefault": "Profilstandard verwenden",
   "taskAgentWakeAgent": "Agenten aufwecken",
-  "taskBlockedByChipLabel": "{count, plural, =1{Blockiert von {title}} other{Blockiert von {count} Aufgaben}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Wartet auf 1 Aufgabe} other{Wartet auf {count} Aufgaben}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "title": {
-        "type": "String"
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Blockiert von {title}} other{Tippen, um {count} Blockierer zu sehen}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Wartet auf {title}} other{Tippen, um {count} Blockierer zu sehen}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4140,9 +4131,9 @@
       }
     }
   },
+  "taskBlockedByUnresolvedLabel": "Blockierende Aufgabe noch nicht synchronisiert",
   "taskBlockedReason": "Blockiert von: {title}",
-  "taskBlockerPickerSkipButton": "Überspringen",
-  "taskBlockerPickerTitle": "Was blockiert diese Aufgabe?",
+  "taskBlockerPickerTitle": "Was blockiert sie?",
   "taskCategoryAllLabel": "Alle",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "Nicht zugewiesen",

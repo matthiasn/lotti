@@ -13,6 +13,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -43,6 +44,7 @@ import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
@@ -932,7 +934,12 @@ void main() {
           LinkTaskModal.show(
             context: context,
             currentTaskId: world.orbitalHabitatTask.id,
-            existingLinkedIds: {world.fishFeederTask.id},
+            existingRelations: {
+              ExistingRelation(
+                taskId: world.fishFeederTask.id,
+                relation: const DirectedRelation(EntryLinkType.basic),
+              ),
+            },
           ),
         );
         await settleFrames(tester, 30);

@@ -9,7 +9,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
@@ -83,6 +84,13 @@ void main() {
         linkType: any(named: 'linkType'),
       ),
     ).thenAnswer((_) async => 1);
+    when(
+      () => journalRepo.updateLinkType(
+        linkId: any(named: 'linkId'),
+        newType: any(named: 'newType'),
+        swapDirection: any(named: 'swapDirection'),
+      ),
+    ).thenAnswer((_) async => true);
 
     final outgoingLinks = outgoing
         .map(
@@ -139,6 +147,18 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     return journalRepo;
+  }
+
+  // Drives the relationship dropdown by its own callback; the inline panel is
+  // unreliable to hit-test inside a dialog in the test harness.
+  Future<void> pickRelation(WidgetTester tester, String label) async {
+    final dropdown = tester.widget<DesignSystemDropdown>(
+      find.byType(DesignSystemDropdown),
+    );
+    dropdown.onItemPressed!(
+      dropdown.items.firstWhere((item) => item.label == label),
+    );
+    await tester.pump();
   }
 
   late MockNavService mockNavService;
@@ -198,7 +218,8 @@ void main() {
 
   group('LinkedTasksWidget overflow menu', () {
     testWidgets(
-      'shows link/create/manage actions when there are linked tasks',
+      'the overflow menu carries create/manage only — linking has its own '
+      'header action, so it must not appear twice in one header row',
       (tester) async {
         await pumpWidget(
           tester,
@@ -210,9 +231,24 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Link existing task...'), findsOneWidget);
         expect(find.text('Create new linked task...'), findsOneWidget);
         expect(find.text('Manage links...'), findsOneWidget);
+        expect(find.text('Link existing task...'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'leaves plain links unheaded when they are the only links — there is '
+      'nothing for them to be distinguished from',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+        );
+
+        expect(find.text('Relates to'), findsNothing);
+        expect(find.text('Outgoing Task'), findsOneWidget);
       },
     );
 
@@ -251,7 +287,22 @@ void main() {
     });
 
     testWidgets(
-      'tapping "Link existing task..." opens the LinkTaskModal',
+      'the empty state worded action opens LinkTaskModal — the only entry '
+      'point on a task with no links',
+      (tester) async {
+        await pumpWidget(tester, incoming: [], outgoing: []);
+
+        await tester.tap(find.text('Link a task…'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(LinkTaskModal), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the header link action opens LinkTaskModal directly, without going '
+      'through the overflow menu',
       (tester) async {
         await pumpWidget(
           tester,
@@ -259,20 +310,18 @@ void main() {
           outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
         );
 
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Link existing task...'));
+        await tester.tap(find.byIcon(Icons.add_link));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Modal renders the LinkTaskModal as a draggable bottom sheet.
         expect(find.byType(LinkTaskModal), findsOneWidget);
       },
     );
 
-    testWidgets('row tap is disabled in manage mode to avoid '
-        'accidental navigation while unlinking', (tester) async {
+    testWidgets('rows stay navigable in manage mode — the edit/unlink '
+        'buttons are additive, not a replacement for the row tap', (
+      tester,
+    ) async {
       await pumpWidget(
         tester,
         incoming: [],
@@ -280,9 +329,6 @@ void main() {
         manageMode: true,
       );
 
-      // The row InkWell wrapping the title has its onTap nulled out in manage
-      // mode. The header InkWell is unrelated; find the InkWell ancestor of
-      // the task title.
       final rowInkWell = tester.widget<InkWell>(
         find
             .ancestor(
@@ -291,7 +337,7 @@ void main() {
             )
             .first,
       );
-      expect(rowInkWell.onTap, isNull);
+      expect(rowInkWell.onTap, isNotNull);
     });
   });
 
@@ -527,10 +573,14 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final linkPill = tester.widget<DsPill>(
-          find.ancestor(of: find.text('Link'), matching: find.byType(DsPill)),
+        expect(
+          tester
+              .widget<DesignSystemDropdown>(
+                find.byType(DesignSystemDropdown),
+              )
+              .inputLabel,
+          'Relates to',
         );
-        expect(linkPill.selected, isTrue);
 
         await tester.tap(find.text('Cancel'));
         await tester.pump();
@@ -543,6 +593,65 @@ void main() {
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
           ),
+        );
+      },
+    );
+
+    testWidgets(
+      'a rejected typed link leaves the auto-created plain link in place, so '
+      'the new task is never left unlinked',
+      (tester) async {
+        final created = buildTask(id: 'new-task', title: 'New');
+        stubCreateTaskEntry(created);
+
+        final repo = await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          extraOverrides: createFlowOverrides(parentCategoryId: null),
+        );
+        when(
+          () => repo.removeTypedLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async => 1);
+        // The cycle guard rejects the blocks edge.
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.blocks,
+          ),
+        ).thenAnswer((_) async => false);
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Create new linked task...'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await pickRelation(tester, 'Blocks');
+        await tester.tap(find.text('Create'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The BasicLink createTask made must survive, or the new task would
+        // have no link back to its parent at all.
+        verifyNever(
+          () => repo.removeTypedLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: 'BasicLink',
+          ),
+        );
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsWidgets,
         );
       },
     );
@@ -582,8 +691,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
+        await pickRelation(tester, 'Blocks');
         await tester.tap(find.text('Create'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -640,10 +748,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('Blocks'));
-        await tester.pump();
-        await tester.tap(find.text('Is blocked by').last);
-        await tester.pump();
+        await pickRelation(tester, 'Is blocked by');
         await tester.tap(find.text('Create'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -761,5 +866,36 @@ void main() {
         ),
       );
     });
+
+    testWidgets(
+      'editing a flat outgoing row opens the edit modal pre-selected to '
+      'Link, and Save round-trips it unchanged',
+      (tester) async {
+        final repo = await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          manageMode: true,
+        );
+
+        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Edit relationship'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => repo.updateLinkType(
+            linkId: 'link-out-1',
+            newType: EntryLinkType.basic,
+            swapDirection: false,
+          ),
+        ).called(1);
+      },
+    );
   });
 }

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 
@@ -40,12 +41,14 @@ void main() {
     void Function(String id)? onPick,
     Future<String?> Function(String query)? createFromQuery,
     bool Function(String query)? shouldShowCreate,
+    int titleMaxLines = 1,
   }) async {
     await tester.pumpWidget(
       WidgetTestBench(
         child: Material(
           child: EntityPickerSheet(
             mode: mode,
+            titleMaxLines: titleMaxLines,
             entriesBuilder: entriesBuilder,
             searchHintText: 'Search',
             emptyMessage: 'Nothing here',
@@ -365,6 +368,60 @@ void main() {
       );
       expect(find.byKey(const ValueKey('create')), findsNothing);
     });
+  });
+
+  group('layout', () {
+    testWidgets(
+      'insets the search field from the modal header instead of welding it '
+      'to the divider',
+      (tester) async {
+        await pumpSheet(
+          tester,
+          mode: PickerMode.single,
+          entriesBuilder: (_) => [item('alpha')],
+        );
+
+        // Callers pass padding: EdgeInsets.zero to the modal to control the
+        // row indent, so the sheet has to supply its own top inset.
+        final sheetTop = tester.getTopLeft(find.byType(EntityPickerSheet)).dy;
+        final searchTop = tester.getTopLeft(find.byType(TextField)).dy;
+        expect(searchTop - sheetTop, greaterThan(0));
+      },
+    );
+
+    testWidgets(
+      'caps row titles at one line by default and honours a raised cap',
+      (tester) async {
+        await pumpSheet(
+          tester,
+          mode: PickerMode.single,
+          entriesBuilder: (_) => [item('alpha', title: 'A very long title')],
+        );
+        expect(
+          tester
+              .widget<DesignSystemSelectionRow>(
+                find.byType(DesignSystemSelectionRow),
+              )
+              .titleMaxLines,
+          1,
+        );
+
+        await pumpSheet(
+          tester,
+          mode: PickerMode.single,
+          entriesBuilder: (_) => [item('alpha', title: 'A very long title')],
+          titleMaxLines: 2,
+        );
+        expect(
+          tester
+              .widget<DesignSystemSelectionRow>(
+                find.byType(DesignSystemSelectionRow),
+              )
+              .titleMaxLines,
+          2,
+        );
+      },
+    );
   });
 
   group('construction contracts', () {

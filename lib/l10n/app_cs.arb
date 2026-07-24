@@ -2331,6 +2331,9 @@
     }
   },
   "doneButton": "Hotovo",
+  "editLinkTypeFailedMessage": "Vztah se nepodařilo upravit. Zkuste to prosím znovu.",
+  "editLinkTypeTitle": "Upravit vztah",
+  "editLinkTypeTooltip": "Upravit vztah",
   "editMenuTitle": "Upravit",
   "editorDiscardChanges": "Zahodit změny",
   "editorInsertDivider": "Vložit oddělovač",
@@ -2785,18 +2788,15 @@
   "knowledgeGraphTooltip": "Prozkoumat odkazy",
   "knowledgeGraphWalkHint": "Klepni na uzel a přejdi dál · {count, plural, one{1 uzel} few{{count} uzly} other{{count} uzlů}}",
   "linkBlocksCycleErrorMessage": "Tím by vznikl blokující cyklus — vyber jiný úkol.",
-  "linkedFromCaption": "z",
+  "linkDirectionLabel": "Tento úkol…",
   "linkedTaskImageBadge": "Z propojené úlohy",
   "linkedTasksBlockedBySectionTitle": "Blokováno",
-  "linkedTasksBlocksSectionTitle": "Blokuje",
-  "linkedTasksDuplicatesSectionTitle": "Duplikáty",
-  "linkedTasksFixesSectionTitle": "Opravuje",
-  "linkedTasksFollowUpsSectionTitle": "Navazující úkoly",
+  "linkedTasksEmptyAction": "Propojit úkol…",
+  "linkedTasksEmptyHint": "Propoj tento úkol s jiným — blokátorem, navazujícím nebo duplicitou.",
   "linkedTasksMenuTooltip": "Možnosti propojených úkolů",
-  "linkedTasksSupersedesSectionTitle": "Nahrazuje",
   "linkedTasksTitle": "Propojené úkoly",
-  "linkedToCaption": "na",
   "linkExistingTask": "Propojit existující úkol...",
+  "linkPhraseBasic": "Souvisí s",
   "linkPhraseBlocksInverse": "Je blokováno",
   "linkPhraseBlocksPrimary": "Blokuje",
   "linkPhraseDuplicatesInverse": "Je duplikováno",
@@ -2807,12 +2807,6 @@
   "linkPhraseFollowsUpPrimary": "Navazuje na",
   "linkPhraseSupersedesInverse": "Je nahrazeno",
   "linkPhraseSupersedesPrimary": "Nahrazuje",
-  "linkTypeBasicOption": "Propojit",
-  "linkTypeBlocksOption": "Blokuje",
-  "linkTypeDuplicatesOption": "Duplikuje",
-  "linkTypeFixesOption": "Opravuje",
-  "linkTypeFollowsUpOption": "Navazuje",
-  "linkTypeSupersedesOption": "Nahrazuje",
   "logbookEmptyHint": "Vytvoř svůj první záznam a začni si psát deník.",
   "logbookEmptyTitle": "Tvůj deník je prázdný",
   "logbookNewEntriesHint": "Nové záznamy se otevřou tady.",
@@ -4125,18 +4119,15 @@
   "taskAgentUseCategoryDefaultDescription": "Zkopíruje aktuální nastavení kategorie. Pozdější změny kategorie tohoto agenta neovlivní.",
   "taskAgentUseProfileDefault": "Použít výchozí model profilu",
   "taskAgentWakeAgent": "Probudit agenta",
-  "taskBlockedByChipLabel": "{count, plural, =1{Blokováno úkolem {title}} few{Blokováno {count} úkoly} other{Blokováno {count} úkolů}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Čeká na 1 úkol} few{Čeká na {count} úkoly} other{Čeká na {count} úkolů}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "title": {
-        "type": "String"
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Blokováno úkolem {title}} few{Klepnutím zobrazíte {count} blokující úkoly} other{Klepnutím zobrazíte {count} blokujících úkolů}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Čeká se na {title}} few{Klepnutím zobrazíte {count} blokující úkoly} other{Klepnutím zobrazíte {count} blokujících úkolů}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4147,9 +4138,9 @@
       }
     }
   },
+  "taskBlockedByUnresolvedLabel": "Blokující úkol není synchronizován",
   "taskBlockedReason": "Blokováno úkolem: {title}",
-  "taskBlockerPickerSkipButton": "Přeskočit",
-  "taskBlockerPickerTitle": "Co blokuje tento úkol?",
+  "taskBlockerPickerTitle": "Co ho blokuje?",
   "taskCategoryAllLabel": "vše",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "nepřiřazeno",

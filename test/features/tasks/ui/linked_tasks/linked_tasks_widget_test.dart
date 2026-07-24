@@ -10,6 +10,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
@@ -247,12 +248,42 @@ void main() {
   });
 
   group('LinkedTasksWidget rendering', () {
-    testWidgets('hides entirely when no linked tasks', (tester) async {
-      await pumpWidget(tester, incoming: [], outgoing: []);
+    testWidgets(
+      'with no links it still renders a header carrying the link action — '
+      'otherwise the feature has no reachable entry point at all',
+      (tester) async {
+        await pumpWidget(tester, incoming: [], outgoing: []);
 
-      expect(find.text('Linked Tasks'), findsNothing);
-      expect(find.byType(SvgPicture), findsNothing);
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+        expect(find.text('Linked Tasks'), findsOneWidget);
+        // A worded action, not a bare icon in an empty bordered box.
+        expect(find.text('Link a task…'), findsOneWidget);
+        expect(
+          find.text(
+            'Connect this task to another — a blocker, a follow-up, a '
+            'duplicate.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.byIcon(Icons.add_link), findsOneWidget);
+        // Nothing to count, expand, or list yet.
+        expect(find.text('0'), findsNothing);
+        expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
+        expect(find.byType(LinkedTaskRow), findsNothing);
+      },
+    );
+
+    testWidgets('exposes the link action alongside links too', (tester) async {
+      await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+      );
+
+      // With a list to add to, the header carries the action and the empty
+      // state's worded row is gone.
+      expect(find.byIcon(Icons.add_link), findsOneWidget);
+      expect(find.text('Link a task…'), findsNothing);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
 
     testWidgets('shows title and count badge for linked tasks', (
@@ -299,45 +330,34 @@ void main() {
       },
     );
 
-    testWidgets(
-      'renders to-row for outgoing tasks with subdirectory_arrow_right',
-      (tester) async {
-        await pumpWidget(
-          tester,
-          incoming: [],
-          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
-        );
+    // A plain link carries no relationship semantics, so its row renders
+    // without the direction glyph + caption unit that a typed relationship
+    // row uses — the "Other links" section header is the only signal, and a
+    // flat row must not mimic a typed one with a content-free "to"/"from".
+    for (final flat in [
+      (label: 'outgoing', incoming: false, title: 'Outgoing Task'),
+      (label: 'incoming', incoming: true, title: 'Incoming Task'),
+    ]) {
+      testWidgets(
+        'renders an ${flat.label} plain link captionless',
+        (tester) async {
+          final task = buildTask(id: 'flat-1', title: flat.title);
+          await pumpWidget(
+            tester,
+            incoming: flat.incoming ? [task] : [],
+            outgoing: flat.incoming ? [] : [task],
+          );
 
-        expect(find.text('to'), findsOneWidget);
-        expect(find.text('Outgoing Task'), findsOneWidget);
-        expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
-
-        final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
-        // Asset glyphs are wired via SvgAssetLoader; verify the loader points
-        // at the outgoing arrow asset.
-        expect(
-          svg.bytesLoader.toString(),
-          contains('subdirectory_arrow_right'),
-        );
-      },
-    );
-
-    testWidgets(
-      'renders from-row for incoming tasks with subdirectory_arrow_left',
-      (tester) async {
-        await pumpWidget(
-          tester,
-          incoming: [buildTask(id: 'in-1', title: 'Incoming Task')],
-          outgoing: [],
-        );
-
-        expect(find.text('from'), findsOneWidget);
-        expect(find.text('Incoming Task'), findsOneWidget);
-
-        final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
-        expect(svg.bytesLoader.toString(), contains('subdirectory_arrow_left'));
-      },
-    );
+          expect(find.text(flat.title), findsOneWidget);
+          // Browse-mode chevron is still the row's affordance...
+          expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+          // ...but no direction caption or arrow glyph.
+          expect(find.text('to'), findsNothing);
+          expect(find.text('from'), findsNothing);
+          expect(find.byType(SvgPicture), findsNothing);
+        },
+      );
+    }
 
     testWidgets('renders both directions and a divider between rows', (
       tester,
@@ -354,8 +374,9 @@ void main() {
       expect(find.text('Outgoing 1'), findsOneWidget);
       expect(find.text('Outgoing 2'), findsOneWidget);
       expect(find.text('Incoming Task'), findsOneWidget);
-      expect(find.text('to'), findsNWidgets(2));
-      expect(find.text('from'), findsOneWidget);
+      // All three render captionless.
+      expect(find.text('to'), findsNothing);
+      expect(find.text('from'), findsNothing);
       // Three rows → two dividers between them.
       expect(find.byType(Divider), findsNWidgets(2));
     });
@@ -466,7 +487,7 @@ void main() {
           extraTypedTasks: [blocker],
         );
 
-        expect(find.text('Blocked by'), findsOneWidget);
+        expect(find.text('Is blocked by'), findsOneWidget);
         expect(find.text('Blocker Task'), findsOneWidget);
         expect(find.text('Outgoing Task'), findsOneWidget);
         // One divider between the typed sections and the flat list — the

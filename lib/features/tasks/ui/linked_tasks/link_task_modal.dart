@@ -3,51 +3,49 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Modal for searching and selecting a task to link to the current task, with
 /// a relationship-type + direction picker (defaults to a plain "Link", today's
 /// behavior, unchanged when untouched).
 ///
-/// Shows a search field and list of available tasks. Excludes:
-/// - The current task itself
-/// - Tasks already linked (both incoming and outgoing)
+/// Shows a relationship picker plus a search field and list of candidate
+/// tasks. Excludes the current task, and any task that already holds the
+/// relationship currently selected — but not tasks linked by some *other*
+/// relationship, which remain valid candidates.
 class LinkTaskModal extends ConsumerStatefulWidget {
   const LinkTaskModal({
     required this.currentTaskId,
-    required this.existingLinkedIds,
+    required this.existingRelations,
     super.key,
   });
 
   /// The ID of the current task (to exclude from results).
   final String currentTaskId;
 
-  /// IDs of tasks already linked (to exclude from results).
-  final Set<String> existingLinkedIds;
+  /// Relationships the current task already holds, so the candidate list can
+  /// exclude only the ones that would duplicate the selected relation.
+  final Set<ExistingRelation> existingRelations;
 
   /// Shows the modal and returns the selected task, or null if cancelled.
   static Future<Task?> show({
     required BuildContext context,
     required String currentTaskId,
-    required Set<String> existingLinkedIds,
-  }) async {
-    return ModalUtils.showBottomSheet<Task>(
+    required Set<ExistingRelation> existingRelations,
+  }) {
+    return ModalUtils.showSinglePageModal<Task>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => LinkTaskModal(
+      title: context.messages.linkExistingTask,
+      padding: EdgeInsets.zero,
+      builder: (_) => LinkTaskModal(
         currentTaskId: currentTaskId,
-        existingLinkedIds: existingLinkedIds,
+        existingRelations: existingRelations,
       ),
     );
   }
@@ -57,15 +55,14 @@ class LinkTaskModal extends ConsumerStatefulWidget {
 }
 
 class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
-  EntryLinkType _selectedType = EntryLinkType.basic;
-  bool _inverse = false;
+  DirectedRelation _relation = const DirectedRelation(EntryLinkType.basic);
 
   Future<void> _selectTask(Task task) async {
-    final swap = _selectedType != EntryLinkType.basic && _inverse;
+    final swap = _relation.inverse;
     final created = await getIt<PersistenceLogic>().createLink(
       fromId: swap ? task.meta.id : widget.currentTaskId,
       toId: swap ? widget.currentTaskId : task.meta.id,
-      linkType: _selectedType,
+      linkType: _relation.type,
     );
 
     if (!created) {
@@ -86,62 +83,36 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                key: const Key('link_task_modal_handle'),
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                context.messages.linkExistingTask,
-                style: context.textTheme.titleMedium,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: RelationshipTypeSelector(
-                selectedType: _selectedType,
-                inverse: _inverse,
-                onTypeChanged: (type) => setState(() {
-                  _selectedType = type;
-                  _inverse = false;
-                }),
-                onInverseChanged: (value) => setState(() => _inverse = value),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: TaskSearchPickerBody(
-                excludeIds: {
-                  widget.currentTaskId,
-                  ...widget.existingLinkedIds,
-                },
-                onTaskSelected: _selectTask,
-                scrollController: scrollController,
-              ),
-            ),
-          ],
-        );
-      },
+    final tokens = context.designTokens;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+            tokens.spacing.step4,
+          ),
+          child: RelationshipTypeSelector(
+            selected: _relation,
+            onChanged: (relation) => setState(() => _relation = relation),
+          ),
+        ),
+        TaskSearchPickerBody(
+          topInset: false,
+          excludeIds: {
+            widget.currentTaskId,
+            // Only the tasks that already hold *this* relation — a pair may
+            // legitimately hold several different ones.
+            for (final existing in widget.existingRelations)
+              if (existing.relation == _relation) existing.taskId,
+          },
+          onTaskSelected: _selectTask,
+        ),
+      ],
     );
   }
 }

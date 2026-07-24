@@ -627,7 +627,9 @@ flowchart LR
 The modal explicitly excludes:
 
 - the current task
-- already-linked tasks
+- tasks that already hold *the relationship currently selected* — recomputed
+  as that selection changes, so a task linked one way stays available to be
+  linked another (see "Typed relationships" below)
 
 which is a good example of the feature preferring guardrails over polite chaos.
 
@@ -650,33 +652,72 @@ direction of that same row, never separate rows:
 | `fixes`      | *from* fixes *to* (the defect)      | *to* is fixed by *from*     |
 | `supersedes` | *from* supersedes *to* (obsolete)   | *to* is superseded by *from*|
 
-`RelationshipTypeSelector` (shared by `LinkTaskModal` and
-`BlockingTaskPickerModal`'s callers) renders these as six chips — Link, Blocks,
-Follows up, Duplicates, Fixes, Supersedes — defaulting to plain Link
-(today's behavior, unchanged when untouched). Picking a directional type
-reveals a second segmented toggle for the two phrasings (e.g. "Blocks" / "Is
-blocked by"); picking the inverse phrasing swaps `fromId`/`toId` in
-`LinkTaskModal._selectTask` before persisting, so the canonical stored
-direction is always the one the table above lists (e.g. `blocks`'s `fromId`
-is always the blocker, never the blocked task). `PersistenceLogic.createLink`
-runs a best-effort local cycle guard for `EntryLinkType.blocks` only (surfaced
-as a snackbar via `linkBlocksCycleErrorMessage` on rejection); read-time
-traversal tolerates cycles regardless, since two offline devices can always
-race one into existence.
+Type and direction are **one choice, not two**. `RelationshipTypeSelector`
+renders a single `DesignSystemDropdown` completing the sentence
+"This task… ⟨Blocks⟩", whose list holds all eleven directed relations: the
+symmetric plain link ("Relates to", the default — today's behavior, unchanged
+when untouched) plus each of the five types in both directions. A
+`DirectedRelation` carries the type and its `inverse` flag together, so callers
+never reconcile two independent values.
+
+An earlier iteration split this into a row of six type chips plus a separate
+primary/inverse toggle. Because a `blocks` link's primary phrase *is* the word
+"Blocks", the selected chip and the toggle's first segment displayed the same
+word stacked a few pixels apart for four of the five directional types, which
+reviewers and test users consistently read as a duplicated or contradictory
+control. Every established issue tracker presents relations as one flat list of
+directed phrases; this now does too.
+
+Picking an inverse phrase swaps `fromId`/`toId` before persisting, so the
+canonical stored direction is always the one the table above lists (e.g.
+`blocks`'s `fromId` is always the blocker, never the blocked task).
+`PersistenceLogic.createLink` runs a best-effort local cycle guard for
+`EntryLinkType.blocks` only (surfaced as a snackbar via
+`linkBlocksCycleErrorMessage` on rejection); read-time traversal tolerates
+cycles regardless, since two offline devices can always race one into existence.
+
+The candidate list excludes only the tasks that already hold *the relation
+currently selected*, recomputed as that selection changes — not every task the
+anchor already touches. The schema's `UNIQUE(from_id, to_id, type)` lets one
+pair hold several different relationships, and direction is part of the
+identity, so the inverse of an existing link stays offerable.
+
+`EditLinkTypeModal` retypes or reverses an existing link in place, via the same
+selector pre-seeded to the link's current relation, calling
+`JournalRepository.updateLinkType` (which reuses `updateLink`'s vector-clock,
+outbox-sync and notification plumbing, and re-runs the cycle guard with the
+edited link's own row excluded so a legitimate direction flip is not rejected
+against its own stale state).
 
 `TaskLinkGroupsController` (`taskLinkGroupsControllerProvider(taskId)`)
 resolves every plain and typed link touching a task, both directions, from one
 batched `JournalRepository.getTypedLinksForTaskIds` call, and buckets the
-result into `flat` (today's plain-link list) and `typed` (the five
-relationship kinds). `TaskRelationshipSections` renders the `typed` bucket as
-six grouped sections above the flat list: **Blocked by** and **Blocks** are
-`blocks` split by direction (each header alone disambiguates direction, so
-rows carry no caption — this is also the highest-signal relationship, feeding
-the header chip and the status-enrichment flow below); **Follow-ups**,
-**Duplicates**, **Fixes**, and **Supersedes** merge both directions into one
-section, with each row captioned via `relationshipPhrasePair` so a reader
-still knows which way the relationship points. A section renders only when it
-has entries — an empty relationship type is invisible, not an empty header.
+result into `flat` (plain links) and `typed` (the five relationship kinds).
+
+`TaskRelationshipSections` renders `typed` as **direction-specific sections**,
+each titled with the very phrase the picker offered for it — "Is blocked by",
+"Blocks", "Follows up on", "Has follow-up", and so on — so the card reads back
+the exact words that were chosen. One phrase source (`relationshipPhrasePair`)
+feeds both the picker and the headers. Because the header states the
+relationship in full, no row carries a per-row caption, and every row on the
+card renders from one template: status glyph, title, status label, trailing
+affordance. A section renders only when it has entries.
+
+"Is blocked by" leads and is the only accented header (an amber label plus a
+leading glyph, matching the task header's own "Waiting on X" chip); every other
+section and every row stays neutral, so one accent reads as signal rather than
+as one more competing hue. Plain links follow under a "Relates to" header,
+shown only when there are typed sections to distinguish them from.
+
+Rows compose `DesignSystemListItem`, and `EntityPickerSheet` takes the same
+`rowSize`, so one task title renders at one rank whether it is read on the card
+or in the picker one tap away. The status label sits as a trailing anchor where
+there is width for it and drops to the subtitle slot at narrow widths.
+
+The card always renders its header, including on a task with no links at all —
+where it shows a worded "Link a task…" action rather than nothing. Rendering
+nothing had left the feature with no reachable entry point, since the link
+modal's only call site lived inside that hidden card.
 
 ### Blockedness: a derived fact, not a stored flag
 

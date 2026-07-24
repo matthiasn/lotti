@@ -3206,11 +3206,9 @@
       }
     }
   },
-  "linkedFromCaption": "van",
   "linkedTaskImageBadge": "Van verbonden taak",
   "linkedTasksMenuTooltip": "Gekoppelde takenopties",
   "linkedTasksTitle": "Gekoppelde taken",
-  "linkedToCaption": "tot",
   "linkExistingTask": "Bestaande taak koppelen...",
   "loggingDomainAgentRuntime": "Agent runtime",
   "loggingDomainAgentWorkflow": "Werkstroom van het agentschap",

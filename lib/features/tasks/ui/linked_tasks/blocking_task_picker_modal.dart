@@ -8,7 +8,6 @@ import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Optional prompt shown right after a task's status is set to Blocked, to
@@ -19,7 +18,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 /// Skippable with zero required interaction: the status write already
 /// completed independently before this modal opens (see
 /// `DesktopTaskHeaderConnector._showStatusPicker`), so dismissing this modal
-/// or tapping Skip persists nothing further.
+/// via the standard close button persists nothing further.
 class BlockingTaskPickerModal extends ConsumerWidget {
   const BlockingTaskPickerModal({required this.blockedTaskId, super.key});
 
@@ -27,21 +26,16 @@ class BlockingTaskPickerModal extends ConsumerWidget {
   final String blockedTaskId;
 
   /// Shows the modal. Returns the selected blocker task, or null if the user
-  /// skipped/dismissed it.
+  /// dismissed it.
   static Future<Task?> show({
     required BuildContext context,
     required String blockedTaskId,
   }) {
-    return ModalUtils.showBottomSheet<Task>(
+    return ModalUtils.showSinglePageModal<Task>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) =>
-          BlockingTaskPickerModal(blockedTaskId: blockedTaskId),
+      title: context.messages.taskBlockerPickerTitle,
+      padding: EdgeInsets.zero,
+      builder: (_) => BlockingTaskPickerModal(blockedTaskId: blockedTaskId),
     );
   }
 
@@ -84,54 +78,9 @@ class BlockingTaskPickerModal extends ConsumerWidget {
             .toSet() ??
         const <String>{};
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            Center(
-              child: Container(
-                key: const Key('blocking_task_picker_modal_handle'),
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      context.messages.taskBlockerPickerTitle,
-                      style: context.textTheme.titleMedium,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(context.messages.taskBlockerPickerSkipButton),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: TaskSearchPickerBody(
-                excludeIds: {blockedTaskId, ...existingBlockerIds},
-                onTaskSelected: (task) => _selectBlocker(context, task),
-                scrollController: scrollController,
-              ),
-            ),
-          ],
-        );
-      },
+    return TaskSearchPickerBody(
+      excludeIds: {blockedTaskId, ...existingBlockerIds},
+      onTaskSelected: (task) => _selectBlocker(context, task),
     );
   }
 }

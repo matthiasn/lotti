@@ -245,3 +245,17 @@ extension EntryLinkTypeFactory on EntryLinkType {
     }
   }
 }
+
+/// The `linked_entries.type` column value for [link]'s union variant. Shared
+/// by `linkedDbEntity` (the write path) and `JournalRepository`'s
+/// `updateLink` change-detection so a variant change is never missed.
+String entryLinkTypeName(EntryLink link) => link.map(
+  basic: (_) => 'BasicLink',
+  rating: (_) => 'RatingLink',
+  project: (_) => 'ProjectLink',
+  blocks: (_) => 'BlocksLink',
+  followsUp: (_) => 'FollowsUpLink',
+  duplicates: (_) => 'DuplicatesLink',
+  fixes: (_) => 'FixesLink',
+  supersedes: (_) => 'SupersedesLink',
+);

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_relationship_sections.dart';
@@ -9,6 +12,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
@@ -24,6 +28,7 @@ void main() {
   const anchorTaskId = 'anchor-task';
 
   setUp(() {
+    registerAllFallbackValues();
     final mockUpdateNotifications = MockUpdateNotifications();
     when(
       () => mockUpdateNotifications.updateStream,
@@ -60,6 +65,13 @@ void main() {
         linkType: any(named: 'linkType'),
       ),
     ).thenAnswer((_) async => 1);
+    when(
+      () => journalRepo.updateLinkType(
+        linkId: any(named: 'linkId'),
+        newType: any(named: 'newType'),
+        swapDirection: any(named: 'swapDirection'),
+      ),
+    ).thenAnswer((_) async => true);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -88,7 +100,7 @@ void main() {
     ) async {
       await pumpSections(tester, TaskLinkGroups.empty);
 
-      expect(find.text('Blocked by'), findsNothing);
+      expect(find.text('Is blocked by'), findsNothing);
       expect(find.byType(Divider), findsNothing);
     });
 
@@ -116,17 +128,18 @@ void main() {
           ),
         );
 
-        expect(find.text('Blocked by'), findsOneWidget);
+        // Each direction is its own section, titled with the very phrase the
+        // picker offers for it.
+        expect(find.text('Is blocked by'), findsOneWidget);
         expect(find.text('Blocks'), findsOneWidget);
         expect(find.text('Blocker Task'), findsOneWidget);
         expect(find.text('Blocked Task'), findsOneWidget);
-        // Split sections carry no per-row direction caption/glyph.
-        expect(find.text('Is blocked by'), findsNothing);
       },
     );
 
     testWidgets(
-      'renders a merged Follow-ups section with per-row phrase captions',
+      'splits a bidirectional kind into one section per direction, each '
+      'titled with that direction own phrase',
       (tester) async {
         await pumpSections(
           tester,
@@ -149,15 +162,19 @@ void main() {
           ),
         );
 
-        expect(find.text('Follow-ups'), findsOneWidget);
+        // Two direction-specific headers, not one merged "Follow-ups" group.
         expect(find.text('Follows up on'), findsOneWidget);
         expect(find.text('Has follow-up'), findsOneWidget);
+        expect(find.text('Follow-ups'), findsNothing);
+        // Each row sits under its own header, so no row repeats the phrase.
+        expect(find.text('Outgoing Follow-up'), findsOneWidget);
+        expect(find.text('Incoming Follow-up'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'orders sections Blocked by, Blocks, Follow-ups, Duplicates, Fixes, '
-      'Supersedes',
+      'orders sections Blocked by first, then by kind and direction, '
+      'skipping every empty one',
       (tester) async {
         await pumpSections(
           tester,
@@ -165,10 +182,6 @@ void main() {
             flat: const [],
             typed: [
               entry(
-                // Incoming direction, so its row caption reads the inverse
-                // phrase ("Is superseded by") rather than "Supersedes" —
-                // avoiding a text collision with this section's own header
-                // in the assertion below.
                 id: 'supersedes-1',
                 title: 'Supersedes entry',
                 kind: TaskLinkKind.supersedes,
@@ -181,8 +194,6 @@ void main() {
                 direction: TaskLinkDirection.incoming,
               ),
               entry(
-                // Incoming direction for the same reason ("Is fixed by" vs.
-                // the "Fixes" section header).
                 id: 'fixes-1',
                 title: 'Fixes entry',
                 kind: TaskLinkKind.fixes,
@@ -192,22 +203,68 @@ void main() {
           ),
         );
 
+        const allHeaders = [
+          'Blocks',
+          'Is blocked by',
+          'Follows up on',
+          'Has follow-up',
+          'Duplicates',
+          'Is duplicated by',
+          'Fixes',
+          'Is fixed by',
+          'Supersedes',
+          'Is superseded by',
+        ];
         final headers = tester
             .widgetList<Text>(find.byType(Text))
             .map((t) => t.data)
-            .where(
-              (text) => [
-                'Blocked by',
-                'Blocks',
-                'Follow-ups',
-                'Duplicates',
-                'Fixes',
-                'Supersedes',
-              ].contains(text),
-            )
+            .where(allHeaders.contains)
             .toList();
 
-        expect(headers, ['Blocked by', 'Fixes', 'Supersedes']);
+        // Blocked-by leads; the two incoming entries render their inverse
+        // phrases; the outgoing counterpart sections stay absent.
+        expect(headers, ['Is blocked by', 'Is fixed by', 'Is superseded by']);
+      },
+    );
+
+    testWidgets(
+      'accents only the Blocked-by header, leaving every other section and '
+      'row neutral',
+      (tester) async {
+        await pumpSections(
+          tester,
+          TaskLinkGroups(
+            flat: const [],
+            typed: [
+              entry(
+                id: 'blocker',
+                title: 'Blocker Task',
+                kind: TaskLinkKind.blocks,
+                direction: TaskLinkDirection.incoming,
+              ),
+              entry(
+                id: 'blocked',
+                title: 'Blocked Task',
+                kind: TaskLinkKind.blocks,
+                direction: TaskLinkDirection.outgoing,
+              ),
+            ],
+          ),
+        );
+
+        final headers = tester
+            .widgetList<LinkedTaskSectionHeader>(
+              find.byType(LinkedTaskSectionHeader),
+            )
+            .toList();
+        final blockedBy = headers.firstWhere((h) => h.title == 'Is blocked by');
+        final blocks = headers.firstWhere((h) => h.title == 'Blocks');
+
+        expect(blockedBy.accent, isNotNull);
+        expect(blocks.accent, isNull);
+        // The accent brings a leading glyph tying the section to the header
+        // chip; it is the only one on the card.
+        expect(find.byIcon(Icons.block), findsOneWidget);
       },
     );
 
@@ -279,5 +336,127 @@ void main() {
         ),
       ).called(1);
     });
+
+    testWidgets(
+      'editing an incoming row opens the modal pre-selected to its type and '
+      'direction, and Save persists it unchanged (identity round-trip)',
+      (tester) async {
+        final repo = await pumpSections(
+          tester,
+          TaskLinkGroups(
+            flat: const [],
+            typed: [
+              entry(
+                id: 'blocker',
+                title: 'Blocker Task',
+                kind: TaskLinkKind.blocks,
+                direction: TaskLinkDirection.incoming,
+              ),
+            ],
+          ),
+          manageMode: true,
+        );
+
+        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Edit relationship'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => repo.updateLinkType(
+            linkId: 'link-blocker',
+            newType: EntryLinkType.blocks,
+            swapDirection: false,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'editing an outgoing row also round-trips unchanged through Save',
+      (tester) async {
+        final repo = await pumpSections(
+          tester,
+          TaskLinkGroups(
+            flat: const [],
+            typed: [
+              entry(
+                id: 'blocked',
+                title: 'Blocked Task',
+                kind: TaskLinkKind.blocks,
+                direction: TaskLinkDirection.outgoing,
+              ),
+            ],
+          ),
+          manageMode: true,
+        );
+
+        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => repo.updateLinkType(
+            linkId: 'link-blocked',
+            newType: EntryLinkType.blocks,
+            swapDirection: false,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'changing the type before Save persists the newly selected type',
+      (tester) async {
+        final repo = await pumpSections(
+          tester,
+          TaskLinkGroups(
+            flat: const [],
+            typed: [
+              entry(
+                id: 'followup',
+                title: 'Follow-up Task',
+                kind: TaskLinkKind.followsUp,
+                direction: TaskLinkDirection.outgoing,
+              ),
+            ],
+          ),
+          manageMode: true,
+        );
+
+        await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Switch the relation from "Follows up on" to "Blocks" before saving.
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
+        );
+        dropdown.onItemPressed!(
+          dropdown.items.firstWhere((item) => item.label == 'Blocks'),
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => repo.updateLinkType(
+            linkId: 'link-followup',
+            newType: EntryLinkType.blocks,
+            swapDirection: false,
+          ),
+        ).called(1);
+      },
+    );
   });
 }

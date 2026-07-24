@@ -2324,6 +2324,9 @@
     }
   },
   "doneButton": "Listo",
+  "editLinkTypeFailedMessage": "No se pudo actualizar la relación. Inténtalo de nuevo.",
+  "editLinkTypeTitle": "Editar relación",
+  "editLinkTypeTooltip": "Editar relación",
   "editMenuTitle": "Editar",
   "editorDiscardChanges": "Descartar cambios",
   "editorInsertDivider": "Insertar separador",
@@ -2778,18 +2781,15 @@
   "knowledgeGraphTooltip": "Explorar enlaces",
   "knowledgeGraphWalkHint": "Toca un nodo para avanzar · nodos: {count}",
   "linkBlocksCycleErrorMessage": "Esto crearía un ciclo de bloqueo — elige otra tarea.",
-  "linkedFromCaption": "desde",
+  "linkDirectionLabel": "Esta tarea…",
   "linkedTaskImageBadge": "De tarea vinculada",
   "linkedTasksBlockedBySectionTitle": "Bloqueada por",
-  "linkedTasksBlocksSectionTitle": "Bloquea",
-  "linkedTasksDuplicatesSectionTitle": "Duplicados",
-  "linkedTasksFixesSectionTitle": "Corrige",
-  "linkedTasksFollowUpsSectionTitle": "Seguimientos",
+  "linkedTasksEmptyAction": "Vincular una tarea…",
+  "linkedTasksEmptyHint": "Conecta esta tarea con otra: un bloqueo, un seguimiento o un duplicado.",
   "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
-  "linkedTasksSupersedesSectionTitle": "Reemplaza",
   "linkedTasksTitle": "Tareas vinculadas",
-  "linkedToCaption": "a",
   "linkExistingTask": "Vincular tarea existente...",
+  "linkPhraseBasic": "Se relaciona con",
   "linkPhraseBlocksInverse": "Está bloqueada por",
   "linkPhraseBlocksPrimary": "Bloquea",
   "linkPhraseDuplicatesInverse": "Está duplicada por",
@@ -2800,12 +2800,6 @@
   "linkPhraseFollowsUpPrimary": "Da seguimiento a",
   "linkPhraseSupersedesInverse": "Está reemplazada por",
   "linkPhraseSupersedesPrimary": "Reemplaza",
-  "linkTypeBasicOption": "Vincular",
-  "linkTypeBlocksOption": "Bloquea",
-  "linkTypeDuplicatesOption": "Duplica",
-  "linkTypeFixesOption": "Corrige",
-  "linkTypeFollowsUpOption": "Da seguimiento",
-  "linkTypeSupersedesOption": "Reemplaza",
   "logbookEmptyHint": "Crea tu primera entrada para empezar tu diario.",
   "logbookEmptyTitle": "Tu diario está vacío",
   "logbookNewEntriesHint": "Las nuevas entradas se abrirán aquí.",
@@ -4118,18 +4112,15 @@
   "taskAgentUseCategoryDefaultDescription": "Copia la configuración actual de la categoría. Los cambios posteriores de la categoría no afectarán a este agente.",
   "taskAgentUseProfileDefault": "Usar el valor predeterminado del perfil",
   "taskAgentWakeAgent": "Ejecutar agente",
-  "taskBlockedByChipLabel": "{count, plural, =1{Bloqueada por {title}} other{Bloqueada por {count} tareas}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Esperando 1 tarea} other{Esperando {count} tareas}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "title": {
-        "type": "String"
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Bloqueada por {title}} other{Toca para ver {count} bloqueos}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Esperando {title}} other{Toca para ver {count} bloqueos}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4140,9 +4131,9 @@
       }
     }
   },
+  "taskBlockedByUnresolvedLabel": "El bloqueo aún no se ha sincronizado",
   "taskBlockedReason": "Bloqueada por: {title}",
-  "taskBlockerPickerSkipButton": "Omitir",
-  "taskBlockerPickerTitle": "¿Qué está bloqueando esta tarea?",
+  "taskBlockerPickerTitle": "¿Qué la está bloqueando?",
   "taskCategoryAllLabel": "todos",
   "taskCategoryLabel": "Categoría:",
   "taskCategoryUnassignedLabel": "sin asignar",

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -63,6 +64,9 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
     this.shouldShowCreate,
     this.createRowKey,
     this.reserveFooterInset = true,
+    this.titleMaxLines = 1,
+    this.topInset = true,
+    this.rowSize = DesignSystemListItemSize.medium,
     super.key,
   }) : assert(
          mode == PickerMode.single || stagedNotifier != null,
@@ -104,6 +108,18 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
   /// Multi mode: reserve bottom space for the glass Apply footer. Embedded
   /// callers that supply their own action bar pass `false`.
   final bool reserveFooterInset;
+
+  /// Title line cap for rows. Pickers listing long-form titles (tasks) raise
+  /// this so a title never truncates mid-word on the row whose tap commits.
+  final int titleMaxLines;
+
+  /// Whether to inset the search field from the top. False when the sheet is
+  /// embedded below other modal content that already supplies that gap.
+  final bool topInset;
+
+  /// Row density. Pickers listing the same entity a surrounding surface also
+  /// lists should match that surface, so one entity has one rank throughout.
+  final DesignSystemListItemSize rowSize;
 
   @override
   ConsumerState<EntityPickerSheet> createState() => _EntityPickerSheetState();
@@ -163,14 +179,22 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
     final screenHeight = MediaQuery.of(context).size.height;
     final maxHeight = math.min(screenHeight * 0.9, 640).toDouble();
 
+    // Cap at maxHeight for long lists (which then scroll internally via the
+    // shrink-wrapped ListView below) without forcing short lists to claim
+    // that full height — a fixed `Expanded` list here previously left a large
+    // blank surface under a 2-3 row result set (design-review-panel finding).
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
+            // Own top inset: every caller passes padding: EdgeInsets.zero to
+            // the modal to get the row indent right, which also zeroes the
+            // vertical inset and welds this field to the header divider.
             padding: EdgeInsets.fromLTRB(
               tokens.spacing.step5,
-              0,
+              widget.topInset ? tokens.spacing.step5 : 0,
               tokens.spacing.step5,
               tokens.spacing.step5,
             ),
@@ -198,25 +222,21 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
             ),
           ),
           if (showEmptyState)
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: tokens.spacing.step6,
-                    vertical: tokens.spacing.step4,
-                  ),
-                  child: Text(
-                    widget.emptyMessage,
-                    textAlign: TextAlign.center,
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step6,
+                vertical: tokens.spacing.step6,
+              ),
+              child: Text(
+                widget.emptyMessage,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
             )
           else
-            Expanded(
+            Flexible(
               child: _multi
                   ? ValueListenableBuilder<Set<String>>(
                       valueListenable: widget.stagedNotifier!,
@@ -237,6 +257,7 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
     bool showCreate,
   ) {
     return ListView(
+      shrinkWrap: true,
       padding: EdgeInsets.only(
         bottom: (_multi && widget.reserveFooterInset)
             ? DesignSystemGlassActionFooter.reservedHeightFor(context)
@@ -262,6 +283,8 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
       item: item,
       multi: _multi,
       selected: selected,
+      titleMaxLines: widget.titleMaxLines,
+      rowSize: widget.rowSize,
       onTap: !item.enabled
           ? null
           : () => _multi ? _toggle(item.id) : widget.onPick?.call(item.id),
@@ -296,12 +319,16 @@ class _PickerItemRow extends StatelessWidget {
     required this.multi,
     required this.selected,
     required this.onTap,
+    required this.titleMaxLines,
+    required this.rowSize,
   });
 
   final PickerItem item;
   final bool multi;
   final bool selected;
   final VoidCallback? onTap;
+  final int titleMaxLines;
+  final DesignSystemListItemSize rowSize;
 
   @override
   Widget build(BuildContext context) {
@@ -311,6 +338,8 @@ class _PickerItemRow extends StatelessWidget {
     return DesignSystemSelectionRow(
       key: item.rowKey,
       title: item.title,
+      titleMaxLines: titleMaxLines,
+      size: rowSize,
       subtitle: item.subtitle,
       leading: item.leading,
       trailing: badges,

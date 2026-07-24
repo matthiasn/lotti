@@ -257,16 +257,7 @@ LinkedDbEntry linkedDbEntity(EntryLink link) {
     hidden: link.hidden ?? false,
     createdAt: link.createdAt,
     updatedAt: link.updatedAt,
-    type: link.map(
-      basic: (_) => 'BasicLink',
-      rating: (_) => 'RatingLink',
-      project: (_) => 'ProjectLink',
-      blocks: (_) => 'BlocksLink',
-      followsUp: (_) => 'FollowsUpLink',
-      duplicates: (_) => 'DuplicatesLink',
-      fixes: (_) => 'FixesLink',
-      supersedes: (_) => 'SupersedesLink',
-    ),
+    type: entryLinkTypeName(link),
   );
 }
 

@@ -11,6 +11,7 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
@@ -458,7 +459,10 @@ class _TaskBlockedByChip extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final accent = TaskShowcasePalette.error(context);
+    // warning, not error: the overdue due-date chip already owns error red —
+    // a simultaneously-blocked-and-overdue task must not show two identical
+    // alarms (design-review-panel round 1, color-contrast finding).
+    final accent = TaskShowcasePalette.warning(context);
     final blockers = result.openBlockers;
 
     if (blockers.isEmpty) {
@@ -469,11 +473,12 @@ class _TaskBlockedByChip extends ConsumerWidget {
         variant: DsPillVariant.tinted,
         color: accent,
         leading: Icon(Icons.block, size: 12, color: accent),
-        label: context.messages.taskStatusBlocked,
+        label: context.messages.taskBlockedByUnresolvedLabel,
       );
     }
 
     final single = blockers.length == 1;
+    final tokens = context.designTokens;
 
     return Tooltip(
       message: context.messages.taskBlockedByChipTooltip(
@@ -484,9 +489,18 @@ class _TaskBlockedByChip extends ConsumerWidget {
         variant: DsPillVariant.tinted,
         color: accent,
         leading: Icon(Icons.block, size: 12, color: accent),
-        label: context.messages.taskBlockedByChipLabel(
-          blockers.length,
-          single ? blockers.first.data.title : '',
+        // Count only, no blocker title. Embedding the title made the chip
+        // grow with it — on a long title it spanned the header and out-shouted
+        // the status pill beside it. That the task is waiting is the header's
+        // job; which task it waits on is one glance away in the Linked Tasks
+        // card, and the tooltip still names it.
+        label: context.messages.taskBlockedByChipLabel(blockers.length),
+        // Matches LinkedTaskRow's own browse-mode chevron so a chip that
+        // navigates reads as tappable, not just as a status readout.
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: linkedRowChevronSize,
+          color: tokens.colors.text.lowEmphasis,
         ),
         onTap: () => single
             ? openLinkedTaskDetail(context: context, taskId: blockers.first.id)
@@ -502,16 +516,16 @@ class _TaskBlockedByChip extends ConsumerWidget {
     await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.linkedTasksBlockedBySectionTitle,
+      // LinkedTaskRow brings its own step5 horizontal padding, same as every
+      // sibling picker in this feature — without this the rows get inset twice.
+      padding: EdgeInsets.zero,
       builder: (context) => ListView(
         shrinkWrap: true,
         children: [
           for (final blocker in blockers)
             LinkedTaskRow(
               taskId: taskId,
-              data: LinkedTaskRowData(
-                task: blocker,
-                direction: LinkDirection.incoming,
-              ),
+              data: LinkedTaskRowData(task: blocker),
               manageMode: false,
             ),
         ],

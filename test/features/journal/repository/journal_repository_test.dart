@@ -2736,6 +2736,17 @@ void main() {
             ),
             'hidden': base.copyWith(hidden: hidden != true),
             'collapsed': base.copyWith(collapsed: collapsed != true),
+            'type': EntryLink.blocks(
+              id: base.id,
+              fromId: base.fromId,
+              toId: base.toId,
+              createdAt: base.createdAt,
+              updatedAt: base.updatedAt,
+              vectorClock: base.vectorClock,
+              hidden: base.hidden,
+              collapsed: base.collapsed,
+              deletedAt: base.deletedAt,
+            ),
           };
           for (final MapEntry(key: field, value: mutated)
               in mutations.entries) {
@@ -3004,6 +3015,55 @@ void main() {
         expect(result, isTrue);
       });
 
+      test(
+        'detects a link-type-only change as meaningful (everything else '
+        'identical)',
+        () async {
+          final existing = EntryLink.followsUp(
+            id: 'link-id',
+            fromId: 'from-id',
+            toId: 'to-id',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+          final incoming = EntryLink.blocks(
+            id: 'link-id',
+            fromId: 'from-id',
+            toId: 'to-id',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+
+          when(
+            () => collapsedMockJournalDb.entryLinkById(incoming.id),
+          ).thenAnswer((_) async => existing);
+          when(
+            () => collapsedMockVectorClockService.getNextVectorClock(),
+          ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+          when(
+            () => collapsedMockJournalDb.upsertEntryLink(any()),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => collapsedMockUpdateNotifications.notify(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => collapsedMockOutboxService.enqueueMessage(any()),
+          ).thenAnswer((_) async {});
+
+          final result = await collapsedRepository.updateLink(incoming);
+
+          expect(result, isTrue);
+          final persisted =
+              verify(
+                    () => collapsedMockJournalDb.upsertEntryLink(captureAny()),
+                  ).captured.single
+                  as EntryLink;
+          expect(persisted, isA<BlocksLink>());
+        },
+      );
+
       test('skips update when no fields changed', () async {
         final link = EntryLink.basic(
           id: 'link-id',
@@ -3056,6 +3116,202 @@ void main() {
 
         expect(result, isTrue);
         verify(() => collapsedMockJournalDb.upsertEntryLink(any())).called(1);
+      });
+    });
+
+    group('updateLinkType', () {
+      void stubSuccessfulUpsert() {
+        when(
+          () => collapsedMockVectorClockService.getNextVectorClock(),
+        ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+        when(
+          () => collapsedMockJournalDb.upsertEntryLink(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => collapsedMockUpdateNotifications.notify(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => collapsedMockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+      }
+
+      test(
+        'retypes an existing link in place: same id, bumped VC, synced',
+        () async {
+          final existing = EntryLink.followsUp(
+            id: 'link-id',
+            fromId: 'from-id',
+            toId: 'to-id',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: const VectorClock({'node1': 0}),
+          );
+          when(
+            () => collapsedMockJournalDb.entryLinkById('link-id'),
+          ).thenAnswer((_) async => existing);
+          when(
+            () => collapsedMockJournalDb.typedLinksForTaskIds(
+              any(),
+              types: any(named: 'types'),
+            ),
+          ).thenAnswer((_) async => <EntryLink>[]);
+          stubSuccessfulUpsert();
+
+          final result = await collapsedRepository.updateLinkType(
+            linkId: 'link-id',
+            newType: EntryLinkType.blocks,
+            swapDirection: false,
+          );
+
+          expect(result, isTrue);
+          final persisted =
+              verify(
+                    () => collapsedMockJournalDb.upsertEntryLink(captureAny()),
+                  ).captured.single
+                  as EntryLink;
+          expect(persisted, isA<BlocksLink>());
+          expect(persisted.id, 'link-id');
+          expect(persisted.fromId, 'from-id');
+          expect(persisted.toId, 'to-id');
+          verify(
+            () => collapsedMockOutboxService.enqueueMessage(
+              SyncMessage.entryLink(
+                entryLink: persisted,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'swapDirection flips fromId/toId while keeping the same type',
+        () async {
+          final existing = EntryLink.followsUp(
+            id: 'link-id',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+          when(
+            () => collapsedMockJournalDb.entryLinkById('link-id'),
+          ).thenAnswer((_) async => existing);
+          stubSuccessfulUpsert();
+
+          final result = await collapsedRepository.updateLinkType(
+            linkId: 'link-id',
+            newType: EntryLinkType.followsUp,
+            swapDirection: true,
+          );
+
+          expect(result, isTrue);
+          final persisted =
+              verify(
+                    () => collapsedMockJournalDb.upsertEntryLink(captureAny()),
+                  ).captured.single
+                  as EntryLink;
+          expect(persisted, isA<FollowsUpLink>());
+          expect(persisted.fromId, 'b');
+          expect(persisted.toId, 'a');
+        },
+      );
+
+      test(
+        'rejects a retype to blocks that would close a cycle via an '
+        'unrelated existing blocks edge',
+        () async {
+          // 'flip-me' is a followsUp link (x->y) being retyped to blocks.
+          // A separate, real blocks edge (y->x) already exists, so the
+          // retype must be rejected exactly like a fresh create would be.
+          final existing = EntryLink.followsUp(
+            id: 'flip-me',
+            fromId: 'x',
+            toId: 'y',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+          when(
+            () => collapsedMockJournalDb.entryLinkById('flip-me'),
+          ).thenAnswer((_) async => existing);
+          when(
+            () => collapsedMockJournalDb.typedLinksForTaskIds(
+              {'y'},
+              types: {'BlocksLink'},
+            ),
+          ).thenAnswer(
+            (_) async => [
+              EntryLink.blocks(
+                id: 'other-edge',
+                fromId: 'y',
+                toId: 'x',
+                createdAt: DateTime(2023),
+                updatedAt: DateTime(2023),
+                vectorClock: null,
+              ),
+            ],
+          );
+
+          final result = await collapsedRepository.updateLinkType(
+            linkId: 'flip-me',
+            newType: EntryLinkType.blocks,
+            swapDirection: false,
+          );
+
+          expect(result, isFalse);
+          verifyNever(() => collapsedMockJournalDb.upsertEntryLink(any()));
+        },
+      );
+
+      test(
+        'a direction flip on an existing blocks edge is not rejected '
+        'against its own stale row',
+        () async {
+          final existing = EntryLink.blocks(
+            id: 'flip-me',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+          when(
+            () => collapsedMockJournalDb.entryLinkById('flip-me'),
+          ).thenAnswer((_) async => existing);
+          when(
+            () => collapsedMockJournalDb.typedLinksForTaskIds(
+              {'a'},
+              types: {'BlocksLink'},
+            ),
+          ).thenAnswer((_) async => [existing]);
+          stubSuccessfulUpsert();
+
+          final result = await collapsedRepository.updateLinkType(
+            linkId: 'flip-me',
+            newType: EntryLinkType.blocks,
+            swapDirection: true,
+          );
+
+          expect(result, isTrue);
+          verify(() => collapsedMockJournalDb.upsertEntryLink(any())).called(1);
+        },
+      );
+
+      test('returns false when linkId no longer resolves to a link', () async {
+        when(
+          () => collapsedMockJournalDb.entryLinkById('missing'),
+        ).thenAnswer((_) async => null);
+
+        final result = await collapsedRepository.updateLinkType(
+          linkId: 'missing',
+          newType: EntryLinkType.blocks,
+          swapDirection: false,
+        );
+
+        expect(result, isFalse);
+        verifyNever(() => collapsedMockJournalDb.upsertEntryLink(any()));
       });
     });
   });

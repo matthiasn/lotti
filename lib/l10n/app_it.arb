@@ -3207,11 +3207,9 @@
       }
     }
   },
-  "linkedFromCaption": "da",
   "linkedTaskImageBadge": "Da un'attività collegata",
   "linkedTasksMenuTooltip": "Opzioni di attività collegate",
   "linkedTasksTitle": "Compiti collegati",
-  "linkedToCaption": "a",
   "linkExistingTask": "Collegare il compito esistente...",
   "loggingDomainAgentRuntime": "Tempo libero dell'agente",
   "loggingDomainAgentWorkflow": "Flusso di lavoro agente",
