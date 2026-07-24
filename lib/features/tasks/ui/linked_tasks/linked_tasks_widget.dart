@@ -22,12 +22,11 @@ import 'package:lotti/themes/theme.dart';
 
 /// Linked tasks card on the task detail view.
 ///
-/// Renders a single section card with a header (title, count badge, expand
-/// chevron, overflow menu), the 6 typed-relationship sections
-/// ([TaskRelationshipSections] — Blocked by, Blocks, Follow-ups, Duplicates,
-/// Fixes, Supersedes, each shown only when non-empty), and the flat
-/// plain-link list (today's original "Linked Tasks" rows, unchanged). Hidden
-/// entirely when there are no links of any kind.
+/// Renders a section card with a header (title, count badge, link action,
+/// expand chevron, overflow menu), the typed-relationship sections
+/// ([TaskRelationshipSections], one per relationship direction that has
+/// entries), and the flat plain-link list. The header always renders — even
+/// with no links at all — so the link action stays reachable.
 class LinkedTasksWidget extends ConsumerStatefulWidget {
   const LinkedTasksWidget({
     required this.taskId,
@@ -105,9 +104,12 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                     thickness: 1,
                     color: tokens.colors.decorative.level01,
                   ),
-                if (flatRows.isNotEmpty)
+                // Headed only when there is something to be "other" than —
+                // and headed with the picker's own word for a plain link, so
+                // the card reads back the phrase the user picked.
+                if (flatRows.isNotEmpty && linkGroups.typed.isNotEmpty)
                   LinkedTaskSectionHeader(
-                    title: context.messages.linkedTasksOtherLinksSectionTitle,
+                    title: context.messages.linkPhraseBasic,
                   ),
                 for (var i = 0; i < flatRows.length; i++) ...[
                   if (i > 0)
@@ -246,8 +248,6 @@ class _LinkedTasksHeader extends ConsumerWidget {
                 position: PopupMenuPosition.under,
                 onSelected: (value) async {
                   switch (value) {
-                    case 'link_existing':
-                      await _showLinkTaskModal(context, ref);
                     case 'create_new':
                       await _createNewLinkedTask(context, ref);
                     case 'manage':
@@ -255,18 +255,6 @@ class _LinkedTasksHeader extends ConsumerWidget {
                   }
                 },
                 itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'link_existing',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.link, size: 18),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(context.messages.linkExistingTask),
-                        ),
-                      ],
-                    ),
-                  ),
                   PopupMenuItem(
                     value: 'create_new',
                     child: Row(

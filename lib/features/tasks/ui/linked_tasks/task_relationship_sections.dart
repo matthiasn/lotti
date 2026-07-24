@@ -8,7 +8,6 @@ import 'package:lotti/features/tasks/ui/linked_tasks/edit_link_type_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// One rendered group inside [TaskRelationshipSections]: a header + its rows.
 ///
@@ -54,7 +53,7 @@ EntryLinkType _entryLinkTypeFor(TaskLinkKind kind) {
 /// The typed-relationship sections on the linked-tasks card, rendered above
 /// the flat plain-link list. Every relationship kind contributes up to two
 /// sections — one per direction — titled with that direction's own phrase
-/// ("Blocked by" / "Blocks", "Follows up on" / "Has follow-up", …), so the
+/// ("Blocks" / "Is blocked by", "Follows up on" / "Has follow-up", …), so the
 /// header states the relationship in full and every row across the whole card
 /// renders from one template: status glyph, title, trailing affordance.
 class TaskRelationshipSections extends ConsumerWidget {
@@ -90,31 +89,31 @@ class TaskRelationshipSections extends ConsumerWidget {
     // surfaces, and the one that gates whether work can start at all.
     final sections = <_Section>[
       _Section(
-        title: context.messages.linkedTasksBlockedBySectionTitle,
+        title: _directionTitle(
+          context,
+          TaskLinkKind.blocks,
+          TaskLinkDirection.incoming,
+        ),
         entries: entriesOf(
           TaskLinkKind.blocks,
           direction: TaskLinkDirection.incoming,
         ),
         accent: TaskShowcasePalette.warning(context),
       ),
-      _Section(
-        title: context.messages.linkedTasksBlocksSectionTitle,
-        entries: entriesOf(
-          TaskLinkKind.blocks,
-          direction: TaskLinkDirection.outgoing,
-        ),
-      ),
       for (final kind in const [
+        TaskLinkKind.blocks,
         TaskLinkKind.followsUp,
         TaskLinkKind.duplicates,
         TaskLinkKind.fixes,
         TaskLinkKind.supersedes,
       ])
         for (final direction in TaskLinkDirection.values)
-          _Section(
-            title: _directionTitle(context, kind, direction),
-            entries: entriesOf(kind, direction: direction),
-          ),
+          if (!(kind == TaskLinkKind.blocks &&
+              direction == TaskLinkDirection.incoming))
+            _Section(
+              title: _directionTitle(context, kind, direction),
+              entries: entriesOf(kind, direction: direction),
+            ),
     ].where((s) => s.entries.isNotEmpty).toList();
 
     final children = <Widget>[];
@@ -173,9 +172,9 @@ class TaskRelationshipSections extends ConsumerWidget {
   }
 }
 
-/// Section title for one direction of a relationship kind — the same phrase
-/// pair the link picker's direction toggle offers, so a relationship is
-/// described identically wherever it's read.
+/// Section title for one direction of a relationship kind — the very phrase
+/// the picker offered for it, so the card reads back exactly the words the
+/// user chose. One source, one grammatical form, no hand-written variants.
 String _directionTitle(
   BuildContext context,
   TaskLinkKind kind,

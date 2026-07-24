@@ -327,7 +327,7 @@ void main() {
       (label: 'incoming', incoming: true, title: 'Incoming Task'),
     ]) {
       testWidgets(
-        'renders an ${flat.label} plain link captionless under "Other links"',
+        'renders an ${flat.label} plain link captionless',
         (tester) async {
           final task = buildTask(id: 'flat-1', title: flat.title);
           await pumpWidget(
@@ -336,7 +336,6 @@ void main() {
             outgoing: flat.incoming ? [] : [task],
           );
 
-          expect(find.text('Other links'), findsOneWidget);
           expect(find.text(flat.title), findsOneWidget);
           // Browse-mode chevron is still the row's affordance...
           expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
@@ -363,8 +362,7 @@ void main() {
       expect(find.text('Outgoing 1'), findsOneWidget);
       expect(find.text('Outgoing 2'), findsOneWidget);
       expect(find.text('Incoming Task'), findsOneWidget);
-      // All three sit in the one "Other links" section, captionless.
-      expect(find.text('Other links'), findsOneWidget);
+      // All three render captionless.
       expect(find.text('to'), findsNothing);
       expect(find.text('from'), findsNothing);
       // Three rows → two dividers between them.
@@ -477,7 +475,7 @@ void main() {
           extraTypedTasks: [blocker],
         );
 
-        expect(find.text('Blocked by'), findsOneWidget);
+        expect(find.text('Is blocked by'), findsOneWidget);
         expect(find.text('Blocker Task'), findsOneWidget);
         expect(find.text('Outgoing Task'), findsOneWidget);
         // One divider between the typed sections and the flat list — the

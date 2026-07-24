@@ -6670,13 +6670,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blokováno';
 
   @override
-  String get linkedTasksBlocksSectionTitle => 'Blokuje';
-
-  @override
   String get linkedTasksMenuTooltip => 'Možnosti propojených úkolů';
-
-  @override
-  String get linkedTasksOtherLinksSectionTitle => 'Další odkazy';
 
   @override
   String get linkedTasksTitle => 'Propojené úkoly';
@@ -6716,24 +6710,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Nahrazuje';
-
-  @override
-  String get linkTypeBasicOption => 'Propojit';
-
-  @override
-  String get linkTypeBlocksOption => 'Blokuje';
-
-  @override
-  String get linkTypeDuplicatesOption => 'Duplikuje';
-
-  @override
-  String get linkTypeFixesOption => 'Opravuje';
-
-  @override
-  String get linkTypeFollowsUpOption => 'Navazuje';
-
-  @override
-  String get linkTypeSupersedesOption => 'Nahrazuje';
 
   @override
   String get logbookEmptyHint =>

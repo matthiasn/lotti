@@ -63,6 +63,8 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
     this.shouldShowCreate,
     this.createRowKey,
     this.reserveFooterInset = true,
+    this.titleMaxLines = 1,
+    this.topInset = true,
     super.key,
   }) : assert(
          mode == PickerMode.single || stagedNotifier != null,
@@ -104,6 +106,14 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
   /// Multi mode: reserve bottom space for the glass Apply footer. Embedded
   /// callers that supply their own action bar pass `false`.
   final bool reserveFooterInset;
+
+  /// Title line cap for rows. Pickers listing long-form titles (tasks) raise
+  /// this so a title never truncates mid-word on the row whose tap commits.
+  final int titleMaxLines;
+
+  /// Whether to inset the search field from the top. False when the sheet is
+  /// embedded below other modal content that already supplies that gap.
+  final bool topInset;
 
   @override
   ConsumerState<EntityPickerSheet> createState() => _EntityPickerSheetState();
@@ -173,9 +183,12 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
+            // Own top inset: every caller passes padding: EdgeInsets.zero to
+            // the modal to get the row indent right, which also zeroes the
+            // vertical inset and welds this field to the header divider.
             padding: EdgeInsets.fromLTRB(
               tokens.spacing.step5,
-              0,
+              widget.topInset ? tokens.spacing.step5 : 0,
               tokens.spacing.step5,
               tokens.spacing.step5,
             ),
@@ -264,6 +277,7 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
       item: item,
       multi: _multi,
       selected: selected,
+      titleMaxLines: widget.titleMaxLines,
       onTap: !item.enabled
           ? null
           : () => _multi ? _toggle(item.id) : widget.onPick?.call(item.id),
@@ -298,12 +312,14 @@ class _PickerItemRow extends StatelessWidget {
     required this.multi,
     required this.selected,
     required this.onTap,
+    required this.titleMaxLines,
   });
 
   final PickerItem item;
   final bool multi;
   final bool selected;
   final VoidCallback? onTap;
+  final int titleMaxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -313,6 +329,7 @@ class _PickerItemRow extends StatelessWidget {
     return DesignSystemSelectionRow(
       key: item.rowKey,
       title: item.title,
+      titleMaxLines: titleMaxLines,
       subtitle: item.subtitle,
       leading: item.leading,
       trailing: badges,

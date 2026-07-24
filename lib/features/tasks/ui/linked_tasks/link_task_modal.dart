@@ -90,7 +90,7 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
         Padding(
           padding: EdgeInsets.fromLTRB(
             tokens.spacing.step5,
-            0,
+            tokens.spacing.step5,
             tokens.spacing.step5,
             tokens.spacing.step4,
           ),
@@ -100,6 +100,7 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
           ),
         ),
         TaskSearchPickerBody(
+          topInset: false,
           excludeIds: {
             widget.currentTaskId,
             ...widget.existingLinkedIds,

@@ -6651,13 +6651,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blocked by';
 
   @override
-  String get linkedTasksBlocksSectionTitle => 'Blocks';
-
-  @override
   String get linkedTasksMenuTooltip => 'Opções de tarefas vinculadas';
-
-  @override
-  String get linkedTasksOtherLinksSectionTitle => 'Other links';
 
   @override
   String get linkedTasksTitle => 'Tarefas Vinculadas';
@@ -6697,24 +6691,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Supersedes';
-
-  @override
-  String get linkTypeBasicOption => 'Link';
-
-  @override
-  String get linkTypeBlocksOption => 'Blocks';
-
-  @override
-  String get linkTypeDuplicatesOption => 'Duplicates';
-
-  @override
-  String get linkTypeFixesOption => 'Fixes';
-
-  @override
-  String get linkTypeFollowsUpOption => 'Follows up';
-
-  @override
-  String get linkTypeSupersedesOption => 'Supersedes';
 
   @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';

@@ -218,7 +218,8 @@ void main() {
 
   group('LinkedTasksWidget overflow menu', () {
     testWidgets(
-      'shows link/create/manage actions when there are linked tasks',
+      'the overflow menu carries create/manage only — linking has its own '
+      'header action, so it must not appear twice in one header row',
       (tester) async {
         await pumpWidget(
           tester,
@@ -230,15 +231,15 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Link existing task...'), findsOneWidget);
         expect(find.text('Create new linked task...'), findsOneWidget);
         expect(find.text('Manage links...'), findsOneWidget);
+        expect(find.text('Link existing task...'), findsNothing);
       },
     );
 
     testWidgets(
-      'shows an "Other links" section header above the flat/plain-link rows '
-      'so they never read as an unlabeled continuation of a typed section',
+      'leaves plain links unheaded when they are the only links — there is '
+      'nothing for them to be distinguished from',
       (tester) async {
         await pumpWidget(
           tester,
@@ -246,7 +247,7 @@ void main() {
           outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
         );
 
-        expect(find.text('Other links'), findsOneWidget);
+        expect(find.text('Relates to'), findsNothing);
         expect(find.text('Outgoing Task'), findsOneWidget);
       },
     );
@@ -284,26 +285,6 @@ void main() {
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsNothing);
     });
-
-    testWidgets(
-      'tapping "Link existing task..." opens the LinkTaskModal',
-      (tester) async {
-        await pumpWidget(
-          tester,
-          incoming: [],
-          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
-        );
-
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Link existing task...'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.byType(LinkTaskModal), findsOneWidget);
-      },
-    );
 
     testWidgets(
       'the header link action opens LinkTaskModal directly, without going '

@@ -100,7 +100,7 @@ void main() {
     ) async {
       await pumpSections(tester, TaskLinkGroups.empty);
 
-      expect(find.text('Blocked by'), findsNothing);
+      expect(find.text('Is blocked by'), findsNothing);
       expect(find.byType(Divider), findsNothing);
     });
 
@@ -128,12 +128,12 @@ void main() {
           ),
         );
 
-        expect(find.text('Blocked by'), findsOneWidget);
+        // Each direction is its own section, titled with the very phrase the
+        // picker offers for it.
+        expect(find.text('Is blocked by'), findsOneWidget);
         expect(find.text('Blocks'), findsOneWidget);
         expect(find.text('Blocker Task'), findsOneWidget);
         expect(find.text('Blocked Task'), findsOneWidget);
-        // Split sections carry no per-row direction caption/glyph.
-        expect(find.text('Is blocked by'), findsNothing);
       },
     );
 
@@ -204,8 +204,8 @@ void main() {
         );
 
         const allHeaders = [
-          'Blocked by',
           'Blocks',
+          'Is blocked by',
           'Follows up on',
           'Has follow-up',
           'Duplicates',
@@ -223,7 +223,7 @@ void main() {
 
         // Blocked-by leads; the two incoming entries render their inverse
         // phrases; the outgoing counterpart sections stay absent.
-        expect(headers, ['Blocked by', 'Is fixed by', 'Is superseded by']);
+        expect(headers, ['Is blocked by', 'Is fixed by', 'Is superseded by']);
       },
     );
 
@@ -257,7 +257,7 @@ void main() {
               find.byType(LinkedTaskSectionHeader),
             )
             .toList();
-        final blockedBy = headers.firstWhere((h) => h.title == 'Blocked by');
+        final blockedBy = headers.firstWhere((h) => h.title == 'Is blocked by');
         final blocks = headers.firstWhere((h) => h.title == 'Blocks');
 
         expect(blockedBy.accent, isNotNull);

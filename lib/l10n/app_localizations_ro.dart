@@ -6711,13 +6711,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Blocată de';
 
   @override
-  String get linkedTasksBlocksSectionTitle => 'Blochează';
-
-  @override
   String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
-
-  @override
-  String get linkedTasksOtherLinksSectionTitle => 'Alte legături';
 
   @override
   String get linkedTasksTitle => 'Sarcini legate';
@@ -6757,24 +6751,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Înlocuiește';
-
-  @override
-  String get linkTypeBasicOption => 'Legați';
-
-  @override
-  String get linkTypeBlocksOption => 'Blocați';
-
-  @override
-  String get linkTypeDuplicatesOption => 'Duplicați';
-
-  @override
-  String get linkTypeFixesOption => 'Remediați';
-
-  @override
-  String get linkTypeFollowsUpOption => 'Continuați';
-
-  @override
-  String get linkTypeSupersedesOption => 'Înlocuiți';
 
   @override
   String get logbookEmptyHint =>

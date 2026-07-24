@@ -3,9 +3,8 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// The 6 relationship types offered by [RelationshipTypeSelector], in display
-/// order. `rating`/`project` are excluded — they're not user-facing task
-/// relationships.
+/// The 6 task-relationship types, in display order. `rating`/`project` are
+/// excluded — they're not user-facing task relationships.
 const List<EntryLinkType> relationshipSelectorTypes = [
   EntryLinkType.basic,
   EntryLinkType.blocks,
@@ -59,27 +58,6 @@ List<DirectedRelation> get relationshipDirectedOptions => [
       DirectedRelation(type, inverse: true),
     ],
 ];
-
-/// Compact chip label for a relationship type (the picker's primary row).
-String relationshipTypeOptionLabel(BuildContext context, EntryLinkType type) {
-  switch (type) {
-    case EntryLinkType.basic:
-      return context.messages.linkTypeBasicOption;
-    case EntryLinkType.blocks:
-      return context.messages.linkTypeBlocksOption;
-    case EntryLinkType.followsUp:
-      return context.messages.linkTypeFollowsUpOption;
-    case EntryLinkType.duplicates:
-      return context.messages.linkTypeDuplicatesOption;
-    case EntryLinkType.fixes:
-      return context.messages.linkTypeFixesOption;
-    case EntryLinkType.supersedes:
-      return context.messages.linkTypeSupersedesOption;
-    case EntryLinkType.rating:
-    case EntryLinkType.project:
-      throw StateError('$type is not a task-relationship option');
-  }
-}
 
 /// The (primary, inverse) phrasing pair for a directional relationship type,
 /// or null for `basic` (symmetric — no phrasing choice). Shared by the

@@ -11495,23 +11495,11 @@ abstract class AppLocalizations {
   /// **'Blocked by'**
   String get linkedTasksBlockedBySectionTitle;
 
-  /// No description provided for @linkedTasksBlocksSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Blocks'**
-  String get linkedTasksBlocksSectionTitle;
-
   /// No description provided for @linkedTasksMenuTooltip.
   ///
   /// In en, this message translates to:
   /// **'Linked tasks options'**
   String get linkedTasksMenuTooltip;
-
-  /// No description provided for @linkedTasksOtherLinksSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Other links'**
-  String get linkedTasksOtherLinksSectionTitle;
 
   /// No description provided for @linkedTasksTitle.
   ///
@@ -11590,42 +11578,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Supersedes'**
   String get linkPhraseSupersedesPrimary;
-
-  /// No description provided for @linkTypeBasicOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Link'**
-  String get linkTypeBasicOption;
-
-  /// No description provided for @linkTypeBlocksOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Blocks'**
-  String get linkTypeBlocksOption;
-
-  /// No description provided for @linkTypeDuplicatesOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Duplicates'**
-  String get linkTypeDuplicatesOption;
-
-  /// No description provided for @linkTypeFixesOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Fixes'**
-  String get linkTypeFixesOption;
-
-  /// No description provided for @linkTypeFollowsUpOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Follows up'**
-  String get linkTypeFollowsUpOption;
-
-  /// No description provided for @linkTypeSupersedesOption.
-  ///
-  /// In en, this message translates to:
-  /// **'Supersedes'**
-  String get linkTypeSupersedesOption;
 
   /// No description provided for @logbookEmptyHint.
   ///

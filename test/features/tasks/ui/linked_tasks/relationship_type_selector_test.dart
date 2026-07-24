@@ -22,52 +22,6 @@ void main() {
     return captured;
   }
 
-  group('relationshipTypeOptionLabel', () {
-    testWidgets('returns a label for every task-relationship option', (
-      tester,
-    ) async {
-      final context = await pumpContext(tester);
-
-      expect(relationshipTypeOptionLabel(context, EntryLinkType.basic), 'Link');
-      expect(
-        relationshipTypeOptionLabel(context, EntryLinkType.blocks),
-        'Blocks',
-      );
-      expect(
-        relationshipTypeOptionLabel(context, EntryLinkType.followsUp),
-        'Follows up',
-      );
-      expect(
-        relationshipTypeOptionLabel(context, EntryLinkType.duplicates),
-        'Duplicates',
-      );
-      expect(
-        relationshipTypeOptionLabel(context, EntryLinkType.fixes),
-        'Fixes',
-      );
-      expect(
-        relationshipTypeOptionLabel(context, EntryLinkType.supersedes),
-        'Supersedes',
-      );
-    });
-
-    testWidgets(
-      'throws for rating/project — never offered as a task relationship',
-      (tester) async {
-        final context = await pumpContext(tester);
-
-        expect(
-          () => relationshipTypeOptionLabel(context, EntryLinkType.rating),
-          throwsStateError,
-        );
-        expect(
-          () => relationshipTypeOptionLabel(context, EntryLinkType.project),
-          throwsStateError,
-        );
-      },
-    );
-  });
-
   group('relationshipPhrasePair', () {
     testWidgets('returns the (primary, inverse) pair for every directional '
         'type', (tester) async {

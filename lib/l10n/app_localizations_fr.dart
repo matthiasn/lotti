@@ -6704,13 +6704,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkedTasksBlockedBySectionTitle => 'Bloquée par';
 
   @override
-  String get linkedTasksBlocksSectionTitle => 'Bloque';
-
-  @override
   String get linkedTasksMenuTooltip => 'Options des tâches liées';
-
-  @override
-  String get linkedTasksOtherLinksSectionTitle => 'Autres liens';
 
   @override
   String get linkedTasksTitle => 'Tâches liées';
@@ -6750,24 +6744,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Remplace';
-
-  @override
-  String get linkTypeBasicOption => 'Lier';
-
-  @override
-  String get linkTypeBlocksOption => 'Bloque';
-
-  @override
-  String get linkTypeDuplicatesOption => 'Duplique';
-
-  @override
-  String get linkTypeFixesOption => 'Corrige';
-
-  @override
-  String get linkTypeFollowsUpOption => 'Fait suite à';
-
-  @override
-  String get linkTypeSupersedesOption => 'Remplace';
 
   @override
   String get logbookEmptyHint =>

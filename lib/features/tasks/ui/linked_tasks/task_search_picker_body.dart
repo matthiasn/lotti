@@ -22,6 +22,7 @@ class TaskSearchPickerBody extends StatefulWidget {
   const TaskSearchPickerBody({
     required this.excludeIds,
     required this.onTaskSelected,
+    this.topInset = true,
     super.key,
   });
 
@@ -32,6 +33,10 @@ class TaskSearchPickerBody extends StatefulWidget {
   /// Called when the user taps a result. The body does not close itself or
   /// persist anything — the caller decides what selecting a task means.
   final ValueChanged<Task> onTaskSelected;
+
+  /// False when this body sits below other modal content that already
+  /// supplies the gap under the header (the link modal's relation dropdown).
+  final bool topInset;
 
   @override
   State<TaskSearchPickerBody> createState() => _TaskSearchPickerBodyState();
@@ -149,6 +154,10 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
     return EntityPickerSheet(
       mode: PickerMode.single,
       entriesBuilder: _entriesBuilder,
+      // Task titles are sentences, not short entity names — one line truncates
+      // real words away on the row whose tap immediately commits the link.
+      titleMaxLines: 2,
+      topInset: widget.topInset,
       searchHintText: context.messages.searchTasksHint,
       emptyMessage: hasCandidates
           ? context.messages.noTasksFound
