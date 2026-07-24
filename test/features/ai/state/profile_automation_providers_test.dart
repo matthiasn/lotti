@@ -7,6 +7,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
@@ -429,6 +430,91 @@ void main() {
         final allowed = await lookupFor(entity: null);
 
         expect(allowed, isFalse);
+      });
+    });
+
+    /// Decides whether the category settings form shows the automatic-
+    /// inference switch at all. It must answer yes for both ways automation
+    /// can happen, or the fallback path would run with no visible control.
+    group('categoryAutomationAvailableProvider', () {
+      AiConfigInferenceProfile profileWith({required bool automated}) {
+        return AiTestDataFactory.createTestProfile(id: 'profile-1').copyWith(
+          skillAssignments: [
+            SkillAssignment(skillId: 'skill-transcribe', automate: automated),
+          ],
+        );
+      }
+
+      /// A configured speech-to-text model plus its provider — the state in
+      /// which the direct transcription fallback could run.
+      void stubFallbackAvailable({required bool available}) {
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'stt-model',
+              inferenceProviderId: 'provider-1',
+              inputModalities: available
+                  ? const [Modality.audio]
+                  : const [Modality.text],
+              // Spelled out even though it matches the default: audio-in /
+              // text-out is exactly what makes this a speech-to-text row.
+              // ignore: avoid_redundant_argument_values
+              outputModalities: const [Modality.text],
+            ),
+          ],
+        );
+        when(() => mockAiConfigRepo.getConfigById('provider-1')).thenAnswer(
+          (_) async => AiTestDataFactory.createTestProvider(id: 'provider-1'),
+        );
+      }
+
+      Future<bool> availableFor(String? profileId) async {
+        final container = createContainer();
+        return container.read(
+          categoryAutomationAvailableProvider(profileId).future,
+        );
+      }
+
+      test(
+        'true when the selected profile carries an automated skill',
+        () async {
+          when(
+            () => mockAiConfigRepo.getConfigById('profile-1'),
+          ).thenAnswer((_) async => profileWith(automated: true));
+          stubFallbackAvailable(available: false);
+
+          expect(await availableFor('profile-1'), isTrue);
+        },
+      );
+
+      // A profile whose skills are all manual still leaves the fallback, so
+      // the switch stays offered rather than silently disappearing.
+      test(
+        'falls through to the direct fallback for a manual profile',
+        () async {
+          when(
+            () => mockAiConfigRepo.getConfigById('profile-1'),
+          ).thenAnswer((_) async => profileWith(automated: false));
+          stubFallbackAvailable(available: true);
+
+          expect(await availableFor('profile-1'), isTrue);
+        },
+      );
+
+      // The mobile case: no profile selectable, but an MLX Audio model
+      // configured. Hiding the switch here would strand the fallback.
+      test('true from the fallback when the category has no profile', () async {
+        stubFallbackAvailable(available: true);
+
+        expect(await availableFor(null), isTrue);
+      });
+
+      test('false when nothing can be automated', () async {
+        stubFallbackAvailable(available: false);
+
+        expect(await availableFor(null), isFalse);
       });
     });
   });

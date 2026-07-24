@@ -498,6 +498,36 @@ void main() {
         expect(automationLookupTaskIds, ['task-1']);
       });
 
+      // Settings asks this without a task in hand, to decide whether the
+      // category switch has anything to control.
+      group('hasDirectTranscriptionFallback', () {
+        test(
+          'is true when a configured provider owns a speech model',
+          () async {
+            when(
+              () => mockAiConfig.getConfigsByType(AiConfigType.model),
+            ).thenAnswer((_) async => [makeModel()]);
+            when(
+              () => mockAiConfig.getConfigById('provider-mlx'),
+            ).thenAnswer((_) async => makeProvider());
+
+            expect(await service.hasDirectTranscriptionFallback(), isTrue);
+          },
+        );
+
+        test('is false when no model can turn speech into text', () async {
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer(
+            (_) async => [
+              makeModel(inputModalities: const [Modality.text]),
+            ],
+          );
+
+          expect(await service.hasDirectTranscriptionFallback(), isFalse);
+        });
+      });
+
       // An unwired lookup must fail closed: an environment that cannot answer
       // "did the user opt in?" has not been told yes.
       test('an unwired lookup denies automation', () async {

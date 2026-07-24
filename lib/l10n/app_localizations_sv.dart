@@ -2674,7 +2674,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Transcribe new audio and analyse new images in this category automatically';
+      'Transcribe new audio and analyze new images in this category automatically';
 
   @override
   String get categoryAutomaticInferenceLabel => 'Automatic inference';

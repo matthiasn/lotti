@@ -4617,7 +4617,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryAutomaticInferenceDescription.
   ///
   /// In en, this message translates to:
-  /// **'Transcribe new audio and analyse new images in this category automatically'**
+  /// **'Transcribe new audio and analyze new images in this category automatically'**
   String get categoryAutomaticInferenceDescription;
 
   /// No description provided for @categoryAutomaticInferenceLabel.
