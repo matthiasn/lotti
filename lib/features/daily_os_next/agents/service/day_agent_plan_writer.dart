@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -259,7 +260,13 @@ class DayAgentPlanWriter {
     }
     if (captureId != null) {
       final capture = await reads.captureOrNull(captureId);
-      if (capture == null || capture.agentId != agentId) {
+      // Ownership spans the ADR 0032 cutover (see persistParsedItems).
+      if (capture == null ||
+          !canReadDailyOsDayArtifact(
+            readerAgentId: agentId,
+            ownerAgentId: capture.agentId,
+            dayId: captureDayId(capture),
+          )) {
         throw DayAgentCaptureException('capture $captureId not found');
       }
     }
@@ -311,6 +318,15 @@ class DayAgentPlanWriter {
       agentId: agentId,
       dayId: dayId,
     );
+    if (existing != null && existing.data.status is DayPlanStatusCommitted) {
+      // ADR 0006: a committed plan is user-approved state — including block
+      // progress — and may only change through an approved ChangeSet. A
+      // redraft here would wholesale replace it without any approval gate.
+      throw const DayAgentCaptureException(
+        'draft_day_plan cannot replace a committed plan. Propose changes '
+        'with propose_plan_diff instead so the user can approve them.',
+      );
+    }
     final plan =
         AgentDomainEntity.dayPlan(
               id: dayAgentPlanEntityId(dayId),
@@ -330,7 +346,12 @@ class DayAgentPlanWriter {
               scheduledMinutes: scheduledMinutes,
               createdAt: existing?.createdAt ?? now,
               updatedAt: now,
-              vectorClock: null,
+              // Seed from the persisted register so the sync layer's
+              // next-clock stamp causally DOMINATES the prior plan (same
+              // discipline as _writeDaySummary and the rollup rewrite);
+              // null would downgrade a redraft to wall-clock LWW against
+              // any revision that synced in meanwhile.
+              vectorClock: existing?.vectorClock,
             )
             as DayPlanEntity;
 

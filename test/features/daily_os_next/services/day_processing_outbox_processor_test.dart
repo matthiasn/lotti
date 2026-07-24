@@ -289,6 +289,34 @@ void main() {
     });
 
     test(
+      'an offline agent job parks as waitingForNetwork without running the '
+      'executor — no full wake attempt per connectivity probe',
+      () async {
+        var executorRuns = 0;
+        final processor = DayProcessingOutboxProcessor(
+          repository: repository,
+          transcribe: (_) async => 'unused',
+          attachTranscript: (_, _) async => true,
+          isOnline: () async => false,
+          agentJobExecutor: (job) async {
+            executorRuns++;
+            return const DayAgentJobSucceeded();
+          },
+        );
+        await enqueueParse();
+
+        final result = await processor.processNext(
+          kinds: const {DayProcessingJobKind.parseCapture},
+        );
+        final saved = await repository.getById('parse_cap-1');
+
+        expect(result, DayProcessingRunResult.deferred);
+        expect(executorRuns, 0);
+        expect(saved!.status, DayProcessingJobStatus.waitingForNetwork);
+      },
+    );
+
+    test(
       'a deterministic agent-job failure surfaces as failed, not deferred',
       () async {
         final processor = DayProcessingOutboxProcessor(

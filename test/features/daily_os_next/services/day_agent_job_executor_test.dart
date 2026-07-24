@@ -77,7 +77,11 @@ void main() {
     draftPlanUpdatedAt,
     Future<String?> Function(String agentId, String dayId, DateTime since)?
     pendingDiffCreatedSince,
+    Future<String?> Function(String agentId, String dayId, Set<String> runKeys)?
+    pendingDiffForRuns,
+    Future<void> Function(String jobId, String runKey)? recordRunKey,
     Future<bool> Function(String captureId)? hasParsedItems,
+    Future<bool> Function(String dayId)? hasPendingDraftWork,
     Duration wakeTimeout = const Duration(seconds: 1),
     int maxAttempts = 5,
   }) => DayAgentJobExecutor(
@@ -86,7 +90,10 @@ void main() {
     runCompletions: runCompletions ?? const Stream.empty(),
     draftPlanUpdatedAt: draftPlanUpdatedAt ?? (_, _) async => null,
     pendingDiffCreatedSince: pendingDiffCreatedSince ?? (_, _, _) async => null,
+    pendingDiffForRuns: pendingDiffForRuns ?? (_, _, _) async => null,
+    recordRunKey: recordRunKey ?? (_, _) async {},
     hasParsedItems: hasParsedItems ?? (_) async => false,
+    hasPendingDraftWork: hasPendingDraftWork ?? (_) async => false,
     wakeTimeout: wakeTimeout,
     maxAttempts: maxAttempts,
   );
@@ -167,26 +174,136 @@ void main() {
     );
 
     test(
-      'refinePlan short-circuits and returns the pending diff id when one '
-      'already exists at/after requestedAt',
+      'refinePlan short-circuits when a pending diff matches one of the '
+      "job's recorded wake run keys",
+      () async {
+        Set<String>? consultedRunKeys;
+        final executor = buildExecutor(
+          draftPlanUpdatedAt: (agentId, dayId) async => requestedAt,
+          pendingDiffForRuns: (agentId, dayId, runKeys) async {
+            consultedRunKeys = runKeys;
+            return runKeys.contains('recorded-key') ? 'diff-1' : null;
+          },
+        );
+        final job = refineJob().copyWith(runKeys: const ['recorded-key']);
+
+        final outcome = await executor.execute(job);
+
+        expect(outcome, isA<DayAgentJobSucceeded>());
+        expect((outcome as DayAgentJobSucceeded).resultEntityId, 'diff-1');
+        expect(consultedRunKeys, {'recorded-key'});
+      },
+    );
+
+    test(
+      "a never-attempted refine job ignores a sibling refine's diff in its "
+      'time window and runs its own wake (provenance regression)',
+      () async {
+        var wakeEnqueued = false;
+        var timeWindowConsulted = false;
+        final completions = StreamController<WakeRunCompletion>.broadcast();
+        addTearDown(completions.close);
+        final executor = buildExecutor(
+          draftPlanUpdatedAt: (agentId, dayId) async => requestedAt,
+          // A sibling refine's diff sits in the window — the old time-based
+          // check would have returned it and dropped this job's transcript.
+          pendingDiffCreatedSince: (agentId, dayId, since) async {
+            timeWindowConsulted = true;
+            return 'diff-of-sibling';
+          },
+          pendingDiffForRuns: (agentId, dayId, runKeys) async => null,
+          enqueueWake: (request) {
+            wakeEnqueued = true;
+            return 'run-key';
+          },
+          runCompletions: completions.stream,
+          wakeTimeout: const Duration(milliseconds: 10),
+        );
+
+        final outcome = await executor.execute(refineJob());
+
+        expect(timeWindowConsulted, isFalse);
+        expect(wakeEnqueued, isTrue);
+        // No completion arrives in this test; the point is the wake ran
+        // instead of the sibling's diff satisfying the job.
+        expect(outcome, isA<DayAgentJobFailed>());
+      },
+    );
+
+    test(
+      'a legacy attempted refine job (no recorded run keys) still falls '
+      'back to the time-window check',
       () async {
         final executor = buildExecutor(
           draftPlanUpdatedAt: (agentId, dayId) async => requestedAt,
           pendingDiffCreatedSince: (agentId, dayId, since) async => 'diff-1',
         );
+        final job = refineJob().copyWith(attempts: 1);
+
+        final outcome = await executor.execute(job);
+
+        expect(outcome, isA<DayAgentJobSucceeded>());
+        expect((outcome as DayAgentJobSucceeded).resultEntityId, 'diff-1');
+      },
+    );
+
+    test(
+      'refinePlan records the enqueued wake run key and matches the diff '
+      'it produced on completion',
+      () async {
+        final recorded = <(String, String)>[];
+        final completions = StreamController<WakeRunCompletion>.broadcast();
+        addTearDown(completions.close);
+        final executor = buildExecutor(
+          draftPlanUpdatedAt: (agentId, dayId) async => requestedAt,
+          recordRunKey: (jobId, runKey) async => recorded.add((jobId, runKey)),
+          pendingDiffForRuns: (agentId, dayId, runKeys) async =>
+              runKeys.contains('run-key-1') ? 'diff-from-this-wake' : null,
+          runCompletions: completions.stream,
+        );
+        unawaited(
+          Future<void>.delayed(Duration.zero, () {
+            completions.add(
+              const WakeRunCompletion(
+                runKey: 'run-key-1',
+                agentId: agentId,
+                status: WakeRunStatus.completed,
+              ),
+            );
+          }),
+        );
 
         final outcome = await executor.execute(refineJob());
 
+        expect(recorded, [('refine_${dayId}_abc', 'run-key-1')]);
         expect(outcome, isA<DayAgentJobSucceeded>());
         expect(
           (outcome as DayAgentJobSucceeded).resultEntityId,
-          'diff-1',
+          'diff-from-this-wake',
         );
       },
     );
   });
 
-  test('refinePlan defers behind a plan that does not exist yet', () async {
+  test(
+    'refinePlan defers while a pending draft job can still produce a plan',
+    () async {
+      final executor = buildExecutor(
+        draftPlanUpdatedAt: (agentId, dayId) async => null,
+        hasPendingDraftWork: (jobDayId) async => jobDayId == dayId,
+      );
+
+      final outcome = await executor.execute(refineJob());
+
+      expect(outcome, isA<DayAgentJobFailed>());
+      final failed = outcome as DayAgentJobFailed;
+      expect(failed.failureClass, DayProcessingFailureClass.local);
+      expect(failed.retryAfter, isNotNull);
+    },
+  );
+
+  test('refinePlan fails deterministically when no plan exists and no draft '
+      'job is pending — a local defer would loop forever', () async {
     final executor = buildExecutor(
       draftPlanUpdatedAt: (agentId, dayId) async => null,
     );
@@ -195,8 +312,8 @@ void main() {
 
     expect(outcome, isA<DayAgentJobFailed>());
     final failed = outcome as DayAgentJobFailed;
-    expect(failed.failureClass, DayProcessingFailureClass.local);
-    expect(failed.retryAfter, isNotNull);
+    expect(failed.failureClass, DayProcessingFailureClass.deterministic);
+    expect(failed.retryAfter, isNull);
   });
 
   test('resolveAgentId throwing maps to setupRequired', () async {
@@ -292,7 +409,8 @@ void main() {
   );
 
   test(
-    'a completed wake without the expected artifact reports a local retry',
+    'a completed wake without the expected artifact counts the spent '
+    'inference as an attempt (providerBusy, not local)',
     () async {
       final completions = StreamController<WakeRunCompletion>.broadcast();
       addTearDown(completions.close);
@@ -317,8 +435,41 @@ void main() {
       expect(outcome, isA<DayAgentJobFailed>());
       expect(
         (outcome as DayAgentJobFailed).failureClass,
-        DayProcessingFailureClass.local,
+        DayProcessingFailureClass.providerBusy,
       );
+    },
+  );
+
+  test(
+    'a completed wake without the expected artifact is downgraded to '
+    'deterministic at maxAttempts instead of re-inferring forever',
+    () async {
+      final completions = StreamController<WakeRunCompletion>.broadcast();
+      addTearDown(completions.close);
+      final executor = buildExecutor(
+        runCompletions: completions.stream,
+        hasParsedItems: (_) async => false,
+        maxAttempts: 3,
+      );
+      unawaited(
+        Future<void>.delayed(Duration.zero, () {
+          completions.add(
+            const WakeRunCompletion(
+              runKey: 'run-key-1',
+              agentId: agentId,
+              status: WakeRunStatus.completed,
+            ),
+          );
+        }),
+      );
+      final job = parseJob().copyWith(attempts: 2);
+
+      final outcome = await executor.execute(job);
+
+      expect(outcome, isA<DayAgentJobFailed>());
+      final failed = outcome as DayAgentJobFailed;
+      expect(failed.failureClass, DayProcessingFailureClass.deterministic);
+      expect(failed.error, contains('Gave up after 3 attempts'));
     },
   );
 
@@ -346,7 +497,7 @@ void main() {
       expect(outcome, isA<DayAgentJobFailed>());
       expect(
         (outcome as DayAgentJobFailed).failureClass,
-        DayProcessingFailureClass.local,
+        DayProcessingFailureClass.providerBusy,
       );
     },
   );

@@ -49,7 +49,10 @@ class DayAgentJobExecutor {
     required this.runCompletions,
     required this.draftPlanUpdatedAt,
     required this.pendingDiffCreatedSince,
+    required this.pendingDiffForRuns,
+    required this.recordRunKey,
     required this.hasParsedItems,
+    required this.hasPendingDraftWork,
     this.wakeTimeout = const Duration(minutes: 3),
     this.maxAttempts = 5,
   });
@@ -73,12 +76,35 @@ class DayAgentJobExecutor {
   draftPlanUpdatedAt;
 
   /// Reads the id of a pending ChangeSet for the day created at or after the
-  /// given instant, or `null` when none exists.
+  /// given instant, or `null` when none exists. Legacy fallback used only
+  /// for jobs persisted before run-key provenance existed (`runKeys` empty).
   final Future<String?> Function(String agentId, String dayId, DateTime since)
   pendingDiffCreatedSince;
 
+  /// Reads the id of a pending ChangeSet for the day whose `runKey` is in
+  /// the given set, or `null` when none exists. This is the provenance-exact
+  /// refine artifact check: a sibling refine's diff — created in the same
+  /// time window but by a different wake — never matches.
+  final Future<String?> Function(
+    String agentId,
+    String dayId,
+    Set<String> runKeys,
+  )
+  pendingDiffForRuns;
+
+  /// Persists the run key of a wake this executor just enqueued for the job,
+  /// so a post-crash re-claim can still recognize the wake's artifact.
+  final Future<void> Function(String jobId, String runKey) recordRunKey;
+
   /// Whether the given capture already has parsed items.
   final Future<bool> Function(String captureId) hasParsedItems;
+
+  /// Whether the day still has a draft job in the outbox that can produce a
+  /// plan (queued, running, or waiting for network). Used by refine jobs
+  /// with no plan to decide between a short defer (a draft is on the way)
+  /// and failing fast (nothing will ever produce one — a `local` defer never
+  /// counts an attempt, so deferring unconditionally would loop forever).
+  final Future<bool> Function(String dayId) hasPendingDraftWork;
 
   /// Upper bound on how long one attempt waits for its wake to finish.
   final Duration wakeTimeout;
@@ -98,13 +124,24 @@ class DayAgentJobExecutor {
         job.dayId,
       );
       if (draftPending == null) {
-        // No plan to refine yet — most likely a draft job for this day is
-        // still in flight. Defer briefly rather than spending a wake on a
-        // refine that has nothing to act on.
+        if (await hasPendingDraftWork(job.dayId)) {
+          // No plan to refine yet, but a draft job for this day is still in
+          // flight. Defer briefly rather than spending a wake on a refine
+          // that has nothing to act on.
+          return const DayAgentJobFailed(
+            failureClass: DayProcessingFailureClass.local,
+            error: 'No plan to refine yet',
+            retryAfter: Duration(seconds: 5),
+          );
+        }
+        // No plan exists and nothing will produce one: the day's draft job
+        // is absent, terminally failed, or waiting on the user. Fail
+        // deterministically instead of deferring forever.
         return const DayAgentJobFailed(
-          failureClass: DayProcessingFailureClass.local,
-          error: 'No plan to refine yet',
-          retryAfter: Duration(seconds: 5),
+          failureClass: DayProcessingFailureClass.deterministic,
+          error:
+              'No plan to refine — the day has no drafted plan and no '
+              'pending draft job',
         );
       }
     }
@@ -120,34 +157,65 @@ class DayAgentJobExecutor {
       return _classifyFailure(job, e);
     }
 
-    final runKey = enqueueWake((agentId: agentId, dayId: job.dayId, job: job));
+    // Subscribe BEFORE enqueueing (the orchestrator's documented contract):
+    // a fast wake can complete while provenance is being persisted below,
+    // and a completion emitted before `firstWhere` subscribes would be lost
+    // on the broadcast stream. The plain controller buffers events until
+    // the waiter attaches.
+    final buffered = StreamController<WakeRunCompletion>();
+    final completionEvents = runCompletions.listen(
+      buffered.add,
+      onError: buffered.addError,
+    );
 
-    final WakeRunCompletion completion;
     try {
-      completion = await runCompletions
-          .firstWhere((event) => event.runKey == runKey)
-          .timeout(wakeTimeout);
-    } on TimeoutException {
-      return const DayAgentJobFailed(
-        failureClass: DayProcessingFailureClass.timeout,
-        error: 'Wake did not complete in time',
-      );
-    }
+      final runKey = enqueueWake((
+        agentId: agentId,
+        dayId: job.dayId,
+        job: job,
+      ));
+      // Persist provenance before awaiting: if the process dies mid-wake,
+      // the re-claim's artifact pre-check can still attribute the wake's
+      // output.
+      await recordRunKey(job.id, runKey);
 
-    if (completion.status == WakeRunStatus.completed) {
-      final settled = await _artifactOutcome(job, agentId: agentId);
-      if (settled != null) return settled;
-      // The wake reported success but the expected artifact is missing —
-      // the workflow's forced-tool retry already exhausted itself producing
-      // a Missing*Exception in this case, so this is unexpected; treat it
-      // like any other transient miss and let the outbox retry.
-      return const DayAgentJobFailed(
-        failureClass: DayProcessingFailureClass.local,
-        error: 'Wake completed without producing the expected artifact',
-      );
-    }
+      final WakeRunCompletion completion;
+      try {
+        completion = await buffered.stream
+            .firstWhere((event) => event.runKey == runKey)
+            .timeout(wakeTimeout);
+      } on TimeoutException {
+        return const DayAgentJobFailed(
+          failureClass: DayProcessingFailureClass.timeout,
+          error: 'Wake did not complete in time',
+        );
+      }
 
-    return _classifyFailure(job, completion.error);
+      if (completion.status == WakeRunStatus.completed) {
+        final settled = await _artifactOutcome(
+          job,
+          agentId: agentId,
+          extraRunKey: runKey,
+        );
+        if (settled != null) return settled;
+        // The wake reported success but the expected artifact is missing —
+        // the workflow's forced-tool retry should have surfaced this as a
+        // Missing*Exception, so it is unexpected. A full inference was still
+        // spent, so the failure must count as an attempt and respect
+        // [maxAttempts]: `providerBusy` increments the attempt counter,
+        // whereas `local` would retry forever without ever counting one.
+        return _cappedRetryableFailure(
+          job,
+          DayProcessingFailureClass.providerBusy,
+          'Wake completed without producing the expected artifact',
+        );
+      }
+
+      return _classifyFailure(job, completion.error);
+    } finally {
+      await completionEvents.cancel();
+      unawaited(buffered.close());
+    }
   }
 
   Future<String> _safeResolve(String dayId) async {
@@ -164,6 +232,7 @@ class DayAgentJobExecutor {
   Future<DayAgentJobOutcome?> _artifactOutcome(
     DayProcessingJob job, {
     String? agentId,
+    String? extraRunKey,
   }) async {
     switch (job.payload) {
       case ParseCapturePayload(:final captureId):
@@ -180,11 +249,32 @@ class DayAgentJobExecutor {
         return null;
       case RefinePlanPayload():
         final resolvedAgentId = agentId ?? await _safeResolve(job.dayId);
-        final diffId = await pendingDiffCreatedSince(
-          resolvedAgentId,
-          job.dayId,
-          job.requestedAt,
-        );
+        final knownRunKeys = {...job.runKeys, ?extraRunKey};
+        final String? diffId;
+        if (knownRunKeys.isNotEmpty) {
+          // Provenance-exact: only a diff written by one of THIS job's
+          // wakes satisfies it. Matching by time window alone let a sibling
+          // refine's diff mark this job succeeded and silently drop its
+          // instruction.
+          diffId = await pendingDiffForRuns(
+            resolvedAgentId,
+            job.dayId,
+            knownRunKeys,
+          );
+        } else if (job.attempts > 0 || job.lastFailureClass != null) {
+          // Legacy fallback: the job was attempted before run-key
+          // provenance existed, so its wake's artifact is only findable by
+          // time window.
+          diffId = await pendingDiffCreatedSince(
+            resolvedAgentId,
+            job.dayId,
+            job.requestedAt,
+          );
+        } else {
+          // Never attempted: no wake has run for this intent, so no
+          // artifact can belong to it.
+          diffId = null;
+        }
         if (diffId != null) {
           return DayAgentJobSucceeded(resultEntityId: diffId);
         }
@@ -194,18 +284,28 @@ class DayAgentJobExecutor {
     }
   }
 
-  DayAgentJobOutcome _classifyFailure(DayProcessingJob job, Object? error) {
-    final failureClass = classifyDayAgentJobFailure(error);
+  DayAgentJobOutcome _classifyFailure(DayProcessingJob job, Object? error) =>
+      _cappedRetryableFailure(
+        job,
+        classifyDayAgentJobFailure(error),
+        error?.toString() ?? 'Wake failed',
+      );
+
+  /// Applies the [maxAttempts] cap to a retryable failure: once this attempt
+  /// is counted the job will have been tried `attempts + 1` times, and
+  /// further retries are cut off by downgrading to `deterministic`.
+  DayAgentJobOutcome _cappedRetryableFailure(
+    DayProcessingJob job,
+    DayProcessingFailureClass failureClass,
+    String error,
+  ) {
     if (_isRetryable(failureClass) && job.attempts + 1 >= maxAttempts) {
       return DayAgentJobFailed(
         failureClass: DayProcessingFailureClass.deterministic,
         error: 'Gave up after ${job.attempts + 1} attempts: $error',
       );
     }
-    return DayAgentJobFailed(
-      failureClass: failureClass,
-      error: error?.toString() ?? 'Wake failed',
-    );
+    return DayAgentJobFailed(failureClass: failureClass, error: error);
   }
 
   bool _isRetryable(DayProcessingFailureClass failureClass) =>

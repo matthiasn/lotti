@@ -101,6 +101,10 @@ class AgentRepository {
     Iterable<String> ids,
   ) => _core.getEntitiesByIds(ids);
 
+  Future<Map<String, AgentDomainEntity>> getEntitiesByIdsIncludingDeleted(
+    Iterable<String> ids,
+  ) => _core.getEntitiesByIdsIncludingDeleted(ids);
+
   Future<List<AgentDomainEntity>> getEntitiesByAgentId(
     String agentId, {
     String? type,
@@ -237,6 +241,11 @@ class AgentRepository {
     DateTime since, {
     int? limit,
   }) => _queries.getDayStatusEventsSince(since, limit: limit);
+
+  Future<List<DayStatusEventEntity>> getDayStatusEventsSinceNewestFirst(
+    DateTime since, {
+    required int limit,
+  }) => _queries.getDayStatusEventsSinceNewestFirst(since, limit: limit);
 
   Future<List<AgentMessageEntity>> getMessagesForThread(
     String agentId,

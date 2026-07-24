@@ -144,6 +144,10 @@ class DayAgentWorkflow {
 
   static const minScheduledWakeLeadTime = Duration(minutes: 15);
   static const maxScheduledWakeWritesPerDay = 4;
+
+  /// Newest-first fetch cap for the per-wake observation read (see the call
+  /// site in [execute]) — 2x the 20-item replay cap in `recentObservations`.
+  static const _observationFetchLimit = 40;
   void _log(String message, {String? subDomain}) {
     domainLogger.log(
       LogDomain.agentWorkflow,
@@ -235,6 +239,13 @@ class DayAgentWorkflow {
     final observations = await agentRepository.getMessagesByKind(
       agentId,
       AgentMessageKind.observation,
+      // Newest-first page: the prompt replays at most 20 (see
+      // recentObservations). An unlimited read loads and deserializes the
+      // coordinator's ENTIRE observation history on every wake — the exact
+      // forever-growing fold cost ADR 0032 exists to remove. The 2x buffer
+      // absorbs equal-createdAt tiebreak differences between the DB order
+      // and the replay sort.
+      limit: _observationFetchLimit,
     );
     final recentObs = recentObservations(observations);
     final observationPayloads = await _resolveObservationPayloads(
@@ -327,6 +338,7 @@ class DayAgentWorkflow {
       wakeContext: wakeContext,
       dayDate: dayDate,
       now: now,
+      preloadedTodayDirective: directive,
     );
     final recentWeeksContext = await _recentWeeksContext(
       agentId: agentId,

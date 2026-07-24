@@ -230,6 +230,7 @@ void main() {
       () => repository.getMessagesByKind(
         dailyOsPlannerAgentId,
         AgentMessageKind.observation,
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
     when(
@@ -376,7 +377,11 @@ void main() {
       (_) async => currentState,
     );
     when(
-      () => repository.getMessagesByKind(agentId, AgentMessageKind.observation),
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.observation,
+        limit: any(named: 'limit'),
+      ),
     ).thenAnswer((_) async => []);
     when(() => repository.getEntitiesByIds(any())).thenAnswer(
       (_) async => const <String, AgentDomainEntity>{},
@@ -983,6 +988,7 @@ void main() {
           () => repository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer(
           (_) async => [
@@ -1064,6 +1070,7 @@ void main() {
           () => repository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer(
           (_) async => [
@@ -1318,6 +1325,65 @@ void main() {
             'Keep the afternoon free for recovery.',
           ),
         );
+      },
+    );
+
+    test(
+      'caps <day_entries> to the newest 32 recordings with an explicit '
+      'truncation marker (ADR 0032 §4 provenance-index sizing)',
+      () async {
+        final journalDb = MockJournalDb();
+        JournalAudio audioAt(int minute) => JournalAudio(
+          meta: Metadata(
+            id: 'audio-$minute',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: AudioData(
+            dateFrom: now,
+            dateTo: now,
+            audioFile: 'clip-$minute.wav',
+            audioDirectory: '/audio/',
+            duration: const Duration(minutes: 1),
+            dayContext: DayAudioContext(
+              dayId: dayId,
+              planDate: now,
+              recordingSessionId: 'session-$minute',
+              activityEntryId: 'activity-$minute',
+              processingJobId: 'transcribe_session-$minute',
+              capturedAt: now.add(Duration(minutes: minute)),
+              intent: 'dayPlan',
+            ),
+          ),
+        );
+        when(() => journalDb.getDayAudioEntries(dayId)).thenAnswer(
+          (_) async => [for (var i = 0; i < 40; i++) audioAt(i)],
+        );
+
+        final result = await execute(
+          workflow(
+            dayAudioEntryContextService: DayAudioEntryContextService(
+              journalDb: journalDb,
+            ),
+          ),
+        );
+
+        expect(result.success, isTrue);
+        final entries =
+            sentPrompt().json(DayAgentPromptTags.dayEntries)! as List;
+        // The newest 32 entries plus the truncation marker.
+        expect(entries, hasLength(33));
+        expect(
+          (entries.first as Map)['audioId'],
+          'audio-8',
+          reason: 'The cap keeps the NEWEST entries — oldest 8 drop.',
+        );
+        expect((entries[31] as Map)['audioId'], 'audio-39');
+        final marker = entries.last as Map;
+        expect(marker, containsPair('truncated', true));
+        expect(marker, containsPair('omittedOlderEntries', 8));
       },
     );
 
@@ -1962,8 +2028,13 @@ void main() {
         'renders <digest> with status events, directives, and the digest '
         'rules, then re-arms the next digest',
         () async {
-          // Watermark: the newest dailyWakeCompleted milestone.
+          // Watermark: the newest dailyWakeCompleted milestone, overlapped
+          // by the 12h sync-lag slack so a peer's late-synced escalation
+          // (origin timestamp older than the local milestone) still ranks.
           final lastDigestAt = now.subtract(const Duration(hours: 24));
+          final sinceWithSlack = lastDigestAt.subtract(
+            const Duration(hours: 12),
+          );
           when(
             () => repository.getMessagesByKind(
               dailyOsPlannerAgentId,
@@ -1985,7 +2056,7 @@ void main() {
           );
           when(
             () => repository.getDayStatusEventsSince(
-              lastDigestAt,
+              sinceWithSlack,
               limit: any(named: 'limit'),
             ),
           ).thenAnswer(
@@ -2047,7 +2118,7 @@ void main() {
           final digest = sentPrompt().json('digest')! as Map;
           expect(digest['todayDayId'], dayId);
           expect(digest['tomorrowDayId'], 'dayplan-2026-05-26');
-          expect(digest['since'], lastDigestAt.toIso8601String());
+          expect(digest['since'], sinceWithSlack.toIso8601String());
           final events = digest['statusEvents'] as List;
           expect((events.single as Map)['status'], 'attentionNeeded');
           expect((events.single as Map)['reasons'], ['overCommitted']);
@@ -2274,9 +2345,16 @@ void main() {
                 id: 'day_status:$dayId:flood-$i',
                 status: DayStatusKind.dayClosed,
                 reasons: const [],
-                raisedAt: now.subtract(Duration(minutes: 2000 - i)),
-                createdAt: now.subtract(Duration(minutes: 2000 - i)),
+                raisedAt: now.subtract(Duration(minutes: 2100 - i)),
+                createdAt: now.subtract(Duration(minutes: 2100 - i)),
               ),
+            // Beyond the ceiling: the oldest-first fetch can never return
+            // this escalation, and the watermark would skip it forever.
+            makeTestDayStatusEvent(
+              id: 'day_status:$dayId:beyond-ceiling-escalation',
+              raisedAt: now.subtract(const Duration(minutes: 1)),
+              createdAt: now.subtract(const Duration(minutes: 1)),
+            ),
           ];
           when(
             () => repository.getDayStatusEventsSince(
@@ -2286,6 +2364,15 @@ void main() {
           ).thenAnswer((invocation) async {
             final limit = invocation.namedArguments[#limit] as int?;
             return all.take(limit ?? all.length).toList();
+          });
+          when(
+            () => repository.getDayStatusEventsSinceNewestFirst(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((invocation) async {
+            final limit = invocation.namedArguments[#limit]! as int;
+            return all.reversed.take(limit).toList();
           });
 
           final result = await executeDigest(
@@ -2303,14 +2390,31 @@ void main() {
           verifyNever(
             () => repository.getDayStatusEventsSince(any(), limit: 3200),
           );
+          // At the ceiling one newest-first page merges into the pool so
+          // the live end of the backlog still gets ranked.
+          verify(
+            () => repository.getDayStatusEventsSinceNewestFirst(
+              any(),
+              limit: 200,
+            ),
+          ).called(1);
           final digest = sentPrompt().json('digest')! as Map;
           expect(digest['statusEventsTruncated'], isTrue);
-          expect(digest['statusEvents'] as List, hasLength(50));
+          final events = digest['statusEvents'] as List;
+          expect(events, hasLength(50));
+          expect(
+            (events.last as Map)['status'],
+            'attentionNeeded',
+            reason:
+                'The escalation beyond the ceiling must be ranked in via '
+                'the newest-first merge (rendering last, chronologically).',
+          );
         },
       );
 
       test(
-        'falls back to a 48h watermark for the first digest',
+        'falls back to a 48h watermark (plus the sync-lag slack) for the '
+        'first digest',
         () async {
           when(
             () => repository.getMessagesByKind(
@@ -2328,11 +2432,11 @@ void main() {
           final digest = sentPrompt().json('digest')! as Map;
           expect(
             digest['since'],
-            now.subtract(const Duration(hours: 48)).toIso8601String(),
+            now.subtract(const Duration(hours: 60)).toIso8601String(),
           );
           verify(
             () => repository.getDayStatusEventsSince(
-              now.subtract(const Duration(hours: 48)),
+              now.subtract(const Duration(hours: 60)),
               limit: any(named: 'limit'),
             ),
           ).called(1);
@@ -2542,6 +2646,7 @@ void main() {
           () => repository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => [observationMessage]);
         when(
@@ -4228,6 +4333,7 @@ void main() {
           () => repository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => observations);
         when(() => repository.getEntitiesByIds(any())).thenAnswer(
@@ -4324,6 +4430,7 @@ void main() {
         () => repository.getMessagesByKind(
           agentId,
           AgentMessageKind.observation,
+          limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [observationB, observationA]);
       when(

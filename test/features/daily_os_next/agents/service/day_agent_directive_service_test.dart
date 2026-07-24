@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
     show DayAgentDirectToolResult;
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -146,14 +147,17 @@ void main() {
     );
 
     test(
-      'a revision preserves createdAt and mints a fresh revision id',
+      'a revision preserves createdAt and the persisted vector clock, and '
+      'mints a fresh revision id',
       () async {
+        const priorClock = VectorClock({'host-a': 7});
         final existing = makeTestDayDirective(
           dayId: dayId,
           id: 'day_directive:$dayId',
           directiveRevisionId: 'rev-old',
           createdAt: DateTime(2026, 7, 22, 6),
           updatedAt: DateTime(2026, 7, 22, 6),
+          vectorClock: priorClock,
         );
         when(
           () => agentRepository.getEntity('day_directive:$dayId'),
@@ -166,6 +170,14 @@ void main() {
         expect(revised.createdAt, DateTime(2026, 7, 22, 6));
         expect(revised.updatedAt, now);
         expect(revised.directiveRevisionId, isNot('rev-old'));
+        expect(
+          revised.vectorClock,
+          priorClock,
+          reason:
+              "Seeding from the persisted register makes the sync layer's "
+              'next-clock stamp causally dominate the prior revision; null '
+              'would downgrade a re-issue to wall-clock LWW.',
+        );
       },
     );
 

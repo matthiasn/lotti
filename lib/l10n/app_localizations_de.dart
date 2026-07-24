@@ -4023,6 +4023,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Verknüpfung lösen';
 
   @override
+  String get dailyOsNextPlanChangesReadyNotificationBody =>
+      'Die vorgeschlagenen Änderungen warten auf deine Durchsicht.';
+
+  @override
+  String get dailyOsNextPlanChangesReadyNotificationTitle =>
+      'Deine Planänderungen sind fertig';
+
+  @override
+  String get dailyOsNextPlanReadyNotificationBody =>
+      'Der Entwurf wartet auf deine Durchsicht.';
+
+  @override
+  String get dailyOsNextPlanReadyNotificationTitle =>
+      'Dein Tagesplan ist fertig';
+
+  @override
   String get dailyOsNextPlanViewActivity => 'Aktivität';
 
   @override

@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
@@ -1289,6 +1290,85 @@ void main() {
 
       expect(items, isEmpty);
     });
+
+    test(
+      'persistParsedItems accepts a coordinator-owned capture on a per-day '
+      'agent wake (ADR 0032 ownership cutover)',
+      () async {
+        const dayAgentId = 'day_agent:dayplan-2026-05-25';
+        agentEntities[dayAgentId] = makeTestIdentity(
+          id: dayAgentId,
+          agentId: dayAgentId,
+          kind: AgentKinds.dayAgent,
+          allowedCategoryIds: {'work'},
+        );
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-cutover',
+                  agentId: dailyOsPlannerAgentId,
+                  transcript: 'demo prep',
+                  capturedAt: _now,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        agentEntities[capture.id] = capture;
+
+        final items = await createService().persistParsedItems(
+          agentId: dayAgentId,
+          captureId: capture.id,
+          rawItems: const [
+            {
+              'title': 'Prep demo',
+              'categoryId': 'work',
+              'confidenceScore': 0.4,
+            },
+          ],
+        );
+
+        expect(items, hasLength(1));
+        expect(items.single.agentId, dayAgentId);
+      },
+    );
+
+    test(
+      "persistParsedItems still rejects a foreign agent's capture",
+      () async {
+        const dayAgentId = 'day_agent:dayplan-2026-05-25';
+        agentEntities[dayAgentId] = makeTestIdentity(
+          id: dayAgentId,
+          agentId: dayAgentId,
+          kind: AgentKinds.dayAgent,
+          allowedCategoryIds: {'work'},
+        );
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-foreign',
+                  agentId: 'task_agent:task-9',
+                  transcript: 'demo prep',
+                  capturedAt: _now,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        agentEntities[capture.id] = capture;
+
+        await expectLater(
+          createService().persistParsedItems(
+            agentId: dayAgentId,
+            captureId: capture.id,
+            rawItems: const [
+              {
+                'title': 'X',
+                'categoryId': 'work',
+                'confidenceScore': 0.4,
+              },
+            ],
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+      },
+    );
 
     test('persistParsedItems rejects when the capture is missing', () async {
       await expectLater(

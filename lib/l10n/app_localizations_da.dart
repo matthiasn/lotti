@@ -3995,6 +3995,21 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Break link';
 
   @override
+  String get dailyOsNextPlanChangesReadyNotificationBody =>
+      'The proposed changes are waiting for your review.';
+
+  @override
+  String get dailyOsNextPlanChangesReadyNotificationTitle =>
+      'Your plan changes are ready';
+
+  @override
+  String get dailyOsNextPlanReadyNotificationBody =>
+      'The draft is waiting for your review.';
+
+  @override
+  String get dailyOsNextPlanReadyNotificationTitle => 'Your day plan is ready';
+
+  @override
   String get dailyOsNextPlanViewActivity => 'Activity';
 
   @override

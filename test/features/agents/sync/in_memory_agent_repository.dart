@@ -61,6 +61,21 @@ class InMemoryAgentRepository extends MockAgentRepository {
   Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
     Iterable<String> ids,
   ) async {
+    // Mirror the real query: soft-deleted rows are excluded.
+    final result = <String, AgentDomainEntity>{};
+    for (final id in ids) {
+      final entity = _entities[id];
+      if (entity != null && entity.deletedAt == null) {
+        result[id] = entity;
+      }
+    }
+    return result;
+  }
+
+  @override
+  Future<Map<String, AgentDomainEntity>> getEntitiesByIdsIncludingDeleted(
+    Iterable<String> ids,
+  ) async {
     final result = <String, AgentDomainEntity>{};
     for (final id in ids) {
       final entity = _entities[id];
@@ -101,6 +116,28 @@ class InMemoryAgentRepository extends MockAgentRepository {
             .toList()
           ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     if (limit != null && limit >= 0 && matching.length > limit) {
+      return matching.sublist(0, limit);
+    }
+    return matching;
+  }
+
+  @override
+  Future<List<DayStatusEventEntity>> getDayStatusEventsSinceNewestFirst(
+    DateTime since, {
+    required int limit,
+  }) async {
+    final matching =
+        entities
+            .whereType<DayStatusEventEntity>()
+            .where((e) => e.deletedAt == null && e.createdAt.isAfter(since))
+            .toList()
+          // Mirror the real query's `created_at DESC, id DESC` tiebreak.
+          ..sort((a, b) {
+            final byCreatedAt = b.createdAt.compareTo(a.createdAt);
+            if (byCreatedAt != 0) return byCreatedAt;
+            return b.id.compareTo(a.id);
+          });
+    if (limit >= 0 && matching.length > limit) {
       return matching.sublist(0, limit);
     }
     return matching;

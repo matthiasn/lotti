@@ -219,10 +219,18 @@ class DayProcessingOutboxRepository {
       return job;
     }
     if (existing.status == DayProcessingJobStatus.running) {
-      // The in-flight attempt keeps its payload; injecting newer selections
-      // mid-wake is not possible, and the caller's await attaches to this
-      // job's terminal state either way.
-      return existing;
+      final leaseUntil = existing.leaseUntil;
+      if (leaseUntil != null && now.isBefore(leaseUntil)) {
+        // The in-flight attempt keeps its payload; injecting newer
+        // selections mid-wake is not possible, and the caller's await
+        // attaches to this job's terminal state either way.
+        return existing;
+      }
+      // `running` with an expired (or missing) lease is a zombie left by a
+      // killed process — nothing is executing. Absorbing the new payload
+      // into it would run the OLD selections at the eventual lease-expiry
+      // re-claim, silently dropping what the user just decided. Fall
+      // through to re-arm with the fresh payload instead.
     }
     final rearmed = existing.copyWith(
       status: DayProcessingJobStatus.queued,
@@ -231,6 +239,9 @@ class DayProcessingOutboxRepository {
       requestedAt: now,
       nextAttemptAt: now,
       attempts: 0,
+      // A re-arm is new intent: artifacts of the old intent's wakes must
+      // not satisfy it, so recorded run keys reset with the baseline.
+      runKeys: const [],
       generation: existing.generation + 1,
       clearClaimToken: true,
       clearLeaseUntil: true,
@@ -290,6 +301,7 @@ class DayProcessingOutboxRepository {
       requestedAt: now,
       nextAttemptAt: now,
       attempts: 0,
+      runKeys: const [],
       generation: existing.generation + 1,
       clearClaimToken: true,
       clearLeaseUntil: true,
@@ -566,8 +578,38 @@ class DayProcessingOutboxRepository {
       clearLeaseUntil: true,
     );
     await _write(updated);
+    _notify();
     return updated;
   });
+
+  /// Records the run key of a wake enqueued for [jobId] (agent jobs).
+  ///
+  /// Deliberately claim-less: the stamp is provenance metadata, not intent —
+  /// a stale writer appending its run key is harmless (the key belongs to a
+  /// wake that really was enqueued for this job), so fencing would only add
+  /// failure modes. Keys are capped to the newest [maxRecordedRunKeys] —
+  /// far above `maxAttempts` — purely as a file-size backstop.
+  Future<DayProcessingJob?> recordRunKey({
+    required String jobId,
+    required String runKey,
+  }) => _serialize(() async {
+    final job = await _readJobOrNull(jobId);
+    if (job == null || job.isTerminal) return job;
+    if (job.runKeys.contains(runKey)) return job;
+    final keys = [...job.runKeys, runKey];
+    final updated = job.copyWith(
+      updatedAt: _now(),
+      runKeys: keys.length > maxRecordedRunKeys
+          ? keys.sublist(keys.length - maxRecordedRunKeys)
+          : keys,
+    );
+    await _write(updated);
+    _notify();
+    return updated;
+  });
+
+  /// Backstop cap for [recordRunKey].
+  static const int maxRecordedRunKeys = 16;
 
   Future<DayProcessingJob?> retryNow(String jobId) => _serialize(() async {
     final job = await _readJobOrNull(jobId);

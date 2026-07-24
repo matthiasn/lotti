@@ -4054,6 +4054,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Dissocier';
 
   @override
+  String get dailyOsNextPlanChangesReadyNotificationBody =>
+      'Les modifications proposées attendent ta relecture.';
+
+  @override
+  String get dailyOsNextPlanChangesReadyNotificationTitle =>
+      'Tes modifications du plan sont prêtes';
+
+  @override
+  String get dailyOsNextPlanReadyNotificationBody =>
+      'Le brouillon attend ta relecture.';
+
+  @override
+  String get dailyOsNextPlanReadyNotificationTitle =>
+      'Ton plan du jour est prêt';
+
+  @override
   String get dailyOsNextPlanViewActivity => 'Activité';
 
   @override

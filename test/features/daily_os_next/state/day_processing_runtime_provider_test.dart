@@ -91,6 +91,49 @@ void main() {
     if (root.existsSync()) root.deleteSync(recursive: true);
   });
 
+  test(
+    'wires the plan-ready notifier as the processor completion hook '
+    '(ADR 0032 §5)',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          audioTranscriptionServiceProvider.overrideWithValue(
+            MockAudioTranscriptionService(),
+          ),
+          ..._agentJobExecutorOverrides(),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final processor = container.read(dayProcessingOutboxProcessorProvider);
+
+      expect(
+        processor.onJobFinished,
+        isNotNull,
+        reason:
+            'The "your plan is ready" notification hangs off this hook — '
+            'unwired, background completions are silent.',
+      );
+      // Invoke the wired closure with a non-succeeded job: it must absorb
+      // the call without side effects (the notifier reacts to successes
+      // only), proving the hook is callable as wired in production.
+      processor.onJobFinished!(
+        DayProcessingJob(
+          id: 'draft_dayplan-2026-07-21',
+          status: DayProcessingJobStatus.cancelled,
+          dayId: 'dayplan-2026-07-21',
+          payload: const DraftPlanPayload(),
+          createdAt: DateTime.utc(2026, 7, 21),
+          updatedAt: DateTime.utc(2026, 7, 21),
+          requestedAt: DateTime.utc(2026, 7, 21),
+          nextAttemptAt: DateTime.utc(2026, 7, 21),
+          attempts: 0,
+          generation: 0,
+        ),
+      );
+    },
+  );
+
   test('constructs every local-first runtime dependency', () async {
     final transcriber = MockAudioTranscriptionService();
     final container = ProviderContainer(

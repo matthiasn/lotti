@@ -5,6 +5,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_servi
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/services/day_agent_job_executor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 
 /// `YYYY-MM-DD` day id → the local calendar date it names.
 ///
@@ -26,6 +27,7 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
   required DayAgentPlanService planService,
   required DayAgentCaptureService captureService,
   required WakeOrchestrator orchestrator,
+  required DayProcessingOutboxRepository outbox,
 }) {
   return DayAgentJobExecutor(
     resolveAgentId: (dayId) async {
@@ -105,9 +107,33 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
       }
       return null;
     },
+    pendingDiffForRuns: (agentId, dayId, runKeys) async {
+      final diffs = await planService.pendingPlanDiffsForDay(
+        agentId: agentId,
+        dayId: dayId,
+      );
+      for (final diff in diffs) {
+        if (runKeys.contains(diff.runKey)) return diff.id;
+      }
+      return null;
+    },
+    recordRunKey: (jobId, runKey) async {
+      await outbox.recordRunKey(jobId: jobId, runKey: runKey);
+    },
     hasParsedItems: (captureId) async {
       final items = await captureService.parsedItemsForCapture(captureId);
       return items.isNotEmpty;
+    },
+    hasPendingDraftWork: (dayId) async {
+      final draftJob = await outbox.getById(
+        DayProcessingOutboxRepository.draftJobId(dayId),
+      );
+      return switch (draftJob?.status) {
+        DayProcessingJobStatus.queued ||
+        DayProcessingJobStatus.running ||
+        DayProcessingJobStatus.waitingForNetwork => true,
+        _ => false,
+      };
     },
   );
 }

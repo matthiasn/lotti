@@ -61,6 +61,44 @@ void main() {
   }
 
   test(
+    'every outbox mutation re-runs the activity projection — not just the '
+    'first (Stream<void> AsyncData dedupe regression)',
+    () async {
+      final repository = MockAgentRepository();
+      var projectionRuns = 0;
+      when(() => repository.getEntitiesByIds(any())).thenAnswer((_) async {
+        projectionRuns++;
+        return const {};
+      });
+
+      // The listener keeps the autoDispose chain alive across invalidations.
+      final container = makeContainer(repository)
+        ..listen(dayActivityProvider(date), (_, _) {});
+      await container.read(dayActivityProvider(date).future);
+      expect(projectionRuns, 1);
+
+      await outbox.enqueueParseCapture(dayId: dayId, captureId: 'cap-1');
+      await pumpEventQueue();
+      expect(
+        projectionRuns,
+        2,
+        reason: 'first outbox event must refresh the projection',
+      );
+
+      await outbox.enqueueParseCapture(dayId: dayId, captureId: 'cap-2');
+      await pumpEventQueue();
+      expect(
+        projectionRuns,
+        3,
+        reason:
+            'later outbox events must refresh too — a Stream<void> provider '
+            'deduplicates identical AsyncData<void> values and would stop '
+            'notifying after the first event',
+      );
+    },
+  );
+
+  test(
     'loads an offline day projection from its resolved dependencies',
     () async {
       final repository = MockAgentRepository();

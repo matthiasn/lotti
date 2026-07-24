@@ -433,7 +433,17 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     final days = <String>{};
     for (final captureId in captureIds) {
       final capture = await service.getCapture(captureId);
-      if (capture == null || capture.agentId != agentId) continue;
+      if (capture == null) continue;
+      // Ownership spans the ADR 0032 cutover: the capture may carry the
+      // coordinator's id while this wake runs under the day's agent (or
+      // vice versa after a cross-device ownership race).
+      if (!canReadDailyOsDayArtifact(
+        readerAgentId: agentId,
+        ownerAgentId: capture.agentId,
+        dayId: captureDayId(capture),
+      )) {
+        continue;
+      }
       days.add(captureDayId(capture));
     }
     return PlannerWakeDayResolution(candidates: days);

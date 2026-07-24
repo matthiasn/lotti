@@ -473,6 +473,22 @@ void main() {
   );
 
   test(
+    'cancel notifies the changes stream like every other mutator — '
+    'awaiters and providers must observe the cancellation',
+    () async {
+      final job = await enqueue();
+      var events = 0;
+      final subscription = repository.changes.listen((_) => events++);
+      addTearDown(subscription.cancel);
+
+      await repository.cancel(job.id);
+      await pumpEventQueue();
+
+      expect(events, 1);
+    },
+  );
+
+  test(
     'getAll skips and quarantines a corrupt job file',
     () async {
       await enqueue();
@@ -709,6 +725,103 @@ void main() {
           ['t1'],
         );
         expect(attached.claimToken, claim!.token);
+      },
+    );
+
+    test(
+      'enqueueDraftPlan re-arms a zombie running job (expired lease) with '
+      'the fresh payload instead of silently absorbing it',
+      () async {
+        final first = await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(decidedTaskIds: ['t1']),
+        );
+        await repository.claimNext(
+          kinds: const {DayProcessingJobKind.draftPlan},
+        );
+        // The claiming process dies; its lease runs out.
+        now = now.add(const Duration(minutes: 10));
+
+        final rearmed = await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(decidedTaskIds: ['t2']),
+        );
+
+        expect(rearmed.id, first.id);
+        expect(rearmed.status, DayProcessingJobStatus.queued);
+        expect(
+          (rearmed.payload as DraftPlanPayload).decidedTaskIds,
+          ['t2'],
+          reason:
+              'a zombie must not absorb the new selections into the old '
+              'payload — the eventual re-claim would run stale intent',
+        );
+        expect(rearmed.requestedAt, now);
+        expect(rearmed.claimToken, isNull);
+      },
+    );
+
+    test(
+      'recordRunKey appends provenance, dedupes, survives a reload, and '
+      'a re-arm resets it with the new intent',
+      () async {
+        final job = await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(),
+        );
+
+        await repository.recordRunKey(jobId: job.id, runKey: 'k1');
+        await repository.recordRunKey(jobId: job.id, runKey: 'k1');
+        final stamped = await repository.recordRunKey(
+          jobId: job.id,
+          runKey: 'k2',
+        );
+
+        expect(stamped!.runKeys, ['k1', 'k2']);
+        // Round-trips through the file envelope.
+        expect((await repository.getById(job.id))!.runKeys, ['k1', 'k2']);
+
+        now = now.add(const Duration(minutes: 1));
+        final rearmed = await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(decidedTaskIds: ['t1']),
+        );
+        expect(
+          rearmed.runKeys,
+          isEmpty,
+          reason:
+              "a re-arm is new intent — the old wakes' artifacts must not "
+              'satisfy it',
+        );
+      },
+    );
+
+    test(
+      'recordRunKey caps the recorded keys as a file-size backstop',
+      () async {
+        final job = await repository.enqueueDraftPlan(
+          dayId: 'dayplan-2026-07-18',
+          payload: const DraftPlanPayload(),
+        );
+
+        for (
+          var i = 0;
+          i < DayProcessingOutboxRepository.maxRecordedRunKeys + 4;
+          i++
+        ) {
+          await repository.recordRunKey(jobId: job.id, runKey: 'k$i');
+        }
+
+        final stored = (await repository.getById(job.id))!.runKeys;
+        expect(
+          stored,
+          hasLength(DayProcessingOutboxRepository.maxRecordedRunKeys),
+        );
+        expect(stored.first, 'k4');
+        expect(
+          stored.last,
+          'k${DayProcessingOutboxRepository.maxRecordedRunKeys + 3}',
+        );
       },
     );
 

@@ -288,6 +288,7 @@ class DayAgentPipelineHarness {
       planService: planService,
       captureService: captureService,
       orchestrator: orchestrator,
+      outbox: outbox,
     );
     final processor = DayProcessingOutboxProcessor(
       repository: outbox,

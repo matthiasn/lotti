@@ -4042,6 +4042,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Odpojit';
 
   @override
+  String get dailyOsNextPlanChangesReadyNotificationBody =>
+      'Navržené změny čekají na tvou kontrolu.';
+
+  @override
+  String get dailyOsNextPlanChangesReadyNotificationTitle =>
+      'Tvé změny plánu jsou připravené';
+
+  @override
+  String get dailyOsNextPlanReadyNotificationBody =>
+      'Návrh čeká na tvou kontrolu.';
+
+  @override
+  String get dailyOsNextPlanReadyNotificationTitle =>
+      'Tvůj denní plán je hotový';
+
+  @override
   String get dailyOsNextPlanViewActivity => 'Aktivita';
 
   @override

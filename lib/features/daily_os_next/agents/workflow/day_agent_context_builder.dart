@@ -56,11 +56,30 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       ..addText(DayAgentPromptTags.dayLog, compactedLog)
       // Durable recording receipts are independent of CaptureEntity creation,
       // so a later wake can recover a completed offline check-in immediately.
+      // Capped to the newest entries (ADR 0032 §4 sizes this slot as a
+      // provenance/status INDEX, ~32 items): a heavy capture day must not
+      // inflate a section that sits ahead of everything behind it in the
+      // prompt. The marker keeps truncation explicit instead of reading as
+      // "this was everything".
       ..addJson(
         DayAgentPromptTags.dayEntries,
         dayAudioEntries.isEmpty
             ? null
-            : [for (final entry in dayAudioEntries) entry.toJson()],
+            : [
+                for (final entry
+                    in dayAudioEntries.length > _dayEntriesLimit
+                        ? dayAudioEntries.sublist(
+                            dayAudioEntries.length - _dayEntriesLimit,
+                          )
+                        : dayAudioEntries)
+                  entry.toJson(),
+                if (dayAudioEntries.length > _dayEntriesLimit)
+                  {
+                    'truncated': true,
+                    'omittedOlderEntries':
+                        dayAudioEntries.length - _dayEntriesLimit,
+                  },
+              ],
       )
       // Day-stable attention claims/agreements precede the per-wake mode blocks.
       ..addJson(
@@ -338,6 +357,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required DailyOsPlannerWakeContext wakeContext,
     required DateTime dayDate,
     required DateTime now,
+    DayDirectiveEntity? preloadedTodayDirective,
   }) async {
     if (!wakeContext.isDigestWake ||
         agentId != dailyOsPlannerAgentId ||
@@ -345,7 +365,19 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       return null;
     }
     try {
-      final since = await _lastDigestAt(agentId, now);
+      // Overlap the watermark by a sync-lag slack: `created_at` is stamped
+      // by the ORIGINATING device, so another device's offline escalation
+      // can sync in bearing a timestamp older than this device's
+      // digest-completion milestone. A strict `> watermark` read would skip
+      // it forever; the bounded overlap re-ranks such late arrivals instead
+      // (re-showing an already-digested event is advisory noise, skipping
+      // an escalation is loss). Events syncing in later than the slack are
+      // still missed — accepted residual until consumed-event tracking
+      // exists.
+      final since = (await _lastDigestAt(
+        agentId,
+        now,
+      )).subtract(_digestStatusEventSyncLagSlack);
       final tomorrowId = dayAgentIdForDate(
         DateTime(dayDate.year, dayDate.month, dayDate.day + 1),
       );
@@ -382,14 +414,35 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         );
       }
       final poolTruncated = candidates.length >= _digestStatusEventFetchCeiling;
+      if (poolTruncated) {
+        // The pool is oldest-first, so at the ceiling the NEWEST events —
+        // the live escalations — are exactly the ones that would go
+        // unranked and be skipped forever once the watermark advances.
+        // Merge one newest-first page so ranking covers both ends of the
+        // backlog; only the middle can drop, and the marker says so.
+        final newest = await agentRepository.getDayStatusEventsSinceNewestFirst(
+          since,
+          limit: _digestStatusEventFetchLimit,
+        );
+        final seenIds = {for (final event in candidates) event.id};
+        candidates = [
+          ...candidates,
+          for (final event in newest)
+            if (seenIds.add(event.id)) event,
+        ];
+      }
       final (:selected, :truncated) = selectDigestStatusEvents(
         candidates,
         limit: _digestStatusEventLimit,
       );
       final statusEvents = selected;
-      final todayDirective = await directiveService!.directiveForDay(
-        wakeContext.dayId,
-      );
+      // Reuse the standalone <day_directive> load when it is this day's —
+      // the digest previously re-read the identical register.
+      final todayDirective =
+          preloadedTodayDirective != null &&
+              preloadedTodayDirective.dayId == wakeContext.dayId
+          ? preloadedTodayDirective
+          : await directiveService!.directiveForDay(wakeContext.dayId);
       final tomorrowDirective = await directiveService!.directiveForDay(
         tomorrowId,
       );
@@ -441,6 +494,15 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   /// something is systemically wrong — which the `statusEventsTruncated`
   /// marker surfaces to the model rather than hiding.
   static const _digestStatusEventLimit = 50;
+
+  /// Sync-lag overlap subtracted from the digest watermark before reading
+  /// status events (see `_digestContext`).
+  static const _digestStatusEventSyncLagSlack = Duration(hours: 12);
+
+  /// Cap on `<day_entries>` items rendered into the prompt — the ADR 0032
+  /// §4 sizing of this slot as a bounded provenance/status index. The list
+  /// is ascending by capture time, so the cap keeps the NEWEST entries.
+  static const _dayEntriesLimit = 32;
 
   /// Initial candidate-pool fetch for ranked selection — larger than the
   /// render cap so severity decides what survives truncation instead of
@@ -566,10 +628,16 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
 
     // The IDs are pre-sorted, so under a merged multi-capture token set the
     // same capture wins deterministically. The first capture that loads and
-    // belongs to this agent becomes the wake's capture context.
+    // belongs to a legitimate day owner (spanning the ADR 0032 ownership
+    // cutover) becomes the wake's capture context.
     for (final captureId in wakeContext.captureIds) {
       final capture = await service.getCapture(captureId);
-      if (capture == null || capture.agentId != agentIdentity.agentId) {
+      if (capture == null ||
+          !canReadDailyOsDayArtifact(
+            readerAgentId: agentIdentity.agentId,
+            ownerAgentId: capture.agentId,
+            dayId: captureDayId(capture),
+          )) {
         continue;
       }
 

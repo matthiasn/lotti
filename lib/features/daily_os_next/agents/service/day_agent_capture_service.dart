@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
@@ -314,7 +315,17 @@ class DayAgentCaptureService {
   }) async {
     final identity = await _requireIdentity(agentId);
     final capture = await getCapture(captureId);
-    if (capture == null || capture.agentId != agentId) {
+    // Ownership spans the ADR 0032 cutover: a coordinator-owned capture must
+    // stay parseable by the day's agent (and vice versa) — otherwise a
+    // cross-device ownership race leaves the capture visible in the panel
+    // but permanently unparseable, with retryCapture re-enqueueing a job
+    // that can never succeed.
+    if (capture == null ||
+        !canReadDailyOsDayArtifact(
+          readerAgentId: agentId,
+          ownerAgentId: capture.agentId,
+          dayId: captureDayId(capture),
+        )) {
       throw DayAgentCaptureException('capture $captureId not found');
     }
 

@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -64,10 +65,23 @@ class DayAgentPlanEditor {
     required String dayId,
   }) async {
     final planId = dayAgentPlanEntityId(dayId);
-    final entities = await agentRepository.getEntitiesByAgentId(
+    // Span the ADR 0032 ownership cutover: the day's diffs may be owned by
+    // the coordinator (pre-cutover, or a cross-device ownership race) or by
+    // the day's own agent. A foreign caller keeps the exact-owner read.
+    final ownerIds = <String>{
       agentId,
-      type: 'changeSet',
-    );
+      if (isDailyOsDayOwner(agentId)) ...{
+        dailyOsPlannerAgentId,
+        perDayAgentId(dayId),
+      },
+    };
+    final entities = <AgentDomainEntity>[
+      for (final ownerId in ownerIds)
+        ...await agentRepository.getEntitiesByAgentId(
+          ownerId,
+          type: 'changeSet',
+        ),
+    ];
     // Per-item filtering: a change set can stay `pending` overall while
     // individual items have already been confirmed/rejected (e.g. the
     // user accepted one row out of three). The UI only wants to see the
@@ -240,7 +254,13 @@ class DayAgentPlanEditor {
     }
     if (captureId != null) {
       final capture = await reads.captureOrNull(captureId);
-      if (capture == null || capture.agentId != agentId) {
+      // Ownership spans the ADR 0032 cutover (see persistParsedItems).
+      if (capture == null ||
+          !canReadDailyOsDayArtifact(
+            readerAgentId: agentId,
+            ownerAgentId: capture.agentId,
+            dayId: captureDayId(capture),
+          )) {
         throw DayAgentCaptureException('capture $captureId not found');
       }
     }

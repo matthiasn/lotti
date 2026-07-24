@@ -51,3 +51,31 @@ String? dayIdFromPerDayAgentId(String agentId) {
 /// per-day agents post-cutover — while still excluding foreign agents.
 bool isDailyOsDayOwner(String agentId) =>
     agentId == dailyOsPlannerAgentId || isPerDayAgentId(agentId);
+
+/// Whether [agentId] legitimately owns [dayId]'s artifacts specifically:
+/// the coordinator or exactly this day's per-day agent.
+///
+/// Tighter than [isDailyOsDayOwner]: single-day reads must not accept a
+/// *sibling* day agent's writes — a `day_agent:<otherDay>` id on a
+/// day-keyed register could only appear through a bug, and silently
+/// accepting it would mask that bug.
+bool ownsDailyOsDay(String agentId, String dayId) =>
+    agentId == dailyOsPlannerAgentId || agentId == perDayAgentId(dayId);
+
+/// Whether [readerAgentId] may consume a day artifact of [dayId] that is
+/// owned by [ownerAgentId].
+///
+/// Exact ownership always passes. Beyond that, the ADR 0032 day-forward
+/// cutover means one day's artifacts can legitimately carry either the
+/// coordinator's id (pre-cutover work, or a cross-device ownership race
+/// where one device created `day_agent:<dayId>` before another device's
+/// coordinator-owned artifacts synced in) or the day's own agent id — so
+/// any Daily OS day owner reads across both, while foreign agents'
+/// artifacts stay invisible.
+bool canReadDailyOsDayArtifact({
+  required String readerAgentId,
+  required String ownerAgentId,
+  required String dayId,
+}) =>
+    ownerAgentId == readerAgentId ||
+    (isDailyOsDayOwner(readerAgentId) && ownsDailyOsDay(ownerAgentId, dayId));

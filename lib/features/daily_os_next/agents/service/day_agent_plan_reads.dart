@@ -1,5 +1,6 @@
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 
@@ -20,14 +21,24 @@ class DayAgentPlanReads {
   /// uncommit, refine, the UI's `currentPlanForDate` projection) all
   /// see the same "no plan" state instead of operating on the deleted
   /// row.
+  ///
+  /// The read spans the ADR 0032 ownership cutover: a Daily OS reader sees
+  /// the day's plan whether it was written by the coordinator (pre-cutover,
+  /// or a cross-device ownership race) or by the day's own agent. Without
+  /// this, a coordinator-owned plan syncing in after `day_agent:<dayId>`
+  /// was created on another device would be permanently invisible.
   Future<DayPlanEntity?> draftPlanForDay({
     required String agentId,
     required String dayId,
   }) async {
     final entity = await agentRepository.getEntity(dayAgentPlanEntityId(dayId));
     if (entity is DayPlanEntity &&
-        entity.agentId == agentId &&
-        entity.deletedAt == null) {
+        entity.deletedAt == null &&
+        canReadDailyOsDayArtifact(
+          readerAgentId: agentId,
+          ownerAgentId: entity.agentId,
+          dayId: dayId,
+        )) {
       return entity;
     }
     return null;
