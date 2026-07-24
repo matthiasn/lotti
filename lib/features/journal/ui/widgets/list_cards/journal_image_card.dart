@@ -80,15 +80,15 @@ class ModernJournalImageCard extends StatelessWidget {
                               : caption,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: caption.isEmpty
-                              ? tokens.typography.styles.subtitle.subtitle1
-                                    .copyWith(
-                                      color: context.colorScheme.onSurface,
-                                    )
-                              : tokens.typography.styles.body.bodyLarge
-                                    .copyWith(
-                                      color: context.colorScheme.onSurface,
-                                    ),
+                          // subtitle2 (14/w600), the same title tier every
+                          // other list card uses. An image caption is the
+                          // row's title, not a body paragraph, so it must not
+                          // outrank a text or task title sitting next to it in
+                          // the same feed.
+                          style: tokens.typography.styles.subtitle.subtitle2
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
                         ),
                       ),
                       _StatusIndicators(item: item),
@@ -99,8 +99,12 @@ class ModernJournalImageCard extends StatelessWidget {
                     entryDateLabel(context, item.meta.dateFrom),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    // mediumEmphasis, not outline, matching the meta row of
+                    // every other card: timestamps are wayfinding in a
+                    // chronological feed and outline was flagged as too faint
+                    // to skim by.
                     style: tokens.typography.styles.others.caption.copyWith(
-                      color: context.colorScheme.outline,
+                      color: tokens.colors.text.mediumEmphasis,
                     ),
                   ),
                 ],

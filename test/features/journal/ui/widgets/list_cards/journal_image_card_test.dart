@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -140,6 +141,163 @@ void main() {
         expect(find.text('test image entry text'), findsNothing);
       });
     }
+
+    // The headline is the row's title, so it must sit on the same tier as
+    // every other list card's title instead of the body/bodyLarge tier it
+    // used to render at, which made image rows shout in the feed.
+    testWidgets('renders the headline at the shared list-card title tier', (
+      tester,
+    ) async {
+      final imageEntry = testImageEntry;
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalImageCard(item: imageEntry),
+        ),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(ModernJournalImageCard),
+      );
+      final tokens = context.designTokens;
+      final headline = tester
+          .widget<Text>(find.text(imageEntry.entryText!.plainText))
+          .style!;
+
+      expect(
+        headline.fontSize,
+        tokens.typography.styles.subtitle.subtitle2.fontSize,
+      );
+      expect(
+        headline.fontWeight,
+        tokens.typography.styles.subtitle.subtitle2.fontWeight,
+      );
+      expect(headline.color, tokens.colors.text.highEmphasis);
+      // Guards the actual regression: never back to the body tier.
+      expect(
+        headline.fontSize,
+        lessThan(tokens.typography.styles.body.bodyLarge.fontSize!),
+      );
+    });
+
+    testWidgets('keeps the headline ranked above the timestamp', (
+      tester,
+    ) async {
+      final entry = testImageEntry.copyWith(
+        meta: testImageEntry.meta.copyWith(
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalImageCard(item: entry),
+        ),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(ModernJournalImageCard),
+      );
+      final headline = tester
+          .widget<Text>(find.text(entry.entryText!.plainText))
+          .style!;
+      final timestamp = tester
+          .widget<Text>(find.text(entryDateLabel(context, entry.meta.dateFrom)))
+          .style!;
+
+      // Shrinking the headline must not flatten the hierarchy: it stays both
+      // larger and heavier than the meta row.
+      expect(headline.fontSize, greaterThan(timestamp.fontSize!));
+      expect(
+        headline.fontWeight!.value,
+        greaterThan(timestamp.fontWeight!.value),
+      );
+      expect(
+        timestamp.color,
+        context.designTokens.colors.text.mediumEmphasis,
+      );
+    });
+
+    testWidgets('fallback label renders at the same title tier', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalImageCard(
+            item: testImageEntry.copyWith(entryText: null),
+          ),
+        ),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(ModernJournalImageCard),
+      );
+      final tokens = context.designTokens;
+      final fallback = tester
+          .widget<Text>(find.text(context.messages.entryTypeLabelJournalImage))
+          .style!;
+
+      expect(
+        fallback.fontSize,
+        tokens.typography.styles.subtitle.subtitle2.fontSize,
+      );
+      expect(
+        fallback.fontWeight,
+        tokens.typography.styles.subtitle.subtitle2.fontWeight,
+      );
+      expect(fallback.color, tokens.colors.text.highEmphasis);
+    });
+
+    testWidgets('headline truncates to two lines with an ellipsis', (
+      tester,
+    ) async {
+      const longCaption =
+          'This is a perfectly executed, thematic cover art for the AI '
+          'consumption attribution series that runs well past two lines at '
+          'any list width the logbook is rendered at.';
+      final entry = testImageEntry.copyWith(
+        entryText: const EntryText(plainText: longCaption, markdown: ''),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalImageCard(item: entry),
+        ),
+      );
+
+      final headline = tester.widget<Text>(find.text(longCaption));
+      expect(headline.maxLines, 2);
+      expect(headline.overflow, TextOverflow.ellipsis);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('row height stays thumbnail-driven regardless of caption', (
+      tester,
+    ) async {
+      Future<double> heightFor(String caption) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalImageCard(
+              item: testImageEntry.copyWith(
+                entryText: EntryText(plainText: caption, markdown: ''),
+              ),
+            ),
+          ),
+        );
+        return tester.getSize(find.byType(ModernBaseCard)).height;
+      }
+
+      // A two-line caption at the title tier is shorter than the 104px
+      // thumbnail, so the smaller headline cannot reflow the row.
+      final short = await heightFor('Short');
+      final long = await heightFor(
+        'A much longer caption that wraps onto the second line and then '
+        'keeps going well beyond it.',
+      );
+
+      expect(long, short);
+      expect(short, greaterThanOrEqualTo(104));
+    });
 
     testWidgets('shows starred icon when entry is starred', (tester) async {
       final starredEntry = testImageEntry.copyWith(
