@@ -11,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repo
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -387,4 +389,72 @@ void main() {
       expect(captured?.provider.id, 'p-profile');
     },
   );
+
+  test('the drain prioritises the day the user is looking at', () async {
+    final container = ProviderContainer(
+      overrides: [
+        audioTranscriptionServiceProvider.overrideWithValue(
+          MockAudioTranscriptionService(),
+        ),
+        ..._agentJobExecutorOverrides(),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    // Enqueued first, so plain FIFO order would claim the unviewed day.
+    await outbox.enqueueParseCapture(
+      dayId: 'dayplan-2026-09-09',
+      captureId: 'cap-elsewhere',
+    );
+    await outbox.enqueueParseCapture(
+      dayId: dayAgentIdForDate(DateTime(2026, 7, 18)),
+      captureId: 'cap-viewed',
+    );
+    container
+        .read(dailyOsNextSelectedDateProvider.notifier)
+        .select(DateTime(2026, 7, 18));
+
+    final processor = container.read(dayProcessingOutboxProcessorProvider);
+    final priority = processor.priority!();
+
+    expect(
+      priority.dayIds.first,
+      dayAgentIdForDate(DateTime(2026, 7, 18)),
+      reason: 'the selected date leads the ordering',
+    );
+
+    // And the ordering it produces really does reach the repository.
+    final claim = await outbox.claimNext(priority: priority);
+    expect(claim!.job.id, 'parse_cap-viewed');
+  });
+
+  test('re-reads the selection per claim rather than at build time', () async {
+    final container = ProviderContainer(
+      overrides: [
+        audioTranscriptionServiceProvider.overrideWithValue(
+          MockAudioTranscriptionService(),
+        ),
+        ..._agentJobExecutorOverrides(),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final processor = container.read(dayProcessingOutboxProcessorProvider);
+    final before = processor.priority!().dayIds.first;
+
+    container
+        .read(dailyOsNextSelectedDateProvider.notifier)
+        .select(DateTime(2026, 11, 3));
+
+    // Same processor instance: navigating must not require rebuilding the
+    // long-lived runtime for the new day to win.
+    expect(
+      processor.priority!().dayIds.first,
+      isNot(before),
+    );
+    expect(
+      processor.priority!().dayIds.first,
+      dayAgentIdForDate(DateTime(2026, 11, 3)),
+    );
+  });
 }

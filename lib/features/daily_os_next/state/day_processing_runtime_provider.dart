@@ -1,9 +1,10 @@
 import 'dart:async';
-
+import 'package:clock/clock.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_review_fence.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repo
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_job_wiring.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -42,6 +44,22 @@ dayProcessingOutboxProcessorProvider = Provider((ref) {
     // ADR 0032 §5: event-driven completion surface for jobs that finish
     // while the app is backgrounded — "your plan is ready" as an OS banner.
     onJobFinished: (job) => unawaited(planReadyNotifier.onJobFinished(job)),
+    // Claim the day the user is actually looking at first. `ref.read`, not
+    // `watch`: navigating between days must not tear down and rebuild the
+    // long-lived runtime, and the resolver runs per claim so the current
+    // selection is picked up on the next job either way.
+    priority: () {
+      final selected = ref.read(dailyOsNextSelectedDateProvider);
+      final today = clock.now();
+      return DayProcessingClaimPriority(
+        dayIds: [
+          dayAgentIdForDate(selected),
+          dayAgentIdForDate(today),
+          dayAgentIdForDate(today.add(const Duration(days: 1))),
+        ],
+        agingCutoff: today.subtract(dayProcessingPriorityAging),
+      );
+    },
     // Resolve the planner profile's transcription slot per attempt so a
     // configuration change between retries takes effect immediately;
     // discovery remains the fallback when no profile slot exists.

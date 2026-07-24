@@ -1031,4 +1031,134 @@ void main() {
       expect(events, 0);
     });
   });
+
+  group('priority-aware claiming (head-of-line blocking)', () {
+    /// Enqueues a parse job for [dayId]. Parse jobs carry no immutable-intent
+    /// constraints, so they are the cheapest way to build a multi-day queue.
+    Future<DayProcessingJob> queueFor(String dayId, String captureId) =>
+        repository.enqueueParseCapture(dayId: dayId, captureId: captureId);
+
+    DayProcessingClaimPriority priorityFor(
+      List<String> dayIds, {
+      Duration aging = dayProcessingPriorityAging,
+    }) => DayProcessingClaimPriority(
+      dayIds: dayIds,
+      agingCutoff: now.subtract(aging),
+    );
+
+    test('claims the viewed day ahead of an older unrelated day', () async {
+      // The unrelated day is enqueued first, so plain FIFO would take it.
+      await queueFor('dayplan-2026-07-25', 'cap-far');
+      now = now.add(const Duration(minutes: 1));
+      await queueFor('dayplan-2026-07-18', 'cap-viewed');
+
+      final claim = await repository.claimNext(
+        priority: priorityFor(['dayplan-2026-07-18']),
+      );
+
+      expect(claim!.job.id, 'parse_cap-viewed');
+    });
+
+    test('falls through the tiers in order', () async {
+      await queueFor('dayplan-2026-08-01', 'cap-other');
+      await queueFor('dayplan-2026-07-19', 'cap-tomorrow');
+      await queueFor('dayplan-2026-07-18', 'cap-today');
+      await queueFor('dayplan-2026-07-22', 'cap-viewed');
+
+      final order = <String>[];
+      for (var i = 0; i < 4; i++) {
+        final claim = await repository.claimNext(
+          priority: priorityFor([
+            'dayplan-2026-07-22',
+            'dayplan-2026-07-18',
+            'dayplan-2026-07-19',
+          ]),
+        );
+        order.add(claim!.job.id);
+        await repository.markSucceeded(
+          jobId: claim.job.id,
+          claimToken: claim.token,
+        );
+      }
+
+      expect(order, [
+        'parse_cap-viewed',
+        'parse_cap-today',
+        'parse_cap-tomorrow',
+        'parse_cap-other',
+      ]);
+    });
+
+    test('preserves same-day ordering within a tier', () async {
+      // The guarantee the single serial lane used to provide for free: a
+      // day's capture parse still runs before that day's draft.
+      await queueFor('dayplan-2026-07-18', 'cap-1');
+      now = now.add(const Duration(seconds: 30));
+      await repository.enqueueDraftPlan(
+        dayId: 'dayplan-2026-07-18',
+        payload: const DraftPlanPayload(),
+      );
+
+      final claim = await repository.claimNext(
+        priority: priorityFor(['dayplan-2026-07-18']),
+      );
+
+      expect(claim!.job.id, 'parse_cap-1');
+    });
+
+    test(
+      'a job that waited past the aging cutoff outranks the viewed day',
+      () async {
+        await queueFor('dayplan-2026-08-01', 'cap-stale');
+        now = now.add(dayProcessingPriorityAging + const Duration(minutes: 1));
+        await queueFor('dayplan-2026-07-18', 'cap-viewed');
+
+        final claim = await repository.claimNext(
+          priority: priorityFor(['dayplan-2026-07-18']),
+        );
+
+        expect(
+          claim!.job.id,
+          'parse_cap-stale',
+          reason: 'a busy foreground must not starve another day forever',
+        );
+      },
+    );
+
+    test('an empty priority list is plain FIFO', () async {
+      await queueFor('dayplan-2026-08-01', 'cap-first');
+      now = now.add(const Duration(minutes: 1));
+      await queueFor('dayplan-2026-07-18', 'cap-second');
+
+      final claim = await repository.claimNext(
+        priority: DayProcessingClaimPriority(
+          dayIds: const [],
+          agingCutoff: now,
+        ),
+      );
+
+      expect(claim!.job.id, 'parse_cap-first');
+    });
+
+    test('priority does not widen what is claimable', () async {
+      // A viewed-day job that is not due stays unclaimed; priority only
+      // reorders candidates, it never promotes one into the candidate set.
+      final job = await queueFor('dayplan-2026-07-18', 'cap-viewed');
+      final claim = await repository.claimById(job.id);
+      await repository.markFailure(
+        jobId: claim!.job.id,
+        claimToken: claim.token,
+        failureClass: DayProcessingFailureClass.providerBusy,
+        error: 'busy',
+        retryDelay: const Duration(minutes: 10),
+      );
+      await queueFor('dayplan-2026-08-01', 'cap-other');
+
+      final next = await repository.claimNext(
+        priority: priorityFor(['dayplan-2026-07-18']),
+      );
+
+      expect(next!.job.id, 'parse_cap-other');
+    });
+  });
 }

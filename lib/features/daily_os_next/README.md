@@ -276,6 +276,22 @@ everything are bounded: `DayActivityRepository` calls `getForDay(dayId, kinds:
 `DayProcessingRuntime` calls `getSchedulable()`. Claim cost tracks outstanding
 work rather than install age.
 
+**Claiming order.** All agent job kinds share one serial drain lane, so
+without an ordering rule a 30-second draft for a day nobody is looking at
+blocks a capture just recorded for today. Claim order is therefore tiered:
+anything that has already waited past `dayProcessingPriorityAging` (15 minutes)
+first — so a busy foreground cannot starve another day — then the day the user
+has selected, then today, then tomorrow, then everything else. Ties fall
+through to FIFO by `(created_at, id)`, which preserves ordering *within* a day:
+a capture's parse still runs before that day's draft.
+
+Priority is viewer-relative, so it is a query-time expression rather than a
+stored column, evaluated over the candidate set the pending partial index
+already bounds. `DayProcessingOutboxProcessor.priority` is a resolver called
+per claim (not per drain), reading `dailyOsNextSelectedDateProvider` through
+`ref.read` — navigating between days takes effect on the next job without
+rebuilding the long-lived runtime.
+
 **Claiming** is one atomic statement — `UPDATE … WHERE id = (SELECT … ORDER BY
 created_at, id LIMIT 1) RETURNING …` — so there is no window in which a second
 claimer can take a row between it being chosen and owned. FIFO by creation
