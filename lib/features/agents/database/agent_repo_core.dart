@@ -97,14 +97,29 @@ class AgentRepoCore {
   /// Empty input returns an empty map without touching the database.
   Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
     Iterable<String> ids,
-  ) async {
+  ) => _entitiesByIds(ids, includeDeleted: false);
+
+  /// Like [getEntitiesByIds], but tombstoned rows are returned too (with
+  /// `deletedAt` set). For callers whose write decision depends on whether a
+  /// register was deliberately deleted — e.g. the week-rollup recompute must
+  /// see the tombstone to avoid resurrecting it, which the deleted-filtered
+  /// read structurally cannot support.
+  Future<Map<String, AgentDomainEntity>> getEntitiesByIdsIncludingDeleted(
+    Iterable<String> ids,
+  ) => _entitiesByIds(ids, includeDeleted: true);
+
+  Future<Map<String, AgentDomainEntity>> _entitiesByIds(
+    Iterable<String> ids, {
+    required bool includeDeleted,
+  }) async {
     final result = <String, AgentDomainEntity>{};
     for (final chunk in sqliteInClauseChunks(ids)) {
       final placeholders = List.filled(chunk.length, '?').join(', ');
+      final deletedFilter = includeDeleted ? '' : ' AND deleted_at IS NULL';
       final rows = await _db
           .customSelect(
             'SELECT * FROM agent_entities '
-            'WHERE id IN ($placeholders) AND deleted_at IS NULL',
+            'WHERE id IN ($placeholders)$deletedFilter',
             variables: chunk.map(Variable.withString).toList(),
             readsFrom: {_db.agentEntities},
           )

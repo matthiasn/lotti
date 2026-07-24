@@ -382,6 +382,23 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         );
       }
       final poolTruncated = candidates.length >= _digestStatusEventFetchCeiling;
+      if (poolTruncated) {
+        // The pool is oldest-first, so at the ceiling the NEWEST events —
+        // the live escalations — are exactly the ones that would go
+        // unranked and be skipped forever once the watermark advances.
+        // Merge one newest-first page so ranking covers both ends of the
+        // backlog; only the middle can drop, and the marker says so.
+        final newest = await agentRepository.getDayStatusEventsSinceNewestFirst(
+          since,
+          limit: _digestStatusEventFetchLimit,
+        );
+        final seenIds = {for (final event in candidates) event.id};
+        candidates = [
+          ...candidates,
+          for (final event in newest)
+            if (seenIds.add(event.id)) event,
+        ];
+      }
       final (:selected, :truncated) = selectDigestStatusEvents(
         candidates,
         limit: _digestStatusEventLimit,

@@ -256,9 +256,14 @@ class DayAgentWeekContextService {
     try {
       now ??= clock.now();
       final weekStarts = _recentCompleteWeekStarts(now);
-      final existingById = await agentRepository.getEntitiesByIds({
-        for (final weekStart in weekStarts) weekRollupEntityId(weekStart),
-      });
+      // MUST be the tombstone-including read: the deleted-filtered
+      // getEntitiesByIds returns nothing for a tombstoned register, which
+      // makes the tombstone check below unreachable and resurrects every
+      // deliberately deleted rollup on the next digest.
+      final existingById = await agentRepository
+          .getEntitiesByIdsIncludingDeleted({
+            for (final weekStart in weekStarts) weekRollupEntityId(weekStart),
+          });
       final aggregatesByWeek = await _computeAggregatesForWeeks(weekStarts);
       for (final weekStart in weekStarts) {
         final id = weekRollupEntityId(weekStart);

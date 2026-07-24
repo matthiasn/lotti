@@ -39,6 +39,35 @@ class AgentRepoQueries {
         .toList();
   }
 
+  /// Newest-first counterpart of [getDayStatusEventsSince].
+  ///
+  /// The digest's bounded candidate fetch reads oldest-first, so when a
+  /// pathological backlog exceeds its hard ceiling the NEWEST events — the
+  /// live escalations — would be the ones dropped unranked, permanently
+  /// (the watermark advances past them). Merging one newest-first page into
+  /// the pool guarantees both ends of the backlog get ranked.
+  Future<List<DayStatusEventEntity>> getDayStatusEventsSinceNewestFirst(
+    DateTime since, {
+    required int limit,
+  }) async {
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM agent_entities '
+          "WHERE type = 'day_status_event' AND deleted_at IS NULL "
+          'AND created_at > ?1 ORDER BY created_at DESC LIMIT ?2',
+          variables: [Variable<DateTime>(since), Variable<int>(limit)],
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+    final entities = <DayStatusEventEntity>[];
+    for (final row in rows) {
+      final entityRow = await _db.agentEntities.mapFromRow(row);
+      final entity = AgentDbConversions.fromEntityRow(entityRow);
+      if (entity is DayStatusEventEntity) entities.add(entity);
+    }
+    return entities;
+  }
+
   Future<List<AgentMessageEntity>> getMessagesByKind(
     String agentId,
     AgentMessageKind kind, {

@@ -55,6 +55,9 @@ void main() {
     when(() => repository.getEntitiesByIds(any())).thenAnswer(
       (_) async => const <String, AgentDomainEntity>{},
     );
+    when(() => repository.getEntitiesByIdsIncludingDeleted(any())).thenAnswer(
+      (_) async => const <String, AgentDomainEntity>{},
+    );
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
       () => repository.getAttentionClaimsForWindow(
@@ -781,30 +784,45 @@ void main() {
       'week_rollup:2026-05-11',
     ];
 
-    /// Routes [repository.getEntitiesByIds] by requested id shape: rollup-id
+    /// Routes the entity-batch reads by requested id shape: rollup-id
     /// requests serve [rollups]; day-plan-id requests serve the matching
     /// subset of [plans] (keyed by entity id).
+    ///
+    /// Mirrors the REAL repository semantics: `getEntitiesByIds` filters
+    /// tombstoned rows out, `getEntitiesByIdsIncludingDeleted` returns them.
+    /// The tombstone-resurrection bug hid behind a stub that returned
+    /// deleted rows from the filtered read — something the production query
+    /// can never do — so the split here is load-bearing.
     void stubEntityReads({
       Map<String, AgentDomainEntity> rollups = const {},
       Map<String, AgentDomainEntity> plans = const {},
     }) {
-      when(() => repository.getEntitiesByIds(any())).thenAnswer((
-        invocation,
-      ) async {
+      Map<String, AgentDomainEntity> route(
+        Invocation invocation, {
+        required bool includeDeleted,
+      }) {
         final ids = (invocation.positionalArguments.single as Iterable)
             .cast<String>()
             .toSet();
-        if (ids.any((id) => id.startsWith('week_rollup:'))) {
-          return {
-            for (final entry in rollups.entries)
-              if (ids.contains(entry.key)) entry.key: entry.value,
-          };
-        }
+        final source = ids.any((id) => id.startsWith('week_rollup:'))
+            ? rollups
+            : plans;
         return {
-          for (final entry in plans.entries)
-            if (ids.contains(entry.key)) entry.key: entry.value,
+          for (final entry in source.entries)
+            if (ids.contains(entry.key) &&
+                (includeDeleted || entry.value.deletedAt == null))
+              entry.key: entry.value,
         };
-      });
+      }
+
+      when(() => repository.getEntitiesByIds(any())).thenAnswer(
+        (invocation) async => route(invocation, includeDeleted: false),
+      );
+      when(
+        () => repository.getEntitiesByIdsIncludingDeleted(any()),
+      ).thenAnswer(
+        (invocation) async => route(invocation, includeDeleted: true),
+      );
     }
 
     JournalEntity timeEntry({
@@ -941,9 +959,12 @@ void main() {
           isEmpty,
           reason: 'Unchanged aggregates: no sync churn.',
         );
-        // One rollup-id batch read + ONE spanning plan batch (28 ids) — never
-        // a per-week read loop.
-        verify(() => repository.getEntitiesByIds(any())).called(2);
+        // One tombstone-aware rollup-id batch read + ONE spanning plan batch
+        // (28 ids) — never a per-week read loop.
+        verify(
+          () => repository.getEntitiesByIdsIncludingDeleted(any()),
+        ).called(1);
+        verify(() => repository.getEntitiesByIds(any())).called(1);
         verify(
           () => journalDb.sortedCalendarEntries(
             rangeStart: DateTime(2026, 5, 11),
@@ -1069,7 +1090,7 @@ void main() {
       'ensureWeekRollups is fail-soft: a storage error logs and returns',
       () async {
         when(
-          () => repository.getEntitiesByIds(any()),
+          () => repository.getEntitiesByIdsIncludingDeleted(any()),
         ).thenThrow(StateError('storage offline'));
 
         await withNow(() => service.ensureWeekRollups());

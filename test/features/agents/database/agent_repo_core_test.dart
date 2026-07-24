@@ -122,6 +122,39 @@ void main() {
     test('empty input returns an empty map without a query', () async {
       expect(await core.getEntitiesByIds(const []), isEmpty);
     });
+
+    test(
+      'tombstoned rows are hidden from getEntitiesByIds but returned by '
+      'getEntitiesByIdsIncludingDeleted',
+      () async {
+        await core.upsertEntity(
+          makeTestIdentity(id: 'live', agentId: 'a1', createdAt: testDate),
+        );
+        await core.upsertEntity(
+          makeTestIdentity(
+            id: 'gone',
+            agentId: 'a2',
+            createdAt: testDate,
+          ).copyWith(deletedAt: testDate),
+        );
+
+        final filtered = await core.getEntitiesByIds(['live', 'gone']);
+        expect(filtered.keys, ['live']);
+
+        final all = await core.getEntitiesByIdsIncludingDeleted([
+          'live',
+          'gone',
+        ]);
+        expect(all.keys, containsAll(['live', 'gone']));
+        expect(
+          all['gone']!.deletedAt,
+          testDate,
+          reason:
+              'The tombstone must be visible to callers whose write '
+              'decision depends on it (week-rollup resurrection guard).',
+        );
+      },
+    );
   });
 
   group('latestEntitiesByAgentIds', () {

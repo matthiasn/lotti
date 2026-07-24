@@ -2269,9 +2269,16 @@ void main() {
                 id: 'day_status:$dayId:flood-$i',
                 status: DayStatusKind.dayClosed,
                 reasons: const [],
-                raisedAt: now.subtract(Duration(minutes: 2000 - i)),
-                createdAt: now.subtract(Duration(minutes: 2000 - i)),
+                raisedAt: now.subtract(Duration(minutes: 2100 - i)),
+                createdAt: now.subtract(Duration(minutes: 2100 - i)),
               ),
+            // Beyond the ceiling: the oldest-first fetch can never return
+            // this escalation, and the watermark would skip it forever.
+            makeTestDayStatusEvent(
+              id: 'day_status:$dayId:beyond-ceiling-escalation',
+              raisedAt: now.subtract(const Duration(minutes: 1)),
+              createdAt: now.subtract(const Duration(minutes: 1)),
+            ),
           ];
           when(
             () => repository.getDayStatusEventsSince(
@@ -2281,6 +2288,15 @@ void main() {
           ).thenAnswer((invocation) async {
             final limit = invocation.namedArguments[#limit] as int?;
             return all.take(limit ?? all.length).toList();
+          });
+          when(
+            () => repository.getDayStatusEventsSinceNewestFirst(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((invocation) async {
+            final limit = invocation.namedArguments[#limit]! as int;
+            return all.reversed.take(limit).toList();
           });
 
           final result = await executeDigest(
@@ -2298,9 +2314,25 @@ void main() {
           verifyNever(
             () => repository.getDayStatusEventsSince(any(), limit: 3200),
           );
+          // At the ceiling one newest-first page merges into the pool so
+          // the live end of the backlog still gets ranked.
+          verify(
+            () => repository.getDayStatusEventsSinceNewestFirst(
+              any(),
+              limit: 200,
+            ),
+          ).called(1);
           final digest = sentPrompt().json('digest')! as Map;
           expect(digest['statusEventsTruncated'], isTrue);
-          expect(digest['statusEvents'] as List, hasLength(50));
+          final events = digest['statusEvents'] as List;
+          expect(events, hasLength(50));
+          expect(
+            (events.last as Map)['status'],
+            'attentionNeeded',
+            reason:
+                'The escalation beyond the ceiling must be ranked in via '
+                'the newest-first merge (rendering last, chronologically).',
+          );
         },
       );
 

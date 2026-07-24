@@ -110,6 +110,52 @@ void main() {
         ],
       );
     });
+
+    test(
+      'getDayStatusEventsSinceNewestFirst returns the newest events first '
+      'under the same watermark/deletion semantics',
+      () async {
+        final watermark = DateTime(2026, 3, 15, 6);
+        await core.upsertEntity(
+          makeTestDayStatusEvent(
+            id: 'day_status:dayplan-2026-03-15:pre-watermark',
+            createdAt: watermark.subtract(const Duration(hours: 1)),
+          ),
+        );
+        await core.upsertEntity(
+          makeTestDayStatusEvent(
+            id: 'day_status:dayplan-2026-03-15:deleted',
+            createdAt: watermark.add(const Duration(hours: 4)),
+            deletedAt: watermark.add(const Duration(hours: 5)),
+          ),
+        );
+        for (var i = 1; i <= 3; i++) {
+          await core.upsertEntity(
+            makeTestDayStatusEvent(
+              id: 'day_status:dayplan-2026-03-15:live-$i',
+              createdAt: watermark.add(Duration(hours: i)),
+            ),
+          );
+        }
+
+        final events = await queries.getDayStatusEventsSinceNewestFirst(
+          watermark,
+          limit: 2,
+        );
+
+        expect(
+          [for (final event in events) event.id],
+          [
+            'day_status:dayplan-2026-03-15:live-3',
+            'day_status:dayplan-2026-03-15:live-2',
+          ],
+          reason:
+              'Newest first, capped by limit, skipping tombstones and '
+              'pre-watermark rows — the digest merges this page at its '
+              'fetch ceiling so the live end of a backlog still ranks.',
+        );
+      },
+    );
   });
 
   Future<void> seedReportWithHead({
