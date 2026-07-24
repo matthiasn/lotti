@@ -6699,6 +6699,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get linkedToCaption => 'a';
 
   @override
+  String get linkDirectionLabel => 'Direction:';
+
+  @override
   String get linkExistingTask => 'Collegare il compito esistente...';
 
   @override
@@ -10289,9 +10292,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String taskBlockedReason(String title) {
     return 'Blocked by: $title';
   }
-
-  @override
-  String get taskBlockerPickerSkipButton => 'Skip';
 
   @override
   String get taskBlockerPickerTitle => 'What\'s blocking this task?';

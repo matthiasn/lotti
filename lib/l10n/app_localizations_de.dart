@@ -6651,6 +6651,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkedToCaption => 'zu';
 
   @override
+  String get linkDirectionLabel => 'Richtung:';
+
+  @override
   String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
 
   @override
@@ -10217,9 +10220,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String taskBlockedReason(String title) {
     return 'Blockiert von: $title';
   }
-
-  @override
-  String get taskBlockerPickerSkipButton => 'Überspringen';
 
   @override
   String get taskBlockerPickerTitle => 'Was blockiert diese Aufgabe?';

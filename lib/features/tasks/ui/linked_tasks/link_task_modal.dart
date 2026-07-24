@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Modal for searching and selecting a task to link to the current task, with
@@ -36,16 +36,12 @@ class LinkTaskModal extends ConsumerStatefulWidget {
     required BuildContext context,
     required String currentTaskId,
     required Set<String> existingLinkedIds,
-  }) async {
-    return ModalUtils.showBottomSheet<Task>(
+  }) {
+    return ModalUtils.showSinglePageModal<Task>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => LinkTaskModal(
+      title: context.messages.linkExistingTask,
+      padding: EdgeInsets.zero,
+      builder: (_) => LinkTaskModal(
         currentTaskId: currentTaskId,
         existingLinkedIds: existingLinkedIds,
       ),
@@ -86,60 +82,37 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
 
   @override
   Widget build(BuildContext context) {
-    // A fixed, generous fraction of the screen — not a DraggableScrollableSheet
-    // reveal — so the sheet's surface fills exactly this height with no dead
-    // space above it. Search-and-pick content is expected to fill the space
-    // rather than shrink-wrap to a handful of results.
-    return SizedBox(
-      height: MediaQuery.sizeOf(context).height * 0.85,
-      child: Column(
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              key: const Key('link_task_modal_handle'),
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: context.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+    final tokens = context.designTokens;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            0,
+            tokens.spacing.step5,
+            tokens.spacing.step4,
           ),
-          // Title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              context.messages.linkExistingTask,
-              style: context.textTheme.titleMedium,
-            ),
+          child: RelationshipTypeSelector(
+            selectedType: _selectedType,
+            inverse: _inverse,
+            onTypeChanged: (type) => setState(() {
+              _selectedType = type;
+              _inverse = false;
+            }),
+            onInverseChanged: (value) => setState(() => _inverse = value),
           ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: RelationshipTypeSelector(
-              selectedType: _selectedType,
-              inverse: _inverse,
-              onTypeChanged: (type) => setState(() {
-                _selectedType = type;
-                _inverse = false;
-              }),
-              onInverseChanged: (value) => setState(() => _inverse = value),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: TaskSearchPickerBody(
-              excludeIds: {
-                widget.currentTaskId,
-                ...widget.existingLinkedIds,
-              },
-              onTaskSelected: _selectTask,
-            ),
-          ),
-        ],
-      ),
+        ),
+        TaskSearchPickerBody(
+          excludeIds: {
+            widget.currentTaskId,
+            ...widget.existingLinkedIds,
+          },
+          onTaskSelected: _selectTask,
+        ),
+      ],
     );
   }
 }

@@ -125,7 +125,15 @@ class RelationshipTypeSelector extends StatelessWidget {
           ],
         ),
         if (phrasePair != null) ...[
-          SizedBox(height: tokens.spacing.step2),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            context.messages.linkDirectionLabel,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step1),
           DsSegmentedToggle<bool>(
             segments: [
               DsSegment(false, phrasePair.$1),

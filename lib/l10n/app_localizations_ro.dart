@@ -6735,6 +6735,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkedToCaption => 'la';
 
   @override
+  String get linkDirectionLabel => 'Direcție:';
+
+  @override
   String get linkExistingTask => 'Leagă o sarcină existentă...';
 
   @override
@@ -10347,9 +10350,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String taskBlockedReason(String title) {
     return 'Blocată de: $title';
   }
-
-  @override
-  String get taskBlockerPickerSkipButton => 'Omiteți';
 
   @override
   String get taskBlockerPickerTitle => 'Ce blochează această sarcină?';

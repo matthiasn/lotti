@@ -129,8 +129,6 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                     onEdit: () => EditLinkTypeModal.show(
                       context: context,
                       linkId: linkGroups.flat[i].linkId,
-                      anchorTaskId: taskId,
-                      otherTaskId: flatRows[i].task.meta.id,
                       currentType: EntryLinkType.basic,
                       currentDirection: linkGroups.flat[i].direction,
                     ),

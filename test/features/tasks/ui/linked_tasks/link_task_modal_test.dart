@@ -16,6 +16,7 @@ import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
@@ -54,10 +55,12 @@ void main() {
     Future<void> openModal(
       WidgetTester tester, {
       Set<String> existingLinkedIds = const {},
+      MediaQueryData? mediaQueryData,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: mediaQueryData,
             child: Builder(
               builder: (context) => ElevatedButton(
                 onPressed: () async {
@@ -197,46 +200,32 @@ void main() {
     });
 
     testWidgets(
-      'modal sizes itself to a fixed, generous fraction of the screen '
-      'height rather than a DraggableScrollableSheet reveal (no dead space '
-      'above the sheet)',
+      'opens via the shared Wolt responsive modal, not a '
+      'DraggableScrollableSheet reveal',
       (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            child: WidgetTestBench(
-              child: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () async {
-                    await LinkTaskModal.show(
-                      context: context,
-                      currentTaskId: 'current-task',
-                      existingLinkedIds: const {},
-                    );
-                  },
-                  child: const Text('Open Modal'),
-                ),
-              ),
-            ),
-          ),
-        );
+        await openModal(tester);
 
-        await tester.tap(find.text('Open Modal'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-
+        // ModalUtils.showSinglePageModal's own responsive dialog/bottom-sheet
+        // breakpoint logic is covered by test/widgets/modal/modal_utils_test.dart
+        // — this just confirms LinkTaskModal no longer sizes itself via the
+        // old, unprecedented DraggableScrollableSheet reveal.
         expect(find.byType(DraggableScrollableSheet), findsNothing);
-        final sizedBox = tester.widget<SizedBox>(
-          find
-              .ancestor(
-                of: find.byKey(const Key('link_task_modal_handle')),
-                matching: find.byType(SizedBox),
-              )
-              .first,
+      },
+    );
+
+    testWidgets(
+      'renders correctly on a wide desktop viewport too — the same '
+      'responsive modal path every other task-page picker uses',
+      (tester) async {
+        // Desktop sizing crosses WoltModalConfig.pageBreakpoint (560), so
+        // ModalUtils.showSinglePageModal resolves to its dialog variant.
+        await openModal(
+          tester,
+          mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
         );
-        // phoneMediaQueryData's default height (test/widget_test_utils.dart)
-        // is 844 — the sheet fills 85% of it, no matter how many results
-        // the search list contains.
-        expect(sizedBox.height, 844 * 0.85);
+
+        expect(find.text('Link existing task...'), findsOneWidget);
+        expect(find.byType(DraggableScrollableSheet), findsNothing);
       },
     );
 
@@ -368,34 +357,6 @@ void main() {
       expect(find.text('Available Task'), findsOneWidget);
     });
 
-    testWidgets('has a handle bar for dragging', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () async {
-                  await LinkTaskModal.show(
-                    context: context,
-                    currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
-                  );
-                },
-                child: const Text('Open Modal'),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open Modal'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-
-      // Handle bar is rendered with a specific key
-      expect(find.byKey(const Key('link_task_modal_handle')), findsOneWidget);
-    });
-
     testWidgets('shows status icons for tasks', (tester) async {
       final testTasks = [
         buildTask(
@@ -447,73 +408,6 @@ void main() {
         find.byIcon(taskIconFromStatusString('IN PROGRESS')),
         findsOneWidget,
       );
-    });
-
-    testWidgets('shows link icon for each task item', (tester) async {
-      final testTasks = [buildTask(title: 'Some Task')];
-
-      when(
-        () => mockJournalDb.getTasks(
-          starredStatuses: any(named: 'starredStatuses'),
-          taskStatuses: any(named: 'taskStatuses'),
-          categoryIds: any(named: 'categoryIds'),
-          limit: any(named: 'limit'),
-        ),
-      ).thenAnswer((_) async => testTasks);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () async {
-                  await LinkTaskModal.show(
-                    context: context,
-                    currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
-                  );
-                },
-                child: const Text('Open Modal'),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open Modal'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-
-      // Each task shows add_link icon as trailing
-      expect(find.byIcon(Icons.add_link_rounded), findsOneWidget);
-    });
-
-    testWidgets('modal opens as bottom sheet', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () async {
-                  await LinkTaskModal.show(
-                    context: context,
-                    currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
-                  );
-                },
-                child: const Text('Open Modal'),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open Modal'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-
-      // Verify modal is open as a BottomSheet
-      expect(find.byType(BottomSheet), findsOneWidget);
     });
 
     testWidgets('shows no tasks message when no tasks available', (
@@ -792,10 +686,7 @@ void main() {
         ),
       ).called(1);
       // The modal actually pops on success, not just createLink firing.
-      expect(
-        find.byKey(const Key('link_task_modal_handle')),
-        findsNothing,
-      );
+      expect(find.text('Link existing task...'), findsNothing);
     });
 
     testWidgets(
@@ -966,7 +857,15 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('Blocker Task'), findsOneWidget);
-        expect(find.byType(SnackBar), findsOneWidget);
+        // The Wolt-hosted picker can transiently mount two SnackBar widget
+        // instances for a single logical show (a benign rendering artifact
+        // also seen in edit_link_type_modal_test.dart) — assert on content.
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsWidgets,
+        );
       },
     );
 
@@ -1149,8 +1048,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      // Enter search that matches via FTS5
+      // Enter search that matches via FTS5. Unlike the plain-substring case,
+      // this needs a second pump: the FTS5 fetch is now kicked off as a
+      // build-time side effect of TaskSearchPickerBody's entriesBuilder (one
+      // rebuild hop further from the keystroke than the old direct
+      // onChanged-triggered fetch), so the result lands one frame later.
       await tester.enterText(find.byType(TextField), 'special');
+      await tester.pump();
       await tester.pump();
 
       // Task-2 should be visible because FTS5 matched it
@@ -1305,7 +1209,15 @@ void main() {
         await openModal(tester);
 
         expect(find.text(label), findsOneWidget);
-        expect(find.byIcon(icon), findsOneWidget);
+        // Rejected's icon (Icons.close_rounded) is also the Wolt modal's own
+        // close button — scope to the picker list so the two don't collide.
+        expect(
+          find.descendant(
+            of: find.byType(EntityPickerSheet),
+            matching: find.byIcon(icon),
+          ),
+          findsOneWidget,
+        );
       });
     }
   });

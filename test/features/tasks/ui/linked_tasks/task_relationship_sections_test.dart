@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_relationship_sections.dart';
@@ -316,7 +317,7 @@ void main() {
 
         expect(find.text('Edit relationship'), findsOneWidget);
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -353,7 +354,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -393,7 +394,7 @@ void main() {
         // Switch the type from Follows up to Blocks before saving.
         await tester.tap(find.text('Blocks'));
         await tester.pump();
-        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

@@ -6701,6 +6701,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkedToCaption => 'a';
 
   @override
+  String get linkDirectionLabel => 'Dirección:';
+
+  @override
   String get linkExistingTask => 'Vincular tarea existente...';
 
   @override
@@ -10314,9 +10317,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String taskBlockedReason(String title) {
     return 'Bloqueada por: $title';
   }
-
-  @override
-  String get taskBlockerPickerSkipButton => 'Omitir';
 
   @override
   String get taskBlockerPickerTitle => '¿Qué está bloqueando esta tarea?';

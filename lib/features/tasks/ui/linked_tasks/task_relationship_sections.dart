@@ -149,8 +149,6 @@ class TaskRelationshipSections extends ConsumerWidget {
             onEdit: () => EditLinkTypeModal.show(
               context: context,
               linkId: entry.linkId,
-              anchorTaskId: taskId,
-              otherTaskId: entry.task.meta.id,
               currentType: _entryLinkTypeFor(entry.kind),
               currentDirection: entry.direction,
             ),
@@ -174,7 +172,10 @@ class TaskRelationshipSections extends ConsumerWidget {
       }
     }
 
-    return Column(children: children);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    );
   }
 
   String? _rowCaption(BuildContext context, TaskLinkEntry entry) {

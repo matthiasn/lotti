@@ -11543,6 +11543,12 @@ abstract class AppLocalizations {
   /// **'to'**
   String get linkedToCaption;
 
+  /// No description provided for @linkDirectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Direction:'**
+  String get linkDirectionLabel;
+
   /// No description provided for @linkExistingTask.
   ///
   /// In en, this message translates to:
@@ -17543,12 +17549,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Blocked by: {title}'**
   String taskBlockedReason(String title);
-
-  /// No description provided for @taskBlockerPickerSkipButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Skip'**
-  String get taskBlockerPickerSkipButton;
 
   /// No description provided for @taskBlockerPickerTitle.
   ///

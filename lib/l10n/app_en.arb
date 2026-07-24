@@ -3369,6 +3369,7 @@
   "linkedTasksSupersedesSectionTitle": "Supersedes",
   "linkedTasksTitle": "Linked Tasks",
   "linkedToCaption": "to",
+  "linkDirectionLabel": "Direction:",
   "linkExistingTask": "Link existing task...",
   "linkPhraseBlocksInverse": "Is blocked by",
   "linkPhraseBlocksPrimary": "Blocks",
@@ -4936,7 +4937,6 @@
       }
     }
   },
-  "taskBlockerPickerSkipButton": "Skip",
   "taskBlockerPickerTitle": "What's blocking this task?",
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",

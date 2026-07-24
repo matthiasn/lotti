@@ -458,7 +458,10 @@ class _TaskBlockedByChip extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final accent = TaskShowcasePalette.error(context);
+    // warning, not error: the overdue due-date chip already owns error red —
+    // a simultaneously-blocked-and-overdue task must not show two identical
+    // alarms (design-review-panel round 1, color-contrast finding).
+    final accent = TaskShowcasePalette.warning(context);
     final blockers = result.openBlockers;
 
     if (blockers.isEmpty) {

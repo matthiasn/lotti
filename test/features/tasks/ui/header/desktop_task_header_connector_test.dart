@@ -1655,7 +1655,7 @@ void main() {
         await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
 
         expect(
-          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          find.text("What's blocking this task?"),
           findsOneWidget,
         );
       },
@@ -1691,7 +1691,7 @@ void main() {
         await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
 
         expect(
-          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          find.text("What's blocking this task?"),
           findsNothing,
         );
       },
@@ -1717,7 +1717,7 @@ void main() {
         );
 
         expect(
-          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          find.text("What's blocking this task?"),
           findsNothing,
         );
       },
@@ -1738,7 +1738,7 @@ void main() {
         await selectBlockedStatus(tester, task, currentStatusLabel: 'Open');
 
         expect(
-          find.byKey(const Key('blocking_task_picker_modal_handle')),
+          find.text("What's blocking this task?"),
           findsNothing,
         );
       },

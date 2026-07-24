@@ -6694,6 +6694,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedToCaption => 'na';
 
   @override
+  String get linkDirectionLabel => 'Směr:';
+
+  @override
   String get linkExistingTask => 'Propojit existující úkol...';
 
   @override
@@ -10288,9 +10291,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String taskBlockedReason(String title) {
     return 'Blokováno úkolem: $title';
   }
-
-  @override
-  String get taskBlockerPickerSkipButton => 'Přeskočit';
 
   @override
   String get taskBlockerPickerTitle => 'Co blokuje tento úkol?';
