@@ -608,6 +608,7 @@ class TutorialAppHarness {
       world: world,
       closeables: [
         agentDatabase,
+        dayProcessingDb,
         editorDb,
         fts5Db,
         journalDb,
@@ -693,6 +694,8 @@ class TutorialAppHarness {
           case final SyncDatabase db:
             await db.close();
           case final AgentDatabase db:
+            await db.close();
+          case final DayProcessingDb db:
             await db.close();
         }
       } on Object {
