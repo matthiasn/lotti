@@ -23,6 +23,7 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 
@@ -191,6 +192,7 @@ DayAgentWorkflow dayAgentWorkflow(Ref ref) {
     knowledgeService: ref.watch(dayAgentKnowledgeServiceProvider),
     weekContextService: ref.watch(dayAgentWeekContextServiceProvider),
     directiveService: ref.watch(dayAgentDirectiveServiceProvider),
+    dependencyResolver: ref.watch(taskDependencyResolverProvider),
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
     dayAudioEntryContextService: DayAudioEntryContextService(
       journalDb: ref.watch(journalDbProvider),

@@ -153,6 +153,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
@@ -1126,6 +1127,9 @@ class MockOnboardingCaptureToTaskService extends Mock
 class MockJournalRepository extends Mock implements JournalRepository {}
 
 class MockChecklistRepository extends Mock implements ChecklistRepository {}
+
+class MockTaskDependencyResolver extends Mock
+    implements TaskDependencyResolver {}
 
 class MockChecklistController extends Mock implements ChecklistController {}
 

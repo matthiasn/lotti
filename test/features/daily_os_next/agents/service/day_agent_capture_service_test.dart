@@ -14,6 +14,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_m
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -508,6 +509,52 @@ void main() {
           snapshot.first['due'],
           DateTime(2026, 5, 25, 12).toIso8601String(),
         );
+      },
+    );
+
+    test(
+      'buildTaskCorpusSnapshot forwards dependencyResolver to the '
+      'underlying corpus service',
+      () async {
+        final open = _task(
+          id: 'task-1',
+          title: 'Open work',
+          status: _openStatus(),
+        );
+        when(
+          () => journalDb.getTasksDueOnOrBefore(any()),
+        ).thenAnswer((_) async => const <Task>[]);
+        when(
+          () => journalDb.getOpenTasksForDayAgentCorpus(
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [open]);
+
+        final resolver = MockTaskDependencyResolver();
+        when(
+          () => resolver.resolveBlockedStatus({'task-1'}),
+        ).thenAnswer(
+          (_) async => {
+            'task-1': [
+              const ResolvedBlocker(
+                taskId: 'blocker-1',
+                title: 'Blocker',
+                status: 'OPEN',
+              ),
+            ],
+          },
+        );
+
+        final snapshot = await createService().buildTaskCorpusSnapshot(
+          allowedCategoryIds: {'work'},
+          day: DateTime(2026, 5, 25, 8),
+          dependencyResolver: resolver,
+        );
+
+        expect(snapshot.single['blockedBy'], [
+          {'taskId': 'blocker-1', 'title': 'Blocker', 'status': 'OPEN'},
+        ]);
       },
     );
 

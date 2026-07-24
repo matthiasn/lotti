@@ -43,6 +43,7 @@ import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -68,6 +69,7 @@ class DayAgentWorkflow {
     this.knowledgeService,
     this.weekContextService,
     this.directiveService,
+    this.dependencyResolver,
     this.soulDocumentService,
     this.dayAudioEntryContextService,
     this.onPersistedStateChanged,
@@ -117,6 +119,12 @@ class DayAgentWorkflow {
   /// Directive backend: the coordinator-only `issue_day_directive` tool and
   /// the per-day `<day_directive>` prompt read (ADR 0032 phase 3).
   final DayAgentDirectiveService? directiveService;
+
+  /// Batch one-hop blocker resolver (ADR 0043) — the sole source of truth
+  /// for both the corpus's `blockedBy` annotation and the prompt's
+  /// blocked-work/digest rule blocks, so the two can never drift out of
+  /// sync. Null keeps every prompt/corpus byte-identical to pre-ADR-0043.
+  final TaskDependencyResolver? dependencyResolver;
 
   /// Structured logger.
   final DomainLogger domainLogger;

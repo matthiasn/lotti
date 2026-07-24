@@ -1,0 +1,114 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:meta/meta.dart';
+
+/// One blocker of a task, as resolved by [TaskDependencyResolver].
+///
+/// `title`/`status` are null when the link exists but its target task could
+/// not be loaded at all (sync gap) — ADR 0042 §4's "unresolvable blocker
+/// keeps blocking" case. The entry is still emitted (never dropped) so a
+/// task whose only blocker is unresolved still serializes to a non-empty
+/// `blockedBy`, keeping it observably blocked rather than silently ready.
+@immutable
+class ResolvedBlocker {
+  const ResolvedBlocker({required this.taskId, this.title, this.status});
+
+  final String taskId;
+  final String? title;
+  final String? status;
+
+  /// True when the blocker link's target could not be loaded as a task.
+  bool get isUnresolved => title == null;
+
+  Map<String, Object?> toJson() => {
+    'taskId': taskId,
+    if (title != null) 'title': title,
+    if (status != null) 'status': status,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is ResolvedBlocker &&
+      other.taskId == taskId &&
+      other.title == title &&
+      other.status == status;
+
+  @override
+  int get hashCode => Object.hash(taskId, title, status);
+}
+
+/// Batch, one-hop, bounded resolver for "which of these tasks are blocked,
+/// and by what" (ADR 0043 §2). Generalizes the single-task classification
+/// `TaskBlockersController._fetch` uses to N tasks in two bounded queries:
+/// one type-scoped link fetch + one batch blocker-status load for the
+/// distinct blocker ids. No transitive closure, no per-task fan-out.
+class TaskDependencyResolver {
+  TaskDependencyResolver({required this.journalRepository});
+
+  final JournalRepository journalRepository;
+
+  /// Returns a map from blocked task id to its open/unresolved blockers.
+  /// Keys are present only for tasks with at least one entry — absence means
+  /// link-ready, mirroring the corpus's own "absence = ready" contract.
+  Future<Map<String, List<ResolvedBlocker>>> resolveBlockedStatus(
+    Set<String> taskIds,
+  ) async {
+    if (taskIds.isEmpty) return const {};
+
+    final links = await journalRepository.getTypedLinksForTaskIds(
+      taskIds,
+      linkTypes: const {'BlocksLink'},
+    );
+
+    final blockerIdsByTarget = <String, Set<String>>{};
+    for (final link in links) {
+      if (link.deletedAt != null) continue;
+      if (!taskIds.contains(link.toId)) continue;
+      blockerIdsByTarget.putIfAbsent(link.toId, () => {}).add(link.fromId);
+    }
+    if (blockerIdsByTarget.isEmpty) return const {};
+
+    final blockerIds = {
+      for (final ids in blockerIdsByTarget.values) ...ids,
+    };
+    final resolved = await journalRepository
+        .getJournalEntitiesByIdsIncludingDeleted(blockerIds);
+    final resolvedById = {for (final e in resolved) e.id: e};
+
+    final result = <String, List<ResolvedBlocker>>{};
+    for (final entry in blockerIdsByTarget.entries) {
+      final blockers = <ResolvedBlocker>[];
+      for (final blockerId in entry.value) {
+        final entity = resolvedById[blockerId];
+        if (entity == null || entity is! Task) {
+          blockers.add(ResolvedBlocker(taskId: blockerId));
+          continue;
+        }
+        if (entity.meta.deletedAt != null) continue;
+        if (isClosedTask(entity)) continue;
+        blockers.add(
+          ResolvedBlocker(
+            taskId: entity.id,
+            title: entity.data.title,
+            status: entity.data.status.toDbString,
+          ),
+        );
+      }
+      if (blockers.isNotEmpty) result[entry.key] = blockers;
+    }
+    return result;
+  }
+}
+
+final taskDependencyResolverProvider = Provider<TaskDependencyResolver>(
+  taskDependencyResolver,
+  name: 'taskDependencyResolverProvider',
+);
+TaskDependencyResolver taskDependencyResolver(Ref ref) {
+  return TaskDependencyResolver(
+    journalRepository: ref.watch(journalRepositoryProvider),
+  );
+}

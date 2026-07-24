@@ -31,6 +31,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -170,6 +171,7 @@ void main() {
     MockDayAgentKnowledgeService? knowledgeService,
     MockDayAgentWeekContextService? weekContextService,
     MockDayAgentDirectiveService? directiveService,
+    TaskDependencyResolver? dependencyResolver,
     DayAudioEntryContextService? dayAudioEntryContextService,
   }) {
     return DayAgentWorkflow(
@@ -185,6 +187,7 @@ void main() {
       knowledgeService: knowledgeService,
       weekContextService: weekContextService,
       directiveService: directiveService,
+      dependencyResolver: dependencyResolver,
       dayAudioEntryContextService: dayAudioEntryContextService,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
@@ -336,6 +339,7 @@ void main() {
       () => captureService.buildTaskCorpusSnapshot(
         allowedCategoryIds: any(named: 'allowedCategoryIds'),
         day: any(named: 'day'),
+        dependencyResolver: any(named: 'dependencyResolver'),
       ),
     ).thenAnswer((_) async => const []);
   }
@@ -562,6 +566,7 @@ void main() {
           () => captureService.buildTaskCorpusSnapshot(
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             day: any(named: 'day'),
+            dependencyResolver: any(named: 'dependencyResolver'),
           ),
         ).thenAnswer((_) async => const []);
         when(
@@ -2773,6 +2778,7 @@ void main() {
         () => captureService.buildTaskCorpusSnapshot(
           allowedCategoryIds: const <String>{},
           day: DateTime(2026, 5, 25),
+          dependencyResolver: any(named: 'dependencyResolver'),
         ),
       ).thenAnswer(
         (_) async => const [
@@ -3255,6 +3261,7 @@ void main() {
           () => captureService.buildTaskCorpusSnapshot(
             allowedCategoryIds: const <String>{},
             day: DateTime(2026, 5, 25),
+            dependencyResolver: any(named: 'dependencyResolver'),
           ),
         ).thenAnswer((_) async => const []);
         when(
@@ -5067,6 +5074,202 @@ void main() {
         );
       },
     );
+
+    group('dependency-aware planning (ADR 0043)', () {
+      test(
+        'adds Blocked-work rules to the system prompt only when a '
+        'dependencyResolver is configured',
+        () async {
+          final resolver = MockTaskDependencyResolver();
+
+          await execute(workflow(dependencyResolver: resolver));
+          expect(
+            conversationRepository.lastSystemMessage,
+            contains('Blocked-work rules (ADR 0043)'),
+          );
+          // The gated block keeps exactly one blank line on the seam.
+          expect(
+            conversationRepository.lastSystemMessage,
+            contains('shut down a day.\n\nBlocked-work rules'),
+          );
+
+          await execute(workflow());
+          expect(
+            conversationRepository.lastSystemMessage,
+            isNot(contains('Blocked-work rules')),
+          );
+        },
+      );
+
+      test(
+        'the digest gains its blocked-dependency bullet only when both '
+        'directiveService and dependencyResolver are configured',
+        () async {
+          final directiveService = MockDayAgentDirectiveService();
+          when(
+            () => directiveService.directiveForDay(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => repository.getDayStatusEventsSince(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => const []);
+          final resolver = MockTaskDependencyResolver();
+
+          Future<WakeResult> executeDigest(DayAgentWorkflow sut) {
+            stubCoordinatorReads();
+            return withClock(
+              Clock.fixed(now),
+              () => sut.execute(
+                agentIdentity: makeTestIdentity(
+                  id: dailyOsPlannerAgentId,
+                  agentId: dailyOsPlannerAgentId,
+                  kind: AgentKinds.dayAgent,
+                  displayName: 'Shepherd',
+                  currentStateId: 'state-$dailyOsPlannerAgentId',
+                  config: const AgentConfig(
+                    profileId: 'profile-day',
+                    maxTurnsPerWake: 5,
+                  ),
+                  createdAt: now,
+                  updatedAt: now,
+                ),
+                runKey: runKey,
+                triggerTokens: {dayAgentDigestToken(dayId)},
+                threadId: threadId,
+              ),
+            );
+          }
+
+          // directiveService alone: base digest text present, new bullet
+          // absent.
+          final withoutResolver = await executeDigest(
+            workflow(directiveService: directiveService),
+          );
+          expect(
+            withoutResolver.success,
+            isTrue,
+            reason: withoutResolver.error,
+          );
+          expect(
+            conversationRepository.lastSystemMessage,
+            contains('Digest rules'),
+          );
+          expect(
+            conversationRepository.lastSystemMessage,
+            isNot(
+              contains(
+                'A directive commitment on a task blocked for planning',
+              ),
+            ),
+          );
+
+          // Both configured: the new bullet appears, on its own line.
+          final withResolver = await executeDigest(
+            workflow(
+              directiveService: directiveService,
+              dependencyResolver: resolver,
+            ),
+          );
+          expect(withResolver.success, isTrue, reason: withResolver.error);
+          expect(
+            conversationRepository.lastSystemMessage,
+            contains(
+              'pre-warms.\n'
+              '- A directive commitment on a task blocked for planning '
+              'should target its\n'
+              '  blocker instead',
+            ),
+          );
+        },
+      );
+
+      test(
+        'passes the exact dependencyResolver instance through to the '
+        'capture service on a capture wake',
+        () async {
+          final resolver = MockTaskDependencyResolver();
+          final capture = makeTestCapture(
+            id: 'capture-1',
+            agentId: agentId,
+            transcript: 'buy milk',
+            capturedAt: DateTime(2026, 5, 25, 7),
+            createdAt: DateTime(2026, 5, 25, 7),
+          );
+          final captureService = MockDayAgentCaptureService();
+          when(() => captureService.getCapture('capture-1')).thenAnswer(
+            (_) async => capture,
+          );
+          when(
+            () => captureService.buildTaskCorpusSnapshot(
+              allowedCategoryIds: const <String>{},
+              day: DateTime(2026, 5, 25),
+              dependencyResolver: resolver,
+            ),
+          ).thenAnswer((_) async => const []);
+          when(
+            () => captureService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.parseCaptureToItems,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(
+              const {
+                'captureId': 'capture-1',
+                'items': [
+                  {'id': 'parsed-1'},
+                ],
+              },
+            ),
+          );
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.parseCaptureToItems,
+              args: const {
+                'captureId': 'capture-1',
+                'items': [
+                  {
+                    'kind': 'newTask',
+                    'title': 'Buy milk',
+                    'categoryId': 'home',
+                    'confidenceScore': 0.4,
+                  },
+                ],
+              },
+            ),
+          ];
+
+          final result = await execute(
+            workflow(
+              captureService: captureService,
+              dependencyResolver: resolver,
+            ),
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          // A mismatched (e.g. differently-instantiated) resolver would not
+          // satisfy this exact-instance stub, so the mock would have no
+          // matching call and this verify would fail — proving the same
+          // instance travels from the workflow field through
+          // _captureContext to the capture service call.
+          verify(
+            () => captureService.buildTaskCorpusSnapshot(
+              allowedCategoryIds: const <String>{},
+              day: DateTime(2026, 5, 25),
+              dependencyResolver: resolver,
+            ),
+          ).called(1);
+        },
+      );
+    });
   });
 }
 

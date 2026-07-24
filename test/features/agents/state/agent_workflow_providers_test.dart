@@ -22,6 +22,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
@@ -115,6 +116,11 @@ void main() {
       expect(
         workflow.dayAudioEntryContextService?.assetRoot?.path,
         Directory.systemTemp.path,
+      );
+      expect(workflow.dependencyResolver, isA<TaskDependencyResolver>());
+      expect(
+        workflow.dependencyResolver?.journalRepository,
+        same(journalRepository),
       );
       workflow.onPersistedStateChanged?.call('day-agent-001');
       verify(
