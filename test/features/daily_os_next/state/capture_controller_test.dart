@@ -23,6 +23,7 @@ import 'package:record/record.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
+import '../services/day_processing_test_db.dart';
 
 final _now = DateTime(2026, 7, 20, 9);
 const _sessionId = 'session-fixed-0001';
@@ -75,7 +76,9 @@ class _Bench {
     final ampController = StreamController<Amplitude>.broadcast();
     final outboxRoot = Directory.systemTemp.createTempSync('capture-outbox-');
     final docDir = Directory.systemTemp.createTempSync('capture-docs-');
-    final outbox = DayProcessingOutboxRepository(rootDirectory: outboxRoot);
+    final outbox = DayProcessingOutboxRepository(
+      db: createTestDayProcessingDb(),
+    );
     final persistenceLogic = MockPersistenceLogic();
     when(recorder.hasPermission).thenAnswer((_) async => true);
     when(recorder.stopRecording).thenAnswer((_) async {});

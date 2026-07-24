@@ -35,6 +35,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/sync/in_memory_agent_repository.dart';
 import '../../agents/test_data/template_factories.dart';
+import '../services/day_processing_test_db.dart';
 
 /// Wires the full ADR 0032 durable draft/refine pipeline out of real
 /// production classes — [DayProcessingOutboxRepository] (real,
@@ -212,7 +213,9 @@ class DayAgentPipelineHarness {
       journalDb: journalDb,
       domainLogger: domainLogger,
     );
-    final outbox = DayProcessingOutboxRepository(rootDirectory: root);
+    final outbox = DayProcessingOutboxRepository(
+      db: createTestDayProcessingDb(),
+    );
     // Deferred: the runtime is built after the capture service (its executor
     // depends on it), mirroring the deferred-read wiring in production.
     DayProcessingRuntime? runtimeRef;

@@ -20,6 +20,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/ai_config_factories.dart';
+import '../services/day_processing_test_db.dart';
 import 'day_agent_pipeline_harness.dart';
 
 /// End-to-end smoke test for the ADR 0032 durable draft/refine pipeline.
@@ -158,9 +159,9 @@ void main() {
       expect(diff.changes, hasLength(1));
       expect(diff.changes.single.kind, PlanDiffChangeKind.added);
 
-      final refineJobs = (await harness.outbox.getAll())
-          .where((job) => job.kind.name == 'refinePlan')
-          .toList();
+      final refineJobs = (await allDayProcessingJobs(
+        harness.outbox.db,
+      )).where((job) => job.kind.name == 'refinePlan').toList();
       expect(refineJobs, hasLength(1));
       expect(refineJobs.single.isTerminal, isTrue);
       expect(refineJobs.single.status.name, 'succeeded');

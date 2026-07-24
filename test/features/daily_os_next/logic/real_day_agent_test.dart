@@ -107,8 +107,9 @@ class _FakeOutboxState {
     when(() => mock.getById(any())).thenAnswer(
       (inv) async => _jobs[inv.positionalArguments[0] as String],
     );
-    // ignore: unnecessary_lambdas
-    when(() => mock.getAll()).thenAnswer((_) async => all);
+    when(mock.getSchedulable).thenAnswer(
+      (_) async => all.where((job) => !job.isTerminal).toList(),
+    );
     when(
       () => mock.enqueueDraftPlan(
         dayId: any(named: 'dayId'),
@@ -533,7 +534,7 @@ void main() {
         await pumpEventQueue();
 
         final jobId = DayProcessingOutboxRepository.draftJobId(dayId);
-        expect((await bench.outbox.getAll()).map((j) => j.id), [jobId]);
+        expect(bench.fakeOutbox.all.map((j) => j.id), [jobId]);
 
         await bench.completeJob(jobId);
         final results = await Future.wait([firstFuture, secondFuture]);
@@ -2007,7 +2008,7 @@ void main() {
           ),
           throwsA(isA<DayAgentInteractionException>()),
         );
-        expect(await bench.outbox.getAll(), isEmpty);
+        expect(bench.fakeOutbox.all, isEmpty);
       },
     );
 
@@ -2034,7 +2035,7 @@ void main() {
         ),
         throwsA(isA<DayAgentInteractionException>()),
       );
-      expect(await bench.outbox.getAll(), isEmpty);
+      expect(bench.fakeOutbox.all, isEmpty);
     });
 
     test(
@@ -2117,7 +2118,7 @@ void main() {
         );
         await pumpEventQueue();
 
-        final jobs = await bench.outbox.getAll();
+        final jobs = bench.fakeOutbox.all;
         expect(jobs, hasLength(1));
         expect(jobs.single.kind, DayProcessingJobKind.refinePlan);
         expect(
@@ -2189,7 +2190,7 @@ void main() {
         );
         await pumpEventQueue();
 
-        final jobs = await bench.outbox.getAll();
+        final jobs = bench.fakeOutbox.all;
         await bench.completeJob(jobs.single.id, resultEntityId: 'diff-missing');
 
         await expectLater(
@@ -2237,7 +2238,7 @@ void main() {
         );
         await pumpEventQueue();
 
-        final jobs = await bench.outbox.getAll();
+        final jobs = bench.fakeOutbox.all;
         expect(
           (jobs.single.payload as RefinePlanPayload).transcriptCaptureId,
           isNull,
@@ -2287,7 +2288,7 @@ void main() {
           voiceTranscript: 'no change comes',
         );
         await pumpEventQueue();
-        final jobs = await bench.outbox.getAll();
+        final jobs = bench.fakeOutbox.all;
         await bench.failJob(
           jobs.single.id,
           failureClass: DayProcessingFailureClass.timeout,

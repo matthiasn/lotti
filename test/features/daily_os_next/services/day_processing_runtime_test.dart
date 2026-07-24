@@ -3,21 +3,26 @@ import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:path/path.dart' as path;
 
+import 'day_processing_test_db.dart';
+
 void main() {
   late Directory root;
   late DateTime now;
+  late DayProcessingDb db;
   late DayProcessingOutboxRepository repository;
 
   setUp(() async {
     root = Directory.systemTemp.createTempSync('day-runtime-test-');
     now = DateTime.utc(2026, 7, 18, 8);
+    db = createTestDayProcessingDb();
     repository = DayProcessingOutboxRepository(
-      rootDirectory: root,
+      db: db,
       now: () => now,
       tokenFactory: () => 'claim-1',
     );
@@ -162,11 +167,11 @@ void main() {
       failureClass: DayProcessingFailureClass.network,
       error: 'offline',
     );
-    root.deleteSync(recursive: true);
-    final blockingFile = File(root.path)..writeAsStringSync('not a directory');
-    addTearDown(() {
-      if (blockingFile.existsSync()) blockingFile.deleteSync();
-    });
+    // Force a storage failure. Closing the database makes every subsequent
+    // query throw, which is the runtime-visible shape of the outbox being
+    // unusable — the runtime must contain it and reschedule rather than let
+    // the error escape an unawaited connectivity callback.
+    await db.close();
     Duration? scheduledDelay;
     final runtime = DayProcessingRuntime(
       repository: repository,

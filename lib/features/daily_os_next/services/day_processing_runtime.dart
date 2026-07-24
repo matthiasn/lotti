@@ -79,7 +79,11 @@ class DayProcessingRuntime {
       }
       await drain();
       final now = _now();
-      final jobs = (await repository.getAll()).where(_canSchedule).toList()
+      // Only rows that can still be scheduled, bounded by outstanding work
+      // rather than install age (ADR 0044). The effective-due ordering stays
+      // here rather than in SQL because it depends on this runtime's own
+      // [networkProbeInterval], and the rule should have one implementation.
+      final jobs = (await repository.getSchedulable()).toList()
         ..sort((a, b) => _effectiveDue(a).compareTo(_effectiveDue(b)));
       if (jobs.isEmpty) {
         _scheduleGeneration += 1;
@@ -98,13 +102,6 @@ class DayProcessingRuntime {
       _scheduleNext(failureRetryDelay);
     }
   }
-
-  bool _canSchedule(DayProcessingJob job) => switch (job.status) {
-    DayProcessingJobStatus.queued ||
-    DayProcessingJobStatus.running ||
-    DayProcessingJobStatus.waitingForNetwork => true,
-    _ => false,
-  };
 
   DateTime _effectiveDue(DayProcessingJob job) {
     final retryBoundary = job.retryNotBefore;

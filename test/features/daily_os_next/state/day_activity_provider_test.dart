@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/entity_factories.dart';
+import '../services/day_processing_test_db.dart';
 
 void main() {
   late Directory root;
@@ -28,7 +29,7 @@ void main() {
 
   setUp(() async {
     root = Directory.systemTemp.createTempSync('day-activity-provider-test-');
-    outbox = DayProcessingOutboxRepository(rootDirectory: root);
+    outbox = DayProcessingOutboxRepository(db: createTestDayProcessingDb());
     final mocks = await setUpTestGetIt(
       additionalSetup: () => getIt.registerSingleton<Directory>(root),
     );

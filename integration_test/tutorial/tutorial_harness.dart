@@ -43,6 +43,7 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     hide aiConfigRepositoryProvider;
+import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
@@ -84,7 +85,6 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:path/path.dart' as path;
 
 import '../../test/helpers/fallbacks.dart';
 import '../../test/helpers/manual_demo_world.dart';
@@ -475,6 +475,7 @@ class TutorialAppHarness {
     );
     final fts5Db = Fts5Db(inMemoryDatabase: true);
     final editorDb = EditorDb(inMemoryDatabase: true);
+    final dayProcessingDb = DayProcessingDb(inMemoryDatabase: true);
     final syncDatabase = SyncDatabase(inMemoryDatabase: true);
     final agentDatabase = AgentDatabase(
       inMemoryDatabase: true,
@@ -524,12 +525,9 @@ class TutorialAppHarness {
       // getIt directly (day_processing_runtime_provider.dart) rather than a
       // Riverpod override — MyBeamerApp fails to build at all without it,
       // even for scenarios that never touch Daily OS.
+      ..registerSingleton<DayProcessingDb>(dayProcessingDb)
       ..registerSingleton<DayProcessingOutboxRepository>(
-        DayProcessingOutboxRepository(
-          rootDirectory: Directory(
-            path.join(documentsDirectory.path, '.day_processing_outbox'),
-          ),
-        ),
+        DayProcessingOutboxRepository(db: dayProcessingDb),
       )
       ..registerSingleton<SavedTaskFiltersRepository>(
         SavedTaskFiltersRepository(
@@ -610,6 +608,7 @@ class TutorialAppHarness {
       world: world,
       closeables: [
         agentDatabase,
+        dayProcessingDb,
         editorDb,
         fts5Db,
         journalDb,
@@ -695,6 +694,8 @@ class TutorialAppHarness {
           case final SyncDatabase db:
             await db.close();
           case final AgentDatabase db:
+            await db.close();
+          case final DayProcessingDb db:
             await db.close();
         }
       } on Object {

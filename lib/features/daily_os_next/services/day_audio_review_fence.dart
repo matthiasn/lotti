@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 
@@ -54,9 +55,13 @@ class DayAudioReviewFence {
   }
 
   Future<void> _sweep() async {
-    final jobs = await outbox.getAll();
+    // Non-terminal transcription jobs only. Both filters live in the query
+    // (ADR 0044), served by the partial index over pending rows, so the sweep
+    // never walks the retained ledger.
+    final jobs = await outbox.getPendingByKind(
+      DayProcessingJobKind.transcribeAudio,
+    );
     for (final job in jobs) {
-      if (job.isTerminal) continue;
       final audioId = job.audioId;
       if (audioId == null) continue;
       final entity = await journalDb.journalEntityById(audioId);

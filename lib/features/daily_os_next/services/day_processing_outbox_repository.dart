@@ -1,12 +1,21 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
+import 'package:drift/drift.dart';
+import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
+import 'package:lotti/features/daily_os_next/database/day_processing_job_row.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
-import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
+
+/// How long a terminal job stays in the Activity ledger (ADR 0044 decision 5).
+///
+/// Chosen to comfortably outlive Activity's practical scroll-back and to
+/// survive a long offline gap. It is a number to revisit if Activity grows a
+/// longer history surface, not a load-bearing constant: the partial index
+/// already keeps the ledger off the drain path, so this bounds disk footprint
+/// rather than query cost.
+const Duration dayProcessingLedgerRetention = Duration(days: 90);
 
 class DayProcessingClaim {
   const DayProcessingClaim({required this.job, required this.token});
@@ -37,26 +46,52 @@ class DayProcessingClaimRevokedException implements Exception {
   String toString() => 'Processing claim no longer owns $jobId';
 }
 
-/// File-backed, per-job processing outbox for Daily OS derived work.
+/// Device-local processing outbox for Daily OS derived work (ADR 0044).
 ///
-/// Each mutation flushes an integrity envelope to a partial file before an
-/// atomic rename. Jobs remain after success as the local processing ledger
-/// consumed by Activity and startup repair.
+/// One row per job in [DayProcessingDb]. Jobs remain after success as the
+/// local processing ledger consumed by Activity and startup repair; the
+/// partial index over non-terminal rows keeps that ledger off the drain path,
+/// so claim cost tracks outstanding work rather than install age.
+///
+/// Every read-modify-write runs in a transaction and every claimed mutation is
+/// fenced by `claim_token`, which together replace the mutex and atomic-rename
+/// machinery of the pre-0044 file store.
 class DayProcessingOutboxRepository {
   DayProcessingOutboxRepository({
-    required this.rootDirectory,
+    required this.db,
     DateTime Function()? now,
     String Function()? tokenFactory,
   }) : _now = now ?? DateTime.now,
        _tokenFactory = tokenFactory ?? (() => const Uuid().v4());
 
-  final Directory rootDirectory;
+  final DayProcessingDb db;
   final DateTime Function() _now;
   final String Function() _tokenFactory;
   final StreamController<void> _changes = StreamController<void>.broadcast();
-  Future<void> _tail = Future<void>.value();
 
   Stream<void> get changes => _changes.stream;
+
+  /// Backstop cap for [recordRunKey].
+  static const int maxRecordedRunKeys = 16;
+
+  static const String _columns = dayProcessingJobColumns;
+
+  /// Statuses a job can be claimed or scheduled from. Mirrors
+  /// [DayProcessingJob.isDue]'s first guard.
+  static const String _drainableStatuses =
+      "('queued', 'running', 'waitingForNetwork')";
+
+  /// [DayProcessingJob.isDue] as SQL, with `?1` bound to now.
+  ///
+  /// A `running` row is due only once its lease has expired (crash recovery);
+  /// everything else is due at `next_attempt_at`. A hard provider boundary
+  /// vetoes both.
+  static const String _dueClause =
+      'status IN $_drainableStatuses '
+      'AND (retry_not_before IS NULL OR retry_not_before <= ?1) '
+      "AND ((status = 'running' AND lease_until IS NOT NULL "
+      'AND lease_until <= ?1) '
+      "OR (status <> 'running' AND next_attempt_at <= ?1))";
 
   static String transcriptionJobId(String recordingSessionId) =>
       'transcribe_$recordingSessionId';
@@ -76,28 +111,31 @@ class DayProcessingOutboxRepository {
     required String audioId,
     required String audioPath,
     required DateTime capturedAt,
-  }) => _serialize(() async {
-    await _ensureRoot();
-    final id = transcriptionJobId(recordingSessionId);
-    final now = _now();
-    final requested = _newTranscriptionJob(
-      dayId: dayId,
-      activityEntryId: activityEntryId,
-      recordingSessionId: recordingSessionId,
-      audioId: audioId,
-      audioPath: audioPath,
-      capturedAt: capturedAt,
-      now: now,
-    );
-    final existing = await _readJobOrNull(id);
-    if (existing != null) {
-      _validateImmutableIntent(existing, requested);
-      return existing;
-    }
-    await _write(requested);
-    _notify();
-    return requested;
-  });
+  }) async {
+    var published = false;
+    final job = await db.transaction(() async {
+      final now = _now();
+      final requested = _newTranscriptionJob(
+        dayId: dayId,
+        activityEntryId: activityEntryId,
+        recordingSessionId: recordingSessionId,
+        audioId: audioId,
+        audioPath: audioPath,
+        capturedAt: capturedAt,
+        now: now,
+      );
+      final existing = await _readJobOrNull(requested.id);
+      if (existing != null) {
+        _validateImmutableIntent(existing, requested);
+        return existing;
+      }
+      await _write(requested);
+      published = true;
+      return requested;
+    });
+    if (published) _notify();
+    return job;
+  }
 
   /// Repairs the journal-created/outbox-not-yet-published crash boundary.
   Future<bool> restoreTranscriptionIntent({
@@ -108,53 +146,54 @@ class DayProcessingOutboxRepository {
     required String audioPath,
     required DateTime capturedAt,
     String? completedTranscript,
-  }) => _serialize(() async {
-    await _ensureRoot();
-    final id = transcriptionJobId(recordingSessionId);
-    final now = _now();
-    final transcript = completedTranscript?.trim();
-    var requested = _newTranscriptionJob(
-      dayId: dayId,
-      activityEntryId: activityEntryId,
-      recordingSessionId: recordingSessionId,
-      audioId: audioId,
-      audioPath: audioPath,
-      capturedAt: capturedAt,
-      now: now,
-    );
-    final existing = await _readJobOrNull(id);
-    if (existing != null) {
-      _validateImmutableIntent(existing, requested);
-      if (transcript == null ||
-          transcript.isEmpty ||
-          existing.status == DayProcessingJobStatus.succeeded) {
-        return false;
+  }) async {
+    final restored = await db.transaction(() async {
+      final now = _now();
+      final transcript = completedTranscript?.trim();
+      var requested = _newTranscriptionJob(
+        dayId: dayId,
+        activityEntryId: activityEntryId,
+        recordingSessionId: recordingSessionId,
+        audioId: audioId,
+        audioPath: audioPath,
+        capturedAt: capturedAt,
+        now: now,
+      );
+      final existing = await _readJobOrNull(requested.id);
+      if (existing != null) {
+        _validateImmutableIntent(existing, requested);
+        if (transcript == null ||
+            transcript.isEmpty ||
+            existing.status == DayProcessingJobStatus.succeeded) {
+          return false;
+        }
+        requested = existing.copyWith(
+          status: DayProcessingJobStatus.succeeded,
+          updatedAt: now,
+          generation: existing.generation + 1,
+          resultTranscript: transcript,
+          completedAt: now,
+          clearClaimToken: true,
+          clearLeaseUntil: true,
+          clearLastError: true,
+          clearLastFailureClass: true,
+        );
       }
-      requested = existing.copyWith(
-        status: DayProcessingJobStatus.succeeded,
-        updatedAt: now,
-        generation: existing.generation + 1,
-        resultTranscript: transcript,
-        completedAt: now,
-        clearClaimToken: true,
-        clearLeaseUntil: true,
-        clearLastError: true,
-        clearLastFailureClass: true,
-      );
-    }
-    if (existing == null && transcript != null && transcript.isNotEmpty) {
-      requested = requested.copyWith(
-        status: DayProcessingJobStatus.succeeded,
-        updatedAt: now,
-        generation: 1,
-        resultTranscript: transcript,
-        completedAt: now,
-      );
-    }
-    await _write(requested);
-    _notify();
-    return true;
-  });
+      if (existing == null && transcript != null && transcript.isNotEmpty) {
+        requested = requested.copyWith(
+          status: DayProcessingJobStatus.succeeded,
+          updatedAt: now,
+          generation: 1,
+          resultTranscript: transcript,
+          completedAt: now,
+        );
+      }
+      await _write(requested);
+      return true;
+    });
+    if (restored) _notify();
+    return restored;
+  }
 
   /// Atomically publishes and claims a new interactive transcription job,
   /// preventing the background runner from racing the capture screen.
@@ -166,26 +205,27 @@ class DayProcessingOutboxRepository {
     required String audioPath,
     required DateTime capturedAt,
     Duration lease = const Duration(minutes: 3),
-  }) => _serialize(() async {
-    await _ensureRoot();
-    final id = transcriptionJobId(recordingSessionId);
-    final now = _now();
-    final existing = await _readJobOrNull(id);
-    final requested = _newTranscriptionJob(
-      dayId: dayId,
-      activityEntryId: activityEntryId,
-      recordingSessionId: recordingSessionId,
-      audioId: audioId,
-      audioPath: audioPath,
-      capturedAt: capturedAt,
-      now: now,
-    );
-    if (existing != null) _validateImmutableIntent(existing, requested);
-    final job = existing ?? requested;
-    if (existing == null) await _write(job);
-    if (!job.isDue(now)) return null;
-    return _claimUnsafe(job, now: now, lease: lease);
-  });
+  }) async {
+    final claim = await db.transaction(() async {
+      final now = _now();
+      final requested = _newTranscriptionJob(
+        dayId: dayId,
+        activityEntryId: activityEntryId,
+        recordingSessionId: recordingSessionId,
+        audioId: audioId,
+        audioPath: audioPath,
+        capturedAt: capturedAt,
+        now: now,
+      );
+      final existing = await _readJobOrNull(requested.id);
+      if (existing != null) _validateImmutableIntent(existing, requested);
+      final job = existing ?? requested;
+      if (existing == null) await _write(job);
+      return _claim(now: now, lease: lease, jobId: job.id);
+    });
+    if (claim != null) _notify();
+    return claim;
+  }
 
   /// Enqueues (or coalesces onto) the day's durable draft-plan intent.
   ///
@@ -196,65 +236,51 @@ class DayProcessingOutboxRepository {
   Future<DayProcessingJob> enqueueDraftPlan({
     required String dayId,
     required DraftPlanPayload payload,
-  }) => _serialize(() async {
-    await _ensureRoot();
-    final id = draftJobId(dayId);
-    final now = _now();
-    final existing = await _readJobOrNull(id);
-    if (existing == null) {
-      final job = DayProcessingJob(
-        id: id,
-        status: DayProcessingJobStatus.queued,
-        dayId: dayId,
-        payload: payload,
-        createdAt: now,
-        updatedAt: now,
-        requestedAt: now,
-        nextAttemptAt: now,
-        attempts: 0,
-        generation: 0,
-      );
-      await _write(job);
-      _notify();
-      return job;
-    }
-    if (existing.status == DayProcessingJobStatus.running) {
-      final leaseUntil = existing.leaseUntil;
-      if (leaseUntil != null && now.isBefore(leaseUntil)) {
-        // The in-flight attempt keeps its payload; injecting newer
-        // selections mid-wake is not possible, and the caller's await
-        // attaches to this job's terminal state either way.
-        return existing;
+  }) async {
+    var mutated = false;
+    final job = await db.transaction(() async {
+      final id = draftJobId(dayId);
+      final now = _now();
+      final existing = await _readJobOrNull(id);
+      if (existing == null) {
+        final job = DayProcessingJob(
+          id: id,
+          status: DayProcessingJobStatus.queued,
+          dayId: dayId,
+          payload: payload,
+          createdAt: now,
+          updatedAt: now,
+          requestedAt: now,
+          nextAttemptAt: now,
+          attempts: 0,
+          generation: 0,
+        );
+        await _write(job);
+        mutated = true;
+        return job;
       }
-      // `running` with an expired (or missing) lease is a zombie left by a
-      // killed process — nothing is executing. Absorbing the new payload
-      // into it would run the OLD selections at the eventual lease-expiry
-      // re-claim, silently dropping what the user just decided. Fall
-      // through to re-arm with the fresh payload instead.
-    }
-    final rearmed = existing.copyWith(
-      status: DayProcessingJobStatus.queued,
-      payload: payload,
-      updatedAt: now,
-      requestedAt: now,
-      nextAttemptAt: now,
-      attempts: 0,
-      // A re-arm is new intent: artifacts of the old intent's wakes must
-      // not satisfy it, so recorded run keys reset with the baseline.
-      runKeys: const [],
-      generation: existing.generation + 1,
-      clearClaimToken: true,
-      clearLeaseUntil: true,
-      clearRetryNotBefore: true,
-      clearLastError: true,
-      clearLastFailureClass: true,
-      clearResultEntityId: true,
-      clearCompletedAt: true,
-    );
-    await _write(rearmed);
-    _notify();
-    return rearmed;
-  });
+      if (existing.status == DayProcessingJobStatus.running) {
+        final leaseUntil = existing.leaseUntil;
+        if (leaseUntil != null && now.isBefore(leaseUntil)) {
+          // The in-flight attempt keeps its payload; injecting newer
+          // selections mid-wake is not possible, and the caller's await
+          // attaches to this job's terminal state either way.
+          return existing;
+        }
+        // `running` with an expired (or missing) lease is a zombie left by a
+        // killed process — nothing is executing. Absorbing the new payload
+        // into it would run the OLD selections at the eventual lease-expiry
+        // re-claim, silently dropping what the user just decided. Fall
+        // through to re-arm with the fresh payload instead.
+      }
+      final rearmed = _rearm(existing, payload: payload, now: now);
+      await _write(rearmed);
+      mutated = true;
+      return rearmed;
+    });
+    if (mutated) _notify();
+    return job;
+  }
 
   /// Enqueues the durable parse intent for one submitted capture.
   ///
@@ -268,53 +294,42 @@ class DayProcessingOutboxRepository {
   Future<DayProcessingJob> enqueueParseCapture({
     required String dayId,
     required String captureId,
-  }) => _serialize(() async {
-    await _ensureRoot();
-    final id = parseJobId(captureId);
-    final now = _now();
-    final requested = DayProcessingJob(
-      id: id,
-      status: DayProcessingJobStatus.queued,
-      dayId: dayId,
-      payload: ParseCapturePayload(captureId: captureId),
-      createdAt: now,
-      updatedAt: now,
-      requestedAt: now,
-      nextAttemptAt: now,
-      attempts: 0,
-      generation: 0,
-    );
-    final existing = await _readJobOrNull(id);
-    if (existing == null) {
-      await _write(requested);
-      _notify();
-      return requested;
-    }
-    _validateImmutableIntent(existing, requested);
-    if (existing.status == DayProcessingJobStatus.queued ||
-        existing.status == DayProcessingJobStatus.running) {
-      return existing;
-    }
-    final rearmed = existing.copyWith(
-      status: DayProcessingJobStatus.queued,
-      updatedAt: now,
-      requestedAt: now,
-      nextAttemptAt: now,
-      attempts: 0,
-      runKeys: const [],
-      generation: existing.generation + 1,
-      clearClaimToken: true,
-      clearLeaseUntil: true,
-      clearRetryNotBefore: true,
-      clearLastError: true,
-      clearLastFailureClass: true,
-      clearResultEntityId: true,
-      clearCompletedAt: true,
-    );
-    await _write(rearmed);
-    _notify();
-    return rearmed;
-  });
+  }) async {
+    var mutated = false;
+    final job = await db.transaction(() async {
+      final id = parseJobId(captureId);
+      final now = _now();
+      final requested = DayProcessingJob(
+        id: id,
+        status: DayProcessingJobStatus.queued,
+        dayId: dayId,
+        payload: ParseCapturePayload(captureId: captureId),
+        createdAt: now,
+        updatedAt: now,
+        requestedAt: now,
+        nextAttemptAt: now,
+        attempts: 0,
+        generation: 0,
+      );
+      final existing = await _readJobOrNull(id);
+      if (existing == null) {
+        await _write(requested);
+        mutated = true;
+        return requested;
+      }
+      _validateImmutableIntent(existing, requested);
+      if (existing.status == DayProcessingJobStatus.queued ||
+          existing.status == DayProcessingJobStatus.running) {
+        return existing;
+      }
+      final rearmed = _rearm(existing, now: now);
+      await _write(rearmed);
+      mutated = true;
+      return rearmed;
+    });
+    if (mutated) _notify();
+    return job;
+  }
 
   /// Enqueues a durable refine intent for the day.
   ///
@@ -324,28 +339,54 @@ class DayProcessingOutboxRepository {
   Future<DayProcessingJob> enqueueRefinePlan({
     required String dayId,
     String? transcriptCaptureId,
-  }) => _serialize(() async {
-    await _ensureRoot();
-    final now = _now();
-    final raw = _tokenFactory().replaceAll('-', '');
-    final suffix = raw.length > 8 ? raw.substring(0, 8) : raw;
-    final id = 'refine_${dayId}_$suffix';
-    final job = DayProcessingJob(
-      id: id,
-      status: DayProcessingJobStatus.queued,
-      dayId: dayId,
-      payload: RefinePlanPayload(transcriptCaptureId: transcriptCaptureId),
-      createdAt: now,
-      updatedAt: now,
-      requestedAt: now,
-      nextAttemptAt: now,
-      attempts: 0,
-      generation: 0,
-    );
-    await _write(job);
+  }) async {
+    final job = await db.transaction(() async {
+      final now = _now();
+      final raw = _tokenFactory().replaceAll('-', '');
+      final suffix = raw.length > 8 ? raw.substring(0, 8) : raw;
+      final job = DayProcessingJob(
+        id: 'refine_${dayId}_$suffix',
+        status: DayProcessingJobStatus.queued,
+        dayId: dayId,
+        payload: RefinePlanPayload(transcriptCaptureId: transcriptCaptureId),
+        createdAt: now,
+        updatedAt: now,
+        requestedAt: now,
+        nextAttemptAt: now,
+        attempts: 0,
+        generation: 0,
+      );
+      await _write(job);
+      return job;
+    });
     _notify();
     return job;
-  });
+  }
+
+  /// Re-arms a job onto fresh intent: new baseline, cleared retry/error state,
+  /// and no inherited run keys (artifacts of the old intent's wakes must not
+  /// satisfy the new one).
+  DayProcessingJob _rearm(
+    DayProcessingJob existing, {
+    required DateTime now,
+    DayProcessingPayload? payload,
+  }) => existing.copyWith(
+    status: DayProcessingJobStatus.queued,
+    payload: payload,
+    updatedAt: now,
+    requestedAt: now,
+    nextAttemptAt: now,
+    attempts: 0,
+    runKeys: const [],
+    generation: existing.generation + 1,
+    clearClaimToken: true,
+    clearLeaseUntil: true,
+    clearRetryNotBefore: true,
+    clearLastError: true,
+    clearLastFailureClass: true,
+    clearResultEntityId: true,
+    clearCompletedAt: true,
+  );
 
   void _validateImmutableIntent(
     DayProcessingJob existing,
@@ -414,27 +455,50 @@ class DayProcessingOutboxRepository {
     generation: 0,
   );
 
-  Future<List<DayProcessingJob>> getAll() => _serialize(() async {
-    await _ensureRoot();
-    await _recoverPartials();
-    final jobs = <DayProcessingJob>[];
-    for (final file in rootDirectory.listSync().whereType<File>()) {
-      if (!file.path.endsWith('.json')) continue;
-      try {
-        jobs.add(await _readFile(file));
-      } catch (_) {
-        await _quarantine(file);
-      }
-    }
-    jobs.sort((a, b) {
-      final byCreated = a.createdAt.compareTo(b.createdAt);
-      return byCreated != 0 ? byCreated : a.id.compareTo(b.id);
-    });
-    return List<DayProcessingJob>.unmodifiable(jobs);
-  });
+  Future<DayProcessingJob?> getById(String id) => _readJobOrNull(id);
 
-  Future<DayProcessingJob?> getById(String id) =>
-      _serialize(() => _readJobOrNull(id));
+  /// Every job recorded for [dayId], oldest first.
+  ///
+  /// Day-scoped so Activity's cost tracks one day rather than the whole
+  /// ledger; served by `idx_day_processing_jobs_day`.
+  Future<List<DayProcessingJob>> getForDay(
+    String dayId, {
+    Set<DayProcessingJobKind>? kinds,
+  }) async {
+    final variables = <Variable<Object>>[Variable<String>(dayId)];
+    var sql = 'SELECT $_columns FROM day_processing_jobs WHERE day_id = ?1';
+    if (kinds != null) {
+      if (kinds.isEmpty) return const [];
+      sql += ' AND ${_kindFilter(kinds, variables)}';
+    }
+    sql += ' ORDER BY created_at, id';
+    return _readAll(sql, variables);
+  }
+
+  /// Non-terminal jobs of [kind], oldest first.
+  ///
+  /// Served by the pending partial index, so the review fence's sweep tracks
+  /// outstanding work instead of every recording ever made.
+  Future<List<DayProcessingJob>> getPendingByKind(
+    DayProcessingJobKind kind,
+  ) => _readAll(
+    'SELECT $_columns FROM day_processing_jobs '
+    "WHERE status NOT IN ('succeeded', 'cancelled') AND kind = ?1 "
+    'ORDER BY created_at, id',
+    [Variable<String>(kind.name)],
+  );
+
+  /// Jobs the runtime can still schedule a wake-up for, oldest first.
+  ///
+  /// Bounded by outstanding work rather than install age. The effective
+  /// due-time ordering stays in the runtime (it depends on the runtime's own
+  /// network-probe interval) so that rule has exactly one implementation.
+  Future<List<DayProcessingJob>> getSchedulable() => _readAll(
+    'SELECT $_columns FROM day_processing_jobs '
+    'WHERE status IN $_drainableStatuses '
+    'ORDER BY created_at, id',
+    const [],
+  );
 
   /// Claims the next due job, optionally restricted to [kinds] so callers
   /// can drain kind families independently (a slow agent wake must not block
@@ -442,48 +506,69 @@ class DayProcessingOutboxRepository {
   Future<DayProcessingClaim?> claimNext({
     Duration lease = const Duration(minutes: 3),
     Set<DayProcessingJobKind>? kinds,
-  }) => _serialize(() async {
-    final now = _now();
-    final jobs = await _readAllUnsafe();
-    final due = jobs
-        .where(
-          (job) =>
-              job.isDue(now) && (kinds == null || kinds.contains(job.kind)),
-        )
-        .firstOrNull;
-    if (due == null) return null;
-    return _claimUnsafe(due, now: now, lease: lease);
-  });
+  }) async {
+    if (kinds != null && kinds.isEmpty) return null;
+    final claim = await _claim(now: _now(), lease: lease, kinds: kinds);
+    if (claim != null) _notify();
+    return claim;
+  }
 
   /// Claims one known job for an interactive foreground attempt.
   Future<DayProcessingClaim?> claimById(
     String jobId, {
     Duration lease = const Duration(minutes: 3),
-  }) => _serialize(() async {
-    final now = _now();
-    final job = await _readJobOrNull(jobId);
-    if (job == null || !job.isDue(now)) return null;
-    return _claimUnsafe(job, now: now, lease: lease);
-  });
+  }) async {
+    final claim = await _claim(now: _now(), lease: lease, jobId: jobId);
+    if (claim != null) _notify();
+    return claim;
+  }
 
-  Future<DayProcessingClaim> _claimUnsafe(
-    DayProcessingJob job, {
+  /// Selects and stamps a claim in one statement.
+  ///
+  /// The due predicate, the ordering and the claim write are a single
+  /// `UPDATE … WHERE id = (SELECT …) RETURNING`, so there is no window in
+  /// which a second claimer can take the row between choosing it and owning
+  /// it — the question of what a "lost" claim should do never arises, rather
+  /// than being answered with a retry loop. An empty result means nothing was
+  /// due, which is the only reason a caller sees no claim.
+  ///
+  /// Returns the row as written, so the caller's job reflects exactly what is
+  /// durable rather than a locally reconstructed copy.
+  ///
+  /// The token is minted before the statement runs and is therefore consumed
+  /// even when nothing matches. Tokens are opaque and unbounded, so gaps carry
+  /// no meaning.
+  Future<DayProcessingClaim?> _claim({
     required DateTime now,
     required Duration lease,
+    String? jobId,
+    Set<DayProcessingJobKind>? kinds,
   }) async {
     final token = _tokenFactory();
-    final claimed = job.copyWith(
-      status: DayProcessingJobStatus.running,
-      updatedAt: now,
-      generation: job.generation + 1,
-      claimToken: token,
-      leaseUntil: now.add(lease),
-      clearLastError: true,
-      clearLastFailureClass: true,
+    final variables = <Variable<Object>>[
+      Variable<int>(_ms(now)),
+      Variable<String>(token),
+      Variable<int>(_ms(now.add(lease))),
+    ];
+    var selector = 'SELECT id FROM day_processing_jobs WHERE $_dueClause';
+    if (jobId != null) {
+      variables.add(Variable<String>(jobId));
+      selector += ' AND id = ?${variables.length}';
+    }
+    if (kinds != null) selector += ' AND ${_kindFilter(kinds, variables)}';
+    selector += ' ORDER BY created_at, id LIMIT 1';
+
+    final rows = await db.customWriteReturning(
+      'UPDATE day_processing_jobs SET '
+      "status = 'running', updated_at = ?1, generation = generation + 1, "
+      'claim_token = ?2, lease_until = ?3, '
+      'last_error = NULL, last_failure_class = NULL '
+      'WHERE id = ($selector) '
+      'RETURNING $_columns',
+      variables: variables,
     );
-    await _write(claimed);
-    _notify();
-    return DayProcessingClaim(job: claimed, token: token);
+    if (rows.isEmpty) return null;
+    return DayProcessingClaim(job: _fromRow(rows.single), token: token);
   }
 
   Future<DayProcessingJob> markSucceeded({
@@ -565,22 +650,18 @@ class DayProcessingOutboxRepository {
   /// Terminalizes a job the user no longer wants — e.g. its recording was
   /// deleted. A concurrently running worker's next claimed mutation fails
   /// its stale-claim check and is absorbed by the runtime's retry handling.
-  Future<DayProcessingJob?> cancel(String jobId) => _serialize(() async {
-    final job = await _readJobOrNull(jobId);
-    if (job == null || job.isTerminal) return job;
-    final now = _now();
-    final updated = job.copyWith(
-      status: DayProcessingJobStatus.cancelled,
-      updatedAt: now,
-      completedAt: now,
-      generation: job.generation + 1,
-      clearClaimToken: true,
-      clearLeaseUntil: true,
-    );
-    await _write(updated);
-    _notify();
-    return updated;
-  });
+  Future<DayProcessingJob?> cancel(String jobId) =>
+      _mutateUnclaimed(jobId, (job, now) {
+        if (job.isTerminal) return null;
+        return job.copyWith(
+          status: DayProcessingJobStatus.cancelled,
+          updatedAt: now,
+          completedAt: now,
+          generation: job.generation + 1,
+          clearClaimToken: true,
+          clearLeaseUntil: true,
+        );
+      });
 
   /// Records the run key of a wake enqueued for [jobId] (agent jobs).
   ///
@@ -588,51 +669,39 @@ class DayProcessingOutboxRepository {
   /// a stale writer appending its run key is harmless (the key belongs to a
   /// wake that really was enqueued for this job), so fencing would only add
   /// failure modes. Keys are capped to the newest [maxRecordedRunKeys] —
-  /// far above `maxAttempts` — purely as a file-size backstop.
+  /// far above `maxAttempts` — purely as a size backstop.
   Future<DayProcessingJob?> recordRunKey({
     required String jobId,
     required String runKey,
-  }) => _serialize(() async {
-    final job = await _readJobOrNull(jobId);
-    if (job == null || job.isTerminal) return job;
-    if (job.runKeys.contains(runKey)) return job;
+  }) => _mutateUnclaimed(jobId, (job, now) {
+    if (job.isTerminal || job.runKeys.contains(runKey)) return null;
     final keys = [...job.runKeys, runKey];
-    final updated = job.copyWith(
-      updatedAt: _now(),
+    return job.copyWith(
+      updatedAt: now,
       runKeys: keys.length > maxRecordedRunKeys
           ? keys.sublist(keys.length - maxRecordedRunKeys)
           : keys,
     );
-    await _write(updated);
-    _notify();
-    return updated;
   });
 
-  /// Backstop cap for [recordRunKey].
-  static const int maxRecordedRunKeys = 16;
-
-  Future<DayProcessingJob?> retryNow(String jobId) => _serialize(() async {
-    final job = await _readJobOrNull(jobId);
-    if (job == null || job.isTerminal) return job;
-    final now = _now();
-    final hardBoundary = job.retryNotBefore;
-    final due = hardBoundary != null && now.isBefore(hardBoundary)
-        ? hardBoundary
-        : now;
-    final updated = job.copyWith(
-      status: DayProcessingJobStatus.queued,
-      updatedAt: now,
-      nextAttemptAt: due,
-      generation: job.generation + 1,
-      clearClaimToken: true,
-      clearLeaseUntil: true,
-      clearLastError: true,
-      clearLastFailureClass: true,
-    );
-    await _write(updated);
-    _notify();
-    return updated;
-  });
+  Future<DayProcessingJob?> retryNow(String jobId) =>
+      _mutateUnclaimed(jobId, (job, now) {
+        if (job.isTerminal) return null;
+        final hardBoundary = job.retryNotBefore;
+        final due = hardBoundary != null && now.isBefore(hardBoundary)
+            ? hardBoundary
+            : now;
+        return job.copyWith(
+          status: DayProcessingJobStatus.queued,
+          updatedAt: now,
+          nextAttemptAt: due,
+          generation: job.generation + 1,
+          clearClaimToken: true,
+          clearLeaseUntil: true,
+          clearLastError: true,
+          clearLastFailureClass: true,
+        );
+      });
 
   /// Marks transcription as satisfied by canonical user-reviewed text.
   /// Pending provider work is fenced and will not later overwrite the user's
@@ -640,13 +709,11 @@ class DayProcessingOutboxRepository {
   Future<DayProcessingJob?> satisfyWithReviewedText(
     String jobId,
     String transcript,
-  ) => _serialize(() async {
-    final job = await _readJobOrNull(jobId);
-    if (job == null || job.isTerminal) return job;
+  ) => _mutateUnclaimed(jobId, (job, now) {
+    if (job.isTerminal) return null;
     final trimmed = transcript.trim();
-    if (trimmed.isEmpty) return job;
-    final now = _now();
-    final updated = job.copyWith(
+    if (trimmed.isEmpty) return null;
+    return job.copyWith(
       status: DayProcessingJobStatus.succeeded,
       updatedAt: now,
       generation: job.generation + 1,
@@ -658,151 +725,142 @@ class DayProcessingOutboxRepository {
       clearLastError: true,
       clearLastFailureClass: true,
     );
-    await _write(updated);
-    _notify();
-    return updated;
   });
 
-  Future<void> signalConnectivityRestored() => _serialize(() async {
-    final now = _now();
-    for (final job in await _readAllUnsafe()) {
-      if (job.status != DayProcessingJobStatus.waitingForNetwork) continue;
-      final updated = job.copyWith(
-        status: DayProcessingJobStatus.queued,
-        updatedAt: now,
-        nextAttemptAt: now,
-        generation: job.generation + 1,
-      );
-      await _write(updated);
-    }
+  Future<void> signalConnectivityRestored() async {
+    final now = _ms(_now());
+    await db.customUpdate(
+      'UPDATE day_processing_jobs SET '
+      "status = 'queued', updated_at = ?1, next_attempt_at = ?1, "
+      'generation = generation + 1 '
+      "WHERE status = 'waitingForNetwork'",
+      variables: [Variable<int>(now)],
+    );
     _notify();
-  });
+  }
+
+  /// Deletes ledger rows completed before [cutoff] (ADR 0044 decision 5).
+  ///
+  /// Only terminal rows are eligible: a job parked in `failed`,
+  /// `waitingForUser` or `waitingForNetwork` is outstanding user intent that
+  /// [retryNow] and re-enqueue can still resurrect, so age alone must never
+  /// remove it. Returns the number of rows pruned.
+  Future<int> pruneTerminalBefore(DateTime cutoff) async {
+    final pruned = await db.customUpdate(
+      'DELETE FROM day_processing_jobs '
+      "WHERE status IN ('succeeded', 'cancelled') "
+      'AND completed_at IS NOT NULL AND completed_at < ?1',
+      variables: [Variable<int>(_ms(cutoff))],
+      updateKind: UpdateKind.delete,
+    );
+    if (pruned > 0) _notify();
+    return pruned;
+  }
+
+  /// Read-modify-write for the claim-less mutators.
+  ///
+  /// [update] returns null when the job should be left untouched, which keeps
+  /// each caller's no-op guards (terminal, duplicate run key, blank text)
+  /// beside the mutation they guard.
+  Future<DayProcessingJob?> _mutateUnclaimed(
+    String jobId,
+    DayProcessingJob? Function(DayProcessingJob job, DateTime now) update,
+  ) async {
+    var mutated = false;
+    final job = await db.transaction(() async {
+      final job = await _readJobOrNull(jobId);
+      if (job == null) return null;
+      final updated = update(job, _now());
+      if (updated == null) return job;
+      await _write(updated);
+      mutated = true;
+      return updated;
+    });
+    if (mutated) _notify();
+    return job;
+  }
 
   Future<DayProcessingJob> _updateClaimed(
     String jobId,
     String claimToken,
     DayProcessingJob Function(DayProcessingJob job, DateTime now) update,
-  ) => _serialize(() async {
-    final job = await _readJobOrNull(jobId);
-    if (job == null) throw StateError('Unknown processing job $jobId');
-    if (job.status != DayProcessingJobStatus.running ||
-        job.claimToken != claimToken) {
-      throw DayProcessingClaimRevokedException(jobId);
-    }
-    final updated = update(job, _now());
-    await _write(updated);
+  ) async {
+    final updated = await db.transaction(() async {
+      final job = await _readJobOrNull(jobId);
+      if (job == null) throw StateError('Unknown processing job $jobId');
+      if (job.status != DayProcessingJobStatus.running ||
+          job.claimToken != claimToken) {
+        throw DayProcessingClaimRevokedException(jobId);
+      }
+      final updated = update(job, _now());
+      await _write(updated);
+      return updated;
+    });
     _notify();
     return updated;
-  });
-
-  Future<List<DayProcessingJob>> _readAllUnsafe() async {
-    await _ensureRoot();
-    await _recoverPartials();
-    final jobs = <DayProcessingJob>[];
-    for (final file in rootDirectory.listSync().whereType<File>()) {
-      if (!file.path.endsWith('.json')) continue;
-      try {
-        jobs.add(await _readFile(file));
-      } catch (_) {
-        await _quarantine(file);
-      }
-    }
-    jobs.sort((a, b) {
-      final byDue = a.nextAttemptAt.compareTo(b.nextAttemptAt);
-      return byDue != 0 ? byDue : a.id.compareTo(b.id);
-    });
-    return jobs;
   }
 
   Future<DayProcessingJob?> _readJobOrNull(String id) async {
-    await _ensureRoot();
-    final file = _fileFor(id);
-    if (!file.existsSync()) return null;
-    try {
-      return await _readFile(file);
-    } catch (_) {
-      await _quarantine(file);
-      return null;
-    }
+    final rows = await db
+        .customSelect(
+          'SELECT $_columns FROM day_processing_jobs WHERE id = ?1',
+          variables: [Variable<String>(id)],
+        )
+        .get();
+    return rows.isEmpty ? null : _fromRow(rows.single);
   }
 
-  Future<DayProcessingJob> _readFile(File file) async {
-    final envelope =
-        jsonDecode(await file.readAsString())! as Map<String, Object?>;
-    final payload = envelope['payload']! as String;
-    final expected = envelope['sha256']! as String;
-    final actual = sha256.convert(utf8.encode(payload)).toString();
-    if (actual != expected) {
-      throw const FormatException('Invalid processing job digest');
+  Future<List<DayProcessingJob>> _readAll(
+    String sql,
+    List<Variable<Object>> variables,
+  ) async {
+    final rows = await db.customSelect(sql, variables: variables).get();
+    return List<DayProcessingJob>.unmodifiable(rows.map(_fromRow));
+  }
+
+  /// Appends `kind IN (…)` to a query, extending [variables] in place so the
+  /// placeholder numbering stays aligned with the caller's existing bindings.
+  static String _kindFilter(
+    Set<DayProcessingJobKind> kinds,
+    List<Variable<Object>> variables,
+  ) {
+    final placeholders = <String>[];
+    for (final kind in kinds) {
+      variables.add(Variable<String>(kind.name));
+      placeholders.add('?${variables.length}');
     }
-    return DayProcessingJob.fromJson(
-      jsonDecode(payload)! as Map<String, Object?>,
-    );
+    return 'kind IN (${placeholders.join(', ')})';
   }
 
   Future<void> _write(DayProcessingJob job) async {
-    await _ensureRoot();
-    final destination = _fileFor(job.id);
-    final payload = jsonEncode(job.toJson());
-    final envelope = jsonEncode(<String, Object?>{
-      'payload': payload,
-      'sha256': sha256.convert(utf8.encode(payload)).toString(),
-    });
-    await atomicWriteString(
-      text: envelope,
-      filePath: destination.path,
-      subDomain: 'daily_os.processing_outbox',
+    const assignments =
+        'status = excluded.status, kind = excluded.kind, '
+        'day_id = excluded.day_id, payload = excluded.payload, '
+        'run_keys = excluded.run_keys, created_at = excluded.created_at, '
+        'updated_at = excluded.updated_at, '
+        'requested_at = excluded.requested_at, '
+        'next_attempt_at = excluded.next_attempt_at, '
+        'attempts = excluded.attempts, generation = excluded.generation, '
+        'claim_token = excluded.claim_token, '
+        'lease_until = excluded.lease_until, '
+        'retry_not_before = excluded.retry_not_before, '
+        'last_failure_class = excluded.last_failure_class, '
+        'last_error = excluded.last_error, '
+        'result_transcript = excluded.result_transcript, '
+        'result_entity_id = excluded.result_entity_id, '
+        'completed_at = excluded.completed_at';
+    await db.customInsert(
+      'INSERT INTO day_processing_jobs ($_columns) VALUES '
+      '($dayProcessingJobPlaceholders) '
+      'ON CONFLICT(id) DO UPDATE SET $assignments',
+      variables: dayProcessingJobVariables(job),
     );
   }
 
-  Future<void> _recoverPartials() async {
-    for (final partial in rootDirectory.listSync().whereType<File>().where(
-      (file) => file.path.endsWith('.json.part'),
-    )) {
-      final destination = File(
-        partial.path.substring(0, partial.path.length - '.part'.length),
-      );
-      if (destination.existsSync()) {
-        await partial.delete();
-        continue;
-      }
-      try {
-        await _readFile(partial);
-        await partial.rename(destination.path);
-      } catch (_) {
-        await _quarantine(partial);
-      }
-    }
-  }
+  static DayProcessingJob _fromRow(QueryRow row) =>
+      dayProcessingJobFromRow(row);
 
-  Future<void> _quarantine(File file) async {
-    final quarantine = Directory(path.join(rootDirectory.path, 'quarantine'));
-    await quarantine.create(recursive: true);
-    final destination = File(
-      path.join(quarantine.path, path.basename(file.path)),
-    );
-    if (destination.existsSync()) await destination.delete();
-    await file.rename(destination.path);
-  }
-
-  File _fileFor(String id) {
-    final safe = id.replaceAll(RegExp('[^A-Za-z0-9_-]'), '_');
-    return File(path.join(rootDirectory.path, '$safe.json'));
-  }
-
-  Future<void> _ensureRoot() => rootDirectory.create(recursive: true);
-
-  Future<T> _serialize<T>(Future<T> Function() operation) {
-    final completer = Completer<T>();
-    _tail = _tail.then((_) async {
-      try {
-        completer.complete(await operation());
-      } catch (error, stackTrace) {
-        completer.completeError(error, stackTrace);
-      }
-    });
-    return completer.future;
-  }
+  static int _ms(DateTime value) => value.millisecondsSinceEpoch;
 
   void _notify() {
     if (!_changes.isClosed) _changes.add(null);

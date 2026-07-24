@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
+import 'day_processing_test_db.dart';
 
 void main() {
   final capturedAt = DateTime(2026, 7, 18, 8);
@@ -67,7 +68,7 @@ void main() {
     root = Directory.systemTemp.createTempSync('day-activity-test-');
     journalDb = MockJournalDb();
     outbox = DayProcessingOutboxRepository(
-      rootDirectory: Directory('${root.path}/outbox'),
+      db: createTestDayProcessingDb(),
       now: () => capturedAt,
     );
     repository = DayActivityRepository(

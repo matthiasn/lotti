@@ -173,6 +173,10 @@ With those three converted, no caller reads the whole store and
 
 ### 4. Claiming becomes one conditional statement
 
+> Superseded in part by the 2026-07-25 amendment at the end of this
+> document: the select and the update turned out to be expressible as a
+> single statement, which removes the race this section reasons about.
+
 Claim is `UPDATE … SET status='running', claim_token=?, lease_until=? …
 WHERE id=? AND <due predicate>` guarded by affected-row count; fenced
 mutations become `WHERE id=? AND claim_token=? AND status='running'`.
@@ -390,3 +394,44 @@ recorded loses its pending transcription across the migration.
   outbox this ADR supersedes on storage; every other decision in it
   stands)
 - ADR 0032 (hierarchical day agents — extended the outbox to agent jobs)
+
+## Amendment 2026-07-25 — claiming is one statement, not two
+
+Implementation showed decision 4's select-then-conditional-`UPDATE` was
+solving a problem the design does not have.
+
+Both statements run inside one drift transaction on a single connection, so
+a second claimer cannot interleave between choosing a row and stamping it.
+The generation guard could therefore never fail, the "a lost claim is not
+an idle drain" branch was unreachable, and its retry loop was untestable
+dead code that every future reader would still have to reason about.
+
+Claiming is now a single atomic statement:
+
+```sql
+UPDATE day_processing_jobs
+   SET status = 'running', updated_at = ?1, generation = generation + 1,
+       claim_token = ?2, lease_until = ?3,
+       last_error = NULL, last_failure_class = NULL
+ WHERE id = (SELECT id FROM day_processing_jobs
+              WHERE <due predicate> [AND kind IN (…)] [AND id = ?]
+              ORDER BY created_at, id LIMIT 1)
+RETURNING <columns>
+```
+
+`claimNext`, `claimById` and the interactive
+`enqueueAndClaimTranscription` all route through it, differing only in the
+predicate. There is no window to lose, so the lost-versus-idle distinction
+disappears rather than being handled: an empty result means nothing was
+due, which is the only reason a caller sees no claim. `RETURNING` also
+hands back the row as written, so a claim reflects what is durable instead
+of a locally reconstructed copy.
+
+One consequence worth naming: the claim token is bound into the statement
+before it runs, so an attempt matching no row still consumes one. Tokens
+are opaque and unbounded, so gaps carry no meaning.
+
+The fencing on *claimed mutations* (`WHERE id = ? AND claim_token = ? AND
+status = 'running'`) is unchanged — that guards a genuinely concurrent
+case, where a claim holder reports back after the job was terminalized by
+reviewed text or a cancellation.

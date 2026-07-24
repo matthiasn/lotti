@@ -1,16 +1,18 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
+import 'day_processing_test_db.dart';
+
 void main() {
   late Directory root;
   late DateTime now;
+  late DayProcessingDb db;
   late DayProcessingOutboxRepository repository;
   var tokenCounter = 0;
 
@@ -18,8 +20,9 @@ void main() {
     root = Directory.systemTemp.createTempSync('day-processing-outbox-test-');
     now = DateTime.utc(2026, 7, 18, 7, 42);
     tokenCounter = 0;
+    db = createTestDayProcessingDb();
     repository = DayProcessingOutboxRepository(
-      rootDirectory: root,
+      db: db,
       now: () => now,
       tokenFactory: () => 'claim-${++tokenCounter}',
     );
@@ -39,17 +42,19 @@ void main() {
     capturedAt: DateTime.utc(2026, 7, 18, 7, 40),
   );
 
+  Future<List<DayProcessingJob>> allJobs() => allDayProcessingJobs(db);
+
   test('enqueue is durable across repository restart and idempotent', () async {
     final first = await enqueue();
     final duplicate = await enqueue();
     await repository.dispose();
     repository = DayProcessingOutboxRepository(
-      rootDirectory: root,
+      db: db,
       now: () => now,
       tokenFactory: () => 'restart-claim',
     );
 
-    final restored = await repository.getAll();
+    final restored = await allJobs();
 
     expect(duplicate.id, first.id);
     expect(restored, hasLength(1));
@@ -79,7 +84,7 @@ void main() {
         );
         return enqueue();
       });
-      expect((await repository.getAll()).single.dayId, 'dayplan-2026-07-18');
+      expect((await allJobs()).single.dayId, 'dayplan-2026-07-18');
     },
   );
 
@@ -99,14 +104,14 @@ void main() {
       );
 
       await expectLater(conflict, throwsA(isA<DayProcessingIntentConflict>()));
-      expect((await repository.getAll()).single.dayId, 'dayplan-2026-07-18');
+      expect((await allJobs()).single.dayId, 'dayplan-2026-07-18');
     },
   );
 
   test('default claim tokens are UUIDs', () async {
     await repository.dispose();
     repository = DayProcessingOutboxRepository(
-      rootDirectory: root,
+      db: db,
       now: () => now,
     );
 
@@ -231,7 +236,14 @@ void main() {
 
     expect(missing, isNull);
     expect(claim!.job.id, 'transcribe_session-1');
-    expect(claim.token, 'claim-1');
+    // The returned token is the one actually stamped on the row — asserted by
+    // round-trip rather than by name, because a claim that matches no row
+    // still consumes a token from the factory.
+    expect(claim.token, isNotEmpty);
+    expect(
+      (await repository.getById(claim.job.id))!.claimToken,
+      claim.token,
+    );
     expect(await repository.claimById(claim.job.id), isNull);
   });
 
@@ -253,7 +265,7 @@ void main() {
 
     await repository.dispose();
     repository = DayProcessingOutboxRepository(
-      rootDirectory: root,
+      db: db,
       now: () => now,
     );
     final restored = await repository.getById(ready.id);
@@ -372,7 +384,7 @@ void main() {
       );
     }
 
-    expect((await repository.getAll()).map((job) => job.id), [
+    expect((await allJobs()).map((job) => job.id), [
       'transcribe_session-1',
       'transcribe_session-a',
       'transcribe_session-b',
@@ -395,65 +407,6 @@ void main() {
 
     expect(retried!.nextAttemptAt, now.add(const Duration(minutes: 2)));
     expect(await repository.claimNext(), isNull);
-  });
-
-  test('startup publishes a valid orphan partial job', () async {
-    final job = await enqueue();
-    final target = root.listSync().whereType<File>().single;
-    final partial = File('${target.path}.part');
-    await target.rename(partial.path);
-    await repository.dispose();
-    repository = DayProcessingOutboxRepository(
-      rootDirectory: root,
-      now: () => now,
-    );
-
-    final restored = await repository.getAll();
-
-    expect(restored.single.id, job.id);
-    expect(target.existsSync(), isTrue);
-    expect(partial.existsSync(), isFalse);
-  });
-
-  test('startup removes a stale partial beside its published job', () async {
-    await enqueue();
-    final target = root.listSync().whereType<File>().single;
-    final partial = File('${target.path}.part')
-      ..writeAsBytesSync(target.readAsBytesSync());
-
-    final jobs = await repository.getAll();
-
-    expect(jobs, hasLength(1));
-    expect(target.existsSync(), isTrue);
-    expect(partial.existsSync(), isFalse);
-  });
-
-  test('startup quarantines a corrupt orphan partial', () async {
-    File(
-      path.join(root.path, 'corrupt.json.part'),
-    ).writeAsStringSync('not an envelope');
-
-    expect(await repository.getAll(), isEmpty);
-    expect(
-      File(
-        path.join(root.path, 'quarantine', 'corrupt.json.part'),
-      ).existsSync(),
-      isTrue,
-    );
-  });
-
-  test('lookup quarantines a corrupt job at its deterministic path', () async {
-    await enqueue();
-    final targetPath = root.listSync().whereType<File>().single.path;
-    File(targetPath).writeAsStringSync('corrupt');
-
-    expect(await repository.getById('transcribe_session-1'), isNull);
-    expect(
-      File(
-        path.join(root.path, 'quarantine', path.basename(targetPath)),
-      ).existsSync(),
-      isTrue,
-    );
   });
 
   test(
@@ -488,51 +441,6 @@ void main() {
     },
   );
 
-  test(
-    'getAll skips and quarantines a corrupt job file',
-    () async {
-      await enqueue();
-      final corrupt = File(path.join(root.path, 'corrupt.json'))
-        ..writeAsStringSync('not an envelope');
-
-      final jobs = await repository.getAll();
-
-      expect(jobs.map((job) => job.id), ['transcribe_session-1']);
-      expect(corrupt.existsSync(), isFalse);
-      expect(
-        File(path.join(root.path, 'quarantine', 'corrupt.json')).existsSync(),
-        isTrue,
-      );
-    },
-  );
-
-  test(
-    'corrupt jobs are quarantined instead of blocking healthy work',
-    () async {
-      await enqueue();
-      final corruptPayload = jsonEncode(<String, Object?>{'id': 'bad'});
-      final quarantine = Directory(path.join(root.path, 'quarantine'))
-        ..createSync();
-      final quarantined = File(path.join(quarantine.path, 'corrupt.json'))
-        ..writeAsStringSync('stale quarantine entry');
-      await File(path.join(root.path, 'corrupt.json')).writeAsString(
-        jsonEncode(<String, Object?>{
-          'payload': corruptPayload,
-          'sha256': sha256.convert(utf8.encode('different')).toString(),
-        }),
-        flush: true,
-      );
-
-      final claim = await repository.claimNext();
-
-      expect(claim?.job.id, 'transcribe_session-1');
-      expect(quarantined.existsSync(), isTrue);
-      final quarantinedEnvelope =
-          jsonDecode(await quarantined.readAsString())! as Map<String, Object?>;
-      expect(quarantinedEnvelope['payload'], corruptPayload);
-    },
-  );
-
   group('durable agent jobs (ADR 0032 phase 1)', () {
     test('enqueueParseCapture is deterministic and accumulates', () async {
       final first = await repository.enqueueParseCapture(
@@ -551,7 +459,7 @@ void main() {
       expect(first.id, 'parse_cap-1');
       expect(second.id, 'parse_cap-2');
       expect(duplicate.id, first.id);
-      expect(await repository.getAll(), hasLength(2));
+      expect(await allJobs(), hasLength(2));
     });
 
     test(
@@ -669,7 +577,7 @@ void main() {
         );
         expect(rearmed.requestedAt, now);
         expect(rearmed.generation, first.generation + 1);
-        expect(await repository.getAll(), hasLength(1));
+        expect(await allJobs(), hasLength(1));
       },
     );
 
@@ -843,7 +751,7 @@ void main() {
           (first.payload as RefinePlanPayload).transcriptCaptureId,
           'cap-a',
         );
-        expect(await repository.getAll(), hasLength(2));
+        expect(await allJobs(), hasLength(2));
       },
     );
 
@@ -884,6 +792,243 @@ void main() {
       );
 
       expect(succeeded.resultEntityId, 'parsed-item-1');
+    });
+  });
+
+  group('bounded queries (ADR 0044)', () {
+    Future<DayProcessingJob> transcriptionFor(
+      String sessionId, {
+      String dayId = 'dayplan-2026-07-18',
+    }) => repository.enqueueTranscription(
+      dayId: dayId,
+      activityEntryId: 'activity-$sessionId',
+      recordingSessionId: sessionId,
+      audioId: 'audio-$sessionId',
+      audioPath: path.join(root.path, '$sessionId.m4a'),
+      capturedAt: now,
+    );
+
+    test('getForDay returns only the requested day', () async {
+      await transcriptionFor('session-1');
+      await transcriptionFor('session-2', dayId: 'dayplan-2026-07-19');
+      await repository.enqueueParseCapture(
+        dayId: 'dayplan-2026-07-18',
+        captureId: 'cap-1',
+      );
+
+      final jobs = await repository.getForDay('dayplan-2026-07-18');
+
+      expect(
+        jobs.map((job) => job.id),
+        unorderedEquals([
+          'transcribe_session-1',
+          'parse_cap-1',
+        ]),
+      );
+    });
+
+    test('getForDay narrows to the requested kinds', () async {
+      await transcriptionFor('session-1');
+      await repository.enqueueParseCapture(
+        dayId: 'dayplan-2026-07-18',
+        captureId: 'cap-1',
+      );
+
+      final jobs = await repository.getForDay(
+        'dayplan-2026-07-18',
+        kinds: const {DayProcessingJobKind.transcribeAudio},
+      );
+
+      expect(jobs.map((job) => job.id), ['transcribe_session-1']);
+    });
+
+    test('getForDay with an empty kind set matches nothing', () async {
+      await transcriptionFor('session-1');
+
+      expect(
+        await repository.getForDay('dayplan-2026-07-18', kinds: const {}),
+        isEmpty,
+      );
+    });
+
+    test('getForDay keeps terminal rows — Activity reads the ledger', () async {
+      await transcriptionFor('session-1');
+      final claim = await repository.claimNext();
+      await repository.markSucceeded(
+        jobId: claim!.job.id,
+        claimToken: claim.token,
+      );
+
+      final jobs = await repository.getForDay('dayplan-2026-07-18');
+
+      expect(jobs.single.status, DayProcessingJobStatus.succeeded);
+    });
+
+    test('getPendingByKind excludes terminal rows and other kinds', () async {
+      await transcriptionFor('session-1');
+      await transcriptionFor('session-2');
+      await repository.enqueueParseCapture(
+        dayId: 'dayplan-2026-07-18',
+        captureId: 'cap-1',
+      );
+      final claim = await repository.claimById('transcribe_session-1');
+      await repository.markSucceeded(
+        jobId: claim!.job.id,
+        claimToken: claim.token,
+      );
+
+      final pending = await repository.getPendingByKind(
+        DayProcessingJobKind.transcribeAudio,
+      );
+
+      expect(pending.map((job) => job.id), ['transcribe_session-2']);
+    });
+
+    test(
+      'getPendingByKind keeps parked work the fence can still act on',
+      () async {
+        await transcriptionFor('session-1');
+        final claim = await repository.claimNext();
+        await repository.markFailure(
+          jobId: claim!.job.id,
+          claimToken: claim.token,
+          failureClass: DayProcessingFailureClass.deterministic,
+          error: 'bad audio',
+        );
+
+        final pending = await repository.getPendingByKind(
+          DayProcessingJobKind.transcribeAudio,
+        );
+
+        expect(pending.single.status, DayProcessingJobStatus.failed);
+      },
+    );
+
+    test('getSchedulable drops terminal and non-drainable rows', () async {
+      await transcriptionFor('session-queued');
+      await transcriptionFor('session-failed');
+      await transcriptionFor('session-done');
+
+      final failing = await repository.claimById('transcribe_session-failed');
+      await repository.markFailure(
+        jobId: failing!.job.id,
+        claimToken: failing.token,
+        failureClass: DayProcessingFailureClass.deterministic,
+        error: 'nope',
+      );
+      final done = await repository.claimById('transcribe_session-done');
+      await repository.markSucceeded(
+        jobId: done!.job.id,
+        claimToken: done.token,
+      );
+
+      final schedulable = await repository.getSchedulable();
+
+      expect(schedulable.map((job) => job.id), ['transcribe_session-queued']);
+    });
+
+    test(
+      'getSchedulable keeps a running job so its lease can expire',
+      () async {
+        await transcriptionFor('session-1');
+        await repository.claimNext();
+
+        final schedulable = await repository.getSchedulable();
+
+        expect(schedulable.single.status, DayProcessingJobStatus.running);
+      },
+    );
+  });
+
+  group('ledger retention (ADR 0044)', () {
+    Future<DayProcessingJob> terminalJob(String sessionId) async {
+      await repository.enqueueTranscription(
+        dayId: 'dayplan-2026-07-18',
+        activityEntryId: 'activity-$sessionId',
+        recordingSessionId: sessionId,
+        audioId: 'audio-$sessionId',
+        audioPath: path.join(root.path, '$sessionId.m4a'),
+        capturedAt: now,
+      );
+      final claim = await repository.claimById('transcribe_$sessionId');
+      return repository.markSucceeded(
+        jobId: claim!.job.id,
+        claimToken: claim.token,
+      );
+    }
+
+    test('prunes terminal rows completed before the cutoff', () async {
+      await terminalJob('session-old');
+      now = now.add(const Duration(days: 100));
+      await terminalJob('session-new');
+
+      final pruned = await repository.pruneTerminalBefore(
+        now.subtract(dayProcessingLedgerRetention),
+      );
+
+      expect(pruned, 1);
+      expect(
+        (await allJobs()).map((job) => job.id),
+        ['transcribe_session-new'],
+      );
+    });
+
+    test('never prunes pending work, however old', () async {
+      // Outstanding user intent that retryNow or a re-enqueue can still
+      // resurrect: age alone must not delete it.
+      await repository.enqueueTranscription(
+        dayId: 'dayplan-2026-07-18',
+        activityEntryId: 'activity-1',
+        recordingSessionId: 'session-1',
+        audioId: 'audio-1',
+        audioPath: path.join(root.path, 'session-1.m4a'),
+        capturedAt: now,
+      );
+      final claim = await repository.claimNext();
+      await repository.markFailure(
+        jobId: claim!.job.id,
+        claimToken: claim.token,
+        failureClass: DayProcessingFailureClass.setupRequired,
+        error: 'needs setup',
+      );
+      now = now.add(const Duration(days: 3650));
+
+      final pruned = await repository.pruneTerminalBefore(now);
+
+      expect(pruned, 0);
+      expect(
+        (await allJobs()).single.status,
+        DayProcessingJobStatus.waitingForUser,
+      );
+    });
+
+    test('announces a prune so Activity refreshes', () async {
+      await terminalJob('session-old');
+      var events = 0;
+      final subscription = repository.changes.listen((_) => events++);
+      addTearDown(subscription.cancel);
+
+      await repository.pruneTerminalBefore(
+        now.add(const Duration(days: 1)),
+      );
+      await pumpEventQueue();
+
+      expect(events, 1);
+    });
+
+    test('stays quiet when nothing was eligible', () async {
+      await terminalJob('session-recent');
+      var events = 0;
+      final subscription = repository.changes.listen((_) => events++);
+      addTearDown(subscription.cancel);
+
+      final pruned = await repository.pruneTerminalBefore(
+        now.subtract(dayProcessingLedgerRetention),
+      );
+      await pumpEventQueue();
+
+      expect(pruned, 0);
+      expect(events, 0);
     });
   });
 }

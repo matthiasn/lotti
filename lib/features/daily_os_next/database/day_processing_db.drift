@@ -1,0 +1,108 @@
+-- Device-local processing outbox (day_processing.sqlite), ADR 0044.
+--
+-- Replaces the file-per-job store from ADR 0031. Rows are strictly
+-- device-local: claim tokens, leases and attempt counters describe *this*
+-- device's progress and must never sync, which is why this lives in its own
+-- database rather than in the journal or agent domains.
+--
+-- Envelope columns are real columns so the drain path can be indexed; the
+-- kind-specific payload and the run-key provenance list stay JSON, exactly as
+-- they were in the file format.
+--
+-- The generated row class is `DayProcessingJobRow`, named explicitly so it
+-- does not collide with the `DayProcessingJob` domain model — the same row-vs-
+-- domain split as `ConsumptionEvent` / `AiConsumptionEvent`. Reads and writes
+-- go through `day_processing_job_row.dart`, not the generated class.
+--
+-- Timestamps are epoch milliseconds (INTEGER), matching `inbound_event_queue`
+-- in sync_db and preserving the millisecond precision that Drift's default
+-- second-granularity DateTime mapping would truncate. They are read back as
+-- UTC, which is what the previous ISO-8601 file encoding produced.
+CREATE TABLE day_processing_jobs (
+  -- Deterministic per intent (`transcribe_<sessionId>`, `parse_<captureId>`,
+  -- `draft_<dayId>`, `refine_<dayId>_<suffix>`), so enqueue is an idempotent
+  -- upsert and the file migration cannot duplicate a job.
+  id TEXT NOT NULL PRIMARY KEY,
+
+  -- DayProcessingJobStatus.name. Text rather than an enum index so the set
+  -- stays readable in the partial indexes below and survives reordering.
+  status TEXT NOT NULL,
+
+  -- DayProcessingJobKind.name.
+  kind TEXT NOT NULL,
+  day_id TEXT NOT NULL,
+
+  -- DayProcessingPayload.toJson() for `kind`.
+  payload TEXT NOT NULL,
+
+  -- JSON array of wake run keys, newest last. NULL when none recorded.
+  run_keys TEXT,
+
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+
+  -- When the work this row currently represents was requested; moves forward
+  -- on re-arm and is the artifact baseline for agent jobs.
+  requested_at INTEGER NOT NULL,
+
+  next_attempt_at INTEGER NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  generation INTEGER NOT NULL DEFAULT 0,
+
+  -- Claim fencing. A claimed mutation must present the current token, so a
+  -- worker whose claim was revoked cannot write over the terminal state.
+  claim_token TEXT,
+  lease_until INTEGER,
+
+  -- Hard retry boundary from a provider `Retry-After`.
+  retry_not_before INTEGER,
+
+  last_failure_class TEXT,
+  last_error TEXT,
+
+  -- Provider output staged before the journal side effect, so a local commit
+  -- failure retries without repeating inference.
+  result_transcript TEXT,
+
+  -- Agent-job output id: the DayPlanEntity id for drafts, ChangeSet for
+  -- refines.
+  result_entity_id TEXT,
+
+  completed_at INTEGER
+) AS DayProcessingJobRow;
+
+-- Drain/pending index. Partial on non-terminal rows so the retained ledger —
+-- which grows for the life of the install — is excluded from every hot query.
+-- Keyed on (created_at, id) because claim order is FIFO by creation, with the
+-- id as the tie-break, matching the file store's sort.
+--
+-- Serves both the claim selection (which narrows further to the three
+-- drainable statuses plus the due predicate) and the review fence (which wants
+-- every non-terminal transcription job). Without the partial, both would scan
+-- the ledger.
+CREATE INDEX idx_day_processing_jobs_pending
+  ON day_processing_jobs (created_at, id)
+  WHERE status NOT IN ('succeeded', 'cancelled');
+
+-- Activity index: the day view reads one day's jobs instead of the whole
+-- ledger. Includes `kind` because Activity only joins transcription jobs to
+-- recording cards.
+CREATE INDEX idx_day_processing_jobs_day
+  ON day_processing_jobs (day_id, kind, created_at);
+
+-- Retention sweep: terminal rows past the window. Partial so the sweep never
+-- looks at pending work, which is never retention-eligible.
+CREATE INDEX idx_day_processing_jobs_retention
+  ON day_processing_jobs (completed_at)
+  WHERE status IN ('succeeded', 'cancelled');
+
+-- One-row-per-milestone record of completed one-off migrations. The
+-- file-to-table cutover sentinel lives here rather than in a file so it shares
+-- a durability domain with the imported rows: either both commit or neither
+-- does (ADR 0044 decision 6).
+-- `migration_key`, not `key`: drift's grammar treats `key` as reserved and
+-- silently generates a table without that column.
+CREATE TABLE day_processing_migrations (
+  migration_key TEXT NOT NULL PRIMARY KEY,
+  completed_at INTEGER NOT NULL
+) AS DayProcessingMigrationRow;

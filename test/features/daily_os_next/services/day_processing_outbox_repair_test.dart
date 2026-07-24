@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repo
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import 'day_processing_test_db.dart';
 
 void main() {
   late Directory root;
@@ -63,7 +64,7 @@ void main() {
   setUp(() {
     root = Directory.systemTemp.createTempSync('day-outbox-repair-test-');
     repository = DayProcessingOutboxRepository(
-      rootDirectory: Directory('${root.path}/outbox'),
+      db: createTestDayProcessingDb(),
       now: () => now,
     );
     journalDb = MockJournalDb();
@@ -101,7 +102,7 @@ void main() {
       );
 
       final repaired = await repair.repair();
-      final jobs = await repository.getAll();
+      final jobs = await allDayProcessingJobs(repository.db);
 
       expect(repaired, 2);
       expect(jobs, hasLength(2));
@@ -144,7 +145,7 @@ void main() {
     );
 
     expect(await repair.repair(), 0);
-    expect(await repository.getAll(), isEmpty);
+    expect(await allDayProcessingJobs(repository.db), isEmpty);
   });
 
   test('continues through full pages until the final partial page', () async {
@@ -178,7 +179,7 @@ void main() {
     );
 
     expect(await repair.repair(pageSize: 1), 1);
-    expect(await repository.getAll(), hasLength(1));
+    expect(await allDayProcessingJobs(repository.db), hasLength(1));
     verify(
       () => journalDb.getJournalEntities(
         types: const <String>['JournalAudio'],

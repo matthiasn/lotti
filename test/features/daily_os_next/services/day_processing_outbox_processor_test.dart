@@ -11,6 +11,8 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_proc
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:path/path.dart' as path;
 
+import 'day_processing_test_db.dart';
+
 void main() {
   late Directory root;
   late File audio;
@@ -23,7 +25,7 @@ void main() {
     await audio.writeAsBytes(<int>[1, 2, 3], flush: true);
     now = DateTime.utc(2026, 7, 18, 8);
     repository = DayProcessingOutboxRepository(
-      rootDirectory: Directory(path.join(root.path, 'outbox')),
+      db: createTestDayProcessingDb(),
       now: () => now,
       tokenFactory: () => 'claim-token',
     );
