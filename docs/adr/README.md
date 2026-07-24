@@ -99,3 +99,4 @@ Each ADR should contain:
 - [`0041-relationship-contact-linking.md`](./0041-relationship-contact-linking.md)
 - [`0042-typed-task-relationship-links.md`](./0042-typed-task-relationship-links.md)
 - [`0043-dependency-aware-planning.md`](./0043-dependency-aware-planning.md)
+- [`0044-day-processing-outbox-storage.md`](./0044-day-processing-outbox-storage.md)
