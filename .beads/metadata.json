@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "lotti3",
+  "project_id": "b24ed675-f49d-4500-9c67-f23b58c56146"
+}
