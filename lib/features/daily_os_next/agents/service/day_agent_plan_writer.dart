@@ -311,6 +311,15 @@ class DayAgentPlanWriter {
       agentId: agentId,
       dayId: dayId,
     );
+    if (existing != null && existing.data.status is DayPlanStatusCommitted) {
+      // ADR 0006: a committed plan is user-approved state — including block
+      // progress — and may only change through an approved ChangeSet. A
+      // redraft here would wholesale replace it without any approval gate.
+      throw const DayAgentCaptureException(
+        'draft_day_plan cannot replace a committed plan. Propose changes '
+        'with propose_plan_diff instead so the user can approve them.',
+      );
+    }
     final plan =
         AgentDomainEntity.dayPlan(
               id: dayAgentPlanEntityId(dayId),

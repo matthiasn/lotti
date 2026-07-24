@@ -309,6 +309,46 @@ void main() {
       },
     );
 
+    test(
+      'persistDraftPlan refuses to replace a committed plan — committed '
+      'state may only change through an approved ChangeSet (ADR 0006)',
+      () async {
+        final committed = seedPlanEntity(
+          status: DayPlanStatus.committed(
+            committedAt: DateTime(2026, 5, 25, 8),
+          ),
+        );
+
+        await expectLater(
+          createService().persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: [
+              {
+                'id': 'block-9',
+                'title': 'Overwrite attempt',
+                'categoryId': 'work',
+                'start': DateTime(2026, 5, 25, 9).toIso8601String(),
+                'end': DateTime(2026, 5, 25, 10).toIso8601String(),
+                'type': 'manual',
+              },
+            ],
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('propose_plan_diff'),
+            ),
+          ),
+        );
+        // The committed plan is untouched — nothing was written.
+        expect(upsertedEntities, isEmpty);
+        expect(agentEntities[committed.id], same(committed));
+      },
+    );
+
     test('persistDraftPlan rejects AI blocks without reasons', () async {
       await expectLater(
         createService().persistDraftPlan(
