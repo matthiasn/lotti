@@ -179,6 +179,19 @@ mutations become `WHERE id=? AND claim_token=? AND status='running'`.
 This is strictly stronger than today's read-then-write under a Dart
 mutex.
 
+**A lost claim is not an idle drain.** Two claimers exist: the background
+drain lane and the interactive foreground path
+(`enqueueAndClaimTranscription` / `claimById`, used by
+`capture_controller.dart:381`). Today `_serialize` orders them and the
+loser simply observes `!isDue`. With a conditional `UPDATE` the loser
+instead sees zero affected rows, and that must not be reported as "no
+work": `drain()` breaks its loop on `DayProcessingRunResult.idle`
+(`day_processing_outbox_processor.dart:253`), so collapsing the two would
+stop a drain while other jobs are still due. The contract is therefore
+explicit — zero affected rows means another claimer won, so re-select and
+continue (bounded to avoid a livelock); only an empty candidate set is
+idle.
+
 **Ordering contract.** Selection is `SELECT … WHERE <active statuses>
 AND <due predicate> ORDER BY … LIMIT 1`. The order key is deliberately
 *not* a stored `priority` column. The sync outbox can store one
@@ -296,17 +309,33 @@ because the count can match while the *identities* differ.
    ids make this an idempotent upsert.
 3. **Verify by identity, not by count.** Re-scan the directory and
    compare the *set of job ids* against the table. If the re-scan turns
-   up ids the table lacks, import those and repeat. Publish the sentinel
-   only after a re-scan that adds nothing.
-4. Write the sentinel. The repository reads the table from that point on.
-   Until the sentinel exists the filesystem remains authoritative, so a
-   crash at any point before step 4 simply re-runs the whole migration on
-   the next start.
+   up ids the table lacks, import those and repeat.
+4. **Publish the sentinel inside the database**, in the same transaction
+   as the final verifying scan — a row in a migration-state table, not a
+   file. The table and a sentinel file would be separate durability
+   domains, and a crash between them could expose a sentinel over an
+   unpersisted import, making the still-authoritative files invisible.
+   One transaction removes that failure mode by construction rather than
+   by ordering rules. Until the sentinel row commits, the filesystem
+   stays authoritative, so a crash anywhere earlier just re-runs the
+   whole migration on the next start.
 5. Leave the job files in place for one release, then delete them in a
    follow-up. They are dead weight, and they are also a free rollback.
 6. Startup repair — which rebuilds jobs from persisted `dayContext`
    provenance in the journal — is unchanged and remains the second safety
    net for anything that still slips through.
+
+**The verification is deliberately one-directional.** Every id on disk
+must exist in the table; ids in the table with no corresponding file are
+accepted and must *not* be deleted. Exact set equality would be the wrong
+invariant here: no code path removes a job file to express intent —
+cancellation is a `cancelled` status written *into* the file — so a
+missing file never means "this job should not exist". It does mean
+something specific, though: `_quarantine` renames a file whose checksum
+fails, so a job successfully imported on one attempt can lose its file
+before the next. Requiring equality would delete that row and turn a
+recoverable state into actual data loss. Keeping it is the safe
+direction, and after the migration the table is the only writer anyway.
 
 The durability guarantee from ADR 0031 is unchanged: nothing the user
 recorded loses its pending transcription across the migration.
