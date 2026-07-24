@@ -8,6 +8,24 @@ part 'day_plan.g.dart';
 String dayPlanId(DateTime date) =>
     'dayplan-${date.toIso8601String().substring(0, 10)}';
 
+/// Normalizes [date] to the local calendar day used by DayPlan IDs.
+///
+/// Converts to local time first so a UTC-typed [date] (e.g. a timestamp
+/// deserialized as UTC) is bucketed to the user's actual local calendar day
+/// rather than the UTC day, which would shift near midnight. A no-op for the
+/// already-local timestamps the app produces via `clock.now()`.
+DateTime localDay(DateTime date) {
+  final local = date.toLocal();
+  return DateTime(local.year, local.month, local.day);
+}
+
+/// Stable day-agent subject ID for a local calendar [date].
+///
+/// Lives here rather than with the Daily OS slot helpers because the agent
+/// persistence layer derives a capture's day workspace when writing its
+/// indexed subtype, and must not depend on a feature package.
+String dayAgentIdForDate(DateTime date) => dayPlanId(localDay(date));
+
 /// Reasons why a day plan needs review after being agreed.
 enum DayPlanReviewReason {
   /// A task with due date was added for this day

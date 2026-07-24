@@ -250,4 +250,61 @@ void main() {
       expect(metas.single.capturedAt, DateTime(2026, 3, 15, 10));
     });
   });
+
+  group('day-scoped subtype reads (ADR 0044 follow-up)', () {
+    test('returns only the requested day and skips the rest', () async {
+      for (final day in ['dayplan-2026-05-25', 'dayplan-2026-05-26']) {
+        for (var i = 0; i < 2; i++) {
+          await core.upsertEntity(
+            AgentDomainEntity.capture(
+              id: 'capture-$day-$i',
+              agentId: 'daily_os_planner',
+              transcript: 'note $i',
+              capturedAt: DateTime(2026, 5, 25, 9),
+              createdAt: DateTime(2026, 5, 25, 9),
+              dayId: day,
+              vectorClock: null,
+            ),
+          );
+        }
+      }
+
+      final rows = await core.getEntitiesByAgentIdAndSubtype(
+        'daily_os_planner',
+        type: AgentEntityTypes.capture,
+        subtype: 'dayplan-2026-05-25',
+      );
+
+      expect(
+        rows.whereType<CaptureEntity>().map((c) => c.id),
+        unorderedEquals([
+          'capture-dayplan-2026-05-25-0',
+          'capture-dayplan-2026-05-25-1',
+        ]),
+      );
+    });
+
+    test('finds a legacy capture by its derived day', () async {
+      // No explicit dayId: the stored subtype is derived from capturedAt, so
+      // a day-scoped read still finds it without a Dart-side fallback scan.
+      await core.upsertEntity(
+        AgentDomainEntity.capture(
+          id: 'capture-legacy',
+          agentId: 'daily_os_planner',
+          transcript: 'from an old peer',
+          capturedAt: DateTime(2026, 5, 25, 9),
+          createdAt: DateTime(2026, 5, 25, 9),
+          vectorClock: null,
+        ),
+      );
+
+      final rows = await core.getEntitiesByAgentIdAndSubtype(
+        'daily_os_planner',
+        type: AgentEntityTypes.capture,
+        subtype: 'dayplan-2026-05-25',
+      );
+
+      expect(rows.whereType<CaptureEntity>().single.id, 'capture-legacy');
+    });
+  });
 }

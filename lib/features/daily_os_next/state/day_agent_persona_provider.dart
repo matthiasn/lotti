@@ -55,9 +55,12 @@ final dayAgentPersonaStateProvider = FutureProvider.autoDispose
       );
       if (owner is! AgentIdentityEntity) return DayAgentPersonaState.idle;
       final repository = ref.watch(agentRepositoryProvider);
-      final rows = await repository.getEntitiesByAgentId(
+      // Day-scoped and indexed: status events are the fastest-growing entity
+      // the day surface reads, and this provider runs on every day view.
+      final rows = await repository.getEntitiesByAgentIdAndSubtype(
         owner.agentId,
         type: AgentEntityTypes.dayStatusEvent,
+        subtype: dayId,
       );
       DayStatusEventEntity? newest;
       for (final row in rows) {

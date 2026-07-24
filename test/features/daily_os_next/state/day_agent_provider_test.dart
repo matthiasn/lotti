@@ -254,9 +254,10 @@ void main() {
       // (ADR 0032); default the coordinator leg to empty so owner-focused
       // tests stay unchanged. Specific stubs registered later win.
       when(
-        () => agentRepository.getEntitiesByAgentId(
+        () => agentRepository.getEntitiesByAgentIdAndSubtype(
           any(),
           type: any(named: 'type'),
+          subtype: any(named: 'subtype'),
         ),
       ).thenAnswer((_) async => const <AgentDomainEntity>[]);
     });
@@ -305,9 +306,10 @@ void main() {
 
       expect(captures, isEmpty);
       verifyNever(
-        () => agentRepository.getEntitiesByAgentId(
+        () => agentRepository.getEntitiesByAgentIdAndSubtype(
           any(),
           type: any(named: 'type'),
+          subtype: any(named: 'subtype'),
         ),
       );
     });
@@ -325,9 +327,10 @@ void main() {
           ),
         );
         when(
-          () => agentRepository.getEntitiesByAgentId(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
             agentId,
             type: AgentEntityTypes.capture,
+            subtype: any(named: 'subtype'),
           ),
         ).thenAnswer((_) async => const <AgentDomainEntity>[]);
 
@@ -336,9 +339,10 @@ void main() {
         // The provider re-derives the day-agent id from the supplied date.
         verify(() => dayAgentService.getDayAgentForDate(forDate)).called(1);
         verify(
-          () => agentRepository.getEntitiesByAgentId(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
             agentId,
             type: AgentEntityTypes.capture,
+            subtype: any(named: 'subtype'),
           ),
         ).called(1);
       },
@@ -367,9 +371,10 @@ void main() {
           deletedAt: dayAt,
         );
         when(
-          () => agentRepository.getEntitiesByAgentId(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
             agentId,
             type: AgentEntityTypes.capture,
+            subtype: any(named: 'subtype'),
           ),
         ).thenAnswer((_) async => [live, tombstone]);
         when(
@@ -422,9 +427,10 @@ void main() {
                 )
                 as CaptureEntity;
         when(
-          () => agentRepository.getEntitiesByAgentId(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
             agentId,
             type: AgentEntityTypes.capture,
+            subtype: any(named: 'subtype'),
           ),
         ).thenAnswer((_) async => [today, otherDay]);
 
@@ -461,15 +467,17 @@ void main() {
           agentId: dailyOsPlannerAgentId,
         );
         when(
-          () => agentRepository.getEntitiesByAgentId(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
             ownerId,
             type: AgentEntityTypes.capture,
+            subtype: any(named: 'subtype'),
           ),
         ).thenAnswer((_) async => [ownCapture, sharedOwn]);
         when(
-          () => agentRepository.getEntitiesByAgentId(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
             dailyOsPlannerAgentId,
             type: AgentEntityTypes.capture,
+            subtype: any(named: 'subtype'),
           ),
         ).thenAnswer((_) async => [plannerCapture, sharedPlanner]);
 
@@ -498,9 +506,10 @@ void main() {
         );
         final typed = makeCapture(id: 'cap-typed', agentId: agentId);
         when(
-          () => agentRepository.getEntitiesByAgentId(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
             agentId,
             type: AgentEntityTypes.capture,
+            subtype: any(named: 'subtype'),
           ),
         ).thenAnswer((_) async => [typed]);
 
@@ -539,9 +548,10 @@ void main() {
           data: testAudioEntry.data,
         );
         when(
-          () => agentRepository.getEntitiesByAgentId(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
             agentId,
             type: AgentEntityTypes.capture,
+            subtype: any(named: 'subtype'),
           ),
         ).thenAnswer((_) async => [capture]);
         when(
@@ -575,9 +585,10 @@ void main() {
           audioRef: audioRef,
         );
         when(
-          () => agentRepository.getEntitiesByAgentId(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
             agentId,
             type: AgentEntityTypes.capture,
+            subtype: any(named: 'subtype'),
           ),
         ).thenAnswer((_) async => [capture]);
         when(

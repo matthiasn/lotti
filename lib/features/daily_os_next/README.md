@@ -250,6 +250,29 @@ device-local processing outbox that transcription uses (`services/day_processing
 a sealed `DayProcessingPayload` per kind (`TranscribeAudioPayload`,
 `ParseCapturePayload`, `DraftPlanPayload`, `RefinePlanPayload`).
 
+### Day-scoped agent reads
+
+Opening a day used to load **every** capture and **every** day-status event the
+owning agent had ever recorded and filter them in Dart. That cost grew with the
+user's whole history on the main day surface, and it bit hardest on
+planner-owned days: a `day_agent:<dayId>` is self-limiting by construction,
+but the coordinator accumulates forever and owns every pre-cutover day.
+
+The cause was the projected `subtype` column. `capture` stored the capture's
+own id (redundant with the primary key) and `dayStatusEvent` its status name,
+so neither could serve a day-scoped query — while `dayPlan`/`daySummary`/
+`dayDirective` already stored the day and were indexed. Both now store the day
+workspace, so `capturesForDateProvider` and `dayAgentPersonaStateProvider` read
+through `idx_agent_entities_agent_type_sub` instead of scanning.
+
+A capture that carries no explicit `dayId` (synced from a peer old enough to
+predate it) derives one from `capturedAt` in local time, the same rule
+`captureDayId` applies on read — so legacy rows land on the right day rather
+than needing a Dart-side fallback scan. Schema v17 backfills existing rows
+through that same Dart projection rather than a SQL `json_extract` update,
+because a backfilled value that disagreed with the writer would silently drop
+rows out of their day.
+
 ### Outbox storage: a device-local table (ADR 0044)
 
 The outbox is a table in its own database (`database/day_processing_db.drift`,

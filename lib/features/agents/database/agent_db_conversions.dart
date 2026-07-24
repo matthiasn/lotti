@@ -1,6 +1,6 @@
 import 'dart:convert';
-
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -108,8 +108,17 @@ class AgentDbConversions {
   /// - `AgentStateEntity` counters: legacy scalar `wakeCounter` /
   ///   `totalSessionsCompleted` / `weeklyReviewCount` seeded into their per-host
   ///   `*ByHost` G-counter maps (see [_migrateGCounters]).
-  static AgentDomainEntity fromEntityRow(AgentEntity row) {
-    final json = jsonDecode(row.serialized) as Map<String, dynamic>;
+  static AgentDomainEntity fromEntityRow(AgentEntity row) =>
+      fromSerialized(row.serialized);
+
+  /// Decodes the stored payload, applying the same in-place format
+  /// migrations [fromEntityRow] does.
+  ///
+  /// Exposed for schema migrations that re-derive projected columns and must
+  /// use the identical decode path, so a backfilled value can never disagree
+  /// with what the writer would produce.
+  static AgentDomainEntity fromSerialized(String serialized) {
+    final json = jsonDecode(serialized) as Map<String, dynamic>;
     _migrateReportContent(json);
     _migrateGCounters(json);
     return AgentDomainEntity.fromJson(json);
@@ -269,12 +278,20 @@ class AgentDbConversions {
       agentReportHead: (head) => head.scope,
       scheduledWake: (wake) => wake.status.name,
       plannerKnowledge: (k) => k.key,
-      capture: (capture) => capture.id,
+      // The day workspace, not the capture's own id (which the primary key
+      // already carries): this is what makes a day-scoped read of a busy
+      // agent's captures an indexed lookup instead of a full scan. Derived
+      // for captures synced from peers old enough to carry no dayId.
+      capture: (capture) => capture.dayId.isNotEmpty
+          ? capture.dayId
+          : dayAgentIdForDate(capture.capturedAt),
       parsedItem: (item) => item.kind.name,
       dayPlan: (plan) => plan.dayId,
       daySummary: (e) => e.dayId,
       dayDirective: (e) => e.dayId,
-      dayStatusEvent: (e) => e.status.name,
+      // The day, not the status: status events are the fastest-growing entity
+      // type here and are always read day-scoped.
+      dayStatusEvent: (e) => e.dayId,
       attentionRequest: (request) => request.scopeKind.name,
       attentionClaimDisposition: (disposition) => disposition.requestId,
       attentionAward: (award) => award.dayId,

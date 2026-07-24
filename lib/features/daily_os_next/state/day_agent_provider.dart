@@ -156,14 +156,16 @@ final capturesForDateProvider = FutureProvider.autoDispose
       final agentIds = <String>{agent.agentId, dailyOsPlannerAgentId};
       final rows = <AgentDomainEntity>[
         for (final agentId in agentIds)
-          ...await agentRepository.getEntitiesByAgentId(
+          ...await agentRepository.getEntitiesByAgentIdAndSubtype(
             agentId,
             type: AgentEntityTypes.capture,
+            subtype: dayId,
           ),
       ];
-      // Day-scope the list: an owner can hold many days' captures (the
-      // coordinator always does), so filter to this date's workspace.
-      // captureDayId derives the day for legacy captures with no dayId.
+      // The subtype filter above already scopes to this day (the stored
+      // subtype is derived by captureDayId's rule, so legacy captures with no
+      // dayId land on the right day too). captureDayId stays as a belt-and-
+      // braces check against a row whose subtype predates the backfill.
       final seenIds = <String>{};
       final captures = rows
           .whereType<CaptureEntity>()
