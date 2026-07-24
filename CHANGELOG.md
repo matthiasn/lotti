@@ -40,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to your day.
 
 ### Fixed
+- **Photo rows in the Logbook no longer shout.** An image entry's caption was
+  rendered several sizes larger than the title of every other row in the same
+  feed, so photos dominated the list. It now sits on the same title scale as
+  note, task and event rows, and the timestamp beneath it matches the other
+  cards' brightness.
 - **Day-plan processing can no longer retry forever in the background.** A
   draft or refinement whose AI call completed without producing the expected
   result used to re-run a full model request every few seconds, indefinitely

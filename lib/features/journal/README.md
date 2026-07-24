@@ -353,6 +353,8 @@ Each browse row is rendered by [`CardWrapperWidget`](ui/widgets/list_cards/card_
 - a **de-emphasized meta line**: a locale-aware relative date (`entryDateLabel`) plus an optional category dot;
 - type-specific **metric chips** (`ModernStatusChip`) on their own row.
 
+`ModernJournalImageCard` swaps only the leading element: a 104dp square thumbnail (`CardImageWidget` over a gradient media-well and framed-image glyph, so a missing file degrades to an intentional placeholder) takes the glyph tile's place and drives the row height. Everything right of it follows the shared anatomy — the image caption is the title at `subtitle2`/`highEmphasis`, capped at two lines with an ellipsis, over the same `others.caption`/`mediumEmphasis` date line; an empty caption falls back to the localized type label at that same title tier. Because the thumbnail is taller than the text column, caption length never changes the row's height.
+
 Structured types are humanized rather than surfacing storage values: health/quantitative shows `humanHealthTypeName` + a `value unit` chip (e.g. `Systolic Blood Pressure` · `122 mmHg`, never the raw `HealthDataType.*`/`HealthDataUnit.*` enum); workout shows the sport name + duration/energy/distance chips; measurement shows the measurable name + value; survey shows the instrument name + compact score chips. Checklist rows surface `done/total` progress (via `checklistCompletionControllerProvider`) with a thin progress bar; habit-completion rows resolve the habit name and show an explicit status chip (Completed / Skipped / Failed). `ModernJournalCard` is also reused on detail and linked-from surfaces, where the same anatomy renders with `showLinkedDuration` / `removeHorizontalMargin`.
 
 ### Browse and Search Flow
