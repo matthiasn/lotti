@@ -326,8 +326,15 @@ class TaskAgentService {
 
   /// Enable or disable subscription-triggered automatic task updates.
   ///
-  /// Turning this on allows retained subscriptions to schedule future wakes,
-  /// but never enqueues work or replays changes received while it was off.
+  /// Turning this on retains subscriptions for future wakes and, when the
+  /// report is not already current, enqueues **exactly one** wake so the user
+  /// does not have to follow the switch with a manual "wake agent" tap. It
+  /// still never replays the individual changes received while automation was
+  /// off: one catch-up wake, not one per missed change. A report that is
+  /// already fresh — nothing marked it stale since the last successful report
+  /// wake — enqueues nothing, so toggling the switch right after a manual wake
+  /// costs no tokens.
+  ///
   /// Turning it off clears the countdown and queued automatic jobs. When that
   /// countdown represented a pending report refresh, the report is first
   /// marked stale so removing the timer cannot make the card claim that the
@@ -338,6 +345,7 @@ class TaskAgentService {
     required bool enabled,
   }) async {
     late AgentIdentityEntity identity;
+    var wakeOnEnable = false;
     await syncService.runInTransaction(() async {
       final current = await agentService.getAgent(agentId);
       if (current == null) {
@@ -359,8 +367,15 @@ class TaskAgentService {
       );
       await syncService.upsertEntity(updated);
 
-      if (!enabled) {
-        final state = await repository.getAgentState(agentId);
+      final state = await repository.getAgentState(agentId);
+      if (enabled) {
+        // Catch-up wake decision, taken here while the state row is already
+        // loaded. "Nothing to catch up on" is a report that exists and is
+        // current; an agent that has never produced one still wakes, because
+        // its card would otherwise sit empty until the next task edit.
+        wakeOnEnable =
+            state == null || state.reportFreshAt == null || state.isReportStale;
+      } else {
         final pendingWake = state?.nextWakeAt;
         if (state != null &&
             pendingWake != null &&
@@ -373,7 +388,8 @@ class TaskAgentService {
       }
     });
 
-    if (enabled && identity.lifecycle == AgentLifecycle.active) {
+    final activating = enabled && identity.lifecycle == AgentLifecycle.active;
+    if (activating) {
       orchestrator.enableAutomaticUpdatesRuntime(agentId);
       await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
     } else {
@@ -386,6 +402,13 @@ class TaskAgentService {
       '${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
+
+    // After the runtime is enabled and subscriptions are restored, so the
+    // catch-up wake cannot race its own scheduling setup. Inactive agents and
+    // disabled setups never reach here.
+    if (activating && wakeOnEnable) {
+      triggerReanalysis(agentId);
+    }
   }
 
   /// Update the base inference profile and clear any direct model override.

@@ -1257,6 +1257,8 @@
   "categoryActiveSwitchDescription": "Seleccionable para nuevas entradas",
   "categoryAiDefaultsDescription": "Establecer el perfil de IA y la plantilla de agente predeterminados para nuevas tareas en esta categoría",
   "categoryAiDefaultsTitle": "Valores predeterminados de IA",
+  "categoryAutomaticInferenceDescription": "Transcribe los audios nuevos y analiza las imágenes nuevas de esta categoría automáticamente",
+  "categoryAutomaticInferenceLabel": "Inferencia automática",
   "categoryCreationError": "No se pudo crear la categoría. Por favor, inténtalo de nuevo.",
   "categoryDayPlanDescription": "Hacer que esta categoría esté disponible para seleccionarla en tu plan del día",
   "categoryDayPlanLabel": "Plan del día",

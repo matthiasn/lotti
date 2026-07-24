@@ -1527,6 +1527,8 @@
   "categoryActiveSwitchDescription": "Selectable for new entries",
   "categoryAiDefaultsDescription": "Set default AI profile and agent template for new tasks in this category",
   "categoryAiDefaultsTitle": "AI defaults",
+  "categoryAutomaticInferenceDescription": "Transcribe new audio and analyze new images in this category automatically",
+  "categoryAutomaticInferenceLabel": "Automatic inference",
   "categoryCreationError": "Failed to create category. Please try again.",
   "categoryDayPlanDescription": "Make this category available for selection in the day plan",
   "categoryDayPlanLabel": "Day planning",

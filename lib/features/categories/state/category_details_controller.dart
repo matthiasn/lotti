@@ -125,6 +125,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
             _originalCategory!.defaultLanguageCode ||
         _pendingCategory!.defaultProfileId !=
             _originalCategory!.defaultProfileId ||
+        _pendingCategory!.automaticInferenceEnabled !=
+            _originalCategory!.automaticInferenceEnabled ||
         _pendingCategory!.defaultTemplateId !=
             _originalCategory!.defaultTemplateId ||
         _pendingCategory!.defaultEventTemplateId !=
@@ -201,6 +203,15 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   void setDefaultProfileId(String? profileId) {
     _updatePendingCategory(
       (c) => c.copyWith(defaultProfileId: profileId),
+    );
+  }
+
+  /// Turns automatic inference — auto-transcription and auto-image-analysis —
+  /// on or off for this category. This is the user's explicit consent to spend
+  /// tokens without a gesture; selecting a profile does not imply it.
+  void setAutomaticInferenceEnabled({required bool enabled}) {
+    _updatePendingCategory(
+      (c) => c.copyWith(automaticInferenceEnabled: enabled),
     );
   }
 

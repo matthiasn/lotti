@@ -24,6 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1063]
 ### Changed
+- **Automatic AI now waits to be asked, per category.** Transcribing new audio
+  and analyzing new images automatically is now an explicit per-category
+  switch, sitting under the category's AI profile. Previously, picking a
+  profile was enough to start it — profiles arrive with automation already
+  enabled — and audio could even be transcribed automatically with no profile
+  chosen at all. **The switch starts off everywhere, including categories that
+  already had a profile**, so turn it on for each category where you want AI
+  to keep working in the background. Per-recording "don't transcribe this one"
+  still works as before.
 - **Picking what two tasks mean to each other is now one choice, not two.**
   The relationship picker was a row of type chips plus a separate direction
   switch, which put the same word on screen twice — a chip reading "Blocks"
@@ -46,6 +55,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sheet on a phone, a centred dialog on a wide window, matching every other
   task picker — and size themselves to their content instead of leaving a
   large empty area below a short list.
+
+### Added
+- **Turning on automatic updates now wakes the task agent right away.** The
+  switch used to only arm future updates, so you had to tap "wake agent"
+  yourself to get a current summary. It now fetches one immediately — unless
+  the summary is already up to date, in which case it stays quiet rather than
+  spending tokens on a refresh you don't need.
 
 ### Fixed
 - **Two tasks can hold more than one relationship.** A task already linked to

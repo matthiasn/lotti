@@ -2699,6 +2699,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'Výchozí hodnoty AI';
 
   @override
+  String get categoryAutomaticInferenceDescription =>
+      'Automaticky přepisovat nové audio a analyzovat nové obrázky v této kategorii';
+
+  @override
+  String get categoryAutomaticInferenceLabel => 'Automatická inference';
+
+  @override
   String get categoryCreationError => 'Nepodařilo se vytvořit kategorii.';
 
   @override

@@ -280,6 +280,7 @@ CategoryDefinition _$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
           )
           .toList(),
       defaultProfileId: json['defaultProfileId'] as String?,
+      automaticInferenceEnabled: json['automaticInferenceEnabled'] as bool?,
       defaultTemplateId: json['defaultTemplateId'] as String?,
       defaultEventTemplateId: json['defaultEventTemplateId'] as String?,
       isAvailableForDayPlan: json['isAvailableForDayPlan'] as bool?,
@@ -304,6 +305,7 @@ Map<String, dynamic> _$CategoryDefinitionToJson(CategoryDefinition instance) =>
       'speechDictionary': instance.speechDictionary,
       'correctionExamples': instance.correctionExamples,
       'defaultProfileId': instance.defaultProfileId,
+      'automaticInferenceEnabled': instance.automaticInferenceEnabled,
       'defaultTemplateId': instance.defaultTemplateId,
       'defaultEventTemplateId': instance.defaultEventTemplateId,
       'isAvailableForDayPlan': instance.isAvailableForDayPlan,

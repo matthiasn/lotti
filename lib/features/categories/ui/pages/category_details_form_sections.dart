@@ -123,6 +123,36 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
     );
   }
 
+  /// Explicit consent to run inference in this category without a gesture.
+  ///
+  /// Only rendered when there is something to consent to — the selected
+  /// profile carries automated skills, or the direct transcription fallback
+  /// could run. While that resolves, and whenever automation is impossible,
+  /// the row is absent rather than shown disabled: an off switch the user
+  /// cannot act on reads as a broken control.
+  Widget _buildAutomaticInferenceSwitch(CategoryDefinition category) {
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+    final available =
+        ref
+            .watch(
+              categoryAutomationAvailableProvider(category.defaultProfileId),
+            )
+            .value ??
+        false;
+    if (!available) return const SizedBox.shrink();
+
+    return SettingsSwitchRow(
+      title: context.messages.categoryAutomaticInferenceLabel,
+      subtitle: context.messages.categoryAutomaticInferenceDescription,
+      icon: Icons.auto_awesome_outlined,
+      value: category.automaticInferenceEnabledEffective,
+      onChanged: (value) =>
+          controller.setAutomaticInferenceEnabled(enabled: value),
+    );
+  }
+
   Widget _buildDefaultTemplatePicker(CategoryDefinition category) {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,

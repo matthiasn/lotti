@@ -2695,6 +2695,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'Valores predeterminados de IA';
 
   @override
+  String get categoryAutomaticInferenceDescription =>
+      'Transcribe los audios nuevos y analiza las imágenes nuevas de esta categoría automáticamente';
+
+  @override
+  String get categoryAutomaticInferenceLabel => 'Inferencia automática';
+
+  @override
   String get categoryCreationError =>
       'No se pudo crear la categoría. Por favor, inténtalo de nuevo.';
 

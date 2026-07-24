@@ -262,15 +262,26 @@ void main() {
   // exercises the macOS ranking) and restore it for each test. A dedicated
   // test below pins the non-macOS demotion behaviour.
   late bool originalIsMacOS;
+  // Every path is gated on the owning category's automatic-inference switch.
+  // The suite below exercises what happens *past* that gate, so the default is
+  // an opted-in category; the `category automation gate` group flips it.
+  late bool categoryAllowsAutomation;
+  late List<String> automationLookupTaskIds;
 
   setUp(() {
     originalIsMacOS = platform.isMacOS;
     platform.isMacOS = true;
+    categoryAllowsAutomation = true;
+    automationLookupTaskIds = [];
     mockResolver = MockProfileAutomationResolver();
     mockAiConfig = MockAiConfigRepository();
     service = ProfileAutomationService(
       resolver: mockResolver,
       aiConfigRepository: mockAiConfig,
+      categoryAutomationLookup: (taskId) async {
+        automationLookupTaskIds.add(taskId);
+        return categoryAllowsAutomation;
+      },
     );
     when(
       () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -393,6 +404,115 @@ void main() {
   }
 
   group('ProfileAutomationService', () {
+    // The category switch is the only place the user consents to inference
+    // running without a gesture. Selecting a profile is not consent: seeded
+    // profiles arrive with `automate: true` assignments already set.
+    group('category automation gate', () {
+      /// A profile that would otherwise transcribe automatically, plus a
+      /// configured speech-to-text model so the direct fallback is available
+      /// too — both paths must stay shut while the switch is off.
+      void stubFullyAutomatedEnvironment() {
+        const assignment = SkillAssignment(
+          skillId: 'skill-transcribe',
+          automate: true,
+        );
+        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          (_) async => makeProfile(
+            skillAssignments: [assignment],
+            withTranscription: true,
+          ),
+        );
+        when(
+          () => mockAiConfig.getConfigById('skill-transcribe'),
+        ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
+      }
+
+      test('transcription does not run when the category has it off', () async {
+        categoryAllowsAutomation = false;
+        stubFullyAutomatedEnvironment();
+
+        final result = await service.tryTranscribe(taskId: 'task-1');
+
+        expect(result.handled, isFalse);
+        // The gate short-circuits before any profile work.
+        verifyNever(() => mockResolver.resolveForTask(any()));
+      });
+
+      test(
+        'image analysis does not run when the category has it off',
+        () async {
+          categoryAllowsAutomation = false;
+          when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+            (_) async => makeProfile(
+              skillAssignments: const [
+                SkillAssignment(skillId: 'skill-image', automate: true),
+              ],
+              withImageRecognition: true,
+            ),
+          );
+
+          final result = await service.tryAnalyzeImage(taskId: 'task-1');
+
+          expect(result.handled, isFalse);
+          verifyNever(() => mockResolver.resolveForTask(any()));
+        },
+      );
+
+      // The direct fallback is the path that used to transcribe with no
+      // profile, no assignment, and no opt-in at all.
+      test('direct transcription fallback is gated too', () async {
+        categoryAllowsAutomation = false;
+        when(
+          () => mockResolver.resolveForTask('task-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [makeModel()]);
+
+        final result = await service.tryTranscribe(taskId: 'task-1');
+
+        expect(result.handled, isFalse);
+        verifyNever(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        );
+      });
+
+      test('affordance visibility mirrors the gate', () async {
+        categoryAllowsAutomation = false;
+        stubFullyAutomatedEnvironment();
+
+        expect(
+          await service.hasAutomatedSkillType(
+            taskId: 'task-1',
+            skillType: SkillType.transcription,
+          ),
+          isFalse,
+        );
+      });
+
+      test('the gate is asked about the task being automated', () async {
+        stubFullyAutomatedEnvironment();
+
+        await service.tryTranscribe(taskId: 'task-1');
+
+        expect(automationLookupTaskIds, ['task-1']);
+      });
+
+      // An unwired lookup must fail closed: an environment that cannot answer
+      // "did the user opt in?" has not been told yes.
+      test('an unwired lookup denies automation', () async {
+        final ungated = ProfileAutomationService(
+          resolver: mockResolver,
+          aiConfigRepository: mockAiConfig,
+        );
+        stubFullyAutomatedEnvironment();
+
+        final result = await ungated.tryTranscribe(taskId: 'task-1');
+
+        expect(result.handled, isFalse);
+      });
+    });
+
     group('tryTranscribe', () {
       test(
         'returns handled when transcription skill with automate found',
@@ -1006,6 +1126,8 @@ void main() {
         final localService = ProfileAutomationService(
           resolver: localResolver,
           aiConfigRepository: localAiConfig,
+          // Generated scenarios cover behaviour past the consent gate.
+          categoryAutomationLookup: (_) async => true,
         );
         final actualLookupIds = <String>[];
         var resolverCalls = 0;
@@ -1108,6 +1230,8 @@ void main() {
         final localService = ProfileAutomationService(
           resolver: localResolver,
           aiConfigRepository: localAiConfig,
+          // Generated scenarios cover behaviour past the consent gate.
+          categoryAutomationLookup: (_) async => true,
         );
 
         final providers = <AiConfigInferenceProvider>[];

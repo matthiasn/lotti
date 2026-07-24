@@ -22,6 +22,13 @@ typedef _TranscriptionFallbackCandidate = ({
   AiConfigInferenceProvider provider,
 });
 
+/// Whether the category owning [taskId] has automatic inference switched on.
+///
+/// Wired to `CategoryDefinition.automaticInferenceEnabledEffective`. An
+/// unwired lookup reports `false`: automation is opt-in, so an environment
+/// that cannot answer the question must not run inference on its own.
+typedef CategoryAutomationLookup = Future<bool> Function(String taskId);
+
 /// Result of an automation attempt.
 ///
 /// When [handled] is `true`, the caller should skip the legacy prompt path.
@@ -56,8 +63,14 @@ class AutomationResult {
 
 /// Service for profile-driven automation of AI tasks.
 ///
-/// Resolves the profile for a task's agent and checks whether a matching
-/// skill assignment with `automate: true` exists. Returns an
+/// Every entry point is gated on the owning category's automatic-inference
+/// switch ([CategoryAutomationLookup]) before any profile is resolved. That
+/// switch is the user's only explicit consent to spend tokens without a
+/// gesture; picking a profile is not, because seeded profiles arrive with
+/// `automate: true` assignments already set.
+///
+/// Past the gate it resolves the profile for a task's agent and checks whether
+/// a matching skill assignment with `automate: true` exists. Returns an
 /// [AutomationResult] that tells the caller whether the profile-driven
 /// path handled the request.
 ///
@@ -73,10 +86,40 @@ class ProfileAutomationService {
   const ProfileAutomationService({
     required this._resolver,
     required this._aiConfigRepository,
+    this._categoryAutomationLookup,
   });
 
   final ProfileAutomationResolver _resolver;
   final AiConfigRepository _aiConfigRepository;
+  final CategoryAutomationLookup? _categoryAutomationLookup;
+
+  /// The single consent gate for running inference without a user gesture.
+  ///
+  /// Both automation paths pass through here — the profile path and the
+  /// direct-model transcription fallback — because the fallback would
+  /// otherwise transcribe for any configured speech-to-text model with no
+  /// opt-in at all. Selecting a profile is not consent: seeded profiles ship
+  /// `automate: true` assignments, so the category switch is the only place
+  /// the user actually says yes.
+  Future<bool> _categoryAllowsAutomation(String taskId) async {
+    final lookup = _categoryAutomationLookup;
+    if (lookup == null) {
+      developer.log(
+        'No category automation lookup wired — treating automation as off '
+        'for task $taskId',
+        name: _logTag,
+      );
+      return false;
+    }
+    final allowed = await lookup(taskId);
+    if (!allowed) {
+      developer.log(
+        'Automatic inference is off for the category owning task $taskId',
+        name: _logTag,
+      );
+    }
+    return allowed;
+  }
 
   /// Attempts profile-driven transcription for a task.
   ///
@@ -97,6 +140,10 @@ class ProfileAutomationService {
       return AutomationResult.notHandled;
     }
 
+    if (!await _categoryAllowsAutomation(taskId)) {
+      return AutomationResult.notHandled;
+    }
+
     final profileResult = await _tryAutomateSkillType(
       taskId: taskId,
       skillType: SkillType.transcription,
@@ -113,6 +160,9 @@ class ProfileAutomationService {
   Future<AutomationResult> tryAnalyzeImage({
     required String taskId,
   }) async {
+    if (!await _categoryAllowsAutomation(taskId)) {
+      return AutomationResult.notHandled;
+    }
     return _tryAutomateSkillType(
       taskId: taskId,
       skillType: SkillType.imageAnalysis,
@@ -199,6 +249,10 @@ class ProfileAutomationService {
     required String taskId,
     required SkillType skillType,
   }) async {
+    // Mirrors the gate the run paths apply, so an affordance never advertises
+    // automation the category has switched off.
+    if (!await _categoryAllowsAutomation(taskId)) return false;
+
     final result = await _tryAutomateSkillType(
       taskId: taskId,
       skillType: skillType,
@@ -208,6 +262,17 @@ class ProfileAutomationService {
 
     final fallbackResult = await _tryDirectTranscriptionFallback();
     return fallbackResult.handled;
+  }
+
+  /// Whether the direct transcription fallback could run at all — some
+  /// configured provider owns a usable speech-to-text model.
+  ///
+  /// Settings needs this without a task in hand: the fallback transcribes with
+  /// no profile involved, so the category's automation switch has something to
+  /// control even when the category has no profile selected.
+  Future<bool> hasDirectTranscriptionFallback() async {
+    final result = await _tryDirectTranscriptionFallback();
+    return result.handled;
   }
 
   /// Finds a configured audio-to-text model that can run transcription without

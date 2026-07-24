@@ -12,7 +12,7 @@ Categories are persisted `CategoryDefinition` entities. In the current codebase 
 - Settings surfaces: `CategoriesListPage`, `CategoryDetailsPage`, and create mode
 - Reusable picker surfaces: `CategoryField`, `CategoryPickerSheet`, and `CategoryCreateModal`
 - Category presentation metadata: `name`, `color`, `icon`
-- Category flags: `private`, `active`, `favorite`, `isAvailableForDayPlan`
+- Category flags: `private`, `active`, `favorite`, `isAvailableForDayPlan`, `automaticInferenceEnabled`
 - Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`, `defaultEventTemplateId`
 - Category-scoped AI and speech context: `speechDictionary`, `correctionExamples`
 
@@ -20,6 +20,15 @@ Categories are persisted `CategoryDefinition` entities. In the current codebase 
 
 - `CategoryDefinition` does not currently contain prompt allowlists such as `allowedPromptIds`.
 - The old `automaticPrompts` concept is not part of the current category model.
+- `automaticInferenceEnabled` is the category's explicit opt-in to running
+  inference without a user gesture (auto-transcription of new audio,
+  auto-analysis of new images). It is nullable and an absent value means
+  **off**, including for categories that already carry a `defaultProfileId`:
+  seeded inference profiles ship `automate: true` skill assignments, so
+  selecting a profile alone would otherwise start spending tokens silently.
+  `ProfileAutomationService` consults it before every automatic path — the
+  profile-driven one and the direct transcription fallback alike — so this
+  flag, not the profile, is the switch that decides whether automation runs.
 - In this code sweep, `defaultLanguageCode` is referenced by the categories model, controller, and UI, but I did not find a downstream consumer outside this feature.
 
 ## Runtime Architecture
@@ -154,6 +163,12 @@ Both modes of `CategoryDetailsPage` render inside the shared settings-detail kit
     profile field opens the shared `InferenceProfilePickerModal` used by agent
     configuration surfaces and preserves its rendered value during background
     provider reloads
+  - the automatic-inference switch (`SettingsSwitchRow`) directly beneath the
+    profile field, rendered only when `categoryAutomationAvailableProvider`
+    reports that automation is possible for the category — the selected
+    profile carries automated skills, or the direct transcription fallback
+    could run. When nothing can be automated the row is omitted rather than
+    shown disabled
   - speech dictionary
   - checklist correction examples
 

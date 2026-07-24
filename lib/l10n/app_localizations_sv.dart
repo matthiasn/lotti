@@ -2673,6 +2673,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'AI-standardinställningar';
 
   @override
+  String get categoryAutomaticInferenceDescription =>
+      'Transcribe new audio and analyse new images in this category automatically';
+
+  @override
+  String get categoryAutomaticInferenceLabel => 'Automatic inference';
+
+  @override
   String get categoryCreationError =>
       'Misslyckades med att skapa kategori. Försök igen, tack.';
 

@@ -8,12 +8,14 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -329,5 +331,115 @@ void main() {
         expect(saved.defaultEventTemplateId, 'tpl-event');
       },
     );
+  });
+
+  /// The per-category consent switch built by
+  /// `_buildAutomaticInferenceSwitch`. It is the only place the user agrees
+  /// to inference running without a gesture, so both its visibility rule and
+  /// what it persists are pinned here.
+  group('Automatic inference switch', () {
+    late MockCategoryRepository mockRepository;
+    late String testCategoryId;
+
+    setUp(() {
+      mockRepository = MockCategoryRepository();
+      testCategoryId = const Uuid().v4();
+      beamToNamedOverride = (_) {};
+    });
+
+    tearDown(() {
+      beamToNamedOverride = null;
+    });
+
+    Future<void> pumpPage(
+      WidgetTester tester, {
+      required CategoryDefinition category,
+      required bool automationAvailable,
+    }) async {
+      tester.view.physicalSize = const Size(1024, 3600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      when(
+        () => mockRepository.watchCategory(testCategoryId),
+      ).thenAnswer((_) => Stream.value(category));
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(mockRepository),
+            categoryAutomationAvailableProvider(
+              category.defaultProfileId,
+            ).overrideWith((ref) async => automationAvailable),
+          ],
+          child: CategoryDetailsPage(categoryId: testCategoryId),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+    }
+
+    Finder switchFinder() => find.ancestor(
+      of: find.text('Automatic inference'),
+      matching: find.byType(SettingsSwitchRow),
+    );
+
+    testWidgets('is hidden when no automation is available', (tester) async {
+      await pumpPage(
+        tester,
+        category: CategoryTestUtils.createTestCategory(),
+        automationAvailable: false,
+      );
+
+      expect(switchFinder(), findsNothing);
+    });
+
+    testWidgets('renders off for a category that never opted in', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        category: CategoryTestUtils.createTestCategory(),
+        automationAvailable: true,
+      );
+
+      expect(
+        tester.widget<SettingsSwitchRow>(switchFinder()).value,
+        isFalse,
+      );
+    });
+
+    testWidgets('persists the opt-in', (tester) async {
+      final category = CategoryTestUtils.createTestCategory();
+      when(
+        () => mockRepository.getCategoryById(testCategoryId),
+      ).thenAnswer((_) async => category);
+      when(
+        () => mockRepository.updateCategory(any()),
+      ).thenAnswer((_) async => category);
+
+      await pumpPage(
+        tester,
+        category: category,
+        automationAvailable: true,
+      );
+
+      // Invoke the row's callback directly: the toggle itself sits behind an
+      // IgnorePointer and the row's InkWell is below the fold in this tall
+      // test viewport, so a synthetic tap is unreliable here.
+      tester.widget<SettingsSwitchRow>(switchFinder()).onChanged!(true);
+      await tester.pump();
+      expect(isPillEnabled(tester, 'Save'), isTrue);
+      await tester.tap(pillFinder('Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      final saved =
+          verify(
+                () => mockRepository.updateCategory(captureAny()),
+              ).captured.single
+              as CategoryDefinition;
+      expect(saved.automaticInferenceEnabled, isTrue);
+    });
   });
 }

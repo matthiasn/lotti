@@ -152,6 +152,15 @@ sealed class EntityDefinition with _$EntityDefinition {
     /// Enables speech-to-text and image analysis immediately on task creation.
     String? defaultProfileId,
 
+    /// Opt-in switch for running inference automatically in this category —
+    /// auto-transcription of new audio and auto-analysis of new images.
+    /// Selecting a profile alone is NOT consent: profiles ship with automated
+    /// skill assignments, so without this flag choosing one would silently
+    /// start spending tokens. Nullable for JSON backward compatibility, and an
+    /// absent key ⇒ `null` ⇒ **off**, including for categories that already
+    /// had a profile before this flag existed.
+    bool? automaticInferenceEnabled,
+
     /// Default agent template ID for new tasks in this category.
     /// An agent is auto-created from this template when a task is created.
     String? defaultTemplateId,
@@ -227,6 +236,15 @@ sealed class EntityDefinition with _$EntityDefinition {
 
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>
       _$EntityDefinitionFromJson(json);
+}
+
+extension CategoryAutomation on CategoryDefinition {
+  /// Automatic inference is opt-in, so an unset preference is off. Categories
+  /// that predate the switch — including ones with an inference profile
+  /// already selected — never run inference on their own until the user turns
+  /// this on.
+  bool get automaticInferenceEnabledEffective =>
+      automaticInferenceEnabled ?? false;
 }
 
 @freezed

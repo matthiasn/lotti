@@ -120,9 +120,10 @@ void main() {
         );
 
         expect(hasTranscription, isFalse);
-        verify(
-          () => mockTaskAgentService.getTaskAgentForTask('task-1'),
-        ).called(1);
+        // The category gate denies first — an entry with no category has
+        // nobody who opted in — so the agent lookup is never reached.
+        verifyNever(() => mockTaskAgentService.getTaskAgentForTask('task-1'));
+        verify(() => mockDb.journalEntityById('task-1')).called(1);
       },
     );
   });
@@ -356,6 +357,79 @@ void main() {
       verify(() => mockDb.getCategoryById('cat-missing')).called(1);
       verifyNever(() => mockAiConfigRepo.getConfigById(any()));
       expect(result, isNull);
+    });
+
+    // The gate the service applies before any automation: the entry's
+    // category must have automatic inference switched on.
+    group('categoryAutomationLookup', () {
+      JournalEntity taskEntity({String? categoryId}) {
+        return JournalEntity.task(
+          meta: Metadata(
+            id: 'entry-1',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: categoryId,
+          ),
+          data: TaskData(
+            status: taskStatusFromString(''),
+            title: 'Test',
+            statusHistory: const [],
+            dateTo: DateTime(2024),
+            dateFrom: DateTime(2024),
+            estimate: Duration.zero,
+          ),
+        );
+      }
+
+      Future<bool> lookupFor({
+        required JournalEntity? entity,
+        CategoryDefinition? category,
+      }) async {
+        when(
+          () => mockDb.journalEntityById('entry-1'),
+        ).thenAnswer((_) async => entity);
+        when(
+          () => mockDb.getCategoryById(any()),
+        ).thenAnswer((_) async => category);
+
+        final container = createContainer();
+        final service = container.read(profileAutomationServiceProvider);
+        // The lookup is private to the service; exercise it through the one
+        // public entry point that consults it and nothing else.
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => const <AiConfig>[]);
+        return service.hasAutomatedSkillType(
+          taskId: 'entry-1',
+          skillType: SkillType.imageAnalysis,
+        );
+      }
+
+      test('denies when the entry has no category', () async {
+        final allowed = await lookupFor(
+          entity: taskEntity(),
+        );
+
+        expect(allowed, isFalse);
+        verifyNever(() => mockDb.getCategoryById(any()));
+      });
+
+      test('denies when the category never opted in', () async {
+        final allowed = await lookupFor(
+          entity: taskEntity(categoryId: 'cat-1'),
+          category: makeCategory(),
+        );
+
+        expect(allowed, isFalse);
+      });
+
+      test('denies when the entry is missing entirely', () async {
+        final allowed = await lookupFor(entity: null);
+
+        expect(allowed, isFalse);
+      });
     });
   });
 }

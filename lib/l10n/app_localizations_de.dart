@@ -2689,6 +2689,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'KI-Standardwerte';
 
   @override
+  String get categoryAutomaticInferenceDescription =>
+      'Neue Audioaufnahmen und Bilder in dieser Kategorie automatisch auswerten';
+
+  @override
+  String get categoryAutomaticInferenceLabel => 'Automatische Inferenz';
+
+  @override
   String get categoryCreationError =>
       'Kategorie konnte nicht erstellt werden. Bitte versuche es erneut.';
 

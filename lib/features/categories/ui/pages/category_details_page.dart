@@ -5,6 +5,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
@@ -29,6 +30,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 
 part 'category_details_form_sections.dart';
@@ -294,6 +296,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
             description: context.messages.categoryAiDefaultsDescription,
             children: [
               _buildDefaultProfilePicker(category),
+              _buildAutomaticInferenceSwitch(category),
               _buildDefaultTemplatePicker(category),
               if (ref.watch(configFlagProvider(enableEventsFlag)).value ??
                   false)
