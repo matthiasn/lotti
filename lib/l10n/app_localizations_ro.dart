@@ -4059,6 +4059,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Desface legătura';
 
   @override
+  String get dailyOsNextPlanChangesReadyNotificationBody =>
+      'Modificările propuse așteaptă revizuirea dvs.';
+
+  @override
+  String get dailyOsNextPlanChangesReadyNotificationTitle =>
+      'Modificările planului dvs. sunt gata';
+
+  @override
+  String get dailyOsNextPlanReadyNotificationBody =>
+      'Schița așteaptă revizuirea dvs.';
+
+  @override
+  String get dailyOsNextPlanReadyNotificationTitle =>
+      'Planul zilei dvs. este gata';
+
+  @override
   String get dailyOsNextPlanViewActivity => 'Activitate';
 
   @override

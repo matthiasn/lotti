@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -5,6 +7,7 @@ import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_review_fence.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
+import 'package:lotti/features/daily_os_next/services/day_plan_ready_notifier.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repair.dart';
@@ -33,8 +36,12 @@ dayProcessingOutboxProcessorProvider = Provider((ref) {
     orchestrator: ref.watch(wakeOrchestratorProvider),
     outbox: ref.watch(dayProcessingOutboxRepositoryProvider),
   );
+  final planReadyNotifier = DayPlanReadyNotifier();
   return DayProcessingOutboxProcessor(
     repository: ref.watch(dayProcessingOutboxRepositoryProvider),
+    // ADR 0032 §5: event-driven completion surface for jobs that finish
+    // while the app is backgrounded — "your plan is ready" as an OS banner.
+    onJobFinished: (job) => unawaited(planReadyNotifier.onJobFinished(job)),
     // Resolve the planner profile's transcription slot per attempt so a
     // configuration change between retries takes effect immediately;
     // discovery remains the fallback when no profile slot exists.

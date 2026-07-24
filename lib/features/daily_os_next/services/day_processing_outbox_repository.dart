@@ -566,6 +566,7 @@ class DayProcessingOutboxRepository {
       clearLeaseUntil: true,
     );
     await _write(updated);
+    _notify();
     return updated;
   });
 

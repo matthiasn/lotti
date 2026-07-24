@@ -473,6 +473,22 @@ void main() {
   );
 
   test(
+    'cancel notifies the changes stream like every other mutator — '
+    'awaiters and providers must observe the cancellation',
+    () async {
+      final job = await enqueue();
+      var events = 0;
+      final subscription = repository.changes.listen((_) => events++);
+      addTearDown(subscription.cancel);
+
+      await repository.cancel(job.id);
+      await pumpEventQueue();
+
+      expect(events, 1);
+    },
+  );
+
+  test(
     'getAll skips and quarantines a corrupt job file',
     () async {
       await enqueue();

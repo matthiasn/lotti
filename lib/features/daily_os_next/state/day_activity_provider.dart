@@ -12,9 +12,21 @@ import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provid
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 
-final StreamProvider<void> dayProcessingOutboxChangesProvider =
-    StreamProvider.autoDispose<void>((ref) {
-      return ref.watch(dayProcessingOutboxRepositoryProvider).changes;
+/// Emits a strictly increasing tick per outbox mutation.
+///
+/// The repository's `changes` is a `Stream<void>`, and Riverpod deduplicates
+/// `AsyncData` values with `==` — `AsyncData<void>(null)` equals itself, so
+/// watching the raw stream would only ever notify on the FIRST event and the
+/// Activity timeline would never refresh on later job-state changes (retry,
+/// backoff, waitingForNetwork, failure). Mapping to a counter makes every
+/// emission identity-distinct (same trick as `agentUpdateStreamProvider`).
+final StreamProvider<int> dayProcessingOutboxChangesProvider =
+    StreamProvider.autoDispose<int>((ref) {
+      var tick = 0;
+      return ref
+          .watch(dayProcessingOutboxRepositoryProvider)
+          .changes
+          .map((_) => ++tick);
     });
 
 /// Offline-first activity rows for one local calendar day.

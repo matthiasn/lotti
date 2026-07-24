@@ -6869,6 +6869,30 @@ abstract class AppLocalizations {
   /// **'Break link'**
   String get dailyOsNextParsedCardBreakLinkTooltip;
 
+  /// No description provided for @dailyOsNextPlanChangesReadyNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The proposed changes are waiting for your review.'**
+  String get dailyOsNextPlanChangesReadyNotificationBody;
+
+  /// No description provided for @dailyOsNextPlanChangesReadyNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan changes are ready'**
+  String get dailyOsNextPlanChangesReadyNotificationTitle;
+
+  /// No description provided for @dailyOsNextPlanReadyNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The draft is waiting for your review.'**
+  String get dailyOsNextPlanReadyNotificationBody;
+
+  /// No description provided for @dailyOsNextPlanReadyNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your day plan is ready'**
+  String get dailyOsNextPlanReadyNotificationTitle;
+
   /// No description provided for @dailyOsNextPlanViewActivity.
   ///
   /// In en, this message translates to:
