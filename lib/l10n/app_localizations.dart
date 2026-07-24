@@ -11477,6 +11477,12 @@ abstract class AppLocalizations {
   /// **'This would create a blocking cycle — choose a different task.'**
   String get linkBlocksCycleErrorMessage;
 
+  /// No description provided for @linkDirectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'This task…'**
+  String get linkDirectionLabel;
+
   /// No description provided for @linkedFromCaption.
   ///
   /// In en, this message translates to:
@@ -11548,12 +11554,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'to'**
   String get linkedToCaption;
-
-  /// No description provided for @linkDirectionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Direction:'**
-  String get linkDirectionLabel;
 
   /// No description provided for @linkExistingTask.
   ///

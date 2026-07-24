@@ -6583,6 +6583,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'This would create a blocking cycle — choose a different task.';
 
   @override
+  String get linkDirectionLabel => 'This task…';
+
+  @override
   String get linkedFromCaption => 'fra';
 
   @override
@@ -6617,9 +6620,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get linkedToCaption => 'til';
-
-  @override
-  String get linkDirectionLabel => 'Direction:';
 
   @override
   String get linkExistingTask => 'Link eksisterende opgave...';

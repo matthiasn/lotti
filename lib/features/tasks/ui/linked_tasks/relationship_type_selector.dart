@@ -127,24 +127,25 @@ class RelationshipTypeSelector extends StatelessWidget {
         if (phrasePair != null) ...[
           SizedBox(height: tokens.spacing.step3),
           Text(
+            // Reads as the opening of a sentence the toggle completes
+            // ("This task… | Blocks → | ← Is blocked by"), rather than a
+            // second label for what the type pills above already said. Round
+            // 2's arrow suffix alone still left the selected pill and the
+            // toggle's first segment showing the identical bare word for 4 of
+            // the 5 directional types, which reviewers kept reading as a
+            // duplicated control (design-review-panel rounds 2 and 3).
             context.messages.linkDirectionLabel,
             style: tokens.typography.styles.others.caption.copyWith(
               // highEmphasis, not mediumEmphasis: low-vision persona flagged
-              // the caption as small/low-contrast next to the toggle it names
-              // (design-review-panel round 2).
+              // the caption as small/low-contrast next to the toggle it names.
+              // w500 rather than w600 so it stays a label instead of competing
+              // with the toggle's own bold selected segment.
               color: tokens.colors.text.highEmphasis,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           SizedBox(height: tokens.spacing.step1),
           DsSegmentedToggle<bool>(
-            // Arrow-prefixed rather than the bare phrase: for 4 of the 5
-            // directional types the bare primary phrase is the exact same
-            // word as the just-selected type pill above (e.g. "Blocks" /
-            // "Blocks"), which a novice persona flagged as an outright
-            // blocker ("did I already choose this?") in round 2. The arrow
-            // reframes this control as being about direction, not repeating
-            // the relationship name.
             segments: [
               DsSegment(false, '${phrasePair.$1} →'),
               DsSegment(true, '← ${phrasePair.$2}'),

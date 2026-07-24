@@ -2781,7 +2781,7 @@
   "knowledgeGraphTooltip": "Explorați legăturile",
   "knowledgeGraphWalkHint": "Atingeți un nod pentru a continua · {count, plural, =1{1 nod} few{{count} noduri} other{{count} de noduri}}",
   "linkBlocksCycleErrorMessage": "Aceasta ar crea un ciclu de blocare — alegeți o altă sarcină.",
-  "linkDirectionLabel": "Direcție:",
+  "linkDirectionLabel": "Această sarcină…",
   "linkedFromCaption": "de la",
   "linkedTaskImageBadge": "Din sarcina legată",
   "linkedTasksBlockedBySectionTitle": "Blocată de",

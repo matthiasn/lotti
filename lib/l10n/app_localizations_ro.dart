@@ -6702,6 +6702,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Aceasta ar crea un ciclu de blocare — alegeți o altă sarcină.';
 
   @override
+  String get linkDirectionLabel => 'Această sarcină…';
+
+  @override
   String get linkedFromCaption => 'de la';
 
   @override
@@ -6736,9 +6739,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get linkedToCaption => 'la';
-
-  @override
-  String get linkDirectionLabel => 'Direcție:';
 
   @override
   String get linkExistingTask => 'Leagă o sarcină existentă...';

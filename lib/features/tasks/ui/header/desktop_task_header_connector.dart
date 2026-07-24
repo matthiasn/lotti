@@ -497,7 +497,7 @@ class _TaskBlockedByChip extends ConsumerWidget {
         // navigates reads as tappable, not just as a status readout.
         trailing: Icon(
           Icons.arrow_forward_ios,
-          size: 12,
+          size: linkedRowChevronSize,
           color: tokens.colors.text.lowEmphasis,
         ),
         onTap: () => single
@@ -514,6 +514,9 @@ class _TaskBlockedByChip extends ConsumerWidget {
     await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.linkedTasksBlockedBySectionTitle,
+      // LinkedTaskRow brings its own step5 horizontal padding, same as every
+      // sibling picker in this feature — without this the rows get inset twice.
+      padding: EdgeInsets.zero,
       builder: (context) => ListView(
         shrinkWrap: true,
         children: [

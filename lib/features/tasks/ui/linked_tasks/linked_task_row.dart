@@ -11,6 +11,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// anchor task is the link's `fromId`.
 enum LinkDirection { outgoing, incoming }
 
+/// Size of the "this navigates somewhere" chevron, shared by [LinkedTaskRow]
+/// and the header's blocked-by chip so the same affordance is the same glyph
+/// at the same size everywhere it appears in this feature.
+const double linkedRowChevronSize = 14;
+
 /// One row's content: the other task in the link, its direction relative to
 /// the anchor task, and an optional direction caption.
 class LinkedTaskRowData {
@@ -67,9 +72,12 @@ class LinkedTaskRow extends StatelessWidget {
     final tokens = context.designTokens;
     final task = data.task;
     final isOutgoing = data.direction == LinkDirection.outgoing;
-    final directionColor = isOutgoing
-        ? tokens.colors.alert.info.defaultColor
-        : tokens.colors.alert.success.defaultColor;
+    // Neutral, not alert.info/alert.success: those two are already spoken for
+    // as *task-status* colors on this same card, so tinting a link's
+    // direction with them made an editorial relationship read as a status
+    // (design-review-panel round 3, colour-contrast + hierarchy findings).
+    // The left/right glyph already encodes direction without colour.
+    final directionColor = tokens.colors.text.mediumEmphasis;
     final glyph = isOutgoing
         ? 'assets/icons/subdirectory_arrow_right.svg'
         : 'assets/icons/subdirectory_arrow_left.svg';
@@ -110,7 +118,11 @@ class LinkedTaskRow extends StatelessWidget {
                 style: tokens.typography.styles.body.bodySmall.copyWith(
                   color: tokens.colors.text.highEmphasis,
                 ),
-                maxLines: 2,
+                // A caption eats horizontal room on the same line, so a
+                // captioned row gets one more line before ellipsizing —
+                // otherwise long titles truncate mid-word on phone widths
+                // (design-review-panel round 3, typography finding).
+                maxLines: caption == null ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -155,7 +167,7 @@ class LinkedTaskRow extends StatelessWidget {
             ] else
               Icon(
                 Icons.arrow_forward_ios,
-                size: 14,
+                size: linkedRowChevronSize,
                 color: tokens.colors.text.lowEmphasis,
               ),
           ],

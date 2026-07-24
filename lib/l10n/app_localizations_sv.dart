@@ -6584,6 +6584,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'This would create a blocking cycle — choose a different task.';
 
   @override
+  String get linkDirectionLabel => 'This task…';
+
+  @override
   String get linkedFromCaption => 'från';
 
   @override
@@ -6618,9 +6621,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get linkedToCaption => 'att';
-
-  @override
-  String get linkDirectionLabel => 'Direction:';
 
   @override
   String get linkExistingTask => 'Länka befintlig uppgift...';

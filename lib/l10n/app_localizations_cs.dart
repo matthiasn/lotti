@@ -6661,6 +6661,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tím by vznikl blokující cyklus — vyber jiný úkol.';
 
   @override
+  String get linkDirectionLabel => 'Tento úkol…';
+
+  @override
   String get linkedFromCaption => 'z';
 
   @override
@@ -6695,9 +6698,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get linkedToCaption => 'na';
-
-  @override
-  String get linkDirectionLabel => 'Směr:';
 
   @override
   String get linkExistingTask => 'Propojit existující úkol...';

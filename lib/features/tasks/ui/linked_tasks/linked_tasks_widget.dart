@@ -70,9 +70,12 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
             direction: entry.direction == TaskLinkDirection.outgoing
                 ? LinkDirection.outgoing
                 : LinkDirection.incoming,
-            caption: entry.direction == TaskLinkDirection.outgoing
-                ? context.messages.linkedToCaption
-                : context.messages.linkedFromCaption,
+            // No caption: a plain link carries no relationship semantics, so
+            // the glyph + "to"/"from" treatment made it mimic a real typed
+            // relationship row with a content-free verb. The "Other links"
+            // section header carries all the meaning there is
+            // (design-review-panel round 3, top consensus finding), matching
+            // how the split Blocks/Blocked-by sections also render captionless.
           ),
         )
         .toList();

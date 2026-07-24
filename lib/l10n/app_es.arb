@@ -2781,7 +2781,7 @@
   "knowledgeGraphTooltip": "Explorar enlaces",
   "knowledgeGraphWalkHint": "Toca un nodo para avanzar · nodos: {count}",
   "linkBlocksCycleErrorMessage": "Esto crearía un ciclo de bloqueo — elige otra tarea.",
-  "linkDirectionLabel": "Dirección:",
+  "linkDirectionLabel": "Esta tarea…",
   "linkedFromCaption": "desde",
   "linkedTaskImageBadge": "De tarea vinculada",
   "linkedTasksBlockedBySectionTitle": "Bloqueada por",

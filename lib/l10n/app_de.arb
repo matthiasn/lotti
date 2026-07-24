@@ -2781,7 +2781,7 @@
   "knowledgeGraphTooltip": "Verknüpfungen erkunden",
   "knowledgeGraphWalkHint": "Tippe auf einen Knoten · Knoten: {count}",
   "linkBlocksCycleErrorMessage": "Das würde einen blockierenden Kreislauf erzeugen — wähle eine andere Aufgabe.",
-  "linkDirectionLabel": "Richtung:",
+  "linkDirectionLabel": "Diese Aufgabe…",
   "linkedFromCaption": "von",
   "linkedTaskImageBadge": "Von verknüpfter Aufgabe",
   "linkedTasksBlockedBySectionTitle": "Blockiert von",

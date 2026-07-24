@@ -3358,7 +3358,7 @@
     }
   },
   "linkBlocksCycleErrorMessage": "This would create a blocking cycle — choose a different task.",
-  "linkDirectionLabel": "Direction:",
+  "linkDirectionLabel": "This task…",
   "linkedFromCaption": "from",
   "linkedTaskImageBadge": "From linked task",
   "linkedTasksBlockedBySectionTitle": "Blocked by",

@@ -6618,6 +6618,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das würde einen blockierenden Kreislauf erzeugen — wähle eine andere Aufgabe.';
 
   @override
+  String get linkDirectionLabel => 'Diese Aufgabe…';
+
+  @override
   String get linkedFromCaption => 'von';
 
   @override
@@ -6652,9 +6655,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get linkedToCaption => 'zu';
-
-  @override
-  String get linkDirectionLabel => 'Richtung:';
 
   @override
   String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
