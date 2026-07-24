@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/services/day_plan_ready_notifier.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -7,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
   final now = DateTime(2026, 7, 22, 8);
   const dayId = 'dayplan-2026-07-22';
 
@@ -113,6 +115,73 @@ void main() {
     );
 
     verifyZeroInteractions(notifications);
+  });
+
+  group('default collaborators (no injected overrides)', () {
+    DayPlanReadyNotifier defaultNotifier() =>
+        DayPlanReadyNotifier(notificationService: notifications);
+
+    tearDown(() {
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      binding.platformDispatcher.clearLocaleTestValue();
+    });
+
+    test(
+      'a paused app counts as backgrounded and the banner copy resolves '
+      'from the device locale',
+      () async {
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        binding.platformDispatcher.localeTestValue = const Locale('en', 'US');
+
+        await defaultNotifier().onJobFinished(
+          job(payload: const DraftPlanPayload()),
+        );
+
+        verify(
+          () => notifications.showNotificationNow(
+            title: 'Your day plan is ready',
+            body: 'The draft is waiting for your review.',
+            notificationId: DayPlanReadyNotifier.notificationId,
+            showOnMobile: true,
+            showOnDesktop: true,
+            deepLink: DayPlanReadyNotifier.deepLink,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'an unsupported device locale falls back to English banner copy',
+      () async {
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        binding.platformDispatcher.localeTestValue = const Locale('xx');
+
+        await defaultNotifier().onJobFinished(
+          job(payload: const DraftPlanPayload()),
+        );
+
+        verify(
+          () => notifications.showNotificationNow(
+            title: 'Your day plan is ready',
+            body: 'The draft is waiting for your review.',
+            notificationId: DayPlanReadyNotifier.notificationId,
+            showOnMobile: true,
+            showOnDesktop: true,
+            deepLink: DayPlanReadyNotifier.deepLink,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('a resumed app counts as foreground — no banner', () async {
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+      await defaultNotifier().onJobFinished(
+        job(payload: const DraftPlanPayload()),
+      );
+
+      verifyZeroInteractions(notifications);
+    });
   });
 
   test('transcription and parse jobs raise no banner', () async {

@@ -1324,6 +1324,65 @@ void main() {
     );
 
     test(
+      'caps <day_entries> to the newest 32 recordings with an explicit '
+      'truncation marker (ADR 0032 §4 provenance-index sizing)',
+      () async {
+        final journalDb = MockJournalDb();
+        JournalAudio audioAt(int minute) => JournalAudio(
+          meta: Metadata(
+            id: 'audio-$minute',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: AudioData(
+            dateFrom: now,
+            dateTo: now,
+            audioFile: 'clip-$minute.wav',
+            audioDirectory: '/audio/',
+            duration: const Duration(minutes: 1),
+            dayContext: DayAudioContext(
+              dayId: dayId,
+              planDate: now,
+              recordingSessionId: 'session-$minute',
+              activityEntryId: 'activity-$minute',
+              processingJobId: 'transcribe_session-$minute',
+              capturedAt: now.add(Duration(minutes: minute)),
+              intent: 'dayPlan',
+            ),
+          ),
+        );
+        when(() => journalDb.getDayAudioEntries(dayId)).thenAnswer(
+          (_) async => [for (var i = 0; i < 40; i++) audioAt(i)],
+        );
+
+        final result = await execute(
+          workflow(
+            dayAudioEntryContextService: DayAudioEntryContextService(
+              journalDb: journalDb,
+            ),
+          ),
+        );
+
+        expect(result.success, isTrue);
+        final entries =
+            sentPrompt().json(DayAgentPromptTags.dayEntries)! as List;
+        // The newest 32 entries plus the truncation marker.
+        expect(entries, hasLength(33));
+        expect(
+          (entries.first as Map)['audioId'],
+          'audio-8',
+          reason: 'The cap keeps the NEWEST entries — oldest 8 drop.',
+        );
+        expect((entries[31] as Map)['audioId'], 'audio-39');
+        final marker = entries.last as Map;
+        expect(marker, containsPair('truncated', true));
+        expect(marker, containsPair('omittedOlderEntries', 8));
+      },
+    );
+
+    test(
       'keeps planning available when durable recording lookup fails',
       () async {
         final journalDb = MockJournalDb();

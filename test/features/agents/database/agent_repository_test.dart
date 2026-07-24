@@ -12,6 +12,8 @@ import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/agent_link.dart'
     show AgentLinkSelection;
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart'
+    show DayStatusKind;
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -442,6 +444,66 @@ void main() {
             'bulk-soft',
           ]);
           expect(result.keys, ['bulk-live']);
+        },
+      );
+
+      test(
+        'getEntitiesByIdsIncludingDeleted returns tombstoned rows too — '
+        'the read for callers whose write decision depends on whether a '
+        'register was deliberately deleted (week-rollup resurrection guard)',
+        () async {
+          final live = makeAgent(id: 'bulk-live-2');
+          final softDeleted = makeAgent(
+            id: 'bulk-soft-2',
+          ).copyWith(deletedAt: DateTime(2026, 5, 12));
+          await repo.upsertEntity(live);
+          await repo.upsertEntity(softDeleted);
+
+          final result = await repo.getEntitiesByIdsIncludingDeleted([
+            'bulk-live-2',
+            'bulk-soft-2',
+          ]);
+
+          expect(
+            result.keys,
+            unorderedEquals(['bulk-live-2', 'bulk-soft-2']),
+          );
+          expect(result['bulk-soft-2']!.deletedAt, DateTime(2026, 5, 12));
+          expect(result['bulk-live-2']!.deletedAt, isNull);
+        },
+      );
+
+      test(
+        'getDayStatusEventsSinceNewestFirst reads through the repository '
+        'facade, newest first under the watermark',
+        () async {
+          final watermark = DateTime(2026, 2, 20, 6);
+          for (var i = 1; i <= 3; i++) {
+            await repo.upsertEntity(
+              AgentDomainEntity.dayStatusEvent(
+                id: 'day_status:dayplan-2026-02-20:event-$i',
+                agentId: 'day_agent:dayplan-2026-02-20',
+                dayId: 'dayplan-2026-02-20',
+                status: DayStatusKind.attentionNeeded,
+                raisedAt: watermark.add(Duration(hours: i)),
+                createdAt: watermark.add(Duration(hours: i)),
+                vectorClock: null,
+              ),
+            );
+          }
+
+          final events = await repo.getDayStatusEventsSinceNewestFirst(
+            watermark,
+            limit: 2,
+          );
+
+          expect(
+            [for (final event in events) event.id],
+            [
+              'day_status:dayplan-2026-02-20:event-3',
+              'day_status:dayplan-2026-02-20:event-2',
+            ],
+          );
         },
       );
 
