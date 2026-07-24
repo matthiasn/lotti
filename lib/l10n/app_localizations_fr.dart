@@ -2708,6 +2708,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'Paramètres IA par défaut';
 
   @override
+  String get categoryAutomaticInferenceDescription =>
+      'Transcris les nouveaux audios et analyse les nouvelles images de cette catégorie automatiquement';
+
+  @override
+  String get categoryAutomaticInferenceLabel => 'Inférence automatique';
+
+  @override
   String get categoryCreationError =>
       'Impossible de créer la catégorie. Réessaie s\'il te plaît.';
 

@@ -1257,6 +1257,8 @@
   "categoryActiveSwitchDescription": "Selectabil pentru intrări noi",
   "categoryAiDefaultsDescription": "Setați profilul AI și șablonul de agent implicit pentru sarcinile noi din această categorie",
   "categoryAiDefaultsTitle": "Setări implicite AI",
+  "categoryAutomaticInferenceDescription": "Transcrie automat audio nou și analizează imaginile noi din această categorie",
+  "categoryAutomaticInferenceLabel": "Inferență automată",
   "categoryCreationError": "Nu s-a putut crea categoria. Vă rugăm să încercați din nou.",
   "categoryDayPlanDescription": "Faceți această categorie disponibilă pentru selecție în planul zilei",
   "categoryDayPlanLabel": "Planificarea zilei",

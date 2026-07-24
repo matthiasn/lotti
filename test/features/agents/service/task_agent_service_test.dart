@@ -248,6 +248,18 @@ void main() {
     when(
       () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
     ).thenReturn(null);
+    // Returns the wake's run key, so an unstubbed call fails on the null
+    // return rather than on the verification.
+    when(
+      () => mockOrchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+        supersede: any(named: 'supersede'),
+        initiator: any(named: 'initiator'),
+      ),
+    ).thenReturn('run-key');
 
     // Stub template existence for all tests that provide kTestTemplateId.
     when(
@@ -1986,6 +1998,53 @@ void main() {
         },
       );
 
+      /// Wires the mocks an enable-path call reads: the agent, its (optional)
+      /// state row, and the empty task-link list `restoreSubscriptionsForAgent`
+      /// walks.
+      void stubEnablePath({
+        required AgentStateEntity? state,
+        AgentLifecycle lifecycle = AgentLifecycle.active,
+      }) {
+        when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+          (_) async => makeIdentity(
+            lifecycle: lifecycle,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: false,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          ),
+        );
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
+        when(
+          () => mockRepository.getLinksFrom(
+            'agent-1',
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => []);
+      }
+
+      /// Asserts how many catch-up wakes the enable path enqueued. `verify`
+      /// fails outright on zero matching calls, so the none case routes
+      /// through `verifyNever`.
+      void expectCatchUpWakes(int expected) {
+        void call() => mockOrchestrator.enqueueManualWake(
+          agentId: 'agent-1',
+          reason: any(named: 'reason'),
+          initiator: any(named: 'initiator'),
+        );
+        if (expected == 0) {
+          verifyNever(call);
+          return;
+        }
+        verify(call).called(expected);
+      }
+
       test(
         'turning on restores subscriptions without an old countdown',
         () async {
@@ -2002,6 +2061,9 @@ void main() {
           when(
             () => mockAgentService.getAgent('agent-1'),
           ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
           when(
             () => mockRepository.getLinksFrom(
               'agent-1',
@@ -2031,6 +2093,79 @@ void main() {
           );
         },
       );
+
+      // Enabling the switch is the whole gesture: the user should not have to
+      // follow it with a manual "wake agent" tap. One catch-up wake, never one
+      // per change missed while automation was off.
+      test(
+        'turning on enqueues exactly one catch-up wake when stale',
+        () async {
+          final now = DateTime(2026, 7, 20, 12);
+          stubEnablePath(
+            state: makeState().copyWith(
+              reportFreshAt: now.subtract(const Duration(minutes: 5)),
+              reportStaleAt: now.subtract(const Duration(minutes: 1)),
+            ),
+          );
+
+          await service.updateAutomaticUpdates(
+            agentId: 'agent-1',
+            enabled: true,
+          );
+
+          expectCatchUpWakes(1);
+        },
+      );
+
+      // The token-saving half of the contract: a report nothing has
+      // invalidated needs no refresh, so toggling right after a manual wake
+      // costs nothing.
+      test('turning on does not wake when the report is fresh', () async {
+        final now = DateTime(2026, 7, 20, 12);
+        stubEnablePath(
+          state: makeState().copyWith(
+            reportFreshAt: now,
+            reportStaleAt: now.subtract(const Duration(minutes: 5)),
+          ),
+        );
+
+        await service.updateAutomaticUpdates(agentId: 'agent-1', enabled: true);
+
+        expectCatchUpWakes(0);
+      });
+
+      // An agent that has never reported has nothing to show; without this
+      // wake its card stays empty until the next task edit.
+      test('turning on wakes when no report has ever been produced', () async {
+        stubEnablePath(state: makeState());
+
+        await service.updateAutomaticUpdates(agentId: 'agent-1', enabled: true);
+
+        expectCatchUpWakes(1);
+      });
+
+      test('turning on an inactive agent neither enables runtime nor '
+          'wakes', () async {
+        stubEnablePath(state: null, lifecycle: AgentLifecycle.dormant);
+
+        await service.updateAutomaticUpdates(agentId: 'agent-1', enabled: true);
+
+        expectCatchUpWakes(0);
+        verifyNever(
+          () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+        );
+      });
+
+      test('turning off never wakes', () async {
+        stubEnablePath(state: makeState());
+
+        await service.updateAutomaticUpdates(
+          agentId: 'agent-1',
+          enabled: false,
+        );
+
+        expectCatchUpWakes(0);
+      });
 
       test('cannot turn automation on without an inference setup', () async {
         final identity = makeIdentity(

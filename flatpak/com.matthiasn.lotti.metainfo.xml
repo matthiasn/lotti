@@ -35,6 +35,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1065" date="2026-07-25">
+      <description>
+        <p>Automatic AI now waits to be asked, per category: transcribing new audio and analyzing new images automatically is an explicit per-category switch under the category's AI profile. Picking a profile used to be enough to start it, and audio could be transcribed automatically with no profile chosen at all. The switch starts off everywhere, including categories that already had a profile, so turn it on where you want AI to keep working in the background. Per-recording opt-out is unchanged.</p>
+        <p>Turning on automatic updates for a task agent now wakes it right away instead of only arming future updates — unless the summary is already current, in which case nothing is spent.</p>
+      </description>
+    </release>
     <release version="0.9.1064" date="2026-07-25">
       <description>
         <p>Undo a link you just made. Picking a task in the link or blocker picker still commits on that single tap, but it now says what it wrote ("Blocks: Draft crew rotation schedule") and offers Undo, so a mis-tap or the right task under the wrong relationship is one tap to take back instead of a trip through Manage links.</p>

@@ -1257,6 +1257,8 @@
   "categoryActiveSwitchDescription": "Für neue Einträge wählbar",
   "categoryAiDefaultsDescription": "Standard-KI-Profil und Agenten-Vorlage für neue Aufgaben in dieser Kategorie festlegen",
   "categoryAiDefaultsTitle": "KI-Standardwerte",
+  "categoryAutomaticInferenceDescription": "Neue Audioaufnahmen und Bilder in dieser Kategorie automatisch auswerten",
+  "categoryAutomaticInferenceLabel": "Automatische Inferenz",
   "categoryCreationError": "Kategorie konnte nicht erstellt werden. Bitte versuche es erneut.",
   "categoryDayPlanDescription": "Diese Kategorie für die Auswahl im Tagesplan verfügbar machen",
   "categoryDayPlanLabel": "Tagesplanung",

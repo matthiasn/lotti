@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1065]
+### Changed
+- **Automatic AI now waits to be asked, per category.** Transcribing new audio
+  and analyzing new images automatically is now an explicit per-category
+  switch, sitting under the category's AI profile. Previously, picking a
+  profile was enough to start it — profiles arrive with automation already
+  enabled — and audio could even be transcribed automatically with no profile
+  chosen at all. **The switch starts off everywhere, including categories that
+  already had a profile**, so turn it on for each category where you want AI
+  to keep working in the background. Per-recording "don't transcribe this one"
+  still works as before.
+
+### Added
+- **Turning on automatic updates now wakes the task agent right away.** The
+  switch used to only arm future updates, so you had to tap "wake agent"
+  yourself to get a current summary. It now fetches one immediately — unless
+  the summary is already up to date, in which case it stays quiet rather than
+  spending tokens on a refresh you don't need.
+
 ## [0.9.1064]
 ### Added
 - **Undo a link you just made.** Picking a task in the link or blocker picker
@@ -46,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sheet on a phone, a centred dialog on a wide window, matching every other
   task picker — and size themselves to their content instead of leaving a
   large empty area below a short list.
+
 
 ### Fixed
 - **Two tasks can hold more than one relationship.** A task already linked to

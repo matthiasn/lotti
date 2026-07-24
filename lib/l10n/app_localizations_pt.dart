@@ -2694,6 +2694,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'Padrões de IA';
 
   @override
+  String get categoryAutomaticInferenceDescription =>
+      'Transcribe new audio and analyze new images in this category automatically';
+
+  @override
+  String get categoryAutomaticInferenceLabel => 'Automatic inference';
+
+  @override
   String get categoryCreationError =>
       'Falha ao criar categoria. Por favor, tente novamente.';
 

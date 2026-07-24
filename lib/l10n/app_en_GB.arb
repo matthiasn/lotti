@@ -2,6 +2,7 @@
   "@@locale": "en_GB",
   "agentControlsReanalyzeButton": "Re-analyse",
   "aiSetupWizardCreatesOptimized": "Creates optimised models, prompts, and a test category",
+  "categoryAutomaticInferenceDescription": "Transcribe new audio and analyse new images in this category automatically",
   "categoryCreationError": "Failed to create category. Please try again.",
   "categoryDeleteConfirmation": "This action cannot be undone. All entries in this category will remain but will no longer be categorised.",
   "categoryFavoriteDescription": "Mark this category as a favourite",

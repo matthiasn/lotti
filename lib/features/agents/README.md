@@ -1118,6 +1118,41 @@ the write."
 14. optionally embed the persisted report when both embedding dependencies are
     available
 
+### Automatic Updates Switch
+
+`TaskAgentService.updateAutomaticUpdates()` owns every transition of the
+card's automatic-updates toggle. Two guards run inside the write transaction:
+the agent must exist, and enabling is rejected outright when
+`config.inferenceSetup.mode` is `disabled` (there is nothing to run inference
+with). Runtime effects — `enableAutomaticUpdatesRuntime` plus subscription
+restore — apply only to an `active` agent.
+
+Enabling schedules **one catch-up wake** rather than replaying the changes
+that accumulated while automation was off, and skips even that when the
+report is already current (`reportFreshAt` set and no newer `reportStaleAt`),
+so flipping the switch right after a manual wake costs no tokens. An agent
+that has never produced a report always wakes — otherwise its card would stay
+empty until the next task edit. The wake is enqueued after the runtime is
+enabled and subscriptions are restored, so it cannot race its own scheduling.
+
+Disabling clears the countdown and queued automatic jobs; if that countdown
+represented a pending report refresh, the report is marked stale first so
+removing the timer cannot leave the card claiming an older report is current.
+Subscriptions keep observing and keep marking the report stale while
+automation is off.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Off
+    Off --> Off: enable rejected<br/>(inference setup disabled)
+    Off --> OnCaughtUp: enable + report fresh<br/>(no wake enqueued)
+    Off --> OnWaking: enable + report stale or absent<br/>(one catch-up wake)
+    OnWaking --> OnCaughtUp: wake completes<br/>(reportFreshAt advances)
+    OnCaughtUp --> OnWaking: subscription match<br/>(scheduled wake)
+    OnCaughtUp --> Off: disable
+    OnWaking --> Off: disable<br/>(mark report stale, clear countdown)
+```
+
 ### Evidence-First Inference
 
 Evidence-first inference is the task-agent workflow's permanent execution

@@ -4614,6 +4614,18 @@ abstract class AppLocalizations {
   /// **'AI defaults'**
   String get categoryAiDefaultsTitle;
 
+  /// No description provided for @categoryAutomaticInferenceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribe new audio and analyze new images in this category automatically'**
+  String get categoryAutomaticInferenceDescription;
+
+  /// No description provided for @categoryAutomaticInferenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic inference'**
+  String get categoryAutomaticInferenceLabel;
+
   /// No description provided for @categoryCreationError.
   ///
   /// In en, this message translates to:

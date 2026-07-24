@@ -2711,6 +2711,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'Setări implicite AI';
 
   @override
+  String get categoryAutomaticInferenceDescription =>
+      'Transcrie automat audio nou și analizează imaginile noi din această categorie';
+
+  @override
+  String get categoryAutomaticInferenceLabel => 'Inferență automată';
+
+  @override
   String get categoryCreationError =>
       'Nu s-a putut crea categoria. Vă rugăm să încercați din nou.';
 

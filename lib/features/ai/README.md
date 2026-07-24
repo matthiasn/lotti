@@ -219,12 +219,19 @@ Today the automatic path is narrower than the direct one:
 flowchart TD
   Trigger["Task-linked entity or skill trigger"] --> Mode{"How was it started?"}
 
-  Mode -->|automatic| Auto["ProfileAutomationService"]
+  Mode -->|automatic| Gate{"Category automatic
+inference switched on?"}
   Mode -->|direct skill| Direct["triggerSkillProvider"]
+
+  Gate -->|no| Stop["Not handled — no inference"]
+  Gate -->|yes| Auto["ProfileAutomationService"]
 
   Auto --> Resolve["ProfileAutomationResolver.resolveForTask()"]
   Resolve --> Match["Find exactly one automate=true skill assignment"]
   Match --> Runner["SkillInferenceRunner"]
+  Match -->|no match, transcription only| Fallback["Direct model fallback
+(also behind the gate)"]
+  Fallback --> Runner
 
   Direct --> LinkTask["Resolve task id from caller or link graph"]
   LinkTask --> ResolveDirect["ProfileAutomationResolver.resolveForTask()"]
@@ -235,11 +242,37 @@ flowchart TD
   Route --> Persist["Journal entity or AiResponseEntry persistence"]
 ```
 
-The automatic branch is intentionally strict:
+#### The category consent gate
+
+Every automatic entry point — `tryTranscribe`, `tryAnalyzeImage`, and the
+`hasAutomatedSkillType` affordance check — first asks whether the entry's
+category has `CategoryDefinition.automaticInferenceEnabled` switched on
+(`CategoryAutomationLookup`, wired in `profile_automation_providers.dart`).
+Nothing else in the chain runs until it says yes.
+
+This exists because **selecting a profile is not consent**: every seeded
+default profile ships `automate: true` skill assignments, so binding a profile
+to a category used to silently start transcribing audio and analysing images.
+The flag is nullable and an absent value means **off** — including for
+categories that already had a profile before the switch existed — so no
+install starts spending tokens on its own after an upgrade.
+
+The direct transcription fallback sits behind the same gate. That path
+synthesises a profile-shaped result from any configured speech-to-text model
+without consulting a profile at all, so leaving it ungated would have kept the
+exact behaviour the switch is meant to make explicit. Because the fallback
+needs no profile, the settings switch is offered whenever *either* the
+selected profile carries automated skills *or* the fallback could run
+(`categoryAutomationAvailableProvider`) — otherwise a mobile install with an
+MLX Audio model and no selectable desktop-only profile would lose automation
+with no visible control to restore it.
+
+Past the gate, the automatic branch is intentionally strict:
 
 - it only handles a skill type when exactly one automated assignment matches
 - if multiple automated skills of the same type exist, the profile is treated as ambiguous and automation is skipped
 - the resolved profile must expose the required model slot for that skill type
+- the per-recording `enableSpeechRecognition: false` opt-out still wins independently of the category switch
 
 `SkillInferenceRunner` then persists results according to skill type:
 

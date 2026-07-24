@@ -7,6 +7,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
@@ -120,9 +121,10 @@ void main() {
         );
 
         expect(hasTranscription, isFalse);
-        verify(
-          () => mockTaskAgentService.getTaskAgentForTask('task-1'),
-        ).called(1);
+        // The category gate denies first — an entry with no category has
+        // nobody who opted in — so the agent lookup is never reached.
+        verifyNever(() => mockTaskAgentService.getTaskAgentForTask('task-1'));
+        verify(() => mockDb.journalEntityById('task-1')).called(1);
       },
     );
   });
@@ -356,6 +358,164 @@ void main() {
       verify(() => mockDb.getCategoryById('cat-missing')).called(1);
       verifyNever(() => mockAiConfigRepo.getConfigById(any()));
       expect(result, isNull);
+    });
+
+    // The gate the service applies before any automation: the entry's
+    // category must have automatic inference switched on.
+    group('categoryAutomationLookup', () {
+      JournalEntity taskEntity({String? categoryId}) {
+        return JournalEntity.task(
+          meta: Metadata(
+            id: 'entry-1',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: categoryId,
+          ),
+          data: TaskData(
+            status: taskStatusFromString(''),
+            title: 'Test',
+            statusHistory: const [],
+            dateTo: DateTime(2024),
+            dateFrom: DateTime(2024),
+            estimate: Duration.zero,
+          ),
+        );
+      }
+
+      Future<bool> lookupFor({
+        required JournalEntity? entity,
+        CategoryDefinition? category,
+      }) async {
+        when(
+          () => mockDb.journalEntityById('entry-1'),
+        ).thenAnswer((_) async => entity);
+        when(
+          () => mockDb.getCategoryById(any()),
+        ).thenAnswer((_) async => category);
+
+        final container = createContainer();
+        final service = container.read(profileAutomationServiceProvider);
+        // The lookup is private to the service; exercise it through the one
+        // public entry point that consults it and nothing else.
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => const <AiConfig>[]);
+        return service.hasAutomatedSkillType(
+          taskId: 'entry-1',
+          skillType: SkillType.imageAnalysis,
+        );
+      }
+
+      test('denies when the entry has no category', () async {
+        final allowed = await lookupFor(
+          entity: taskEntity(),
+        );
+
+        expect(allowed, isFalse);
+        verifyNever(() => mockDb.getCategoryById(any()));
+      });
+
+      test('denies when the category never opted in', () async {
+        final allowed = await lookupFor(
+          entity: taskEntity(categoryId: 'cat-1'),
+          category: makeCategory(),
+        );
+
+        expect(allowed, isFalse);
+      });
+
+      test('denies when the entry is missing entirely', () async {
+        final allowed = await lookupFor(entity: null);
+
+        expect(allowed, isFalse);
+      });
+    });
+
+    /// Decides whether the category settings form shows the automatic-
+    /// inference switch at all. It must answer yes for both ways automation
+    /// can happen, or the fallback path would run with no visible control.
+    group('categoryAutomationAvailableProvider', () {
+      AiConfigInferenceProfile profileWith({required bool automated}) {
+        return AiTestDataFactory.createTestProfile(id: 'profile-1').copyWith(
+          skillAssignments: [
+            SkillAssignment(skillId: 'skill-transcribe', automate: automated),
+          ],
+        );
+      }
+
+      /// A configured speech-to-text model plus its provider — the state in
+      /// which the direct transcription fallback could run.
+      void stubFallbackAvailable({required bool available}) {
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'stt-model',
+              inferenceProviderId: 'provider-1',
+              inputModalities: available
+                  ? const [Modality.audio]
+                  : const [Modality.text],
+              // Spelled out even though it matches the default: audio-in /
+              // text-out is exactly what makes this a speech-to-text row.
+              // ignore: avoid_redundant_argument_values
+              outputModalities: const [Modality.text],
+            ),
+          ],
+        );
+        when(() => mockAiConfigRepo.getConfigById('provider-1')).thenAnswer(
+          (_) async => AiTestDataFactory.createTestProvider(id: 'provider-1'),
+        );
+      }
+
+      Future<bool> availableFor(String? profileId) async {
+        final container = createContainer();
+        return container.read(
+          categoryAutomationAvailableProvider(profileId).future,
+        );
+      }
+
+      test(
+        'true when the selected profile carries an automated skill',
+        () async {
+          when(
+            () => mockAiConfigRepo.getConfigById('profile-1'),
+          ).thenAnswer((_) async => profileWith(automated: true));
+          stubFallbackAvailable(available: false);
+
+          expect(await availableFor('profile-1'), isTrue);
+        },
+      );
+
+      // A profile whose skills are all manual still leaves the fallback, so
+      // the switch stays offered rather than silently disappearing.
+      test(
+        'falls through to the direct fallback for a manual profile',
+        () async {
+          when(
+            () => mockAiConfigRepo.getConfigById('profile-1'),
+          ).thenAnswer((_) async => profileWith(automated: false));
+          stubFallbackAvailable(available: true);
+
+          expect(await availableFor('profile-1'), isTrue);
+        },
+      );
+
+      // The mobile case: no profile selectable, but an MLX Audio model
+      // configured. Hiding the switch here would strand the fallback.
+      test('true from the fallback when the category has no profile', () async {
+        stubFallbackAvailable(available: true);
+
+        expect(await availableFor(null), isTrue);
+      });
+
+      test('false when nothing can be automated', () async {
+        stubFallbackAvailable(available: false);
+
+        expect(await availableFor(null), isFalse);
+      });
     });
   });
 }
