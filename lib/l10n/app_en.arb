@@ -4896,14 +4896,11 @@
   "taskAgentUseCategoryDefaultDescription": "Copies the category’s current setup. Later category changes won’t affect this agent.",
   "taskAgentUseProfileDefault": "Use profile default",
   "taskAgentWakeAgent": "Wake agent",
-  "taskBlockedByChipLabel": "{count, plural, =1{Waiting on {title}} other{Waiting on {count} tasks}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Waiting on 1 task} other{Waiting on {count} tasks}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "title": {
-        "type": "String"
       }
     }
   },

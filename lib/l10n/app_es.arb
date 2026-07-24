@@ -4112,14 +4112,11 @@
   "taskAgentUseCategoryDefaultDescription": "Copia la configuración actual de la categoría. Los cambios posteriores de la categoría no afectarán a este agente.",
   "taskAgentUseProfileDefault": "Usar el valor predeterminado del perfil",
   "taskAgentWakeAgent": "Ejecutar agente",
-  "taskBlockedByChipLabel": "{count, plural, =1{Esperando a {title}} other{Esperando a {count} tareas}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Esperando 1 tarea} other{Esperando {count} tareas}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "title": {
-        "type": "String"
       }
     }
   },

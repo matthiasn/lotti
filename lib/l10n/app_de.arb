@@ -4112,14 +4112,11 @@
   "taskAgentUseCategoryDefaultDescription": "Kopiert das aktuelle Setup der Kategorie. Spätere Kategorieänderungen wirken sich nicht auf diesen Agenten aus.",
   "taskAgentUseProfileDefault": "Profilstandard verwenden",
   "taskAgentWakeAgent": "Agenten aufwecken",
-  "taskBlockedByChipLabel": "{count, plural, =1{Wartet auf {title}} other{Wartet auf {count} Aufgaben}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Wartet auf 1 Aufgabe} other{Wartet auf {count} Aufgaben}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "title": {
-        "type": "String"
       }
     }
   },

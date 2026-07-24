@@ -4112,14 +4112,11 @@
   "taskAgentUseCategoryDefaultDescription": "Copiați configurarea curentă a categoriei. Modificările ulterioare ale categoriei nu vor afecta acest agent.",
   "taskAgentUseProfileDefault": "Folosiți modelul implicit al profilului",
   "taskAgentWakeAgent": "Treziți agentul",
-  "taskBlockedByChipLabel": "{count, plural, =1{Se așteaptă {title}} few{Se așteaptă {count} sarcini} other{Se așteaptă {count} de sarcini}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{În așteptarea unei sarcini} few{În așteptarea a {count} sarcini} other{În așteptarea a {count} de sarcini}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "title": {
-        "type": "String"
       }
     }
   },

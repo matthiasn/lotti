@@ -10231,13 +10231,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentWakeAgent => 'Probudit agenta';
 
   @override
-  String taskBlockedByChipLabel(int count, String title) {
+  String taskBlockedByChipLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Čeká se na $count úkolů',
-      few: 'Čeká se na $count úkoly',
-      one: 'Čeká se na $title',
+      other: 'Čeká na $count úkolů',
+      few: 'Čeká na $count úkoly',
+      one: 'Čeká na 1 úkol',
     );
     return '$_temp0';
   }

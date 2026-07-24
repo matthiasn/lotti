@@ -489,10 +489,12 @@ class _TaskBlockedByChip extends ConsumerWidget {
         variant: DsPillVariant.tinted,
         color: accent,
         leading: Icon(Icons.block, size: 12, color: accent),
-        label: context.messages.taskBlockedByChipLabel(
-          blockers.length,
-          single ? blockers.first.data.title : '',
-        ),
+        // Count only, no blocker title. Embedding the title made the chip
+        // grow with it — on a long title it spanned the header and out-shouted
+        // the status pill beside it. That the task is waiting is the header's
+        // job; which task it waits on is one glance away in the Linked Tasks
+        // card, and the tooltip still names it.
+        label: context.messages.taskBlockedByChipLabel(blockers.length),
         // Matches LinkedTaskRow's own browse-mode chevron so a chip that
         // navigates reads as tappable, not just as a status readout.
         trailing: Icon(

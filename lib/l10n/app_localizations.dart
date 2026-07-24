@@ -17469,8 +17469,8 @@ abstract class AppLocalizations {
   /// No description provided for @taskBlockedByChipLabel.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Waiting on {title}} other{Waiting on {count} tasks}}'**
-  String taskBlockedByChipLabel(int count, String title);
+  /// **'{count, plural, =1{Waiting on 1 task} other{Waiting on {count} tasks}}'**
+  String taskBlockedByChipLabel(int count);
 
   /// No description provided for @taskBlockedByChipTooltip.
   ///

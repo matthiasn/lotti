@@ -35,9 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The same two tasks can hold more than one relationship.
   The Linked Tasks section groups links under the exact phrase you picked
   rather than one flat list, with what's blocking the task listed first and
-  called out. A blocked task shows a "Waiting on …" chip next to its status in
-  the header — tap it to jump to the blocker, or see all of them when there's
-  more than one. Marking a task Blocked optionally prompts you to name what's
+  called out. A task that's waiting shows a compact "Waiting on 1 task" chip
+  next to its status in the header — tap it to jump to the blocker, or see all
+  of them when there's more than one. Marking a task Blocked optionally prompts you to name what's
   blocking it on the spot. A task with no links yet now offers a "Link a
   task…" action instead of hiding the section entirely.
 - **"Your plan is ready" as a system notification.** When a Daily OS plan

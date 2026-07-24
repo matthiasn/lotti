@@ -10259,12 +10259,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskAgentWakeAgent => 'Ejecutar agente';
 
   @override
-  String taskBlockedByChipLabel(int count, String title) {
+  String taskBlockedByChipLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Esperando a $count tareas',
-      one: 'Esperando a $title',
+      other: 'Esperando $count tareas',
+      one: 'Esperando 1 tarea',
     );
     return '$_temp0';
   }

@@ -10290,13 +10290,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentWakeAgent => 'Treziți agentul';
 
   @override
-  String taskBlockedByChipLabel(int count, String title) {
+  String taskBlockedByChipLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Se așteaptă $count de sarcini',
-      few: 'Se așteaptă $count sarcini',
-      one: 'Se așteaptă $title',
+      other: 'În așteptarea a $count de sarcini',
+      few: 'În așteptarea a $count sarcini',
+      one: 'În așteptarea unei sarcini',
     );
     return '$_temp0';
   }
