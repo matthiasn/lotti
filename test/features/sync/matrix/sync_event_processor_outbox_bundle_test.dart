@@ -40,7 +40,7 @@ void main() {
         await processor.process(event: event, journalDb: journalDb);
 
         final captured = verify(
-          () => aiConfigRepository.hardDeleteConfig(
+          () => aiConfigRepository.deleteConfig(
             captureAny<String>(),
             fromSync: true,
           ),

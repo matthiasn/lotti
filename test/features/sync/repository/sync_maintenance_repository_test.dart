@@ -253,6 +253,20 @@ void main() {
           includeDeleted: any(named: 'includeDeleted'),
         ),
       ).thenAnswer((_) async => [prompt]);
+      // The pass also replays profiles and skills, so a missed soft-delete for
+      // either can be repaired.
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProfile,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.skill,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
       when(
         () => mockOutboxService.enqueueMessage(any()),
       ).thenAnswer((_) async {});
@@ -681,6 +695,18 @@ void main() {
           includeDeleted: any(named: 'includeDeleted'),
         ),
       ).thenAnswer((_) async => [promptConfig]);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProfile,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.skill,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
 
       final totals = await syncMaintenanceRepository.fetchTotalsForSteps({
         SyncStep.measurables,
@@ -729,6 +755,18 @@ void main() {
       when(
         () => mockJournalDb.getAllMeasurableDataTypes(),
       ).thenAnswer((_) async => [FakeMeasurableDataType(id: 'm')]);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProfile,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.skill,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
       when(
         () => mockJournalDb.getAllLabelDefinitions(),
       ).thenAnswer((_) async => []);

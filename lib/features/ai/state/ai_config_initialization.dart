@@ -26,17 +26,32 @@ Future<void> aiConfigInitialization(Ref ref) async {
   // soft-deleted rows *before* anything seeds. Those releases hard-deleted the
   // config, so on upgrade a deleted seed is simply absent — and backfill or
   // seeding would recreate it, undoing the user's deletion.
+  var tombstonesMigrated = true;
   try {
     await SeedTombstoneMigration(
       aiConfigRepository: aiConfigRepo,
       settingsDb: getIt<SettingsDb>(),
     ).migrate();
   } catch (error, stackTrace) {
+    tombstonesMigrated = false;
     developer.log(
       'Failed to migrate legacy seed tombstones: $error',
       name: 'aiConfigInitialization',
       stackTrace: stackTrace,
     );
+  }
+
+  // Every pass below recreates rows it finds missing, and an unconverted
+  // ledger is exactly the state where "missing" means "the user deleted it".
+  // Skipping this launch leaves the ledger intact to retry, which is strictly
+  // better than resurrecting — and syncing — deleted seeds.
+  if (!tombstonesMigrated) {
+    developer.log(
+      'Skipping model backfill and profile seeding: legacy seed tombstones '
+      'are not migrated, so deleted seeds would be recreated',
+      name: 'aiConfigInitialization',
+    );
+    return;
   }
 
   // Backfill known models before seeding so that new default profiles can

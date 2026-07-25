@@ -192,7 +192,9 @@ void main() {
         final container = createContainer();
         await container.read(aiConfigInitializationProvider.future);
 
-        verify(() => repo.hardDeleteConfig(profileMeliousId)).called(1);
+        verify(
+          () => repo.hardDeleteConfig(profileMeliousId, fromSync: true),
+        ).called(1);
       },
     );
 
@@ -225,6 +227,14 @@ void main() {
       await expectLater(
         container.read(aiConfigInitializationProvider.future),
         completes,
+      );
+      // …and the passes that would resurrect the unconverted deletions are
+      // skipped for this launch, leaving the ledger to retry next time.
+      verifyNever(
+        () => repo.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       );
     });
 

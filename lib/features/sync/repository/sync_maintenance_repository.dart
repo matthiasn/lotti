@@ -536,6 +536,17 @@ class SyncMaintenanceRepository {
             AiConfigType.prompt,
             includeDeleted: true,
           ),
+          // Profiles and skills belong here too: a missed soft-delete for
+          // either is otherwise never repaired, and bundled profiles are the
+          // rows this tombstone mechanism mostly exists for.
+          _aiConfigRepository.getConfigsByType(
+            AiConfigType.inferenceProfile,
+            includeDeleted: true,
+          ),
+          _aiConfigRepository.getConfigsByType(
+            AiConfigType.skill,
+            includeDeleted: true,
+          ),
         ]);
 
         return configGroups.expand((group) => group).toList();

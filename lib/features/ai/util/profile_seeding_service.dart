@@ -203,7 +203,10 @@ class ProfileSeedingService {
       // Not a user deletion: this pass removes seeds whose provider became
       // unusable and deliberately re-seeds them if the provider returns, so it
       // must leave no `deletedAt` behind.
-      await _repo.hardDeleteConfig(config.id);
+      // fromSync: true keeps the removal local. Whether a provider is usable
+      // is a per-device fact, so propagating this delete would strip the
+      // profile from a peer that can still serve it.
+      await _repo.hardDeleteConfig(config.id, fromSync: true);
       removedCount++;
     }
 

@@ -121,11 +121,16 @@ Map<String, dynamic> _$SyncSyncNodeProfileToJson(
 SyncAiConfigDelete _$SyncAiConfigDeleteFromJson(Map<String, dynamic> json) =>
     SyncAiConfigDelete(
       id: json['id'] as String,
+      hardDelete: json['hardDelete'] as bool?,
       $type: json['runtimeType'] as String?,
     );
 
 Map<String, dynamic> _$SyncAiConfigDeleteToJson(SyncAiConfigDelete instance) =>
-    <String, dynamic>{'id': instance.id, 'runtimeType': instance.$type};
+    <String, dynamic>{
+      'id': instance.id,
+      'hardDelete': instance.hardDelete,
+      'runtimeType': instance.$type,
+    };
 
 SyncSavedTaskFilter _$SyncSavedTaskFilterFromJson(Map<String, dynamic> json) =>
     SyncSavedTaskFilter(

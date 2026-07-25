@@ -108,7 +108,7 @@ class AiConfigRepository {
     _invalidateConfig(id);
     if (!fromSync) {
       await getIt<OutboxService>().enqueueMessage(
-        SyncMessage.aiConfigDelete(id: id),
+        SyncMessage.aiConfigDelete(id: id, hardDelete: true),
       );
     }
   }
@@ -198,10 +198,26 @@ class AiConfigRepository {
     // drop them and the peers hear about it.
     deletedIds.forEach(_invalidateConfig);
     if (!fromSync) {
+      // Best effort, and deliberately non-fatal. The rows are already gone
+      // locally, so throwing here would tell the user the deletion failed and
+      // withdraw the undo affordance for work that did happen. One failed
+      // enqueue must also not skip the rest — a hard delete leaves no row for
+      // the maintenance pass to replay, so every id we can queue, we queue.
       for (final id in deletedIds) {
-        await getIt<OutboxService>().enqueueMessage(
-          SyncMessage.aiConfigDelete(id: id),
-        );
+        try {
+          await getIt<OutboxService>().enqueueMessage(
+            SyncMessage.aiConfigDelete(id: id, hardDelete: true),
+          );
+        } catch (error, stackTrace) {
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt<DomainLogger>().error(
+              LogDomain.ai,
+              error,
+              stackTrace: stackTrace,
+              subDomain: 'deleteInferenceProviderWithModels',
+            );
+          }
+        }
       }
     }
 

@@ -198,6 +198,14 @@ void main() {
       verifyNever(
         () => repo.deleteConfig(any(), fromSync: any(named: 'fromSync')),
       );
+      // The lookup must ask for deleted rows, or the migration reads a
+      // tombstoned row as absent and writes a duplicate.
+      verify(
+        () => repo.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: true,
+        ),
+      ).called(1);
     });
 
     // Clearing the key is what stops this running on every launch.

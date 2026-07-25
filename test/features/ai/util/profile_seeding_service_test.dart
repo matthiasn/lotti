@@ -702,7 +702,9 @@ void main() {
 
         await service.removeOrphanedDefaultSeeds();
 
-        verify(() => mockRepo.hardDeleteConfig(profileMeliousId)).called(1);
+        verify(
+          () => mockRepo.hardDeleteConfig(profileMeliousId, fromSync: true),
+        ).called(1);
       },
     );
 
@@ -839,7 +841,9 @@ void main() {
 
         await service.removeOrphanedDefaultSeeds();
 
-        verify(() => mockRepo.hardDeleteConfig(profileLocalPowerId)).called(1);
+        verify(
+          () => mockRepo.hardDeleteConfig(profileLocalPowerId, fromSync: true),
+        ).called(1);
       },
     );
 
