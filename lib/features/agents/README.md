@@ -2163,13 +2163,33 @@ Key invariants:
   *inside* it later is left entirely to that row's own choreography — an
   enclosing `AnimatedSize` would instead try to re-drive (and assert on) that
   inner, per-frame size change.
-- **Off-screen growth anchor.** When a new proposal grows the card while the
-  card has scrolled *fully above* the viewport, `TaskDetailsPage` pins the seam
-  just below the card (a second `ScrollAnchor` keyed on the linked-entries
-  sliver, engaged only when the card is off-screen — the visible/partly-visible
-  case is left to the entrance reveal) so the growth never moves the visible
-  area. This is the rise-side dual of `_suggestionsAnchor`, which guards the
-  shrink-above-card case on resolve.
+- **Off-screen card anchor (growth *and* collapse).** While the card has
+  scrolled *fully above* the viewport, `TaskDetailsPage` pins the seam just
+  below it (a second `ScrollAnchor` keyed on the linked-entries sliver) instead
+  of pinning the proposals, so neither a new proposal growing the card nor a
+  resolved row collapsing it moves the visible area. The
+  visible/partly-visible case is left to the entrance reveal and to the row's
+  own collapse — that motion is what the user is looking at.
+
+  The collapse side matters for *every* tool and *both* verdicts: `_confirm`
+  and `_reject` are the same choreography — each calls `onResolveStart`
+  synchronously at gesture time and then `_collapseAndPrune` — so a dismissed
+  proposal shrinks the card exactly as an accepted one does, and the
+  `unifiedSuggestionListProvider` count listener cannot tell them apart either.
+  `_suggestionsAnchor` cannot cover it: it locates
+  `ProposalsSection`'s own top, and a row collapsing *inside* that section never
+  moves it, so the anchor measures zero drift and does nothing.
+  `set_task_language` was the clearest reproducer — nothing above the card
+  renders the language, so the card's collapse is that tool's entire
+  page-layout effect. While the card is off-screen its band therefore also
+  reports its own height delta (`ViewportStableSizeReporter(offscreenOnly:
+  true)`) so the correction lands pre-paint rather than one frame late per frame
+  of the collapse.
+
+  The two anchors are mutually exclusive: they sit either side of the card, so
+  the correction that holds one moves the other by exactly the card's height
+  change. `TaskDetailsPage` evaluates the off-screen predicate once per resolve
+  and arms exactly one.
 - **Reduced motion** (`MediaQuery.disableAnimations`): no resolve/collapse
   travel — the row is pruned instantly; pill swaps instantly; the entrance
   reveal is instant; the haptic still fires (feedback, not motion).

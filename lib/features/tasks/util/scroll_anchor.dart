@@ -35,6 +35,20 @@ double? viewportTopGlobal(RenderObject? renderObject) {
   return viewport.localToGlobal(Offset.zero).dy;
 }
 
+/// Returns the global bottom edge of the viewport containing [renderObject].
+///
+/// Returns `null` when either object is detached, unsized, or the viewport is
+/// not a [RenderBox]. Used to tell whether a region that changed height sits
+/// entirely past what the user can see.
+double? viewportBottomGlobal(RenderObject? renderObject) {
+  if (renderObject == null || !renderObject.attached) return null;
+  final RenderObject? viewport = RenderAbstractViewport.maybeOf(renderObject);
+  if (viewport is! RenderBox || !viewport.attached || !viewport.hasSize) {
+    return null;
+  }
+  return viewport.localToGlobal(Offset(0, viewport.size.height)).dy;
+}
+
 /// Pure helper: the scroll offset needed to hold an anchored widget visually
 /// fixed in the viewport after content *above* it changed height.
 ///
@@ -98,8 +112,9 @@ class ScrollAnchor {
   /// when it is not currently laid out / attached.
   final double? Function() locate;
 
-  /// How long to keep holding after a [hold] call. Measured from frame
-  /// timestamps, so it is independent of the device refresh rate.
+  /// Default window for a [hold] call that does not pass its own duration.
+  /// Measured from frame timestamps, so it is independent of the device
+  /// refresh rate.
   final Duration holdDuration;
 
   /// Drift below this (logical px) is ignored.
@@ -126,18 +141,36 @@ class ScrollAnchor {
   bool get isHolding => _anchorTop != null;
 
   /// Begin holding: capture the current anchor position and start correcting.
-  void hold() {
+  ///
+  /// [duration] overrides [holdDuration] for this hold only, so one anchor can
+  /// serve windows of different lengths. A second anchor on the same target is
+  /// deliberately not an option: two anchors correct the same drift, and
+  /// because they cooperate with the *controller* rather than with each other,
+  /// each reads the other's `jumpTo` as a user scroll and silently disarms it
+  /// mid-batch.
+  void hold({Duration? duration}) {
     if (_disposed) return;
+    final window = duration ?? holdDuration;
     final top = locate();
-    if (top == null || holdDuration <= Duration.zero) return;
+    if (top == null || window <= Duration.zero) return;
     _anchorTop = top;
     _expectedOffset = controller.positions.length == 1
         ? controller.offset
         : null;
     _releaseTimer?.cancel();
-    _releaseTimer = Timer(holdDuration, _endHold);
+    _releaseTimer = Timer(window, _endHold);
     _schedule();
   }
+
+  /// Ends an active hold without disposing the anchor, so it can hold again
+  /// later.
+  ///
+  /// Callers that own more than one anchor use this to keep them mutually
+  /// exclusive. Two anchors either side of a region whose own height changes
+  /// cannot both be satisfied: the correction that holds one still moves the
+  /// other by exactly that height change, which the other then reads as drift
+  /// and undoes on the next post-frame.
+  void release() => _endHold();
 
   void _schedule() {
     if (_scheduled || _disposed) return;

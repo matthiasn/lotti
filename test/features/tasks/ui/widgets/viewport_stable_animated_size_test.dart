@@ -687,6 +687,216 @@ void main() {
     );
     expect(tester.getTopLeft(find.byKey(_markerKey)).dy, closeTo(markerTop, 1));
   });
+
+  group('offscreen-only reported region', () {
+    // Models the AI card band. Every accepted proposal collapses a row and so
+    // shrinks the card; that shrink must move the content below it only while
+    // the card is visible. Once the card is above the viewport the page arms
+    // the hold with includeOffscreenRegions and the shrink is absorbed instead.
+
+    testWidgets('is ignored while a plain explicit hold is armed', (
+      tester,
+    ) async {
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..controller.jumpTo(500);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy;
+
+      // A visible card: the collapse IS the reflow the user is watching, so
+      // the page must not scroll under their pointer to hide it.
+      state
+        ..hold()
+        ..resizeOffscreenRegion(200);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(500, 0.1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop + 200, 0.1),
+      );
+    });
+
+    testWidgets('is consumed pre-paint while an offscreen hold is armed', (
+      tester,
+    ) async {
+      final paintedMarkerTops = <double>[];
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          _ReportedSizeHarness(key: key, onMarkerPaint: paintedMarkerTops.add),
+        ),
+      );
+      await tester.pump();
+
+      // Give the region a height to shrink from, before any hold is armed.
+      final state = key.currentState!..resizeOffscreenRegion(200);
+      await tester.pump();
+      state.controller.jumpTo(500);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy;
+      paintedMarkerTops.clear();
+
+      state
+        ..holdOffscreen()
+        ..resizeOffscreenRegion(100);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(400, 0.1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 0.1),
+      );
+      // No displaced frame was painted on the way.
+      expect(paintedMarkerTops, isNotEmpty);
+      expect(
+        paintedMarkerTops.every((top) => (top - markerTop).abs() <= 1),
+        isTrue,
+        reason: 'painted positions: $paintedMarkerTops',
+      );
+    });
+
+    testWidgets('sums with an always-on region into one pre-paint correction', (
+      tester,
+    ) async {
+      // A confirm that both grows the checklist above the card and collapses a
+      // proposal row inside it: the two deltas cancel, so nothing should move.
+      final paintedMarkerTops = <double>[];
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          _ReportedSizeHarness(
+            key: key,
+            initialHeight: 250,
+            onMarkerPaint: paintedMarkerTops.add,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..resizeOffscreenRegion(200);
+      await tester.pump();
+      state.controller.jumpTo(500);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy;
+      paintedMarkerTops.clear();
+
+      state
+        ..holdOffscreen()
+        ..resizeBothRegions(reported: 350, offscreen: 100);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(500, 0.1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 0.1),
+      );
+      expect(paintedMarkerTops, isNotEmpty);
+      expect(
+        paintedMarkerTops.every((top) => (top - markerTop).abs() <= 1),
+        isTrue,
+        reason: 'painted positions: $paintedMarkerTops',
+      );
+    });
+
+    testWidgets(
+      'shrinking at the bottom extent clamps instead of retaining phantom '
+      'trailing extent',
+      (tester) async {
+        // The direct regression for the reported bug. Unreported, this shrink
+        // made applyContentDimensions retain a phantom tail and pin the old
+        // offset — which moves the visible content up by the row height and
+        // leaves a blank band. Reported, the correction lands and the page
+        // simply gets shorter.
+        final key = GlobalKey<_ReportedSizeHarnessState>();
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+        );
+        await tester.pump();
+
+        final state = key.currentState!..resizeOffscreenRegion(200);
+        await tester.pump();
+        state.controller.jumpTo(state.controller.position.maxScrollExtent);
+        await tester.pump();
+        final maxBefore = state.controller.position.maxScrollExtent;
+        final markerTop = tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy;
+
+        state
+          ..holdOffscreen()
+          ..resizeOffscreenRegion(100);
+        await tester.pump();
+
+        expect(
+          state.controller.position.maxScrollExtent,
+          closeTo(maxBefore - 100, 0.1),
+        );
+        expect(
+          state.controller.offset,
+          closeTo(state.controller.position.maxScrollExtent, 0.1),
+        );
+        expect(
+          tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+          closeTo(markerTop, 0.1),
+        );
+      },
+    );
+
+    testWidgets('does not accumulate deltas measured while no hold is armed', (
+      tester,
+    ) async {
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..controller.jumpTo(500);
+      await tester.pump();
+
+      // Two unheld resizes: the reporter re-baselines each time, so arming
+      // afterwards must start from the current height, not replay the history.
+      state.resizeOffscreenRegion(200);
+      await tester.pump();
+      state.resizeOffscreenRegion(300);
+      await tester.pump();
+
+      final offsetBefore = state.controller.offset;
+      state.holdOffscreen();
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(offsetBefore, 0.1));
+    });
+
+    testWidgets('is no longer admitted once the offscreen hold has expired', (
+      tester,
+    ) async {
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..resizeOffscreenRegion(200);
+      await tester.pump();
+      state.controller.jumpTo(500);
+      await tester.pump();
+
+      state.holdOffscreen(duration: const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 101));
+
+      // A plain hold must not inherit the expired hold's offscreen permission.
+      state
+        ..hold()
+        ..resizeOffscreenRegion(100);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(500, 0.1));
+    });
+  });
 }
 
 const _animatedSizeKey = Key('stable-animated-size');
@@ -803,6 +1013,11 @@ class _ReportedSizeHarnessState extends State<_ReportedSizeHarness> {
   final controller = ViewportStableScrollController();
   late final ValueNotifier<double> height;
   final animatedRegionHeight = ValueNotifier<double>(50);
+
+  /// Models the AI card band: reported only while the page says the region is
+  /// off-screen. Zero by default so it contributes nothing to the content
+  /// height the other tests' offset and extent expectations are built on.
+  final offscreenRegionHeight = ValueNotifier<double>(0);
   final tailHeight = ValueNotifier<double>(1600);
 
   @override
@@ -812,6 +1027,9 @@ class _ReportedSizeHarnessState extends State<_ReportedSizeHarness> {
   }
 
   void hold() => controller.hold(const Duration(seconds: 2));
+
+  void holdOffscreen({Duration duration = const Duration(seconds: 2)}) =>
+      controller.hold(duration, includeOffscreenRegions: true);
 
   // ignore: use_setters_to_change_properties
   void resize(double value) => height.value = value;
@@ -827,10 +1045,23 @@ class _ReportedSizeHarnessState extends State<_ReportedSizeHarness> {
   // ignore: use_setters_to_change_properties
   void resizeAnimatedRegion(double value) => animatedRegionHeight.value = value;
 
+  // ignore: use_setters_to_change_properties
+  void resizeOffscreenRegion(double value) =>
+      offscreenRegionHeight.value = value;
+
+  void resizeBothRegions({
+    required double reported,
+    required double offscreen,
+  }) {
+    height.value = reported;
+    offscreenRegionHeight.value = offscreen;
+  }
+
   @override
   void dispose() {
     height.dispose();
     animatedRegionHeight.dispose();
+    offscreenRegionHeight.dispose();
     tailHeight.dispose();
     controller.dispose();
     super.dispose();
@@ -858,6 +1089,13 @@ class _ReportedSizeHarnessState extends State<_ReportedSizeHarness> {
                 ViewportStableSizeReporter(
                   child: ValueListenableBuilder<double>(
                     valueListenable: height,
+                    builder: (context, value, child) => SizedBox(height: value),
+                  ),
+                ),
+                ViewportStableSizeReporter(
+                  offscreenOnly: true,
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: offscreenRegionHeight,
                     builder: (context, value, child) => SizedBox(height: value),
                   ),
                 ),

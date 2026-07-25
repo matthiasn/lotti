@@ -9,11 +9,16 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
+import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -64,9 +69,14 @@ void main() {
   ///   needs none of these.
   /// * [watchConfigPrivate] — when true, `watchConfigFlags` emits the `private`
   ///   flag; the null group emits an empty set.
+  /// * [linkedEntities] — entities `getLinkedEntities` resolves to (defaults to
+  ///   one text entry). The off-screen-card tests pass several so the sliver
+  ///   below the AI card is tall enough to scroll the card past the viewport
+  ///   top.
   Future<void> registerTaskDetailsServices({
     List<MeasurableDataType>? measurables,
     List<CategoryDefinition>? categories,
+    List<JournalEntity>? linkedEntities,
     bool stubTaskEntity = true,
     bool stubLinkedAndMeasurements = true,
     bool watchConfigPrivate = true,
@@ -143,7 +153,7 @@ void main() {
       when(
         () => mockJournalDb.getLinkedEntities(testTask.meta.id),
       ).thenAnswer(
-        (_) async => [testTextEntry],
+        (_) async => linkedEntities ?? [testTextEntry],
       );
       when(
         () => mockJournalDb.getMeasurementsByType(
@@ -593,6 +603,523 @@ void main() {
         expect(find.byType(ProposalRow), findsNWidgets(2));
         expect(position.pixels, offsetBefore);
 
+        container.dispose();
+      },
+    );
+  });
+
+  group('TaskDetailsPage Off-screen Card Anchor - ', () {
+    // Every accepted proposal collapses its row and shrinks the AI card. While
+    // the card is visible that collapse is the reflow the user is watching;
+    // once the card has scrolled above the viewport it instead drags the
+    // linked entries the user *is* reading upwards. The proposals anchor is
+    // structurally blind to it — a row collapsing inside the proposals section
+    // does not move the section's top — so the card band reports its own
+    // shrink and the below-card anchor replaces the proposals anchor.
+    setUpAll(() {
+      registerTaskDetailsFallbacks();
+      registerAllFallbackValues();
+    });
+    setUp(
+      () => registerTaskDetailsServices(
+        // Enough below the card that it can scroll fully past the viewport top.
+        linkedEntities: [
+          for (var i = 0; i < 8; i++)
+            testTextEntry.copyWith(
+              meta: testTextEntry.meta.copyWith(id: 'linked-entry-$i'),
+            ),
+        ],
+      ),
+    );
+    tearDown(getIt.reset);
+
+    ScrollPosition scrollPositionOf(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find
+              .descendant(
+                of: find.byType(CustomScrollView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        )
+        .position;
+
+    /// Pumps the page, scrolls until the AI card sits fully above the viewport
+    /// top, and returns the scroll position. Fails loudly when the scenario
+    /// cannot be reached, so the test can never silently assert nothing.
+    Future<ScrollPosition> scrollCardOffScreen(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final position = scrollPositionOf(tester);
+      final viewportTop = tester.getRect(find.byType(CustomScrollView)).top;
+      // skipOffstage: false — a sliver scrolled past the viewport is offstage,
+      // and the default finder would report it as absent rather than measuring
+      // it. It is still laid out, which is exactly why its height changes still
+      // move the content below it.
+      final card = find.byType(AiSummaryCard, skipOffstage: false);
+      // Past the top by more than the band's trailing padding: the page
+      // measures the whole reported band (card plus its bottom padding), not
+      // just the card, so clearing the card alone leaves the predicate false.
+      position.jumpTo(
+        position.pixels + (tester.getRect(card).bottom - viewportTop) + 40,
+      );
+      await tester.pump();
+
+      expect(
+        tester.getRect(card).bottom,
+        lessThan(viewportTop),
+        reason: 'the card never scrolled above the viewport top',
+      );
+      return position;
+    }
+
+    for (final scenario in [
+      (
+        // The pure card-collapse case: nothing above the card changes, so the
+        // proposals anchor provably is not what keeps this stable.
+        tool: 'set_task_language',
+      ),
+      (
+        // A header delta and the card shrink compose into one correction.
+        tool: 'update_task_estimate',
+      ),
+      (
+        // Opposite-sign deltas: the checklist grows above while the card
+        // shrinks below.
+        tool: 'add_checklist_item',
+      ),
+    ]) {
+      testWidgets(
+        '${scenario.tool}: resolving with the card above the viewport keeps '
+        'the below-card entries fixed',
+        (tester) async {
+          tester.view.physicalSize = const Size(800, 500);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+
+          final confirmationService = MockChangeSetConfirmationService();
+          late final ProviderContainer container;
+          when(
+            () => confirmationService.confirmItem(any(), any()),
+          ).thenAnswer((_) async {
+            container
+                .read(controllableOpenSuggestionCountProvider.notifier)
+                .set(0);
+            return const ToolExecutionResult(success: true, output: 'ok');
+          });
+
+          container = ProviderContainer(
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              ...hLinkedEntriesOverrides(),
+              ...hControllableSuggestionOverrides(
+                items: hSingleSuggestion(scenario.tool),
+              ),
+              changeSetConfirmationServiceProvider.overrideWith(
+                (ref) => confirmationService,
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+            ),
+          );
+
+          // Confirm the row while the card is still visible, then scroll it
+          // away before the collapse lands — the same shape as tapping and
+          // scrolling on to read the entries below.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byType(ProposalRow), findsOneWidget);
+
+          final position = await scrollCardOffScreen(tester);
+          final entriesTop = tester
+              .getTopLeft(find.byType(LinkedEntriesWithTimer))
+              .dy;
+
+          container
+              .read(controllableOpenSuggestionCountProvider.notifier)
+              .set(
+                0,
+              );
+          for (var frame = 0; frame < 12; frame++) {
+            await tester.pump(const Duration(milliseconds: 50));
+            expect(
+              tester.getTopLeft(find.byType(LinkedEntriesWithTimer)).dy,
+              closeTo(entriesTop, 1),
+              reason: 'below-card entries moved on frame $frame',
+            );
+          }
+
+          expect(tester.takeException(), isNull);
+          expect(position.pixels, isNot(isNaN));
+          container.dispose();
+        },
+      );
+    }
+
+    testWidgets(
+      'a new proposal arriving while the card is above the viewport keeps the '
+      'below-card entries fixed',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 500);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+        container.read(controllableOpenSuggestionCountProvider.notifier).set(1);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+          ),
+        );
+
+        await scrollCardOffScreen(tester);
+        final entriesTop = tester
+            .getTopLeft(find.byType(LinkedEntriesWithTimer))
+            .dy;
+
+        // The growth-side dual: the card grows off-screen, so the visible
+        // content below it must not be pushed down.
+        container.read(controllableOpenSuggestionCountProvider.notifier).set(2);
+        for (var frame = 0; frame < 8; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(
+            tester.getTopLeft(find.byType(LinkedEntriesWithTimer)).dy,
+            closeTo(entriesTop, 1),
+            reason: 'below-card entries moved on frame $frame',
+          );
+        }
+
+        expect(tester.takeException(), isNull);
+        container.dispose();
+      },
+    );
+
+    testWidgets('a user scroll during the resolve window releases the hold', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 500);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final container = ProviderContainer(
+        overrides: [
+          ...hTaskDetailsPageOverrides(),
+          ...hLinkedEntriesOverrides(),
+          ...hControllableSuggestionOverrides(),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+        ),
+      );
+
+      final position = await scrollCardOffScreen(tester);
+
+      // Arm the hold, then scroll deliberately: stabilization must never fight
+      // input, however long its window still had to run.
+      container.read(controllableOpenSuggestionCountProvider.notifier).set(1);
+      await tester.pump();
+      final offsetBefore = position.pixels;
+
+      await tester.drag(
+        find.byType(CustomScrollView),
+        const Offset(0, -120),
+      );
+      await tester.pump();
+
+      expect(position.pixels, greaterThan(offsetBefore));
+      expect(tester.takeException(), isNull);
+      container.dispose();
+    });
+
+    testWidgets(
+      'a linked task appearing long after the resolve window re-arms the hold '
+      'and keeps the proposals in place',
+      (tester) async {
+        // `create_follow_up_task` links its new task only after awaiting agent
+        // content generation, so the linked-tasks band above the card can grow
+        // seconds after the tap — long past the window the resolve armed. The
+        // page watches the band's own count so it re-arms whenever that lands.
+        tester.view.physicalSize = const Size(800, 500);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableLinkedTasksOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final proposals = find.byType(ProposalsSection);
+        expect(proposals, findsOneWidget);
+        final position = scrollPositionOf(tester);
+        await tester.ensureVisible(proposals);
+        await tester.pump();
+
+        // Well past _suggestionResolveHold, so nothing armed earlier can be
+        // what keeps this stable.
+        await tester.pump(const Duration(seconds: 2));
+        final proposalsTop = tester.getTopLeft(proposals).dy;
+        final offsetBefore = position.pixels;
+
+        container.read(controllableLinkedTaskCountProvider.notifier).set(1);
+        for (var frame = 0; frame < 6; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(
+            tester.getTopLeft(proposals).dy,
+            closeTo(proposalsTop, 1),
+            reason: 'proposals moved on frame $frame',
+          );
+        }
+
+        // The band really did change height above the card — otherwise the
+        // assertion above would hold trivially.
+        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        expect(tester.takeException(), isNull);
+        container.dispose();
+      },
+    );
+
+    testWidgets(
+      'a link changing relationship type re-arms the hold even though the '
+      'count is unchanged',
+      (tester) async {
+        // TaskLinkGroupsController re-emits whenever the resolved entries
+        // differ, not only when links are added or removed. totalCount is
+        // flat + typed, so a link moving between those buckets — a synced
+        // link-type change — resizes the band (typed links render with their
+        // own section headers) while the count stays identical. Keying the
+        // listener on the count alone would leave that unstabilized.
+        tester.view.physicalSize = const Size(800, 500);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableLinkedTasksOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+        container.read(controllableLinkedTaskCountProvider.notifier).set(1);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final proposals = find.byType(ProposalsSection);
+        expect(proposals, findsOneWidget);
+        final position = scrollPositionOf(tester);
+        await tester.ensureVisible(proposals);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+
+        final proposalsTop = tester.getTopLeft(proposals).dy;
+        final offsetBefore = position.pixels;
+
+        container.read(controllableLinkedTaskTypedProvider.notifier).set(true);
+        for (var frame = 0; frame < 6; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(
+            tester.getTopLeft(proposals).dy,
+            closeTo(proposalsTop, 1),
+            reason: 'proposals moved on frame $frame',
+          );
+        }
+
+        // The retitle really did resize the band — otherwise the assertion
+        // above would hold trivially.
+        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        expect(tester.takeException(), isNull);
+        container.dispose();
+      },
+    );
+
+    testWidgets(
+      'the first link change after mounting onto an already-resolved provider '
+      'still arms the hold',
+      (tester) async {
+        // taskLinkGroupsControllerProvider is cached for entryCacheDuration, so
+        // a page can mount onto an AsyncData provider and get no emission for
+        // the value already there. Without seeding the baseline from the
+        // listener's own previous value, the first real change would only
+        // establish the baseline and arm nothing.
+        tester.view.physicalSize = const Size(800, 500);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableLinkedTasksOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+        container.read(controllableLinkedTaskCountProvider.notifier).set(1);
+
+        // Warm the provider to AsyncData *before* the page mounts, and keep the
+        // subscription alive so it is not auto-disposed in between.
+        final warmup = container.listen(
+          taskLinkGroupsControllerProvider(testTask.meta.id),
+          (_, _) {},
+        );
+        await container.read(
+          taskLinkGroupsControllerProvider(testTask.meta.id).future,
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final proposals = find.byType(ProposalsSection);
+        expect(proposals, findsOneWidget);
+        final position = scrollPositionOf(tester);
+        await tester.ensureVisible(proposals);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+
+        final proposalsTop = tester.getTopLeft(proposals).dy;
+        final offsetBefore = position.pixels;
+
+        // The very first change this page ever sees for the provider, pushed as
+        // a single AsyncData the way the real controller's update-stream
+        // listener does — no AsyncLoading in between to seed the baseline.
+        (container.read(
+                  taskLinkGroupsControllerProvider(testTask.meta.id).notifier,
+                )
+                as ControllableTaskLinkGroupsController)
+            .push(hLinkGroups(count: 2));
+        for (var frame = 0; frame < 6; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(
+            tester.getTopLeft(proposals).dy,
+            closeTo(proposalsTop, 1),
+            reason: 'proposals moved on frame $frame',
+          );
+        }
+
+        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        expect(tester.takeException(), isNull);
+        warmup.close();
+        container.dispose();
+      },
+    );
+
+    testWidgets(
+      'a linked task appearing below the viewport leaves the content the user '
+      'is reading alone',
+      (tester) async {
+        // The linked-tasks listener fires without the user having touched
+        // anything — a sync can change the link set at any scroll position.
+        // Down there the growth moves nothing on screen, so compensating it
+        // would drag the header and checklist upwards for no reason.
+        //
+        // Short viewport so the band is genuinely past the fold at offset 0;
+        // the width is unchanged, so the layout above it is identical.
+        tester.view.physicalSize = const Size(800, 200);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableLinkedTasksOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+
+        // Start populated and then *grow* the band. A shrink at offset zero is
+        // clamped by minScrollExtent and would pass whether or not the gate
+        // exists; growth is what actually pushes the offset forward.
+        container.read(controllableLinkedTaskCountProvider.notifier).set(1);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Stay at the top, where the header is what the user is reading and
+        // the linked-tasks band is far below the fold.
+        final position = scrollPositionOf(tester);
+        expect(position.pixels, isZero);
+        final viewportBottom = tester
+            .getRect(find.byType(CustomScrollView))
+            .bottom;
+        expect(
+          tester
+              .getTopLeft(find.byType(LinkedTasksWidget, skipOffstage: false))
+              .dy,
+          greaterThanOrEqualTo(viewportBottom),
+          reason: 'the linked-tasks band was not below the viewport',
+        );
+
+        final header = find.byType(DesktopTaskHeaderConnector);
+        final headerTop = tester.getTopLeft(header).dy;
+
+        container.read(controllableLinkedTaskCountProvider.notifier).set(2);
+        for (var frame = 0; frame < 6; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(
+            tester.getTopLeft(header).dy,
+            closeTo(headerTop, 1),
+            reason: 'the header moved on frame $frame',
+          );
+        }
+
+        expect(position.pixels, isZero);
+        expect(tester.takeException(), isNull);
         container.dispose();
       },
     );

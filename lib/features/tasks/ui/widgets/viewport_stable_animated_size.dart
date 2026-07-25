@@ -27,6 +27,10 @@ class ViewportStableScrollController extends ScrollController
 
   bool _isExplicitlyHolding = false;
   bool _isAnimatedSizeHolding = false;
+
+  /// Whether the current explicit hold also admits regions that are stabilized
+  /// only while they are scrolled above the viewport. See [hold].
+  bool _isOffscreenRegionHoldArmed = false;
   double _pendingExtentDelta = 0;
   double? _expectedOffset;
   Timer? _explicitReleaseTimer;
@@ -47,10 +51,27 @@ class ViewportStableScrollController extends ScrollController
   /// This hold is independent of the shorter automatic holds owned by
   /// [ViewportStableAnimatedSize], so an unrelated animation ending cannot
   /// release a checklist suggestion batch early.
-  void hold(Duration duration) {
+  ///
+  /// [includeOffscreenRegions] additionally admits deltas from regions built as
+  /// `ViewportStableSizeReporter(offscreenOnly: true)` — regions whose own
+  /// height change must be compensated only while they are out of sight. The
+  /// AI card is the case this exists for: a proposal row collapsing inside it
+  /// drags everything below the card up, which matters only when the card
+  /// itself cannot be seen. While it is visible that reflow is the animation
+  /// the user is watching, and compensating it would slide the card out from
+  /// under their next tap.
+  ///
+  /// The caller owns that predicate rather than the region, because the caller
+  /// must pick a matching post-frame [ScrollAnchor] in the same breath: the
+  /// anchors either side of such a region cannot both be satisfied. Two
+  /// mechanisms evaluating "is it off-screen?" independently would disagree
+  /// over the padding between their reference points and then fight every
+  /// frame.
+  void hold(Duration duration, {bool includeOffscreenRegions = false}) {
     if (duration <= Duration.zero) return;
     _beginHold();
     _isExplicitlyHolding = true;
+    _isOffscreenRegionHoldArmed = includeOffscreenRegions;
     _explicitReleaseTimer?.cancel();
     _explicitReleaseTimer = Timer(duration, _releaseExplicitHold);
   }
@@ -100,6 +121,7 @@ class ViewportStableScrollController extends ScrollController
     _explicitReleaseTimer?.cancel();
     _explicitReleaseTimer = null;
     _isExplicitlyHolding = false;
+    _isOffscreenRegionHoldArmed = false;
     _resetIfIdle();
   }
 
@@ -117,6 +139,7 @@ class ViewportStableScrollController extends ScrollController
     _animatedSizeReleaseTimer = null;
     _isExplicitlyHolding = false;
     _isAnimatedSizeHolding = false;
+    _isOffscreenRegionHoldArmed = false;
     _resetIfIdle();
   }
 
@@ -144,6 +167,13 @@ class ViewportStableScrollController extends ScrollController
       return;
     }
     _queueExtentDelta(delta);
+  }
+
+  /// A delta from a region that is compensated only while it is off-screen;
+  /// see [hold]'s `includeOffscreenRegions`.
+  void _reportOffscreenRegionExtentDelta(double delta) {
+    if (!_isOffscreenRegionHoldArmed) return;
+    _reportExplicitExtentDelta(delta);
   }
 
   void _queueExtentDelta(double delta) {
@@ -328,13 +358,31 @@ class TaskScrollStabilityScope extends InheritedWidget {
 /// asynchronous mutations from one user action.
 ///
 /// Outside [TaskScrollStabilityScope] this is a direct pass-through.
+///
+/// Nest these only deliberately: two reporters over the same subtree both
+/// accumulate into the same pending delta, and so does a
+/// [ViewportStableAnimatedSize] wrapped inside one. Each band gets exactly one.
 class ViewportStableSizeReporter extends StatelessWidget {
   const ViewportStableSizeReporter({
     required this.child,
+    this.offscreenOnly = false,
     super.key,
   });
 
   final Widget child;
+
+  /// Report this region's deltas only while the page armed its hold with
+  /// [ViewportStableScrollController.hold]'s `includeOffscreenRegions` — i.e.
+  /// only while the page has determined that this region is scrolled fully
+  /// above the viewport.
+  ///
+  /// Regions the user can see must never be compensated this way: a proposal
+  /// row collapsing inside a *visible* AI card is the reflow the user is
+  /// watching, and correcting it would scroll the page under their pointer.
+  /// The predicate lives with the page rather than here because the page must
+  /// pick the matching anchor from the same answer — see
+  /// [ViewportStableScrollController.hold].
+  final bool offscreenOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -342,7 +390,9 @@ class ViewportStableSizeReporter extends StatelessWidget {
     if (controller is! ViewportStableScrollController) return child;
     return _LayoutInvalidationReporter(
       onWillLayout: _noop,
-      onHeightDelta: controller._reportExplicitExtentDelta,
+      onHeightDelta: offscreenOnly
+          ? controller._reportOffscreenRegionExtentDelta
+          : controller._reportExplicitExtentDelta,
       child: child,
     );
   }

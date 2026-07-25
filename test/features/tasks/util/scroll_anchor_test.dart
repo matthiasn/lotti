@@ -313,6 +313,74 @@ void main() {
       expect(anchor.isHolding, isFalse);
     });
 
+    testWidgets(
+      'hold(duration:) overrides the window the anchor was constructed with',
+      (tester) async {
+        // The below-card anchor is built for the card's short growth reveal but
+        // is reused for the much longer suggestion-resolve window. One anchor
+        // per anchored point is the invariant; the window is per-hold.
+        final harnessKey = GlobalKey<_AnchorHarnessState>();
+        await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+        await tester.pump();
+
+        final state = harnessKey.currentState!;
+        state.controller.jumpTo(300);
+        await tester.pump();
+        final before = state.anchorTop();
+
+        state.anchor.hold(duration: const Duration(milliseconds: 500));
+
+        // Well past the 100ms the anchor was constructed with.
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(state.anchor.isHolding, isTrue);
+
+        // A shrink landing inside the overridden window is still corrected.
+        state.grow(-150);
+        await tester.pump();
+        await tester.pump();
+        expect((state.anchorTop()! - before!).abs(), lessThan(2));
+        expect(state.controller.offset, closeTo(150, 2));
+
+        // ...and the overridden window still ends on its own.
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(state.anchor.isHolding, isFalse);
+      },
+    );
+
+    testWidgets('release() ends an active hold without disposing the anchor', (
+      tester,
+    ) async {
+      final harnessKey = GlobalKey<_AnchorHarnessState>();
+      await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+      await tester.pump();
+
+      final state = harnessKey.currentState!;
+      state.controller.jumpTo(300);
+      await tester.pump();
+
+      state.anchor.hold();
+      expect(state.anchor.isHolding, isTrue);
+
+      state.anchor.release();
+      expect(state.anchor.isHolding, isFalse);
+
+      // Released: a shrink above is left uncorrected.
+      state.grow(-150);
+      await tester.pump();
+      await tester.pump();
+      expect(state.controller.offset, 300);
+
+      // ...but the anchor is still usable, unlike after dispose().
+      final before = state.anchorTop();
+      state.anchor.hold();
+      expect(state.anchor.isHolding, isTrue);
+      state.grow(-100);
+      await tester.pump();
+      await tester.pump();
+      expect((state.anchorTop()! - before!).abs(), lessThan(2));
+      expect(state.controller.offset, closeTo(200, 2));
+    });
+
     testWidgets('dispose stops an in-flight hold', (tester) async {
       final harnessKey = GlobalKey<_AnchorHarnessState>();
       await tester.pumpWidget(_AnchorHarness(key: harnessKey));

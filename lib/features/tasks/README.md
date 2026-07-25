@@ -253,9 +253,14 @@ subtle frame in light and dark themes.
   added). `AiSummaryCard` therefore signals `TaskDetailsPage` synchronously when
   a resolve gesture begins, before checklist persistence can relayout the page.
   The page arms its `ViewportStableScrollController`, while
-  `ViewportStableSizeReporter` wraps the header band (title, label, due-date,
-  priority, and status chips — all of which confirmed proposals can grow) and
-  the checklist band, and reports every
+  `ViewportStableSizeReporter` wraps every band a confirmed proposal can
+  resize — the header band (title, label, due-date, priority, estimate and
+  status chips), the checklist band, the linked-tasks band (a confirmed
+  `create_follow_up_task` links its new task there, and the first link is a
+  large step: two tall empty-state actions plus a divider give way to one
+  compact row while the card header gains a chevron, count badge and Link
+  button), and the AI card band itself in off-screen-only mode (below) — and
+  reports every
   measured height delta. The custom scroll position consumes those deltas in
   `correctForNewDimensions`, causing Flutter to repeat viewport layout at the
   corrected offset before anything paints. This matters for Confirm all:
@@ -279,11 +284,54 @@ subtle frame in light and dark themes.
     Enter --> Report[ViewportStableSizeReporter measures delta]
     Report --> Layout[correctForNewDimensions adjusts offset]
     Layout --> Paint[paint anchored suggestion area]
-    Arm -. residual fallback .-> Anchor[ScrollAnchor]
+    Arm --> Which{card above viewport?}
+    Which -->|no| SA[ScrollAnchor pins the proposals top]
+    Which -->|yes| BA[ScrollAnchor pins the below-card seam]
+    Which -->|yes| CardReport[AI card band reports its own collapse]
   ```
 
-  The existing `ScrollAnchor` remains a fallback for proposal-driven changes in
-  other task regions above the AI card, and the
+  **Which point stays still flips when the card leaves the screen.** Every
+  resolved proposal collapses its row and so shrinks the card — confirm and
+  dismiss run the same path (`_confirm` and `_reject` both call
+  `onResolveStart` and then `_collapseAndPrune`), and the
+  `unifiedSuggestionListProvider` count listener sees either as a drop. While
+  the card is
+  visible that collapse *is* the reflow the user is watching, so the card band
+  stays silent and `_suggestionsAnchor` pins the proposals under their pointer.
+  Once the card has scrolled fully above the viewport the user is reading the
+  linked entries below it, and the same shrink drags that content up —
+  `_suggestionsAnchor` is structurally blind to it, because a row collapsing
+  *inside* the proposals section never moves the section's top. So the card band
+  reports its own delta for a pre-paint correction and `_belowCardAnchor` pins
+  the seam below the card instead. `set_task_language` is the clearest
+  reproducer of the shrink-only case: nothing above the card renders the
+  language, so the collapse is its whole page-layout effect.
+
+  The two anchors are **never armed together**. They sit either side of the
+  change, so the correction that holds one moves the other by exactly that
+  height change, which the other then reads as drift and undoes on the next
+  post-frame — both holding means both jumping, every frame.
+  `_holdSuggestionsStable` therefore evaluates `_isCardRegionAboveViewport()`
+  once and arms exactly one geometry, passing the same answer to the controller
+  as `hold(..., includeOffscreenRegions:)`. The predicate deliberately lives
+  with the page rather than with the reporter: two mechanisms answering "is it
+  off-screen?" independently would disagree over the padding between their
+  reference points. It measures the card *band* (card plus its bottom padding),
+  falling back to the below-card seam when the band's sliver has scrolled beyond
+  the viewport's cache extent and has no render object left to measure — an
+  unlaid-out card cannot change height, but the post-frame anchor still has to
+  be the below-card one. Because `ProposalRow`'s Confirm-all cascade calls
+  `onResolveStart` per row, the predicate is re-evaluated per row and the
+  anchors hand over cleanly if the card crosses the viewport top mid-sweep.
+
+  `create_follow_up_task` needs one more thing: `FollowUpTaskHandler` awaits
+  `createTaskAgent(awaitContent: true)` *before* it creates the link, so the
+  linked-tasks band can grow seconds after the tap — long past the resolve
+  window. A `taskLinkGroupsControllerProvider` listener re-arms whenever that
+  band's count actually changes, which also covers user-initiated linking.
+
+  The `ScrollAnchor` remains the post-frame fallback for proposal-driven changes
+  in task regions that do not report their own delta, and the
   `unifiedSuggestionListProvider` count listener arms both paths for externally
   resolved proposals. When checklist content above the proposals and card
   content below them shrink in the same layout pass, the custom position bases
@@ -292,7 +340,10 @@ subtle frame in light and dark themes.
   If the shorter card leaves too little trailing extent to preserve the held
   position, the position retains only the missing extent until deliberate
   scrolling returns inside the real range; ending the timer therefore cannot
-  cause a delayed jump. Newly created checklist rows and cards still reveal
+  cause a delayed jump. That retention is for *reported* shrinks: with the card
+  band reporting its own collapse it no longer misfires on an off-screen card
+  near the bottom extent, where pinning the old offset used to convert a benign
+  clamp into a visible jump plus a blank band. Newly created checklist rows and cards still reveal
   through `SizeFadeEntrance`; the stabilizer preserves geometry rather than
   suppressing useful motion. The hold spans the checked item's delayed row
   collapse (`checklistCompletionAnimationDuration` +
@@ -1197,22 +1248,60 @@ Examples:
 That separation is deliberate. The task feature owns the task experience; it should not become a secret duplicate of the AI feature.
 
 `TaskDetailsPage` wraps its scroll view in `TaskScrollStabilityScope`. The scope
-has two region adapters backed by the same `ViewportStableScrollController`:
+has three region-adapter modes backed by the same
+`ViewportStableScrollController`:
 
 - `ViewportStableAnimatedSize` animates generated entry text and nested AI
   response height, automatically arming only when the region is fully above the
   viewport.
-- `ViewportStableSizeReporter` adds no motion; the header and checklist bands
-  use it while a suggestion-resolution hold is armed because their content
-  already owns its entrance/completion animations.
+- `ViewportStableSizeReporter` adds no motion; the header, checklist and
+  linked-tasks bands use it while a suggestion-resolution hold is armed because
+  their content already owns its entrance/completion animations.
+- `ViewportStableSizeReporter(offscreenOnly: true)` wraps the AI card band. It
+  reports only while the page armed the hold with `includeOffscreenRegions`,
+  i.e. only while the page has determined the card is scrolled above the
+  viewport. Unlike `ViewportStableAnimatedSize` it does *not* compute that
+  predicate itself: the page has to pick a matching `ScrollAnchor` from the same
+  answer, and two mechanisms deciding independently would disagree over the
+  padding between their reference points and then fight each frame.
 
-Both adapters feed exact region-height deltas into the viewport's own layout
+Each band carries a distinct, task-scoped `ValueKey`. `StaggeredEntrance` maps
+its children through `flutter_animate`, which does not forward their keys, so
+the column matches children positionally — without distinct keys, toggling the
+legacy body band would let one band's render object (and its measured height
+baseline) be reused for another and emit a bogus delta.
+
+All adapters feed exact region-height deltas into the viewport's own layout
 cycle, so the content currently being read never paints at an intermediate
 displaced position. The scroll position also retains a temporary trailing
 extent when a simultaneous shrink below the anchor would otherwise clamp the
 viewport; that extent disappears once the user scrolls inside the real range.
 User scrolling cancels the hold immediately, and the standalone journal-entry
 detail page remains outside the scope.
+
+### Known gap: insertions inside the below-card sliver
+
+Both `ScrollAnchor`s pin the *top of a container* and are structurally
+incapable of seeing an insertion or removal inside it. That is why the AI card's
+own collapse needed the card band to report (above), and the same blindness
+remains unaddressed one level down: `_belowCardKey` sits on the `Center`
+wrapping the whole below-card column, so it cannot see the linked-entries list
+change from within.
+
+This is reachable from the agent's time-tracking proposals.
+`sortedLinkedEntriesProvider` defaults to `newestFirst`, so a confirmed
+`create_time_entry` / `update_time_entry` inserts at the **top** of that list
+and pushes every already-visible entry down.
+
+The obvious fix — a `ViewportStableSizeReporter` around the linked-entries
+region — is unsafe as written, because that region already contains
+`ViewportStableAnimatedSize` wrappers (`entry_details_widget.dart`,
+`nested_ai_responses_widget.dart`) reporting through the animated-size channel;
+nesting the two would double-count every delta while a hold is armed. Two
+candidate fixes, neither implemented: add nesting protection so an inner
+adapter defers to an outer one, or anchor the topmost *visible entry* using the
+`_entryKeys` map the page already maintains for scroll-to, which is correct
+under top-insertion where a container anchor is not.
 
 ## Current Constraints
 
