@@ -74,13 +74,13 @@ Startup does this:
 - New agents snapshot where their setup came from (`user`, category, or
   template). Category assignment with no default profile creates an explicit
   disabled setup even if the selected template has a profile; the header then
-  shows `No profile selected` and `Wake agent` stays disabled until a profile or
+  shows `No profile selected` and `Update now` stays disabled until a profile or
   direct thinking model is chosen.
 - `automaticUpdatesEnabled` is an independent persistent task-agent setting.
   New task agents persist it as `false`; a missing legacy value also resolves to
   `false`. Turning it off retains subscriptions, clears countdown state, and
   selectively drops queued automation wakes while preserving user-origin
-  `Wake agent` jobs. A matching task notification then advances
+  `Update now` jobs. A matching task notification then advances
   `reportStaleAt` instead of running inference. Turning automation back on does
   not replay changes received while it was off or invent a countdown.
 - `AgentStateEntity.reportStaleAt` and `reportFreshAt` are monotonic freshness
@@ -169,7 +169,7 @@ flowchart TD
 stateDiagram-v2
   [*] --> Fresh
   Fresh --> Stale: matching change while automation is off
-  Stale --> Refreshing: user chooses Wake agent
+  Stale --> Refreshing: user chooses Update now
   Refreshing --> Fresh: wake succeeds and no later change exists
   Refreshing --> Stale: matching change arrives after wake start
   Fresh --> Scheduled: matching change while automation is on
@@ -188,46 +188,77 @@ narrow widths. Proposal prose uses the same unmodified `body.bodySmall`
 metrics as the report instead of introducing a separate line height.
 
 All secondary controls live in a quiet, flat footer pinned to the card bottom
-(`TaskAgentControlsFooter`). Wake status and automatic updates share one
-bounded automation cluster instead of reading as unrelated controls. Wide
-cards place model/provider identity beside that cluster. Narrow cards place
-the cluster first and wrap identity below; within the cluster, wake status and
-the automatic-updates setting also wrap when their localized content cannot
-share a line. A scheduled wake is a design-system `DsPill` with a clock glyph;
-its separate `spacing.step9` close target cancels the wake without making the
-informational pill itself destructive. The countdown uses tabular figures and
-reserves its initial formatted-label width, so minute/hour digit transitions
-cannot move the pill, toggle, model identity, or responsive wrap point.
-Running uses a non-interactive status row with an explicit `spacing.step3`
-spinner/label gap and defensive single-line truncation rather than presenting
-disabled work as a loading button. The toggle and cancel retain full-size
-`spacing.step9` targets, while status and identity use the denser
-`spacing.step8` rhythm so the footer stays compact without becoming cramped.
-Meaningful attribution uses `aiCard.metaText` rather than the fainter
-decorative color. When setup is
-missing, the disabled toggle explains itself via an info tooltip. The filled
-accent is reserved for the one wake CTA per state; the TTS play control idles as a whispered
-subtleWash/metaText icon and earns the accent pair only while preparing or
-playing. While automation is off, `TaskAgentFreshnessStrip`
-holds a constant-geometry slot directly after the summary (and before the
-proposals): stale renders the alert-warning glyph with
-"This summary is out of date" and a primary wake CTA, fresh renders a quiet
-accent check with "Summary is up to date" and a secondary wake CTA — the
-same height in both states, so freshness flips never shift the layout. On
-narrow strips the labeled pill gives way to a compact circular reload
-button on the same message line (label via tooltip + semantics), keeping
-the strip a single row at phone width. The
-strip wears the same hairline chrome and reading measure as the proposal
-rows; the hue lives on the status glyph only and the message stays at
-standard foreground contrast. The footer hides its own wake button while the strip
-owns that affordance (it returns only for the no-report-yet edge, where the
-strip has nothing to describe). `Read more` follows the
-report it expands.
+(`TaskAgentControlsFooter`). The band answers three questions in order — *what
+am I looking at*, *when does it update*, *which AI is answering* — with the
+first two sharing a line whenever they fit.
+
+**The band is the only surface.** Its `aiCard.footerWash` and top hairline are
+the container; nothing inside draws a second fill, border or radius. An earlier
+revision boxed the automation controls in a nested card, which cost a nesting
+level, two horizontal insets and a third leading edge — and in the light theme
+that inner fill *was* the band's own fill, so it was invisible anyway. The band
+pays `spacing.step4` horizontally and each row adds `spacing.step2` of its own,
+so every glyph lands on `spacing.cardPadding`, sharing one leading edge with
+the summary prose and the proposal rows, while interactive rows still get ink
+that breathes around their content instead of clipping flush against it.
+
+**The manual trigger is never absent.** `Update now` occupies the same slot in
+every state, and a run in flight swaps its label and glyph in place
+(`DesignSystemButton.isLoading` → spinner + `Thinking…`) rather than vacating
+the row. Until #3568 the countdown *replaced* the trigger, so running the agent
+by hand meant cancelling the schedule first. Cancelling one pending run is now
+a worded `Skip` grouped with the countdown it cancels, not a bare glyph beside
+the switch it does not control; it still calls `cancelScheduledWake` and leaves
+automatic updates on.
+
+**Prose degrades before payloads do.** `TaskAgentAutomationRow` measures its
+localized labels with a `TextPainter` at the live `MediaQuery.textScalerOf`
+rather than branching on a pixel breakpoint — no constant can know whether
+"Automatische Aktualisierungen" fits beside a trigger at 1.3× text scale. The
+schedule wording steps down `Next update in 1:30` → `in 1:30` → `1:30`, and only
+when no rung fits does the row stack into status / trigger / switch on the
+shared leading edge. The countdown value, the trigger and the switch never
+degrade; the automatic-updates label wraps to two lines rather than truncating.
+
+```mermaid
+flowchart TD
+  M["measure at the live locale + textScaler:<br/>status · trigger · switch"] --> T0{"status with<br/>'Next update in 1:30'<br/>+ trigger + switch<br/>fits one line?"}
+  T0 -->|yes| W0["one line, full sentence"]
+  T0 -->|no| T1{"...with 'in 1:30'?"}
+  T1 -->|yes| W1["one line, short sentence"]
+  T1 -->|no| T2{"...with '1:30'?"}
+  T2 -->|yes| W2["one line, value only"]
+  T2 -->|no| S{"status alone fits<br/>a full-width line?"}
+  S -->|yes| S1["stack: status / trigger / switch"]
+  S -->|no| S2["stack, and split the status:<br/>freshness above, schedule below"]
+```
+
+**Ticking digits move nothing.** The schedule label reserves the width of the
+wording captured when the deadline was latched, and the fit decision is taken
+against that same reserved width, so a `1:00:00` → `59:59` transition can
+neither resize the label nor flip the row between its two forms. The reservation
+is measured in the *painted* style: tabular figures change digit advance, and
+measuring without them clips the payload.
+
+Freshness is a glyph **and** a word, never colour alone; the full sentence lives
+in the tooltip. With automation on and nothing pending the line reads "Updates
+when this task changes", so flipping the switch never leaves a hole that resizes
+the card. The toggle keeps a full `spacing.step9` interaction slot around its
+40×24 track. When setup is missing, the disabled toggle explains itself via an
+info tooltip and the trigger is disabled rather than hidden. Meaningful
+attribution uses `aiCard.metaText` rather than the fainter decorative color; the
+TTS play control idles as a whispered subtleWash/metaText icon and earns the
+accent pair only while preparing or playing. `Read more` follows the report it
+expands.
 
 The setup region compares the live route fingerprint with the immutable
 final-author route on the visible report. Equal routes collapse to one editable
 identity line. Different routes render separate `Current setup` and `This
-report` lines. Agent Internals opens the same `AgentModelSheet`; it does not own
+report` lines. Both rows shrink-wrap — a stretching `Column` hands its children
+a *tight* width, which silently defeats the `MainAxisSize.min` they declare and
+inflates their ink, tooltip and tap target to the full reading measure — and
+both truncate rather than wrap, with the full route in the tooltip and the
+semantics label. Agent Internals opens the same `AgentModelSheet`; it does not own
 a second profile mutation path.
 
 `AgentModelSheet` is one adaptive multi-page Wolt route. Its overview branches
@@ -988,7 +1019,7 @@ The persisted wake reasons are:
   `SyncedAudioInferenceDispatcher`) route through
   `WakeOrchestrator.requestContentWake`, which honors the automatic-updates
   opt-in: with automation off the transcript only persists the stale
-  watermark (surfacing the manual `Wake agent` CTA) instead of enqueuing
+  watermark (surfacing the manual `Update now` CTA) instead of enqueuing
   inference. The enqueued wake carries `WakeInitiator.automation`, so
   toggling automation off sweeps a still-queued transcript wake from the
   queue.
@@ -2066,24 +2097,15 @@ agent runtime produces:
 - a `History · N` toggle (`_HistoryToggle`, label `aiCardHistoryToggle`) that
   lazily expands resolved ledger entries, rendered with `Confirmed` /
   `Dismissed` tags and a strikethrough.
-- the wake-cycle affordances in the controls footer
-  (`task_agent_controls_footer.dart`): a compact `Wake agent` button
-  (calls `TaskAgentService.triggerReanalysis`), a dedicated `Thinking…`
-  status with tokenized spinner spacing while a wake runs, a design-system
-  `DsPill` labeled `Next update in m:ss` (`h:mm:ss` once the hour cell is
-  needed) with a separate full-size cancel target that calls
-  `cancelScheduledWake`, the automatic-updates toggle, and the tappable
-  model/provider identity row (`TaskAgentIdentityRegion`, opens
-  `AgentModelSheet`). The countdown and toggle form one bounded automation
-  cluster. Wide cards keep model identity beside the cluster; narrow cards
-  wrap identity below, and the cluster wraps its own controls when needed.
-  Countdown label width is reserved for the scheduled interval so ticking
-  across digit and hour-format boundaries never causes layout movement. While
-  automation is off, `TaskAgentFreshnessStrip` directly under the
-  report owns the wake CTA instead (stale warning or quiet up-to-date
-  confirmation in one constant-geometry slot). Disabling automation while a
-  countdown is pending first persists a stale report watermark, so clearing
-  the scheduled wake never changes an older summary to “up to date.”
+- the controls footer (`task_agent_controls_footer.dart`), a composition root
+  over `TaskAgentAutomationRow` (`task_agent_automation_row.dart`) and
+  `TaskAgentIdentityRegion` (`task_agent_identity_region.dart`). The automation
+  row holds a freshness glyph *and word* (`Up to date` / `Out of date`), the
+  schedule line, an `Update now` button calling
+  `TaskAgentService.triggerReanalysis`, and the automatic-updates toggle; the
+  identity row opens `AgentModelSheet`. Disabling automation while a countdown
+  is pending first persists a stale report watermark, so clearing the scheduled
+  wake never changes an older summary to “up to date.”
 
 The card keeps the last visible suggestion list in widget state while an
 agent wake is running. If the provider briefly reloads to an empty or partial
