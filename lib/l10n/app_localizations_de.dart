@@ -6687,6 +6687,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkPhraseSupersedesPrimary => 'Ersetzt';
 
   @override
+  String get linkTaskButton => 'Verknüpfen';
+
+  @override
   String get linkedTaskImageBadge => 'Von verknüpfter Aufgabe';
 
   @override

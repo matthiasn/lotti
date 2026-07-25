@@ -6652,6 +6652,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkPhraseSupersedesPrimary => 'Supersedes';
 
   @override
+  String get linkTaskButton => 'Link';
+
+  @override
   String get linkedTaskImageBadge => 'Fra linket opgave';
 
   @override

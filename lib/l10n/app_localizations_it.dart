@@ -6735,6 +6735,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get linkPhraseSupersedesPrimary => 'Supersedes';
 
   @override
+  String get linkTaskButton => 'Link';
+
+  @override
   String get linkedTaskImageBadge => 'Da un\'attività collegata';
 
   @override

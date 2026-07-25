@@ -338,8 +338,8 @@ void main() {
     });
 
     testWidgets(
-      'editing an incoming row opens the modal pre-selected to its type and '
-      'direction, and Save persists it unchanged (identity round-trip)',
+      'editing an incoming row opens the modal pre-selected to the inverse '
+      'phrase, and flipping it back persists as a direction swap',
       (tester) async {
         final repo = await pumpSections(
           tester,
@@ -363,6 +363,25 @@ void main() {
 
         expect(find.text('Edit relationship'), findsOneWidget);
 
+        // An incoming blocks edge reads as "Is blocked by" — the inverse
+        // phrase for the same stored row.
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
+        );
+        expect(dropdown.inputLabel, 'Is blocked by');
+        expect(
+          tester
+              .widget<DesignSystemButton>(
+                find.widgetWithText(DesignSystemButton, 'Save'),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        dropdown.onItemPressed!(
+          dropdown.items.firstWhere((item) => item.label == 'Blocks'),
+        );
+        await tester.pump();
         await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -371,14 +390,15 @@ void main() {
           () => repo.updateLinkType(
             linkId: 'link-blocker',
             newType: EntryLinkType.blocks,
-            swapDirection: false,
+            swapDirection: true,
           ),
         ).called(1);
       },
     );
 
     testWidgets(
-      'editing an outgoing row also round-trips unchanged through Save',
+      'editing an outgoing row opens on the primary phrase, and flipping it '
+      'persists as a direction swap from the opposite baseline',
       (tester) async {
         final repo = await pumpSections(
           tester,
@@ -400,6 +420,15 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
+        );
+        expect(dropdown.inputLabel, 'Blocks');
+
+        dropdown.onItemPressed!(
+          dropdown.items.firstWhere((item) => item.label == 'Is blocked by'),
+        );
+        await tester.pump();
         await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -408,7 +437,7 @@ void main() {
           () => repo.updateLinkType(
             linkId: 'link-blocked',
             newType: EntryLinkType.blocks,
-            swapDirection: false,
+            swapDirection: true,
           ),
         ).called(1);
       },

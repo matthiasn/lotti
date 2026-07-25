@@ -6730,6 +6730,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkPhraseSupersedesPrimary => 'Nahrazuje';
 
   @override
+  String get linkTaskButton => 'Propojit';
+
+  @override
   String get linkedTaskImageBadge => 'Z propojené úlohy';
 
   @override

@@ -2818,6 +2818,7 @@
   "linkPhraseFollowsUpPrimary": "Folgt auf",
   "linkPhraseSupersedesInverse": "Wird ersetzt durch",
   "linkPhraseSupersedesPrimary": "Ersetzt",
+  "linkTaskButton": "Verknüpfen",
   "linkedTaskImageBadge": "Von verknüpfter Aufgabe",
   "linkedTasksBlockedBySectionTitle": "Blockiert von",
   "linkedTasksEmptyAction": "Aufgabe verknüpfen…",

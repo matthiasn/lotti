@@ -48,6 +48,10 @@ class TaskSearchPickerBody extends StatefulWidget {
 class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   List<Task> _tasks = [];
   Set<String> _fts5Matches = {};
+
+  /// Full-text hits that fall outside the prefetched window, fetched by id.
+  /// Kept separate from [_tasks] so clearing the query drops them again.
+  List<Task> _resolvedMatches = const [];
   bool _isLoading = true;
   String? _lastFetchedQuery;
 
@@ -93,13 +97,37 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
     final generation = ++_searchGeneration;
 
     try {
-      final matches = await _fts5Db.watchFullTextMatches(query).first;
+      final matches = (await _fts5Db.watchFullTextMatches(query).first).toSet();
+
+      // Resolve the hits the prefetch never loaded. Intersecting matches
+      // against the preloaded window instead meant that on a backlog larger
+      // than the window, a task that exists and matches was reported as "No
+      // tasks found" — the picker stating confidently that it isn't there.
+      final unloaded = matches.difference(
+        _tasks.map((task) => task.meta.id).toSet(),
+      );
+      final resolved = unloaded.isEmpty
+          ? const <Task>[]
+          : (await _db.getJournalEntitiesForIds(unloaded))
+                .whereType<Task>()
+                .where(
+                  (task) =>
+                      openTaskStatuses.contains(task.data.status.toDbString),
+                )
+                .toList();
+
       if (mounted && generation == _searchGeneration) {
-        setState(() => _fts5Matches = matches.toSet());
+        setState(() {
+          _fts5Matches = matches;
+          _resolvedMatches = resolved;
+        });
       }
     } catch (e) {
       if (mounted && generation == _searchGeneration) {
-        setState(() => _fts5Matches = {});
+        setState(() {
+          _fts5Matches = {};
+          _resolvedMatches = const [];
+        });
       }
     }
   }
@@ -113,14 +141,18 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       _lastFetchedQuery = query;
       if (query.isEmpty) {
         _fts5Matches = {};
+        _resolvedMatches = const [];
       } else {
         unawaited(_fetchFts5(query));
       }
     }
 
-    final candidates = _tasks.where(
-      (task) => !widget.excludeIds.contains(task.meta.id),
-    );
+    final candidates = [
+      ..._tasks,
+      // Appended, not merged into _tasks: these are scoped to the current
+      // query and must not linger in the unfiltered list once it is cleared.
+      ..._resolvedMatches,
+    ].where((task) => !widget.excludeIds.contains(task.meta.id));
     final queryLower = query.toLowerCase();
     final filtered = query.isEmpty
         ? candidates
@@ -150,7 +182,10 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
             Icon(
               Icons.add_link,
               size: tokens.spacing.step5,
-              color: tokens.colors.text.lowEmphasis,
+              // Not below the status text beside it: this glyph is the only
+              // thing distinguishing a row that commits from one that
+              // navigates, so it cannot be the quietest mark on the row.
+              color: tokens.colors.interactive.enabled,
             ),
           ],
         ),

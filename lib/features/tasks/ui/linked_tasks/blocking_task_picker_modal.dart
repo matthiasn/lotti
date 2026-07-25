@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -34,9 +36,45 @@ class BlockingTaskPickerModal extends ConsumerWidget {
     required BuildContext context,
     required String blockedTaskId,
   }) {
+    final title = context.messages.taskBlockerPickerTitle;
     return ModalUtils.showSinglePageModal<Task>(
       context: context,
-      title: context.messages.taskBlockerPickerTitle,
+      // Carries the same amber ⊘ the card's "Is blocked by" section and the
+      // header chip use. Every other surface in this feature states its
+      // meaning with a mark as well as a sentence; this one — where the tap
+      // writes the highest-consequence relationship in the set — had only the
+      // sentence.
+      titleWidget: Builder(
+        builder: (context) => Semantics(
+          container: true,
+          explicitChildNodes: true,
+          header: true,
+          namesRoute: true,
+          scopesRoute: true,
+          label: title,
+          child: ExcludeSemantics(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.block,
+                  size: context.designTokens.spacing.step5,
+                  color: TaskShowcasePalette.warning(context),
+                ),
+                SizedBox(width: context.designTokens.spacing.step3),
+                Flexible(
+                  child: Text(
+                    title,
+                    style: ModalUtils.modalTitleStyle(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       padding: EdgeInsets.zero,
       builder: (_) => BlockingTaskPickerModal(blockedTaskId: blockedTaskId),
     );

@@ -57,7 +57,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   task under the wrong relationship is one tap to take back instead of a trip
   through Manage links.
 
+### Fixed
+- **Task search could deny a task that exists.** In the link and blocker
+  pickers, full-text search results were matched against only the first 200
+  open tasks loaded, so on a larger backlog a task you searched for by name
+  could come back as "No tasks found". Matches outside that window are now
+  fetched directly.
+
 ### Changed
+- **Linking a task is a labelled button again.** Once the Linked Tasks card
+  had any links, its only way to add another was an unlabelled icon; it now
+  reads "Link", matching the Done button that shares that slot.
+- **Save in the edit-relationship sheet stays off until you change something**,
+  instead of offering to save an edit nobody made.
+- French and Romanian task statuses are sentence case ("En cours", "În
+  progres") rather than all caps, matching every other language.
 - **One word for one relationship.** The header chip on a blocked task reads
   "Blocked by 2 tasks" again, matching the section it jumps to and the option
   that created the link — previously it said "Waiting on", so the same

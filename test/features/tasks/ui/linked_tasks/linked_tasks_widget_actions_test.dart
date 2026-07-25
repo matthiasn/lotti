@@ -872,8 +872,8 @@ void main() {
     });
 
     testWidgets(
-      'editing a flat outgoing row opens the edit modal pre-selected to '
-      'Link, and Save round-trips it unchanged',
+      'editing a flat outgoing row opens the edit modal pre-selected to Link, '
+      "and retyping it persists against that row's own link id",
       (tester) async {
         final repo = await pumpWidget(
           tester,
@@ -888,6 +888,24 @@ void main() {
 
         expect(find.text('Edit relationship'), findsOneWidget);
 
+        // Pre-selected to the row's current relation, so Save starts inert.
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
+        );
+        expect(dropdown.inputLabel, 'Relates to');
+        expect(
+          tester
+              .widget<DesignSystemButton>(
+                find.widgetWithText(DesignSystemButton, 'Save'),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        dropdown.onItemPressed!(
+          dropdown.items.firstWhere((item) => item.label == 'Blocks'),
+        );
+        await tester.pump();
         await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -895,7 +913,7 @@ void main() {
         verify(
           () => repo.updateLinkType(
             linkId: 'link-out-1',
-            newType: EntryLinkType.basic,
+            newType: EntryLinkType.blocks,
             swapDirection: false,
           ),
         ).called(1);

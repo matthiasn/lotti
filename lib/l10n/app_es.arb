@@ -2818,6 +2818,7 @@
   "linkPhraseFollowsUpPrimary": "Da seguimiento a",
   "linkPhraseSupersedesInverse": "Está reemplazada por",
   "linkPhraseSupersedesPrimary": "Reemplaza",
+  "linkTaskButton": "Vincular",
   "linkedTaskImageBadge": "De tarea vinculada",
   "linkedTasksBlockedBySectionTitle": "Bloqueada por",
   "linkedTasksEmptyAction": "Vincular una tarea…",

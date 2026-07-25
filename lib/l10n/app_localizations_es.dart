@@ -6737,6 +6737,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkPhraseSupersedesPrimary => 'Reemplaza';
 
   @override
+  String get linkTaskButton => 'Vincular';
+
+  @override
   String get linkedTaskImageBadge => 'De tarea vinculada';
 
   @override

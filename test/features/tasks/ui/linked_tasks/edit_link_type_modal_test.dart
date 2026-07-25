@@ -150,29 +150,48 @@ void main() {
       },
     );
 
-    testWidgets('Save persists the unchanged type/direction as an identity '
-        'round-trip', (tester) async {
-      stubUpdateLinkType(result: true);
+    testWidgets(
+      'Save is inert until the relation actually changes, and arms once it '
+      'does — an identity round-trip would bump the vector clock and enqueue '
+      'a sync message for an edit nobody made',
+      (tester) async {
+        stubUpdateLinkType(result: true);
 
-      await openModal(
-        tester,
-        currentType: EntryLinkType.followsUp,
-        currentDirection: TaskLinkDirection.outgoing,
-      );
+        await openModal(
+          tester,
+          currentType: EntryLinkType.followsUp,
+          currentDirection: TaskLinkDirection.outgoing,
+        );
 
-      await tester.tap(saveButton());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          tester.widget<DesignSystemButton>(saveButton()).onPressed,
+          isNull,
+        );
 
-      verify(
-        () => journalRepo.updateLinkType(
-          linkId: 'link-1',
-          newType: EntryLinkType.followsUp,
-          swapDirection: false,
-        ),
-      ).called(1);
-      expect(find.text('Edit relationship'), findsNothing);
-    });
+        await pickRelation(tester, 'Duplicates');
+        await tester.pump();
+        expect(
+          tester.widget<DesignSystemButton>(saveButton()).onPressed,
+          isNotNull,
+        );
+
+        // ...and disarms again on returning to the starting relation.
+        await pickRelation(tester, 'Follows up on');
+        await tester.pump();
+        expect(
+          tester.widget<DesignSystemButton>(saveButton()).onPressed,
+          isNull,
+        );
+
+        verifyNever(
+          () => journalRepo.updateLinkType(
+            linkId: any(named: 'linkId'),
+            newType: any(named: 'newType'),
+            swapDirection: any(named: 'swapDirection'),
+          ),
+        );
+      },
+    );
 
     testWidgets(
       'selecting a new type before Save persists that type',
@@ -284,6 +303,9 @@ void main() {
 
       await openModal(tester);
 
+      // Save only arms once something changed.
+      await pickRelation(tester, 'Duplicates');
+      await tester.pump();
       await tester.tap(saveButton());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

@@ -6771,6 +6771,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkPhraseSupersedesPrimary => 'Înlocuiește';
 
   @override
+  String get linkTaskButton => 'Asociază';
+
+  @override
   String get linkedTaskImageBadge => 'Din sarcina legată';
 
   @override
@@ -10647,28 +10650,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskStatusAll => 'Toate';
 
   @override
-  String get taskStatusBlocked => 'BLOCAT';
+  String get taskStatusBlocked => 'Blocat';
 
   @override
-  String get taskStatusDone => 'TERMINAT';
+  String get taskStatusDone => 'Terminat';
 
   @override
-  String get taskStatusGroomed => 'PREGĂTIT';
+  String get taskStatusGroomed => 'Pregătit';
 
   @override
-  String get taskStatusInProgress => 'ÎN PROGRES';
+  String get taskStatusInProgress => 'În progres';
 
   @override
   String get taskStatusLabel => 'Starea Sarcinii:';
 
   @override
-  String get taskStatusOnHold => 'ÎN AȘTEPTARE';
+  String get taskStatusOnHold => 'În așteptare';
 
   @override
-  String get taskStatusOpen => 'DESCHIS';
+  String get taskStatusOpen => 'Deschis';
 
   @override
-  String get taskStatusRejected => 'RESPINS';
+  String get taskStatusRejected => 'Respins';
 
   @override
   String get taskTitleEmpty => 'Fără titlu';

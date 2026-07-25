@@ -126,7 +126,9 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
               tokens.spacing.step5,
               tokens.spacing.step5,
               tokens.spacing.step5,
-              tokens.spacing.step4,
+              // Matches the container inset: the gap between the two fields
+              // was tighter than the gap around them.
+              tokens.spacing.step5,
             ),
             child: RelationshipTypeSelector(
               selected: _relation,

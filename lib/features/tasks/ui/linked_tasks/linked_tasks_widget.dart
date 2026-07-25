@@ -244,18 +244,16 @@ class _LinkedTasksHeader extends ConsumerWidget {
                 variant: DesignSystemButtonVariant.tertiary,
                 onPressed: notifier.toggleManageMode,
               ),
-            // The link action is worded in the empty state's own row, so the
-            // header only carries it once there is a list to add to.
+            // Worded, in the same slot manage mode's Done occupies. As an
+            // icon alone it was the card's only creative action and its least
+            // legible control, and a bare glyph gives a screen-magnifier or
+            // low-vision user nothing to read.
             if (hasLinkedTasks && !manageMode) ...[
-              IconButton(
-                tooltip: context.messages.linkExistingTask,
+              DesignSystemButton(
+                label: context.messages.linkTaskButton,
+                variant: DesignSystemButtonVariant.tertiary,
+                leadingIcon: Icons.add_link,
                 onPressed: () => _showLinkTaskModal(context, ref, taskId),
-                visualDensity: VisualDensity.compact,
-                icon: Icon(
-                  Icons.add_link,
-                  size: tokens.spacing.step5,
-                  color: tokens.colors.text.highEmphasis,
-                ),
               ),
               Icon(
                 expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,

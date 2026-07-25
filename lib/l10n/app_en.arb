@@ -3405,6 +3405,10 @@
   "linkPhraseFollowsUpPrimary": "Follows up on",
   "linkPhraseSupersedesInverse": "Is superseded by",
   "linkPhraseSupersedesPrimary": "Supersedes",
+  "linkTaskButton": "Link",
+  "@linkTaskButton": {
+    "description": "Short verb label for the Linked Tasks card header action that opens the link picker. Mirrors the Done button occupying the same slot in manage mode."
+  },
   "linkedTaskImageBadge": "From linked task",
   "linkedTasksBlockedBySectionTitle": "Blocked by",
   "linkedTasksEmptyAction": "Link a task…",

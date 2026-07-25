@@ -6764,6 +6764,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkPhraseSupersedesPrimary => 'Remplace';
 
   @override
+  String get linkTaskButton => 'Lier';
+
+  @override
   String get linkedTaskImageBadge => 'De la tâche liée';
 
   @override
@@ -10661,28 +10664,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskStatusAll => 'Tout';
 
   @override
-  String get taskStatusBlocked => 'BLOQUÉE';
+  String get taskStatusBlocked => 'Bloquée';
 
   @override
-  String get taskStatusDone => 'TERMINÉE';
+  String get taskStatusDone => 'Terminée';
 
   @override
-  String get taskStatusGroomed => 'AFFINÉE';
+  String get taskStatusGroomed => 'Affinée';
 
   @override
-  String get taskStatusInProgress => 'EN COURS';
+  String get taskStatusInProgress => 'En cours';
 
   @override
   String get taskStatusLabel => 'État de la tâche :';
 
   @override
-  String get taskStatusOnHold => 'EN ATTENTE';
+  String get taskStatusOnHold => 'En attente';
 
   @override
-  String get taskStatusOpen => 'OUVERTE';
+  String get taskStatusOpen => 'Ouverte';
 
   @override
-  String get taskStatusRejected => 'REJETÉE';
+  String get taskStatusRejected => 'Rejetée';
 
   @override
   String get taskTitleEmpty => 'Sans titre';

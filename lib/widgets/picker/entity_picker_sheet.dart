@@ -304,7 +304,10 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
 Widget buildPickerApplyFooter({
   required BuildContext context,
   required String label,
-  required VoidCallback onTap,
+
+  /// Null disables the button. Use it when there is nothing to apply, so the
+  /// loudest mark on the sheet stops promising a write it would not make.
+  required VoidCallback? onTap,
   Key? buttonKey,
 }) {
   return DesignSystemGlassActionFooter(

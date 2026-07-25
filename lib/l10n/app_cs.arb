@@ -2825,6 +2825,7 @@
   "linkPhraseFollowsUpPrimary": "Navazuje na",
   "linkPhraseSupersedesInverse": "Je nahrazeno",
   "linkPhraseSupersedesPrimary": "Nahrazuje",
+  "linkTaskButton": "Propojit",
   "linkedTaskImageBadge": "Z propojené úlohy",
   "linkedTasksBlockedBySectionTitle": "Blokováno",
   "linkedTasksEmptyAction": "Propojit úkol…",

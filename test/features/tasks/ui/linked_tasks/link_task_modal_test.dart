@@ -142,6 +142,10 @@ void main() {
         () => mockFts5Db.watchFullTextMatches(any()),
       ).thenAnswer((_) => Stream.value(<String>[]));
 
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => <JournalEntity>[]);
+
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<Fts5Db>(mockFts5Db)
@@ -154,6 +158,66 @@ void main() {
           .setMockMethodCallHandler(SystemChannels.platform, null);
       await getIt.reset();
     });
+
+    testWidgets(
+      'a full-text hit outside the prefetched window is fetched by id, so a '
+      'backlog larger than the window cannot make the picker deny a task that '
+      'exists',
+      (tester) async {
+        // The prefetch window holds one task; the match is a different one.
+        stubTasks([buildTask(id: 'in-window', title: 'Prefetched task')]);
+        when(
+          () => mockFts5Db.watchFullTextMatches(any()),
+        ).thenAnswer((_) => Stream.value(<String>['beyond-window']));
+        when(() => mockJournalDb.getJournalEntitiesForIds(any())).thenAnswer(
+          (_) async => [
+            buildTask(id: 'beyond-window', title: 'Task past the 200th row'),
+          ],
+        );
+
+        await openModal(tester);
+        await tester.enterText(find.byType(TextField), 'past');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('Task past the 200th row'), findsOneWidget);
+        // Only the ids the window did not already hold are re-fetched.
+        verify(
+          () => mockJournalDb.getJournalEntitiesForIds({'beyond-window'}),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    testWidgets(
+      'a closed task matching the query is not offered, even when full-text '
+      'search returns it from outside the window',
+      (tester) async {
+        stubTasks([]);
+        when(
+          () => mockFts5Db.watchFullTextMatches(any()),
+        ).thenAnswer((_) => Stream.value(<String>['done-task']));
+        when(() => mockJournalDb.getJournalEntitiesForIds(any())).thenAnswer(
+          (_) async => [
+            TestTaskFactory.create(
+              id: 'done-task',
+              title: 'Already finished',
+              status: TaskStatus.done(
+                id: 's',
+                createdAt: DateTime(2024),
+                utcOffset: 0,
+              ),
+            ),
+          ],
+        );
+
+        await openModal(tester);
+        await tester.enterText(find.byType(TextField), 'finish');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('Already finished'), findsNothing);
+      },
+    );
 
     testWidgets('renders title "Link existing task"', (tester) async {
       await tester.pumpWidget(

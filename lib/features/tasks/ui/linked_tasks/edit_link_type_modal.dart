@@ -41,6 +41,7 @@ abstract final class EditLinkTypeModal {
           linkId: linkId,
           currentDirection: currentDirection,
           relation: relation,
+          originalRelation: relation.value,
         ),
         builder: (_) => _EditLinkTypeBody(
           relation: relation,
@@ -99,15 +100,19 @@ class _EditLinkTypeBody extends StatelessWidget {
               children: [
                 Text(
                   context.messages.editLinkTypeCounterpartLabel,
+                  // Same ink as the dropdown's own caption above it: two field
+                  // labels on one modal should not read as two ranks.
                   style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step1),
                 Text(
                   linkedTaskTitle,
+                  // Medium, not high: this value is read-only, and the only
+                  // high-emphasis value in the body should be the editable one.
                   style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -126,11 +131,16 @@ class _EditLinkTypeApplyFooter extends ConsumerStatefulWidget {
     required this.linkId,
     required this.currentDirection,
     required this.relation,
+    required this.originalRelation,
   });
 
   final String linkId;
   final TaskLinkDirection currentDirection;
   final ValueNotifier<DirectedRelation> relation;
+
+  /// The relation the link held when the modal opened, so Save can tell an
+  /// actual edit from a round trip back to the starting value.
+  final DirectedRelation originalRelation;
 
   @override
   ConsumerState<_EditLinkTypeApplyFooter> createState() =>
@@ -146,42 +156,49 @@ class _EditLinkTypeApplyFooterState
 
   @override
   Widget build(BuildContext context) {
-    return buildPickerApplyFooter(
-      context: context,
-      label: context.messages.saveButton,
-      onTap: () async {
-        if (_saving) return;
-        setState(() => _saving = true);
-        final navigator = Navigator.of(context);
-        final messenger = ScaffoldMessenger.of(context);
-        final messages = context.messages;
+    // Rebuilt as the selection changes so Save reflects whether there is
+    // anything to save: an always-armed button that can write nothing tells
+    // the user their edit landed when no edit was made.
+    return ValueListenableBuilder<DirectedRelation>(
+      valueListenable: widget.relation,
+      builder: (context, selected, _) => buildPickerApplyFooter(
+        context: context,
+        label: context.messages.saveButton,
+        onTap: selected == widget.originalRelation
+            ? null
+            : () async {
+                if (_saving) return;
+                setState(() => _saving = true);
+                final navigator = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+                final messages = context.messages;
 
-        final selected = widget.relation.value;
-        final newIsOutgoing = !selected.inverse;
-        final oldIsOutgoing =
-            widget.currentDirection == TaskLinkDirection.outgoing;
-        final swapDirection = newIsOutgoing != oldIsOutgoing;
+                final newIsOutgoing = !selected.inverse;
+                final oldIsOutgoing =
+                    widget.currentDirection == TaskLinkDirection.outgoing;
+                final swapDirection = newIsOutgoing != oldIsOutgoing;
 
-        final saved = await ref
-            .read(journalRepositoryProvider)
-            .updateLinkType(
-              linkId: widget.linkId,
-              newType: selected.type,
-              swapDirection: swapDirection,
-            );
+                final saved = await ref
+                    .read(journalRepositoryProvider)
+                    .updateLinkType(
+                      linkId: widget.linkId,
+                      newType: selected.type,
+                      swapDirection: swapDirection,
+                    );
 
-        if (!mounted) return;
-        setState(() => _saving = false);
-        if (!saved) {
-          messenger.showSnackBar(
-            SnackBar(content: Text(messages.editLinkTypeFailedMessage)),
-          );
-          return;
-        }
+                if (!mounted) return;
+                setState(() => _saving = false);
+                if (!saved) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(messages.editLinkTypeFailedMessage)),
+                  );
+                  return;
+                }
 
-        await HapticFeedback.mediumImpact();
-        navigator.pop();
-      },
+                await HapticFeedback.mediumImpact();
+                navigator.pop();
+              },
+      ),
     );
   }
 }

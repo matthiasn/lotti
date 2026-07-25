@@ -11603,6 +11603,12 @@ abstract class AppLocalizations {
   /// **'Supersedes'**
   String get linkPhraseSupersedesPrimary;
 
+  /// Short verb label for the Linked Tasks card header action that opens the link picker. Mirrors the Done button occupying the same slot in manage mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get linkTaskButton;
+
   /// No description provided for @linkedTaskImageBadge.
   ///
   /// In en, this message translates to:
