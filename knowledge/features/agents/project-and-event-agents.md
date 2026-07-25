@@ -1,0 +1,179 @@
+---
+type: Feature Module
+title: Project and event agents
+description: The digest-shaped project agent that resists waking on every linked-task edit, and the leaner event agent that writes recaps under a hard human-authorship invariant.
+resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
+tags: [agents, project-agent, event-agent, digest]
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: project-workflow
+    resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
+    title: ProjectAgentWorkflow
+    last_modified: 2026-07-25
+  - id: event-workflow
+    resource: ../../../lib/features/agents/workflow/event_agent_workflow.dart
+    title: EventAgentWorkflow
+    last_modified: 2026-07-25
+  - id: providers
+    resource: ../../../lib/features/agents/state/agent_providers.dart
+    title: Wake executor routing and content checkers
+    last_modified: 2026-07-25
+---
+
+# Project agents
+
+A project agent is **digest-shaped**. Its defining problem is that a project has
+many linked tasks, and waking on every one of their edits would be both
+expensive and useless.
+
+`ProjectAgentService.createProjectAgent()`:
+
+1. Enforces one project agent per project.
+2. Validates the template is a project-agent template.
+3. Creates identity and state.
+4. Sets `slots.activeProjectId`.
+5. Schedules the first digest for **tomorrow's local 06:00** —
+   `nextLocalDayAtTime` always rolls forward a full day, even if today's 06:00
+   has not yet passed.
+6. Creates `agent_project` and `template_assignment` links.
+7. Registers a **direct project-edit** subscription.
+8. Enqueues a creation wake.
+
+## Two different trigger paths
+
+```mermaid
+stateDiagram-v2
+  [*] --> Scheduled: project agent created
+  Scheduled --> WakingNow: creation wake
+  Scheduled --> WakingNow: manual reanalysis
+  Scheduled --> WakingNow: direct project edit
+  Scheduled --> PendingActivity: linked task or project activity
+  PendingActivity --> WakingNow: scheduled digest becomes due
+  Scheduled --> SkipAndReschedule: scheduled digest due with no pending activity
+  SkipAndReschedule --> Scheduled
+  WakingNow --> Scheduled: state updated after wake
+```
+
+- **Linked-task churn** never wakes the agent directly. `ProjectActivityMonitor`
+  listens to `localUpdateStream`, resolves affected project ids, and sets
+  `slots.pendingProjectActivityAt` on the project agent state. The digest picks
+  it up later.
+- **Direct project edits** are different: the service registers a direct project
+  notification token, so an explicit edit to the project entity wakes the agent
+  immediately through the orchestrator.
+
+## The cheap skip
+
+If a scheduled digest is due, a report already exists, and
+`pendingProjectActivityAt` is still `null`, the workflow rolls `scheduledWakeAt`
+forward and **skips the model call entirely**. That is the mechanism keeping
+project agents digest-shaped rather than reactive.
+
+During the final state transition, `pendingProjectActivityAt` is cleared **only
+when no newer activity arrived during the wake**. If fresh activity lands
+mid-run, the newer timestamp is retained so the next digest still knows the
+summary is stale again.
+
+## Wake flow
+
+`ProjectAgentWorkflow.execute()` loads state and resolves `activeProjectId`,
+checks whether a due scheduled wake can be skipped cheaply, loads the project
+entity and prior observations, resolves template/version and inference profile,
+builds linked-task context **including task-agent reports**, runs the
+conversation with `ProjectAgentStrategy`, and persists token usage, final
+thought, report, observations, deferred change set and updated state.
+
+Project reports follow the same inline task-link contract as task reports: when
+linked-task context includes a task id, the report may point at `/tasks/<taskId>`
+rather than relegating internal navigation to the external Links block.
+
+## Tools and recommendations
+
+Immediate local tools: `update_project_report`, `record_observations`.
+
+Deferred tools: `recommend_next_steps`, `update_project_status`, `create_task`.
+
+Confirmed `recommend_next_steps` decisions become `ProjectRecommendationEntity`
+rows via `ProjectRecommendationService`, which supersedes existing active
+recommendations for that project first. Recommendations then move through
+`active`, `resolved`, `dismissed` and `superseded`.
+
+# Event agents
+
+An event agent narrates a first-class Event — a trip, a birthday, a gathering —
+into a short living recap. An event mostly happens **once**, so the agent is a
+*recap writer*, not a continuous watcher.
+
+It is deliberately leaner than the project agent: no compaction or input-capture
+log, no daily digest, no deferred change sets beyond one tool, no health band. It
+borrows the task agent's content gate so a bare-title event does not burn an
+inference run.
+
+## The human-authorship invariant
+
+> **Rating and cover are human-only.** The event's star rating and cover photo
+> are the user's own authorship of their memory.
+
+This is enforced at three independent layers, not by directive: the event agent
+has **no tool** that can set them, the context builder never renders them, and no
+workflow code path writes the `JournalEvent`. By construction there is no
+rating/cover tool to misuse.
+
+## Creation and the content gate
+
+`EventAgentService.createEventAgent()` enforces one agent per event, validates
+the template kind, creates identity and state, sets `slots.activeEventId` and the
+`awaitingContent` flag, creates `agent_event` and `template_assignment` links,
+mirrors `awaitingContent` into the orchestrator, registers a subscription on the
+**bare `eventId`**, and enqueues a creation wake.
+
+The shared gate (`wake_batch_router._shouldSkipForAwaitingContent`) dispatches
+per active slot: an `activeEventId` agent routes to `eventContentChecker`, with
+**no cross-slot fallback**. The checker treats an event as having content when it
+has note text **or** a linked photo/note — a bare title does not pass.
+
+```mermaid
+stateDiagram-v2
+  [*] --> AwaitingContent: event agent created (auto-attach)
+  AwaitingContent --> AwaitingContent: creation wake suppressed (bare title)
+  AwaitingContent --> Narrating: photo/note added — gate clears
+  Narrating --> Idle: recap published, awaitingContent cleared
+  Idle --> Narrating: direct event edit / linked entry change
+```
+
+The gate clears in the router on detection and again in the workflow's success
+transaction.
+
+## Wake flow
+
+`EventAgentWorkflow.execute()` loads the reconciled agent state and resolves
+`activeEventId`, loads the latest recap and the event entity, loads prior
+observations, resolves template/version and profile, builds context (title,
+status, when, note, plus a linked-entries digest of photos with captions, notes,
+voice-memo transcripts and linked tasks), runs `EventAgentStrategy`, and persists
+usage, final thought, recap report and head, observations, and the updated state
+— clearing `awaitingContent` and emitting the `wakeCompleted` milestone.
+
+## Tools
+
+Immediate local, reusing the task agent's scope-agnostic contract:
+`update_report` (`oneLiner` / `tldr` / `content`), `record_observations`.
+
+Deferred: `suggest_follow_up_task` — proposes a concrete follow-up the event
+implies. It accumulates as a pending `ChangeSet` keyed by the event id, surfaces
+on the detail page as an accept/reject row, and on accept is applied by
+`EventToolDispatcher`, which creates a follow-up task linked to the event and
+inheriting its category and default profile. Rejection only records the decision.
+
+Accepting a follow-up does **not** re-wake the agent — the new task is its own
+entity. A future status write-action that edited the event itself would re-wake
+it through the event subscription.
+
+## Auto-attach
+
+`autoAssignCategoryEventAgent` creates a content-awaiting event agent when an
+event is created in a category whose `Category.defaultEventTemplateId` is set.
+This is independent of the task agents' `defaultTemplateId`, so enabling task
+agents does not implicitly spawn event agents.

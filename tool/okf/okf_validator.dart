@@ -134,6 +134,29 @@ class OkfDocument {
   final String body;
 }
 
+final _fencedBlockPattern = RegExp(
+  r'^(```|~~~).*?^\1',
+  multiLine: true,
+  dotAll: true,
+);
+final _inlineCodePattern = RegExp(r'`[^`\n]*`');
+
+/// Blanks out fenced blocks and inline code so link scanning never treats a
+/// documented link *form* — `` `[Title](/tasks/<taskId>)` `` — as a real link
+/// the bundle must resolve. Replacing rather than deleting keeps byte offsets
+/// stable for any future line reporting.
+String stripCodeSpans(String markdown) {
+  return markdown
+      .replaceAllMapped(
+        _fencedBlockPattern,
+        (m) => ' ' * m.group(0)!.length,
+      )
+      .replaceAllMapped(
+        _inlineCodePattern,
+        (m) => ' ' * m.group(0)!.length,
+      );
+}
+
 /// Extracts the frontmatter block and body from a markdown [content] string.
 OkfDocument splitDocument(String content) {
   final match = _frontmatterPattern.firstMatch(content);
@@ -676,7 +699,7 @@ List<OkfIssue> _validateBundleLinks(
       ? path.substring(0, path.lastIndexOf('/'))
       : '';
 
-  for (final match in _markdownLinkPattern.allMatches(body)) {
+  for (final match in _markdownLinkPattern.allMatches(stripCodeSpans(body))) {
     final target = match.group(1)!;
     if (target.startsWith('http://') ||
         target.startsWith('https://') ||
@@ -741,7 +764,9 @@ List<OkfIssue> validateRepoReferences({
         : '';
 
     final targets = <String>[
-      for (final match in _markdownLinkPattern.allMatches(document.body))
+      for (final match in _markdownLinkPattern.allMatches(
+        stripCodeSpans(document.body),
+      ))
         match.group(1)!,
       ..._resourceTargets(document.frontmatterYaml),
     ];

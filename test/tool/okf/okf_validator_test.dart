@@ -473,6 +473,28 @@ See [the architecture](../architecture/).
       expect(result.issues, isEmpty);
     });
 
+    test('a link form quoted in code is not resolved as a link', () {
+      final result = validateBundle(
+        _bundle('''
+---
+type: Feature Module
+title: Speech
+description: Audio capture.
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+---
+
+Reports may link tasks as `[Title](/tasks/<taskId>)`.
+
+```markdown
+See [the missing one](./nope.md).
+```
+'''),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
     test('external URLs and anchors are not treated as bundle paths', () {
       final result = validateBundle(
         _bundle('''
