@@ -74,6 +74,12 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// card band reports its height deltas, and measuring two different edges
   /// would let those decisions disagree in the gap between them.
   final GlobalKey _cardRegionKey = GlobalKey(debugLabel: 'task_ai_card_region');
+
+  /// Marks the linked-tasks band, so [_onLinkedTasksChanged] can tell whether
+  /// a background link write happened anywhere the user can see.
+  final GlobalKey _linkedTasksRegionKey = GlobalKey(
+    debugLabel: 'task_linked_tasks_region',
+  );
   Timer? _suggestionsRetryTimer;
 
   /// Fallback anchor for above-card changes that do not report their own size
@@ -175,7 +181,8 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   ///   so [_suggestionsAnchor] holds. The card's own collapse is the reflow the
   ///   user is watching, so the card band stays silent.
   /// * **Card fully above the viewport** — the user is reading the linked
-  ///   entries below it, and every accepted proposal collapses a row and shrinks
+  ///   entries below it, and every resolved proposal — confirmed or dismissed
+  ///   alike — collapses a row and shrinks
   ///   the card, dragging that content up. [_suggestionsAnchor] is structurally
   ///   blind to it, because a row collapsing *inside* the proposals section does
   ///   not move the section's top. So the card band reports its own shrink for a
@@ -310,6 +317,24 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     _belowCardAnchor.hold();
   }
 
+  /// Whether the band marked by [key] starts below everything the user can see.
+  ///
+  /// A height change down there moves nothing that is on screen, so
+  /// compensating it would scroll the page under content that had no reason to
+  /// move. Unknown geometry answers `false`: an unlaid-out band reports no
+  /// delta either, so arming is inert rather than wrong.
+  bool _isRegionBelowViewport(GlobalKey key) {
+    final renderObject = key.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox ||
+        !renderObject.attached ||
+        !renderObject.hasSize) {
+      return false;
+    }
+    final viewportBottom = viewportBottomGlobal(renderObject);
+    if (viewportBottom == null) return false;
+    return renderObject.localToGlobal(Offset.zero).dy >= viewportBottom;
+  }
+
   /// Re-arms stabilization when the linked-tasks band changes height.
   ///
   /// `create_follow_up_task` links its new task only *after* awaiting agent
@@ -317,6 +342,14 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// past the window [_holdSuggestionsStable] armed at gesture time. Watching
   /// the band's own count catches it whenever it actually lands, and covers
   /// user-initiated linking too.
+  ///
+  /// Unlike the gesture path, this fires without the user having touched
+  /// anything — a sync or another background writer can change the link set at
+  /// any scroll position. When the band sits entirely below the viewport its
+  /// growth moves nothing on screen, and correcting for it would drag the
+  /// header and checklist the user *is* reading upwards. So that case is left
+  /// alone; a band that is visible or above stays worth compensating, because
+  /// everything below it — including the card — would otherwise shift.
   void _onLinkedTasksChanged(
     AsyncValue<TaskLinkGroups>? previous,
     AsyncValue<TaskLinkGroups> next,
@@ -327,6 +360,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     final previousCount = _lastLinkedTaskCount;
     _lastLinkedTaskCount = nextCount;
     if (previousCount == null || previousCount == nextCount) return;
+    if (_isRegionBelowViewport(_linkedTasksRegionKey)) return;
     _holdSuggestionsStable();
   }
 
@@ -462,6 +496,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                         taskId: widget.taskId,
                         suggestionsFocusKey: _suggestionsKey,
                         cardRegionKey: _cardRegionKey,
+                        linkedTasksRegionKey: _linkedTasksRegionKey,
                         onSuggestionResolveStart: _holdSuggestionsStable,
                       ),
                     ),

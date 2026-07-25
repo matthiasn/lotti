@@ -30,8 +30,10 @@ import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.da
 ///   first link is a large step: two tall empty-state actions plus a divider
 ///   give way to one compact row while the card header gains a chevron, count
 ///   badge and Link button
-/// * **AI card**, off-screen only — every accepted proposal collapses its row
-///   and so shrinks the card. While the card is visible that collapse is the
+/// * **AI card**, off-screen only — every resolved proposal collapses its row
+///   and so shrinks the card, whether it was confirmed or dismissed (both
+///   gestures run the same resolve-then-collapse path). While the card is
+///   visible that collapse is the
 ///   reflow the user is watching and must not move the page; once the card has
 ///   scrolled above the viewport the same shrink drags the linked entries the
 ///   user *is* reading upwards, so the page arms
@@ -54,6 +56,7 @@ class TaskForm extends ConsumerWidget {
     required this.taskId,
     this.suggestionsFocusKey,
     this.cardRegionKey,
+    this.linkedTasksRegionKey,
     this.onSuggestionResolveStart,
     super.key,
   });
@@ -67,6 +70,12 @@ class TaskForm extends ConsumerWidget {
   /// seam below the card sits a further `step5 + step5` lower, and in that gap
   /// the card is already out of sight while the seam is not.
   final GlobalKey? cardRegionKey;
+
+  /// Marks the linked-tasks band. Unlike the bands resized by a gesture on the
+  /// card, this one can change from a background write — a follow-up task
+  /// linking itself, or a sync — while the user is reading somewhere else
+  /// entirely, so the page has to check where it sits before compensating it.
+  final GlobalKey? linkedTasksRegionKey;
 
   final VoidCallback? onSuggestionResolveStart;
 
@@ -123,7 +132,10 @@ class TaskForm extends ConsumerWidget {
         ),
         ViewportStableSizeReporter(
           key: ValueKey('linked-tasks-size-reporter-$taskId'),
-          child: LinkedTasksWidget(taskId: taskId),
+          child: KeyedSubtree(
+            key: linkedTasksRegionKey,
+            child: LinkedTasksWidget(taskId: taskId),
+          ),
         ),
         ViewportStableSizeReporter(
           key: ValueKey('ai-card-size-reporter-$taskId'),

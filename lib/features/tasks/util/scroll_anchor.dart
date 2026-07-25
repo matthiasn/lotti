@@ -35,6 +35,20 @@ double? viewportTopGlobal(RenderObject? renderObject) {
   return viewport.localToGlobal(Offset.zero).dy;
 }
 
+/// Returns the global bottom edge of the viewport containing [renderObject].
+///
+/// Returns `null` when either object is detached, unsized, or the viewport is
+/// not a [RenderBox]. Used to tell whether a region that changed height sits
+/// entirely past what the user can see.
+double? viewportBottomGlobal(RenderObject? renderObject) {
+  if (renderObject == null || !renderObject.attached) return null;
+  final RenderObject? viewport = RenderAbstractViewport.maybeOf(renderObject);
+  if (viewport is! RenderBox || !viewport.attached || !viewport.hasSize) {
+    return null;
+  }
+  return viewport.localToGlobal(Offset(0, viewport.size.height)).dy;
+}
+
 /// Pure helper: the scroll offset needed to hold an anchored widget visually
 /// fixed in the viewport after content *above* it changed height.
 ///

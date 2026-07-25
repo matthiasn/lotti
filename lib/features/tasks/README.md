@@ -291,7 +291,11 @@ subtle frame in light and dark themes.
   ```
 
   **Which point stays still flips when the card leaves the screen.** Every
-  accepted proposal collapses its row and so shrinks the card. While the card is
+  resolved proposal collapses its row and so shrinks the card — confirm and
+  dismiss run the same path (`_confirm` and `_reject` both call
+  `onResolveStart` and then `_collapseAndPrune`), and the
+  `unifiedSuggestionListProvider` count listener sees either as a drop. While
+  the card is
   visible that collapse *is* the reflow the user is watching, so the card band
   stays silent and `_suggestionsAnchor` pins the proposals under their pointer.
   Once the card has scrolled fully above the viewport the user is reading the

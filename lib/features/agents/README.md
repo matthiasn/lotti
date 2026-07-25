@@ -2171,8 +2171,12 @@ Key invariants:
   visible/partly-visible case is left to the entrance reveal and to the row's
   own collapse — that motion is what the user is looking at.
 
-  The collapse side matters for *every* tool, because every accepted proposal
-  collapses a row. `_suggestionsAnchor` cannot cover it: it locates
+  The collapse side matters for *every* tool and *both* verdicts: `_confirm`
+  and `_reject` are the same choreography — each calls `onResolveStart`
+  synchronously at gesture time and then `_collapseAndPrune` — so a dismissed
+  proposal shrinks the card exactly as an accepted one does, and the
+  `unifiedSuggestionListProvider` count listener cannot tell them apart either.
+  `_suggestionsAnchor` cannot cover it: it locates
   `ProposalsSection`'s own top, and a row collapsing *inside* that section never
   moves it, so the anchor measures zero drift and does nothing.
   `set_task_language` was the clearest reproducer — nothing above the card

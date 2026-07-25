@@ -16,6 +16,8 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -904,6 +906,79 @@ void main() {
         // The band really did change height above the card — otherwise the
         // assertion above would hold trivially.
         expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        expect(tester.takeException(), isNull);
+        container.dispose();
+      },
+    );
+
+    testWidgets(
+      'a linked task appearing below the viewport leaves the content the user '
+      'is reading alone',
+      (tester) async {
+        // The linked-tasks listener fires without the user having touched
+        // anything — a sync can change the link set at any scroll position.
+        // Down there the growth moves nothing on screen, so compensating it
+        // would drag the header and checklist upwards for no reason.
+        //
+        // Short viewport so the band is genuinely past the fold at offset 0;
+        // the width is unchanged, so the layout above it is identical.
+        tester.view.physicalSize = const Size(800, 200);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableLinkedTasksOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+
+        // Start populated and then *grow* the band. A shrink at offset zero is
+        // clamped by minScrollExtent and would pass whether or not the gate
+        // exists; growth is what actually pushes the offset forward.
+        container.read(controllableLinkedTaskCountProvider.notifier).set(1);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Stay at the top, where the header is what the user is reading and
+        // the linked-tasks band is far below the fold.
+        final position = scrollPositionOf(tester);
+        expect(position.pixels, isZero);
+        final viewportBottom = tester
+            .getRect(find.byType(CustomScrollView))
+            .bottom;
+        expect(
+          tester
+              .getTopLeft(find.byType(LinkedTasksWidget, skipOffstage: false))
+              .dy,
+          greaterThanOrEqualTo(viewportBottom),
+          reason: 'the linked-tasks band was not below the viewport',
+        );
+
+        final header = find.byType(DesktopTaskHeaderConnector);
+        final headerTop = tester.getTopLeft(header).dy;
+
+        container.read(controllableLinkedTaskCountProvider.notifier).set(2);
+        for (var frame = 0; frame < 6; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(
+            tester.getTopLeft(header).dy,
+            closeTo(headerTop, 1),
+            reason: 'the header moved on frame $frame',
+          );
+        }
+
+        expect(position.pixels, isZero);
         expect(tester.takeException(), isNull);
         container.dispose();
       },

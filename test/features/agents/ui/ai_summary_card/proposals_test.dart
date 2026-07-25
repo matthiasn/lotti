@@ -461,6 +461,46 @@ void main() {
       verify(() => notifier.notify(any())).called(1);
     });
 
+    testWidgets('tap-reject arms scroll stabilization before rejectItem', (
+      tester,
+    ) async {
+      // Dismissing collapses the row exactly as confirming does, so it shrinks
+      // the card by the same amount and needs the page armed just as early.
+      // The page cannot tell the two apart afterwards either — its other entry
+      // point is an open-count drop.
+      final pending = makePending(
+        id: 'p1',
+        toolName: 'set_task_status',
+        humanSummary: 'Set status to GROOMED',
+      );
+
+      final service = MockChangeSetConfirmationService();
+      var stabilizationStarted = false;
+      when(() => service.rejectItem(any(), any())).thenAnswer((_) async {
+        expect(stabilizationStarted, isTrue);
+        return true;
+      });
+      final notifier = MockUpdateNotifications();
+
+      final bench = AgentTestBench(
+        confirmationService: service,
+        updateNotifications: notifier,
+        suggestions: UnifiedSuggestionList(open: [pending], activity: const []),
+        onSuggestionResolveStart: () => stabilizationStarted = true,
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byIcon(Icons.close_rounded).first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(stabilizationStarted, isTrue);
+      verify(() => service.rejectItem(pending.changeSet, 0)).called(1);
+    });
+
     testWidgets('swipe-right past the threshold confirms via the service', (
       tester,
     ) async {
