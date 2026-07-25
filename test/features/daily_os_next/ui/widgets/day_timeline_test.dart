@@ -2060,8 +2060,18 @@ void main() {
         // now-line must survive the rebuild.
         await tester.pump(const Duration(minutes: 1));
 
-        expect(nowBadge(), findsOneWidget);
         expect(find.text('Anchor block'), findsOneWidget);
+        // The timer callback reads the *real* clock, not the test binding's,
+        // so a run that straddles local midnight legitimately moves "now"
+        // outside this draft's day and retires the badge. Assert the badge
+        // only while the wall clock is still on the day the draft was built
+        // for; the survives-a-tick property is carried by the block above and
+        // the mounted check below either way.
+        final wallAfter = clock.now();
+        final sameDay =
+            DateTime(wallAfter.year, wallAfter.month, wallAfter.day) == today;
+        expect(nowBadge(), sameDay ? findsOneWidget : findsNothing);
+        expect(find.byType(DayTimeline), findsOneWidget);
 
         // Dispose cancels the live (rescheduled) timer; a leaked timer would
         // fail the test, proving the reschedule produced a cancellable timer.
