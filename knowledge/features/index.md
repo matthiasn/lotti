@@ -6,6 +6,10 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 # Agent runtime and AI
 
 * [Agents](agents/) - the persisted agent runtime: wake scheduling, memory, proposals, review gates.
+* [AI](ai/) - the shared inference plumbing: configuration, provider routing, conversations, embeddings.
+
+# Infrastructure
+
 * [Sync](sync/) - single-user multi-device replication over end-to-end encrypted Matrix.
 
 # Related
