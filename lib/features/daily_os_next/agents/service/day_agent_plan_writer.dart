@@ -280,7 +280,18 @@ class DayAgentPlanWriter {
     final now = clock.now();
     final earliestDraftStart = localDay(planDate) == localDay(now) ? now : null;
     final allowedCategoryIds = identity.allowedCategoryIds;
-    final decidedTasks = decidedTaskIds.toSet();
+    // Resolved and category-filtered like every other task reference. This
+    // argument is written by the model itself, so an unchecked set let it
+    // reference a deleted task, a non-existent one, or one belonging to a
+    // category this agent may not touch, just by echoing the id into its own
+    // `draft_day_plan` call. Legitimate decided tasks survive: they are
+    // hydrated for the prompt through `hydrateDecidedTasks`, which already
+    // applies exactly this filter, so the only ids dropped here are ones the
+    // model was never given.
+    final decidedTasks = await _resolveTaskIds(
+      decidedTaskIds,
+      allowedCategoryIds,
+    );
     final allowedExistingTaskIds = await _allowedExistingTaskIds(
       rawBlocks,
       allowedCategoryIds,
@@ -485,9 +496,18 @@ class DayAgentPlanWriter {
     }
     if (referenced.isEmpty) return const <String>{};
 
-    final entities = await journalDb.journalEntityMapForIds(
-      referenced.toList(),
-    );
+    return _resolveTaskIds(referenced, allowedCategoryIds);
+  }
+
+  /// The subset of [taskIds] that resolve to a live task this agent is allowed
+  /// to reference.
+  Future<Set<String>> _resolveTaskIds(
+    Iterable<String> taskIds,
+    Set<String> allowedCategoryIds,
+  ) async {
+    final ids = taskIds.toSet();
+    if (ids.isEmpty) return const <String>{};
+    final entities = await journalDb.journalEntityMapForIds(ids.toList());
     return {
       for (final entry in entities.entries)
         if (entry.value is Task &&

@@ -116,19 +116,58 @@ void main() {
         }
       });
 
-      test('exempts cal blocks and non-drafted states from the guard', () {
-        final cal = parse(
-          rawBlock(type: 'cal'),
-          earliestDraftStart: earliest,
-        );
-        expect(cal.type, PlannedBlockType.cal);
-        expect(cal.startTime, DateTime(2026, 3, 16, 9));
+      test('exempts only states that record what already happened', () {
+        // History a re-draft legitimately carries forward. These are records,
+        // not plans, so they are allowed to sit in the past.
+        for (final state in ['inProgress', 'completed', 'dropped']) {
+          final block = parse(
+            rawBlock()..['state'] = state,
+            earliestDraftStart: earliest,
+          );
+          expect(block.startTime, DateTime(2026, 3, 16, 9), reason: state);
+        }
+      });
 
-        final inProgress = parse(
-          rawBlock()..['state'] = 'inProgress',
-          earliestDraftStart: earliest,
+      test('guards committed blocks, not just drafted ones', () {
+        // `committed` is a plan the user agreed to, not a record of something
+        // that happened — and writing a new block as committed was the
+        // remaining way to place work before the current time, the same
+        // probing as relabelling a block `buffer`, one field over.
+        expect(
+          () => parse(
+            rawBlock()..['state'] = 'committed',
+            earliestDraftStart: earliest,
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must not start before current time'),
+            ),
+          ),
         );
-        expect(inProgress.state, PlannedBlockState.inProgress);
+      });
+
+      test('a cal block is refused outright, guard or no guard', () {
+        // `cal` means "imported calendar event" and this agent is shown none,
+        // so the type can only ever assert an import that never happened —
+        // and the plan editor then refuses to let the user edit the result.
+        for (final earliestStart in [earliest, null]) {
+          expect(
+            () => parse(
+              rawBlock(type: 'cal'),
+              earliestDraftStart: earliestStart,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('none are available to this agent'),
+              ),
+            ),
+            reason: 'earliestDraftStart=$earliestStart',
+          );
+        }
       });
 
       test('accepts drafted blocks starting at or after the boundary', () {

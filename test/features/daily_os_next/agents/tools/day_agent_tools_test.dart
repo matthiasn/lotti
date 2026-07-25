@@ -217,7 +217,9 @@ void main() {
       expect(blockSchema['additionalProperties'], isFalse);
       expect(
         (blockProperties['type'] as Map<String, dynamic>)['enum'],
-        ['ai', 'cal', 'buffer', 'manual'],
+        // No `cal`: this agent is shown no calendar events, so the parser
+        // rejects one and offering the option only invites wasted turns.
+        ['ai', 'buffer', 'manual'],
       );
       expect(
         (blockProperties['state'] as Map<String, dynamic>)['enum'],

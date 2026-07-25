@@ -156,6 +156,10 @@ void main() {
             entity,
       ];
     });
+    // The journal knows nothing by default: a test that expects a task
+    // reference to be *accepted* has to say which tasks exist, because
+    // `decidedTaskIds` is a model-written argument and is resolved against the
+    // journal rather than trusted.
     when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
       (_) async => const <String, JournalEntity>{},
     );
@@ -297,6 +301,9 @@ void main() {
     test(
       'persistDraftPlan writes plan entity, pinned tasks, and capture link',
       () async {
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},
+        );
         final service = createService();
 
         final plan = await withClock(Clock.fixed(_now), () {
@@ -621,6 +628,9 @@ void main() {
     });
 
     test('persistDraftPlan allows non-AI blocks without reasons', () async {
+      when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+        (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},
+      );
       final plan = await withClock(Clock.fixed(_now), () {
         return createService().persistDraftPlan(
           agentId: _agentId,
@@ -1196,6 +1206,9 @@ void main() {
     test(
       'executeTool runs decidedTaskIds + integer capacity paths end-to-end',
       () async {
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},
+        );
         final result = await withClock(Clock.fixed(_now), () {
           return createService().executeTool(
             agentId: _agentId,
