@@ -7,6 +7,7 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 
 * [Agents](agents/) - the persisted agent runtime: wake scheduling, memory, proposals, review gates.
 * [AI](ai/) - the shared inference plumbing: configuration, provider routing, conversations, embeddings.
+* [Daily OS](daily_os_next/) - the day-planning runtime: coordinator and per-day agents, durable outbox, the capture ritual.
 
 # Infrastructure
 
