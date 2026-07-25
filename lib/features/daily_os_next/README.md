@@ -363,9 +363,13 @@ Four details carry the design:
   first-time-right one.
 - **The prompts are captured by wrapping the conversation repository.** The
   system prompt is built and handed straight to `createConversation` — it is
-  never persisted, so it cannot be read back. The wrapper also makes the
-  forced-retry path visible: a second `sendMessage` on a drafting wake means
-  the model finished its turn without calling `draft_day_plan`.
+  never persisted, so it cannot be read back. The wrapper records one
+  transcript *per conversation*, which is also what makes the forced-retry
+  signal trustworthy: `_forceDraftDayPlanIfMissing` sends a second message
+  into the **same** conversation, whereas a durable job retry opens a fresh
+  one and sends its normal first prompt. Counting messages across the whole
+  cell would report a transient provider failure as the model ignoring the
+  prompt; `jobAttempts` is where infrastructure retries belong.
 - **The dependency resolver is always wired**, matching production. It gates
   both the corpus's `blockedBy` annotation and whether ADR 0043's blocked-work
   rule reaches the prompt at all, so a null resolver would quietly measure a

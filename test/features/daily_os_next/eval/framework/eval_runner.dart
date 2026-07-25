@@ -103,8 +103,7 @@ class EvalRunResult {
     required this.outcome,
     required this.constraints,
     required this.latency,
-    required this.systemPrompt,
-    required this.userPrompts,
+    required this.wakes,
     required this.jobStatus,
     required this.jobAttempts,
     required this.consumption,
@@ -118,15 +117,13 @@ class EvalRunResult {
   /// Wall-clock time for the drafting round trip.
   final Duration latency;
 
-  /// The exact system prompt the model received, as sent.
+  /// One entry per conversation the cell opened, in order.
   ///
-  /// Captured by wrapping the conversation repository rather than read back
-  /// from the agent log: the workflow hands the system prompt straight to
-  /// `createConversation` and never persists it.
-  final String? systemPrompt;
-
-  /// Every user message sent during the wake, in order.
-  final List<String> userPrompts;
+  /// A cell is normally one wake and therefore one conversation, but the
+  /// durable job retries a transient failure up to `maxAttempts` times and
+  /// each attempt is a *fresh* wake with its own conversation. Keeping them
+  /// separate is what lets [forcedDraftRetry] mean what it says.
+  final List<EvalWakeTranscript> wakes;
 
   /// Terminal status of the draft job, or null when no job was found.
   final String? jobStatus;
@@ -142,14 +139,26 @@ class EvalRunResult {
 
   bool get failed => error != null;
 
-  /// Whether the workflow had to force the artifact.
+  /// The wake that produced the persisted plan — the last one, since any
+  /// earlier attempt failed and was retried. Null when nothing ran.
+  EvalWakeTranscript? get draftWake => wakes.isEmpty ? null : wakes.last;
+
+  /// The system prompt of the wake that produced the plan.
+  String? get systemPrompt => draftWake?.systemPrompt;
+
+  /// The user messages of the wake that produced the plan, in order.
+  List<String> get userPrompts => draftWake?.userMessages ?? const [];
+
+  /// Whether the workflow had to force the artifact out of the model.
   ///
-  /// Derived from the send count: a drafting wake sends one message, and
-  /// `_forceDraftDayPlanIfMissing` sends a second one only when the model
-  /// finished its turn without calling `draft_day_plan`. Worth reporting on
-  /// its own — the retry hides a failure to follow the prompt that the
-  /// persisted plan cannot show.
-  bool get forcedDraftRetry => userPrompts.length > 1;
+  /// Scoped to a single conversation on purpose. `_forceDraftDayPlanIfMissing`
+  /// sends a *second message into the same conversation* when the model
+  /// finished its turn without calling `draft_day_plan`. A durable job retry,
+  /// by contrast, opens a fresh conversation and sends its normal first
+  /// prompt — so counting messages across the whole cell would report a
+  /// transient provider failure as the model ignoring the prompt. [jobAttempts]
+  /// is where infrastructure retries are visible.
+  bool get forcedDraftRetry => wakes.any((wake) => wake.forcedRetry);
 }
 
 /// Runs the full matrix, sequentially.
@@ -248,10 +257,12 @@ Future<List<EvalRunResult>> runEvalMatrix({
 
 /// The day a scenario plans for, given [anchor] as today.
 DateTime evalPlanDateFor(EvalScenario scenario, DateTime anchor) {
-  final today = DateTime(anchor.year, anchor.month, anchor.day);
+  // Next civil date, not +24h: on a DST boundary a fixed day-long duration
+  // lands at 23:00 the same date or 01:00 the next, which would give the cell
+  // the wrong day id and shift every block time by an hour.
   return scenario.startHour == null
-      ? today.add(const Duration(days: 1))
-      : today;
+      ? DateTime(anchor.year, anchor.month, anchor.day + 1)
+      : DateTime(anchor.year, anchor.month, anchor.day);
 }
 
 /// Runs one cell and scores it.
@@ -316,46 +327,52 @@ Future<EvalRunResult> _runCell(
     return _failedResult(request, inputs, e);
   }
   final recorder = EvalPromptRecorder(layer.conversationRepository);
-  final harness = DayAgentPipelineHarness.create(
-    now: clock.now(),
-    conversationRepository: recorder,
-    cloudInferenceRepository: layer.cloudInferenceRepository,
-    profile: layer.profile,
-    model: layer.model,
-    provider: layer.provider,
-    // Always non-null, matching production: the resolver gates whether ADR
-    // 0043's blocked-work rule reaches the prompt at all, so a null one would
-    // quietly measure a prompt production never sends. Scenarios without
-    // blockers supply an empty map.
-    dependencyResolver: EvalFixtureDependencyResolver(scenario.blockedStatus),
-    config: config,
-  );
-  seedScenarioCorpus(
-    journalDb: harness.journalDb,
-    scenario: scenario,
-    planDate: planDate,
-  );
-
-  final stopwatch = Stopwatch()..start();
+  // Every acquired resource is released independently below: the harness holds
+  // a running runtime with a periodic timer, a sqlite database and a temp
+  // directory, so leaking one per failed cell would accumulate across a matrix
+  // that is expected to keep going after a failure.
+  DayAgentPipelineHarness? harness;
+  final stopwatch = Stopwatch();
   String? error;
   try {
-    final captureId = scenario.includeCapture
-        ? await _seedCapture(harness, scenario, planDate)
-        : const CaptureId('');
-    await harness.realDayAgent.draftDayPlan(
-      captureId: captureId,
-      decidedTaskIds: scenario.decidedTaskIds,
-      dayDate: planDate,
+    harness = DayAgentPipelineHarness.create(
+      now: clock.now(),
+      conversationRepository: recorder,
+      cloudInferenceRepository: layer.cloudInferenceRepository,
+      profile: layer.profile,
+      model: layer.model,
+      provider: layer.provider,
+      // Always non-null, matching production: the resolver gates whether ADR
+      // 0043's blocked-work rule reaches the prompt at all, so a null one would
+      // quietly measure a prompt production never sends. Scenarios without
+      // blockers supply an empty map.
+      dependencyResolver: EvalFixtureDependencyResolver(scenario.blockedStatus),
+      config: config,
     );
-  } catch (e) {
-    // Recorded, not rethrown: a matrix that aborts on the first bad cell
-    // cannot report on the models that did work.
-    error = e.toString();
-    log?.call('error ${request.label}: $error');
-  }
-  stopwatch.stop();
+    seedScenarioCorpus(
+      journalDb: harness.journalDb,
+      scenario: scenario,
+      planDate: planDate,
+    );
 
-  try {
+    stopwatch.start();
+    try {
+      final captureId = scenario.includeCapture
+          ? await _seedCapture(harness, scenario, planDate)
+          : const CaptureId('');
+      await harness.realDayAgent.draftDayPlan(
+        captureId: captureId,
+        decidedTaskIds: scenario.decidedTaskIds,
+        dayDate: planDate,
+      );
+    } catch (e) {
+      // Recorded, not rethrown: a matrix that aborts on the first bad cell
+      // cannot report on the models that did work.
+      error = e.toString();
+      log?.call('error ${request.label}: $error');
+    }
+    stopwatch.stop();
+
     final dayId = dayAgentIdForDate(planDate);
     final identity = await harness.dayAgentService.getDayAgentForDate(planDate);
     final plan = identity is AgentIdentityEntity
@@ -378,8 +395,7 @@ Future<EvalRunResult> _runCell(
       outcome: outcome,
       constraints: scoreAll(outcome),
       latency: stopwatch.elapsed,
-      systemPrompt: recorder.systemPrompt,
-      userPrompts: List.unmodifiable(recorder.userMessages),
+      wakes: recorder.wakes,
       jobStatus: job?.status.name,
       jobAttempts: job?.attempts,
       consumption: List.unmodifiable(
@@ -388,8 +404,24 @@ Future<EvalRunResult> _runCell(
       error: error,
     );
   } finally {
-    await harness.dispose();
-    await layer.close?.call();
+    await _release('harness', () => harness?.dispose(), log);
+    await _release('model layer', () => layer.close?.call(), log);
+  }
+}
+
+/// Releases one resource, reporting rather than propagating its failure.
+///
+/// A throwing `dispose` must not prevent the next release from running, and
+/// must not replace a cell's real result with a teardown error.
+Future<void> _release(
+  String what,
+  Future<void>? Function() release,
+  void Function(String message)? log,
+) async {
+  try {
+    await release();
+  } catch (e) {
+    log?.call('failed to release $what: $e');
   }
 }
 
@@ -408,8 +440,7 @@ EvalRunResult _failedResult(
     outcome: outcome,
     constraints: scoreAll(outcome),
     latency: Duration.zero,
-    systemPrompt: null,
-    userPrompts: const [],
+    wakes: const [],
     jobStatus: null,
     jobAttempts: null,
     consumption: const [],
@@ -535,6 +566,33 @@ List<EvalToolCall> evalToolCallsFrom(List<AgentDomainEntity> entities) {
   return calls;
 }
 
+/// One conversation the model was driven through, as it was sent.
+@immutable
+class EvalWakeTranscript {
+  const EvalWakeTranscript({
+    required this.conversationId,
+    required this.systemPrompt,
+    required this.userMessages,
+  });
+
+  final String conversationId;
+
+  /// The system prompt, which is never persisted anywhere else.
+  final String? systemPrompt;
+
+  /// User messages sent into this conversation, in order.
+  final List<String> userMessages;
+
+  /// More than one message in a single conversation means the workflow sent a
+  /// follow-up to force the required tool call.
+  bool get forcedRetry => userMessages.length > 1;
+}
+
+class _MutableWake {
+  String? systemPrompt;
+  final List<String> userMessages = [];
+}
+
 /// Wraps a [ConversationRepository] to capture the prompts the model was sent.
 ///
 /// The system prompt is never persisted — the workflow builds it and hands it
@@ -545,20 +603,33 @@ class EvalPromptRecorder extends ConversationRepository {
   EvalPromptRecorder(this._inner);
 
   final ConversationRepository _inner;
+  final Map<String, _MutableWake> _byConversation = {};
+  final List<String> _order = [];
 
-  /// Every user message sent, in order.
-  final List<String> userMessages = [];
-
-  /// The system prompt of the wake's conversation.
-  String? systemPrompt;
+  /// One transcript per conversation, in the order they were opened.
+  List<EvalWakeTranscript> get wakes => List.unmodifiable([
+    for (final id in _order)
+      EvalWakeTranscript(
+        conversationId: id,
+        systemPrompt: _byConversation[id]!.systemPrompt,
+        userMessages: List.unmodifiable(_byConversation[id]!.userMessages),
+      ),
+  ]);
 
   @override
   String createConversation({String? systemMessage, int maxTurns = 20}) {
-    systemPrompt = systemMessage;
-    return _inner.createConversation(
+    final id = _inner.createConversation(
       systemMessage: systemMessage,
       maxTurns: maxTurns,
     );
+    // Keyed by the id the inner repository chose, so a conversation reusing an
+    // id after deletion appends to one transcript rather than silently
+    // starting a second.
+    _byConversation.putIfAbsent(id, () {
+      _order.add(id);
+      return _MutableWake();
+    }).systemPrompt = systemMessage;
+    return id;
   }
 
   @override
@@ -583,7 +654,7 @@ class EvalPromptRecorder extends ConversationRepository {
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
   }) {
-    userMessages.add(message);
+    _byConversation[conversationId]?.userMessages.add(message);
     return _inner.sendMessage(
       conversationId: conversationId,
       message: message,

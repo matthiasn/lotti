@@ -3,6 +3,7 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/get_it.dart';
@@ -61,6 +62,7 @@ void main() {
     required List<List<ChatCompletionMessageToolCall>> turns,
     String id = 'scripted',
     void Function()? onOpen,
+    Future<void> Function()? onClose,
     List<ScriptedConversationRepository>? recordInto,
   }) => EvalModelTarget(
     id: id,
@@ -85,6 +87,7 @@ void main() {
           id: 'provider-eval',
           apiKey: 'provider-key',
         ),
+        close: onClose,
       );
     },
   );
@@ -122,6 +125,17 @@ void main() {
           taskId: taskId,
         ),
       ];
+
+  EvalRunRequest requestFor(
+    EvalScenario scenario, {
+    EvalVariant variant = evalBaselineVariant,
+  }) => EvalRunRequest(
+    scenario: scenario,
+    variant: variant,
+    modelId: 'scripted',
+    sample: 1,
+    planDate: evalPlanDateFor(scenario, today),
+  );
 
   group('runEvalMatrix', () {
     test(
@@ -278,17 +292,6 @@ void main() {
   });
 
   group('runEvalCell', () {
-    EvalRunRequest requestFor(
-      EvalScenario scenario, {
-      EvalVariant variant = evalBaselineVariant,
-    }) => EvalRunRequest(
-      scenario: scenario,
-      variant: variant,
-      modelId: 'scripted',
-      sample: 1,
-      planDate: evalPlanDateFor(scenario, today),
-    );
-
     test('captures a rejection, its text, and the forced retry', () async {
       // A future-day scenario so the same-day guard is not what rejects this;
       // the block simply falls outside the plan's day, which the write path
@@ -643,6 +646,112 @@ void main() {
     });
   });
 
+  group('resource release', () {
+    test('releases the model layer after a run', () async {
+      // The harness holds a running runtime, a database and a temp directory,
+      // and the layer may hold a provider connection. A matrix keeps going
+      // after a failure, so anything left open accumulates across cells.
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      final planDate = evalPlanDateFor(scenario, today);
+      var closed = 0;
+      await runEvalCell(
+        request: requestFor(scenario),
+        model: scriptedTarget(
+          turns: [
+            [draftCall(planDate: planDate, blocks: legalBlocks(planDate))],
+          ],
+          onClose: () async => closed++,
+        ),
+      );
+
+      expect(closed, 1);
+    });
+
+    test('a failing release does not cost the cell its result', () async {
+      // Teardown noise must not be reported as a model result, and one
+      // resource failing to release must not strand the others.
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      final planDate = evalPlanDateFor(scenario, today);
+      final result = await runEvalCell(
+        request: requestFor(scenario),
+        model: scriptedTarget(
+          turns: [
+            [draftCall(planDate: planDate, blocks: legalBlocks(planDate))],
+          ],
+          onClose: () async => throw StateError('close blew up'),
+        ),
+      );
+
+      expect(result.error, isNull);
+      expect(result.outcome.planPersisted, isTrue);
+      expect(result.jobStatus, 'succeeded');
+    });
+  });
+
+  group('EvalPromptRecorder', () {
+    final inferenceRepo = CloudInferenceWrapper(
+      cloudRepository: MockCloudInferenceRepository(),
+    );
+
+    test('keeps one transcript per conversation', () async {
+      final inner = ScriptedConversationRepository();
+      final recorder = EvalPromptRecorder(inner);
+      final first = recorder.createConversation(systemMessage: 'system A');
+      await recorder.sendMessage(
+        conversationId: first,
+        message: 'user A1',
+        model: 'm',
+        provider: testInferenceProvider(id: 'p', apiKey: 'k'),
+        inferenceRepo: inferenceRepo,
+      );
+      final second = recorder.createConversation(systemMessage: 'system B');
+      await recorder.sendMessage(
+        conversationId: second,
+        message: 'user B1',
+        model: 'm',
+        provider: testInferenceProvider(id: 'p', apiKey: 'k'),
+        inferenceRepo: inferenceRepo,
+      );
+
+      expect(recorder.wakes.map((w) => w.systemPrompt), [
+        'system A',
+        'system B',
+      ]);
+      expect(recorder.wakes.map((w) => w.userMessages), [
+        ['user A1'],
+        ['user B1'],
+      ]);
+      expect(
+        recorder.wakes.every((w) => !w.forcedRetry),
+        isTrue,
+        reason:
+            'Two conversations with one message each is the durable job '
+            'retrying, not the model being forced to call the tool.',
+      );
+    });
+
+    test('a second message in one conversation is a forced retry', () async {
+      final inner = ScriptedConversationRepository();
+      final recorder = EvalPromptRecorder(inner);
+      final id = recorder.createConversation(systemMessage: 'system');
+      for (final message in ['first ask', 'forced follow-up']) {
+        await recorder.sendMessage(
+          conversationId: id,
+          message: message,
+          model: 'm',
+          provider: testInferenceProvider(id: 'p', apiKey: 'k'),
+          inferenceRepo: inferenceRepo,
+        );
+      }
+
+      expect(recorder.wakes.single.forcedRetry, isTrue);
+      expect(recorder.wakes.single.userMessages, [
+        'first ask',
+        'forced follow-up',
+      ]);
+    });
+  });
+
   group('evalPlanDateFor', () {
     test('plans today for a same-day scenario and tomorrow otherwise', () {
       const sameDay = EvalScenario(
@@ -661,6 +770,37 @@ void main() {
         evalPlanDateFor(futureDay, DateTime(2030, 1, 15, 23, 30)),
         DateTime(2030, 1, 16),
       );
+    });
+
+    test('advances by civil date, not by twenty-four hours', () {
+      // On a DST boundary a fixed day-long duration lands at 23:00 the same
+      // date or 01:00 the next, which would hand the cell the wrong day id and
+      // shift every block time by an hour. Month and year ends are the same
+      // normalisation question.
+      const futureDay = EvalScenario(id: 'future', intent: 'x', tasks: []);
+
+      expect(
+        evalPlanDateFor(futureDay, DateTime(2030, 1, 31)),
+        // ignore: avoid_redundant_argument_values — the whole date is the point
+        DateTime(2030, 2, 1),
+      );
+      expect(
+        evalPlanDateFor(futureDay, DateTime(2030, 12, 31)),
+        // ignore: avoid_redundant_argument_values — the whole date is the point
+        DateTime(2031, 1, 1),
+      );
+      for (final anchor in [
+        DateTime(2026, 3, 29, 12),
+        DateTime(2026, 10, 25, 12),
+      ]) {
+        final planDate = evalPlanDateFor(futureDay, anchor);
+        expect(planDate.hour, 0, reason: anchor.toIso8601String());
+        expect(
+          planDate.day,
+          isNot(anchor.day),
+          reason: anchor.toIso8601String(),
+        );
+      }
     });
   });
 
