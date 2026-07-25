@@ -632,6 +632,11 @@ const _bindingDirective = EvalScenario(
   // Deliberately over budget: 180 + 120 + 90 against 240 remaining. A day that
   // fits would let a model honour everything by accident and prove nothing
   // about the contract, which only bites when something has to give.
+  // An over-committed directive is honestly `overCommitted` as well as
+  // `directiveUnsatisfiable`, and both live runs reached for the former. The
+  // allowlist is fixture-declared so a model still cannot escalate under a
+  // reason that could not be true of this day.
+  conflictEscalationReasons: {'overCommitted'},
   directive: EvalDirective(
     commitments: [
       EvalDirectiveCommitment(
@@ -693,4 +698,17 @@ void seedScenarioCorpus({
       for (final task in scenario.tasksFor(planDate)) task.id: task,
     },
   );
+  // Single-id lookup, reached by `apply_triage` and `create_task_from_phrase`
+  // — tools a model is free to call on a drafting wake, and glm-5.2 did.
+  // Without this the harness answers "task <id> not found" for a task the
+  // scenario put in the corpus and the model correctly named, and that lands
+  // on the model as a rejection, corrupting the one constraint that measures
+  // whether it needed correcting.
+  final byId = {for (final task in scenario.tasksFor(planDate)) task.id: task};
+  when(
+    () => journalDb.journalEntityById(any()),
+  ).thenAnswer((invocation) async {
+    final id = invocation.positionalArguments.first as String;
+    return byId[id];
+  });
 }

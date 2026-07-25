@@ -1,3 +1,6 @@
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/time_service.dart';
@@ -29,8 +32,11 @@ import '../../../ai_consumption/test_utils.dart';
 /// act on; throwing a Dart type error tells it nothing and corrupts the score.
 Future<void> setUpEvalGetIt(AiInteractionCaptureTestBench attribution) async {
   final persistenceLogic = MockPersistenceLogic();
-  // `create_task_from_phrase` materialises through this. Null is a clean
-  // "no task was created" the tool handler already copes with.
+  // `create_task_from_phrase` materialises through this. It returns a real
+  // Task rather than null: null makes the tool answer "failed to create
+  // task", which reaches the model as a rejection and is indistinguishable in
+  // the score from the model having done something wrong. In the app the
+  // creation succeeds, so the faithful stub is one that succeeds.
   when(
     () => persistenceLogic.createTaskEntry(
       data: any(named: 'data'),
@@ -40,7 +46,24 @@ Future<void> setUpEvalGetIt(AiInteractionCaptureTestBench attribution) async {
       labelIds: any(named: 'labelIds'),
       private: any(named: 'private'),
     ),
-  ).thenAnswer((_) async => null);
+  ).thenAnswer((invocation) async {
+    final data = invocation.namedArguments[#data] as TaskData;
+    final entryText = invocation.namedArguments[#entryText] as EntryText;
+    final categoryId = invocation.namedArguments[#categoryId] as String?;
+    final createdAt = data.dateFrom;
+    return Task(
+      meta: Metadata(
+        id: 'eval-created-${data.title.hashCode}',
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        dateFrom: data.dateFrom,
+        dateTo: data.dateTo,
+        categoryId: categoryId,
+      ),
+      data: data,
+      entryText: entryText,
+    );
+  });
 
   await setUpTestGetIt(
     additionalSetup: () {

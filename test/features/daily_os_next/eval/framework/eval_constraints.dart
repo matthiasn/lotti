@@ -731,11 +731,25 @@ EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
   // this constraint exists to catch; using a different-but-true reason label
   // is a separate, much weaker observation, so it is reported rather than
   // failed.
+  // Reasons that can honestly describe *this* directive failing. The prompt
+  // names `directiveUnsatisfiable`; a scenario may declare others that are
+  // also true of it (an over-committed directive is genuinely `overCommitted`).
+  // An allowlist rather than free text, and rather than any reason at all:
+  // `processingBlocked` says the pipeline is stuck and answers for nothing.
+  final answeringReasons = {
+    'directiveUnsatisfiable',
+    ...outcome.inputs.conflictEscalationReasons,
+  };
   final escalations = [
     for (final call in outcome.toolCalls)
       if (call.accepted &&
           call.name.contains('raise_day_status') &&
-          call.arguments['status'] == 'attentionNeeded')
+          call.arguments['status'] == 'attentionNeeded' &&
+          switch (call.arguments['reasons']) {
+            final List<Object?> list =>
+              list.map((r) => '$r').any(answeringReasons.contains),
+            _ => false,
+          })
         call,
   ];
   final escalatedAsDirective = escalations.any(
@@ -745,9 +759,6 @@ EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
       _ => false,
     },
   );
-  final escalationProse = [
-    for (final call in escalations) '${call.arguments['note'] ?? ''}',
-  ].join(' ').toLowerCase();
 
   // Prose the model attached to the plan, where a representation names its
   // commitment.
@@ -780,12 +791,25 @@ EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
       dispositions.add('${commitment.id}: represented');
     } else if (named(tradeProse)) {
       dispositions.add('${commitment.id}: traded, naming the collision');
-    } else if (escalatedAsDirective) {
-      dispositions.add('${commitment.id}: escalated');
-    } else if (named(escalationProse)) {
+    } else if (escalations.isNotEmpty) {
+      // Escalation is directive-level in the prompt — option (c) is "escalate
+      // via raise_day_status", not "name each commitment in the note" — so
+      // raising `attentionNeeded` answers for everything left unplaced.
+      //
+      // Two live runs pushed this here. Requiring the reason enum to be
+      // `directiveUnsatisfiable` reported a model that escalated as SILENTLY
+      // DROPPED; requiring the note to contain each commitment's *title* did
+      // the same to "Interviews and 1:1s cannot fit — user must defer one or
+      // both", which names both casualties in the words a person would use.
+      // Substring matching cannot referee that, and a false "silently
+      // dropped" is worse than a coarse pass: it accuses the model of the one
+      // thing it visibly did not do. Whether the escalation named a casualty
+      // at all is `surfacedConflict`'s job.
       dispositions.add(
-        '${commitment.id}: escalated by name, though not under the '
-        'directiveUnsatisfiable reason the prompt specifies',
+        escalatedAsDirective
+            ? '${commitment.id}: escalated'
+            : '${commitment.id}: escalated, though not under the '
+                  'directiveUnsatisfiable reason the prompt specifies',
       );
     } else {
       dispositions.add('${commitment.id}: SILENTLY DROPPED');

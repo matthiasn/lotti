@@ -1569,12 +1569,12 @@ void main() {
       expect(result.detail, contains('escalated'));
     });
 
-    test('an escalation naming the casualty is not silence', () {
-      // From the first live run: glm-5.2 raised attentionNeeded with reason
-      // `overCommitted` and a note reading "Cannot fit: interviews (120 min)".
-      // Scoring that as SILENTLY DROPPED called the one thing it demonstrably
-      // was not. The reason-label gap is real but far weaker, so it is
-      // reported in the detail rather than failed.
+    test('an escalation under a different reason is not silence', () {
+      // From the live runs: glm-5.2 raised attentionNeeded with reason
+      // `overCommitted` and a note naming the casualties in plain words
+      // ("Interviews and 1:1s cannot fit"). Scoring that as SILENTLY DROPPED
+      // accused it of the one thing it visibly did not do. The reason-label
+      // gap is real but far weaker, so it is reported, not failed.
       final result = scoreDirectiveHonoured(
         outcome(
           blocks: [titled('Prepare the board deck')],
@@ -1586,7 +1586,7 @@ void main() {
               arguments: {
                 'status': 'attentionNeeded',
                 'reasons': ['overCommitted'],
-                'note': 'Cannot fit: Run the weekly 1:1s (90 min).',
+                'note': 'Interviews and 1:1s cannot fit — defer one.',
               },
             ),
           ],
@@ -1597,21 +1597,13 @@ void main() {
       expect(result.detail, contains('not under the directiveUnsatisfiable'));
     });
 
-    test('an escalation that names nothing is still silence', () {
+    test('silence with no escalation at all still fails', () {
       final result = scoreDirectiveHonoured(
         outcome(
           blocks: [titled('Prepare the board deck')],
           directive: directive,
           toolCalls: const [
-            EvalToolCall(
-              name: 'raise_day_status',
-              accepted: true,
-              arguments: {
-                'status': 'attentionNeeded',
-                'reasons': ['overCommitted'],
-                'note': 'The day is quite full.',
-              },
-            ),
+            EvalToolCall(name: 'record_observations', accepted: true),
           ],
         ),
       );
@@ -1634,6 +1626,7 @@ void main() {
           name: 'raise_day_status',
           accepted: true,
           arguments: {
+            // Says the pipeline is stuck; answers for no commitment.
             'status': 'attentionNeeded',
             'reasons': ['processingBlocked'],
           },
