@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -28,6 +29,7 @@ void showLinkCreatedFeedback({
   required String linkedTaskTitle,
 }) {
   final messages = context.messages;
+  final tokens = context.designTokens;
   final phrase = directedRelationLabel(context, relation);
 
   messenger.showSnackBar(
@@ -55,11 +57,43 @@ void showLinkCreatedFeedback({
             // Awaited and reported, matching the unlink path. Fire-and-forget
             // made a failed undo indistinguishable from a successful one, on
             // the one control whose entire job is taking something back.
-            messenger.showSnackBar(
-              SnackBar(content: Text(messages.unlinkTaskFailedMessage)),
+            showLinkFailureMessage(
+              tokens: tokens,
+              messenger: messenger,
+              message: messages.unlinkTaskFailedMessage,
             );
           }
         },
+      ),
+    ),
+  );
+}
+
+/// Reports a failure in the linking flow.
+///
+/// On the alert colour rather than Material's default SnackBar slab: a
+/// rejected cycle, a failed unlink, a failed retype and a failed undo all
+/// arrived wearing the same surface as the "link created" confirmation, and
+/// that surface is tinted by whichever colour scheme the user happens to have
+/// chosen. The one moment the flow has to say *no* looked exactly like the
+/// moment it says yes.
+/// Takes resolved [tokens] rather than a [BuildContext] because every caller
+/// reports a failure *after* awaiting the write that failed, when the context
+/// may already be gone. Capture `context.designTokens` alongside the messenger
+/// before the await.
+void showLinkFailureMessage({
+  required DsTokens tokens,
+  required ScaffoldMessengerState messenger,
+  required String message,
+}) {
+  messenger.showSnackBar(
+    SnackBar(
+      backgroundColor: tokens.colors.alert.error.defaultColor,
+      content: Text(
+        message,
+        style: tokens.typography.styles.body.bodyMedium.copyWith(
+          color: tokens.colors.text.highEmphasis,
+        ),
       ),
     ),
   );

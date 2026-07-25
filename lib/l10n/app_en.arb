@@ -3376,6 +3376,10 @@
     }
   },
   "linkBlocksCycleErrorMessage": "This would create a blocking cycle — choose a different task.",
+  "linkCreateFailedMessage": "Couldn't create the link. Please try again.",
+  "@linkCreateFailedMessage": {
+    "description": "Shown when creating a link fails for a relation that is not \"blocks\", where a blocking-cycle explanation would be wrong."
+  },
   "linkCreatedMessage": "{relation}: {title}",
   "@linkCreatedMessage": {
     "placeholders": {

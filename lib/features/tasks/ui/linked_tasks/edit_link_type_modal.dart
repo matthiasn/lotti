@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -172,6 +173,7 @@ class _EditLinkTypeApplyFooterState
                 final navigator = Navigator.of(context);
                 final messenger = ScaffoldMessenger.of(context);
                 final messages = context.messages;
+                final tokens = context.designTokens;
 
                 final newIsOutgoing = !selected.inverse;
                 final oldIsOutgoing =
@@ -189,8 +191,10 @@ class _EditLinkTypeApplyFooterState
                 if (!mounted) return;
                 setState(() => _saving = false);
                 if (!saved) {
-                  messenger.showSnackBar(
-                    SnackBar(content: Text(messages.editLinkTypeFailedMessage)),
+                  showLinkFailureMessage(
+                    tokens: tokens,
+                    messenger: messenger,
+                    message: messages.editLinkTypeFailedMessage,
                   );
                   return;
                 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
@@ -62,8 +63,10 @@ class BlockingTaskPickerModal extends ConsumerWidget {
 
     if (!created) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.messages.linkBlocksCycleErrorMessage)),
+        showLinkFailureMessage(
+          tokens: context.designTokens,
+          messenger: messenger,
+          message: context.messages.linkBlocksCycleErrorMessage,
         );
       }
       return;
@@ -119,13 +122,16 @@ class BlockingTaskPickerModal extends ConsumerWidget {
           title: context.messages.linkPhraseBlocksInverse,
           accent: TaskShowcasePalette.warning(context),
           tightTop: true,
+          // The picker's rows reserve a wider leading rail than the card's, so
+          // without this the header sits 25pt left of the rows it labels — the
+          // one visibly broken rail in the flow.
+          leadingRailWidth: context.designTokens.spacing.step8,
         ),
         Flexible(
           child: TaskSearchPickerBody(
             // A finished task cannot block anything, so this picker keeps the
             // open-only filter the shared body no longer applies by default.
             taskStatuses: openTaskStatuses,
-            topInset: false,
             excludeIds: {blockedTaskId, ...existingBlockerIds},
             onTaskSelected: (task) => _selectBlocker(context, ref, task),
           ),

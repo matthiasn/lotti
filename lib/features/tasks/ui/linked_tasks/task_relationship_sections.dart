@@ -194,6 +194,7 @@ class LinkedTaskSectionHeader extends StatelessWidget {
     required this.title,
     this.accent,
     this.tightTop = false,
+    this.leadingRailWidth,
     super.key,
   });
 
@@ -207,6 +208,11 @@ class LinkedTaskSectionHeader extends StatelessWidget {
   /// on the card: rows stay neutral so a single accented header reads as
   /// signal rather than as one more competing hue.
   final Color? accent;
+
+  /// Width of the reserved glyph column. Defaults to the card's own leading
+  /// rail; the picker sheets reserve a wider one, and without matching it the
+  /// header sits left of the rows it labels instead of on their edge.
+  final double? leadingRailWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -250,7 +256,7 @@ class LinkedTaskSectionHeader extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: tokens.spacing.step5,
+            width: leadingRailWidth ?? tokens.spacing.step5,
             child: accent == null
                 ? null
                 : Icon(Icons.block, size: tokens.spacing.step5, color: accent),

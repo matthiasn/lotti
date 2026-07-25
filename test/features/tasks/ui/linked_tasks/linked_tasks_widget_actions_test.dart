@@ -238,6 +238,25 @@ void main() {
     );
 
     testWidgets(
+      'manage mode keeps an add path in the overflow — its header slot is '
+      'taken by Done, and curating links is when adding one is most likely',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          manageMode: true,
+        );
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Link existing task…'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'leaves plain links unheaded when they are the only links — there is '
       'nothing for them to be distinguished from',
       (tester) async {

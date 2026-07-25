@@ -14,6 +14,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/edit_link_type_modal.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
@@ -174,7 +175,12 @@ class _LinkedTasksEmptyAction extends StatelessWidget {
       onTap: onTap,
       title: context.messages.linkedTasksEmptyAction,
       subtitle: context.messages.linkedTasksEmptyHint,
-      subtitleMaxLines: 2,
+      // Three lines, and quieter than the action it explains: at two lines
+      // the longer locales ellipsized away the examples that teach what
+      // "link" means here, and at medium ink the explanation tied with the
+      // action on the one screen shown before the feature has done anything.
+      subtitleMaxLines: 3,
+      subtitleEmphasis: tokens.colors.text.lowEmphasis,
       size: DesignSystemListItemSize.small,
       leading: Icon(
         Icons.add_link,
@@ -303,6 +309,8 @@ class _LinkedTasksHeader extends ConsumerWidget {
                 position: PopupMenuPosition.under,
                 onSelected: (value) async {
                   switch (value) {
+                    case 'link_existing':
+                      await _showLinkTaskModal(context, ref, taskId);
                     case 'create_new':
                       await _createNewLinkedTask(context, ref, taskId);
                     case 'manage':
@@ -310,6 +318,22 @@ class _LinkedTasksHeader extends ConsumerWidget {
                   }
                 },
                 itemBuilder: (context) => [
+                  // Manage mode replaces the header's Link button with Done,
+                  // which left no way to add a link while curating them —
+                  // the one state where the user is most likely to want one.
+                  if (manageMode)
+                    PopupMenuItem(
+                      value: 'link_existing',
+                      child: Row(
+                        children: [
+                          Icon(Icons.add_link, size: tokens.spacing.step5),
+                          SizedBox(width: tokens.spacing.step3),
+                          Flexible(
+                            child: Text(context.messages.linkExistingTask),
+                          ),
+                        ],
+                      ),
+                    ),
                   PopupMenuItem(
                     value: 'create_new',
                     child: Row(
@@ -416,8 +440,14 @@ Future<void> _createNewLinkedTask(
     } else if (context.mounted) {
       // The plain link createTask made is still there, so the new task is
       // reachable; say why it didn't get the relationship that was asked for.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.messages.linkBlocksCycleErrorMessage)),
+      // Only a blocking link can fail the cycle guard, so anything else has
+      // to say so plainly rather than blame a cycle that cannot exist.
+      showLinkFailureMessage(
+        tokens: context.designTokens,
+        messenger: ScaffoldMessenger.of(context),
+        message: selection.type == EntryLinkType.blocks
+            ? context.messages.linkBlocksCycleErrorMessage
+            : context.messages.linkCreateFailedMessage,
       );
     }
   }

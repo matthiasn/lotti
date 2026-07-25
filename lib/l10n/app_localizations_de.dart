@@ -6637,6 +6637,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das würde einen blockierenden Kreislauf erzeugen — wähle eine andere Aufgabe.';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Die Verknüpfung konnte nicht erstellt werden. Bitte versuche es erneut.';
+
+  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation: $title';
   }

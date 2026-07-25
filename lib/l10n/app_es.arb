@@ -2792,6 +2792,7 @@
   "knowledgeGraphTooltip": "Explorar enlaces",
   "knowledgeGraphWalkHint": "Toca un nodo para avanzar · nodos: {count}",
   "linkBlocksCycleErrorMessage": "Esto crearía un ciclo de bloqueo — elige otra tarea.",
+  "linkCreateFailedMessage": "No se pudo crear el vínculo. Inténtalo de nuevo.",
   "linkCreatedMessage": "{relation}: {title}",
   "@linkCreatedMessage": {
     "placeholders": {

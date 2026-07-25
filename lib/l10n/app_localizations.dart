@@ -11507,6 +11507,12 @@ abstract class AppLocalizations {
   /// **'This would create a blocking cycle — choose a different task.'**
   String get linkBlocksCycleErrorMessage;
 
+  /// Shown when creating a link fails for a relation that is not "blocks", where a blocking-cycle explanation would be wrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the link. Please try again.'**
+  String get linkCreateFailedMessage;
+
   /// No description provided for @linkCreatedMessage.
   ///
   /// In en, this message translates to:

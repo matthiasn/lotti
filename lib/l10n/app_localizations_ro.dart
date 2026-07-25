@@ -6721,6 +6721,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Aceasta ar crea un ciclu de blocare — alegeți o altă sarcină.';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Legătura nu a putut fi creată. Vă rugăm încercați din nou.';
+
+  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation: $title';
   }

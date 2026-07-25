@@ -503,6 +503,55 @@ void main() {
       expect(find.text('Available Task'), findsOneWidget);
     });
 
+    testWidgets(
+      'a plain link already held from the OTHER side is excluded too — a plain '
+      'link reads the same from either end, so re-offering it would write a '
+      'second identical row and cost two confirmations to undo one link',
+      (tester) async {
+        stubTasks([
+          buildTask(id: 'linked-task', title: 'Already Linked'),
+          buildTask(id: 'free-task', title: 'Available Task'),
+        ]);
+
+        await openModal(
+          tester,
+          existingRelations: {
+            const ExistingRelation(
+              taskId: 'linked-task',
+              // Recorded from the anchor's side as incoming.
+              relation: DirectedRelation(EntryLinkType.basic, inverse: true),
+            ),
+          },
+        );
+
+        expect(find.text('Already Linked'), findsNothing);
+        expect(find.text('Available Task'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a directed relation held in the opposite direction is still offered — '
+      '"blocks" and "is blocked by" are different links a pair may both hold',
+      (tester) async {
+        stubTasks([buildTask(id: 'other', title: 'Other Task')]);
+
+        await openModal(
+          tester,
+          existingRelations: {
+            const ExistingRelation(
+              taskId: 'other',
+              relation: DirectedRelation(EntryLinkType.blocks, inverse: true),
+            ),
+          },
+        );
+
+        await pickRelation(tester, 'Blocks');
+        await tester.pump();
+
+        expect(find.text('Other Task'), findsOneWidget);
+      },
+    );
+
     testWidgets('shows status icons for tasks', (tester) async {
       final testTasks = [
         buildTask(
@@ -905,6 +954,39 @@ void main() {
             'This would create a blocking cycle — choose a different task.',
           ),
           findsWidgets,
+        );
+      },
+    );
+
+    testWidgets(
+      'a rejected NON-blocking link does not blame a blocking cycle — only a '
+      'blocks edge can fail that guard, so naming it states a cause that '
+      'cannot apply and a remedy that would not help',
+      (tester) async {
+        stubTasks([buildTask(id: 'other-task', title: 'Other Task')]);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.duplicates,
+          ),
+        ).thenAnswer((_) async => false);
+
+        await openModal(tester);
+        await pickRelation(tester, 'Duplicates');
+        await tester.tap(find.text('Other Task'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(
+          find.text("Couldn't create the link. Please try again."),
+          findsWidgets,
+        );
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsNothing,
         );
       },
     );

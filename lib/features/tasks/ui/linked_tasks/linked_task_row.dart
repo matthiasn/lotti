@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -197,8 +198,10 @@ class LinkedTaskRow extends StatelessWidget {
       await onUnlink?.call();
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.messages.unlinkTaskFailedMessage)),
+        showLinkFailureMessage(
+          tokens: context.designTokens,
+          messenger: ScaffoldMessenger.of(context),
+          message: context.messages.unlinkTaskFailedMessage,
         );
       }
     }

@@ -6680,6 +6680,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tím by vznikl blokující cyklus — vyber jiný úkol.';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Propojení se nepodařilo vytvořit. Zkus to prosím znovu.';
+
+  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation: $title';
   }

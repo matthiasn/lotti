@@ -6714,6 +6714,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Cela créerait un cycle de blocage — choisis une autre tâche.';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Impossible de créer le lien. Réessaie.';
+
+  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation : $title';
   }

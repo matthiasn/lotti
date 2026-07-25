@@ -78,8 +78,15 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
 
     if (!created) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.messages.linkBlocksCycleErrorMessage)),
+        // Only a blocking link can fail the cycle guard. Reporting a cycle for
+        // a "Relates to" or "Duplicates" pick named a cause that cannot apply
+        // and a remedy — choose a different task — that would not help.
+        showLinkFailureMessage(
+          tokens: context.designTokens,
+          messenger: messenger,
+          message: _relation.type == EntryLinkType.blocks
+              ? context.messages.linkBlocksCycleErrorMessage
+              : context.messages.linkCreateFailedMessage,
         );
       }
       return;

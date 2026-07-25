@@ -2792,6 +2792,7 @@
   "knowledgeGraphTooltip": "Verknüpfungen erkunden",
   "knowledgeGraphWalkHint": "Tippe auf einen Knoten · Knoten: {count}",
   "linkBlocksCycleErrorMessage": "Das würde einen blockierenden Kreislauf erzeugen — wähle eine andere Aufgabe.",
+  "linkCreateFailedMessage": "Die Verknüpfung konnte nicht erstellt werden. Bitte versuche es erneut.",
   "linkCreatedMessage": "{relation}: {title}",
   "@linkCreatedMessage": {
     "placeholders": {

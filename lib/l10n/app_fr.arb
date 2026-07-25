@@ -2792,6 +2792,7 @@
   "knowledgeGraphTooltip": "Explorer les liens",
   "knowledgeGraphWalkHint": "Touche un nœud pour avancer · {count, plural, =1{1 nœud} other{{count} nœuds}}",
   "linkBlocksCycleErrorMessage": "Cela créerait un cycle de blocage — choisis une autre tâche.",
+  "linkCreateFailedMessage": "Impossible de créer le lien. Réessaie.",
   "linkCreatedMessage": "{relation} : {title}",
   "@linkCreatedMessage": {
     "placeholders": {

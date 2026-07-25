@@ -6621,6 +6621,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'This would create a blocking cycle — choose a different task.';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Couldn\'t create the link. Please try again.';
+
+  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation: $title';
   }

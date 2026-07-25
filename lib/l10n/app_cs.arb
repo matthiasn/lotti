@@ -2799,6 +2799,7 @@
   "knowledgeGraphTooltip": "Prozkoumat odkazy",
   "knowledgeGraphWalkHint": "Klepni na uzel a přejdi dál · {count, plural, one{1 uzel} few{{count} uzly} other{{count} uzlů}}",
   "linkBlocksCycleErrorMessage": "Tím by vznikl blokující cyklus — vyber jiný úkol.",
+  "linkCreateFailedMessage": "Propojení se nepodařilo vytvořit. Zkus to prosím znovu.",
   "linkCreatedMessage": "{relation}: {title}",
   "@linkCreatedMessage": {
     "placeholders": {

@@ -6687,6 +6687,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esto crearía un ciclo de bloqueo — elige otra tarea.';
 
   @override
+  String get linkCreateFailedMessage =>
+      'No se pudo crear el vínculo. Inténtalo de nuevo.';
+
+  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation: $title';
   }
