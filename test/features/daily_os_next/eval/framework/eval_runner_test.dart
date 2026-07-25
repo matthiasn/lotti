@@ -1118,12 +1118,24 @@ void main() {
         ),
       );
 
+      final resolved = currentEvalJournal.mapForIds([
+        'task-overdue-invoice',
+        'task-made-later',
+        'task-never-existed',
+      ]);
+
+      expect(resolved.keys, ['task-overdue-invoice', 'task-made-later']);
+      expect(resolved['task-made-later']?.id, 'task-made-later');
       expect(
-        currentEvalJournal.mapForIds([
-          'task-overdue-invoice',
-          'task-made-later',
-        ]),
-        hasLength(2),
+        (resolved['task-overdue-invoice']! as Task).data.title,
+        'Send the overdue client invoice',
+      );
+      expect(
+        resolved.containsKey('task-never-existed'),
+        isFalse,
+        reason:
+            'an id with nothing behind it must be absent — DayAgentPlanWriter '
+            'reads presence in this map as permission to schedule the task',
       );
     });
 
