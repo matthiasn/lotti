@@ -74,7 +74,7 @@ Future<void> setUpEvalGetIt(AiInteractionCaptureTestBench attribution) async {
     // does not exist: `DayAgentPlanWriter` resolves allowed task references
     // through `journalEntityMapForIds`, so an unstored task makes
     // `draft_day_plan` reject a placement the app would have accepted.
-    currentEvalJournal.add(task);
+    currentEvalJournal.addCreated(task);
     return task;
   });
 

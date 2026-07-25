@@ -23,6 +23,7 @@ import 'package:lotti/classes/journal_entities.dart';
 /// start of each cell's seeding so no run can see another's tasks.
 class EvalJournalFixture {
   final Map<String, JournalEntity> _byId = {};
+  final Set<String> _created = {};
 
   /// Replaces the contents with [entities] — called once per cell.
   void reset(Iterable<JournalEntity> entities) {
@@ -31,10 +32,29 @@ class EvalJournalFixture {
       ..addEntries([
         for (final entity in entities) MapEntry(entity.id, entity),
       ]);
+    _created.clear();
   }
 
-  /// Records something the run itself created.
+  /// Records a write — a triage update, or a task the run created.
   void add(JournalEntity entity) => _byId[entity.id] = entity;
+
+  /// Records a task the run brought into existence.
+  ///
+  /// Tracked here rather than inferred from the agent log, because
+  /// `create_task_from_phrase` only writes a `ParsedItemEntity` when the model
+  /// passes the optional `captureItemId`. Without it the task is still created
+  /// and still schedulable, and reconstructing ids from parsed items alone
+  /// would report that legitimate work as fabricated.
+  void addCreated(JournalEntity entity) {
+    add(entity);
+    _created.add(entity.id);
+  }
+
+  /// Ids of tasks this run created.
+  Set<String> get createdIds => Set.unmodifiable(_created);
+
+  /// Every task currently stored, reflecting any updates the run made.
+  List<Task> get tasks => _byId.values.whereType<Task>().toList();
 
   JournalEntity? byId(String id) => _byId[id];
 

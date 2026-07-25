@@ -20,6 +20,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../ai_consumption/test_utils.dart';
 import '../../integration/day_agent_pipeline_harness.dart';
 import 'eval_constraints.dart';
+import 'eval_journal_fixture.dart';
 import 'eval_models.dart';
 import 'eval_scenario.dart';
 import 'eval_variant.dart';
@@ -441,7 +442,13 @@ Future<EvalRunResult> _runCell(
       blocks: plan?.data.plannedBlocks ?? const [],
       toolCalls: evalToolCallsFrom(harness.agentRepository.entities),
       planPersisted: plan != null,
-      createdTaskIds: evalCreatedTaskIdsFrom(harness.agentRepository.entities),
+      createdTaskIds: {
+        // Both sources: the persistence stub records every created task, and
+        // the parsed-item scan additionally covers ids the model resolved
+        // through triage against work outside the seeded corpus.
+        ...currentEvalJournal.createdIds,
+        ...evalCreatedTaskIdsFrom(harness.agentRepository.entities),
+      },
     );
     return EvalRunResult(
       request: request,

@@ -1168,6 +1168,77 @@ void main() {
       );
     });
 
+    test('corpus reads reflect a task the run updated', () {
+      // A model that runs apply_triage and then rechecks pending work must see
+      // what it just changed. Rebuilding the lists from the scenario would
+      // show a task it marked in-progress as untouched, and every later
+      // decision would rest on state the tool said it had changed.
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      final journalDb = MockJournalDb();
+      seedScenarioCorpus(
+        journalDb: journalDb,
+        scenario: scenario,
+        planDate: evalPlanDateFor(scenario, today),
+      );
+
+      expect(
+        journalDb.getInProgressTasks(),
+        completion(hasLength(1)),
+        reason: 'the fixture seeds exactly one in-progress task',
+      );
+
+      final invoice = currentEvalJournal.byId('task-overdue-invoice')! as Task;
+      currentEvalJournal.add(
+        invoice.copyWith(
+          data: invoice.data.copyWith(
+            status: TaskStatus.inProgress(
+              id: 'moved',
+              createdAt: today,
+              utcOffset: 0,
+            ),
+          ),
+        ),
+      );
+
+      expect(journalDb.getInProgressTasks(), completion(hasLength(2)));
+    });
+
+    test('a created task counts even with no capture item behind it', () {
+      // create_task_from_phrase only writes a ParsedItemEntity when the model
+      // passes the optional captureItemId. Reconstructing created ids from
+      // parsed items alone would report legitimate work as fabricated.
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      seedScenarioCorpus(
+        journalDb: MockJournalDb(),
+        scenario: scenario,
+        planDate: evalPlanDateFor(scenario, today),
+      );
+
+      expect(currentEvalJournal.createdIds, isEmpty);
+      currentEvalJournal.addCreated(
+        Task(
+          meta: Metadata(
+            id: 'task-made-no-capture',
+            createdAt: today,
+            updatedAt: today,
+            dateFrom: today,
+            dateTo: today,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(id: 's', createdAt: today, utcOffset: 0),
+            dateFrom: today,
+            dateTo: today,
+            statusHistory: const [],
+            title: 'Made without a capture item',
+          ),
+          entryText: const EntryText(plainText: 'x'),
+        ),
+      );
+
+      expect(currentEvalJournal.createdIds, {'task-made-no-capture'});
+      expect(currentEvalJournal.byId('task-made-no-capture'), isNotNull);
+    });
+
     test('seeding a cell forgets the previous cell tasks', () {
       final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
       final other = evalScenarios.firstWhere((s) => s.id == 'lateStart');
@@ -1189,6 +1260,11 @@ void main() {
         reason: 'a cell must not see the previous cell task corpus',
       );
       expect(currentEvalJournal.byId('task-long-migration'), isNotNull);
+      expect(
+        currentEvalJournal.createdIds,
+        isEmpty,
+        reason: 'created ids must not leak into the next cell either',
+      );
     });
   });
 

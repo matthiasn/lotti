@@ -664,6 +664,16 @@ const _bindingDirective = EvalScenario(
       'The board deck has to land today. Not sure how the rest fits.',
 );
 
+/// Tasks due on or before [planDate], read live so a triage update shows.
+List<Task> _dueBy(DateTime planDate) => [
+  for (final task in currentEvalJournal.tasks)
+    if (task.data.due case final due?)
+      if (!due.isAfter(
+        DateTime(planDate.year, planDate.month, planDate.day, 23, 59),
+      ))
+        task,
+];
+
 /// Stubs the corpus reads on [journalDb] from [scenario].
 ///
 /// The pipeline harness installs empty defaults for all four task sources;
@@ -675,28 +685,46 @@ void seedScenarioCorpus({
   required DateTime planDate,
   MockJournalRepository? journalRepository,
 }) {
+  // One journal for the cell, shared with the persistence stub so a task the
+  // model creates mid-wake is findable afterwards. Reset here, which is the
+  // once-per-cell seeding point.
+  currentEvalJournal.reset(scenario.tasksFor(planDate));
+  // Every corpus read derives from the mutable per-cell store, not from a
+  // fresh `scenario.tasksFor` each time. A model that runs `apply_triage` and
+  // then re-checks pending work must see what it just changed; recreating the
+  // original lists would show a task it marked done as still in progress, and
+  // every later decision — and the rejection and compliance scores that follow
+  // — would rest on state the tool said it had changed.
   when(
     () => journalDb.getOpenTasksForDayAgentCorpus(
       categoryIds: any(named: 'categoryIds'),
       limit: any(named: 'limit'),
     ),
-  ).thenAnswer((_) async => scenario.tasksFor(planDate));
+  ).thenAnswer((_) async => currentEvalJournal.tasks);
   when(
     () => journalDb.getTasksDueOnOrBefore(any()),
-  ).thenAnswer((_) async => scenario.overdueOrDueTodayFor(planDate));
+  ).thenAnswer((_) async => _dueBy(planDate));
   when(
     () => journalDb.getTasksDueOn(any()),
-  ).thenAnswer((_) async => scenario.overdueOrDueTodayFor(planDate));
+  ).thenAnswer((_) async => _dueBy(planDate));
   when(
     () => journalDb.getInProgressTasks(
       categoryIds: any(named: 'categoryIds'),
       limit: any(named: 'limit'),
     ),
-  ).thenAnswer((_) async => scenario.inProgressFor(planDate));
-  // One journal for the cell, shared with the persistence stub so a task the
-  // model creates mid-wake is findable afterwards. Reset here, which is the
-  // once-per-cell seeding point.
-  currentEvalJournal.reset(scenario.tasksFor(planDate));
+  ).thenAnswer(
+    (_) async => [
+      for (final task in currentEvalJournal.tasks)
+        if (task.data.status is TaskInProgress) task,
+    ],
+  );
+  when(
+    () => journalDb.getJournalEntitiesForIdsUnordered(any()),
+  ).thenAnswer((invocation) async {
+    final ids = invocation.positionalArguments.first as List<String>;
+    return currentEvalJournal.mapForIds(ids).values.toList();
+  });
+
   when(
     () => journalDb.journalEntityMapForIds(any()),
   ).thenAnswer((invocation) async {

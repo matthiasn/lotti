@@ -236,6 +236,16 @@ class DayAgentPipelineHarness {
     when(
       () => journalDb.journalEntityById(any()),
     ).thenAnswer((_) async => null);
+    // `match_to_corpus` is offered to the model, and DayAgentCorpusService
+    // awaits `watchFullTextMatches(...).first` before anything else. An
+    // unstubbed stream getter yields null, and the tool call comes back to the
+    // model as a Dart type error rather than "nothing matched".
+    when(
+      () => fts5Db.watchFullTextMatches(any()),
+    ).thenAnswer((_) => Stream.value(const <String>[]));
+    when(
+      () => journalDb.getJournalEntitiesForIdsUnordered(any()),
+    ).thenAnswer((_) async => const []);
     when(
       () => journalDb.journalEntityMapForIds(any()),
     ).thenAnswer((_) async => const {});

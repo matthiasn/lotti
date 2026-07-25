@@ -66,13 +66,27 @@ void main() {
           for (final scenario in evalScenarios)
             if (scenarioIds.contains(scenario.id)) scenario,
         ];
+  // Every selector must resolve, not just one of them. Dropping a misspelled
+  // id silently runs a smaller matrix, and the operator pays for a report that
+  // omits exactly the scenario they asked about.
+  final unknownScenarioIds = [
+    for (final id in scenarioIds)
+      if (!evalScenarios.any((scenario) => scenario.id == id)) id,
+  ];
+  // One cell per scenario x model x variant x sample, run sequentially, each
+  // able to consume RealDayAgent's 10-minute soft cap. A fixed cap would kill
+  // an expensive matrix before `writeEvalReport` runs, throwing away the
+  // deliverable the run exists to produce.
+  final cells =
+      scenarios.length * modelIds.length * evalVariants.length * samples;
 
   test(
     'runs the day-planning matrix against live models and writes a report',
     () async {
-      if (scenarios.isEmpty) {
+      if (unknownScenarioIds.isNotEmpty) {
         fail(
-          'DAY_PLANNING_EVAL_SCENARIOS matched no scenario. Known ids: '
+          'DAY_PLANNING_EVAL_SCENARIOS names unknown scenario(s): '
+          '${unknownScenarioIds.join(', ')}. Known ids: '
           '${evalScenarios.map((s) => s.id).join(', ')}.',
         );
       }
@@ -188,10 +202,11 @@ void main() {
         ? null
         : 'Set LOTTI_DAY_PLANNING_EVAL_LIVE=1 (plus MELIOUS_API_KEY / '
               'MELIOUS_BASE_URL) to run the live day-planning eval.',
-    // Generous: one cell can take minutes against a reasoning model, and the
-    // matrix runs them sequentially. RealDayAgent's own 10-minute job-await
-    // soft cap is what turns a hang into a diagnostic.
-    timeout: const Timeout(Duration(hours: 2)),
+    // Scaled to the matrix, not fixed: `RealDayAgent`'s own 10-minute
+    // job-await soft cap is what turns a hung cell into a diagnostic, so the
+    // whole-run cap only needs to be past the worst case plus room to write
+    // the report.
+    timeout: Timeout(Duration(minutes: 12 * cells + 10)),
   );
 }
 
