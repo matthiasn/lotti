@@ -1,0 +1,853 @@
+/// Conformance checker for the Open Knowledge Format (OKF) v0.2 bundle that
+/// lives in `knowledge/`.
+///
+/// The spec is at
+/// https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md.
+/// This validator enforces the three normative conformance rules of §11 as
+/// [Severity.error], and reports the SHOULD-level guidance of §4, §5, §7 and
+/// §9 as [Severity.warning] so the bundle stays useful without the checker
+/// rejecting documents the spec says must be tolerated.
+///
+/// The validator is deliberately dependency-light and filesystem-agnostic:
+/// [validateBundle] takes an in-memory map of relative path to file contents so
+/// it can be exercised from unit tests without touching disk. The CLI wrapper
+/// in `tool/okf/validate.dart` reads the tree and hands it over.
+library;
+
+import 'dart:convert';
+
+import 'package:yaml/yaml.dart';
+
+/// How badly a [OkfIssue] breaks the spec.
+enum Severity {
+  /// Violates a normative MUST in §11. The bundle is not conformant.
+  error,
+
+  /// Violates a SHOULD, or a repo-local convention layered on top of OKF.
+  warning,
+}
+
+/// A single problem found in a bundle.
+class OkfIssue {
+  /// Creates an issue at [path], optionally anchored to a 1-based [line].
+  const OkfIssue({
+    required this.severity,
+    required this.path,
+    required this.message,
+    this.line,
+  });
+
+  /// Whether this breaks conformance or only guidance.
+  final Severity severity;
+
+  /// Bundle-relative path of the offending file, e.g. `features/sync.md`.
+  final String path;
+
+  /// Human-readable description of what is wrong.
+  final String message;
+
+  /// 1-based line number within [path], when the issue can be located.
+  final int? line;
+
+  /// Whether this issue makes the bundle non-conformant.
+  bool get isError => severity == Severity.error;
+
+  @override
+  String toString() {
+    final where = line == null ? path : '$path:$line';
+    final label = severity == Severity.error ? 'error' : 'warning';
+    return '$label: $where: $message';
+  }
+}
+
+/// The outcome of validating a whole bundle.
+class OkfValidationResult {
+  /// Wraps [issues] found across [conceptCount] concept documents.
+  const OkfValidationResult({
+    required this.issues,
+    required this.conceptCount,
+  });
+
+  /// Every problem found, in discovery order.
+  final List<OkfIssue> issues;
+
+  /// How many non-reserved `.md` files were checked as concepts.
+  final int conceptCount;
+
+  /// Issues that break §11 conformance.
+  List<OkfIssue> get errors => issues.where((i) => i.isError).toList();
+
+  /// Issues that only break SHOULD-level guidance.
+  List<OkfIssue> get warnings => issues.where((i) => !i.isError).toList();
+
+  /// Whether the bundle satisfies every normative rule.
+  bool get isConformant => errors.isEmpty;
+}
+
+/// Filenames reserved by §3.1, which are structural rather than concepts.
+const reservedFilenames = {'index.md', 'log.md'};
+
+/// The OKF version this validator understands.
+const okfVersion = '0.2';
+
+/// Frontmatter keys the repo asks every concept to carry.
+///
+/// `type` is the spec's only hard requirement (§4.1); the rest are `SHOULD`s
+/// that this repo treats as house style so agents always find a description to
+/// show and a freshness date to reason about.
+const _requiredHouseKeys = {'title', 'description', 'status', 'generated'};
+
+/// Lifecycle values allowed by §5.4.
+const _statusValues = {'draft', 'stable', 'deprecated'};
+
+final _frontmatterPattern = RegExp(
+  r'^---\r?\n(.*?)\r?\n---\s*?(\r?\n|$)',
+  dotAll: true,
+);
+final _isoDatePattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+final _isoDateTimePattern = RegExp(
+  r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$',
+);
+// §7 names `human:`, `process:` and `<producer>/<version>`; §5.1's own example
+// additionally uses a `team:` prefix for `sources[].author`, so it is accepted.
+final _actorPattern = RegExp(
+  r'^(human:[\w.-]+|process:[\w.-]+|team:[\w.-]+|[\w.-]+/[\w.-]+)$',
+);
+// §9: every `##` heading in a log.md groups entries by date, so the whole
+// heading text is the candidate date — matching only a single token would let
+// `## May 22, 2026` slip through as "not a date heading at all".
+final _logDateHeadingPattern = RegExp(r'^##\s+(.+?)\s*$');
+final _markdownLinkPattern = RegExp(r'\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)');
+
+/// A markdown file split into its raw YAML frontmatter and its body.
+///
+/// [frontmatterYaml] is `null` when the file has no frontmatter block at all,
+/// which callers report differently from a block that fails to parse.
+class OkfDocument {
+  /// Creates a parsed view of a concept file.
+  const OkfDocument({required this.frontmatterYaml, required this.body});
+
+  /// The text between the opening and closing `---`, or `null` when absent.
+  final String? frontmatterYaml;
+
+  /// Everything after the frontmatter block.
+  final String body;
+}
+
+/// Extracts the frontmatter block and body from a markdown [content] string.
+OkfDocument splitDocument(String content) {
+  final match = _frontmatterPattern.firstMatch(content);
+  if (match == null) {
+    return OkfDocument(frontmatterYaml: null, body: content);
+  }
+  return OkfDocument(
+    frontmatterYaml: match.group(1),
+    body: content.substring(match.end),
+  );
+}
+
+/// Validates a whole bundle.
+///
+/// [files] maps bundle-relative POSIX paths (`features/sync.md`) to file
+/// contents. Only `.md` files are inspected; other paths are still used to
+/// resolve links, so pass the full file listing when link checking matters.
+OkfValidationResult validateBundle(Map<String, String> files) {
+  final issues = <OkfIssue>[];
+  final markdownPaths = files.keys.where((p) => p.endsWith('.md')).toList()
+    ..sort();
+  final knownPaths = files.keys.toSet();
+  var conceptCount = 0;
+
+  if (!knownPaths.contains('index.md')) {
+    issues.add(
+      const OkfIssue(
+        severity: Severity.warning,
+        path: 'index.md',
+        message:
+            'bundle root has no index.md, so consumers cannot browse the '
+            'bundle without walking the tree (§8)',
+      ),
+    );
+  }
+
+  for (final path in markdownPaths) {
+    final content = files[path]!;
+    final filename = path.split('/').last;
+
+    if (filename == 'index.md') {
+      issues.addAll(_validateIndex(path, content, knownPaths));
+      continue;
+    }
+    if (filename == 'log.md') {
+      issues.addAll(_validateLog(path, content));
+      continue;
+    }
+
+    conceptCount++;
+    issues.addAll(_validateConcept(path, content, knownPaths));
+  }
+
+  return OkfValidationResult(issues: issues, conceptCount: conceptCount);
+}
+
+List<OkfIssue> _validateConcept(
+  String path,
+  String content,
+  Set<String> knownPaths,
+) {
+  final issues = <OkfIssue>[];
+  final document = splitDocument(content);
+
+  if (document.frontmatterYaml == null) {
+    // §11.1: every non-reserved .md file must carry parseable frontmatter.
+    return [
+      OkfIssue(
+        severity: Severity.error,
+        path: path,
+        line: 1,
+        message:
+            'no YAML frontmatter block; a concept must open with `---` '
+            'and close with `---` on their own lines (§4.1)',
+      ),
+    ];
+  }
+
+  final YamlMap frontmatter;
+  try {
+    final parsed = loadYaml(document.frontmatterYaml!);
+    if (parsed is! YamlMap) {
+      return [
+        OkfIssue(
+          severity: Severity.error,
+          path: path,
+          line: 2,
+          message: 'frontmatter is not a YAML mapping (§4.1)',
+        ),
+      ];
+    }
+    frontmatter = parsed;
+  } on YamlException catch (e) {
+    return [
+      OkfIssue(
+        severity: Severity.error,
+        path: path,
+        line: 2,
+        message: 'frontmatter is not parseable YAML: ${e.message} (§11.1)',
+      ),
+    ];
+  }
+
+  // §11.2: a non-empty `type` is the one always-required key.
+  final type = frontmatter['type'];
+  if (type == null) {
+    issues.add(
+      OkfIssue(
+        severity: Severity.error,
+        path: path,
+        message: 'frontmatter is missing the required `type` field (§4.1)',
+      ),
+    );
+  } else if (type is! String || type.trim().isEmpty) {
+    issues.add(
+      OkfIssue(
+        severity: Severity.error,
+        path: path,
+        message: '`type` must be a non-empty string, got `$type` (§4.1)',
+      ),
+    );
+  }
+
+  for (final key in _requiredHouseKeys) {
+    if (!frontmatter.containsKey(key)) {
+      issues.add(
+        OkfIssue(
+          severity: Severity.warning,
+          path: path,
+          message:
+              'frontmatter is missing `$key`, which this bundle asks every '
+              'concept to carry',
+        ),
+      );
+    }
+  }
+
+  issues
+    ..addAll(_validateStatus(path, frontmatter))
+    ..addAll(_validateGenerated(path, frontmatter))
+    ..addAll(_validateVerified(path, frontmatter))
+    ..addAll(_validateStaleAfter(path, frontmatter))
+    ..addAll(_validateSources(path, frontmatter))
+    ..addAll(_validateAttestedComputation(path, frontmatter, document.body))
+    ..addAll(_validateBundleLinks(path, document.body, knownPaths));
+
+  return issues;
+}
+
+List<OkfIssue> _validateStatus(String path, YamlMap frontmatter) {
+  final status = frontmatter['status'];
+  if (status == null) return const [];
+  if (status is! String || !_statusValues.contains(status)) {
+    return [
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message:
+            '`status` must be one of ${_statusValues.join(', ')}, '
+            'got `$status` (§5.4)',
+      ),
+    ];
+  }
+  return const [];
+}
+
+List<OkfIssue> _validateGenerated(String path, YamlMap frontmatter) {
+  final generated = frontmatter['generated'];
+  if (generated == null) return const [];
+  if (generated is! YamlMap) {
+    return [
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message: '`generated` must be a mapping with `by` and `at` (§5.2)',
+      ),
+    ];
+  }
+
+  final issues = <OkfIssue>[];
+  final by = generated['by'];
+  if (by == null) {
+    issues.add(
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message: '`generated.by` is required within `generated` (§5.2)',
+      ),
+    );
+  } else {
+    issues.addAll(_validateActor(path, by, '`generated.by`'));
+  }
+  issues.addAll(_validateDateTime(path, generated['at'], '`generated.at`'));
+  return issues;
+}
+
+List<OkfIssue> _validateVerified(String path, YamlMap frontmatter) {
+  final verified = frontmatter['verified'];
+  if (verified == null) return const [];
+
+  // §5.2/§11: a bare mapping is a one-element list.
+  final entries = verified is YamlList ? verified.toList() : [verified];
+  final issues = <OkfIssue>[];
+  for (final entry in entries) {
+    if (entry is! YamlMap) {
+      issues.add(
+        OkfIssue(
+          severity: Severity.warning,
+          path: path,
+          message:
+              'each `verified` entry must be a `{ by, at }` mapping (§5.2)',
+        ),
+      );
+      continue;
+    }
+    final by = entry['by'];
+    if (by == null) {
+      issues.add(
+        OkfIssue(
+          severity: Severity.warning,
+          path: path,
+          message: 'a `verified` entry is missing `by` (§5.2)',
+        ),
+      );
+    } else {
+      issues.addAll(_validateActor(path, by, '`verified[].by`'));
+    }
+    issues.addAll(_validateDateTime(path, entry['at'], '`verified[].at`'));
+  }
+  return issues;
+}
+
+List<OkfIssue> _validateStaleAfter(String path, YamlMap frontmatter) {
+  final staleAfter = frontmatter['stale_after'];
+  if (staleAfter == null) return const [];
+  if (!_isIsoDate(staleAfter)) {
+    return [
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message:
+            '`stale_after` must be an absolute `YYYY-MM-DD` date, '
+            'got `$staleAfter` (§5.5)',
+      ),
+    ];
+  }
+  return const [];
+}
+
+List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
+  final sources = frontmatter['sources'];
+  if (sources == null) return const [];
+  if (sources is! YamlList) {
+    return [
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message: '`sources` must be a list of entries (§5.1)',
+      ),
+    ];
+  }
+
+  final issues = <OkfIssue>[];
+  final seenIds = <String>{};
+  for (final entry in sources) {
+    if (entry is! YamlMap) {
+      issues.add(
+        OkfIssue(
+          severity: Severity.warning,
+          path: path,
+          message: 'each `sources` entry must be a mapping (§5.1)',
+        ),
+      );
+      continue;
+    }
+    final resource = entry['resource'];
+    if (resource == null || (resource is String && resource.trim().isEmpty)) {
+      issues.add(
+        OkfIssue(
+          severity: Severity.warning,
+          path: path,
+          message: '`resource` is required within a `sources` entry (§5.1)',
+        ),
+      );
+    }
+    final id = entry['id'];
+    if (id is String && !seenIds.add(id)) {
+      issues.add(
+        OkfIssue(
+          severity: Severity.warning,
+          path: path,
+          message:
+              'duplicate `sources[].id` `$id`; footnote attribution joins '
+              'on this key so it must be unique (§5.1)',
+        ),
+      );
+    }
+    final lastModified = entry['last_modified'];
+    if (lastModified != null && !_isIsoDate(lastModified)) {
+      issues.add(
+        OkfIssue(
+          severity: Severity.warning,
+          path: path,
+          message:
+              '`sources[].last_modified` must be `YYYY-MM-DD`, '
+              'got `$lastModified` (§5.1)',
+        ),
+      );
+    }
+    final author = entry['author'];
+    if (author != null) {
+      issues.addAll(_validateActor(path, author, '`sources[].author`'));
+    }
+  }
+  return issues;
+}
+
+List<OkfIssue> _validateAttestedComputation(
+  String path,
+  YamlMap frontmatter,
+  String body,
+) {
+  if (frontmatter['type'] != 'Attested Computation') return const [];
+
+  final issues = <OkfIssue>[];
+  if (frontmatter['runtime'] == null) {
+    issues.add(
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message: '`runtime` is required for an Attested Computation (§10.2)',
+      ),
+    );
+  }
+
+  final hasComputationFile = frontmatter['computation'] != null;
+  final hasComputationHeading = body.contains(
+    RegExp(r'^#+\s+Computation\s*$', multiLine: true),
+  );
+  if (!hasComputationFile && !hasComputationHeading) {
+    issues.add(
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message:
+            'an Attested Computation needs either a `computation` path or a '
+            '`# Computation` body section (§10.3)',
+      ),
+    );
+  }
+  return issues;
+}
+
+List<OkfIssue> _validateActor(String path, Object? actor, String label) {
+  if (actor is! String || !_actorPattern.hasMatch(actor)) {
+    return [
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message:
+            '$label `$actor` does not follow the actor convention '
+            '`<producer>/<version>`, `human:<id>` or `process:<id>` (§7)',
+      ),
+    ];
+  }
+  return const [];
+}
+
+List<OkfIssue> _validateDateTime(String path, Object? value, String label) {
+  if (value == null) {
+    return [
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message:
+            '$label is missing; consumers use it to tell a recent edit '
+            'from a stale fact (§5.2)',
+      ),
+    ];
+  }
+  if (value is DateTime) return const [];
+  if (value is String && _isoDateTimePattern.hasMatch(value)) return const [];
+  return [
+    OkfIssue(
+      severity: Severity.warning,
+      path: path,
+      message:
+          '$label must be an ISO 8601 datetime such as '
+          '`2026-07-26T09:00:00Z`, got `$value` (§5.2)',
+    ),
+  ];
+}
+
+List<OkfIssue> _validateIndex(
+  String path,
+  String content,
+  Set<String> knownPaths,
+) {
+  final issues = <OkfIssue>[];
+  final document = splitDocument(content);
+
+  // §8/§12: only a bundle-root index.md may carry frontmatter, and then only
+  // to declare okf_version.
+  if (document.frontmatterYaml != null) {
+    if (path != 'index.md') {
+      issues.add(
+        OkfIssue(
+          severity: Severity.error,
+          path: path,
+          line: 1,
+          message: 'only the bundle-root index.md may carry frontmatter (§8)',
+        ),
+      );
+    } else {
+      final parsed = loadYaml(document.frontmatterYaml!);
+      if (parsed is! YamlMap) {
+        issues.add(
+          OkfIssue(
+            severity: Severity.error,
+            path: path,
+            line: 2,
+            message: 'root index.md frontmatter is not a YAML mapping (§8)',
+          ),
+        );
+      } else {
+        final extraKeys = parsed.keys.where((k) => k != 'okf_version').toList();
+        if (extraKeys.isNotEmpty) {
+          issues.add(
+            OkfIssue(
+              severity: Severity.error,
+              path: path,
+              line: 2,
+              message:
+                  'root index.md frontmatter may only declare '
+                  '`okf_version`, found ${extraKeys.join(', ')} (§8)',
+            ),
+          );
+        }
+        final declared = parsed['okf_version'];
+        if (declared != null && declared.toString() != okfVersion) {
+          issues.add(
+            OkfIssue(
+              severity: Severity.warning,
+              path: path,
+              message:
+                  'bundle declares okf_version `$declared` but this '
+                  'validator implements $okfVersion (§12)',
+            ),
+          );
+        }
+      }
+    }
+  } else if (path == 'index.md') {
+    issues.add(
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message:
+            'root index.md should declare `okf_version: "$okfVersion"` so '
+            'consumers know which revision to expect (§12)',
+      ),
+    );
+  }
+
+  if (!content.contains(RegExp(r'^#+\s+\S', multiLine: true))) {
+    issues.add(
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message:
+            'index.md should group entries under at least one heading (§8)',
+      ),
+    );
+  }
+
+  issues.addAll(_validateBundleLinks(path, document.body, knownPaths));
+  return issues;
+}
+
+List<OkfIssue> _validateLog(String path, String content) {
+  final issues = <OkfIssue>[];
+  final document = splitDocument(content);
+  if (document.frontmatterYaml != null) {
+    issues.add(
+      OkfIssue(
+        severity: Severity.error,
+        path: path,
+        line: 1,
+        message: 'log.md must not carry frontmatter (§9)',
+      ),
+    );
+  }
+
+  final lines = const LineSplitter().convert(content);
+  var sawDateHeading = false;
+  for (var i = 0; i < lines.length; i++) {
+    final match = _logDateHeadingPattern.firstMatch(lines[i]);
+    if (match == null) continue;
+    sawDateHeading = true;
+    final date = match.group(1)!;
+    if (!_isoDatePattern.hasMatch(date)) {
+      issues.add(
+        OkfIssue(
+          severity: Severity.error,
+          path: path,
+          line: i + 1,
+          message:
+              'log date heading `$date` must use ISO 8601 `YYYY-MM-DD` '
+              'form (§9)',
+        ),
+      );
+    }
+  }
+  if (!sawDateHeading) {
+    issues.add(
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message: 'log.md has no `## YYYY-MM-DD` entries (§9)',
+      ),
+    );
+  }
+  return issues;
+}
+
+/// Reports bundle-internal markdown links whose target is missing.
+///
+/// §6.1 says consumers MUST tolerate broken links, so these are warnings, not
+/// errors: a dangling link may legitimately point at knowledge nobody has
+/// written yet. Links that leave the bundle (`../lib/...`, `https://...`) are
+/// resolved by [validateRepoReferences] instead, which needs the repo root and
+/// therefore runs only in the CLI.
+List<OkfIssue> _validateBundleLinks(
+  String path,
+  String body,
+  Set<String> knownPaths,
+) {
+  final issues = <OkfIssue>[];
+  final dir = path.contains('/')
+      ? path.substring(0, path.lastIndexOf('/'))
+      : '';
+
+  for (final match in _markdownLinkPattern.allMatches(body)) {
+    final target = match.group(1)!;
+    if (target.startsWith('http://') ||
+        target.startsWith('https://') ||
+        target.startsWith('mailto:') ||
+        target.startsWith('#')) {
+      continue;
+    }
+    final withoutAnchor = target.split('#').first;
+    if (withoutAnchor.isEmpty) continue;
+
+    final String resolved;
+    if (withoutAnchor.startsWith('/')) {
+      resolved = withoutAnchor.substring(1);
+    } else {
+      resolved = _normalizeRelative(dir, withoutAnchor);
+      // Leaves the bundle; the CLI checks these against the repo instead.
+      if (resolved.startsWith('..')) continue;
+    }
+
+    // A link to `subdir/` is satisfied by that directory's index.md (§8).
+    final candidates = resolved.endsWith('/')
+        ? {resolved, '${resolved}index.md'}
+        : {resolved};
+    if (candidates.any(knownPaths.contains)) continue;
+
+    issues.add(
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message: 'link target `$target` does not exist in the bundle (§6.1)',
+      ),
+    );
+  }
+  return issues;
+}
+
+/// Checks every reference that leaves the bundle and points at a repo file.
+///
+/// This is the check that keeps the map honest. A concept may say anything
+/// about `lib/features/sync`, but if it links or points its `resource` at a
+/// path that no longer exists, the knowledge has drifted from the code and the
+/// build should fail. Unlike bundle-internal links (§6.1, tolerated), a dangling
+/// repo pointer is reported as [Severity.error]: it is a repo-local rule layered
+/// on top of OKF, not a claim about what consumers must reject.
+///
+/// [files] maps bundle-relative paths to contents, [bundleRoot] is the bundle
+/// directory relative to the repo root (`knowledge`), and [repoFileExists] is
+/// asked about repo-relative paths (`lib/features/sync`).
+List<OkfIssue> validateRepoReferences({
+  required Map<String, String> files,
+  required String bundleRoot,
+  required bool Function(String repoRelativePath) repoFileExists,
+}) {
+  final issues = <OkfIssue>[];
+  final rootPrefix = bundleRoot.split('/').where((s) => s.isNotEmpty).join('/');
+
+  for (final path
+      in files.keys.where((p) => p.endsWith('.md')).toList()..sort()) {
+    final document = splitDocument(files[path]!);
+    final dir = path.contains('/')
+        ? path.substring(0, path.lastIndexOf('/'))
+        : '';
+
+    final targets = <String>[
+      for (final match in _markdownLinkPattern.allMatches(document.body))
+        match.group(1)!,
+      ..._resourceTargets(document.frontmatterYaml),
+    ];
+
+    for (final target in targets) {
+      if (target.startsWith('http://') ||
+          target.startsWith('https://') ||
+          target.startsWith('mailto:') ||
+          target.startsWith('#') ||
+          target.startsWith('/')) {
+        continue;
+      }
+      final withoutAnchor = target.split('#').first;
+      if (withoutAnchor.isEmpty) continue;
+
+      final resolved = _normalizeRelative(dir, withoutAnchor);
+      if (!resolved.startsWith('..')) continue; // stays inside the bundle
+
+      // Resolve against the concept's own directory *inside the repo*, so
+      // `knowledge/architecture/x.md` + `../../lib/main.dart` = `lib/main.dart`.
+      final repoBase = [rootPrefix, dir].where((s) => s.isNotEmpty).join('/');
+      final repoPath = _normalizeRelative(repoBase, withoutAnchor);
+      if (repoPath.startsWith('..')) {
+        issues.add(
+          OkfIssue(
+            severity: Severity.error,
+            path: path,
+            message: 'reference `$target` escapes the repository root',
+          ),
+        );
+        continue;
+      }
+      if (repoFileExists(repoPath)) continue;
+
+      issues.add(
+        OkfIssue(
+          severity: Severity.error,
+          path: path,
+          message:
+              'reference `$target` points at `$repoPath`, which does not '
+              'exist in the repository; the concept has drifted from the code',
+        ),
+      );
+    }
+  }
+  return issues;
+}
+
+/// Collects `resource`-shaped values out of a raw frontmatter block.
+Iterable<String> _resourceTargets(String? frontmatterYaml) sync* {
+  if (frontmatterYaml == null) return;
+  final Object? parsed;
+  try {
+    parsed = loadYaml(frontmatterYaml);
+  } on YamlException {
+    return; // reported separately by _validateConcept
+  }
+  if (parsed is! YamlMap) return;
+
+  final resource = parsed['resource'];
+  if (resource is String) yield resource;
+
+  final sources = parsed['sources'];
+  if (sources is YamlList) {
+    for (final entry in sources) {
+      if (entry is! YamlMap) continue;
+      final entryResource = entry['resource'];
+      // Scope descriptors (§5.1) are prose, not paths; skip anything with a
+      // space in it rather than trying to resolve "all queries in project X".
+      if (entryResource is String && !entryResource.contains(' ')) {
+        yield entryResource;
+      }
+    }
+  }
+
+  for (final key in ['computation', 'executor', 'attester']) {
+    final value = parsed[key];
+    if (value is String) yield value;
+    if (value is YamlMap && value['resource'] is String) {
+      yield value['resource'] as String;
+    }
+  }
+}
+
+String _normalizeRelative(String dir, String target) {
+  final segments = <String>[
+    ...dir.split('/').where((s) => s.isNotEmpty),
+  ];
+  final trailingSlash = target.endsWith('/');
+  for (final segment in target.split('/')) {
+    if (segment.isEmpty || segment == '.') continue;
+    if (segment == '..') {
+      if (segments.isNotEmpty && segments.last != '..') {
+        segments.removeLast();
+      } else {
+        segments.add('..');
+      }
+      continue;
+    }
+    segments.add(segment);
+  }
+  final joined = segments.join('/');
+  return trailingSlash ? '$joined/' : joined;
+}
+
+bool _isIsoDate(Object? value) {
+  if (value is DateTime) return true;
+  return value is String && _isoDatePattern.hasMatch(value);
+}
