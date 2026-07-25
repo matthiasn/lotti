@@ -75,11 +75,15 @@ class DayAgentPlanEditor {
         perDayAgentId(dayId),
       },
     };
+    // Only pending sets can produce a visible row, and `changeSet` stores its
+    // status as the indexed subtype — so the confirmed/rejected history, which
+    // grows with every diff the user has ever acted on, never has to be read.
     final entities = <AgentDomainEntity>[
       for (final ownerId in ownerIds)
-        ...await agentRepository.getEntitiesByAgentId(
+        ...await agentRepository.getEntitiesByAgentIdAndSubtype(
           ownerId,
           type: 'changeSet',
+          subtype: ChangeSetStatus.pending.name,
         ),
     ];
     // Per-item filtering: a change set can stay `pending` overall while

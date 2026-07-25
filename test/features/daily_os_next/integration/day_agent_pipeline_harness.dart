@@ -464,4 +464,40 @@ class PipelineAgentRepository extends InMemoryAgentRepository {
             (type == null || AgentDbConversions.entityType(e) == type),
       )
       .toList();
+
+  // Subtype filtering goes through the production projection, so this fake
+  // cannot answer a day-scoped read differently from the real table.
+  @override
+  Future<List<AgentDomainEntity>> getEntitiesByAgentIdAndSubtype(
+    String agentId, {
+    required String type,
+    required String subtype,
+    int limit = -1,
+  }) async => _bySubtypes(agentId, type, {subtype}, limit);
+
+  @override
+  Future<List<AgentDomainEntity>> getEntitiesByAgentIdAndSubtypes(
+    String agentId, {
+    required String type,
+    required Iterable<String> subtypes,
+  }) async => _bySubtypes(agentId, type, subtypes.toSet(), -1);
+
+  List<AgentDomainEntity> _bySubtypes(
+    String agentId,
+    String type,
+    Set<String> subtypes,
+    int limit,
+  ) {
+    final matches = entities
+        .where(
+          (e) =>
+              e.agentId == agentId &&
+              AgentDbConversions.entityType(e) == type &&
+              subtypes.contains(AgentDbConversions.entitySubtype(e)),
+        )
+        .toList();
+    return limit < 0 || matches.length <= limit
+        ? matches
+        : matches.sublist(0, limit);
+  }
 }

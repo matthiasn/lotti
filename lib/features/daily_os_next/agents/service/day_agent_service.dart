@@ -20,7 +20,6 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.da
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
-import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
@@ -205,10 +204,18 @@ class DayAgentService {
         plan.agentId == planner.agentId) {
       return true;
     }
-    final metas = await repository.getCaptureEventMetaByAgentId(
+    // Indexed day lookup rather than a scan of every capture the coordinator
+    // ever owned: this runs on every day-agent identity resolution, i.e.
+    // ahead of every day-view read. Captures store the day as their subtype
+    // (derived for legacy rows that carry no explicit dayId), so one row is
+    // enough to answer the question.
+    final captures = await repository.getEntitiesByAgentIdAndSubtype(
       planner.agentId,
+      type: AgentEntityTypes.capture,
+      subtype: dayId,
+      limit: 1,
     );
-    return metas.any((meta) => captureEventDayId(meta) == dayId);
+    return captures.isNotEmpty;
   }
 
   /// `YYYY-MM-DD` portion of a `dayplan-YYYY-MM-DD` day id.
