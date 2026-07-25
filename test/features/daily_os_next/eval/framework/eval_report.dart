@@ -359,16 +359,14 @@ class EvalReport {
     'promptStability': [
       for (final standing in standings)
         () {
-          final runs = results.where(
-            (r) => r.request.modelId == standing.modelId,
-          );
-          final stable = _stablePrefixBytes(runs);
+          final prompts = _systemPromptsFor(results, standing.modelId);
+          final stable = _stablePrefixBytes(prompts);
           final mean = _mean(
-            runs.map((r) => utf8.encode(r.systemPrompt ?? '').length),
+            prompts.map((prompt) => utf8.encode(prompt).length),
           );
           return {
             'modelId': standing.modelId,
-            'wakes': runs.length,
+            'wakes': prompts.length,
             'meanSystemPromptBytes': mean,
             'stablePrefixBytes': stable,
             'stableFraction': mean == 0 ? null : stable / mean,
@@ -403,24 +401,37 @@ class EvalReport {
     'judgeBundle': judgeBundle(),
   };
 
+  /// Per model, per variant, per scenario, per constraint.
+  ///
+  /// Variant is a dimension rather than something pooled: a baseline pass and
+  /// a variant failure averaged into one 50% cell would hide which planning
+  /// contract produced the outcome, which is the whole reason the matrix has
+  /// a variant axis.
   Map<String, Object?> _scenarioMatrixJson() {
     final scenarioIds = <String>{
       for (final r in results) r.request.scenario.id,
     }.toList()..sort();
+    final variantIds = <String>{
+      for (final r in results) r.request.variant.id,
+    }.toList()..sort();
     return {
       for (final standing in standings)
         standing.modelId: {
-          for (final scenarioId in scenarioIds)
-            scenarioId: {
-              for (final id in EvalConstraintIds.all)
-                id: _rateFor(
-                  id,
-                  results.where(
-                    (r) =>
-                        r.request.modelId == standing.modelId &&
-                        r.request.scenario.id == scenarioId,
-                  ),
-                ).rate,
+          for (final variantId in variantIds)
+            variantId: {
+              for (final scenarioId in scenarioIds)
+                scenarioId: {
+                  for (final id in EvalConstraintIds.all)
+                    id: _rateFor(
+                      id,
+                      results.where(
+                        (r) =>
+                            r.request.modelId == standing.modelId &&
+                            r.request.variant.id == variantId &&
+                            r.request.scenario.id == scenarioId,
+                      ),
+                    ).rate,
+                },
             },
         },
     };
@@ -487,11 +498,16 @@ class EvalReport {
         'decidedTaskIds': inputs.decidedTaskIds,
         'requiredTaskIds': inputs.requiredTaskIds.toList()..sort(),
         'expectedOmissions': inputs.expectedOmissions.toList()..sort(),
-        // `visibleToModel` is not decoration. The corpus here is ground
-        // truth, and it is rendered only inside the capture context — so on a
-        // wake without a capture the model was shown none of it. A judge
-        // reading blockedBy and concluding the model ignored a dependency it
-        // never received would draw exactly the wrong lesson.
+        // Two different visibilities, and conflating them is how a judge gets
+        // misled. `corpusRowShown` is whether this row — its status, estimate
+        // and blockedBy — was rendered at all; the corpus appears only inside
+        // the capture context, so a capture-less wake sees none of it.
+        // `taskIdReferenceable` is the weaker fact that the model could name
+        // the id, which a decided task satisfies through its own projection
+        // even when its corpus row was never shown. Reporting the second as
+        // if it were the first would print `blockedBy` next to "the model saw
+        // this", inviting exactly the wrong conclusion.
+        'corpusRowsShown': inputs.visibleTaskIds == null,
         'corpus': [
           for (final task in inputs.corpus)
             {
@@ -500,18 +516,28 @@ class EvalReport {
               'status': task.status,
               'estimateMinutes': task.estimateMinutes,
               'blockedBy': task.blockedBy,
-              'visibleToModel': inputs.referenceableTaskIds.contains(
+              'corpusRowShown': inputs.visibleTaskIds == null,
+              'taskIdReferenceable': inputs.referenceableTaskIds.contains(
                 task.taskId,
               ),
             },
         ],
         'captureTranscript': scenario.captureTranscript,
       },
-      'prompts': {
-        'system': result.systemPrompt,
-        'user': result.userPrompts,
-        'forcedDraftRetry': result.forcedDraftRetry,
-      },
+      // Every conversation, not just the last. A durable retry opens a fresh
+      // one, and the entry's tool calls, attempts and cost already cover the
+      // whole cell — showing one prompt beside all of them leaves a judge
+      // unable to reconcile what it is reading.
+      'wakes': [
+        for (final wake in result.wakes)
+          {
+            'conversationId': wake.conversationId,
+            'system': wake.systemPrompt,
+            'user': wake.userMessages,
+            'forcedRetry': wake.forcedRetry,
+          },
+      ],
+      'forcedDraftRetry': result.forcedDraftRetry,
       'toolCalls': [
         for (final call in result.outcome.toolCalls)
           {
@@ -639,18 +665,14 @@ class EvalReport {
       )
       ..writeln('| --- | ---: | ---: | ---: | ---: |');
     for (final standing in standings) {
-      final runs = results.where(
-        (r) => r.request.modelId == standing.modelId,
-      );
-      final stable = _stablePrefixBytes(runs);
-      final mean = _mean(
-        runs.map((r) => utf8.encode(r.systemPrompt ?? '').length),
-      );
+      final prompts = _systemPromptsFor(results, standing.modelId);
+      final stable = _stablePrefixBytes(prompts);
+      final mean = _mean(prompts.map((prompt) => utf8.encode(prompt).length));
       final fraction = mean == 0
           ? '—'
           : '${(stable / mean * 100).toStringAsFixed(0)}%';
       buffer.writeln(
-        '| `${standing.modelId}` | ${runs.length} | $mean | $stable | '
+        '| `${standing.modelId}` | ${prompts.length} | $mean | $stable | '
         '$fraction |',
       );
     }
@@ -700,14 +722,34 @@ class EvalReport {
   ///
   /// With a single run this is the whole prompt, which is honest: nothing
   /// varied, so nothing has been shown to be unstable.
-  static int _stablePrefixBytes(Iterable<EvalRunResult> results) {
-    final prompts = [
-      for (final result in results)
-        if (result.systemPrompt != null) result.systemPrompt!,
-    ];
-    if (prompts.isEmpty) return 0;
-    var prefix = prompts.first;
-    for (final prompt in prompts.skip(1)) {
+  /// Every system prompt actually sent for [modelId], one per conversation.
+  ///
+  /// Per *wake*, not per cell: a durable job retry opens a fresh conversation
+  /// with its own prompt, and reading only the final one would drop the
+  /// earlier attempts from a stability figure that claims to cover every wake.
+  /// A cell that never reached the model contributes nothing rather than an
+  /// empty string — counting a zero-length prompt in the mean while excluding
+  /// it from the prefix can put the "stable" fraction above 100%.
+  static List<String> _systemPromptsFor(
+    List<EvalRunResult> results,
+    String modelId,
+  ) => [
+    for (final result in results)
+      if (result.request.modelId == modelId)
+        for (final wake in result.wakes)
+          if (wake.systemPrompt != null) wake.systemPrompt!,
+  ];
+
+  /// Bytes shared by every prompt in [prompts] — the portion a provider could
+  /// cache across wakes.
+  ///
+  /// With a single wake this is the whole prompt, which is honest: nothing
+  /// varied, so nothing has been shown to be unstable.
+  static int _stablePrefixBytes(Iterable<String> prompts) {
+    final list = prompts.toList();
+    if (list.isEmpty) return 0;
+    var prefix = list.first;
+    for (final prompt in list.skip(1)) {
       var i = 0;
       while (i < prefix.length && i < prompt.length && prefix[i] == prompt[i]) {
         i++;
@@ -751,19 +793,35 @@ class EvalReport {
 class EvalReportPaths {
   const EvalReportPaths({required this.jsonPath, required this.markdownPath});
 
+  /// Resolves the paths for one run.
+  ///
+  /// The default basename carries [timestamp], because the documented promise
+  /// is that runs accumulate and can be diffed — with a fixed basename each
+  /// invocation silently overwrote the last, so there was never anything to
+  /// diff against. An explicit env path still wins and stays fixed, which is
+  /// what a caller wanting "the latest report" at a stable location needs.
   factory EvalReportPaths.fromEnvironment({
+    required DateTime timestamp,
     Map<String, String>? environment,
     String defaultDirectory = 'tmp/day-planning-eval',
   }) {
     final env = environment ?? Platform.environment;
     final directory = env['DAY_PLANNING_EVAL_DIR'] ?? defaultDirectory;
+    final stamp = _stamp(timestamp);
     return EvalReportPaths(
       jsonPath:
-          env['DAY_PLANNING_EVAL_JSON'] ?? '$directory/day-planning-eval.json',
+          env['DAY_PLANNING_EVAL_JSON'] ??
+          '$directory/day-planning-eval-$stamp.json',
       markdownPath:
           env['DAY_PLANNING_EVAL_MARKDOWN'] ??
-          '$directory/day-planning-eval.md',
+          '$directory/day-planning-eval-$stamp.md',
     );
+  }
+
+  static String _stamp(DateTime at) {
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${at.year}${two(at.month)}${two(at.day)}-'
+        '${two(at.hour)}${two(at.minute)}${two(at.second)}';
   }
 
   final String jsonPath;
@@ -775,7 +833,9 @@ class EvalReportPaths {
 /// Returns the paths written, so a caller can point at them from a failure
 /// message.
 EvalReportPaths writeEvalReport(EvalReport report, {EvalReportPaths? paths}) {
-  final target = paths ?? EvalReportPaths.fromEnvironment();
+  // Stamped from the report itself, so the filename matches the run it holds.
+  final target =
+      paths ?? EvalReportPaths.fromEnvironment(timestamp: report.generatedAt);
   (File(target.jsonPath)..parent.createSync(recursive: true)).writeAsStringSync(
     const JsonEncoder.withIndent('  ').convert(report.toJson()),
   );

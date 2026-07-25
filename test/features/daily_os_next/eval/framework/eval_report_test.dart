@@ -63,6 +63,7 @@ void main() {
     List<EvalToolCall> toolCalls = const [],
     String? systemPrompt = 'system prompt',
     List<String> userPrompts = const ['user prompt'],
+    List<EvalWakeTranscript>? wakes,
     Duration latency = const Duration(milliseconds: 100),
     String? error,
     String? jobStatus = 'succeeded',
@@ -78,13 +79,15 @@ void main() {
       ),
       constraints: constraints,
       latency: latency,
-      wakes: [
-        EvalWakeTranscript(
-          conversationId: 'c1',
-          systemPrompt: systemPrompt,
-          userMessages: userPrompts,
-        ),
-      ],
+      wakes:
+          wakes ??
+          [
+            EvalWakeTranscript(
+              conversationId: 'c1',
+              systemPrompt: systemPrompt,
+              userMessages: userPrompts,
+            ),
+          ],
       jobStatus: jobStatus,
       jobAttempts: 0,
       consumption: const [],
@@ -224,6 +227,34 @@ void main() {
     });
   });
 
+  group('scenario matrix', () {
+    test('keeps variants apart instead of pooling them', () {
+      // A baseline pass and a variant failure averaged into one 50% cell
+      // would hide which planning contract produced the outcome, which is the
+      // entire reason the matrix has a variant axis.
+      const variant = EvalVariant(id: 'tighter', rationale: 'x');
+      final report = EvalReport.fromResults([
+        result(constraints: [pass(EvalConstraintIds.withinCapacity)]),
+        result(
+          forRequest: request(variant: variant),
+          constraints: [fail(EvalConstraintIds.withinCapacity)],
+        ),
+      ], generatedAt: generatedAt);
+
+      final matrix =
+          (report.toJson()['scenarioMatrix']! as Map)['model-a']!
+              as Map<String, Object?>;
+      final baseline =
+          (matrix[evalBaselineVariantId]! as Map)['crowded']!
+              as Map<String, Object?>;
+      final tighter =
+          (matrix['tighter']! as Map)['crowded']! as Map<String, Object?>;
+
+      expect(baseline[EvalConstraintIds.withinCapacity], 1.0);
+      expect(tighter[EvalConstraintIds.withinCapacity], 0.0);
+    });
+  });
+
   group('variant delta', () {
     test('compares a variant against the baseline within one model', () {
       const variant = EvalVariant(id: 'tighter', rationale: 'x');
@@ -341,10 +372,10 @@ void main() {
       expect(scenarioJson['captureTranscript'], 'Busy day.');
       expect(
         (scenarioJson['corpus']! as List).single,
-        containsPair('visibleToModel', true),
+        containsPair('corpusRowShown', true),
       );
       expect(
-        (entry['prompts']! as Map<String, Object?>)['system'],
+        ((entry['wakes']! as List).single as Map)['system'],
         'system prompt',
       );
       expect(
@@ -364,17 +395,20 @@ void main() {
       );
     });
 
-    test('marks corpus the model was never shown as invisible', () {
-      // The no-capture scenarios keep the corpus as ground truth while the
-      // model sees only its decided tasks. Without this flag a judge would
-      // read blockedBy and blame the model for ignoring a dependency it was
-      // never given.
+    test('separates corpus visibility from decided-task referenceability', () {
+      // The trap: in a capture-less scenario a *decided* task is still
+      // referenceable through its own projection, so keying the flag on
+      // referenceability would print `blockedBy` beside "the model saw this"
+      // for a row that was never rendered — the exact wrong conclusion the
+      // flag exists to prevent.
       const hidden = EvalScenario(
         id: 'hidden',
         intent: 'the rule arrives, the data does not',
         tasks: [
+          EvalTaskSpec(id: 'task-decided', title: 'Decided work'),
           EvalTaskSpec(id: 'task-unseen', title: 'Unseen work'),
         ],
+        decidedTaskIds: ['task-decided'],
         includeCapture: false,
       );
       final report = EvalReport.fromResults([
@@ -384,10 +418,60 @@ void main() {
         ),
       ], generatedAt: generatedAt);
 
-      final corpus =
-          (report.judgeBundle().single['scenario']! as Map)['corpus']! as List;
-      expect(corpus.single, containsPair('visibleToModel', false));
+      final scenarioJson =
+          report.judgeBundle().single['scenario']! as Map<String, Object?>;
+      expect(scenarioJson['corpusRowsShown'], false);
+      final rows = (scenarioJson['corpus']! as List)
+          .cast<Map<String, Object?>>();
+      final decided = rows.firstWhere((r) => r['taskId'] == 'task-decided');
+      final unseen = rows.firstWhere((r) => r['taskId'] == 'task-unseen');
+
+      expect(
+        decided['taskIdReferenceable'],
+        isTrue,
+        reason: 'a decided task is named to the model through its projection',
+      );
+      expect(
+        decided['corpusRowShown'],
+        isFalse,
+        reason:
+            'its status, estimate and blockedBy were never rendered, so a '
+            'judge must not read them as something the model ignored',
+      );
+      expect(unseen['taskIdReferenceable'], isFalse);
+      expect(unseen['corpusRowShown'], isFalse);
     });
+
+    test(
+      'serialises every wake so the entry reconciles with its own totals',
+      () {
+        // The entry's tool calls, attempts and cost cover the whole cell, so
+        // showing one prompt beside all of them leaves a judge unable to
+        // reconcile what it is reading.
+        final report = EvalReport.fromResults([
+          result(
+            wakes: const [
+              EvalWakeTranscript(
+                conversationId: 'c1',
+                systemPrompt: 'first attempt',
+                userMessages: ['u1'],
+              ),
+              EvalWakeTranscript(
+                conversationId: 'c2',
+                systemPrompt: 'retry',
+                userMessages: ['u2', 'forced follow-up'],
+              ),
+            ],
+            constraints: [pass(EvalConstraintIds.withinCapacity)],
+          ),
+        ], generatedAt: generatedAt);
+
+        final wakes = report.judgeBundle().single['wakes']! as List;
+        expect(wakes, hasLength(2));
+        expect((wakes.first as Map)['system'], 'first attempt');
+        expect((wakes.last as Map)['forcedRetry'], isTrue);
+      },
+    );
 
     test('rejects a cap below one', () {
       expect(
@@ -455,6 +539,62 @@ void main() {
               as Map<String, Object?>;
       expect(stability['stableFraction'], isNull);
     });
+
+    test('counts every retry wake, not just the last', () {
+      // A durable job retry opens a fresh conversation with its own prompt.
+      // Reading only the final one drops the earlier attempts from a figure
+      // that claims to cover every wake.
+      final report = EvalReport.fromResults([
+        result(
+          wakes: const [
+            EvalWakeTranscript(
+              conversationId: 'c1',
+              systemPrompt: 'SHARED then one',
+              userMessages: ['u'],
+            ),
+            EvalWakeTranscript(
+              conversationId: 'c2',
+              systemPrompt: 'SHARED then two',
+              userMessages: ['u'],
+            ),
+          ],
+          constraints: [pass(EvalConstraintIds.withinCapacity)],
+        ),
+      ], generatedAt: generatedAt);
+
+      final stability =
+          (report.toJson()['promptStability']! as List).single
+              as Map<String, Object?>;
+      expect(stability['wakes'], 2, reason: 'wakes, not cells');
+      expect(stability['stablePrefixBytes'], 'SHARED then '.length);
+    });
+
+    test(
+      'a cell that never reached the model cannot push stability over 100%',
+      () {
+        // The failed cell contributes no prompt. Counting it as a zero-length
+        // prompt in the mean while excluding it from the prefix produced a
+        // "stable fraction" above 1 — a number that cannot mean anything.
+        final report = EvalReport.fromResults([
+          result(
+            systemPrompt: 'a stable system prompt',
+            constraints: [pass(EvalConstraintIds.withinCapacity)],
+          ),
+          result(
+            forRequest: request(sample: 2),
+            wakes: const [],
+            constraints: [na(EvalConstraintIds.withinCapacity)],
+            error: 'provider unreachable',
+          ),
+        ], generatedAt: generatedAt);
+
+        final stability =
+            (report.toJson()['promptStability']! as List).single
+                as Map<String, Object?>;
+        expect(stability['wakes'], 1);
+        expect(stability['stableFraction'], 1.0);
+      },
+    );
 
     test('counts prompt bytes including every user message', () {
       final report = EvalReport.fromResults([
@@ -531,7 +671,10 @@ void main() {
 
     test('defaults under a git-ignored directory and honours overrides', () {
       expect(
-        EvalReportPaths.fromEnvironment(environment: const {}).jsonPath,
+        EvalReportPaths.fromEnvironment(
+          timestamp: generatedAt,
+          environment: const {},
+        ).jsonPath,
         startsWith('tmp/'),
         reason:
             'runs accumulate across invocations, so the default must not be '
@@ -539,15 +682,33 @@ void main() {
       );
       expect(
         EvalReportPaths.fromEnvironment(
+          timestamp: generatedAt,
           environment: const {'DAY_PLANNING_EVAL_DIR': '/somewhere'},
         ).markdownPath,
-        '/somewhere/day-planning-eval.md',
+        '/somewhere/day-planning-eval-20260725-120000.md',
+        reason:
+            'a fixed basename overwrites the previous run, so there is never '
+            'anything to diff against',
       );
       expect(
         EvalReportPaths.fromEnvironment(
+          timestamp: generatedAt,
           environment: const {'DAY_PLANNING_EVAL_JSON': '/exact/path.json'},
         ).jsonPath,
         '/exact/path.json',
+        reason: 'an explicit override stays fixed',
+      );
+      expect(
+        EvalReportPaths.fromEnvironment(
+          timestamp: DateTime(2026, 7, 25, 12, 0, 1),
+          environment: const {},
+        ).jsonPath,
+        isNot(
+          EvalReportPaths.fromEnvironment(
+            timestamp: generatedAt,
+            environment: const {},
+          ).jsonPath,
+        ),
       );
     });
   });

@@ -396,9 +396,11 @@ day.
 ### Reading a run
 
 `framework/eval_report.dart` aggregates results into JSON + Markdown under the
-git-ignored `tmp/day-planning-eval/` (env-overridable via
-`DAY_PLANNING_EVAL_DIR`, or per-file with `DAY_PLANNING_EVAL_JSON` /
-`DAY_PLANNING_EVAL_MARKDOWN`), so runs accumulate and can be diffed.
+git-ignored `tmp/day-planning-eval/`, with the run's timestamp in the basename
+so runs genuinely accumulate and can be diffed — a fixed name would have each
+invocation overwrite the last. Override the directory with
+`DAY_PLANNING_EVAL_DIR`, or pin an exact fixed path per file with
+`DAY_PLANNING_EVAL_JSON` / `DAY_PLANNING_EVAL_MARKDOWN`.
 
 The report leads with a **model leaderboard**, then per-constraint rates, cost,
 prompt stability, and failure excerpts. Two properties carry it:
@@ -409,7 +411,8 @@ prompt stability, and failure excerpts. Two properties carry it:
   laziest model look best, counting it as a fail punishes a scenario for not
   exercising a dimension. A constraint nothing exercised reports `—`, never
   100%.
-- **Prompt stability is measured per model across scenarios**, not per cell.
+- **Prompt stability is measured per wake, per model, across scenarios** —
+  not per cell.
   Within one scenario the prompt barely varies, so a per-cell figure just
   restates the prompt size — which is exactly what the first generated report
   showed before it was fixed. Across wakes it answers the question that
@@ -426,11 +429,19 @@ call including rejections and their text, the persisted plan, and that run's
 constraint results and cost.
 
 The bundle is bounded (newest samples per cell) and **states what it dropped**,
-because a truncated bundle that does not say so reads as complete. Each corpus
-row carries `visibleToModel`: the corpus is ground truth and is rendered only
-inside the capture context, so on a capture-less wake the model saw none of it
-— and a judge reading `blockedBy` without that flag would blame the model for
-ignoring a dependency it never received.
+because a truncated bundle that does not say so reads as complete. It carries
+every wake of a cell, not just the last: a durable retry opens a fresh
+conversation, and showing one prompt beside tool calls and cost that cover the
+whole cell leaves a judge unable to reconcile them.
+
+Corpus rows carry two separate flags, because conflating them misleads in
+exactly the direction the flags exist to prevent. `corpusRowShown` is whether
+the row — its status, estimate and `blockedBy` — was rendered at all; the
+corpus appears only inside the capture context. `taskIdReferenceable` is the
+weaker fact that the model could name the id, which a *decided* task satisfies
+through its own projection even on a capture-less wake where its corpus row was
+never shown. Reporting the second as the first would print `blockedBy` next to
+"the model saw this".
 
 **Not yet judged against real models.** The live entry point that points the
 matrix at providers is tracked separately.
