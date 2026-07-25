@@ -396,6 +396,13 @@ const _lateStart = EvalScenario(
       estimateMinutes: 25,
     ),
   ],
+  // Without these a single 15:00-16:00 buffer passed everything: no decided
+  // tasks, no required work, no conflict to surface, and the buffer satisfies
+  // capacity and working hours. Silently ignoring all three seeded tasks read
+  // as clean. The two short items fit comfortably in what remains (55 of ~120
+  // minutes), so requiring them makes the real question measurable — defer the
+  // migration and do the urgent short work, or cram it and fail working hours.
+  requiredTaskIds: {'task-short-invoice', 'task-short-replies'},
   startHour: 15,
   captureTranscript: 'Late start, only the afternoon left.',
 );

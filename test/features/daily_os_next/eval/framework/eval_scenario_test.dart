@@ -224,6 +224,30 @@ void main() {
     );
   });
 
+  test('lateStart requires the short work that actually fits', () {
+    // Otherwise a single buffer block ignores every seeded task and reports
+    // clean, and the defer-versus-cram question is never asked.
+    final scenario = byId('lateStart');
+    final remainingMinutes = (17 - scenario.startHour!) * 60;
+    final requiredMinutes = scenario.tasks
+        .where((task) => scenario.requiredTaskIds.contains(task.id))
+        .fold<int>(0, (sum, task) => sum + (task.estimateMinutes ?? 0));
+
+    expect(scenario.requiredTaskIds, isNotEmpty);
+    expect(
+      requiredMinutes,
+      lessThan(remainingMinutes),
+      reason:
+          'requiring more than the day has left would make the scenario '
+          'unsatisfiable rather than discriminating',
+    );
+    expect(
+      scenario.requiredTaskIds,
+      isNot(contains('task-long-migration')),
+      reason: 'the long task is the one that legitimately may be deferred',
+    );
+  });
+
   test('lateStart carries the working-hours end the scenario turns on', () {
     final inputs = byId('lateStart').inputsFor(planDate);
 

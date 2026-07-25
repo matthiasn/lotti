@@ -39,7 +39,6 @@ void main() {
     Set<String> requiredTaskIds = const {},
     bool requiresConflictSurfaced = false,
     bool forbidsInventedWork = false,
-    bool hasSeededCalendar = false,
     Set<String> conflictEscalationReasons = const {'overCommitted'},
     DateTime? now,
     bool planPersisted = true,
@@ -59,7 +58,6 @@ void main() {
       requiredTaskIds: requiredTaskIds,
       requiresConflictSurfaced: requiresConflictSurfaced,
       forbidsInventedWork: forbidsInventedWork,
-      hasSeededCalendar: hasSeededCalendar,
       conflictEscalationReasons: conflictEscalationReasons,
       now: now,
       visibleTaskIds: visibleTaskIds,
@@ -684,27 +682,6 @@ void main() {
       expect(result.detail, contains('Dentist appointment'));
     });
 
-    test('a calendar block is legitimate when the scenario seeds one', () {
-      final result = scoreNoInventedWork(
-        outcome(
-          blocks: [
-            PlannedBlock(
-              id: 'a',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 7, 18, 9),
-              endTime: DateTime(2026, 7, 18, 10),
-              title: 'Standup',
-              type: PlannedBlockType.cal,
-            ),
-          ],
-          forbidsInventedWork: true,
-          hasSeededCalendar: true,
-        ),
-      );
-
-      expect(result.passed, isTrue);
-    });
-
     test('a buffer block is structuring open time, not inventing work', () {
       final result = scoreNoInventedWork(
         outcome(
@@ -1047,9 +1024,14 @@ void main() {
   });
 
   group('surfacedConflict', () {
+    const dropped = [
+      EvalCorpusTask(taskId: 'task-deck', title: 'Prepare the board deck'),
+      EvalCorpusTask(taskId: 'task-report', title: 'Close the quarterly'),
+    ];
+
     test('fails when an impossible day is absorbed in silence', () {
       // The gap permitting omissions opened: one ordinary buffer block,
-      // twelve hours of requested work ignored, nothing said.
+      // hours of requested work ignored, nothing said.
       final result = scoreSurfacedConflict(
         outcome(
           blocks: [
@@ -1060,15 +1042,38 @@ void main() {
               reason: 'Open buffer for the morning.',
             ),
           ],
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
           requiresConflictSurfaced: true,
         ),
       );
 
       expect(result.passed, isFalse);
-      expect(result.detail, contains('silently'));
+      expect(result.detail, contains('without naming a casualty'));
     });
 
-    test('passes when a block reason names the trade', () {
+    test('a conflict word alone is not surfacing anything', () {
+      // "Deferred" names no casualty and gives the user nothing to act on.
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              reason: 'Deferred — preserving capacity.',
+            ),
+          ],
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('passes when the reason names what was left out', () {
       final result = scoreSurfacedConflict(
         outcome(
           blocks: [
@@ -1076,19 +1081,41 @@ void main() {
               id: 'a',
               startHour: 9,
               endHour: 13,
-              reason: 'Board deck deferred to tomorrow — all four do not fit.',
+              reason:
+                  'Prepare the board deck moved to tomorrow — all four '
+                  'do not fit today.',
             ),
           ],
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
           requiresConflictSurfaced: true,
         ),
       );
 
       expect(result.passed, isTrue);
+      expect(result.detail, contains('task-deck'));
+    });
+
+    test('is not applicable when nothing was actually left out', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-deck'),
+          ],
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.isApplicable, isFalse);
     });
 
     test('passes when the escalation actually names the conflict', () {
       final result = scoreSurfacedConflict(
         outcome(
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
           requiresConflictSurfaced: true,
           toolCalls: const [
             EvalToolCall(
@@ -1111,6 +1138,8 @@ void main() {
       // alone would let a model satisfy this by reporting the day is fine.
       final result = scoreSurfacedConflict(
         outcome(
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
           requiresConflictSurfaced: true,
           toolCalls: const [
             EvalToolCall(
@@ -1131,6 +1160,8 @@ void main() {
       // accepting both reasons would have credited it.
       final result = scoreSurfacedConflict(
         outcome(
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
           requiresConflictSurfaced: true,
           // ignore: avoid_redundant_argument_values
           conflictEscalationReasons: const {'overCommitted'},
@@ -1153,6 +1184,8 @@ void main() {
     test('an unrelated attentionNeeded reason is not an escalation', () {
       final result = scoreSurfacedConflict(
         outcome(
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
           requiresConflictSurfaced: true,
           toolCalls: const [
             EvalToolCall(
@@ -1177,6 +1210,8 @@ void main() {
     test('a rejected escalation does not count', () {
       final result = scoreSurfacedConflict(
         outcome(
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
           requiresConflictSurfaced: true,
           toolCalls: const [
             EvalToolCall(

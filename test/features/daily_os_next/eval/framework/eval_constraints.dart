@@ -578,33 +578,38 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
   }
   final noPlan = _requirePlan(outcome, id);
   if (noPlan != null) return noPlan;
-  const conflictTerms = [
-    'not fit',
-    "won't fit",
-    'does not fit',
-    'capacity',
-    'defer',
-    'deferred',
-    'trade',
-    'drop',
-    'dropped',
-    'postpone',
-    'tomorrow',
-    'over-committed',
-    'overcommitted',
-    'too much',
+  // The prompt asks for "which commitments collide and what trade would make
+  // it fit", so a bare "Deferred" is not surfacing anything — it names no
+  // casualty and gives the user nothing to act on. Require the text to
+  // identify at least one piece of work that was actually left out.
+  final placed = _placedTaskIds(outcome);
+  final omitted = [
+    for (final taskId in outcome.inputs.decidedTaskIds)
+      if (!placed.contains(taskId)) taskId,
   ];
-  final named = outcome.blocks.any((block) {
-    final reason = '${block.reason ?? ''} ${block.note ?? ''}'.toLowerCase();
-    return conflictTerms.any(reason.contains);
-  });
+  if (omitted.isEmpty) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'nothing was left out, so there is no trade to name',
+    );
+  }
+  final prose = [
+    for (final block in outcome.blocks)
+      '${block.reason ?? ''} ${block.note ?? ''}',
+  ].join(' ').toLowerCase();
+  final namedCasualties = [
+    for (final taskId in omitted)
+      if (prose.contains(taskId.toLowerCase()) ||
+          _titleNamed(outcome, taskId, prose))
+        taskId,
+  ];
   return EvalConstraintResult(
     id: id,
-    passed: named,
-    detail: named
-        ? 'named the trade in a block reason'
-        : 'absorbed an impossible day silently — no escalation and no reason '
-              'naming what was left out',
+    passed: namedCasualties.isNotEmpty,
+    detail: namedCasualties.isNotEmpty
+        ? 'named what it left out: ${namedCasualties.join(', ')}'
+        : 'absorbed an impossible day without naming a casualty — '
+              '${omitted.length} decided task(s) dropped in silence',
   );
 }
 
@@ -616,10 +621,12 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
 /// which is precisely what the restraint control exists to detect.
 ///
 /// Only `buffer` is exempt: structuring open time is not inventing work. A
-/// `cal` block is *not* exempt unless the scenario actually seeds calendar
-/// events, because the prompt defines `cal` as mirroring a real event — so on
-/// a day with no calendar, an invented "Dentist appointment" is exactly the
-/// hallucination this control exists to catch.
+/// `cal` block is not, because the prompt defines `cal` as mirroring a real
+/// calendar event and no scenario seeds one — so on these days an invented
+/// "Dentist appointment" is exactly the hallucination this control exists to
+/// catch. The exemption comes back with calendar-seeding, which needs it for
+/// a different reason anyway (a `cal` block is the one remaining way past the
+/// production same-day guard).
 EvalConstraintResult scoreNoInventedWork(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.noInventedWork;
   if (!outcome.inputs.forbidsInventedWork) {
@@ -632,10 +639,7 @@ EvalConstraintResult scoreNoInventedWork(EvalRunOutcome outcome) {
   if (noPlan != null) return noPlan;
   final invented = [
     for (final block in _scheduled(outcome))
-      if (block.taskId == null &&
-          block.type != PlannedBlockType.buffer &&
-          !(block.type == PlannedBlockType.cal &&
-              outcome.inputs.hasSeededCalendar))
+      if (block.taskId == null && block.type != PlannedBlockType.buffer)
         '"${block.title ?? block.id}" (${block.type.name})',
   ];
   return EvalConstraintResult(
@@ -733,6 +737,12 @@ Set<String> _placedTaskIds(EvalRunOutcome outcome) => {
         block.type == PlannedBlockType.manual)
       ?block.taskId,
 };
+
+/// Whether [prose] mentions the title of [taskId].
+bool _titleNamed(EvalRunOutcome outcome, String taskId, String prose) {
+  final title = outcome.inputs.taskById(taskId)?.title.toLowerCase();
+  return title != null && title.isNotEmpty && prose.contains(title);
+}
 
 /// Blocks that consume capacity — `dropped` ones are recorded but not
 /// scheduled, matching `scheduledMinutesFor` in the parser.

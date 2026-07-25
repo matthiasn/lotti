@@ -59,7 +59,6 @@ class EvalFixtureInputs {
     this.requiredTaskIds = const {},
     this.requiresConflictSurfaced = false,
     this.forbidsInventedWork = false,
-    this.hasSeededCalendar = false,
     this.conflictEscalationReasons = const {},
     this.capacityMinutes = 480,
     this.workingHoursStartHour = 9,
@@ -117,12 +116,6 @@ class EvalFixtureInputs {
   /// Whether the scenario has no real work, so any substantive block the
   /// planner adds is invented rather than scheduled.
   final bool forbidsInventedWork;
-
-  /// Whether the scenario seeded real calendar events.
-  ///
-  /// A `cal` block mirrors a real event, so on a day with no calendar an
-  /// invented appointment is fabricated work like any other.
-  final bool hasSeededCalendar;
 
   /// `raise_day_status` reasons that count as escalating *this* conflict.
   ///
