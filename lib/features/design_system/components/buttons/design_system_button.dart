@@ -55,6 +55,7 @@ class DesignSystemButton extends StatefulWidget {
     this.forcedState,
     this.fullWidth = false,
     this.isLoading = false,
+    this.alignsLabelToLeadingEdge = false,
     super.key,
   }) : assert(
          label != '' || semanticsLabel != null,
@@ -75,6 +76,17 @@ class DesignSystemButton extends StatefulWidget {
   /// "work in progress" affordance. Pass the real [onPressed] alongside it; the
   /// button suppresses the tap itself, so the caller need not null it out.
   final bool isLoading;
+
+  /// Pulls the button outward by its own horizontal content inset, so its
+  /// glyph and label land on the parent's leading edge while the ink still
+  /// bleeds into the surrounding padding.
+  ///
+  /// A button placed flush on a shared leading column otherwise puts its
+  /// *content* one inset inside that column, because the padding is internal.
+  /// The effect is invisible beside other buttons and obvious the moment the
+  /// button sits in a stack of text rows — which is exactly where the caption
+  /// tier gets used. Direction-aware, so it pulls right in RTL.
+  final bool alignsLabelToLeadingEdge;
 
   /// When true, the button expands to fill its parent's width (use inside an
   /// [Expanded]/[SizedBox]) and its content is centered rather than left
@@ -186,7 +198,14 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
       ),
     );
 
-    return button;
+    if (!widget.alignsLabelToLeadingEdge) return button;
+    final towardsLeading = Directionality.of(context) == TextDirection.rtl
+        ? 1.0
+        : -1.0;
+    return Transform.translate(
+      offset: Offset(towardsLeading * sizeSpec.horizontalPadding, 0),
+      child: button,
+    );
   }
 
   DesignSystemButtonVisualState _resolveVisualState(bool enabled) {

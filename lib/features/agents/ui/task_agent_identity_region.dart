@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -123,65 +124,21 @@ class _SetupIdentityRow extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final color = isError ? tokens.colors.alert.error.ink : ai.metaText;
-    final iconColor = isError
-        ? tokens.colors.alert.error.defaultColor
-        : ai.metaText;
-    return Semantics(
-      button: true,
-      label: semanticsLabel,
-      excludeSemantics: true,
-      child: Tooltip(
-        // Names the action rather than repeating a route that is usually
-        // fully visible; the full route lives in the semantics label.
-        message: tooltip,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
-              // The inset lives INSIDE the ink so the highlight has room
-              // around the glyph and the chevron; painted flush, the rounded
-              // ink corners cut into the glyph itself.
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step2,
-                ),
-                // Shrink-wrapped so the ink, the tooltip and the tap target
-                // all stop at the chevron instead of running the full width
-                // of the footer.
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isError
-                          ? Icons.error_outline_rounded
-                          : Icons.psychology_outlined,
-                      size: tokens.spacing.step5,
-                      color: iconColor,
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Flexible(
-                      child: _TieredIdentityText(
-                        tiers: tiers,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: color,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: tokens.spacing.step5,
-                      color: iconColor,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+    return DesignSystemInlineAction(
+      onTap: onTap,
+      semanticsLabel: semanticsLabel,
+      // Names the action rather than repeating a route that is usually fully
+      // visible; the full route lives in the semantics label.
+      tooltip: tooltip,
+      leadingIcon: isError
+          ? Icons.error_outline_rounded
+          : Icons.psychology_outlined,
+      trailingIcon: Icons.chevron_right_rounded,
+      ink: color,
+      iconInk: isError ? tokens.colors.alert.error.defaultColor : ai.metaText,
+      labelWidget: _TieredIdentityText(
+        tiers: tiers,
+        style: tokens.typography.styles.others.caption.copyWith(color: color),
       ),
     );
   }

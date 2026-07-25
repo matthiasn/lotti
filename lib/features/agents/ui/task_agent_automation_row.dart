@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -201,18 +202,9 @@ class _TaskAgentAutomationRowState extends State<TaskAgentAutomationRow> {
               : null,
           isStale: widget.isStale,
         );
-        // `DesignSystemButton` pays its own step3 content inset, so a button
-        // whose box starts on the leading edge puts its *glyph* 8px inside it
-        // — visible as a broken column the moment the row stacks and the
-        // button gets a line of its own. Pull the box back out by exactly
-        // that inset so the ink bleeds into the band's padding and the glyph
-        // lands on the same column as every other row.
-        final trigger = Transform.translate(
-          offset: Offset(-tokens.spacing.step2, 0),
-          child: _UpdateNowButton(
-            isRunning: widget.isRunning,
-            onRunNow: widget.inferenceAvailable ? widget.onRunNow : null,
-          ),
+        final trigger = _UpdateNowButton(
+          isRunning: widget.isRunning,
+          onRunNow: widget.inferenceAvailable ? widget.onRunNow : null,
         );
         // Normally the state and its remedy sit side by side. When even that
         // pair cannot share a line — German at 1.3x on a 320px phone — the
@@ -523,9 +515,9 @@ TextStyle scheduleLabelStyle(DsTokens tokens) =>
 
 /// Cancels the pending automatic update without turning automation off.
 ///
-/// Worded rather than a bare glyph, and tinted so it reads as the one control
-/// inside a line of status text: an unlabelled "×" beside an automatic-updates
-/// switch reads as "turn the whole thing off".
+/// Worded rather than a bare glyph, and in metadata ink: accent in this band
+/// means "this starts work", and Skip is its opposite. The underline carries
+/// the affordance.
 class _SkipAction extends StatelessWidget {
   const _SkipAction({
     required this.label,
@@ -539,46 +531,14 @@ class _SkipAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    // Metadata ink, not accent: accent in this band means "this starts work",
-    // and Skip is its opposite. The underline carries the affordance.
-    final ink = tokens.colors.aiCard.metaText;
-    return Semantics(
-      button: true,
-      label: tooltip,
-      excludeSemantics: true,
-      child: Tooltip(
-        message: tooltip,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            key: const ValueKey('taskAgentSkipScheduledUpdate'),
-            onTap: onSkip,
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step2,
-                ),
-                child: Center(
-                  widthFactor: 1,
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: ink,
-                      decoration: TextDecoration.underline,
-                      decorationColor: ink,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return DesignSystemInlineAction(
+      key: const ValueKey('taskAgentSkipScheduledUpdate'),
+      label: label,
+      semanticsLabel: tooltip,
+      tooltip: tooltip,
+      ink: context.designTokens.colors.aiCard.metaText,
+      underline: true,
+      onTap: onSkip,
     );
   }
 }
@@ -610,6 +570,10 @@ class _UpdateNowButton extends StatelessWidget {
       // the user's own task. It stays labelled — an icon-only glyph beside an
       // automation switch is exactly the ambiguity the worded Skip refuses.
       variant: DesignSystemButtonVariant.tertiary,
+      // The band's rows share one leading column; a button's inset is
+      // internal, so without this its glyph would sit one inset inside that
+      // column — invisible on a wide row, a broken column once stacked.
+      alignsLabelToLeadingEdge: true,
       onPressed: isRunning ? null : onRunNow,
     );
   }
