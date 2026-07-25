@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Hover highlights in the AI summary card no longer stretch across the whole
   card.** Pointing at the model row or the card header highlighted the entire
   width instead of the thing under the pointer.
+- **A soul's history no longer blinks while it updates.** On a soul's version
+  history and evolution history, any change to that soul — an edit, a finished
+  ritual session, a sync arriving — swapped the list you were reading for a
+  loading spinner and back, collapsing the section and shifting the rest of the
+  page. Those lists now stay on screen while they update. The same applies to an
+  agent template's reports list.
 - **Answering a task suggestion no longer jumps the page.** Checklist
   suggestions already stayed put, but the others did not. Accepting or
   dismissing a due-date, language, priority, label or estimate suggestion while

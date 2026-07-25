@@ -355,13 +355,20 @@ Widget makeTestableWidgetNoScroll(
 /// tests can read or invalidate providers mid-test (e.g. to simulate a
 /// background refresh). The container is the caller's responsibility to
 /// dispose — typically via `addTearDown(result.container.dispose)`.
+///
+/// [retry] is forwarded to the container. Pass `(_, _) => null` when a test
+/// drives a provider into an error state: Riverpod otherwise schedules an
+/// automatic retry, and the pending timer fails the test at teardown.
 ({Widget widget, ProviderContainer container}) makeTestableWidgetWithContainer(
   Widget child, {
   List<Override> overrides = const [],
   MediaQueryData? mediaQueryData,
   ThemeData? theme,
+  // Spelled out rather than Riverpod's `Retry` typedef: `package:test_api`
+  // exports a `Retry` of its own, and the two collide in test files.
+  Duration? Function(int retryCount, Object error)? retry,
 }) {
-  final container = ProviderContainer(overrides: overrides);
+  final container = ProviderContainer(overrides: overrides, retry: retry);
   final mq = mediaQueryData ?? phoneMediaQueryData;
 
   return (

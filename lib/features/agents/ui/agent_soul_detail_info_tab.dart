@@ -78,6 +78,13 @@ class _VersionHistorySection extends ConsumerWidget {
         ),
         const SizedBox(height: AppTheme.spacingSmall),
         historyAsync.when(
+          // Soul entities carry `agentId: soulId`, so every soul write lands a
+          // notification containing this soul's id and reloads the list under
+          // the reader. It has to survive that in place rather than collapsing
+          // to a spinner and back.
+          skipLoadingOnReload: true,
+          skipLoadingOnRefresh: true,
+          skipError: true,
           data: (versions) {
             final typed = versions
                 .whereType<SoulDocumentVersionEntity>()
@@ -228,6 +235,12 @@ class _SoulEvolutionHistorySection extends ConsumerWidget {
         ),
         const SizedBox(height: AppTheme.spacingSmall),
         historyAsync.when(
+          // Same trigger: a finished ritual session writes soul entities, which
+          // reloads this list. Keep the rendered history rather than flashing a
+          // spinner where it was.
+          skipLoadingOnReload: true,
+          skipLoadingOnRefresh: true,
+          skipError: true,
           data: (entries) {
             if (entries.isEmpty) {
               return Text(

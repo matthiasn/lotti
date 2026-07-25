@@ -2216,6 +2216,59 @@ Key invariants:
   travel — the row is pruned instantly; pill swaps instantly; the entrance
   reveal is instant; the haptic still fires (feedback, not motion).
 
+### History sections: what they show while reloading
+
+Four list sections on the template and soul detail pages read a
+`FutureProvider.autoDispose.family` and render it with `AsyncValue.when`:
+
+| Section | Provider | Reloads while open? |
+|---|---|---|
+| Soul → Info → Version History | `soulVersionHistoryProvider` | yes — every soul write |
+| Soul → Info → Soul Evolution History | `soulEvolutionSessionHistoryProvider` | yes — every soul write |
+| Template → Reports tab | `templateRecentReportsProvider` | yes, but only on some events |
+| Template → Stats → Version History | `templateVersionHistoryProvider` | no |
+
+**What reloads them.** `agentUpdateStreamProvider(id)` filters
+`UpdateNotifications.updateStream` down to sets *containing* `id`. The soul
+sections are well served by this: soul entities carry `agentId: soulId`, so both
+`persistedStateChangedNotifier` (`{agentId, agentNotification}`) and the sync
+handler (`{resolvedEntity.agentId, …}`) land the soul's own id in the set, and
+every soul write reloads them under the reader.
+
+Templates are patchier, because a template id is not an agent id. It reaches a
+notification set from agent initialization (`agent_wiring` includes
+`?templateId`), from template evolution, and from sync — but there only for
+`WakeTokenUsageEntity`. **A report landing therefore does not refresh the
+Reports tab**; that list stays stale until another template-scoped event or a
+reopen. `templateVersionHistory` watches no stream at all, so nothing reloads
+it. Both are known gaps rather than intended behaviour; closing them means
+either widening a producer's notification set or subscribing to the shared
+`agentNotification` topic, and the latter has real blast radius — the same
+providers back `SoulEvolutionReviewPage` and `TemplateTokenUsageSection`, whose
+`when` calls still take the defaults, so a global subscription would collapse
+*those* surfaces on unrelated agent activity.
+
+**What they show while reloading.** Each `when` passes
+`skipLoadingOnReload: true` and `skipError: true`. The distinction matters:
+`AsyncValue.when` already defaults `skipLoadingOnRefresh` to `true`, so an
+explicit `invalidate` was never the risk — a *reload* from a watched dependency
+is, and it defaults to showing the spinner. `skipError` covers the other half: a
+reload that throws yields `AsyncError` carrying the previous value, and the
+default would swap the list for the error widget. Either would collapse the
+section's height and shift everything below it mid-read. An initial load still
+shows the spinner and an initial failure still shows the error, because neither
+has a previous value to keep.
+
+```mermaid
+flowchart LR
+  Write[soul write / sync] --> Notify["notify({agentId, agentNotification})"]
+  Notify --> Scoped["agentUpdateStreamProvider(soulId)"]
+  Scoped --> Reload[history provider reloads]
+  Reload --> Keep["when(skipLoadingOnReload, skipError)"]
+  Keep --> Paint[previous list stays on screen]
+  Reload -. first load only .-> Shell[spinner / error]
+```
+
 ### `AgentInternalsPanel` — right-side overlay
 
 `lib/features/agents/ui/agent_internals_panel.dart` is a dismissable
