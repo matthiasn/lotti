@@ -44,6 +44,13 @@ class _VersionHistorySection extends ConsumerWidget {
         ),
         const SizedBox(height: AppTheme.spacingSmall),
         historyAsync.when(
+          // Defensive, unlike the other three sites: templateVersionHistory
+          // watches only a service, so today nothing reloads it and this cannot
+          // fire. Its soul-side twin does watch agentUpdateStreamProvider, so
+          // adding that watch here is a one-line change away from making the
+          // section flash — the guard belongs here before that happens.
+          skipLoadingOnReload: true,
+          skipLoadingOnRefresh: true,
           data: (versions) {
             final typed = versions
                 .whereType<AgentTemplateVersionEntity>()
@@ -253,6 +260,10 @@ class ReportsTabContent extends ConsumerWidget {
     final reportsAsync = ref.watch(templateRecentReportsProvider(templateId));
 
     return reportsAsync.when(
+      // Reports arrive in the background; keep the rendered list on screen
+      // while they refresh rather than flashing a spinner in its place.
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(
         child: Padding(
