@@ -311,6 +311,7 @@ class OnboardingCaptureToTaskService {
         profileId: category.defaultProfileId,
         allowedCategoryIds: {category.id},
         additionalWakeTokens: {?audioId},
+        automaticUpdatesEnabled: category.automaticAgentWakesEnabledEffective,
       );
       await _seedChecklistProposals(
         agentId: identity.agentId,

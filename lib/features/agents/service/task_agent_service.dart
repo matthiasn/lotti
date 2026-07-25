@@ -78,6 +78,16 @@ class TaskAgentService {
   /// agent's first turn attends to the spoken capture the same way a
   /// `transcriptionComplete` wake would after an in-task recording.
   ///
+  /// [automaticUpdatesEnabled] is the agent's *starting* preference for waking
+  /// on task changes, seeded from `CategoryDefinition.automaticAgentWakesEnabled`
+  /// by the category-default creation paths. The per-task switch on the AI
+  /// summary card owns it from then on, so a later category edit does not
+  /// reach back into agents that already exist. Defaults to off, which is what
+  /// this hardcoded before the category could express a preference. The value
+  /// is both persisted on the config and mirrored into the orchestrator's
+  /// runtime, so a seeded-on agent wakes in the session it was created in
+  /// rather than after the next app start.
+  ///
   /// Throws [StateError] if a Task Agent already exists for [taskId].
   Future<AgentIdentityEntity> createTaskAgent({
     required String taskId,
@@ -88,6 +98,7 @@ class TaskAgentService {
     String? setupOriginEntityId,
     String? displayName,
     bool awaitContent = false,
+    bool automaticUpdatesEnabled = false,
     Set<String> additionalWakeTokens = const {},
   }) async {
     // Resolve template: use the provided ID or fall back to the first
@@ -156,7 +167,7 @@ class TaskAgentService {
           modelId: templateEntity.modelId,
           profileId: baseProfileId,
           inferenceSetup: inferenceSetup,
-          automaticUpdatesEnabled: false,
+          automaticUpdatesEnabled: automaticUpdatesEnabled,
         ),
         allowedCategoryIds: allowedCategoryIds,
       );
@@ -226,7 +237,16 @@ class TaskAgentService {
         AgentInferenceSetupMode.disabled;
     if (inferenceEnabled) {
       _registerTaskSubscription(identity.agentId, taskId);
-      orchestrator.disableAutomaticUpdatesRuntime(identity.agentId);
+      // Mirror the persisted preference into the runtime. Unconditionally
+      // disabling was correct while this was hardcoded off; now it would park
+      // a seeded-on agent in the disabled set, where only an explicit per-task
+      // toggle or the next app start (`restoreSubscriptions`) could free it —
+      // so the category switch would appear to do nothing until a restart.
+      if (automaticUpdatesEnabled) {
+        orchestrator.enableAutomaticUpdatesRuntime(identity.agentId);
+      } else {
+        orchestrator.disableAutomaticUpdatesRuntime(identity.agentId);
+      }
     }
 
     // Mirror the persisted awaitingContent flag in the orchestrator so that

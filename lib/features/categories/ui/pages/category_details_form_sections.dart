@@ -153,6 +153,32 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
     );
   }
 
+  /// Whether task agents created here start out waking on their own.
+  ///
+  /// Sits under the template picker because it is that picker's follow-up
+  /// question: without a `defaultTemplateId` no agent is ever created in this
+  /// category, so the row would control nothing and is absent rather than
+  /// shown inert.
+  ///
+  /// Separate from the automatic-inference switch above on purpose —
+  /// transcription and image analysis keep running with wakes switched off.
+  Widget _buildAutomaticAgentWakesSwitch(CategoryDefinition category) {
+    if (category.defaultTemplateId == null) return const SizedBox.shrink();
+
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
+    return SettingsSwitchRow(
+      title: context.messages.categoryAutomaticAgentWakesLabel,
+      subtitle: context.messages.categoryAutomaticAgentWakesDescription,
+      icon: Icons.autorenew_outlined,
+      value: category.automaticAgentWakesEnabledEffective,
+      onChanged: (value) =>
+          controller.setAutomaticAgentWakesEnabled(enabled: value),
+    );
+  }
+
   Widget _buildDefaultTemplatePicker(CategoryDefinition category) {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,

@@ -2700,6 +2700,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'Výchozí hodnoty AI';
 
   @override
+  String get categoryAutomaticAgentWakesDescription =>
+      'Nech asistenta v této kategorii, ať se sám aktualizuje při změně úkolu. Platí pro nové úkoly; stávající si ponechají vlastní nastavení.';
+
+  @override
+  String get categoryAutomaticAgentWakesLabel =>
+      'Probouzet asistenta automaticky';
+
+  @override
   String get categoryAutomaticInferenceDescription =>
       'Automaticky přepisovat nové audio a analyzovat nové obrázky v této kategorii';
 

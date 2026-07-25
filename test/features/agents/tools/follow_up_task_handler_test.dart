@@ -970,6 +970,55 @@ void main() {
               profileId: 'profile-from-category',
               allowedCategoryIds: {categoryId},
               awaitContent: true,
+              // ignore: avoid_redundant_argument_values
+              automaticUpdatesEnabled: false,
+            ),
+          ).called(1);
+        });
+      });
+
+      // This path builds a category-default agent without going through
+      // `assignCategoryDefaultTaskAgent`, so the category's wake preference
+      // has to be forwarded here too — otherwise an agent-created follow-up
+      // silently opts out of a category that asked for automatic wakes.
+      test('forwards the category wake preference', () async {
+        when(() => mockEntitiesCache.getCategoryById(categoryId)).thenReturn(
+          CategoryDefinition(
+            id: categoryId,
+            name: 'Test Category',
+            color: '#0000FFFF',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: null,
+            active: true,
+            private: false,
+            defaultProfileId: 'profile-from-category',
+            defaultTemplateId: 'template-from-category',
+            automaticAgentWakesEnabled: true,
+          ),
+        );
+
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-wakes');
+
+        stubSourceTaskLookup(sourceTask);
+        stubCreateTask(newTask);
+        stubLinkCreation();
+
+        await withClock(Clock.fixed(testDate), () async {
+          await handlerWithAgent.handle(
+            sourceTaskId,
+            {'title': 'Waking Task'},
+          );
+
+          verify(
+            () => mockTaskAgentService.createTaskAgent(
+              taskId: 'new-task-wakes',
+              templateId: 'template-from-category',
+              profileId: 'profile-from-category',
+              allowedCategoryIds: {categoryId},
+              awaitContent: true,
+              automaticUpdatesEnabled: true,
             ),
           ).called(1);
         });

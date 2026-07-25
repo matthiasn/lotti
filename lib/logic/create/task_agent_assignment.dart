@@ -65,6 +65,21 @@ class TaskAgentAssignmentResult {
 /// Daily OS capture-created tasks. Failures are captured in the returned result
 /// so callers can decide whether and how to report them without duplicating the
 /// task/category/template checks.
+///
+/// The category's defaults travel with the new agent: its inference profile,
+/// and its `automaticAgentWakesEnabled` preference as the agent's starting
+/// automatic-updates value.
+///
+/// This is the funnel for every *UI* creation path, but not the only place a
+/// category-default task agent is built — the agent tools and onboarding
+/// create them too (`ProjectToolDispatcher._tryAutoAssignTaskAgent`,
+/// `FollowUpTaskHandler._tryAutoAssignAgent`,
+/// `OnboardingCaptureToTaskService._assignCategoryAgent`). Those forward the
+/// same category defaults themselves rather than routing through here, because
+/// this helper also passes `setupOrigin: categorySnapshot`, which makes a
+/// category without a `defaultProfileId` produce a *disabled* agent instead of
+/// falling back to the template's profile. Any new category default added here
+/// has to be mirrored in all three.
 Future<TaskAgentAssignmentResult> assignCategoryDefaultTaskAgent({
   required TaskAgentService service,
   required Task task,
@@ -86,6 +101,7 @@ Future<TaskAgentAssignmentResult> assignCategoryDefaultTaskAgent({
       setupOriginEntityId: categoryId,
       allowedCategoryIds: {categoryId},
       awaitContent: awaitContent,
+      automaticUpdatesEnabled: category.automaticAgentWakesEnabledEffective,
     );
     return TaskAgentAssignmentResult.assigned(agent);
   } catch (e, s) {

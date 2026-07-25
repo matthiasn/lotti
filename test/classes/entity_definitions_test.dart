@@ -121,6 +121,91 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  // CategoryAutomation — the two independent automation preferences
+  // -------------------------------------------------------------------------
+  group('CategoryAutomation', () {
+    CategoryDefinition makeCategory({
+      bool? automaticInferenceEnabled,
+      bool? automaticAgentWakesEnabled,
+    }) {
+      return CategoryDefinition(
+        id: 'cat-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        name: 'Lotti',
+        vectorClock: null,
+        private: false,
+        active: true,
+        automaticInferenceEnabled: automaticInferenceEnabled,
+        automaticAgentWakesEnabled: automaticAgentWakesEnabled,
+      );
+    }
+
+    // Both preferences are opt-in, so an unset value is off. For agent wakes
+    // that matches the value `createTaskAgent` hardcoded before the category
+    // could express one, so upgrading changes nothing.
+    for (final (label, value, wakes, inference) in [
+      ('unset', null, false, false),
+      ('explicitly off', false, false, false),
+      ('explicitly on', true, true, true),
+    ]) {
+      test('$label resolves to the expected effective values', () {
+        expect(
+          makeCategory(
+            automaticAgentWakesEnabled: value,
+          ).automaticAgentWakesEnabledEffective,
+          wakes,
+        );
+        expect(
+          makeCategory(
+            automaticInferenceEnabled: value,
+          ).automaticInferenceEnabledEffective,
+          inference,
+        );
+      });
+    }
+
+    test('the two preferences are independent', () {
+      final wakesOnly = makeCategory(automaticAgentWakesEnabled: true);
+      expect(wakesOnly.automaticAgentWakesEnabledEffective, isTrue);
+      expect(wakesOnly.automaticInferenceEnabledEffective, isFalse);
+
+      final inferenceOnly = makeCategory(automaticInferenceEnabled: true);
+      expect(inferenceOnly.automaticAgentWakesEnabledEffective, isFalse);
+      expect(inferenceOnly.automaticInferenceEnabledEffective, isTrue);
+    });
+
+    test('round-trips through JSON', () {
+      final decoded =
+          EntityDefinition.fromJson(
+                jsonDecode(
+                      jsonEncode(
+                        makeCategory(automaticAgentWakesEnabled: true).toJson(),
+                      ),
+                    )
+                    as Map<String, dynamic>,
+              )
+              as CategoryDefinition;
+
+      expect(decoded.automaticAgentWakesEnabled, isTrue);
+    });
+
+    // Categories synced from a client that predates the field arrive without
+    // the key at all; they must decode rather than throw.
+    test('decodes a payload written before the field existed', () {
+      final json =
+          jsonDecode(jsonEncode(makeCategory().toJson()))
+                as Map<String, dynamic>
+            ..remove('automaticAgentWakesEnabled');
+
+      final decoded = EntityDefinition.fromJson(json) as CategoryDefinition;
+
+      expect(decoded.automaticAgentWakesEnabled, isNull);
+      expect(decoded.automaticAgentWakesEnabledEffective, isFalse);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // DashboardItem — all 5 variants
   // -------------------------------------------------------------------------
   group('DashboardItem JSON round-trips — static examples', () {

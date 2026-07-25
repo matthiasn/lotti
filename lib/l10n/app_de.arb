@@ -1257,6 +1257,8 @@
   "categoryActiveSwitchDescription": "Für neue Einträge wählbar",
   "categoryAiDefaultsDescription": "Standard-KI-Profil und Agenten-Vorlage für neue Aufgaben in dieser Kategorie festlegen",
   "categoryAiDefaultsTitle": "KI-Standardwerte",
+  "categoryAutomaticAgentWakesDescription": "Lass den Assistenten in dieser Kategorie sich selbst aktualisieren, wenn sich eine Aufgabe ändert. Gilt für neue Aufgaben; bestehende behalten ihre eigene Einstellung.",
+  "categoryAutomaticAgentWakesLabel": "Assistent automatisch aktualisieren",
   "categoryAutomaticInferenceDescription": "Neue Audioaufnahmen und Bilder in dieser Kategorie automatisch auswerten",
   "categoryAutomaticInferenceLabel": "Automatische Inferenz",
   "categoryCreationError": "Kategorie konnte nicht erstellt werden. Bitte versuche es erneut.",

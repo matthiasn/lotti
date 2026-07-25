@@ -266,6 +266,77 @@ void main() {
           profileId: 'profile-001',
           allowedCategoryIds: {'cat-001'},
           awaitContent: true,
+          // ignore: avoid_redundant_argument_values
+          automaticUpdatesEnabled: false,
+        ),
+      ).called(1);
+    });
+
+    // Project-agent-created tasks build a category-default agent without
+    // going through `assignCategoryDefaultTaskAgent`, so the category's wake
+    // preference has to be forwarded here too — otherwise a task the project
+    // agent creates silently opts out of a category that asked for automatic
+    // wakes.
+    test('create_task forwards the category wake preference', () async {
+      final createdTask = makeTestTask(id: taskId, title: 'Write docs');
+      final category = CategoryDefinition(
+        id: 'cat-001',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        name: 'Platform',
+        vectorClock: null,
+        private: false,
+        active: true,
+        defaultProfileId: 'profile-001',
+        defaultTemplateId: 'template-001',
+        automaticAgentWakesEnabled: true,
+      );
+
+      when(
+        () => mockProjectRepository.getProjectById(projectId),
+      ).thenAnswer((_) async => project);
+      when(
+        () => mockEntitiesCacheService.getCategoryById('cat-001'),
+      ).thenReturn(category);
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => createdTask);
+      when(
+        () => mockProjectRepository.linkTaskToProject(
+          projectId: projectId,
+          taskId: taskId,
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockTaskAgentService.createTaskAgent(
+          taskId: taskId,
+          templateId: 'template-001',
+          profileId: 'profile-001',
+          allowedCategoryIds: {'cat-001'},
+          awaitContent: any(named: 'awaitContent'),
+          automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
+        ),
+      ).thenAnswer((_) async => makeTestIdentity());
+
+      final result = await dispatcher.dispatch(
+        ProjectAgentToolNames.createTask,
+        {'title': 'Write docs'},
+        projectId,
+      );
+
+      expect(result.success, isTrue);
+      verify(
+        () => mockTaskAgentService.createTaskAgent(
+          taskId: taskId,
+          templateId: 'template-001',
+          profileId: 'profile-001',
+          allowedCategoryIds: {'cat-001'},
+          awaitContent: true,
+          automaticUpdatesEnabled: true,
         ),
       ).called(1);
     });

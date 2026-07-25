@@ -442,4 +442,123 @@ void main() {
       expect(saved.automaticInferenceEnabled, isTrue);
     });
   });
+
+  // Seeds `AgentConfig.automaticUpdatesEnabled` on task agents created here.
+  // Deliberately independent of the automatic-inference switch above:
+  // transcription and image analysis keep running with wakes switched off.
+  group('Automatic agent wakes switch', () {
+    late MockCategoryRepository mockRepository;
+    late String testCategoryId;
+
+    setUp(() {
+      mockRepository = MockCategoryRepository();
+      testCategoryId = const Uuid().v4();
+      beamToNamedOverride = (_) {};
+    });
+
+    tearDown(() {
+      beamToNamedOverride = null;
+    });
+
+    Future<void> pumpPage(
+      WidgetTester tester, {
+      required CategoryDefinition category,
+    }) async {
+      tester.view.physicalSize = const Size(1024, 3600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      when(
+        () => mockRepository.watchCategory(testCategoryId),
+      ).thenAnswer((_) => Stream.value(category));
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(mockRepository),
+            categoryAutomationAvailableProvider(
+              category.defaultProfileId,
+            ).overrideWith((ref) async => false),
+          ],
+          child: CategoryDetailsPage(categoryId: testCategoryId),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+    }
+
+    Finder switchFinder() => find.ancestor(
+      of: find.text('Wake the assistant automatically'),
+      matching: find.byType(SettingsSwitchRow),
+    );
+
+    // No default template means no agent is ever created here, so the row
+    // would control nothing.
+    testWidgets('is hidden without a default agent template', (tester) async {
+      await pumpPage(
+        tester,
+        category: CategoryTestUtils.createTestCategory(),
+      );
+
+      expect(switchFinder(), findsNothing);
+    });
+
+    testWidgets('renders off for a category that never opted in', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        category: CategoryTestUtils.createTestCategory(
+          defaultTemplateId: 'template-1',
+        ),
+      );
+
+      expect(tester.widget<SettingsSwitchRow>(switchFinder()).value, isFalse);
+    });
+
+    testWidgets('renders on for a category that opted in', (tester) async {
+      await pumpPage(
+        tester,
+        category: CategoryTestUtils.createTestCategory(
+          defaultTemplateId: 'template-1',
+          automaticAgentWakesEnabled: true,
+        ),
+      );
+
+      expect(tester.widget<SettingsSwitchRow>(switchFinder()).value, isTrue);
+    });
+
+    testWidgets('persists the opt-in without touching automatic inference', (
+      tester,
+    ) async {
+      final category = CategoryTestUtils.createTestCategory(
+        defaultTemplateId: 'template-1',
+      );
+      when(
+        () => mockRepository.getCategoryById(testCategoryId),
+      ).thenAnswer((_) async => category);
+      when(
+        () => mockRepository.updateCategory(any()),
+      ).thenAnswer((_) async => category);
+
+      await pumpPage(tester, category: category);
+
+      // Invoke the row's callback directly: the toggle sits behind an
+      // IgnorePointer and the row is below the fold in this tall viewport.
+      tester.widget<SettingsSwitchRow>(switchFinder()).onChanged!(true);
+      await tester.pump();
+      expect(isPillEnabled(tester, 'Save'), isTrue);
+      await tester.tap(pillFinder('Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      final saved =
+          verify(
+                () => mockRepository.updateCategory(captureAny()),
+              ).captured.single
+              as CategoryDefinition;
+      expect(saved.automaticAgentWakesEnabled, isTrue);
+      expect(saved.automaticInferenceEnabled, isNull);
+    });
+  });
 }

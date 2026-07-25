@@ -1257,6 +1257,8 @@
   "categoryActiveSwitchDescription": "Sélectionnable pour les nouvelles entrées",
   "categoryAiDefaultsDescription": "Définir le profil IA et le modèle d'agent par défaut pour les nouvelles tâches de cette catégorie",
   "categoryAiDefaultsTitle": "Paramètres IA par défaut",
+  "categoryAutomaticAgentWakesDescription": "Laisse l'assistant de cette catégorie se mettre à jour quand une tâche change. S'applique aux nouvelles tâches ; les tâches existantes gardent leur propre réglage.",
+  "categoryAutomaticAgentWakesLabel": "Réveille l'assistant automatiquement",
   "categoryAutomaticInferenceDescription": "Transcris les nouveaux audios et analyse les nouvelles images de cette catégorie automatiquement",
   "categoryAutomaticInferenceLabel": "Inférence automatique",
   "categoryCreationError": "Impossible de créer la catégorie. Réessaie s'il te plaît.",

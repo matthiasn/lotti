@@ -1264,6 +1264,8 @@
   "categoryActiveSwitchDescription": "Volitelné pro nové záznamy",
   "categoryAiDefaultsDescription": "Nastav výchozí AI profil a šablonu agenta pro nové úkoly v této kategorii",
   "categoryAiDefaultsTitle": "Výchozí hodnoty AI",
+  "categoryAutomaticAgentWakesDescription": "Nech asistenta v této kategorii, ať se sám aktualizuje při změně úkolu. Platí pro nové úkoly; stávající si ponechají vlastní nastavení.",
+  "categoryAutomaticAgentWakesLabel": "Probouzet asistenta automaticky",
   "categoryAutomaticInferenceDescription": "Automaticky přepisovat nové audio a analyzovat nové obrázky v této kategorii",
   "categoryAutomaticInferenceLabel": "Automatická inference",
   "categoryCreationError": "Nepodařilo se vytvořit kategorii.",

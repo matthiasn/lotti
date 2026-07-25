@@ -281,6 +281,49 @@ void main() {
       },
     );
 
+    // Seeds new task agents' automatic-updates preference. Tracked separately
+    // from automaticInferenceEnabled so that switching wakes off leaves
+    // automatic transcription and image analysis alone.
+    test(
+      'setAutomaticAgentWakesEnabled flips hasChanges and leaves automatic '
+      'inference untouched',
+      () async {
+        final category = CategoryTestUtils.createTestCategory();
+
+        when(
+          () => mockRepository.watchCategory(testCategoryId),
+        ).thenAnswer((_) => Stream.value(category));
+
+        final container = makeContainer();
+        final controller = await loadCategory(container);
+
+        expect(
+          container
+              .read(categoryDetailsControllerProvider(testCategoryId))
+              .hasChanges,
+          isFalse,
+        );
+
+        controller.setAutomaticAgentWakesEnabled(enabled: true);
+
+        final state = container.read(
+          categoryDetailsControllerProvider(testCategoryId),
+        );
+        expect(state.hasChanges, isTrue);
+        expect(state.category?.automaticAgentWakesEnabled, isTrue);
+        expect(state.category?.automaticInferenceEnabled, isNull);
+
+        // Back to the original (null) is not the same value as false, so the
+        // form stays dirty — the user has expressed an explicit opt-out.
+        controller.setAutomaticAgentWakesEnabled(enabled: false);
+        final reverted = container.read(
+          categoryDetailsControllerProvider(testCategoryId),
+        );
+        expect(reverted.hasChanges, isTrue);
+        expect(reverted.category?.automaticAgentWakesEnabled, isFalse);
+      },
+    );
+
     test(
       'toggling only isAvailableForDayPlan flips hasChanges and updates '
       'the pending category',

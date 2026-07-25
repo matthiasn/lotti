@@ -1155,6 +1155,95 @@ void main() {
           expect(identity.agentId, 'agent-1');
         });
       });
+
+      // The category's `automaticAgentWakesEnabled` seeds this. Before it
+      // existed the value was hardcoded `false`, so every new task agent
+      // started with wakes off no matter what the category wanted.
+      group('automatic updates seed', () {
+        Future<AgentConfig> createWith({bool? automaticUpdatesEnabled}) async {
+          when(
+            () => mockRepository.getLinksTo('task-seed', type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => makeIdentity());
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+          when(
+            () => mockOrchestrator.setAwaitingContent(
+              any(),
+              awaiting: any(named: 'awaiting'),
+            ),
+          ).thenReturn(null);
+
+          await service.createTaskAgent(
+            taskId: 'task-seed',
+            templateId: kTestTemplateId,
+            allowedCategoryIds: const {},
+            automaticUpdatesEnabled: automaticUpdatesEnabled ?? false,
+          );
+
+          return verify(
+                () => mockAgentService.createAgent(
+                  kind: any(named: 'kind'),
+                  displayName: any(named: 'displayName'),
+                  config: captureAny(named: 'config'),
+                  allowedCategoryIds: any(named: 'allowedCategoryIds'),
+                ),
+              ).captured.single
+              as AgentConfig;
+        }
+
+        test('persists the seeded preference on the new agent', () async {
+          final config = await createWith(automaticUpdatesEnabled: true);
+
+          expect(config.automaticUpdatesEnabled, isTrue);
+          expect(config.automaticUpdatesEnabledEffective, isTrue);
+        });
+
+        test(
+          'defaults to off when the caller expresses no preference',
+          () async {
+            final config = await createWith();
+
+            expect(config.automaticUpdatesEnabled, isFalse);
+          },
+        );
+
+        // Persisting the opt-in is not enough. The orchestrator keeps its own
+        // disabled set, and an agent parked there only leaves it via an
+        // explicit per-task toggle or the next app start's
+        // `restoreSubscriptions`. Without mirroring the seed into the runtime
+        // the category switch looks dead until a restart.
+        test('seeding on frees the agent from the disabled set', () async {
+          await createWith(automaticUpdatesEnabled: true);
+
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+          );
+        });
+
+        test('seeding off keeps the runtime disabled', () async {
+          await createWith();
+
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+          );
+        });
+      });
     });
 
     group('getTaskAgentForTask', () {

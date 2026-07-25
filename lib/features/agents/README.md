@@ -1152,6 +1152,40 @@ the write."
    passes the already-transcribed audio entry, so the first turn attends to
    the spoken capture like a `transcriptionComplete` wake would)
 
+Step 3 seeds `AgentConfig.automaticUpdatesEnabled` from the caller's
+`automaticUpdatesEnabled` argument, filled from
+`CategoryDefinition.automaticAgentWakesEnabled`. It hardcoded `false` before
+the category could express a preference, so an absent category value still
+produces exactly that. Seeding sets the agent's *starting* preference only —
+the per-task switch on the AI summary card owns it from then on, and a later
+category edit does not reach back into existing agents.
+
+The seed is mirrored into the orchestrator, not just persisted: step 6 calls
+`enableAutomaticUpdatesRuntime` when it is on and `disableAutomaticUpdatesRuntime`
+when it is off. The orchestrator keeps its own `_automaticUpdatesDisabledAgents`
+set, and an agent parked there only leaves it via an explicit per-task toggle
+or the next app start's `restoreSubscriptions` — so persisting alone would make
+the category switch look dead until a restart.
+
+Four call sites construct a task agent. The three that build one from the
+category's defaults each forward those defaults themselves:
+
+- `assignCategoryDefaultTaskAgent()` (`lib/logic/create/task_agent_assignment.dart`) — every UI creation path
+- `ProjectToolDispatcher._tryAutoAssignTaskAgent()` — tasks a project agent creates
+- `FollowUpTaskHandler._tryAutoAssignAgent()` — follow-up tasks a task agent creates
+- `OnboardingCaptureToTaskService._assignCategoryAgent()` — the first task of a reused area
+
+The fourth, `assign_agent_cta_part.dart`'s manual "Assign agent" flow, is
+excluded on purpose: the user picks template and profile in a modal and the
+result is marked `setupOrigin: user`, so it is an explicit setup gesture
+rather than the category acting on the user's behalf.
+
+The three non-helper paths deliberately do not route through
+`assignCategoryDefaultTaskAgent`: it also passes
+`setupOrigin: categorySnapshot`, which makes a category without a
+`defaultProfileId` produce a *disabled* agent rather than falling back to the
+template's profile. Any new category default has to be added to all three.
+
 ### Assignment announcement
 
 `taskAgentProvider` — what the AI summary card watches — keys its refresh on
