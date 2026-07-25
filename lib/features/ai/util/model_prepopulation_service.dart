@@ -7,10 +7,12 @@ library;
 
 import 'dart:developer' as developer;
 
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/get_it.dart';
 
 /// Service that handles automatic population of known models
@@ -18,9 +20,14 @@ import 'package:lotti/get_it.dart';
 class ModelPrepopulationService {
   ModelPrepopulationService({
     AiConfigRepository? repository,
-  }) : _repository = repository ?? getIt<AiConfigRepository>();
+    SeedTombstoneStore? tombstoneStore,
+  }) : _repository = repository ?? getIt<AiConfigRepository>(),
+       _tombstones =
+           tombstoneStore ??
+           SeedTombstoneStore(settingsDb: getIt<SettingsDb>());
 
   final AiConfigRepository _repository;
+  final SeedTombstoneStore _tombstones;
 
   /// Pre-populates known models for a given inference provider.
   ///
@@ -59,10 +66,22 @@ class ModelPrepopulationService {
         provider.id: provider,
     };
 
+    // Backfill recreates any known model a configured provider lacks, so a
+    // model the user removed comes back on the next launch without this.
+    final deleted = await _tombstones.deletedIdentities();
+
     var modelsCreated = 0;
 
     // Create models that don't exist yet
     for (final knownModel in knownModels) {
+      if (deleted.contains(
+        SeedTombstoneStore.modelKey(
+          inferenceProviderId: provider.id,
+          providerModelId: knownModel.providerModelId,
+        ),
+      )) {
+        continue;
+      }
       final modelId = generateModelId(
         provider.id,
         knownModel.providerModelId,

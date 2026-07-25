@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils.dart';
@@ -25,6 +26,7 @@ List<AiConfig> _usableProvidersFor(Iterable<InferenceProviderType> types) => [
 void main() {
   late MockAiConfigRepository mockRepo;
   late ProfileSeedingService service;
+  late SeedTombstoneStore tombstones;
 
   setUpAll(() {
     registerFallbackValue(
@@ -37,9 +39,13 @@ void main() {
     );
   });
 
-  setUp(() {
+  setUp(() async {
     mockRepo = MockAiConfigRepository();
-    service = ProfileSeedingService(aiConfigRepository: mockRepo);
+    tombstones = await createTombstoneStore();
+    service = ProfileSeedingService(
+      aiConfigRepository: mockRepo,
+      tombstoneStore: tombstones,
+    );
 
     // Default: all profiles missing (return null for any ID lookup).
     when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
@@ -59,10 +65,49 @@ void main() {
       ),
     );
     when(() => mockRepo.saveConfig(any())).thenAnswer((_) async {});
-    when(() => mockRepo.deleteConfig(any())).thenAnswer((_) async {});
+    when(
+      () => mockRepo.deleteConfig(
+        any(),
+        fromSync: any(named: 'fromSync'),
+        recordTombstone: any(named: 'recordTombstone'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   group('ProfileSeedingService', () {
+    // The revival bug: seeding writes any template whose row is missing, and
+    // runs at startup and after every provider save — so without a tombstone
+    // the user's deletion is undone within the same session.
+    group('deleted seeds stay deleted', () {
+      test('a tombstoned profile is not re-seeded', () async {
+        await tombstones.remember(
+          SeedTombstoneStore.profileKey(profileGeminiFlashId),
+        );
+
+        await service.seedDefaults();
+
+        final seeded = verify(() => mockRepo.saveConfig(captureAny())).captured
+            .cast<AiConfigInferenceProfile>()
+            .map((profile) => profile.id);
+        expect(seeded, isNot(contains(profileGeminiFlashId)));
+        // Only the deleted one is withheld.
+        expect(seeded, contains(profileGeminiProId));
+      });
+
+      test('forgetting a tombstone lets the profile seed again', () async {
+        final identity = SeedTombstoneStore.profileKey(profileGeminiFlashId);
+        await tombstones.remember(identity);
+        await tombstones.forget(identity);
+
+        await service.seedDefaults();
+
+        final seeded = verify(() => mockRepo.saveConfig(captureAny())).captured
+            .cast<AiConfigInferenceProfile>()
+            .map((profile) => profile.id);
+        expect(seeded, contains(profileGeminiFlashId));
+      });
+    });
+
     test('seeds all default profiles when none exist', () async {
       await service.seedDefaults();
 
@@ -597,7 +642,12 @@ void main() {
 
         await service.removeOrphanedDefaultSeeds();
 
-        verify(() => mockRepo.deleteConfig(profileMeliousId)).called(1);
+        verify(
+          () => mockRepo.deleteConfig(
+            profileMeliousId,
+            recordTombstone: false,
+          ),
+        ).called(1);
       },
     );
 
@@ -613,7 +663,13 @@ void main() {
 
       await service.removeOrphanedDefaultSeeds();
 
-      verifyNever(() => mockRepo.deleteConfig(any()));
+      verifyNever(
+        () => mockRepo.deleteConfig(
+          any(),
+          fromSync: any(named: 'fromSync'),
+          recordTombstone: any(named: 'recordTombstone'),
+        ),
+      );
     });
 
     test(
@@ -632,7 +688,13 @@ void main() {
 
         await service.removeOrphanedDefaultSeeds();
 
-        verifyNever(() => mockRepo.deleteConfig(any()));
+        verifyNever(
+          () => mockRepo.deleteConfig(
+            any(),
+            fromSync: any(named: 'fromSync'),
+            recordTombstone: any(named: 'recordTombstone'),
+          ),
+        );
       },
     );
 
@@ -668,7 +730,13 @@ void main() {
 
         await service.removeOrphanedDefaultSeeds();
 
-        verifyNever(() => mockRepo.deleteConfig(any()));
+        verifyNever(
+          () => mockRepo.deleteConfig(
+            any(),
+            fromSync: any(named: 'fromSync'),
+            recordTombstone: any(named: 'recordTombstone'),
+          ),
+        );
       },
     );
 
@@ -690,7 +758,12 @@ void main() {
 
         await service.removeOrphanedDefaultSeeds();
 
-        verify(() => mockRepo.deleteConfig(profileLocalPowerId)).called(1);
+        verify(
+          () => mockRepo.deleteConfig(
+            profileLocalPowerId,
+            recordTombstone: false,
+          ),
+        ).called(1);
       },
     );
 
@@ -713,7 +786,13 @@ void main() {
 
         await service.removeOrphanedDefaultSeeds();
 
-        verifyNever(() => mockRepo.deleteConfig(any()));
+        verifyNever(
+          () => mockRepo.deleteConfig(
+            any(),
+            fromSync: any(named: 'fromSync'),
+            recordTombstone: any(named: 'recordTombstone'),
+          ),
+        );
       }
     });
 
@@ -735,7 +814,13 @@ void main() {
 
       await service.removeOrphanedDefaultSeeds();
 
-      verifyNever(() => mockRepo.deleteConfig(any()));
+      verifyNever(
+        () => mockRepo.deleteConfig(
+          any(),
+          fromSync: any(named: 'fromSync'),
+          recordTombstone: any(named: 'recordTombstone'),
+        ),
+      );
     });
   });
 

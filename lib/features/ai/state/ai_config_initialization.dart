@@ -1,9 +1,12 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
+import 'package:lotti/get_it.dart';
 
 /// Seeds default inference profiles and backfills known models on startup.
 ///
@@ -17,6 +20,9 @@ Future<void> aiConfigInitialization(Ref ref) async {
   final aiConfigRepo = ref.watch(aiConfigRepositoryProvider);
   final profileService = ProfileSeedingService(
     aiConfigRepository: aiConfigRepo,
+    tombstoneStore: SeedTombstoneStore(
+      settingsDb: getIt<SettingsDb>(),
+    ),
   );
 
   // Backfill known models before seeding so that new default profiles can

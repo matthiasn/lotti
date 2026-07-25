@@ -7,10 +7,12 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -426,4 +428,22 @@ class ChecklistTestDataFactory {
       ),
     );
   }
+}
+
+/// A [SeedTombstoneStore] backed by a real in-memory settings database, so
+/// reads and writes behave exactly as they do in production.
+///
+/// Pass [deleted] to start with tombstones already recorded. Callers own the
+/// returned store's lifetime only through the database, which the in-memory
+/// executor discards with the test isolate.
+Future<SeedTombstoneStore> createTombstoneStore({
+  Set<String> deleted = const {},
+}) async {
+  final store = SeedTombstoneStore(
+    settingsDb: SettingsDb(inMemoryDatabase: true),
+  );
+  for (final identity in deleted) {
+    await store.remember(identity);
+  }
+  return store;
 }

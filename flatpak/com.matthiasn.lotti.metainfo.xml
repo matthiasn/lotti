@@ -35,6 +35,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1067" date="2026-07-25">
+      <description>
+        <p>Fixed: deleting a bundled AI profile or model now sticks. The app re-created its bundled defaults whenever one was missing — at every launch, and again each time you saved a provider — so deleting one you did not want brought it straight back. Deletions are now remembered. Removing a provider still takes its models with it and still restores them if you add that provider again.</p>
+        <p>Fixed: clearing a profile's automated skills no longer re-enables them. Removing every skill from a bundled profile used to put them back, with automation switched on, on the next launch.</p>
+      </description>
+    </release>
     <release version="0.9.1066" date="2026-07-25">
       <description>
         <p>The "Active" badge on inference profiles now means something you can control. A profile was badged Active purely because one of its models belonged to a provider you had connected, so it could appear active the moment you set up a provider with nothing you could do to change it, while the profile your categories actually used showed nothing. The badge now reads "In use" and appears only when a category or a task agent routes through that profile.</p>

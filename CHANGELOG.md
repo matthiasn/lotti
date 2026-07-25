@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1067]
+### Fixed
+- **Deleting a bundled AI profile or model now sticks.** The app re-created
+  its bundled defaults whenever one was missing — at every launch, and again
+  each time you saved a provider — so deleting one you did not want brought it
+  straight back, sometimes within the same session. Deletions are now
+  remembered. Removing a provider still takes its models with it and still
+  restores them if you add that provider again.
+- **Clearing a profile's automated skills no longer re-enables them.** If you
+  removed every skill from a bundled profile, the next launch put them back
+  with automation switched on. Your empty list is now left alone.
+
 ## [0.9.1066]
 ### Changed
 - **The "Active" badge on inference profiles now means something you can

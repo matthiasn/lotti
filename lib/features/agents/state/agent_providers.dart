@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -487,6 +489,9 @@ Future<void> agentInitialization(Ref ref) async {
   final aiConfigRepo = ref.watch(aiConfigRepositoryProvider);
   final profileSeeder = ProfileSeedingService(
     aiConfigRepository: aiConfigRepo,
+    tombstoneStore: SeedTombstoneStore(
+      settingsDb: getIt<SettingsDb>(),
+    ),
   );
   await Future.wait([
     templateService.seedDefaults(),

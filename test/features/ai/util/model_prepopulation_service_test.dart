@@ -1,12 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
-import '../../../mocks/mocks.dart';
+import '../test_utils.dart';
 import 'model_prepopulation_service_test_helpers.dart';
 
 void main() {
@@ -18,9 +22,12 @@ void main() {
     late MockAiConfigRepository mockRepository;
     late ModelPrepopulationService service;
 
-    setUp(() {
+    setUp(() async {
       mockRepository = MockAiConfigRepository();
-      service = ModelPrepopulationService(repository: mockRepository);
+      service = ModelPrepopulationService(
+        repository: mockRepository,
+        tombstoneStore: await createTombstoneStore(),
+      );
     });
 
     /// Stubs the repository's config queries: [models] for the model type,
@@ -114,6 +121,82 @@ void main() {
         verify(
           () => mockRepository.saveConfig(any()),
         ).called(geminiModels.length - 1);
+      });
+
+      // The production constructor resolves both dependencies from getIt;
+      // every other test injects them, so this pins the default path.
+      test(
+        'falls back to registered dependencies when none are passed',
+        () async {
+          await getIt.reset();
+          getIt
+            ..registerSingleton<AiConfigRepository>(mockRepository)
+            ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true));
+          addTearDown(() async {
+            await getIt<SettingsDb>().close();
+            await getIt.reset();
+          });
+
+          const providerId = 'gemini-provider-id';
+          final provider = AiConfigInferenceProvider(
+            id: providerId,
+            baseUrl: 'https://api.gemini.com',
+            apiKey: 'test-key',
+            name: 'Gemini',
+            createdAt: DateTime(2026, 3, 15),
+            inferenceProviderType: InferenceProviderType.gemini,
+          );
+          stubRepo(providers: [provider]);
+
+          final created = await ModelPrepopulationService()
+              .prepopulateModelsForProvider(provider);
+
+          expect(
+            created,
+            knownModelsByProvider[InferenceProviderType.gemini]!.length,
+          );
+        },
+      );
+
+      // Backfill recreates any known model a configured provider lacks, so
+      // without a tombstone a model the user removed returns on next launch.
+      test('does not recreate a model the user deleted', () async {
+        const providerId = 'gemini-provider-id';
+        final provider = AiConfigInferenceProvider(
+          id: providerId,
+          baseUrl: 'https://api.gemini.com',
+          apiKey: 'test-key',
+          name: 'Gemini',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+        final knownModel =
+            knownModelsByProvider[InferenceProviderType.gemini]!.first;
+
+        stubRepo(providers: [provider]);
+        final tombstoned = ModelPrepopulationService(
+          repository: mockRepository,
+          tombstoneStore: await createTombstoneStore(
+            deleted: {
+              SeedTombstoneStore.modelKey(
+                inferenceProviderId: providerId,
+                providerModelId: knownModel.providerModelId,
+              ),
+            },
+          ),
+        );
+
+        final created = await tombstoned.prepopulateModelsForProvider(provider);
+
+        final saved = verify(
+          () => mockRepository.saveConfig(captureAny()),
+        ).captured.cast<AiConfigModel>().map((model) => model.providerModelId);
+        expect(saved, isNot(contains(knownModel.providerModelId)));
+        // The rest of the catalog is untouched by one tombstone.
+        expect(
+          created,
+          knownModelsByProvider[InferenceProviderType.gemini]!.length - 1,
+        );
       });
 
       test('should create models with correct properties', () async {
@@ -261,6 +344,7 @@ void main() {
           final generatedRepository = MockAiConfigRepository();
           final generatedService = ModelPrepopulationService(
             repository: generatedRepository,
+            tombstoneStore: await createTombstoneStore(),
           );
           final savedModels = <AiConfigModel>[];
 
@@ -375,9 +459,12 @@ void main() {
     late MockAiConfigRepository mockRepository;
     late ModelPrepopulationService service;
 
-    setUp(() {
+    setUp(() async {
       mockRepository = MockAiConfigRepository();
-      service = ModelPrepopulationService(repository: mockRepository);
+      service = ModelPrepopulationService(
+        repository: mockRepository,
+        tombstoneStore: await createTombstoneStore(),
+      );
     });
 
     test('should backfill models for all existing providers', () async {

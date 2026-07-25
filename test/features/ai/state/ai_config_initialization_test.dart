@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_initialization.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -13,10 +15,24 @@ void main() {
 
   late MockAiConfigRepository repo;
 
-  setUp(() {
+  setUp(() async {
     repo = MockAiConfigRepository();
     when(() => repo.saveConfig(any())).thenAnswer((_) async {});
-    when(() => repo.deleteConfig(any())).thenAnswer((_) async {});
+    when(
+      () => repo.deleteConfig(
+        any(),
+        fromSync: any(named: 'fromSync'),
+        recordTombstone: any(named: 'recordTombstone'),
+      ),
+    ).thenAnswer((_) async {});
+    // Seeding consults the tombstone ledger, which lives in the settings db.
+    await getIt.reset();
+    getIt.registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true));
+  });
+
+  tearDown(() async {
+    await getIt<SettingsDb>().close();
+    await getIt.reset();
   });
 
   ProviderContainer createContainer() {
@@ -125,7 +141,9 @@ void main() {
         final container = createContainer();
         await container.read(aiConfigInitializationProvider.future);
 
-        verify(() => repo.deleteConfig(profileMeliousId)).called(1);
+        verify(
+          () => repo.deleteConfig(profileMeliousId, recordTombstone: false),
+        ).called(1);
       },
     );
 
