@@ -1684,7 +1684,7 @@ void main() {
           categoryId: categoryId,
         );
         await tester.pumpWidget(
-          ProviderScope(
+          WidgetTestBench(
             overrides: [
               createEntryControllerOverride(current),
               // The create path fires the same category-agent assignment the
@@ -1692,16 +1692,14 @@ void main() {
               // cannot reach a real AgentDatabase.
               taskAgentServiceProvider.overrideWithValue(taskAgentService),
             ],
-            child: WidgetTestBench(
-              child: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () => LinkTaskModal.show(
-                    context: context,
-                    currentTaskId: 'current-task',
-                    existingRelations: const {},
-                  ),
-                  child: const Text('Open Modal'),
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => LinkTaskModal.show(
+                  context: context,
+                  currentTaskId: 'current-task',
+                  existingRelations: const {},
                 ),
+                child: const Text('Open Modal'),
               ),
             ),
           ),
