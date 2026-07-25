@@ -5,7 +5,6 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -22,12 +21,9 @@ void main() {
     late MockAiConfigRepository mockRepository;
     late ModelPrepopulationService service;
 
-    setUp(() async {
+    setUp(() {
       mockRepository = MockAiConfigRepository();
-      service = ModelPrepopulationService(
-        repository: mockRepository,
-        tombstoneStore: await createTombstoneStore(),
-      );
+      service = ModelPrepopulationService(repository: mockRepository);
     });
 
     /// Stubs the repository's config queries: [models] for the model type,
@@ -37,10 +33,16 @@ void main() {
       List<AiConfig> providers = const [],
     }) {
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => models);
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => providers);
       when(
         () => mockRepository.saveConfig(any()),
@@ -158,64 +160,9 @@ void main() {
         },
       );
 
-      // Mirror of the profile-seeding race: a deletion can land after the
-      // pass read the ledger but before it wrote the row. Model rows and the
-      // ledger live in different databases, so no transaction spans them and
-      // the pass has to reconcile — backfill only ever creates, so nothing
-      // else would remove the resurrected row.
-      test('drops a model tombstoned while the pass was running', () async {
-        const providerId = 'gemini-provider-id';
-        final provider = AiConfigInferenceProvider(
-          id: providerId,
-          baseUrl: 'https://api.gemini.com',
-          apiKey: 'test-key',
-          name: 'Gemini',
-          createdAt: DateTime(2026, 3, 15),
-          inferenceProviderType: InferenceProviderType.gemini,
-        );
-        final knownModel =
-            knownModelsByProvider[InferenceProviderType.gemini]!.first;
-        stubRepo(providers: [provider]);
-        when(
-          () => mockRepository.deleteConfig(
-            any(),
-            fromSync: any(named: 'fromSync'),
-            recordTombstone: any(named: 'recordTombstone'),
-          ),
-        ).thenAnswer((_) async {});
-
-        final racing = ModelPrepopulationService(
-          repository: mockRepository,
-          tombstoneStore: LateTombstoneStore(
-            await createTombstoneStore(),
-            appearsAfterFirstRead: SeedTombstoneStore.modelKey(
-              inferenceProviderId: providerId,
-              providerModelId: knownModel.providerModelId,
-            ),
-          ),
-        );
-
-        await racing.prepopulateModelsForProvider(provider);
-
-        // It was created (the first read saw no tombstone)…
-        final saved = verify(() => mockRepository.saveConfig(captureAny()))
-            .captured
-            .cast<AiConfigModel>()
-            .where(
-              (model) => model.providerModelId == knownModel.providerModelId,
-            );
-        expect(saved, hasLength(1));
-        // …then removed again, without recording a second tombstone.
-        verify(
-          () => mockRepository.deleteConfig(
-            saved.single.id,
-            recordTombstone: false,
-          ),
-        ).called(1);
-      });
-
-      // Backfill recreates any known model a configured provider lacks, so
-      // without a tombstone a model the user removed returns on next launch.
+      // Backfill recreates any known model a configured provider lacks, so a
+      // model the user deleted returns on the next launch unless the row is
+      // still there to be counted as configured.
       test('does not recreate a model the user deleted', () async {
         const providerId = 'gemini-provider-id';
         final provider = AiConfigInferenceProvider(
@@ -228,31 +175,91 @@ void main() {
         );
         final knownModel =
             knownModelsByProvider[InferenceProviderType.gemini]!.first;
-
-        stubRepo(providers: [provider]);
-        final tombstoned = ModelPrepopulationService(
-          repository: mockRepository,
-          tombstoneStore: await createTombstoneStore(
-            deleted: {
-              SeedTombstoneStore.modelKey(
-                inferenceProviderId: providerId,
-                providerModelId: knownModel.providerModelId,
-              ),
-            },
-          ),
+        final deletedRow = knownModel.toAiConfigModel(
+          id: generateModelId(providerId, knownModel.providerModelId),
+          inferenceProviderId: providerId,
+        );
+        stubRepo(
+          providers: [provider],
+          models: [deletedRow.copyWith(deletedAt: DateTime(2026, 7, 25))],
         );
 
-        final created = await tombstoned.prepopulateModelsForProvider(provider);
+        final created = await service.prepopulateModelsForProvider(provider);
 
         final saved = verify(
           () => mockRepository.saveConfig(captureAny()),
         ).captured.cast<AiConfigModel>().map((model) => model.providerModelId);
         expect(saved, isNot(contains(knownModel.providerModelId)));
-        // The rest of the catalog is untouched by one tombstone.
         expect(
           created,
           knownModelsByProvider[InferenceProviderType.gemini]!.length - 1,
         );
+      });
+
+      // Deletion is provider-scoped: removing a model under provider A must
+      // not stop the same known model being created for a newly added
+      // provider B of the same type.
+      test(
+        "another provider's deleted row does not suppress this one",
+        () async {
+          const providerA = 'gemini-a';
+          const providerB = 'gemini-b';
+          AiConfigInferenceProvider provider(String id) =>
+              AiConfigInferenceProvider(
+                id: id,
+                baseUrl: 'https://api.gemini.com',
+                apiKey: 'test-key',
+                name: id,
+                createdAt: DateTime(2026, 3, 15),
+                inferenceProviderType: InferenceProviderType.gemini,
+              );
+          final known =
+              knownModelsByProvider[InferenceProviderType.gemini]!.first;
+          final deletedUnderA = known
+              .toAiConfigModel(
+                id: generateModelId(providerA, known.providerModelId),
+                inferenceProviderId: providerA,
+              )
+              .copyWith(deletedAt: DateTime(2026, 7, 25));
+
+          stubRepo(
+            providers: [provider(providerA), provider(providerB)],
+            models: [deletedUnderA],
+          );
+
+          await service.prepopulateModelsForProvider(provider(providerB));
+
+          final saved = verify(() => mockRepository.saveConfig(captureAny()))
+              .captured
+              .cast<AiConfigModel>()
+              .where((model) => model.providerModelId == known.providerModelId);
+          expect(saved, hasLength(1));
+          expect(saved.single.inferenceProviderId, providerB);
+        },
+      );
+
+      // The existing-model scan must ask for deleted rows, or it reads
+      // "removed" as "never configured".
+      test('the existing-model scan includes deleted rows', () async {
+        const providerId = 'gemini-provider-id';
+        final provider = AiConfigInferenceProvider(
+          id: providerId,
+          baseUrl: 'https://api.gemini.com',
+          apiKey: 'test-key',
+          name: 'Gemini',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+        stubRepo(providers: [provider]);
+
+        await service.prepopulateModelsForProvider(provider);
+
+        verify(
+          () => mockRepository.getConfigsByType(
+            AiConfigType.model,
+            includeDeleted: true,
+          ),
+        ).called(1);
       });
 
       test('should create models with correct properties', () async {
@@ -269,11 +276,15 @@ void main() {
 
         AiConfigModel? capturedModel;
         when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
+          () => mockRepository.getConfigsByType(
+            AiConfigType.model,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => []);
         when(
           () => mockRepository.getConfigsByType(
             AiConfigType.inferenceProvider,
+            includeDeleted: any(named: 'includeDeleted'),
           ),
         ).thenAnswer((_) async => [provider]);
 
@@ -400,16 +411,19 @@ void main() {
           final generatedRepository = MockAiConfigRepository();
           final generatedService = ModelPrepopulationService(
             repository: generatedRepository,
-            tombstoneStore: await createTombstoneStore(),
           );
           final savedModels = <AiConfigModel>[];
 
           when(
-            () => generatedRepository.getConfigsByType(AiConfigType.model),
+            () => generatedRepository.getConfigsByType(
+              AiConfigType.model,
+              includeDeleted: any(named: 'includeDeleted'),
+            ),
           ).thenAnswer((_) async => scenario.existingConfigs);
           when(
             () => generatedRepository.getConfigsByType(
               AiConfigType.inferenceProvider,
+              includeDeleted: any(named: 'includeDeleted'),
             ),
           ).thenAnswer((_) async => [scenario.provider]);
           when(
@@ -515,12 +529,9 @@ void main() {
     late MockAiConfigRepository mockRepository;
     late ModelPrepopulationService service;
 
-    setUp(() async {
+    setUp(() {
       mockRepository = MockAiConfigRepository();
-      service = ModelPrepopulationService(
-        repository: mockRepository,
-        tombstoneStore: await createTombstoneStore(),
-      );
+      service = ModelPrepopulationService(repository: mockRepository);
     });
 
     test('should backfill models for all existing providers', () async {
@@ -534,11 +545,17 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [ollamaProvider]);
 
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => []);
 
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async => {});
@@ -570,11 +587,17 @@ void main() {
       }).toList();
 
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [ollamaProvider]);
 
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => existingModels);
 
       await service.backfillNewModels();
@@ -601,11 +624,17 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [ollamaProvider, geminiProvider]);
 
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => []);
 
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async => {});
@@ -639,11 +668,17 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [ollamaProvider]);
 
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [existingModel]);
 
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async => {});
@@ -657,7 +692,10 @@ void main() {
 
     test('should handle no existing providers gracefully', () async {
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => []);
 
       await service.backfillNewModels();

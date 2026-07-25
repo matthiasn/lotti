@@ -3,11 +3,10 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/ai/util/provider_type_utils.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -55,6 +54,12 @@ class AiConfigRepository {
     AiConfig config, {
     bool fromSync = false,
   }) async {
+    // Only inbound writes are screened: a local edit of a deleted row is the
+    // user acting on this device, and `restoreConfig` is the deliberate way
+    // back. A peer replaying its still-active copy is not.
+    if (fromSync && await _isStaleReplayOfTombstone(config)) {
+      return;
+    }
     await _db.saveConfig(config);
     _storeConfig(config);
     if (!fromSync) {
@@ -67,54 +72,134 @@ class AiConfigRepository {
     }
   }
 
-  /// Delete an AI configuration by its ID.
+  /// Soft-deletes an AI configuration: the row stays and gains a `deletedAt`
+  /// stamp, and the change replicates through the normal config sync path.
   ///
-  /// A user-initiated deletion also records a seed tombstone, so the seeding
-  /// passes stop recreating the row on the next launch or provider save. Set
-  /// [recordTombstone] to false for deletions the app performs on the user's
-  /// behalf and expects to undo later — the orphaned-seed cleanup, and the
-  /// model rows removed by a provider cascade (re-adding that provider must
-  /// bring its models back).
+  /// Deletion has to leave a trace the seeding passes can see. `seedDefaults`
+  /// writes any bundled template whose row is missing, and `backfillNewModels`
+  /// recreates any known model a configured provider lacks — both at startup
+  /// and again after a provider is saved — so a hard delete is undone within
+  /// the session, and on a synced pair each peer re-seeds a default it never
+  /// saw removed. Keeping the row makes "deleted" distinguishable from
+  /// "missing", in the same database and the same write, and it converges
+  /// across devices because it rides the existing `SyncMessage.aiConfig`.
+  ///
+  /// Reads hide these rows by default; the seeding passes ask for them.
+  ///
+  /// This mirrors how the journal domain deletes synced entities — see
+  /// `CategoryRepository.deleteCategory`.
   Future<void> deleteConfig(
     String id, {
     bool fromSync = false,
-    bool recordTombstone = true,
   }) async {
-    // Read before the delete: the identity a tombstone needs (a model's
-    // provider-native id and owning provider) only exists on the row.
-    final config = recordTombstone ? await getConfigById(id) : null;
+    final config = await getConfigById(id, includeDeleted: true);
+    if (config == null) {
+      // A legacy delete can arrive before this device has the row. Bundled
+      // profiles are reconstructible from their template, so write the
+      // tombstone anyway — otherwise seeding recreates exactly what the peer's
+      // user deleted. Nothing else is seeded by id, so nothing else can be
+      // resurrected this way.
+      await _tombstoneUnseenSeed(id, fromSync: fromSync);
+      return;
+    }
+    if (config.deletedAt != null) return;
+
+    // Only profiles and models are ever re-created by the seeding passes, so
+    // only they need the row kept as a tombstone. Retaining anything else
+    // would keep content the user asked to remove — a deleted prompt's system
+    // and user messages, say — and replicate it to peers, which the delete
+    // dialog explicitly promises not to do.
+    if (!_isSeededType(config)) {
+      await hardDeleteConfig(id, fromSync: fromSync);
+      return;
+    }
+
+    final now = DateTime.now();
+    await saveConfig(
+      config.copyWith(deletedAt: now, updatedAt: now),
+      fromSync: fromSync,
+    );
+  }
+
+  /// Whether a seeding pass could recreate [config] if its row went missing.
+  static bool _isSeededType(AiConfig config) => config.map(
+    inferenceProvider: (_) => false,
+    model: (_) => true,
+    prompt: (_) => false,
+    inferenceProfile: (_) => true,
+    skill: (_) => false,
+  );
+
+  /// Writes a tombstone for a bundled profile this device has not seeded yet.
+  Future<void> _tombstoneUnseenSeed(String id, {required bool fromSync}) async {
+    final template = ProfileSeedingService.defaultProfiles
+        .where((profile) => profile.id == id)
+        .firstOrNull;
+    if (template == null) return;
+    final now = DateTime.now();
+    await saveConfig(
+      template.copyWith(deletedAt: now, updatedAt: now),
+      fromSync: fromSync,
+    );
+  }
+
+  /// Removes the row outright, leaving nothing for the seeding passes to see.
+  ///
+  /// Reserved for deletions the app performs on the user's behalf and expects
+  /// to undo later: `removeOrphanedDefaultSeeds` sheds bundled profiles whose
+  /// provider type has no usable provider and deliberately re-seeds them if
+  /// that provider returns, so a soft delete there would make the removal
+  /// permanent — the opposite of what that pass means.
+  Future<void> hardDeleteConfig(
+    String id, {
+    bool fromSync = false,
+  }) async {
     await _db.deleteConfig(id);
     _invalidateConfig(id);
-    if (config != null) {
-      await _rememberSeedTombstone(config);
-    }
     if (!fromSync) {
       await getIt<OutboxService>().enqueueMessage(
-        SyncMessage.aiConfigDelete(id: id),
+        SyncMessage.aiConfigDelete(id: id, hardDelete: true),
       );
     }
   }
 
-  /// Records the deleted [config] so seeding does not bring it back.
+  /// Clears a `deletedAt` stamp, so the seeding passes may recreate the row.
   ///
-  /// Only profiles and models are seeded, so nothing else needs a tombstone.
-  Future<void> _rememberSeedTombstone(AiConfig config) async {
-    final identity = config.mapOrNull(
-      inferenceProfile: (profile) => SeedTombstoneStore.profileKey(profile.id),
-      model: (model) => SeedTombstoneStore.modelKey(
-        inferenceProviderId: model.inferenceProviderId,
-        providerModelId: model.providerModelId,
-      ),
+  /// Used when the user deliberately sets something up again — re-running
+  /// onboarding for a provider whose bundled profile they had deleted.
+  Future<void> restoreConfig(String id) async {
+    final config = await getConfigById(id, includeDeleted: true);
+    if (config == null || config.deletedAt == null) return;
+    // Stamped so this restore is newer than the tombstone it clears, and
+    // therefore wins on any peer applying both.
+    await saveConfig(
+      config.copyWith(deletedAt: null, updatedAt: DateTime.now()),
     );
-    if (identity == null) return;
-    await SeedTombstoneStore(
-      settingsDb: getIt<SettingsDb>(),
-    ).remember(identity);
+  }
+
+  /// Whether an incoming synced [incoming] row would resurrect a local
+  /// tombstone without being a deliberate, newer restore.
+  ///
+  /// A peer that missed a deletion keeps its row active and can replay it —
+  /// through the maintenance pass or a queued edit — which would otherwise
+  /// upsert `deletedAt: null` over the tombstone. Deletions and restores both
+  /// stamp `updatedAt`, so an active row that is not strictly newer than the
+  /// local tombstone is a stale replay and is dropped.
+  Future<bool> _isStaleReplayOfTombstone(AiConfig incoming) async {
+    if (incoming.deletedAt != null) return false;
+    final local = await getConfigById(incoming.id, includeDeleted: true);
+    final tombstonedAt = local?.deletedAt;
+    if (tombstonedAt == null) return false;
+    final incomingUpdatedAt = incoming.updatedAt;
+    if (incomingUpdatedAt == null) return true;
+    final localUpdatedAt = local!.updatedAt ?? tombstonedAt;
+    return !incomingUpdatedAt.isAfter(localUpdatedAt);
   }
 
   /// Delete an inference provider and all its associated models.
   ///
-  /// This method performs cascade deletion within a transaction to ensure atomicity:
+  /// This method performs cascade deletion within a transaction to ensure
+  /// atomicity:
   /// 1. Fetches all models associated with the provider
   /// 2. Deletes each model
   /// 3. Deletes the provider itself
@@ -122,12 +207,20 @@ class AiConfigRepository {
   /// If any deletion fails, the entire transaction is rolled back to maintain
   /// data integrity and prevent partial deletions.
   ///
+  /// The transaction performs database writes only. Cache invalidation and the
+  /// outbox messages that propagate the deletion to peers run *after* it
+  /// commits: enqueuing from inside means a later failure rolls the local rows
+  /// back while the peer deletes stay queued, hard-deleting rows on other
+  /// devices that still exist here.
+  ///
   /// Returns detailed information about the deletion operation.
   Future<CascadeDeletionResult> deleteInferenceProviderWithModels(
     String providerId, {
     bool fromSync = false,
   }) async {
-    return _db.transaction(() async {
+    final deletedIds = <String>[];
+
+    final result = await _db.transaction(() async {
       try {
         // Get the provider first to capture its name
         final provider =
@@ -141,23 +234,18 @@ class AiConfigRepository {
             .where((model) => model.inferenceProviderId == providerId)
             .toList();
 
-        // Delete all associated models with detailed error tracking
+        // Hard deletes: re-adding this provider must bring its models back, so
+        // the cascade must not leave tombstones behind.
         for (final model in associatedModels) {
-          try {
-            await deleteConfig(
-              model.id,
-              fromSync: fromSync,
-              recordTombstone: false,
-            );
-          } catch (e) {
-            // Re-throw to trigger transaction rollback
-            rethrow;
-          }
+          await _db.deleteConfig(model.id);
+          deletedIds.add(model.id);
         }
 
-        // Delete the provider itself
+        // Delete the provider itself. Nothing seeds providers, so there is
+        // no tombstone to keep.
         try {
-          await deleteConfig(providerId, fromSync: fromSync);
+          await _db.deleteConfig(providerId);
+          deletedIds.add(providerId);
         } catch (e) {
           throw Exception('Failed to delete provider $providerId: $e');
         }
@@ -178,10 +266,55 @@ class AiConfigRepository {
         rethrow; // Re-throw to let the caller handle the error
       }
     });
+
+    // Committed: only now are the rows really gone, so only now may the caches
+    // drop them and the peers hear about it.
+    deletedIds.forEach(_invalidateConfig);
+    if (!fromSync) {
+      // Best effort, and deliberately non-fatal. The rows are already gone
+      // locally, so throwing here would tell the user the deletion failed and
+      // withdraw the undo affordance for work that did happen. One failed
+      // enqueue must also not skip the rest — a hard delete leaves no row for
+      // the maintenance pass to replay, so every id we can queue, we queue.
+      for (final id in deletedIds) {
+        try {
+          await getIt<OutboxService>().enqueueMessage(
+            SyncMessage.aiConfigDelete(id: id, hardDelete: true),
+          );
+        } catch (error, stackTrace) {
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt<DomainLogger>().error(
+              LogDomain.ai,
+              error,
+              stackTrace: stackTrace,
+              subDomain: 'deleteInferenceProviderWithModels',
+            );
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
-  /// Get an AI configuration by its ID
-  Future<AiConfig?> getConfigById(String id) async {
+  /// Get an AI configuration by its ID.
+  ///
+  /// Soft-deleted rows are hidden unless [includeDeleted] is set. The seeding
+  /// passes set it: they need "deleted" to read as *present* so they skip
+  /// recreating it, while every user-facing surface must not see it.
+  Future<AiConfig?> getConfigById(
+    String id, {
+    bool includeDeleted = false,
+  }) async {
+    final config = await _getConfigByIdIncludingDeleted(id);
+    if (config == null) return null;
+    if (!includeDeleted && config.deletedAt != null) return null;
+    return config;
+  }
+
+  /// The cached/coalesced read. Caches every row, deleted or not, so both
+  /// callers above are served from one query.
+  Future<AiConfig?> _getConfigByIdIncludingDeleted(String id) async {
     if (_configByIdCache.containsKey(id)) {
       return _configByIdCache[id];
     }
@@ -219,7 +352,23 @@ class AiConfigRepository {
 
   /// Returns cached AI configurations of a specific type, coalescing
   /// overlapping reads against the same database query.
-  Future<List<AiConfig>> getConfigsByType(AiConfigType type) async {
+  ///
+  /// Soft-deleted rows are hidden unless [includeDeleted] is set — see
+  /// [getConfigById].
+  Future<List<AiConfig>> getConfigsByType(
+    AiConfigType type, {
+    bool includeDeleted = false,
+  }) async {
+    final configs = await _getConfigsByTypeIncludingDeleted(type);
+    if (includeDeleted) return configs;
+    return configs
+        .where((config) => config.deletedAt == null)
+        .toList(growable: false);
+  }
+
+  Future<List<AiConfig>> _getConfigsByTypeIncludingDeleted(
+    AiConfigType type,
+  ) async {
     final cached = _configsByTypeCache[type];
     if (cached != null) {
       return cached;
@@ -264,7 +413,10 @@ class AiConfigRepository {
       void emit(List<AiConfig> allConfigs) {
         final filtered = List<AiConfig>.unmodifiable(
           allConfigs
-              .where((config) => _typeForConfig(config) == type)
+              .where(
+                (config) =>
+                    _typeForConfig(config) == type && config.deletedAt == null,
+              )
               .toList(growable: false),
         );
         final previous = lastEmitted;

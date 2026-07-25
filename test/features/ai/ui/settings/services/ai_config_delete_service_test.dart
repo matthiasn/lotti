@@ -443,7 +443,7 @@ void main() {
           () => mockRepository.deleteConfig(testModel.id),
         ).thenAnswer((_) async {});
         when(
-          () => mockRepository.saveConfig(testModel),
+          () => mockRepository.restoreConfig(testModel.id),
         ).thenAnswer((_) async {});
 
         await tester.pumpWidget(
@@ -478,7 +478,7 @@ void main() {
 
         // Assert
         verify(() => mockRepository.deleteConfig(testModel.id)).called(1);
-        verify(() => mockRepository.saveConfig(testModel)).called(1);
+        verify(() => mockRepository.restoreConfig(testModel.id)).called(1);
       });
 
       testWidgets('should undo provider deletion with associated models', (
@@ -545,7 +545,7 @@ void main() {
           () => mockRepository.deleteConfig(testModel.id),
         ).thenAnswer((_) async {});
         when(
-          () => mockRepository.saveConfig(testModel),
+          () => mockRepository.restoreConfig(testModel.id),
         ).thenThrow(Exception('Undo failed'));
 
         await tester.pumpWidget(
@@ -573,7 +573,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Assert - Should not crash or show error to user
-        verify(() => mockRepository.saveConfig(testModel)).called(1);
+        verify(() => mockRepository.restoreConfig(testModel.id)).called(1);
       });
     });
 
@@ -1067,7 +1067,7 @@ void main() {
             () => mockRepository.deleteConfig(testModel.id),
           ).thenAnswer((_) async {});
           when(
-            () => mockRepository.saveConfig(testModel),
+            () => mockRepository.restoreConfig(testModel.id),
           ).thenThrow(Exception('Undo failed – logger path'));
 
           await tester.pumpWidget(
@@ -1094,7 +1094,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 300));
 
           // saveConfig was called (and threw); the service must not re-throw.
-          verify(() => mockRepository.saveConfig(testModel)).called(1);
+          verify(() => mockRepository.restoreConfig(testModel.id)).called(1);
           // The UI stays stable — no error shown to the user for undo failures.
           expect(find.text("Couldn't delete ${testModel.name}"), findsNothing);
         },

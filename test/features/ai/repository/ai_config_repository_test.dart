@@ -2,12 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -84,118 +83,244 @@ void main() {
       },
     );
 
-    test('deleteConfig calls db.deleteConfig', () async {
+    test('deleteConfig is a no-op for a row that does not exist', () async {
       // Arrange
       const id = 'test-id';
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
-      // Deletion reads the row first, to build a seed tombstone identity from
-      // it (a model's identity is provider-scoped, not its row id).
+      // Deletion reads the row first: it stamps `deletedAt` and re-saves,
+      // rather than removing the row, so there is nothing to stamp here.
       when(() => mockDb.getConfigById(any())).thenAnswer((_) async => null);
 
       // Act
       await repository.deleteConfig(id);
 
       // Assert
-      verify(() => mockDb.deleteConfig(id)).called(1);
+      verifyNever(() => mockDb.saveConfig(any()));
+      verifyNever(() => mockDb.deleteConfig(any()));
     });
 
     // Seeding recreates any default profile or known model whose row is
-    // missing, so a deletion has to leave a record or it is undone on the next
-    // launch. Only user-initiated deletions leave one.
-    group('seed tombstones', () {
-      late MockSettingsDb settingsDb;
-
+    // missing, so a deletion has to leave the row behind with a stamp rather
+    // than remove it — that is what makes "deleted" distinguishable from
+    // "never seeded", and it replicates on the normal config sync path.
+    group('soft delete', () {
       setUp(() {
-        settingsDb = getIt<SettingsDb>() as MockSettingsDb;
         when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
       });
 
-      List<String> recordedTombstones() {
-        return verify(
-          () => settingsDb.saveSettingsItem(
-            seedTombstonesSettingsKey,
-            captureAny(),
+      test(
+        'stamps deletedAt and re-saves instead of removing the row',
+        () async {
+          final profile = AiConfig.inferenceProfile(
+            id: 'profile-gemini-flash-001',
+            name: 'Gemini Flash',
+            thinkingModelId: 'model-1',
+            createdAt: fixedDate,
+          );
+          when(
+            () => mockDb.getConfigById('profile-gemini-flash-001'),
+          ).thenAnswer((_) async => profile);
+
+          await repository.deleteConfig('profile-gemini-flash-001');
+
+          final saved =
+              verify(() => mockDb.saveConfig(captureAny())).captured.single
+                  as AiConfigInferenceProfile;
+          expect(saved.id, 'profile-gemini-flash-001');
+          expect(saved.deletedAt, isNotNull);
+          // The row stays: removing it is what let seeding resurrect it.
+          verifyNever(() => mockDb.deleteConfig(any()));
+        },
+      );
+
+      test('deleting twice is a no-op', () async {
+        when(() => mockDb.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: 'profile-1',
+            name: 'Already gone',
+            thinkingModelId: 'model-1',
+            createdAt: fixedDate,
+            deletedAt: fixedDate,
           ),
-        ).captured.cast<String>();
-      }
-
-      /// `verify` fails outright on zero matching calls, so "nothing was
-      /// recorded" has to go through `verifyNever`.
-      void expectNoTombstones() {
-        verifyNever(
-          () => settingsDb.saveSettingsItem(seedTombstonesSettingsKey, any()),
         );
-      }
 
-      test('deleting a profile records its template identity', () async {
-        final profile = AiConfig.inferenceProfile(
-          id: 'profile-gemini-flash-001',
+        await repository.deleteConfig('profile-1');
+
+        verifyNever(() => mockDb.saveConfig(any()));
+      });
+
+      test('restoreConfig clears the stamp', () async {
+        when(() => mockDb.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: 'profile-1',
+            name: 'Gemini Flash',
+            thinkingModelId: 'model-1',
+            createdAt: fixedDate,
+            deletedAt: fixedDate,
+          ),
+        );
+
+        await repository.restoreConfig('profile-1');
+
+        final saved =
+            verify(() => mockDb.saveConfig(captureAny())).captured.single
+                as AiConfigInferenceProfile;
+        expect(saved.deletedAt, isNull);
+      });
+
+      test('reads hide deleted rows unless asked', () async {
+        when(() => mockDb.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: 'profile-1',
+            name: 'Gemini Flash',
+            thinkingModelId: 'model-1',
+            createdAt: fixedDate,
+            deletedAt: fixedDate,
+          ),
+        );
+
+        expect(await repository.getConfigById('profile-1'), isNull);
+        expect(
+          await repository.getConfigById('profile-1', includeDeleted: true),
+          isNotNull,
+        );
+      });
+
+      // Only profiles and models are ever recreated by seeding, so only they
+      // need the row kept. Retaining a deleted prompt would keep its system and
+      // user messages — content the delete dialog promises is gone — and
+      // replicate them to peers.
+      test('a prompt is removed outright, not tombstoned', () async {
+        when(() => mockDb.getConfigById('prompt-1')).thenAnswer(
+          (_) async => AiConfig.prompt(
+            id: 'prompt-1',
+            name: 'Secret prompt',
+            systemMessage: 'sensitive system text',
+            userMessage: 'sensitive user text',
+            defaultModelId: 'model-1',
+            modelIds: const [],
+            createdAt: fixedDate,
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.imageAnalysis,
+          ),
+        );
+
+        await repository.deleteConfig('prompt-1');
+
+        verify(() => mockDb.deleteConfig('prompt-1')).called(1);
+        verifyNever(() => mockDb.saveConfig(any()));
+      });
+
+      // A legacy delete can arrive before this device has ever seeded the row.
+      // Returning without a trace would let seeding recreate exactly what the
+      // peer's user deleted.
+      test('a legacy delete for an unseeded bundled profile still '
+          'tombstones', () async {
+        when(
+          () => mockDb.getConfigById(profileGeminiFlashId),
+        ).thenAnswer((_) async => null);
+
+        await repository.deleteConfig(profileGeminiFlashId, fromSync: true);
+
+        final saved =
+            verify(() => mockDb.saveConfig(captureAny())).captured.single
+                as AiConfigInferenceProfile;
+        expect(saved.id, profileGeminiFlashId);
+        expect(saved.deletedAt, isNotNull);
+      });
+
+      test('an unknown missing id writes nothing', () async {
+        when(
+          () => mockDb.getConfigById('not-a-seed'),
+        ).thenAnswer((_) async => null);
+
+        await repository.deleteConfig('not-a-seed', fromSync: true);
+
+        verifyNever(() => mockDb.saveConfig(any()));
+        verifyNever(() => mockDb.deleteConfig(any()));
+      });
+
+      // A peer that missed the deletion keeps its row active and can replay it
+      // through the maintenance pass; upserting that would clear the tombstone.
+      test('a stale active row from sync does not clear a tombstone', () async {
+        final tombstoned = AiConfig.inferenceProfile(
+          id: 'profile-1',
           name: 'Gemini Flash',
           thinkingModelId: 'model-1',
           createdAt: fixedDate,
+          deletedAt: DateTime(2026, 7, 25, 12),
+          updatedAt: DateTime(2026, 7, 25, 12),
         );
         when(
-          () => mockDb.getConfigById('profile-gemini-flash-001'),
-        ).thenAnswer((_) async => profile);
+          () => mockDb.getConfigById('profile-1'),
+        ).thenAnswer((_) async => tombstoned);
 
-        await repository.deleteConfig('profile-gemini-flash-001');
-
-        expect(
-          recordedTombstones().single,
-          contains('profile:profile-gemini-flash-001'),
+        await repository.saveConfig(
+          tombstoned.copyWith(
+            deletedAt: null,
+            updatedAt: DateTime(2026, 7, 25, 11),
+          ),
+          fromSync: true,
         );
+
+        verifyNever(() => mockDb.saveConfig(any()));
       });
 
-      // Backfill matches models by provider-native id under a provider, so a
-      // row-id tombstone would miss the recreated row.
-      test('deleting a model records its provider-scoped identity', () async {
-        final model = AiConfig.model(
-          id: 'row-id-uuid',
-          name: 'GPT-5.2',
-          providerModelId: 'gpt-5.2',
-          inferenceProviderId: 'provider-1',
-          inputModalities: const [Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
+      test('a newer restore from sync does clear a tombstone', () async {
+        final tombstoned = AiConfig.inferenceProfile(
+          id: 'profile-1',
+          name: 'Gemini Flash',
+          thinkingModelId: 'model-1',
           createdAt: fixedDate,
+          deletedAt: DateTime(2026, 7, 25, 12),
+          updatedAt: DateTime(2026, 7, 25, 12),
         );
         when(
-          () => mockDb.getConfigById('row-id-uuid'),
-        ).thenAnswer((_) async => model);
+          () => mockDb.getConfigById('profile-1'),
+        ).thenAnswer((_) async => tombstoned);
 
-        await repository.deleteConfig('row-id-uuid');
-
-        expect(
-          recordedTombstones().single,
-          contains('model:provider-1:gpt-5.2'),
+        await repository.saveConfig(
+          tombstoned.copyWith(
+            deletedAt: null,
+            updatedAt: DateTime(2026, 7, 25, 13),
+          ),
+          fromSync: true,
         );
+
+        final saved =
+            verify(() => mockDb.saveConfig(captureAny())).captured.single
+                as AiConfigInferenceProfile;
+        expect(saved.deletedAt, isNull);
       });
 
-      test('providers are not tombstoned - nothing seeds them', () async {
-        final provider = AiConfig.inferenceProvider(
-          id: 'provider-1',
-          baseUrl: 'https://api.example.com',
-          apiKey: 'key',
-          name: 'Test API',
+      // A local edit is the user acting on this device; only inbound writes
+      // are screened.
+      test('a local write is never screened', () async {
+        final tombstoned = AiConfig.inferenceProfile(
+          id: 'profile-1',
+          name: 'Gemini Flash',
+          thinkingModelId: 'model-1',
           createdAt: fixedDate,
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
+          deletedAt: DateTime(2026, 7, 25, 12),
+          updatedAt: DateTime(2026, 7, 25, 12),
         );
         when(
-          () => mockDb.getConfigById('provider-1'),
-        ).thenAnswer((_) async => provider);
+          () => mockDb.getConfigById('profile-1'),
+        ).thenAnswer((_) async => tombstoned);
 
-        await repository.deleteConfig('provider-1');
+        await repository.saveConfig(tombstoned.copyWith(deletedAt: null));
 
-        expectNoTombstones();
+        verify(() => mockDb.saveConfig(any())).called(1);
       });
 
-      // The orphaned-seed cleanup deletes rows it wants back once the provider
-      // returns, so it opts out.
-      test('recordTombstone: false skips the record and the read', () async {
-        await repository.deleteConfig('profile-1', recordTombstone: false);
+      // The orphan-seed cleanup removes rows it wants back when the provider
+      // returns, so it must leave no stamp.
+      test('hardDeleteConfig removes the row outright', () async {
+        await repository.hardDeleteConfig('profile-1');
 
-        expectNoTombstones();
-        verifyNever(() => mockDb.getConfigById(any()));
+        verify(() => mockDb.deleteConfig('profile-1')).called(1);
+        verifyNever(() => mockDb.saveConfig(any()));
       });
     });
 
@@ -929,6 +1054,138 @@ void main() {
     tearDown(() async {
       await repository.close();
     });
+
+    // The rows are already gone locally when these run, so a failed enqueue
+    // must not surface as "deletion failed" and withdraw undo — and must not
+    // stop the remaining ids being queued, since a hard delete leaves nothing
+    // for the maintenance pass to replay.
+    test(
+      'deleteInferenceProviderWithModels survives a failing outbox enqueue',
+      () async {
+        final provider = AiConfig.inferenceProvider(
+          id: 'provider-1',
+          baseUrl: 'https://example.com',
+          apiKey: 'key',
+          name: 'Provider 1',
+          createdAt: fixedDate,
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+        final model = AiConfig.model(
+          id: 'model-1',
+          name: 'Model 1',
+          providerModelId: 'provider/model-1',
+          inferenceProviderId: 'provider-1',
+          createdAt: fixedDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        );
+
+        when(
+          () => mockDb.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(() => mockDb.getConfigsByType('model')).thenAnswer(
+          (_) async => [
+            AiConfigDbEntity(
+              id: model.id,
+              type: 'model',
+              name: model.name,
+              serialized: jsonEncode(model.toJson()),
+              createdAt: fixedDate,
+              updatedAt: fixedDate,
+            ),
+          ],
+        );
+        when(
+          () => mockDb.transaction<CascadeDeletionResult>(any()),
+        ).thenAnswer((invocation) async {
+          final callback =
+              invocation.positionalArguments.first
+                  as Future<CascadeDeletionResult> Function();
+          return callback();
+        });
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenThrow(Exception('outbox down'));
+
+        final result = await repository.deleteInferenceProviderWithModels(
+          'provider-1',
+        );
+
+        // Reported as the success it locally is…
+        expect(result.providerName, 'Provider 1');
+        expect(result.deletedModels, hasLength(1));
+        // …and every id was still attempted, not abandoned at the first throw.
+        verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+      },
+    );
+
+    // Enqueuing peer deletes from inside the transaction meant a later
+    // failure rolled the local rows back while the queued deletes stayed —
+    // hard-deleting on other devices rows that still exist here.
+    test(
+      'deleteInferenceProviderWithModels queues no peer deletes when the '
+      'transaction rolls back',
+      () async {
+        final provider = AiConfig.inferenceProvider(
+          id: 'provider-1',
+          baseUrl: 'https://example.com',
+          apiKey: 'key',
+          name: 'Provider 1',
+          createdAt: fixedDate,
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+        final model = AiConfig.model(
+          id: 'model-1',
+          name: 'Model 1',
+          providerModelId: 'provider/model-1',
+          inferenceProviderId: 'provider-1',
+          createdAt: fixedDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        );
+
+        when(
+          () => mockDb.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockDb.getConfigsByType('model'),
+        ).thenAnswer(
+          (_) async => [
+            AiConfigDbEntity(
+              id: model.id,
+              type: 'model',
+              name: model.name,
+              serialized: jsonEncode(model.toJson()),
+              createdAt: fixedDate,
+              updatedAt: fixedDate,
+            ),
+          ],
+        );
+        when(
+          () => mockDb.transaction<CascadeDeletionResult>(any()),
+        ).thenAnswer((invocation) async {
+          final callback =
+              invocation.positionalArguments.first
+                  as Future<CascadeDeletionResult> Function();
+          return callback();
+        });
+        // The model deletes, then the provider row fails, so the transaction
+        // rolls back with one row already removed inside it.
+        when(
+          () => mockDb.deleteConfig('provider-1'),
+        ).thenThrow(Exception('db down'));
+
+        await expectLater(
+          repository.deleteInferenceProviderWithModels('provider-1'),
+          throwsA(isA<Exception>()),
+        );
+
+        // Nothing propagated: peers must not delete rows this device still has.
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      },
+    );
 
     test(
       'deleteInferenceProviderWithModels logs error via DomainLogger and '

@@ -551,7 +551,28 @@ void main() {
     ).called(1);
   });
 
-  test('processes ai config delete messages', () async {
+  test('applies a flagged ai config delete as a hard delete', () async {
+    const id = 'config-id';
+    const message = SyncMessage.aiConfigDelete(id: id, hardDelete: true);
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(
+      () => aiConfigRepository.hardDeleteConfig(id, fromSync: true),
+    ).called(1);
+    verifyNever(
+      () => aiConfigRepository.deleteConfig(
+        any(),
+        fromSync: any(named: 'fromSync'),
+      ),
+    );
+  });
+
+  // 0.9.1068 and earlier hard-deleted user deletions and had no way to say so.
+  // Hard-deleting here would let seeding recreate the row and undo that user's
+  // deletion, so an unflagged envelope becomes a tombstone instead.
+  test('applies an unflagged ai config delete as a soft delete', () async {
     const id = 'config-id';
     const message = SyncMessage.aiConfigDelete(id: id);
     when(() => event.text).thenReturn(encodeMessage(message));
@@ -559,6 +580,12 @@ void main() {
     await processor.process(event: event, journalDb: journalDb);
 
     verify(() => aiConfigRepository.deleteConfig(id, fromSync: true)).called(1);
+    verifyNever(
+      () => aiConfigRepository.hardDeleteConfig(
+        any(),
+        fromSync: any(named: 'fromSync'),
+      ),
+    );
   });
 
   test('processes saved task filter messages', () async {
@@ -1842,10 +1869,7 @@ void main() {
         await processorWithVc.process(event: event, journalDb: journalDb);
 
         verify(
-          () => aiConfigRepository.deleteConfig(
-            'cfg-err',
-            fromSync: true,
-          ),
+          () => aiConfigRepository.deleteConfig('cfg-err', fromSync: true),
         ).called(1);
         verify(
           () => loggingService.error(
@@ -1889,7 +1913,7 @@ void main() {
         await processorWithVc.process(event: event, journalDb: journalDb);
 
         // The bundle's child (an aiConfigDelete) would normally drive a
-        // deleteConfig call inside the unpacker apply phase. With the
+        // hardDeleteConfig call inside the unpacker apply phase. With the
         // self-echo short-circuit, prepare returns a PreparedSyncEvent
         // with no resolved bundle and apply no-ops.
         verifyNever(
@@ -1928,10 +1952,7 @@ void main() {
         await processorWithVc.process(event: event, journalDb: journalDb);
 
         verify(
-          () => aiConfigRepository.deleteConfig(
-            'cfg-peer',
-            fromSync: true,
-          ),
+          () => aiConfigRepository.deleteConfig('cfg-peer', fromSync: true),
         ).called(1);
       },
     );

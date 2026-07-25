@@ -174,18 +174,30 @@ void main() {
     // Default mock responses
     when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
     when(
-      () => mockRepository.getConfigById('test-provider-id'),
+      () => mockRepository.getConfigById(
+        'test-provider-id',
+        includeDeleted: any(named: 'includeDeleted'),
+      ),
     ).thenAnswer((_) async => testProvider);
     when(
-      () => mockRepository.getConfigsByType(AiConfigType.model),
+      () => mockRepository.getConfigsByType(
+        AiConfigType.model,
+        includeDeleted: any(named: 'includeDeleted'),
+      ),
     ).thenAnswer((_) async => []);
     when(
-      () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      () => mockRepository.getConfigsByType(
+        AiConfigType.prompt,
+        includeDeleted: any(named: 'includeDeleted'),
+      ),
     ).thenAnswer((_) async => []);
     // Saving a new provider runs a profile-upgrade pass after model
     // prepopulation, which reads the existing inference profiles.
     when(
-      () => mockRepository.getConfigsByType(AiConfigType.inferenceProfile),
+      () => mockRepository.getConfigsByType(
+        AiConfigType.inferenceProfile,
+        includeDeleted: any(named: 'includeDeleted'),
+      ),
     ).thenAnswer((_) async => []);
 
     // Default category mock responses
@@ -218,7 +230,10 @@ void main() {
       () => mockCategoryRepository.getAllCategories(),
     ).thenAnswer((_) async => []);
     when(
-      () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      () => mockRepository.getConfigsByType(
+        AiConfigType.inferenceProvider,
+        includeDeleted: any(named: 'includeDeleted'),
+      ),
     ).thenAnswer((_) async => []);
   });
 
@@ -237,7 +252,10 @@ void main() {
     // Set up provider count mock if existingProviders is provided
     if (existingProviders != null) {
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => existingProviders);
     }
 
@@ -534,7 +552,10 @@ void main() {
 
       // Setup repository to throw error
       when(
-        () => mockRepository.getConfigById('error-id'),
+        () => mockRepository.getConfigById(
+          'error-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenThrow(Exception('Failed to load'));
 
       await tester.pumpWidget(buildTestWidget(configId: 'error-id'));
@@ -605,7 +626,10 @@ void main() {
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
       when(
-        () => mockRepository.getConfigById('generic-provider-id'),
+        () => mockRepository.getConfigById(
+          'generic-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => genericProvider);
 
       await tester.pumpWidget(
@@ -727,7 +751,10 @@ void main() {
         );
 
         when(
-          () => mockRepository.getConfigById('ollama-id'),
+          () => mockRepository.getConfigById(
+            'ollama-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => ollamaProvider);
 
         await tester.pumpWidget(buildTestWidget(configId: 'ollama-id'));
@@ -860,7 +887,10 @@ void main() {
           return Future.value();
         });
         when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
+          () => mockRepository.getConfigsByType(
+            AiConfigType.model,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
         );
@@ -932,7 +962,10 @@ void main() {
           inferenceProviderType: InferenceProviderType.mlxAudio,
         );
         when(
-          () => mockRepository.getConfigById('mlx-provider-id'),
+          () => mockRepository.getConfigById(
+            'mlx-provider-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => mlxProvider);
         when(
           () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -1139,7 +1172,10 @@ void main() {
         return Future.value();
       });
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer(
         (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
       );
@@ -1243,7 +1279,10 @@ void main() {
         );
 
         when(
-          () => mockRepository.getConfigById('existing-gemini-id'),
+          () => mockRepository.getConfigById(
+            'existing-gemini-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => existingGemini);
 
         await tester.pumpWidget(
@@ -1283,7 +1322,10 @@ void main() {
         return Future.value();
       });
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer(
         (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
       );
@@ -1346,7 +1388,10 @@ void main() {
         return Future.value();
       });
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer(
         (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
       );
@@ -1413,7 +1458,10 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('nebius-provider-id'),
+        () => mockRepository.getConfigById(
+          'nebius-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => nebiusProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -1497,7 +1545,10 @@ void main() {
       ]);
 
       when(
-        () => mockRepository.getConfigById('melious-provider-id'),
+        () => mockRepository.getConfigById(
+          'melious-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => meliousProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -1549,7 +1600,10 @@ void main() {
         );
 
         when(
-          () => mockRepository.getConfigById('melious-provider-id'),
+          () => mockRepository.getConfigById(
+            'melious-provider-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => meliousProvider);
         when(
           () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -1639,7 +1693,10 @@ void main() {
         );
 
         when(
-          () => mockRepository.getConfigById('melious-provider-id'),
+          () => mockRepository.getConfigById(
+            'melious-provider-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => meliousProvider);
         when(
           () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -1739,7 +1796,10 @@ void main() {
       ]);
 
       when(
-        () => mockRepository.getConfigById('omlx-provider-id'),
+        () => mockRepository.getConfigById(
+          'omlx-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => omlxProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -1791,7 +1851,10 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('melious-provider-id'),
+        () => mockRepository.getConfigById(
+          'melious-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => meliousProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -1853,7 +1916,10 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('melious-provider-id'),
+        () => mockRepository.getConfigById(
+          'melious-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => meliousProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -1907,7 +1973,10 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('melious-provider-id'),
+        () => mockRepository.getConfigById(
+          'melious-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => meliousProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -1975,7 +2044,10 @@ void main() {
           inferenceProviderType: InferenceProviderType.anthropic,
         );
         when(
-          () => mockRepository.getConfigById('stale-provider-id'),
+          () => mockRepository.getConfigById(
+            'stale-provider-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => staleProvider);
         when(
           () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -2049,7 +2121,10 @@ void main() {
         );
 
         when(
-          () => mockRepository.getConfigById('melious-provider-id'),
+          () => mockRepository.getConfigById(
+            'melious-provider-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => meliousProvider);
         when(
           () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -2118,7 +2193,10 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('gemini-provider-id'),
+        () => mockRepository.getConfigById(
+          'gemini-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => geminiProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -2173,7 +2251,10 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('gemini-provider-id'),
+        () => mockRepository.getConfigById(
+          'gemini-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => geminiProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -2212,7 +2293,10 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('gemini-provider-id'),
+        () => mockRepository.getConfigById(
+          'gemini-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => geminiProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -2272,7 +2356,10 @@ void main() {
         );
 
         when(
-          () => mockRepository.getConfigById('gemini-provider-id'),
+          () => mockRepository.getConfigById(
+            'gemini-provider-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => geminiProvider);
         when(
           () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -2333,7 +2420,10 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('gemini-provider-id'),
+        () => mockRepository.getConfigById(
+          'gemini-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => geminiProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -2389,7 +2479,10 @@ void main() {
         );
 
         when(
-          () => mockRepository.getConfigById('custom-provider-id'),
+          () => mockRepository.getConfigById(
+            'custom-provider-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => customProvider);
         when(
           () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -2424,7 +2517,10 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('dynamic-provider-id'),
+        () => mockRepository.getConfigById(
+          'dynamic-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => provider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
@@ -2610,13 +2706,19 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('gemini-provider-id'),
+        () => mockRepository.getConfigById(
+          'gemini-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => geminiProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [geminiProvider]);
 
       await tester.pumpWidget(
@@ -2670,13 +2772,19 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('openai-provider-id'),
+        () => mockRepository.getConfigById(
+          'openai-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => openAiProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [openAiProvider]);
 
       await tester.pumpWidget(
@@ -2720,13 +2828,19 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('mistral-provider-id'),
+        () => mockRepository.getConfigById(
+          'mistral-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => mistralProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [mistralProvider]);
 
       await tester.pumpWidget(
@@ -2772,13 +2886,19 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('openrouter-provider-id'),
+        () => mockRepository.getConfigById(
+          'openrouter-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => openRouterProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [openRouterProvider]);
 
       await tester.pumpWidget(
@@ -2826,13 +2946,19 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('gemini-provider-id'),
+        () => mockRepository.getConfigById(
+          'gemini-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => geminiProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [geminiProvider]);
 
       await tester.pumpWidget(
@@ -2888,18 +3014,27 @@ void main() {
           return Future.value();
         });
         when(
-          () => mockRepository.getConfigById('gemini-provider-id'),
+          () => mockRepository.getConfigById(
+            'gemini-provider-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => geminiProvider);
         when(
           () => mockRepository.watchConfigsByType(AiConfigType.model),
         ).thenAnswer((_) => Stream.value([]));
         when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
+          () => mockRepository.getConfigsByType(
+            AiConfigType.model,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
         );
         when(
-          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          () => mockRepository.getConfigsByType(
+            AiConfigType.inferenceProvider,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => [geminiProvider]);
 
         await tester.pumpWidget(
@@ -2978,13 +3113,19 @@ void main() {
       );
 
       when(
-        () => mockRepository.getConfigById('gemini-provider-id'),
+        () => mockRepository.getConfigById(
+          'gemini-provider-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => geminiProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [geminiProvider]);
 
       await tester.pumpWidget(
@@ -3022,7 +3163,10 @@ void main() {
         return Future.value();
       });
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer(
         (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
       );
@@ -3073,7 +3217,10 @@ void main() {
         return Future.value();
       });
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer(
         (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
       );
@@ -3124,7 +3271,10 @@ void main() {
           return Future.value();
         });
         when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
+          () => mockRepository.getConfigsByType(
+            AiConfigType.model,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
         );
@@ -3768,7 +3918,10 @@ void main() {
         await _setTestSurface(tester, height: 1200);
 
         when(
-          () => mockRepository.getConfigById('error-id'),
+          () => mockRepository.getConfigById(
+            'error-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenThrow(Exception('Failed to load'));
 
         await tester.pumpWidget(buildTestWidget(configId: 'error-id'));

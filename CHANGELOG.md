@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1069]
+### Fixed
+- **Deleting a bundled AI profile or model now sticks on every device.**
+  Deletions were remembered only on the device where you made them, so a second
+  device could re-create the profile and sync it back. The deletion now travels
+  with your other AI settings, so it holds everywhere. Removing a provider still
+  takes its models with it and still restores them if you add that provider
+  again, and re-running onboarding still brings back that provider's bundled
+  profile.
+
 ## [0.9.1068]
 ### Changed
 - **Dropdowns and search boxes now look like the same control.** Where the two

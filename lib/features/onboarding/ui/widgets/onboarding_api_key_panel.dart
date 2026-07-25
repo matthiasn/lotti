@@ -5,12 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/state/seed_tombstone_provider.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
@@ -188,18 +186,16 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
               )
               as AiConfigInferenceProvider;
       await repository.saveConfig(config);
-      // Clear any tombstone for this provider's bundled profile *before* the
-      // FTUE setup seeds, or a user who once deleted that profile would get a
-      // category bound to a row seeding now refuses to recreate — the
-      // onboarding flow binds `defaultProfileId` unconditionally, and a
-      // dangling id degrades the first task to title-only. Deliberately
-      // setting this provider up again is the "bring it back" signal; every
-      // other path still honors the deletion.
+      // Un-delete this provider's bundled profile *before* the FTUE setup
+      // seeds. Onboarding binds `defaultProfileId` unconditionally, so a user
+      // who once deleted that profile would otherwise get a category pointing
+      // at a soft-deleted row that seeding deliberately will not recreate, and
+      // the first task degrades to title-only. Deliberately setting this
+      // provider up again is the "bring it back" signal; every other path
+      // still honors the deletion.
       final revivedProfileId = onboardingSeededProfileId(widget.type);
       if (revivedProfileId != null) {
-        await ref
-            .read(seedTombstoneStoreProvider)
-            .forget(SeedTombstoneStore.profileKey(revivedProfileId));
+        await repository.restoreConfig(revivedProfileId);
       }
       if (!mounted) return;
       await runFtueSetupForType(

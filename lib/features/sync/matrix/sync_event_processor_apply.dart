@@ -63,11 +63,22 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           fromSync: true,
         );
         return null;
-      case SyncAiConfigDelete(:final id):
-        await _aiConfigRepository.deleteConfig(
-          id,
-          fromSync: true,
-        );
+      case SyncAiConfigDelete(:final id, :final hardDelete):
+        // Current builds only send this envelope for hard deletes — an
+        // orphaned-seed prune or a provider cascade — and mark it. Applying
+        // those softly would leave a tombstone that stops the peer re-seeding
+        // a profile the sender merely pruned, and keep cascaded rows as hidden
+        // records.
+        //
+        // An absent flag is a *legacy* user deletion from 0.9.1068 or earlier,
+        // which had no other way to express one. Hard-deleting it would let
+        // seeding recreate the row, undoing that user's deletion, so it
+        // becomes a tombstone instead.
+        if (hardDelete ?? false) {
+          await _aiConfigRepository.hardDeleteConfig(id, fromSync: true);
+        } else {
+          await _aiConfigRepository.deleteConfig(id, fromSync: true);
+        }
         return null;
       case SyncSavedTaskFilter(:final filter):
         await _savedTaskFiltersRepository.upsert(

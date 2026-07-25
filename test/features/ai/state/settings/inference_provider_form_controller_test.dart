@@ -240,7 +240,12 @@ void main() {
       'should load existing config in build when configId is provided',
       () async {
         // Arrange
-        when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+        when(
+          () => mockRepository.getConfigById(
+            'test-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer(
           (_) async => testConfig,
         );
 
@@ -260,7 +265,12 @@ void main() {
           controller.baseUrlController.text,
           equals('https://api.example.com'),
         );
-        verify(() => mockRepository.getConfigById('test-id')).called(1);
+        verify(
+          () => mockRepository.getConfigById(
+            'test-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).called(1);
       },
     );
 
@@ -278,14 +288,22 @@ void main() {
       expect(controller.nameController.text, isEmpty);
       expect(controller.apiKeyController.text, isEmpty);
       expect(controller.baseUrlController.text, isEmpty);
-      verifyNever(() => mockRepository.getConfigById(any()));
+      verifyNever(
+        () => mockRepository.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      );
     });
 
     test('should add a new configuration', () async {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       when(
-        () => mockRepository.getConfigsByType(any()),
+        () => mockRepository.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => []);
 
       // Act
@@ -300,14 +318,22 @@ void main() {
 
     test('should update an existing configuration', () async {
       // Arrange
-      when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+      when(
+        () => mockRepository.getConfigById(
+          'test-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer(
         (_) async => testConfig,
       );
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       // Provider updates re-run the gated profile seeding + upgrade pass;
       // no providers/models/profiles exist, so no extra writes happen.
       when(
-        () => mockRepository.getConfigsByType(any()),
+        () => mockRepository.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => []);
 
       // Load the existing config first
@@ -768,7 +794,12 @@ void main() {
 
     test('should load existing Ollama provider with empty API key', () async {
       // Arrange
-      when(() => mockRepository.getConfigById('ollama-id')).thenAnswer(
+      when(
+        () => mockRepository.getConfigById(
+          'ollama-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer(
         (_) async => ollamaConfig,
       );
 
@@ -1132,7 +1163,12 @@ void main() {
 
     test('should ignore preselectedType when configId is provided', () async {
       // Arrange
-      when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+      when(
+        () => mockRepository.getConfigById(
+          'test-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer(
         (_) async => testConfig,
       );
 
@@ -1150,7 +1186,12 @@ void main() {
         equals(InferenceProviderType.genericOpenAi),
       );
       expect(formState?.name.value, equals('Test API'));
-      verify(() => mockRepository.getConfigById('test-id')).called(1);
+      verify(
+        () => mockRepository.getConfigById(
+          'test-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).called(1);
     });
 
     test('should use genericOpenAi when no preselectedType provided', () async {
@@ -1172,7 +1213,10 @@ void main() {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       when(
-        () => mockRepository.getConfigsByType(any()),
+        () => mockRepository.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => []);
 
       // Act
@@ -1199,7 +1243,10 @@ void main() {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       when(
-        () => mockRepository.getConfigsByType(any()),
+        () => mockRepository.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => []);
 
       // Act
@@ -1223,7 +1270,10 @@ void main() {
       // seeding, and the profile upgrade pass each fetch the model rows.
       verify(() => mockRepository.saveConfig(geminiConfig)).called(1);
       verify(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).called(3);
     });
 
@@ -1232,10 +1282,16 @@ void main() {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       when(
-        () => mockRepository.getConfigsByType(any()),
+        () => mockRepository.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => []);
       when(
-        () => mockRepository.getConfigById(any()),
+        () => mockRepository.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => null);
 
       final geminiConfig = AiConfig.inferenceProvider(
@@ -1247,7 +1303,10 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [geminiConfig]);
 
       final controller = container.read(
@@ -1271,15 +1330,26 @@ void main() {
     test('seeds the gated default profile when a provider update makes it '
         'usable', () async {
       // Arrange — editing an existing draft (e.g. pasting the API key).
-      when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+      when(
+        () => mockRepository.getConfigById(
+          'test-id',
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer(
         (_) async => testConfig,
       );
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       when(
-        () => mockRepository.getConfigsByType(any()),
+        () => mockRepository.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => []);
       when(
-        () => mockRepository.getConfigById(profileMeliousId),
+        () => mockRepository.getConfigById(
+          profileMeliousId,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => null);
 
       final meliousConfig = AiConfig.inferenceProvider(
@@ -1291,7 +1361,10 @@ void main() {
         inferenceProviderType: InferenceProviderType.melious,
       );
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [meliousConfig]);
 
       final controller = container.read(
@@ -1318,10 +1391,16 @@ void main() {
       // toast for a save that succeeded.
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       when(
-        () => mockRepository.getConfigsByType(any()),
+        () => mockRepository.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => []);
       when(
-        () => mockRepository.getConfigById(any()),
+        () => mockRepository.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenThrow(Exception('db unavailable'));
 
       final geminiConfig = AiConfig.inferenceProvider(
@@ -1333,7 +1412,10 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [geminiConfig]);
 
       final controller = container.read(
@@ -1350,12 +1432,20 @@ void main() {
       () async {
         // Arrange — every config-type read throws, so the seeding pass fails
         // at its first fetch. The update itself must still complete.
-        when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+        when(
+          () => mockRepository.getConfigById(
+            'test-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer(
           (_) async => testConfig,
         );
         when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
         when(
-          () => mockRepository.getConfigsByType(any()),
+          () => mockRepository.getConfigsByType(
+            any(),
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenThrow(Exception('db unavailable'));
 
         final controller = container.read(
@@ -1498,7 +1588,10 @@ void main() {
       'form should start with clean (non-dirty) state when loading existing config',
       () async {
         when(
-          () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+          () => dirtyMockRepo.getConfigById(
+            testDirtyConfigId,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => testDirtyConfig);
 
         await dirtyContainer.read(
@@ -1526,7 +1619,10 @@ void main() {
 
     test('changing inferenceProviderType should make form dirty', () async {
       when(
-        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+        () => dirtyMockRepo.getConfigById(
+          testDirtyConfigId,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => testDirtyConfig);
 
       await dirtyContainer.read(
@@ -1568,7 +1664,10 @@ void main() {
 
     test('changing text fields should make form dirty', () async {
       when(
-        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+        () => dirtyMockRepo.getConfigById(
+          testDirtyConfigId,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => testDirtyConfig);
 
       await dirtyContainer.read(
@@ -1675,7 +1774,10 @@ void main() {
 
     test('setting same value should not make form dirty', () async {
       when(
-        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+        () => dirtyMockRepo.getConfigById(
+          testDirtyConfigId,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => testDirtyConfig);
 
       await dirtyContainer.read(
@@ -1722,7 +1824,10 @@ void main() {
       'changing provider type to predefined types should update fields and make form dirty',
       () async {
         when(
-          () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+          () => dirtyMockRepo.getConfigById(
+            testDirtyConfigId,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => testDirtyConfig);
 
         await dirtyContainer.read(
@@ -1776,7 +1881,10 @@ void main() {
         // Test with empty name so it gets auto-populated
         final emptyNameConfig = testDirtyConfig.copyWith(name: '');
         when(
-          () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+          () => dirtyMockRepo.getConfigById(
+            testDirtyConfigId,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => emptyNameConfig);
 
         await dirtyContainer.read(

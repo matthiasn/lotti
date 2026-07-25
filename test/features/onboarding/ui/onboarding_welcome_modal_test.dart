@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -56,10 +55,6 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
-  /// Whether this suite's setUp registered the SettingsDb, so tearDown only
-  /// removes a registration it owns.
-  var registeredSettingsDb = false;
-
   setUp(() {
     idSeq = 0;
     db = OnboardingMetricsDb(inMemoryDatabase: true);
@@ -74,28 +69,10 @@ void main() {
     if (!getIt.isRegistered<LoggingService>()) {
       getIt.registerSingleton<LoggingService>(LoggingService());
     }
-    // The key step clears the seed tombstone for the provider being set up,
-    // which reads the settings database — registered at startup in production.
-    // A mock keeps it free of real database I/O, which the widget pumps below
-    // cannot await.
-    registeredSettingsDb = !getIt.isRegistered<SettingsDb>();
-    if (registeredSettingsDb) {
-      final settingsDb = MockSettingsDb();
-      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-      when(
-        () => settingsDb.saveSettingsItem(any(), any()),
-      ).thenAnswer((_) async => 1);
-      getIt.registerSingleton<SettingsDb>(settingsDb);
-    }
   });
 
   tearDown(() async {
     await db.close();
-    // Only tear down what this setUp put there; a suite-provided registration
-    // must outlive this test.
-    if (registeredSettingsDb && getIt.isRegistered<SettingsDb>()) {
-      getIt.unregister<SettingsDb>();
-    }
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
@@ -448,6 +425,9 @@ void main() {
   }) async {
     final aiRepo = MockAiConfigRepository();
     when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
+    // The key step un-deletes this provider's bundled profile before the
+    // FTUE setup seeds.
+    when(() => aiRepo.restoreConfig(any())).thenAnswer((_) async {});
     final catRepo = MockCategoryRepository();
     // The duplicate check consults the unfiltered set (deleted/hidden rows
     // still trip the UNIQUE(name) constraint).

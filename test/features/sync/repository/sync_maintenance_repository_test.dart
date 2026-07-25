@@ -238,14 +238,35 @@ void main() {
       when(
         () => mockAiConfigRepository.getConfigsByType(
           AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
         ),
       ).thenAnswer((_) async => [provider]);
       when(
-        () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [model]);
       when(
-        () => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt),
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.prompt,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [prompt]);
+      // The pass also replays profiles and skills, so a missed soft-delete for
+      // either can be repaired.
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProfile,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.skill,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
       when(
         () => mockOutboxService.enqueueMessage(any()),
       ).thenAnswer((_) async {});
@@ -304,6 +325,7 @@ void main() {
       when(
         () => mockAiConfigRepository.getConfigsByType(
           AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
         ),
       ).thenThrow(exception);
 
@@ -600,6 +622,7 @@ void main() {
         verifyNever(
           () => mockAiConfigRepository.getConfigsByType(
             AiConfigType.inferenceProvider,
+            includeDeleted: any(named: 'includeDeleted'),
           ),
         );
       },
@@ -657,14 +680,33 @@ void main() {
       when(
         () => mockAiConfigRepository.getConfigsByType(
           AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
         ),
       ).thenAnswer((_) async => [providerConfig]);
       when(
-        () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [modelConfig]);
       when(
-        () => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt),
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.prompt,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [promptConfig]);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProfile,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.skill,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
 
       final totals = await syncMaintenanceRepository.fetchTotalsForSteps({
         SyncStep.measurables,
@@ -689,13 +731,20 @@ void main() {
       verify(
         () => mockAiConfigRepository.getConfigsByType(
           AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
         ),
       ).called(1);
       verify(
-        () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).called(1);
       verify(
-        () => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt),
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.prompt,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).called(1);
     });
 
@@ -706,6 +755,18 @@ void main() {
       when(
         () => mockJournalDb.getAllMeasurableDataTypes(),
       ).thenAnswer((_) async => [FakeMeasurableDataType(id: 'm')]);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProfile,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.skill,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
       when(
         () => mockJournalDb.getAllLabelDefinitions(),
       ).thenAnswer((_) async => []);
@@ -720,7 +781,10 @@ void main() {
       ).thenAnswer((_) async => [FakeHabitDefinition(id: 'h')]);
       for (final type in AiConfigType.values) {
         when(
-          () => mockAiConfigRepository.getConfigsByType(type),
+          () => mockAiConfigRepository.getConfigsByType(
+            type,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => []);
       }
       when(

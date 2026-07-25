@@ -22,6 +22,9 @@ AiConfigInferenceProvider _$AiConfigInferenceProviderFromJson(
       ? null
       : DateTime.parse(json['updatedAt'] as String),
   description: json['description'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
   $type: json['runtimeType'] as String?,
 );
 
@@ -37,6 +40,7 @@ Map<String, dynamic> _$AiConfigInferenceProviderToJson(
       _$InferenceProviderTypeEnumMap[instance.inferenceProviderType]!,
   'updatedAt': instance.updatedAt?.toIso8601String(),
   'description': instance.description,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
   'runtimeType': instance.$type,
 };
 
@@ -85,6 +89,9 @@ AiConfigModel _$AiConfigModelFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['updatedAt'] as String),
       description: json['description'] as String?,
       maxCompletionTokens: (json['maxCompletionTokens'] as num?)?.toInt(),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
       $type: json['runtimeType'] as String?,
     );
 
@@ -109,6 +116,7 @@ Map<String, dynamic> _$AiConfigModelToJson(AiConfigModel instance) =>
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'description': instance.description,
       'maxCompletionTokens': instance.maxCompletionTokens,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };
 
@@ -155,6 +163,9 @@ AiConfigPrompt _$AiConfigPromptFromJson(Map<String, dynamic> json) =>
       archived: json['archived'] as bool? ?? false,
       trackPreconfigured: json['trackPreconfigured'] as bool? ?? false,
       preconfiguredPromptId: json['preconfiguredPromptId'] as String?,
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
       $type: json['runtimeType'] as String?,
     );
 
@@ -180,6 +191,7 @@ Map<String, dynamic> _$AiConfigPromptToJson(AiConfigPrompt instance) =>
       'archived': instance.archived,
       'trackPreconfigured': instance.trackPreconfigured,
       'preconfiguredPromptId': instance.preconfiguredPromptId,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };
 
@@ -224,6 +236,9 @@ AiConfigInferenceProfile _$AiConfigInferenceProfileFromJson(
       ? null
       : DateTime.parse(json['updatedAt'] as String),
   description: json['description'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
   $type: json['runtimeType'] as String?,
 );
 
@@ -245,6 +260,7 @@ Map<String, dynamic> _$AiConfigInferenceProfileToJson(
   'pinnedHostId': instance.pinnedHostId,
   'updatedAt': instance.updatedAt?.toIso8601String(),
   'description': instance.description,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
   'runtimeType': instance.$type,
 };
 
@@ -269,6 +285,9 @@ AiConfigSkill _$AiConfigSkillFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['updatedAt'] as String),
       description: json['description'] as String?,
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
       $type: json['runtimeType'] as String?,
     );
 
@@ -288,6 +307,7 @@ Map<String, dynamic> _$AiConfigSkillToJson(AiConfigSkill instance) =>
       'useReasoning': instance.useReasoning,
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'description': instance.description,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };
 

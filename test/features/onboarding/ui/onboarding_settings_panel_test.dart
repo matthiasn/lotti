@@ -208,6 +208,9 @@ void main() {
 
         final aiRepo = MockAiConfigRepository();
         when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
+        // The key step un-deletes this provider's bundled profile before the
+        // FTUE setup seeds.
+        when(() => aiRepo.restoreConfig(any())).thenAnswer((_) async {});
         final catRepo = MockCategoryRepository();
         when(
           catRepo.getAllCategoriesIncludingHidden,

@@ -107,6 +107,12 @@ void setUpProcessorMocks() {
     ),
   ).thenAnswer((_) async {});
   when(
+    () => aiConfigRepository.hardDeleteConfig(
+      any<String>(),
+      fromSync: any<bool>(named: 'fromSync'),
+    ),
+  ).thenAnswer((_) async {});
+  when(
     () => savedTaskFiltersRepository.upsert(
       any<SavedTaskFilter>(),
       fromSync: any<bool>(named: 'fromSync'),

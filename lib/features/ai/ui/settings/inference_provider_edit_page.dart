@@ -3,7 +3,6 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
@@ -29,7 +28,6 @@ import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_res
 import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -125,9 +123,6 @@ Future<AiFtueResult?> runFtueSetupForType({
     try {
       final seedingService = ProfileSeedingService(
         aiConfigRepository: aiConfigRepository,
-        tombstoneStore: SeedTombstoneStore(
-          settingsDb: getIt<SettingsDb>(),
-        ),
       );
       await seedingService.seedDefaults();
       await seedingService.upgradeExisting();

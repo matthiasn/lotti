@@ -35,6 +35,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1069" date="2026-07-25">
+      <description>
+        <p>Fixed: deleting a bundled AI profile or model now sticks on every device. Deletions were remembered only on the device where you made them, so a second device could re-create the profile and sync it back; the deletion now travels with your other AI settings. Removing a provider still takes its models with it and still restores them if you add that provider again, and re-running onboarding still brings back that provider's bundled profile.</p>
+      </description>
+    </release>
     <release version="0.9.1068" date="2026-07-25">
       <description>
         <p>Dropdowns and search boxes now look like the same control. Where the two sit stacked — choosing how a task relates, then searching for the task to link — the dropdown was drawn as a flat opaque box with much rounder corners and a heavier outline than the search field, so the pair read as parts of two different apps. The dropdown now matches the search field's shell, including in dark mode, where it lifts off the panel it sits on instead of looking like a hole punched in it.</p>

@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 
 final AsyncNotifierProviderFamily<
@@ -316,9 +313,6 @@ class InferenceProviderFormController
     try {
       final seedingService = ProfileSeedingService(
         aiConfigRepository: repository,
-        tombstoneStore: SeedTombstoneStore(
-          settingsDb: getIt<SettingsDb>(),
-        ),
       );
       await seedingService.seedDefaults();
       await seedingService.upgradeExisting();

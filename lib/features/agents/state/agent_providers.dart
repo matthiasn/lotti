@@ -28,7 +28,7 @@ import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_migration.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -489,10 +489,17 @@ Future<void> agentInitialization(Ref ref) async {
   final aiConfigRepo = ref.watch(aiConfigRepositoryProvider);
   final profileSeeder = ProfileSeedingService(
     aiConfigRepository: aiConfigRepo,
-    tombstoneStore: SeedTombstoneStore(
-      settingsDb: getIt<SettingsDb>(),
-    ),
   );
+  // Convert the 0.9.1067/0.9.1068 tombstone ledger first. This entry point
+  // starts from `beamer_app` independently of `aiConfigInitializationProvider`,
+  // so without it whichever runs first can re-seed — and sync — a bundled
+  // profile whose deletion is still only recorded in the ledger. The migration
+  // is idempotent: it clears the key, so the second caller is a no-op.
+  await SeedTombstoneMigration(
+    aiConfigRepository: ref.read(aiConfigRepositoryProvider),
+    settingsDb: getIt<SettingsDb>(),
+  ).migrate();
+
   await Future.wait([
     templateService.seedDefaults(),
     profileSeeder.seedDefaults(),

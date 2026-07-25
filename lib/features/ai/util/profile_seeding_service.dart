@@ -7,7 +7,6 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:meta/meta.dart';
 
 /// Well-known IDs for default inference profiles (idempotent seeding).
@@ -65,12 +64,9 @@ const _mistralSkillAssignments = [
 class ProfileSeedingService {
   const ProfileSeedingService({
     required AiConfigRepository aiConfigRepository,
-    required SeedTombstoneStore tombstoneStore,
-  }) : _repo = aiConfigRepository,
-       _tombstones = tombstoneStore;
+  }) : _repo = aiConfigRepository;
 
   final AiConfigRepository _repo;
-  final SeedTombstoneStore _tombstones;
 
   /// The provider type whose setup makes each default profile functional.
   ///
@@ -109,10 +105,7 @@ class ProfileSeedingService {
   /// created, updated, or finishes FTUE setup, so completing a provider
   /// setup surfaces its profile immediately.
   Future<void> seedDefaults() async {
-    final seededIds = <String>[];
-    // Seeding is idempotent by presence, so without this the user's deletion
-    // would be undone on the next launch or provider save.
-    final deleted = await _tombstones.deletedIdentities();
+    var seededCount = 0;
     final models = await _fetchModelRows();
     final usableProviders = (await _fetchProviderRows())
         .where((provider) => provider.isUsable)
@@ -125,10 +118,13 @@ class ProfileSeedingService {
       if (!usableTypes.contains(providerTypeByProfileId[template.id])) {
         continue;
       }
-      if (deleted.contains(SeedTombstoneStore.profileKey(template.id))) {
-        continue;
-      }
-      final existing = await _repo.getConfigById(template.id);
+      // Deleted rows count as present: `deletedAt` is what tells a deletion
+      // apart from a row that was never seeded, so asking for them here is
+      // what makes the user's deletion stick across launches and devices.
+      final existing = await _repo.getConfigById(
+        template.id,
+        includeDeleted: true,
+      );
       if (existing != null) continue;
       final profile = _withResolvedModelConfigIds(
         template,
@@ -139,41 +135,11 @@ class ProfileSeedingService {
         ),
       );
       await _repo.saveConfig(profile);
-      seededIds.add(template.id);
+      seededCount++;
     }
 
-    await _dropSeedsTombstonedDuringPass(seededIds);
-
-    if (seededIds.isNotEmpty) {
-      developer.log('Profiles: seeded ${seededIds.length}', name: _logTag);
-    }
-  }
-
-  /// Removes anything this pass created that the user deleted while it ran.
-  ///
-  /// The row and its tombstone live in different databases (`ai_config.sqlite`
-  /// and `settings.sqlite`), so no transaction can span the deletion and the
-  /// seeding check. A deletion landing after this pass read the ledger but
-  /// before it wrote the row would otherwise leave the row resurrected with a
-  /// tombstone recorded — and since seeding only ever *creates*, nothing would
-  /// clean it up. Re-reading here restores the invariant at the end of every
-  /// pass instead.
-  ///
-  /// The re-read is skipped entirely when the pass wrote nothing, which is the
-  /// overwhelmingly common case.
-  Future<void> _dropSeedsTombstonedDuringPass(List<String> seededIds) async {
-    if (seededIds.isEmpty) return;
-    final deletedNow = await _tombstones.deletedIdentities();
-    for (final id in seededIds) {
-      if (!deletedNow.contains(SeedTombstoneStore.profileKey(id))) continue;
-      // The tombstone already exists — recording it again would be a no-op,
-      // but passing false keeps the intent explicit: this is the app undoing
-      // its own write, not a new user deletion.
-      await _repo.deleteConfig(id, recordTombstone: false);
-      developer.log(
-        'Profiles: dropped $id, deleted while seeding ran',
-        name: _logTag,
-      );
+    if (seededCount > 0) {
+      developer.log('Profiles: seeded $seededCount', name: _logTag);
     }
   }
 
@@ -235,8 +201,12 @@ class ProfileSeedingService {
         continue;
       }
       // Not a user deletion: this pass removes seeds whose provider became
-      // unusable and deliberately re-seeds them if the provider returns.
-      await _repo.deleteConfig(config.id, recordTombstone: false);
+      // unusable and deliberately re-seeds them if the provider returns, so it
+      // must leave no `deletedAt` behind.
+      // fromSync: true keeps the removal local. Whether a provider is usable
+      // is a per-device fact, so propagating this delete would strip the
+      // profile from a peer that can still serve it.
+      await _repo.hardDeleteConfig(config.id, fromSync: true);
       removedCount++;
     }
 
