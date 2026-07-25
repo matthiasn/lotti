@@ -58,6 +58,7 @@ class EvalFixtureInputs {
     this.visibleTaskIds,
     this.requiredTaskIds = const {},
     this.requiresConflictSurfaced = false,
+    this.forbidsInventedWork = false,
     this.conflictEscalationReasons = const {
       'overCommitted',
       'directiveUnsatisfiable',
@@ -114,6 +115,10 @@ class EvalFixtureInputs {
   /// Whether the scenario is impossible as stated, so a competent plan has to
   /// say so rather than quietly absorb it.
   final bool requiresConflictSurfaced;
+
+  /// Whether the scenario has no real work, so any substantive block the
+  /// planner adds is invented rather than scheduled.
+  final bool forbidsInventedWork;
 
   /// `raise_day_status` reasons that count as escalating *this* conflict.
   ///

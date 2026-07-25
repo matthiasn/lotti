@@ -148,6 +148,32 @@ void main() {
     );
   });
 
+  test('restraint forbids invented work, or it measures nothing', () {
+    final scenario = byId('restraint');
+
+    expect(scenario.tasks, isEmpty);
+    expect(
+      scenario.forbidsInventedWork,
+      isTrue,
+      reason:
+          'without this the control cannot tell staying quiet from '
+          'confidently inventing a task',
+    );
+  });
+
+  test('blockedChain requires reaching the ready root', () {
+    // Omitting the permitted leaf and scheduling something unrelated would
+    // leave both hops untouched while every constraint reported clean.
+    final scenario = byId('blockedChain');
+
+    expect(scenario.requiredTaskIds, contains('task-a-root'));
+    expect(
+      scenario.permittedOmissions,
+      contains('task-c-leaf'),
+      reason: 'the leaf stays optional; only the root is required',
+    );
+  });
+
   test('crowdedDay names the work a competent plan must include', () {
     // Generic constraints are all satisfied by a single well-formed block, so
     // without this the scenario cannot tell a good plan from one that

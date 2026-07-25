@@ -38,6 +38,8 @@ void main() {
     Set<String> expectedOmissions = const {},
     Set<String> requiredTaskIds = const {},
     bool requiresConflictSurfaced = false,
+    bool forbidsInventedWork = false,
+    DateTime? now,
     bool planPersisted = true,
     int workingHoursStartHour = 9,
     int workingHoursEndHour = 17,
@@ -54,6 +56,8 @@ void main() {
       expectedOmissions: expectedOmissions,
       requiredTaskIds: requiredTaskIds,
       requiresConflictSurfaced: requiresConflictSurfaced,
+      forbidsInventedWork: forbidsInventedWork,
+      now: now,
       visibleTaskIds: visibleTaskIds,
       workingHoursStartHour: workingHoursStartHour,
       workingHoursEndHour: workingHoursEndHour,
@@ -574,6 +578,110 @@ void main() {
     });
   });
 
+  group('a same-day draft', () {
+    test('cannot schedule work before the draft began', () {
+      // Enforcing only working hours would let a model place work at 10:00 on
+      // a 15:00 draft — and the production guard misses it too, because that
+      // guard fires only for `drafted` state.
+      final result = scoreWithinWorkingHours(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 10,
+              endHour: 12,
+              title: 'Long migration',
+              state: PlannedBlockState.committed,
+            ),
+          ],
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Long migration'));
+    });
+
+    test('still allows work after the draft time', () {
+      final result = scoreWithinWorkingHours(
+        outcome(
+          blocks: [block(id: 'a', startHour: 15, endHour: 17)],
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('a fresh draft may not assert committed state', () {
+      // Commitment is the user's word, not the model's — and asserting it is
+      // also how a block slips the production past-start guard.
+      final result = scoreNoHistoryFabrication(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              title: 'Already agreed',
+              state: PlannedBlockState.committed,
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Already agreed'));
+    });
+  });
+
+  group('noInventedWork', () {
+    test('catches substantive work on a day with nothing to do', () {
+      // The gap the restraint control could not see: no taskId means
+      // fabrication scoring is inapplicable, and everything else passes.
+      final result = scoreNoInventedWork(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 11,
+              title: 'Write a proposal',
+            ),
+          ],
+          forbidsInventedWork: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Write a proposal'));
+    });
+
+    test('a buffer block is structuring open time, not inventing work', () {
+      final result = scoreNoInventedWork(
+        outcome(
+          blocks: [
+            PlannedBlock(
+              id: 'a',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 7, 18, 9),
+              endTime: DateTime(2026, 7, 18, 11),
+              title: 'Open buffer',
+              type: PlannedBlockType.buffer,
+            ),
+          ],
+          forbidsInventedWork: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('is not applicable when the day has real work', () {
+      expect(scoreNoInventedWork(outcome()).isApplicable, isFalse);
+    });
+  });
+
   group('respectsEstimates', () {
     const bigTask = EvalCorpusTask(
       taskId: 'task-big',
@@ -609,6 +717,29 @@ void main() {
       expect(result.passed, isFalse);
       expect(result.detail, contains('60min'));
       expect(result.detail, contains('240min'));
+    });
+
+    test('sums a task split across blocks before judging it', () {
+      // 60 + 120 fully schedules a 180-minute task. Comparing each block
+      // against the whole estimate would fail the first half of a correctly
+      // scheduled task.
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: '1', startHour: 9, endHour: 10, taskId: 'task-split'),
+            block(id: '2', startHour: 10, endHour: 12, taskId: 'task-split'),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-split',
+              title: 'Split work',
+              estimateMinutes: 180,
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
     });
 
     test('is not applicable when no placed task carries an estimate', () {

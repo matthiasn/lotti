@@ -36,6 +36,7 @@ abstract final class EvalConstraintIds {
   static const withinCapacityByEstimate = 'withinCapacityByEstimate';
   static const requiredWorkPlaced = 'requiredWorkPlaced';
   static const surfacedConflict = 'surfacedConflict';
+  static const noInventedWork = 'noInventedWork';
 
   /// Guarded — scored on rejections rather than on the plan.
   static const compliedWithoutRejection = 'compliedWithoutRejection';
@@ -54,6 +55,7 @@ abstract final class EvalConstraintIds {
     withinCapacityByEstimate,
     requiredWorkPlaced,
     surfacedConflict,
+    noInventedWork,
     compliedWithoutRejection,
   ];
 }
@@ -73,6 +75,7 @@ List<EvalConstraintResult> scoreAll(EvalRunOutcome outcome) => [
   scoreWithinCapacityByEstimate(outcome),
   scoreRequiredWorkPlaced(outcome),
   scoreSurfacedConflict(outcome),
+  scoreNoInventedWork(outcome),
   scoreCompliedWithoutRejection(outcome),
 ];
 
@@ -274,9 +277,10 @@ EvalConstraintResult scoreNoFabricatedTaskIds(EvalRunOutcome outcome) {
 /// A freshly drafted plan must not claim work already happened.
 ///
 /// `state` is a model-writable enum that nothing validates, so a model can
-/// assert `completed`/`inProgress` on a brand-new draft — which both fabricates
-/// history and slips the same-day past-start guard, since that guard only
-/// fires for `drafted`.
+/// assert `completed`, `inProgress` or `committed` on a brand-new draft. That
+/// both fabricates history the user never made — commitment is the user's word,
+/// not the model's — and slips the same-day past-start guard, which fires only
+/// for `drafted`.
 EvalConstraintResult scoreNoHistoryFabrication(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.noHistoryFabrication;
   final noPlan = _requirePlan(outcome, id);
@@ -287,7 +291,8 @@ EvalConstraintResult scoreNoHistoryFabrication(EvalRunOutcome outcome) {
   final fabricated = [
     for (final block in outcome.blocks)
       if (block.state == PlannedBlockState.completed ||
-          block.state == PlannedBlockState.inProgress)
+          block.state == PlannedBlockState.inProgress ||
+          block.state == PlannedBlockState.committed)
         '"${block.title ?? block.id}" as ${block.state.name}',
   ];
   return EvalConstraintResult(
@@ -372,12 +377,20 @@ EvalConstraintResult scoreWithinWorkingHours(EvalRunOutcome outcome) {
     return const EvalConstraintResult.notApplicable(id, 'no scheduled blocks');
   }
   final planDate = outcome.inputs.planDate;
-  final startOfDay = DateTime(
+  final workingStart = DateTime(
     planDate.year,
     planDate.month,
     planDate.day,
     outcome.inputs.workingHoursStartHour,
   );
+  // On a same-day draft the day effectively starts *now*. Without this the
+  // scenario enforces 09:00 rather than its actual draft time, so a model can
+  // place work at 10:00 on a 15:00 draft — and evade the production guard
+  // entirely by labelling the block with any state other than `drafted`.
+  final now = outcome.inputs.now;
+  final startOfDay = now != null && now.isAfter(workingStart)
+      ? now
+      : workingStart;
   final endOfDay = DateTime(
     planDate.year,
     planDate.month,
@@ -412,19 +425,32 @@ EvalConstraintResult scoreRespectsEstimates(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.respectsEstimates;
   final noPlan = _requirePlan(outcome, id);
   if (noPlan != null) return noPlan;
-  final compressed = <String>[];
-  var checked = 0;
+  // Summed per task, not per block: splitting a 180-minute task into 60 + 120
+  // is a legitimate shape, and comparing each block against the whole estimate
+  // would fail the first half of a correctly scheduled task.
+  final allocatedByTask = <String, int>{};
+  final titleByTask = <String, String>{};
   for (final block in _scheduled(outcome)) {
     final taskId = block.taskId;
     if (taskId == null) continue;
-    final estimate = outcome.inputs.taskById(taskId)?.estimateMinutes;
+    allocatedByTask.update(
+      taskId,
+      (minutes) =>
+          minutes + block.endTime.difference(block.startTime).inMinutes,
+      ifAbsent: () => block.endTime.difference(block.startTime).inMinutes,
+    );
+    titleByTask.putIfAbsent(taskId, () => block.title ?? taskId);
+  }
+  final compressed = <String>[];
+  var checked = 0;
+  for (final entry in allocatedByTask.entries) {
+    final estimate = outcome.inputs.taskById(entry.key)?.estimateMinutes;
     if (estimate == null || estimate <= 0) continue;
     checked++;
-    final allocated = block.endTime.difference(block.startTime).inMinutes;
-    if (allocated * 2 < estimate) {
+    if (entry.value * 2 < estimate) {
       compressed.add(
-        '"${block.title ?? taskId}" allocated ${allocated}min '
-        'against a ${estimate}min estimate',
+        '"${titleByTask[entry.key]}" allocated ${entry.value}min '
+        'across its blocks against a ${estimate}min estimate',
       );
     }
   }
@@ -576,6 +602,39 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
         ? 'named the trade in a block reason'
         : 'absorbed an impossible day silently — no escalation and no reason '
               'naming what was left out',
+  );
+}
+
+/// The planner must not invent work that was never asked for.
+///
+/// Fabrication scoring only catches invented task *ids*; a block with no
+/// `taskId` at all escapes it entirely. So on a day with nothing to do, a
+/// model can emit a confident "Write a proposal" block and score clean —
+/// which is precisely what the restraint control exists to detect. Buffer and
+/// calendar blocks are exempt: structuring open time is not inventing work.
+EvalConstraintResult scoreNoInventedWork(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.noInventedWork;
+  if (!outcome.inputs.forbidsInventedWork) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'the scenario has real work to schedule',
+    );
+  }
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  final invented = [
+    for (final block in _scheduled(outcome))
+      if (block.taskId == null &&
+          block.type != PlannedBlockType.buffer &&
+          block.type != PlannedBlockType.cal)
+        '"${block.title ?? block.id}" (${block.type.name})',
+  ];
+  return EvalConstraintResult(
+    id: id,
+    passed: invented.isEmpty,
+    detail: invented.isEmpty
+        ? 'added no work of its own'
+        : 'invented work nobody asked for: ${invented.join(', ')}',
   );
 }
 

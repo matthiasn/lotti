@@ -65,6 +65,7 @@ class EvalScenario {
     this.expectedOmissions = const {},
     this.requiredTaskIds = const {},
     this.requiresConflictSurfaced = false,
+    this.forbidsInventedWork = false,
     this.capacityMinutes = 480,
     this.startHour,
     this.includeCapture = true,
@@ -98,6 +99,10 @@ class EvalScenario {
   /// Whether this day is impossible as stated, so the planner must say so
   /// rather than quietly absorbing it.
   final bool requiresConflictSurfaced;
+
+  /// Whether this day has no real work, so anything substantive the planner
+  /// adds was invented rather than scheduled.
+  final bool forbidsInventedWork;
 
   final int capacityMinutes;
 
@@ -156,6 +161,7 @@ class EvalScenario {
     expectedOmissions: expectedOmissions,
     requiredTaskIds: requiredTaskIds,
     requiresConflictSurfaced: requiresConflictSurfaced,
+    forbidsInventedWork: forbidsInventedWork,
     // Without a capture the task corpus is never rendered, so the only ids
     // the model can name are its decided ones. The corpus above stays as
     // ground truth for constraints that need to know what is actually true.
@@ -283,6 +289,10 @@ const _restraint = EvalScenario(
       'With nothing to schedule, does the planner stay quiet rather than '
       'inventing work?',
   tasks: [],
+  // The whole point of the control. Without it a confident "Write a proposal"
+  // block scores identically to staying quiet: it has no taskId, so
+  // fabrication scoring is inapplicable, and every other constraint passes.
+  forbidsInventedWork: true,
   captureTranscript: 'Nothing much on today.',
 );
 
@@ -461,6 +471,11 @@ const _blockedChain = EvalScenario(
   // Leaving the blocked leaf out is a correct outcome, not a miss — the rule
   // says place it only behind its blocker or with the blocker named.
   permittedOmissions: {'task-c-leaf'},
+  // But omitting the leaf and scheduling something unrelated would leave both
+  // hops untouched while every constraint reported clean. The ready root is
+  // the thing a competent plan reaches for, whether or not it gets to the
+  // leaf, so requiring it is what makes the chain measurable.
+  requiredTaskIds: {'task-a-root'},
   captureTranscript: 'I want to get the vendor integration shipped today.',
 );
 

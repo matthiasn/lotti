@@ -253,9 +253,18 @@ a sealed `DayProcessingPayload` per kind (`TranscribeAudioPayload`,
 ### Evaluating what the model actually plans
 
 `test/features/daily_os_next/eval/` is a development instrument for improving
-the day-agent's prompt and context — not a regression gate, and never in CI.
-The storage benchmark above measures what the *repositories* cost; this
-measures what the *model* produces.
+the day-agent's prompt and context. The storage benchmark above measures what
+the *repositories* cost; this measures what the *model* produces.
+
+Two lanes, and the distinction matters:
+
+- **`framework/` runs in ordinary CI.** The scorers, the value types and the
+  fixture-coherence checks are deterministic and provider-free, so they are
+  plain tests and are expected to stay green like any other.
+- **The live runner is opt-in and never in CI.** It spends money against a real
+  provider and is non-deterministic by nature, so it always passes and reports
+  rather than failing — a red build people learn to ignore is worse than no
+  signal.
 
 Its shape follows from how the write path enforces things. Hard constraints —
 day boundaries, `end > start`, same-day past-start, allowed categories,
