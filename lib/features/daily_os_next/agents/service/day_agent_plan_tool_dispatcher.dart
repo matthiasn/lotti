@@ -37,6 +37,7 @@ class DayAgentPlanToolDispatcher {
       final data = switch (toolName) {
         DayAgentToolNames.draftDayPlan => await _draftDayPlanTool(
           agentId,
+          runKey,
           args,
         ),
         DayAgentToolNames.summarizeRecentPatterns =>
@@ -65,6 +66,7 @@ class DayAgentPlanToolDispatcher {
 
   Future<Map<String, Object?>> _draftDayPlanTool(
     String agentId,
+    String runKey,
     Map<String, dynamic> args,
   ) async {
     final dayId = requiredStringArg(args, 'dayId');
@@ -85,6 +87,7 @@ class DayAgentPlanToolDispatcher {
       rawEnergyBands: objectListArg(args['energyBands'], 'energyBands'),
       capacityMinutes: optionalIntArg(args['capacityMinutes']) ?? 480,
       dayLabel: optionalStringArg(args['dayLabel']),
+      runKey: runKey,
     );
     return planJson(plan);
   }

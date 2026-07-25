@@ -1831,10 +1831,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Anmeldelse';
 
   @override
-  String get aiProviderDetailProfilesUsingTitle =>
-      'Profiler der bruger denne udbyder';
-
-  @override
   String get aiProviderDetailAddModelButton => 'Tilføj model';
 
   @override
@@ -1887,6 +1883,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get aiProviderDetailPageTitle => 'Udbyderoplysninger';
+
+  @override
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profiler der bruger denne udbyder';
 
   @override
   String get aiProviderDetailRemoveButton => 'Fjern udbyderen';
@@ -4006,12 +4006,28 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Break link';
 
   @override
+  String get dailyOsNextPlanChangesFailedNotificationBody =>
+      'Open Lotti to see what happened and try again.';
+
+  @override
+  String get dailyOsNextPlanChangesFailedNotificationTitle =>
+      'Your plan changes didn\'t finish';
+
+  @override
   String get dailyOsNextPlanChangesReadyNotificationBody =>
       'The proposed changes are waiting for your review.';
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationTitle =>
       'Your plan changes are ready';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationBody =>
+      'Open Lotti to see what happened and try again.';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationTitle =>
+      'Your day plan didn\'t finish';
 
   @override
   String get dailyOsNextPlanReadyNotificationBody =>

@@ -3246,12 +3246,6 @@ abstract class AppLocalizations {
   /// **'Review'**
   String get aiProviderConnectStepReview;
 
-  /// No description provided for @aiProviderDetailProfilesUsingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Profiles using this provider'**
-  String get aiProviderDetailProfilesUsingTitle;
-
   /// No description provided for @aiProviderDetailAddModelButton.
   ///
   /// In en, this message translates to:
@@ -3335,6 +3329,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Provider details'**
   String get aiProviderDetailPageTitle;
+
+  /// No description provided for @aiProviderDetailProfilesUsingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profiles using this provider'**
+  String get aiProviderDetailProfilesUsingTitle;
 
   /// No description provided for @aiProviderDetailRemoveButton.
   ///
@@ -6887,6 +6887,18 @@ abstract class AppLocalizations {
   /// **'Break link'**
   String get dailyOsNextParsedCardBreakLinkTooltip;
 
+  /// No description provided for @dailyOsNextPlanChangesFailedNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Lotti to see what happened and try again.'**
+  String get dailyOsNextPlanChangesFailedNotificationBody;
+
+  /// No description provided for @dailyOsNextPlanChangesFailedNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan changes didn\'t finish'**
+  String get dailyOsNextPlanChangesFailedNotificationTitle;
+
   /// No description provided for @dailyOsNextPlanChangesReadyNotificationBody.
   ///
   /// In en, this message translates to:
@@ -6898,6 +6910,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your plan changes are ready'**
   String get dailyOsNextPlanChangesReadyNotificationTitle;
+
+  /// No description provided for @dailyOsNextPlanFailedNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Lotti to see what happened and try again.'**
+  String get dailyOsNextPlanFailedNotificationBody;
+
+  /// No description provided for @dailyOsNextPlanFailedNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your day plan didn\'t finish'**
+  String get dailyOsNextPlanFailedNotificationTitle;
 
   /// No description provided for @dailyOsNextPlanReadyNotificationBody.
   ///

@@ -70,9 +70,12 @@ class DayAgentJobExecutor {
   /// Wake completion event stream (`WakeOrchestrator.runCompletions`).
   final Stream<WakeRunCompletion> runCompletions;
 
-  /// Reads the current `updatedAt` of the day's drafted plan, or `null` when
-  /// none exists yet.
-  final Future<DateTime?> Function(String agentId, String dayId)
+  /// Reads the day's drafted plan provenance — when it was last written and
+  /// which wake wrote it — or `null` when no plan exists yet.
+  final Future<({DateTime updatedAt, String? runKey})?> Function(
+    String agentId,
+    String dayId,
+  )
   draftPlanUpdatedAt;
 
   /// Reads the id of a pending ChangeSet for the day created at or after the
@@ -242,11 +245,26 @@ class DayAgentJobExecutor {
         return null;
       case DraftPlanPayload():
         final resolvedAgentId = agentId ?? await _safeResolve(job.dayId);
-        final updatedAt = await draftPlanUpdatedAt(resolvedAgentId, job.dayId);
-        if (updatedAt != null && !updatedAt.isBefore(job.requestedAt)) {
-          return const DayAgentJobSucceeded();
+        final plan = await draftPlanUpdatedAt(resolvedAgentId, job.dayId);
+        if (plan == null) return null;
+        final knownRunKeys = {...job.runKeys, ?extraRunKey};
+        final planRunKey = plan.runKey;
+        if (knownRunKeys.isNotEmpty && planRunKey != null) {
+          // Provenance-exact, same rule as refine: only a plan written by one
+          // of THIS job's wakes satisfies it. Timestamps alone cannot tell
+          // this job's plan from one a concurrent wake wrote in the same
+          // window, which would mark the job succeeded and drop its intent.
+          return knownRunKeys.contains(planRunKey)
+              ? const DayAgentJobSucceeded()
+              : null;
         }
-        return null;
+        // No provenance on one side or the other: a plan written before the
+        // field existed, or a job with no recorded wake. Fall back to the
+        // window this check has always used. Removable once no pre-field
+        // plans remain in circulation.
+        return !plan.updatedAt.isBefore(job.requestedAt)
+            ? const DayAgentJobSucceeded()
+            : null;
       case RefinePlanPayload():
         final resolvedAgentId = agentId ?? await _safeResolve(job.dayId);
         final knownRunKeys = {...job.runKeys, ?extraRunKey};

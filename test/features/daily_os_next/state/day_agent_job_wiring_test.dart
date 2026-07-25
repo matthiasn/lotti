@@ -301,7 +301,7 @@ void main() {
     );
 
     test(
-      "draftPlanUpdatedAt returns the persisted plan's updatedAt or null",
+      'draftPlanUpdatedAt returns null when the day has no plan yet',
       () async {
         when(
           () => planService.draftPlanForDay(
@@ -314,6 +314,38 @@ void main() {
           await executor.draftPlanUpdatedAt('agent-1', 'dayplan-2026-07-22'),
           isNull,
         );
+      },
+    );
+
+    test(
+      'draftPlanUpdatedAt carries the plan run key, not just its timestamp',
+      () async {
+        // The executor decides on provenance, so the wiring must surface the
+        // run key — handing back a bare timestamp would silently downgrade
+        // the artifact check to the time window it replaced.
+        final updatedAt = DateTime.utc(2026, 7, 22, 10);
+        when(
+          () => planService.draftPlanForDay(
+            agentId: 'agent-1',
+            dayId: 'dayplan-2026-07-22',
+          ),
+        ).thenAnswer(
+          (_) async => makeTestDayPlan(
+            id: 'day_agent_plan:dayplan-2026-07-22',
+            agentId: 'agent-1',
+            dayId: 'dayplan-2026-07-22',
+            planDate: DateTime.utc(2026, 7, 22),
+            updatedAt: updatedAt,
+          ).copyWith(runKey: 'run-77'),
+        );
+
+        final provenance = await executor.draftPlanUpdatedAt(
+          'agent-1',
+          'dayplan-2026-07-22',
+        );
+
+        expect(provenance!.updatedAt, updatedAt);
+        expect(provenance.runKey, 'run-77');
       },
     );
 

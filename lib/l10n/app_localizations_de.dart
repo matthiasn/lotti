@@ -1846,10 +1846,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Überprüfen';
 
   @override
-  String get aiProviderDetailProfilesUsingTitle =>
-      'Profile, die diesen Anbieter nutzen';
-
-  @override
   String get aiProviderDetailAddModelButton => 'Modell hinzufügen';
 
   @override
@@ -1902,6 +1898,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiProviderDetailPageTitle => 'Anbieter-Details';
+
+  @override
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profile, die diesen Anbieter nutzen';
 
   @override
   String get aiProviderDetailRemoveButton => 'Anbieter entfernen';
@@ -4034,12 +4034,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Verknüpfung lösen';
 
   @override
+  String get dailyOsNextPlanChangesFailedNotificationBody =>
+      'Öffne Lotti, um zu sehen, was passiert ist, und versuche es erneut.';
+
+  @override
+  String get dailyOsNextPlanChangesFailedNotificationTitle =>
+      'Deine Planänderungen wurden nicht fertig';
+
+  @override
   String get dailyOsNextPlanChangesReadyNotificationBody =>
       'Die vorgeschlagenen Änderungen warten auf deine Durchsicht.';
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationTitle =>
       'Deine Planänderungen sind fertig';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationBody =>
+      'Öffne Lotti, um zu sehen, was passiert ist, und versuche es erneut.';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationTitle =>
+      'Dein Tagesplan wurde nicht fertig';
 
   @override
   String get dailyOsNextPlanReadyNotificationBody =>

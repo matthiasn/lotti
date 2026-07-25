@@ -95,7 +95,8 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
         agentId: agentId,
         dayId: dayId,
       );
-      return plan?.updatedAt;
+      if (plan == null) return null;
+      return (updatedAt: plan.updatedAt, runKey: plan.runKey);
     },
     pendingDiffCreatedSince: (agentId, dayId, since) async {
       final diffs = await planService.pendingPlanDiffsForDay(

@@ -242,6 +242,7 @@ class DayAgentPlanWriter {
     List<String> decidedTaskIds = const [],
     int capacityMinutes = 480,
     String? dayLabel,
+    String? runKey,
   }) async {
     final identity = await reads.requireIdentity(agentId);
     if (identity.allowedCategoryIds.isNotEmpty) {
@@ -333,6 +334,11 @@ class DayAgentPlanWriter {
               agentId: agentId,
               dayId: dayId,
               captureId: captureId,
+              // Provenance for the durable draft job: which wake wrote this.
+              // Without it the executor can only ask "was a plan touched
+              // after I asked?", which a concurrent wake's write answers just
+              // as well as this job's own.
+              runKey: runKey,
               planDate: localDay(planDate),
               data: DayPlanData(
                 planDate: localDay(planDate),

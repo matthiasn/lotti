@@ -1858,10 +1858,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Verificați';
 
   @override
-  String get aiProviderDetailProfilesUsingTitle =>
-      'Profiluri care folosesc acest furnizor';
-
-  @override
   String get aiProviderDetailAddModelButton => 'Adăugați un model';
 
   @override
@@ -1915,6 +1911,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiProviderDetailPageTitle => 'Detalii furnizor';
+
+  @override
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profiluri care folosesc acest furnizor';
 
   @override
   String get aiProviderDetailRemoveButton => 'Eliminați furnizorul';
@@ -4070,12 +4070,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Desface legătura';
 
   @override
+  String get dailyOsNextPlanChangesFailedNotificationBody =>
+      'Deschideți Lotti pentru a vedea ce s-a întâmplat și încercați din nou.';
+
+  @override
+  String get dailyOsNextPlanChangesFailedNotificationTitle =>
+      'Modificările planului dvs. nu s-au finalizat';
+
+  @override
   String get dailyOsNextPlanChangesReadyNotificationBody =>
       'Modificările propuse așteaptă revizuirea dvs.';
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationTitle =>
       'Modificările planului dvs. sunt gata';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationBody =>
+      'Deschideți Lotti pentru a vedea ce s-a întâmplat și încercați din nou.';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationTitle =>
+      'Planul dvs. zilnic nu s-a finalizat';
 
   @override
   String get dailyOsNextPlanReadyNotificationBody =>

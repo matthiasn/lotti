@@ -526,6 +526,7 @@ DayPlanEntity _$DayPlanEntityFromJson(Map<String, dynamic> json) =>
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       captureId: json['captureId'] as String?,
+      runKey: json['runKey'] as String?,
       energyBands:
           (json['energyBands'] as List<dynamic>?)
               ?.map(
@@ -552,6 +553,7 @@ Map<String, dynamic> _$DayPlanEntityToJson(DayPlanEntity instance) =>
       'updatedAt': instance.updatedAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
       'captureId': instance.captureId,
+      'runKey': instance.runKey,
       'energyBands': instance.energyBands,
       'capacityMinutes': instance.capacityMinutes,
       'scheduledMinutes': instance.scheduledMinutes,

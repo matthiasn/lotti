@@ -66,7 +66,13 @@ class DayPlanReadyNotifier {
   /// lookup, platform plugin) must stay a contained best-effort miss instead
   /// of surfacing as an unhandled async error on job completion.
   Future<void> onJobFinished(DayProcessingJob job) async {
-    if (job.status != DayProcessingJobStatus.succeeded) return;
+    final succeeded = job.status == DayProcessingJobStatus.succeeded;
+    // A job that exhausted its retries is exactly as worth saying out loud as
+    // one that worked: the user asked for a plan and is otherwise left with a
+    // day that silently never got planned. The retry cap added in #3558 made
+    // this a reachable state rather than a theoretical one.
+    final failed = job.status == DayProcessingJobStatus.failed;
+    if (!succeeded && !failed) return;
     final isPlanJob =
         job.kind == DayProcessingJobKind.draftPlan ||
         job.kind == DayProcessingJobKind.refinePlan;
@@ -77,12 +83,23 @@ class DayPlanReadyNotifier {
       final messages = _messages();
       final isDraft = job.kind == DayProcessingJobKind.draftPlan;
       await _notifications.showNotificationNow(
-        title: isDraft
-            ? messages.dailyOsNextPlanReadyNotificationTitle
-            : messages.dailyOsNextPlanChangesReadyNotificationTitle,
-        body: isDraft
-            ? messages.dailyOsNextPlanReadyNotificationBody
-            : messages.dailyOsNextPlanChangesReadyNotificationBody,
+        title: switch ((isDraft, succeeded)) {
+          (true, true) => messages.dailyOsNextPlanReadyNotificationTitle,
+          (false, true) =>
+            messages.dailyOsNextPlanChangesReadyNotificationTitle,
+          (true, false) => messages.dailyOsNextPlanFailedNotificationTitle,
+          (false, false) =>
+            messages.dailyOsNextPlanChangesFailedNotificationTitle,
+        },
+        body: switch ((isDraft, succeeded)) {
+          (true, true) => messages.dailyOsNextPlanReadyNotificationBody,
+          (false, true) => messages.dailyOsNextPlanChangesReadyNotificationBody,
+          (true, false) => messages.dailyOsNextPlanFailedNotificationBody,
+          (false, false) =>
+            messages.dailyOsNextPlanChangesFailedNotificationBody,
+        },
+        // Same id for both outcomes: a later result replaces an earlier one
+        // rather than stacking two notifications about the same day.
         notificationId: notificationId,
         showOnMobile: true,
         showOnDesktop: true,
@@ -93,7 +110,7 @@ class DayPlanReadyNotifier {
         getIt<DomainLogger>().error(
           LogDomain.agentWorkflow,
           e,
-          message: 'failed to raise plan-ready notification',
+          message: 'failed to raise plan-outcome notification',
           stackTrace: s,
         );
       }

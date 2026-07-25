@@ -101,19 +101,90 @@ void main() {
     verifyZeroInteractions(notifications);
   });
 
-  test('non-succeeded terminal jobs raise no banner', () async {
+  test('a cancelled job raises no banner', () async {
+    // Cancellation is the user's own doing — telling them about it would be
+    // reporting their own action back at them.
     await makeNotifier().onJobFinished(
       job(
         payload: const DraftPlanPayload(),
         status: DayProcessingJobStatus.cancelled,
       ),
     );
+
+    verifyZeroInteractions(notifications);
+  });
+
+  test(
+    'a failed draft job while backgrounded says so rather than staying silent',
+    () async {
+      await makeNotifier().onJobFinished(
+        job(
+          payload: const DraftPlanPayload(),
+          status: DayProcessingJobStatus.failed,
+        ),
+      );
+
+      verify(
+        () => notifications.showNotificationNow(
+          title: "Your day plan didn't finish",
+          body: 'Open Lotti to see what happened and try again.',
+          // Same id as the success banner, so a later outcome replaces an
+          // earlier one instead of stacking two notices for one day.
+          notificationId: DayPlanReadyNotifier.notificationId,
+          showOnMobile: true,
+          showOnDesktop: true,
+          deepLink: DayPlanReadyNotifier.deepLink,
+        ),
+      ).called(1);
+    },
+  );
+
+  test('a failed refine job uses the plan-changes failure copy', () async {
     await makeNotifier().onJobFinished(
+      job(
+        payload: const RefinePlanPayload(transcriptCaptureId: 'cap-1'),
+        status: DayProcessingJobStatus.failed,
+      ),
+    );
+
+    verify(
+      () => notifications.showNotificationNow(
+        title: "Your plan changes didn't finish",
+        body: 'Open Lotti to see what happened and try again.',
+        notificationId: DayPlanReadyNotifier.notificationId,
+        showOnMobile: true,
+        showOnDesktop: true,
+        deepLink: DayPlanReadyNotifier.deepLink,
+      ),
+    ).called(1);
+  });
+
+  test('a failure while the app is in the foreground stays quiet', () async {
+    // The user is looking at the app; the Activity surface is where a
+    // foreground failure belongs, not an OS banner over the top of it.
+    await makeNotifier(foreground: true).onJobFinished(
       job(
         payload: const DraftPlanPayload(),
         status: DayProcessingJobStatus.failed,
       ),
     );
+
+    verifyZeroInteractions(notifications);
+  });
+
+  test('a still-retrying job raises nothing', () async {
+    // waitingForNetwork and queued are not outcomes — the pipeline has not
+    // given up, so there is nothing to report yet.
+    for (final status in const [
+      DayProcessingJobStatus.queued,
+      DayProcessingJobStatus.waitingForNetwork,
+      DayProcessingJobStatus.waitingForUser,
+      DayProcessingJobStatus.running,
+    ]) {
+      await makeNotifier().onJobFinished(
+        job(payload: const DraftPlanPayload(), status: status),
+      );
+    }
 
     verifyZeroInteractions(notifications);
   });

@@ -1845,10 +1845,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Zkontrolovat';
 
   @override
-  String get aiProviderDetailProfilesUsingTitle =>
-      'Profily využívající tohoto poskytovatele';
-
-  @override
   String get aiProviderDetailAddModelButton => 'Přidat model';
 
   @override
@@ -1903,6 +1899,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiProviderDetailPageTitle => 'Detail poskytovatele';
+
+  @override
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profily využívající tohoto poskytovatele';
 
   @override
   String get aiProviderDetailRemoveButton => 'Odstranit poskytovatele';
@@ -4053,12 +4053,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Odpojit';
 
   @override
+  String get dailyOsNextPlanChangesFailedNotificationBody =>
+      'Otevři Lotti, podívej se, co se stalo, a zkus to znovu.';
+
+  @override
+  String get dailyOsNextPlanChangesFailedNotificationTitle =>
+      'Tvoje změny plánu se nedokončily';
+
+  @override
   String get dailyOsNextPlanChangesReadyNotificationBody =>
       'Navržené změny čekají na tvou kontrolu.';
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationTitle =>
       'Tvé změny plánu jsou připravené';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationBody =>
+      'Otevři Lotti, podívej se, co se stalo, a zkus to znovu.';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationTitle =>
+      'Tvůj denní plán se nedokončil';
 
   @override
   String get dailyOsNextPlanReadyNotificationBody =>
