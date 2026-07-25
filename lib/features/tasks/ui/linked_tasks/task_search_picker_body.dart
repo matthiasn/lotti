@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
@@ -128,6 +129,7 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
                 task.data.title.toLowerCase().contains(queryLower),
           );
 
+    final tokens = context.designTokens;
     return [
       for (final task in filtered)
         PickerItem(
@@ -138,6 +140,18 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
             task.data.status.toDbString,
             context,
           ),
+          // These rows are one tap from the linked-tasks card's rows and read
+          // identically — same glyph, title and status — but tapping here
+          // *creates a link* where tapping there opens the task. The trailing
+          // mark is the only thing that says which, so it is not decoration:
+          // it is the difference between the two gestures.
+          badges: [
+            Icon(
+              Icons.add_link,
+              size: tokens.spacing.step5,
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ],
         ),
     ];
   }

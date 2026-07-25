@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -257,19 +258,26 @@ void main() {
     }) async {
       await tester.pumpWidget(
         WidgetTestBench(
-          child: SizedBox(
-            width: 390,
-            child: LinkedTaskRow(
-              taskId: 'anchor-task',
-              data: LinkedTaskRowData(
-                task: TestTaskFactory.create(
-                  id: 'other-task',
-                  title: 'Migrate the relationship picker to the shared sheet',
+          // Align, not a bare SizedBox: the bench hands its child tight
+          // constraints, so a width set any other way is silently ignored and
+          // the row is measured at the full 800pt surface instead of a phone.
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 390,
+              child: LinkedTaskRow(
+                taskId: 'anchor-task',
+                data: LinkedTaskRowData(
+                  task: TestTaskFactory.create(
+                    id: 'other-task',
+                    title:
+                        'Migrate the relationship picker to the shared sheet',
+                  ),
                 ),
+                manageMode: manageMode,
+                onEdit: () async {},
+                onUnlink: () async {},
               ),
-              manageMode: manageMode,
-              onEdit: () async {},
-              onUnlink: () async {},
             ),
           ),
         ),
@@ -297,6 +305,66 @@ void main() {
       await titleBoxAt(tester, manageMode: true);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('LinkedTaskRow emphasis ladder', () {
+    /// The colour the status label is actually painted at, at a given row width.
+    ///
+    /// Asserted on the rendered ink rather than on which slot the label landed
+    /// in: the wide layout styles it directly while the narrow one inherits the
+    /// list item's subtitle style, so the same intent has two code paths and
+    /// only one of them was carrying the emphasis.
+    Future<Color?> statusInkAt(WidgetTester tester, double width) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          // Align, not a bare SizedBox: the bench hands its child tight
+          // constraints, so a width set any other way is silently ignored and
+          // every case ends up measuring the same 800pt row.
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              child: LinkedTaskRow(
+                taskId: 'anchor-task',
+                data: buildRowData(),
+                manageMode: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      final richText = tester.widget<RichText>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText && widget.text.toPlainText().contains('Open'),
+        ),
+      );
+      // The span carrying the label, not the root: the narrow path overrides
+      // the colour on a child span, so reading the root style reports the
+      // inherited value the override exists to replace.
+      Color? ink;
+      richText.text.visitChildren((span) {
+        if (span is TextSpan && (span.text?.contains('Open') ?? false)) {
+          ink = span.style?.color ?? richText.text.style?.color;
+        }
+        return true;
+      });
+      return ink;
+    }
+
+    testWidgets(
+      'the status label sits below the section eyebrow at both widths, so the '
+      'narrow layout ranks the same three roles the wide one does',
+      (tester) async {
+        final narrow = await statusInkAt(tester, 390);
+        final wide = await statusInkAt(tester, 720);
+
+        expect(narrow, dsTokensLight.colors.text.lowEmphasis);
+        expect(wide, dsTokensLight.colors.text.lowEmphasis);
+        // ...and strictly below the eyebrow that groups it.
+        expect(narrow, isNot(dsTokensLight.colors.text.mediumEmphasis));
+      },
+    );
   });
 
   group('StatusGlyph', () {

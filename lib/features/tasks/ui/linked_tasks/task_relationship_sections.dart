@@ -236,8 +236,11 @@ class LinkedTaskSectionHeader extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step5,
-        // Bound to the rows below it, not floated between two sections.
-        tightTop ? tokens.spacing.step2 : tokens.spacing.step6,
+        // Bound to the rows below it, not floated between two sections. The
+        // gap below looks smaller than it is — the row adds its own top
+        // padding and the title's line leading on top of that — so the gap
+        // above has to clear both for proximity to group the label downward.
+        tightTop ? tokens.spacing.step2 : tokens.spacing.step7,
         tokens.spacing.step5,
         tokens.spacing.step1,
       ),

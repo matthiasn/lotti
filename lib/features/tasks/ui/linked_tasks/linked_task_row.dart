@@ -90,7 +90,19 @@ class LinkedTaskRow extends StatelessWidget {
           // Kept in manage mode too: curating links is exactly when knowing a
           // blocker is already Done matters most, and dropping it there cost
           // the row its second type level during the one task it serves.
-          subtitle: wideEnoughForTrailingStatus ? null : statusLabel,
+          //
+          // Spans rather than a plain subtitle purely to override the ink: the
+          // list item's subtitle is medium emphasis, which on the narrow layout
+          // tied the status with the section eyebrow that groups it and flattened
+          // the same three roles the wide layout ranks.
+          subtitleSpans: wideEnoughForTrailingStatus
+              ? null
+              : [
+                  TextSpan(
+                    text: statusLabel,
+                    style: TextStyle(color: tokens.colors.text.lowEmphasis),
+                  ),
+                ],
           trailing: !wideEnoughForTrailingStatus
               ? null
               : Text(
@@ -118,15 +130,19 @@ class LinkedTaskRow extends StatelessWidget {
                           // manage mode would show the same pencil twice with two
                           // different meanings right next to each other.
                           icon: Icons.swap_horiz_rounded,
+                          // The mode exists to retype relationships, so its
+                          // verb outranks its escape hatch.
+                          emphasis: tokens.colors.text.mediumEmphasis,
                         ),
                       if (onUnlink != null)
                         _RowAction(
                           tooltip: context.messages.unlinkButton,
                           onPressed: () => _confirmUnlink(context),
                           icon: Icons.close_rounded,
-                          // The destructive one carries more weight than its
-                          // neighbour so the two aren't interchangeable smudges.
-                          emphasis: tokens.colors.text.mediumEmphasis,
+                          // Quieter than its neighbour, not louder: the
+                          // confirmation modal is what makes unlinking safe,
+                          // and painting the destructive action as the
+                          // brightest mark on the row only draws the eye to it.
                         ),
                     ],
                   ),
