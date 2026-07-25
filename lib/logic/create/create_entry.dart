@@ -59,12 +59,17 @@ Future<JournalEntity?> createChecklist({
 
 /// Creates a blank task and applies any unambiguous creation context.
 ///
-/// Category, labels, and status are part of the initial entity write. An
-/// explicit [projectId] is validated before that write, its category is
+/// Category, labels, status, and [title] are part of the initial entity write.
+/// An explicit [projectId] is validated before that write, its category is
 /// authoritative, and the project is linked before this future completes.
 /// Invalid projects or failed explicit links return `null`. Without these
 /// optional values, the existing open, uncategorized, unlabeled, project-free
 /// defaults are kept.
+///
+/// [title] defaults to empty, which is what every caller that opens the new
+/// task for editing wants. Callers that already know the title — the link
+/// picker, where the search query the user typed *is* the title — pass it so
+/// the task is never briefly nameless.
 Future<Task?> createTask({
   String? linkedId,
   String? categoryId,
@@ -72,6 +77,7 @@ Future<Task?> createTask({
   List<String>? labelIds,
   String? status,
   DateTime? due,
+  String title = '',
 }) async {
   final now = DateTime.now();
   final projectRepository = projectId != null
@@ -114,7 +120,7 @@ Future<Task?> createTask({
   final task = await getIt<PersistenceLogic>().createTaskEntry(
     data: TaskData(
       status: taskStatusFromString(status ?? ''),
-      title: '',
+      title: title,
       statusHistory: [],
       dateTo: now,
       dateFrom: now,

@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   profile.
 
 ## [0.9.1068]
+### Added
+- **Link a task that doesn't exist yet, without leaving the picker.** Searching
+  for a task to link used to dead-end on "No tasks found" when the work simply
+  hadn't been written down. Typing a title that matches nothing now offers to
+  create it: the task is made with that title, put in the same area as the task
+  you're linking from, connected with the relationship you already picked, and
+  you stay where you were — with the usual Undo. The "Create new linked task…"
+  menu entry still does what it always did, creating a blank task and taking
+  you to it.
+
 ### Changed
 - **Dropdowns and search boxes now look like the same control.** Where the two
   sit stacked — choosing how a task relates, then searching for the task to

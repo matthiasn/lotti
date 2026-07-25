@@ -194,6 +194,23 @@ void main() {
       expect(retrieved, isA<Task>());
     });
 
+    test(
+      'createTask writes a supplied title into the initial entity',
+      () async {
+        // The link picker creates from a search miss, where the query the user
+        // typed already is the title. Applying it after the write would leave
+        // the task briefly nameless in every list that reads it.
+        final task = await createTask(title: 'Write the migration guide');
+
+        expect(task?.data.title, 'Write the migration guide');
+
+        final persisted = await getIt<JournalDb>().journalEntityById(
+          task!.meta.id,
+        );
+        expect((persisted! as Task).data.title, 'Write the migration guide');
+      },
+    );
+
     test('createTask persists inherited task filters', () async {
       const categoryId = 'filtered-category';
       const projectId = 'filtered-project';

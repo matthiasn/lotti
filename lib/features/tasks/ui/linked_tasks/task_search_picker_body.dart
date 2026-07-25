@@ -28,6 +28,7 @@ class TaskSearchPickerBody extends StatefulWidget {
     required this.onTaskSelected,
     this.taskStatuses = allTaskStatuses,
     this.topInset = true,
+    this.onCreateTask,
     super.key,
   });
 
@@ -51,6 +52,17 @@ class TaskSearchPickerBody extends StatefulWidget {
   /// supplies the gap under the header (the link modal's relation dropdown).
   final bool topInset;
 
+  /// Creates a task titled after the current query, or null on failure.
+  ///
+  /// Supplied, a search that matches nothing offers to create the task the
+  /// user just described instead of dead-ending on "No tasks found" — the
+  /// query is already the title. The created task is fed straight back
+  /// through [onTaskSelected], so creating and picking are the same act and
+  /// the caller's linking, confirmation and undo all happen unchanged.
+  ///
+  /// Null (the default) leaves the picker search-only.
+  final Future<Task?> Function(String title)? onCreateTask;
+
   @override
   State<TaskSearchPickerBody> createState() => _TaskSearchPickerBodyState();
 }
@@ -63,10 +75,19 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   /// Kept separate from [_tasks] so clearing the query drops them again.
   List<Task> _resolvedMatches = const [];
 
+  /// Tasks created from a search miss during this session. Held so the pick
+  /// handler can resolve the id the picker hands back — the freshly created
+  /// task is in neither the prefetch nor the full-text results.
+  List<Task> _createdTasks = const [];
+
   /// Every task a row can be built from. Both the row builder and the pick
   /// handler must read this same list: building rows from a wider set than
   /// picks are resolved against is what let a rendered row throw on tap.
-  List<Task> get _candidatePool => [..._tasks, ..._resolvedMatches];
+  List<Task> get _candidatePool => [
+    ..._tasks,
+    ..._resolvedMatches,
+    ..._createdTasks,
+  ];
   bool _isLoading = true;
   String? _lastFetchedQuery;
 
@@ -218,6 +239,30 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
     ];
   }
 
+  /// Creates the task and registers it locally, returning the id the picker
+  /// then feeds back through its own pick callback — which is what links it.
+  /// Creating and picking are deliberately the same act: the caller's link,
+  /// confirmation and undo path stay one code path rather than two that must
+  /// agree.
+  Future<String?> _createFromQuery(String query) async {
+    final created = await widget.onCreateTask!(query.trim());
+    if (created == null || !mounted) return null;
+    setState(() => _createdTasks = [..._createdTasks, created]);
+    return created.meta.id;
+  }
+
+  /// Offer the create row on an exact-title miss, matching the category and
+  /// label pickers: typing "Migrate" still offers to create it even when
+  /// "Migrate the database" already exists, because the shorter title is a
+  /// legitimately different task.
+  bool _shouldShowCreate(String query) {
+    final trimmed = query.trim().toLowerCase();
+    if (trimmed.isEmpty) return false;
+    return !_candidatePool.any(
+      (task) => task.data.title.trim().toLowerCase() == trimmed,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -252,6 +297,9 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
             .firstOrNull;
         if (picked != null) widget.onTaskSelected(picked);
       },
+      createFromQuery: widget.onCreateTask == null ? null : _createFromQuery,
+      shouldShowCreate: _shouldShowCreate,
+      createRowKey: const ValueKey('link-picker-create'),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -7,11 +8,13 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -107,6 +110,32 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
     }
   }
 
+  /// Creates the task a search miss described, ready to be linked.
+  ///
+  /// No `linkedId`: that would write a plain link the caller would then have
+  /// to unpick whenever a typed relation was chosen — the dance the card's
+  /// overflow flow has to do because it creates before it knows the relation.
+  /// Here the relation is already selected above the search field, so the
+  /// task is created bare and [_selectTask] writes exactly one edge.
+  ///
+  /// The category is inherited from the task being linked from: a task
+  /// created from inside another task's link picker belongs with it, and
+  /// leaving it uncategorized would drop it out of every category-scoped
+  /// view the parent appears in.
+  Future<Task?> _createTask(String title) async {
+    final entryState = ref.read(entryControllerProvider(widget.currentTaskId));
+    final created = await createTask(
+      title: title,
+      categoryId: entryState.value?.entry?.meta.categoryId,
+    );
+    if (created != null) {
+      // Same follow-up the card's create flow performs, so a task created
+      // here is not left behind on category-agent assignment.
+      unawaited(autoAssignCategoryAgent(ref, created));
+    }
+    return created;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -152,6 +181,7 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
                   if (existing.relation == _relation) existing.taskId,
               },
               onTaskSelected: _selectTask,
+              onCreateTask: _createTask,
             ),
           ),
         ],

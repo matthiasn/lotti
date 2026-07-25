@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -18,16 +19,21 @@ import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../categories/test_utils.dart';
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('LinkTaskModal', () {
     late MockJournalDb mockJournalDb;
     late MockFts5Db mockFts5Db;
@@ -164,6 +170,9 @@ void main() {
       ]);
 
       getIt
+        // EntryController resolves this in a field initializer, so any test
+        // overriding the controller still constructs the base class.
+        ..registerSingleton<EditorStateService>(MockEditorStateService())
         ..registerSingleton<EntitiesCacheService>(cache)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<Fts5Db>(mockFts5Db)
@@ -738,33 +747,42 @@ void main() {
       await tester.enterText(find.byType(TextField), 'xyz123');
       await tester.pump();
 
-      expect(find.text('No tasks found'), findsOneWidget);
+      // No longer a dead end: the query the user typed is offered as a task
+      // to create. The "No tasks found" message it replaces still exists for
+      // pickers without a create path (the blocker picker).
+      expect(find.text('No tasks found'), findsNothing);
+      expect(find.byKey(const ValueKey('link-picker-create')), findsOneWidget);
     });
 
     testWidgets(
-      'transitions from a populated list to the "No tasks found" empty state '
-      'when a search query eliminates every result',
+      'a query that eliminates every result replaces the list with the offer '
+      'to create the task that was searched for',
       (tester) async {
         stubTasks([buildTask(title: 'Apple Task')]);
 
         await openModal(tester);
 
-        // Before searching: the task is shown and neither empty-state message
-        // (initial vs. no-match) is present.
+        // Before searching: the task is shown, no empty state, and nothing to
+        // create because nothing has been typed.
         expect(find.text('Apple Task'), findsOneWidget);
         expect(find.text('No tasks available to link'), findsNothing);
-        expect(find.text('No tasks found'), findsNothing);
+        expect(find.byKey(const ValueKey('link-picker-create')), findsNothing);
 
         // A query with no FTS5 match (default stub) and no title-substring
         // match filters the single task out.
         await tester.enterText(find.byType(TextField), 'xyz123');
         await tester.pump();
 
-        // After searching: the list collapses to the *non-empty-query* empty
-        // state (noTasksFound), distinct from the initial noTasksToLink state.
+        // The list collapses, but to a create offer rather than an apology.
+        // Neither empty-state message applies: noTasksToLink is for an empty
+        // backlog, and noTasksFound is for pickers with no create path.
         expect(find.text('Apple Task'), findsNothing);
-        expect(find.text('No tasks found'), findsOneWidget);
+        expect(find.text('No tasks found'), findsNothing);
         expect(find.text('No tasks available to link'), findsNothing);
+        expect(
+          find.byKey(const ValueKey('link-picker-create')),
+          findsOneWidget,
+        );
       },
     );
 
@@ -1602,5 +1620,196 @@ void main() {
         );
       });
     }
+
+    group('create from a search miss', () {
+      // The picker used to dead-end on "No tasks found" for work that simply
+      // did not exist yet. The query the user typed already is the title, so
+      // the miss is offered as a create instead.
+      late MockTaskAgentService taskAgentService;
+
+      setUp(() {
+        taskAgentService = MockTaskAgentService();
+      });
+
+      Future<void> openWithCategory(
+        WidgetTester tester, {
+        String? categoryId = 'cat-a',
+      }) async {
+        final current = TestTaskFactory.create(
+          id: 'current-task',
+          title: 'Anchor task',
+          createdAt: now,
+          dateFrom: now,
+          dateTo: now,
+          categoryId: categoryId,
+        );
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              createEntryControllerOverride(current),
+              // The create path fires the same category-agent assignment the
+              // card's create flow does; stubbed so the fire-and-forget call
+              // cannot reach a real AgentDatabase.
+              taskAgentServiceProvider.overrideWithValue(taskAgentService),
+            ],
+            child: WidgetTestBench(
+              child: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingRelations: const {},
+                  ),
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Open Modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+      }
+
+      Finder createRow() => find.byKey(const ValueKey('link-picker-create'));
+
+      testWidgets(
+        'a query matching nothing offers to create it; an exact title match '
+        'does not',
+        (tester) async {
+          stubTasks([buildTask(id: 'apple', title: 'Apple Task')]);
+          await openWithCategory(tester);
+
+          // Nothing typed: no create row, and no reason for one.
+          expect(createRow(), findsNothing);
+
+          await tester.enterText(find.byType(TextField), 'Write the guide');
+          await tester.pump();
+          expect(find.text('No tasks found'), findsNothing);
+          expect(createRow(), findsOneWidget);
+
+          // An exact title match means the task already exists — offering to
+          // create a second one with the same name would be a duplicate.
+          await tester.enterText(find.byType(TextField), 'apple task');
+          await tester.pump();
+          expect(createRow(), findsNothing);
+
+          // A partial match still offers the create: "Apple" is a
+          // legitimately different task from "Apple Task".
+          await tester.enterText(find.byType(TextField), 'Apple');
+          await tester.pump();
+          expect(createRow(), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        "creating from the query titles the task, inherits the anchor task's "
+        'category, and links it with the selected relation',
+        (tester) async {
+          stubTasks([]);
+          final created = buildTask(id: 'new-task', title: 'Write the guide');
+          TaskData? writtenData;
+          String? writtenCategoryId;
+          String? writtenLinkedId;
+          when(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+              labelIds: any(named: 'labelIds'),
+            ),
+          ).thenAnswer((invocation) async {
+            writtenData = invocation.namedArguments[#data] as TaskData;
+            writtenCategoryId =
+                invocation.namedArguments[#categoryId] as String?;
+            writtenLinkedId = invocation.namedArguments[#linkedId] as String?;
+            return created;
+          });
+          when(
+            () => mockPersistenceLogic.createLink(
+              fromId: any(named: 'fromId'),
+              toId: any(named: 'toId'),
+              linkType: EntryLinkType.blocks,
+            ),
+          ).thenAnswer((_) async => true);
+
+          await openWithCategory(tester);
+          await pickRelation(tester, 'Blocks');
+          await tester.enterText(find.byType(TextField), 'Write the guide');
+          await tester.pump();
+
+          await tester.tap(createRow());
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          // The typed query becomes the title in the initial write, so the
+          // task is never briefly nameless.
+          expect(writtenData?.title, 'Write the guide');
+          // Inherited from the task being linked from, not left loose.
+          expect(writtenCategoryId, 'cat-a');
+          // No linkedId: a plain link here would have to be unpicked again
+          // for every typed relation.
+          expect(writtenLinkedId, isNull);
+
+          // Exactly one edge, and it is the relation chosen above the search
+          // field — not the basic link a create-then-retype would leave.
+          verify(
+            () => mockPersistenceLogic.createLink(
+              fromId: 'current-task',
+              toId: 'new-task',
+              linkType: EntryLinkType.blocks,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockPersistenceLogic.createLink(
+              fromId: any(named: 'fromId'),
+              toId: any(named: 'toId'),
+              // ignore: avoid_redundant_argument_values
+              linkType: EntryLinkType.basic,
+            ),
+          );
+
+          // Created, linked, and back where we started — the modal closes and
+          // the confirmation names the new task.
+          expect(find.text('Link existing task'), findsNothing);
+          expect(find.text('Write the guide'), findsWidgets);
+        },
+      );
+
+      testWidgets('a failed create leaves the picker open and links nothing', (
+        tester,
+      ) async {
+        stubTasks([]);
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+            labelIds: any(named: 'labelIds'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        await openWithCategory(tester);
+        await tester.enterText(find.byType(TextField), 'Write the guide');
+        await tester.pump();
+        await tester.tap(createRow());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Persistence returns null rather than throwing on failure, so the
+        // only correct response is to write no link and stay put — a closed
+        // modal would claim a link that does not exist.
+        verifyNever(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        );
+        expect(find.text('Link existing task'), findsOneWidget);
+      });
+    });
   });
 }

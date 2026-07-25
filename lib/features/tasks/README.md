@@ -696,6 +696,57 @@ outbox-sync and notification plumbing, and re-runs the cycle guard with the
 edited link's own row excluded so a legitimate direction flip is not rejected
 against its own stale state).
 
+#### Creating from a search miss
+
+`TaskSearchPickerBody` takes an optional `onCreateTask`. Supplied, a query that
+matches no existing task offers to create it rather than dead-ending on "No
+tasks found" — the query the user typed already *is* the title. Only
+`LinkTaskModal` passes it today; `BlockingTaskPickerModal` stays search-only,
+because a blocker that isn't tracked yet is usually external (a person, a
+delivery, a decision) rather than a task waiting to be written down.
+
+The created task is fed straight back through the picker's own pick callback,
+so creating and picking are one act:
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant P as TaskSearchPickerBody
+  participant M as LinkTaskModal
+  participant C as createTask
+  U->>P: types a title that matches nothing
+  P-->>U: "+ <query>" create row
+  U->>P: taps it
+  P->>M: onCreateTask(query)
+  M->>C: createTask(title: query, categoryId: anchor's)
+  C-->>M: Task
+  M-->>P: Task (registered in the candidate pool)
+  P->>M: onTaskSelected(task) — the ordinary pick path
+  M->>M: createLink(selected relation) → toast with Undo → pop
+```
+
+Three consequences of that shape:
+
+- **One edge, not two.** `createTask` is called without `linkedId`, so no plain
+  link is written that a typed relation would then have to unpick. The card's
+  overflow flow has to do that dance because it creates before it knows the
+  relation; here the relation is already chosen above the search field.
+- **The category is inherited** from the task being linked from. A task created
+  inside another task's picker belongs with it, and leaving it uncategorized
+  would drop it out of every category-scoped view the parent appears in.
+- **Linking, confirmation and undo are unchanged** — they are literally the
+  same code path a normal pick takes, so there are not two flows that must
+  agree.
+
+The create row appears on an exact-title miss, matching the category and label
+pickers: typing "Migrate" still offers to create it when "Migrate the database"
+exists, because the shorter title is a legitimately different task.
+
+The card's overflow "Create new linked task…" entry is deliberately kept. The
+two now express different intents: the overflow creates a *blank* task and
+navigates to it (for writing it out properly), the picker creates a *titled*
+task and links it without leaving the flow.
+
 `TaskLinkGroupsController` (`taskLinkGroupsControllerProvider(taskId)`)
 resolves every plain and typed link touching a task, both directions, from one
 batched `JournalRepository.getTypedLinksForTaskIds` call, and buckets the
