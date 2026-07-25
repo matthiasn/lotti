@@ -1,0 +1,219 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+
+import 'eval_scenario.dart';
+
+/// A fixture that lies about what it contains is worse than no fixture: it
+/// produces a confident report about a scenario that was never actually
+/// exercised. These assert the fixtures are internally coherent, and that the
+/// blocked pair is the controlled comparison it claims to be.
+void main() {
+  final planDate = DateTime(2026, 7, 18);
+
+  EvalScenario byId(String id) =>
+      evalScenarios.firstWhere((scenario) => scenario.id == id);
+
+  test('every scenario has a unique id and states its intent', () {
+    final ids = evalScenarios.map((scenario) => scenario.id).toList();
+
+    expect(ids.toSet(), hasLength(ids.length), reason: 'duplicate scenario id');
+    for (final scenario in evalScenarios) {
+      expect(
+        scenario.intent,
+        isNotEmpty,
+        reason: '${scenario.id} must say what it is trying to find out',
+      );
+    }
+  });
+
+  test('every scenario but the restraint control gives the model work', () {
+    // The first live run produced one generic buffer block against an empty
+    // corpus — correct, and uninformative. Only the control is allowed to be
+    // empty now.
+    for (final scenario in evalScenarios) {
+      if (scenario.id == 'restraint') {
+        expect(scenario.tasks, isEmpty);
+        continue;
+      }
+      expect(
+        scenario.tasks,
+        isNotEmpty,
+        reason: '${scenario.id} would measure only that the pipeline runs',
+      );
+    }
+  });
+
+  test('decided task ids all exist in their scenario corpus', () {
+    for (final scenario in evalScenarios) {
+      final known = {for (final task in scenario.tasks) task.id};
+      for (final decided in scenario.decidedTaskIds) {
+        expect(
+          known,
+          contains(decided),
+          reason:
+              '${scenario.id} decides on $decided, which it never seeds — '
+              'the model would be asked to place a task it cannot see',
+        );
+      }
+    }
+  });
+
+  test('blockedBy references resolve within the scenario', () {
+    for (final scenario in evalScenarios) {
+      final known = {for (final task in scenario.tasks) task.id};
+      for (final task in scenario.tasks) {
+        for (final blockerId in task.blockedBy) {
+          expect(
+            known,
+            contains(blockerId),
+            reason:
+                '${scenario.id}: ${task.id} is blocked by $blockerId, '
+                'which the fixture never seeds',
+          );
+        }
+      }
+    }
+  });
+
+  test('the blocked pair differs only in whether a capture is present', () {
+    // This pair exists to isolate one variable: the corpus is rendered only
+    // inside the capture context, so without a capture the model gets ADR
+    // 0043's rule and none of the data. Anything else differing would
+    // confound that comparison.
+    final withCapture = byId('blockedChain');
+    final withoutCapture = byId('blockedWithoutCorpus');
+
+    expect(withCapture.includeCapture, isTrue);
+    expect(withoutCapture.includeCapture, isFalse);
+    expect(
+      withoutCapture.tasks.map((task) => task.id),
+      withCapture.tasks.map((task) => task.id),
+    );
+    expect(withoutCapture.decidedTaskIds, withCapture.decidedTaskIds);
+    expect(withoutCapture.capacityMinutes, withCapture.capacityMinutes);
+    expect(withoutCapture.startHour, withCapture.startHour);
+  });
+
+  test('overCommitted genuinely does not fit', () {
+    final scenario = byId('overCommitted');
+    final decidedMinutes = scenario.tasks
+        .where((task) => scenario.decidedTaskIds.contains(task.id))
+        .fold<int>(0, (sum, task) => sum + (task.estimateMinutes ?? 0));
+
+    expect(
+      decidedMinutes,
+      greaterThan(scenario.capacityMinutes),
+      reason: 'a scenario named overCommitted that fits proves nothing',
+    );
+  });
+
+  test('lateStart leaves less time than its longest task needs', () {
+    final scenario = byId('lateStart');
+    final longest = scenario.tasks
+        .map((task) => task.estimateMinutes ?? 0)
+        .reduce((a, b) => a > b ? a : b);
+    // Working hours end at 17:00 by default config.
+    final remainingMinutes = (17 - scenario.startHour!) * 60;
+
+    expect(
+      longest,
+      greaterThan(remainingMinutes),
+      reason: 'the tension is a task that cannot fit in what remains',
+    );
+  });
+
+  test('the blocked chain is two hops, which ADR 0043 does not close', () {
+    final scenario = byId('blockedChain');
+    final leaf = scenario.tasks.firstWhere((t) => t.id == 'task-c-leaf');
+    final middle = scenario.tasks.firstWhere((t) => t.id == 'task-b-middle');
+
+    expect(leaf.blockedBy, ['task-b-middle']);
+    expect(middle.blockedBy, ['task-a-root']);
+    expect(
+      scenario.decidedTaskIds,
+      contains('task-c-leaf'),
+      reason:
+          'the decided task must be the far end of the chain, or the '
+          'transitive question never arises',
+    );
+  });
+
+  test('seeded tasks carry the fields the corpus builder reads', () {
+    final scenario = byId('crowdedDay');
+    final tasks = scenario.tasksFor(planDate);
+
+    expect(tasks, hasLength(scenario.tasks.length));
+    final invoice = tasks.firstWhere((t) => t.id == 'task-overdue-invoice');
+    expect(invoice.data.title, 'Send the overdue client invoice');
+    expect(invoice.data.estimate, const Duration(minutes: 30));
+    expect(invoice.meta.categoryId, evalDefaultCategoryId);
+    expect(
+      invoice.data.due!.isBefore(planDate),
+      isTrue,
+      reason: 'a negative dueOffsetDays must land before the plan date',
+    );
+  });
+
+  test('overdue and due-today tasks are the ones offered to the due reads', () {
+    final scenario = byId('crowdedDay');
+
+    final due = scenario.overdueOrDueTodayFor(planDate).map((t) => t.id);
+
+    expect(due, contains('task-overdue-invoice'));
+    expect(due, contains('task-due-today-review'));
+    expect(
+      due,
+      isNot(contains('task-later-onboarding')),
+      reason: 'a task due in two weeks is not due today',
+    );
+  });
+
+  test('in-progress work is offered to the in-progress read', () {
+    final scenario = byId('crowdedDay');
+
+    expect(
+      scenario.inProgressFor(planDate).map((t) => t.id),
+      ['task-inprogress-migration'],
+    );
+  });
+
+  test('scenario inputs mirror the seeded corpus for the scorers', () {
+    final scenario = byId('blockedChain');
+    final inputs = scenario.inputsFor(planDate);
+
+    expect(inputs.corpus.map((task) => task.taskId), [
+      for (final task in scenario.tasks) task.id,
+    ]);
+    final leaf = inputs.taskById('task-c-leaf')!;
+    expect(leaf.isBlocked, isTrue);
+    expect(leaf.blockedBy, ['task-b-middle']);
+    final unrelated = inputs.taskById('task-unrelated')!;
+    expect(unrelated.isBlocked, isFalse);
+  });
+
+  test('the fixture resolver answers only for the ids it was asked about', () {
+    final scenario = byId('blockedChain');
+    final resolver = EvalFixtureDependencyResolver(scenario.blockedStatus);
+
+    return resolver.resolveBlockedStatus({'task-c-leaf'}).then((resolved) {
+      expect(resolved.keys, ['task-c-leaf']);
+      expect(resolved['task-c-leaf']!.single.taskId, 'task-b-middle');
+      expect(
+        resolved['task-c-leaf']!.single.title,
+        'Wire up the vendor integration',
+        reason: 'the blocker title is what the prompt rule lets a reason name',
+      );
+    });
+  });
+
+  test('a task blocked by status alone still reads as blocked', () {
+    // ADR 0043's predicate is a union: absence of blockedBy means link-ready,
+    // not free to schedule.
+    final scenario = byId('blockedChain');
+    final tasks = scenario.tasksFor(planDate);
+    final middle = tasks.firstWhere((t) => t.id == 'task-b-middle');
+
+    expect(middle.data.status, isA<TaskBlocked>());
+  });
+}
