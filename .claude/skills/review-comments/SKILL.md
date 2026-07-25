@@ -112,18 +112,30 @@ resolution.
 
    Poll on the structured status rather than the display columns — the table
    format is human-facing, and a failed API or auth call prints to stderr and
-   would otherwise read as "no pending checks":
+   would otherwise read as "no pending checks".
+
+   Note `gh pr checks` has **no** `--json` flag (checked on gh 2.45); the
+   structured source is `gh pr view --json statusCheckRollup`. Verify whatever
+   command you poll with actually works *before* wrapping it in an `until`
+   loop: a command that errors makes the loop exit immediately and every
+   subsequent report a lie.
 
    ```bash
-   # emits one "<bucket>\t<name>" line per check; `set -o pipefail` so an
-   # auth/API failure aborts instead of looking like an empty (= done) result
-   check_buckets() {
-     set -o pipefail
-     gh pr checks "$1" --json bucket,name --jq '.[] | "\(.bucket)\t\(.name)"'
+   # one "<state>\t<name>" line per check; empty output means the query
+   # failed, not that everything passed — so treat it as not-done.
+   rollup() {
+     gh pr view "$1" --json statusCheckRollup \
+       --jq '.statusCheckRollup[] | "\(.status // .state)\t\(.name // .context)"'
    }
-   until ! check_buckets <n> | grep -q '^pending'; do sleep 30; done
-   check_buckets <n> | grep -v '^pass' || echo "all green"
+   until [ -n "$(rollup <n>)" ] && ! rollup <n> | grep -q 'IN_PROGRESS\|QUEUED\|PENDING'; do
+     sleep 30
+   done
+   rollup <n> | grep -v 'SUCCESS\|COMPLETED' || echo "all green"
    ```
+
+   Cross-check the total against `gh pr checks <n>` before declaring green:
+   the honest failure mode here was a poller that exited on its first
+   iteration and reported "settled" while 15 checks were still queued.
 
    Run that in the background (`run_in_background: true`, or `… &` with the
    PID kept) so replying to comments proceeds concurrently rather than
