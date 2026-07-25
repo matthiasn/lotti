@@ -250,6 +250,44 @@ device-local processing outbox that transcription uses (`services/day_processing
 a sealed `DayProcessingPayload` per kind (`TranscribeAudioPayload`,
 `ParseCapturePayload`, `DraftPlanPayload`, `RefinePlanPayload`).
 
+### Measuring that it does not degrade
+
+`test/features/daily_os_next/benchmark/` seeds a synthetic corpus at 1, 6 and
+12 simulated months and reports the cost of the operations a user action
+actually triggers. It is opt-in:
+
+```sh
+fvm flutter test --dart-define=LOTTI_BENCHMARK=1 \
+  test/features/daily_os_next/benchmark/
+```
+
+The corpus deliberately has the shape a real install has — a small pending
+head over a large terminal ledger — because leaving every job pending would
+measure a backlog nobody has and hide the property under test. A smoke test
+runs unconditionally so the harness cannot rot unnoticed.
+
+Baseline on a dev machine (median of 9, microseconds; absolute values are
+machine-specific, the *slope* is the point):
+
+| metric | 1 month | 6 months | 12 months |
+| --- | --- | --- | --- |
+| `outbox.claimNext` | 157 | 94 | 127 |
+| `dayView.captures` | 224 | 144 | 136 |
+| `dayView.statusEvents` | 313 | 344 | 159 |
+| `dayView.plannerOwnsDay` | 122 | 113 | 86 |
+| `planEditor.pendingDiffs` | 80 | 56 | 53 |
+| `planWriter.lookback` | 666 | 445 | 262 |
+
+Corpus sizes: 360 / 2,184 / 4,380 agent entities and 90 / 546 / 1,095
+processing jobs. Every metric is flat or lower at twelve months than at one,
+across a 12× increase in stored history — which is the property the ADR 0044
+partial indexes and the day-scoped subtypes were built for. (Values drifting
+*down* with size is measurement noise and cache warming, not a real speedup.)
+
+What this does **not** measure: wake prompt bytes, token counts, and digest
+wake duration. Those need the full agent workflow rather than the storage
+layer, and are tracked separately.
+
 ### Day-scoped agent reads
 
 Opening a day used to load **every** capture and **every** day-status event the
