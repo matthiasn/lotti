@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -10,6 +9,9 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:meta/meta.dart';
@@ -403,6 +405,9 @@ Future<EvalRunResult> _runCell(
     final captureId = scenario.includeCapture
         ? await _seedCapture(harness, scenario, planDate)
         : const CaptureId('');
+    if (scenario.directive != null) {
+      await _seedDirective(harness, scenario.directive!, planDate);
+    }
 
     stopwatch.start();
     try {
@@ -531,6 +536,50 @@ Future<CaptureId> _seedCapture(
           as CaptureEntity;
   await harness.syncService.upsertEntity(capture);
   return CaptureId(capture.id);
+}
+
+/// Writes the scenario's `<day_directive>` directly, without running a digest
+/// wake to issue it.
+///
+/// Production issues a directive from the coordinator's digest, which is a
+/// second model call with its own prompt and tool budget — the same reason the
+/// capture is seeded rather than submitted. What the drafting wake needs is
+/// the persisted [DayDirectiveEntity]: `directiveForDay` reads it by
+/// deterministic id and the prompt builder renders the real section from it.
+Future<void> _seedDirective(
+  DayAgentPipelineHarness harness,
+  EvalDirective directive,
+  DateTime planDate,
+) async {
+  final dayId = dayAgentIdForDate(planDate);
+  final now = clock.now();
+  await harness.syncService.upsertEntity(
+    AgentDomainEntity.dayDirective(
+      id: dayDirectiveEntityId(dayId),
+      agentId: dailyOsPlannerAgentId,
+      dayId: dayId,
+      planDate: planDate,
+      directiveRevisionId: 'eval-directive-1',
+      issuedAt: now,
+      createdAt: now,
+      updatedAt: now,
+      vectorClock: null,
+      commitments: [
+        for (final commitment in directive.commitments)
+          DayDirectiveCommitment(
+            id: commitment.id,
+            source: DayCommitmentSource.userCommitment,
+            title: commitment.title,
+            minutes: commitment.minutes,
+          ),
+      ],
+      capacityBudget: DayCapacityBudget(
+        availableMinutes: directive.availableMinutes,
+        alreadyScheduledMinutes: directive.alreadyScheduledMinutes,
+      ),
+      attentionNotes: directive.attentionNotes,
+    ),
+  );
 }
 
 /// Reconstructs the ordered tool-call log from the agent messages one wake

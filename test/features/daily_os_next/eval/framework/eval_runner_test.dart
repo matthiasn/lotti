@@ -619,6 +619,42 @@ void main() {
       },
     );
 
+    test('renders the seeded directive into the prompt', () async {
+      // The directive is seeded as a real entity and read back through
+      // `directiveForDay`, so this asserts the whole path — a scenario whose
+      // directive never reached the prompt would score the contract against a
+      // model that was never given it.
+      final scenario = evalScenarios.firstWhere(
+        (s) => s.id == 'bindingDirective',
+      );
+      final planDate = evalPlanDateFor(scenario, today);
+      final result = await runEvalCell(
+        request: requestFor(scenario),
+        model: scriptedTarget(
+          turns: [
+            [draftCall(planDate: planDate, blocks: legalBlocks(planDate))],
+          ],
+        ),
+      );
+
+      expect(result.userPrompts.single, contains('<day_directive>'));
+      expect(result.userPrompts.single, contains('commit-board-deck'));
+      expect(
+        result.userPrompts.single,
+        contains('Prepare the board deck'),
+        reason: 'the commitment title is what a plan block has to name',
+      );
+      expect(
+        result.constraints
+            .firstWhere((c) => c.id == EvalConstraintIds.directiveHonoured)
+            .passed,
+        isFalse,
+        reason:
+            'the scripted plan names no commitment, so all three were '
+            'silently dropped',
+      );
+    });
+
     test(
       'drafts a same-day scenario under a clock anchored to its start hour',
       () async {

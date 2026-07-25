@@ -397,6 +397,21 @@ void main() {
     expect(middle.data.status, isA<TaskBlocked>());
   });
 
+  test('the binding-directive scenario asks for more than the budget', () {
+    // A directive that fits would let a model honour everything by accident.
+    // The contract only bites when something has to give.
+    final directive = byId('bindingDirective').directive!;
+
+    expect(directive.commitments, hasLength(3));
+    expect(directive.requestedMinutes, 390);
+    expect(directive.remainingMinutes, 240);
+    expect(
+      directive.fits,
+      isFalse,
+      reason: 'a satisfiable directive measures nothing about the contract',
+    );
+  });
+
   test('every scenario claiming a capture can actually supply one', () {
     // A scenario with includeCapture but no transcript would silently become
     // its no-capture twin: the corpus would never be rendered while the

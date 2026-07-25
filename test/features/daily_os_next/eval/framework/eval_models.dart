@@ -44,6 +44,57 @@ class EvalCorpusTask {
       status.toUpperCase() == 'BLOCKED' || blockedBy.isNotEmpty;
 }
 
+/// One commitment the coordinator handed down for a day.
+///
+/// Directive commitments are not tasks: they carry their own ids and titles
+/// and never appear in the task corpus, so a scorer has to match them by what
+/// the plan says rather than by `taskId`.
+@immutable
+class EvalDirectiveCommitment {
+  const EvalDirectiveCommitment({
+    required this.id,
+    required this.title,
+    required this.minutes,
+  });
+
+  final String id;
+  final String title;
+  final int minutes;
+}
+
+/// The `<day_directive>` a scenario seeds.
+///
+/// The prompt calls this BINDING, not a hint, and names exactly three
+/// legitimate responses to a commitment: represent it in the plan, trade it
+/// away in a diff whose reason names the colliding commitment, or escalate via
+/// `raise_day_status` with reason `directiveUnsatisfiable`. Silently dropping
+/// one is the failure.
+@immutable
+class EvalDirective {
+  const EvalDirective({
+    required this.commitments,
+    required this.availableMinutes,
+    this.alreadyScheduledMinutes = 0,
+    this.attentionNotes = const [],
+  });
+
+  final List<EvalDirectiveCommitment> commitments;
+
+  /// `capacityBudget.availableMinutes` as the coordinator stated it.
+  final int availableMinutes;
+  final int alreadyScheduledMinutes;
+  final List<String> attentionNotes;
+
+  int get requestedMinutes =>
+      commitments.fold<int>(0, (sum, c) => sum + c.minutes);
+
+  /// What the prompt asks the model to reconcile against before drafting.
+  int get remainingMinutes => availableMinutes - alreadyScheduledMinutes;
+
+  /// Whether the directive can be honoured in full as stated.
+  bool get fits => requestedMinutes <= remainingMinutes;
+}
+
 /// The inputs a scenario handed the model, kept alongside the result so a
 /// scorer never has to re-derive what the model was asked to do.
 @immutable
@@ -63,6 +114,7 @@ class EvalFixtureInputs {
     this.capacityMinutes = 480,
     this.workingHoursStartHour = 9,
     this.workingHoursEndHour = 17,
+    this.directive,
     this.now,
   });
 
@@ -144,6 +196,9 @@ class EvalFixtureInputs {
   /// of 480 minutes and stays inside the calendar day, so every other
   /// constraint is satisfied while the plan is unusable.
   final int workingHoursEndHour;
+
+  /// The binding directive the wake was given, if any.
+  final EvalDirective? directive;
 
   /// Wall instant the draft ran at, for same-day scenarios. Null for a
   /// future-day draft, where "the past" has no meaning.
