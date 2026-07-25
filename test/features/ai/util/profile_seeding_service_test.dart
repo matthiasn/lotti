@@ -5,7 +5,6 @@ import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils.dart';
@@ -26,7 +25,6 @@ List<AiConfig> _usableProvidersFor(Iterable<InferenceProviderType> types) => [
 void main() {
   late MockAiConfigRepository mockRepo;
   late ProfileSeedingService service;
-  late SeedTombstoneStore tombstones;
 
   setUpAll(() {
     registerFallbackValue(
@@ -39,26 +37,36 @@ void main() {
     );
   });
 
-  setUp(() async {
+  setUp(() {
     mockRepo = MockAiConfigRepository();
-    tombstones = await createTombstoneStore();
-    service = ProfileSeedingService(
-      aiConfigRepository: mockRepo,
-      tombstoneStore: tombstones,
-    );
+    service = ProfileSeedingService(aiConfigRepository: mockRepo);
 
     // Default: all profiles missing (return null for any ID lookup).
-    when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
     when(
-      () => mockRepo.getConfigsByType(AiConfigType.model),
+      () => mockRepo.getConfigById(
+        any(),
+        includeDeleted: any(named: 'includeDeleted'),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockRepo.getConfigsByType(
+        AiConfigType.model,
+        includeDeleted: any(named: 'includeDeleted'),
+      ),
     ).thenAnswer((_) async => const <AiConfig>[]);
     when(
-      () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+      () => mockRepo.getConfigsByType(
+        AiConfigType.inferenceProfile,
+        includeDeleted: any(named: 'includeDeleted'),
+      ),
     ).thenAnswer((_) async => const <AiConfig>[]);
     // Default: a usable provider exists for every mapped provider type, so
     // the seeding gate is open for the whole catalog unless a test narrows it.
     when(
-      () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      () => mockRepo.getConfigsByType(
+        AiConfigType.inferenceProvider,
+        includeDeleted: any(named: 'includeDeleted'),
+      ),
     ).thenAnswer(
       (_) async => _usableProvidersFor(
         ProfileSeedingService.providerTypeByProfileId.values.toSet(),
@@ -66,22 +74,29 @@ void main() {
     );
     when(() => mockRepo.saveConfig(any())).thenAnswer((_) async {});
     when(
-      () => mockRepo.deleteConfig(
+      () => mockRepo.hardDeleteConfig(
         any(),
         fromSync: any(named: 'fromSync'),
-        recordTombstone: any(named: 'recordTombstone'),
       ),
     ).thenAnswer((_) async {});
   });
 
   group('ProfileSeedingService', () {
     // The revival bug: seeding writes any template whose row is missing, and
-    // runs at startup and after every provider save — so without a tombstone
-    // the user's deletion is undone within the same session.
+    // runs at startup and after every provider save — so a hard delete would
+    // be undone within the session. A soft-deleted row is still a row, which
+    // is what makes the deletion stick.
     group('deleted seeds stay deleted', () {
-      test('a tombstoned profile is not re-seeded', () async {
-        await tombstones.remember(
-          SeedTombstoneStore.profileKey(profileGeminiFlashId),
+      test('a soft-deleted profile is not re-seeded', () async {
+        when(
+          () => mockRepo.getConfigById(
+            profileGeminiFlashId,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer(
+          (_) async => ProfileSeedingService.defaultProfiles
+              .firstWhere((profile) => profile.id == profileGeminiFlashId)
+              .copyWith(deletedAt: DateTime(2026, 7, 25)),
         );
 
         await service.seedDefaults();
@@ -94,64 +109,14 @@ void main() {
         expect(seeded, contains(profileGeminiProId));
       });
 
-      // A deletion can land after the pass read the ledger but before it wrote
-      // the row: the row and the tombstone live in different databases, so no
-      // transaction spans them. Seeding only ever creates, so nothing else
-      // would clean up the resurrected row — the pass has to reconcile.
-      test('drops a profile tombstoned while the pass was running', () async {
-        final store = LateTombstoneStore(
-          await createTombstoneStore(),
-          appearsAfterFirstRead: SeedTombstoneStore.profileKey(
-            profileGeminiFlashId,
-          ),
-        );
-        final racing = ProfileSeedingService(
-          aiConfigRepository: mockRepo,
-          tombstoneStore: store,
-        );
-
-        await racing.seedDefaults();
-
-        // It was seeded (the first read saw no tombstone)…
-        final seeded = verify(() => mockRepo.saveConfig(captureAny())).captured
-            .cast<AiConfigInferenceProfile>()
-            .map((profile) => profile.id);
-        expect(seeded, contains(profileGeminiFlashId));
-        // …and then removed again, without recording a second tombstone.
-        verify(
-          () => mockRepo.deleteConfig(
-            profileGeminiFlashId,
-            recordTombstone: false,
-          ),
-        ).called(1);
-      });
-
-      test(
-        'leaves profiles alone when nothing was tombstoned mid-pass',
-        () async {
-          await service.seedDefaults();
-
-          verifyNever(
-            () => mockRepo.deleteConfig(
-              any(),
-              fromSync: any(named: 'fromSync'),
-              recordTombstone: any(named: 'recordTombstone'),
-            ),
-          );
-        },
-      );
-
-      test('forgetting a tombstone lets the profile seed again', () async {
-        final identity = SeedTombstoneStore.profileKey(profileGeminiFlashId);
-        await tombstones.remember(identity);
-        await tombstones.forget(identity);
-
+      // Seeding must ask for deleted rows explicitly, or it sees "missing"
+      // where the user meant "removed".
+      test('seeding reads include deleted rows', () async {
         await service.seedDefaults();
 
-        final seeded = verify(() => mockRepo.saveConfig(captureAny())).captured
-            .cast<AiConfigInferenceProfile>()
-            .map((profile) => profile.id);
-        expect(seeded, contains(profileGeminiFlashId));
+        verify(
+          () => mockRepo.getConfigById(any(), includeDeleted: true),
+        ).called(greaterThan(0));
       });
     });
 
@@ -165,7 +130,12 @@ void main() {
 
     test('skips profiles that already exist', () async {
       // Gemini Flash already exists with all fields matching the seed target.
-      when(() => mockRepo.getConfigById(profileGeminiFlashId)).thenAnswer(
+      when(
+        () => mockRepo.getConfigById(
+          profileGeminiFlashId,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer(
         (_) async => AiConfig.inferenceProfile(
           id: profileGeminiFlashId,
           name: 'Gemini Flash',
@@ -202,7 +172,12 @@ void main() {
         // Any non-null result from getConfigById short-circuits the seed.
         // The seeder is strictly seed-on-create; existing rows are never
         // touched regardless of their contents.
-        when(() => mockRepo.getConfigById(any())).thenAnswer(
+        when(
+          () => mockRepo.getConfigById(
+            any(),
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer(
           (_) async => AiConfig.inferenceProfile(
             id: 'existing',
             name: 'Existing',
@@ -224,7 +199,12 @@ void main() {
         // Local profile exists with a user-swapped thinking model that
         // does NOT match the seed target. Pre-change, this would have
         // been clobbered back to the bundled default on every restart.
-        when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
+        when(
+          () => mockRepo.getConfigById(
+            profileLocalId,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer(
           (_) async => AiConfig.inferenceProfile(
             id: profileLocalId,
             name: 'Local (Ollama)',
@@ -262,7 +242,12 @@ void main() {
       () async {
         // User flipped isDefault off on the Local profile. Seed target
         // has isDefault: true — must not be re-asserted.
-        when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
+        when(
+          () => mockRepo.getConfigById(
+            profileLocalId,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer(
           (_) async => AiConfig.inferenceProfile(
             id: profileLocalId,
             name: 'Local (Ollama)',
@@ -302,7 +287,12 @@ void main() {
         profileLocalGemmaId,
         profileLocalGemmaPowerId,
       ]) {
-        verify(() => mockRepo.getConfigById(id)).called(1);
+        verify(
+          () => mockRepo.getConfigById(
+            id,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).called(1);
       }
     });
 
@@ -311,7 +301,12 @@ void main() {
       () async {
         // Existing profile drifts on imageRecognitionModelId — pre-change
         // this would have been reconciled. Now: left alone.
-        when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
+        when(
+          () => mockRepo.getConfigById(
+            profileLocalId,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer(
           (_) async => AiConfig.inferenceProfile(
             id: profileLocalId,
             name: 'Local (Ollama)',
@@ -591,7 +586,10 @@ void main() {
   group('provider-gated seeding', () {
     test('seeds nothing when no providers exist', () async {
       when(
-        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepo.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => const <AiConfig>[]);
 
       await service.seedDefaults();
@@ -601,7 +599,10 @@ void main() {
 
     test('seeds only the profile of the one usable provider type', () async {
       when(
-        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepo.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer(
         (_) async => _usableProvidersFor([InferenceProviderType.melious]),
       );
@@ -621,7 +622,10 @@ void main() {
       'a draft provider without an API key does not open the gate',
       () async {
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProvider,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => [
             AiTestDataFactory.createTestProvider(
@@ -642,7 +646,10 @@ void main() {
       'a keyless local provider with a base URL opens the Ollama gate',
       () async {
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProvider,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => _usableProvidersFor([InferenceProviderType.ollama]),
         );
@@ -679,42 +686,48 @@ void main() {
       'removes an untouched seed whose provider type has no usable provider',
       () async {
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProvider,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => _usableProvidersFor([InferenceProviderType.gemini]),
         );
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProfile,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => [templateFor(profileMeliousId)]);
 
         await service.removeOrphanedDefaultSeeds();
 
-        verify(
-          () => mockRepo.deleteConfig(
-            profileMeliousId,
-            recordTombstone: false,
-          ),
-        ).called(1);
+        verify(() => mockRepo.hardDeleteConfig(profileMeliousId)).called(1);
       },
     );
 
     test('keeps the seed while a usable same-type provider exists', () async {
       when(
-        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepo.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer(
         (_) async => _usableProvidersFor([InferenceProviderType.melious]),
       );
       when(
-        () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        () => mockRepo.getConfigsByType(
+          AiConfigType.inferenceProfile,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [templateFor(profileMeliousId)]);
 
       await service.removeOrphanedDefaultSeeds();
 
       verifyNever(
-        () => mockRepo.deleteConfig(
+        () => mockRepo.hardDeleteConfig(
           any(),
           fromSync: any(named: 'fromSync'),
-          recordTombstone: any(named: 'recordTombstone'),
         ),
       );
     });
@@ -723,10 +736,16 @@ void main() {
       'keeps a renamed seed — user-touched rows are never removed',
       () async {
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProvider,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => const <AiConfig>[]);
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProfile,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => [
             templateFor(profileMeliousId).copyWith(name: 'My cloud profile'),
@@ -736,10 +755,9 @@ void main() {
         await service.removeOrphanedDefaultSeeds();
 
         verifyNever(
-          () => mockRepo.deleteConfig(
+          () => mockRepo.hardDeleteConfig(
             any(),
             fromSync: any(named: 'fromSync'),
-            recordTombstone: any(named: 'recordTombstone'),
           ),
         );
       },
@@ -752,11 +770,19 @@ void main() {
         // transcription slot at a model row owned by a usable Gemini
         // provider — the profile can still serve requests, so it stays.
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProvider,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => _usableProvidersFor([InferenceProviderType.gemini]),
         );
-        when(() => mockRepo.getConfigsByType(AiConfigType.model)).thenAnswer(
+        when(
+          () => mockRepo.getConfigsByType(
+            AiConfigType.model,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer(
           (_) async => [
             AiTestDataFactory.createTestModel(
               id: 'gemini-flash-row',
@@ -766,7 +792,10 @@ void main() {
           ],
         );
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProfile,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => [
             templateFor(
@@ -778,10 +807,9 @@ void main() {
         await service.removeOrphanedDefaultSeeds();
 
         verifyNever(
-          () => mockRepo.deleteConfig(
+          () => mockRepo.hardDeleteConfig(
             any(),
             fromSync: any(named: 'fromSync'),
-            recordTombstone: any(named: 'recordTombstone'),
           ),
         );
       },
@@ -791,10 +819,16 @@ void main() {
       'removes the legacy-named Local Power seed when oMLX is gone',
       () async {
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProvider,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => const <AiConfig>[]);
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProfile,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => [
             templateFor(
@@ -805,18 +839,16 @@ void main() {
 
         await service.removeOrphanedDefaultSeeds();
 
-        verify(
-          () => mockRepo.deleteConfig(
-            profileLocalPowerId,
-            recordTombstone: false,
-          ),
-        ).called(1);
+        verify(() => mockRepo.hardDeleteConfig(profileLocalPowerId)).called(1);
       },
     );
 
     test('keeps seeds with any user-touched metadata', () async {
       when(
-        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepo.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => const <AiConfig>[]);
       final template = templateFor(profileMeliousId);
       final touchedVariants = <String, AiConfigInferenceProfile>{
@@ -828,16 +860,18 @@ void main() {
 
       for (final entry in touchedVariants.entries) {
         when(
-          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+          () => mockRepo.getConfigsByType(
+            AiConfigType.inferenceProfile,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => [entry.value]);
 
         await service.removeOrphanedDefaultSeeds();
 
         verifyNever(
-          () => mockRepo.deleteConfig(
+          () => mockRepo.hardDeleteConfig(
             any(),
             fromSync: any(named: 'fromSync'),
-            recordTombstone: any(named: 'recordTombstone'),
           ),
         );
       }
@@ -845,10 +879,16 @@ void main() {
 
     test('never touches user-created (non-template) profiles', () async {
       when(
-        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepo.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => const <AiConfig>[]);
       when(
-        () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        () => mockRepo.getConfigsByType(
+          AiConfigType.inferenceProfile,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer(
         (_) async => [
           AiTestDataFactory.createTestProfile(
@@ -862,10 +902,9 @@ void main() {
       await service.removeOrphanedDefaultSeeds();
 
       verifyNever(
-        () => mockRepo.deleteConfig(
+        () => mockRepo.hardDeleteConfig(
           any(),
           fromSync: any(named: 'fromSync'),
-          recordTombstone: any(named: 'recordTombstone'),
         ),
       );
     });

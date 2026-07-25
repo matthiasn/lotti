@@ -395,7 +395,11 @@ class AiConfigDeleteService {
   Future<void> _undoConfigDeletion(WidgetRef ref, AiConfig config) async {
     try {
       final repository = ref.read(aiConfigRepositoryProvider);
-      await repository.saveConfig(config);
+      // Deletion soft-deletes, so undo clears the stamp rather than writing
+      // the row back. Re-saving the pre-delete snapshot would also work today
+      // — it predates the stamp — but only by accident, and it would silently
+      // revert any change made between the delete and the undo.
+      await repository.restoreConfig(config.id);
     } catch (error) {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently

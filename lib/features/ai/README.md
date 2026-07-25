@@ -1232,16 +1232,22 @@ Operational details from the seeded definitions:
 
 ### Deleted seeds stay deleted
 
-Every seeding pass is idempotent *by presence*: `seedDefaults()` writes a gated-in template whenever its row is missing, and `ModelPrepopulationService.backfillNewModels()` recreates any known model a configured provider lacks. Both run at startup and again after a provider is created or updated, so before tombstones a deleted default came back within the same session — deletion had no memory, only presence was state.
+Every seeding pass is idempotent *by presence*: `seedDefaults()` writes a gated-in template whenever its row is missing, and `ModelPrepopulationService.backfillNewModels()` recreates any known model a configured provider lacks. Both run at startup and again after a provider is created or updated, so a hard delete is undone within the same session — deletion had no memory, only presence was state.
 
-`SeedTombstoneStore` (`util/seed_tombstone_store.dart`, backed by one settings row) records what the user deleted, and both passes skip those identities. Two details matter:
+Deleting an AI config therefore **soft-deletes** it: `AiConfigRepository.deleteConfig` stamps `deletedAt` on the row and re-saves it. The row itself is the tombstone, which makes "deleted" distinguishable from "never seeded" in the same database and the same write. Because `SyncMessage.aiConfig` already carries the whole config, the deletion replicates on the existing sync path and converges across devices with no separate ledger and no new message type. This mirrors how the journal domain deletes synced entities — see `CategoryRepository.deleteCategory`.
 
-- **Model identity is provider-scoped, not row-scoped.** Backfill matches on `providerModelId` under a provider, and the row id may be deterministic or a UUID depending on whether it came from FTUE, manual setup, or sync — so `SeedTombstoneStore.modelKey` keys on `provider:providerModelId`, the identity backfill actually compares. Profiles key on their well-known template id.
-- **Only user-initiated deletions are recorded.** `AiConfigRepository.deleteConfig` takes `recordTombstone` (default true) and writes the tombstone; `removeOrphanedDefaultSeeds()` and the model rows removed by a provider cascade both pass `false`, because both *want* their rows back — the orphan pass re-seeds when the provider becomes usable again, and re-adding a provider must bring its models with it.
+Reads split by intent:
 
-Two ordering hazards are handled explicitly. Ledger mutations are serialized across every store instance in the isolate, because the repository builds a fresh store per deletion and a synced delete can land while a user delete is in flight — two concurrent read-modify-writes would otherwise drop one identity and revive that seed. And because the row and its tombstone live in *different* databases (`ai_config.sqlite` and `settings.sqlite`), no transaction can span a deletion and a seeding check: a delete landing mid-pass would leave the row resurrected with a tombstone recorded, which nothing would clean up since seeding only ever creates. Both `seedDefaults()` and `prepopulateModelsForProvider()` therefore re-read the ledger after writing and drop anything that was tombstoned while they ran, restoring the invariant at the end of every pass.
+- `getConfigById` / `getConfigsByType` hide soft-deleted rows by default, so no picker, settings tab, or resolver surfaces them
+- the seeding passes call them with `includeDeleted: true`, because they need a deleted row to read as *present* so they skip recreating it
+- `watchConfigsByType`, which backs the UI, always filters them out
 
-Tombstones are local state, not a synced entity, but a peer applying a synced delete records its own because deletes arrive through the same repository path. The residual gap is a device that never observes the delete event at all: it may re-seed and sync the row back.
+Two paths must **not** leave a stamp, and use `hardDeleteConfig` instead:
+
+- `removeOrphanedDefaultSeeds()` sheds bundled profiles whose gate type has no usable provider and deliberately re-seeds them when that provider returns — a soft delete there would make the removal permanent, the opposite of what the pass means
+- a provider cascade removes the provider's model rows, which must come back if the user re-adds that provider
+
+`restoreConfig` clears the stamp for the one case where the user asks for something back: re-running onboarding for a provider whose bundled profile they had deleted (`OnboardingApiKeyPanel`), which happens before the FTUE setup seeds.
 
 `upgradeExisting()` no longer backfills default skill assignments. The old guard was `skillAssignments.isEmpty`, so clearing every assignment — the obvious way to say "stop doing things automatically" — was exactly what restored them with `automate: true` on the next launch. Automation defaults are now written only when a profile is first seeded.
 

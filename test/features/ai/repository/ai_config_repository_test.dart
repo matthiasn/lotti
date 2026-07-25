@@ -2,12 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -84,118 +82,116 @@ void main() {
       },
     );
 
-    test('deleteConfig calls db.deleteConfig', () async {
+    test('deleteConfig is a no-op for a row that does not exist', () async {
       // Arrange
       const id = 'test-id';
       when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
-      // Deletion reads the row first, to build a seed tombstone identity from
-      // it (a model's identity is provider-scoped, not its row id).
+      // Deletion reads the row first: it stamps `deletedAt` and re-saves,
+      // rather than removing the row, so there is nothing to stamp here.
       when(() => mockDb.getConfigById(any())).thenAnswer((_) async => null);
 
       // Act
       await repository.deleteConfig(id);
 
       // Assert
-      verify(() => mockDb.deleteConfig(id)).called(1);
+      verifyNever(() => mockDb.saveConfig(any()));
+      verifyNever(() => mockDb.deleteConfig(any()));
     });
 
     // Seeding recreates any default profile or known model whose row is
-    // missing, so a deletion has to leave a record or it is undone on the next
-    // launch. Only user-initiated deletions leave one.
-    group('seed tombstones', () {
-      late MockSettingsDb settingsDb;
-
+    // missing, so a deletion has to leave the row behind with a stamp rather
+    // than remove it — that is what makes "deleted" distinguishable from
+    // "never seeded", and it replicates on the normal config sync path.
+    group('soft delete', () {
       setUp(() {
-        settingsDb = getIt<SettingsDb>() as MockSettingsDb;
         when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
       });
 
-      List<String> recordedTombstones() {
-        return verify(
-          () => settingsDb.saveSettingsItem(
-            seedTombstonesSettingsKey,
-            captureAny(),
+      test(
+        'stamps deletedAt and re-saves instead of removing the row',
+        () async {
+          final profile = AiConfig.inferenceProfile(
+            id: 'profile-gemini-flash-001',
+            name: 'Gemini Flash',
+            thinkingModelId: 'model-1',
+            createdAt: fixedDate,
+          );
+          when(
+            () => mockDb.getConfigById('profile-gemini-flash-001'),
+          ).thenAnswer((_) async => profile);
+
+          await repository.deleteConfig('profile-gemini-flash-001');
+
+          final saved =
+              verify(() => mockDb.saveConfig(captureAny())).captured.single
+                  as AiConfigInferenceProfile;
+          expect(saved.id, 'profile-gemini-flash-001');
+          expect(saved.deletedAt, isNotNull);
+          // The row stays: removing it is what let seeding resurrect it.
+          verifyNever(() => mockDb.deleteConfig(any()));
+        },
+      );
+
+      test('deleting twice is a no-op', () async {
+        when(() => mockDb.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: 'profile-1',
+            name: 'Already gone',
+            thinkingModelId: 'model-1',
+            createdAt: fixedDate,
+            deletedAt: fixedDate,
           ),
-        ).captured.cast<String>();
-      }
-
-      /// `verify` fails outright on zero matching calls, so "nothing was
-      /// recorded" has to go through `verifyNever`.
-      void expectNoTombstones() {
-        verifyNever(
-          () => settingsDb.saveSettingsItem(seedTombstonesSettingsKey, any()),
         );
-      }
 
-      test('deleting a profile records its template identity', () async {
-        final profile = AiConfig.inferenceProfile(
-          id: 'profile-gemini-flash-001',
-          name: 'Gemini Flash',
-          thinkingModelId: 'model-1',
-          createdAt: fixedDate,
+        await repository.deleteConfig('profile-1');
+
+        verifyNever(() => mockDb.saveConfig(any()));
+      });
+
+      test('restoreConfig clears the stamp', () async {
+        when(() => mockDb.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: 'profile-1',
+            name: 'Gemini Flash',
+            thinkingModelId: 'model-1',
+            createdAt: fixedDate,
+            deletedAt: fixedDate,
+          ),
         );
-        when(
-          () => mockDb.getConfigById('profile-gemini-flash-001'),
-        ).thenAnswer((_) async => profile);
 
-        await repository.deleteConfig('profile-gemini-flash-001');
+        await repository.restoreConfig('profile-1');
 
+        final saved =
+            verify(() => mockDb.saveConfig(captureAny())).captured.single
+                as AiConfigInferenceProfile;
+        expect(saved.deletedAt, isNull);
+      });
+
+      test('reads hide deleted rows unless asked', () async {
+        when(() => mockDb.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: 'profile-1',
+            name: 'Gemini Flash',
+            thinkingModelId: 'model-1',
+            createdAt: fixedDate,
+            deletedAt: fixedDate,
+          ),
+        );
+
+        expect(await repository.getConfigById('profile-1'), isNull);
         expect(
-          recordedTombstones().single,
-          contains('profile:profile-gemini-flash-001'),
+          await repository.getConfigById('profile-1', includeDeleted: true),
+          isNotNull,
         );
       });
 
-      // Backfill matches models by provider-native id under a provider, so a
-      // row-id tombstone would miss the recreated row.
-      test('deleting a model records its provider-scoped identity', () async {
-        final model = AiConfig.model(
-          id: 'row-id-uuid',
-          name: 'GPT-5.2',
-          providerModelId: 'gpt-5.2',
-          inferenceProviderId: 'provider-1',
-          inputModalities: const [Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-          createdAt: fixedDate,
-        );
-        when(
-          () => mockDb.getConfigById('row-id-uuid'),
-        ).thenAnswer((_) async => model);
+      // The orphan-seed cleanup removes rows it wants back when the provider
+      // returns, so it must leave no stamp.
+      test('hardDeleteConfig removes the row outright', () async {
+        await repository.hardDeleteConfig('profile-1');
 
-        await repository.deleteConfig('row-id-uuid');
-
-        expect(
-          recordedTombstones().single,
-          contains('model:provider-1:gpt-5.2'),
-        );
-      });
-
-      test('providers are not tombstoned - nothing seeds them', () async {
-        final provider = AiConfig.inferenceProvider(
-          id: 'provider-1',
-          baseUrl: 'https://api.example.com',
-          apiKey: 'key',
-          name: 'Test API',
-          createdAt: fixedDate,
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
-        when(
-          () => mockDb.getConfigById('provider-1'),
-        ).thenAnswer((_) async => provider);
-
-        await repository.deleteConfig('provider-1');
-
-        expectNoTombstones();
-      });
-
-      // The orphaned-seed cleanup deletes rows it wants back once the provider
-      // returns, so it opts out.
-      test('recordTombstone: false skips the record and the read', () async {
-        await repository.deleteConfig('profile-1', recordTombstone: false);
-
-        expectNoTombstones();
-        verifyNever(() => mockDb.getConfigById(any()));
+        verify(() => mockDb.deleteConfig('profile-1')).called(1);
+        verifyNever(() => mockDb.saveConfig(any()));
       });
     });
 

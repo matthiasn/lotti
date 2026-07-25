@@ -2464,7 +2464,10 @@ class _StubAiConfigRepository implements AiConfigRepository {
   final List<AiConfig> _configs;
 
   @override
-  Future<List<AiConfig>> getConfigsByType(AiConfigType type) async {
+  Future<List<AiConfig>> getConfigsByType(
+    AiConfigType type, {
+    bool includeDeleted = false,
+  }) async {
     return _configs.where((c) => _typeOf(c) == type).toList();
   }
 

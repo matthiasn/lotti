@@ -19,10 +19,9 @@ void main() {
     repo = MockAiConfigRepository();
     when(() => repo.saveConfig(any())).thenAnswer((_) async {});
     when(
-      () => repo.deleteConfig(
+      () => repo.hardDeleteConfig(
         any(),
         fromSync: any(named: 'fromSync'),
-        recordTombstone: any(named: 'recordTombstone'),
       ),
     ).thenAnswer((_) async {});
     // Seeding consults the tombstone ledger, which lives in the settings db.
@@ -53,10 +52,20 @@ void main() {
 
   group('aiConfigInitialization', () {
     test('seeds no profiles on first run when no providers exist', () async {
-      when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
+      when(
+        () => repo.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => null);
       // No providers configured -> backfill saves no models and the
       // usable-provider gate keeps every default profile unseeded.
-      when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
+      when(
+        () => repo.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
 
       final container = createContainer();
       await container.read(aiConfigInitializationProvider.future);
@@ -69,18 +78,32 @@ void main() {
       'seeds only the profiles of an existing usable provider and '
       'backfills its known models',
       () async {
-        when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
+        when(
+          () => repo.getConfigById(
+            any(),
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer((_) async => null);
 
         final provider = AiTestDataFactory.createTestProvider();
         when(
-          () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+          () => repo.getConfigsByType(
+            AiConfigType.inferenceProvider,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => [provider]);
         // No models exist yet -> every known model for the provider is created.
         when(
-          () => repo.getConfigsByType(AiConfigType.model),
+          () => repo.getConfigsByType(
+            AiConfigType.model,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => []);
         when(
-          () => repo.getConfigsByType(AiConfigType.inferenceProfile),
+          () => repo.getConfigsByType(
+            AiConfigType.inferenceProfile,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => []);
 
         final container = createContainer();
@@ -108,13 +131,26 @@ void main() {
 
     test('skips seeding when the gated profile already exists', () async {
       // The Anthropic profile ID already resolves to an existing config.
-      when(() => repo.getConfigById(any())).thenAnswer((invocation) async {
+      when(
+        () => repo.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((invocation) async {
         final id = invocation.positionalArguments.first as String;
         return AiTestDataFactory.createTestProfile(id: id);
       });
-      when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
       when(
-        () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+        () => repo.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => repo.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [AiTestDataFactory.createTestProvider()]);
 
       final container = createContainer();
@@ -129,33 +165,57 @@ void main() {
       'removes an orphaned untouched default seed when its provider '
       'type has no usable provider',
       () async {
-        when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
-        when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
+        when(
+          () => repo.getConfigById(
+            any(),
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => repo.getConfigsByType(
+            any(),
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer((_) async => []);
         final meliousSeed = ProfileSeedingService.defaultProfiles.firstWhere(
           (p) => p.id == profileMeliousId,
         );
         when(
-          () => repo.getConfigsByType(AiConfigType.inferenceProfile),
+          () => repo.getConfigsByType(
+            AiConfigType.inferenceProfile,
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer((_) async => [meliousSeed]);
 
         final container = createContainer();
         await container.read(aiConfigInitializationProvider.future);
 
-        verify(
-          () => repo.deleteConfig(profileMeliousId, recordTombstone: false),
-        ).called(1);
+        verify(() => repo.hardDeleteConfig(profileMeliousId)).called(1);
       },
     );
 
     test('completes normally and attempts every phase when provider reads '
         'throw', () async {
-      when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
-      when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
+      when(
+        () => repo.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => repo.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
       // Every initialization phase reads the inference-provider configs.
       // Make that shared dependency throw so the test can verify that each
       // guarded phase is still attempted.
       when(
-        () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+        () => repo.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenThrow(Exception('db unavailable'));
 
       final container = createContainer();
@@ -172,20 +232,39 @@ void main() {
       // Backfill, seeding, upgrade, and orphan cleanup each reached their
       // provider read instead of an earlier failure aborting initialization.
       verify(
-        () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+        () => repo.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).called(4);
     });
 
     test('completes normally and still seeds profiles when the profile '
         'upgrade throws', () async {
-      when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
-      when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
       when(
-        () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+        () => repo.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => repo.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => repo.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenAnswer((_) async => [AiTestDataFactory.createTestProvider()]);
       // upgradeExisting() and the orphan cleanup read inference profiles.
       when(
-        () => repo.getConfigsByType(AiConfigType.inferenceProfile),
+        () => repo.getConfigsByType(
+          AiConfigType.inferenceProfile,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
       ).thenThrow(Exception('db unavailable'));
 
       final container = createContainer();

@@ -7,12 +7,10 @@ library;
 
 import 'dart:developer' as developer;
 
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/get_it.dart';
 
 /// Service that handles automatic population of known models
@@ -20,14 +18,9 @@ import 'package:lotti/get_it.dart';
 class ModelPrepopulationService {
   ModelPrepopulationService({
     AiConfigRepository? repository,
-    SeedTombstoneStore? tombstoneStore,
-  }) : _repository = repository ?? getIt<AiConfigRepository>(),
-       _tombstones =
-           tombstoneStore ??
-           SeedTombstoneStore(settingsDb: getIt<SettingsDb>());
+  }) : _repository = repository ?? getIt<AiConfigRepository>();
 
   final AiConfigRepository _repository;
-  final SeedTombstoneStore _tombstones;
 
   /// Pre-populates known models for a given inference provider.
   ///
@@ -51,8 +44,11 @@ class ModelPrepopulationService {
     // not just by row ID. FTUE uses UUID model IDs while this service uses
     // deterministic IDs, and synced duplicate providers can otherwise seed
     // multiple rows for the same providerModelId.
+    // Includes soft-deleted rows on purpose: a model the user deleted must
+    // read as already configured here, or the backfill recreates it.
     final existingConfigs = await _repository.getConfigsByType(
       AiConfigType.model,
+      includeDeleted: true,
     );
     final existingModels = existingConfigs.whereType<AiConfigModel>().toList(
       growable: false,
@@ -66,22 +62,10 @@ class ModelPrepopulationService {
         provider.id: provider,
     };
 
-    // Backfill recreates any known model a configured provider lacks, so a
-    // model the user removed comes back on the next launch without this.
-    final deleted = await _tombstones.deletedIdentities();
-
-    final created = <AiConfigModel>[];
+    var modelsCreated = 0;
 
     // Create models that don't exist yet
     for (final knownModel in knownModels) {
-      if (deleted.contains(
-        SeedTombstoneStore.modelKey(
-          inferenceProviderId: provider.id,
-          providerModelId: knownModel.providerModelId,
-        ),
-      )) {
-        continue;
-      }
       final modelId = generateModelId(
         provider.id,
         knownModel.providerModelId,
@@ -107,38 +91,10 @@ class ModelPrepopulationService {
       );
 
       await _repository.saveConfig(newModel);
-      created.add(newModel);
+      modelsCreated++;
     }
 
-    await _dropModelsTombstonedDuringPass(created, provider);
-
-    return created.length;
-  }
-
-  /// Removes anything this pass created that the user deleted while it ran.
-  ///
-  /// Model rows and the tombstone ledger live in different databases, so no
-  /// transaction spans the deletion and this pass's ledger read. Re-reading
-  /// afterwards restores the invariant rather than leaving a resurrected row
-  /// that nothing would clean up — backfill only ever creates.
-  Future<void> _dropModelsTombstonedDuringPass(
-    List<AiConfigModel> created,
-    AiConfigInferenceProvider provider,
-  ) async {
-    if (created.isEmpty) return;
-    final deletedNow = await _tombstones.deletedIdentities();
-    for (final model in created) {
-      final identity = SeedTombstoneStore.modelKey(
-        inferenceProviderId: provider.id,
-        providerModelId: model.providerModelId,
-      );
-      if (!deletedNow.contains(identity)) continue;
-      await _repository.deleteConfig(model.id, recordTombstone: false);
-      developer.log(
-        'Dropped ${model.providerModelId}, deleted while backfill ran',
-        name: 'ModelPrepopulationService',
-      );
-    }
+    return modelsCreated;
   }
 
   static bool _hasConfiguredKnownModel(

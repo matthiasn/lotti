@@ -21,12 +21,9 @@ void main() {
     );
   });
 
-  setUp(() async {
+  setUp(() {
     mockRepo = MockAiConfigRepository();
-    service = ProfileSeedingService(
-      aiConfigRepository: mockRepo,
-      tombstoneStore: await createTombstoneStore(),
-    );
+    service = ProfileSeedingService(aiConfigRepository: mockRepo);
 
     // Default: all profiles missing (return null for any ID lookup).
     when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);

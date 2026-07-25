@@ -69,6 +69,13 @@ sealed class AiConfig with _$AiConfig {
     required InferenceProviderType inferenceProviderType,
     DateTime? updatedAt,
     String? description,
+
+    /// When set, the user deleted this config. The row is kept so the deletion
+    /// replicates through the normal config sync path — a hard delete would
+    /// leave every peer free to re-seed a bundled default it never saw removed
+    /// — and so the seeding passes can tell "deleted" apart from "missing".
+    /// Reads hide these rows unless a caller explicitly asks for them.
+    DateTime? deletedAt,
   }) = AiConfigInferenceProvider;
 
   const factory AiConfig.model({
@@ -90,6 +97,13 @@ sealed class AiConfig with _$AiConfig {
     DateTime? updatedAt,
     String? description,
     int? maxCompletionTokens,
+
+    /// When set, the user deleted this config. The row is kept so the deletion
+    /// replicates through the normal config sync path — a hard delete would
+    /// leave every peer free to re-seed a bundled default it never saw removed
+    /// — and so the seeding passes can tell "deleted" apart from "missing".
+    /// Reads hide these rows unless a caller explicitly asks for them.
+    DateTime? deletedAt,
   }) = AiConfigModel;
 
   const factory AiConfig.prompt({
@@ -111,6 +125,13 @@ sealed class AiConfig with _$AiConfig {
     @Default(false) bool archived,
     @Default(false) bool trackPreconfigured,
     String? preconfiguredPromptId,
+
+    /// When set, the user deleted this config. The row is kept so the deletion
+    /// replicates through the normal config sync path — a hard delete would
+    /// leave every peer free to re-seed a bundled default it never saw removed
+    /// — and so the seeding passes can tell "deleted" apart from "missing".
+    /// Reads hide these rows unless a caller explicitly asks for them.
+    DateTime? deletedAt,
   }) = AiConfigPrompt;
 
   /// Inference profile — named bundle of model assignments per capability slot.
@@ -174,6 +195,13 @@ sealed class AiConfig with _$AiConfig {
     String? pinnedHostId,
     DateTime? updatedAt,
     String? description,
+
+    /// When set, the user deleted this config. The row is kept so the deletion
+    /// replicates through the normal config sync path — a hard delete would
+    /// leave every peer free to re-seed a bundled default it never saw removed
+    /// — and so the seeding passes can tell "deleted" apart from "missing".
+    /// Reads hide these rows unless a caller explicitly asks for them.
+    DateTime? deletedAt,
   }) = AiConfigInferenceProfile;
 
   /// A skill — a named capability (e.g. transcription, image analysis) that
@@ -207,6 +235,13 @@ sealed class AiConfig with _$AiConfig {
     @Default(false) bool useReasoning,
     DateTime? updatedAt,
     String? description,
+
+    /// When set, the user deleted this config. The row is kept so the deletion
+    /// replicates through the normal config sync path — a hard delete would
+    /// leave every peer free to re-seed a bundled default it never saw removed
+    /// — and so the seeding passes can tell "deleted" apart from "missing".
+    /// Reads hide these rows unless a caller explicitly asks for them.
+    DateTime? deletedAt,
   }) = AiConfigSkill;
 
   factory AiConfig.fromJson(Map<String, dynamic> json) =>

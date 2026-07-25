@@ -50,7 +50,12 @@ AiConfig _$AiConfigFromJson(
 /// @nodoc
 mixin _$AiConfig {
 
- String get id; String get name; DateTime get createdAt; DateTime? get updatedAt; String? get description;
+ String get id; String get name; DateTime get createdAt; DateTime? get updatedAt; String? get description;/// When set, the user deleted this config. The row is kept so the deletion
+/// replicates through the normal config sync path — a hard delete would
+/// leave every peer free to re-seed a bundled default it never saw removed
+/// — and so the seeding passes can tell "deleted" apart from "missing".
+/// Reads hide these rows unless a caller explicitly asks for them.
+ DateTime? get deletedAt;
 /// Create a copy of AiConfig
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -63,12 +68,12 @@ $AiConfigCopyWith<AiConfig> get copyWith => _$AiConfigCopyWithImpl<AiConfig>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfig&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfig&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,createdAt,updatedAt,description);
+int get hashCode => Object.hash(runtimeType,id,name,createdAt,updatedAt,description,deletedAt);
 
 
 
@@ -79,7 +84,7 @@ abstract mixin class $AiConfigCopyWith<$Res>  {
   factory $AiConfigCopyWith(AiConfig value, $Res Function(AiConfig) _then) = _$AiConfigCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, DateTime createdAt, DateTime? updatedAt, String? description
+ String id, String name, DateTime createdAt, DateTime? updatedAt, String? description, DateTime? deletedAt
 });
 
 
@@ -96,14 +101,15 @@ class _$AiConfigCopyWithImpl<$Res>
 
 /// Create a copy of AiConfig
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? createdAt = null,Object? updatedAt = freezed,Object? description = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? createdAt = null,Object? updatedAt = freezed,Object? description = freezed,Object? deletedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -197,14 +203,14 @@ return skill(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description)?  inferenceProvider,TResult Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  String? publisher,  bool supportsFunctionCalling,  GeminiThinkingMode geminiThinkingMode,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens)?  model,TResult Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId)?  prompt,TResult Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? thinkingHighEndModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  int seedGeneration,  List<SkillAssignment> skillAssignments,  String? pinnedHostId,  DateTime? updatedAt,  String? description)?  inferenceProfile,TResult Function( String id,  String name,  DateTime createdAt,  SkillType skillType,  List<Modality> requiredInputModalities,  String systemInstructions,  String userInstructions,  ContextPolicy contextPolicy,  bool isPreconfigured,  bool useReasoning,  DateTime? updatedAt,  String? description)?  skill,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description,  DateTime? deletedAt)?  inferenceProvider,TResult Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  String? publisher,  bool supportsFunctionCalling,  GeminiThinkingMode geminiThinkingMode,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens,  DateTime? deletedAt)?  model,TResult Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId,  DateTime? deletedAt)?  prompt,TResult Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? thinkingHighEndModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  int seedGeneration,  List<SkillAssignment> skillAssignments,  String? pinnedHostId,  DateTime? updatedAt,  String? description,  DateTime? deletedAt)?  inferenceProfile,TResult Function( String id,  String name,  DateTime createdAt,  SkillType skillType,  List<Modality> requiredInputModalities,  String systemInstructions,  String userInstructions,  ContextPolicy contextPolicy,  bool isPreconfigured,  bool useReasoning,  DateTime? updatedAt,  String? description,  DateTime? deletedAt)?  skill,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case AiConfigInferenceProvider() when inferenceProvider != null:
-return inferenceProvider(_that.id,_that.baseUrl,_that.apiKey,_that.name,_that.createdAt,_that.inferenceProviderType,_that.updatedAt,_that.description);case AiConfigModel() when model != null:
-return model(_that.id,_that.name,_that.providerModelId,_that.inferenceProviderId,_that.createdAt,_that.inputModalities,_that.outputModalities,_that.isReasoningModel,_that.publisher,_that.supportsFunctionCalling,_that.geminiThinkingMode,_that.updatedAt,_that.description,_that.maxCompletionTokens);case AiConfigPrompt() when prompt != null:
-return prompt(_that.id,_that.name,_that.systemMessage,_that.userMessage,_that.defaultModelId,_that.modelIds,_that.createdAt,_that.useReasoning,_that.requiredInputData,_that.aiResponseType,_that.comment,_that.updatedAt,_that.description,_that.defaultVariables,_that.category,_that.archived,_that.trackPreconfigured,_that.preconfiguredPromptId);case AiConfigInferenceProfile() when inferenceProfile != null:
-return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.thinkingHighEndModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.seedGeneration,_that.skillAssignments,_that.pinnedHostId,_that.updatedAt,_that.description);case AiConfigSkill() when skill != null:
-return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredInputModalities,_that.systemInstructions,_that.userInstructions,_that.contextPolicy,_that.isPreconfigured,_that.useReasoning,_that.updatedAt,_that.description);case _:
+return inferenceProvider(_that.id,_that.baseUrl,_that.apiKey,_that.name,_that.createdAt,_that.inferenceProviderType,_that.updatedAt,_that.description,_that.deletedAt);case AiConfigModel() when model != null:
+return model(_that.id,_that.name,_that.providerModelId,_that.inferenceProviderId,_that.createdAt,_that.inputModalities,_that.outputModalities,_that.isReasoningModel,_that.publisher,_that.supportsFunctionCalling,_that.geminiThinkingMode,_that.updatedAt,_that.description,_that.maxCompletionTokens,_that.deletedAt);case AiConfigPrompt() when prompt != null:
+return prompt(_that.id,_that.name,_that.systemMessage,_that.userMessage,_that.defaultModelId,_that.modelIds,_that.createdAt,_that.useReasoning,_that.requiredInputData,_that.aiResponseType,_that.comment,_that.updatedAt,_that.description,_that.defaultVariables,_that.category,_that.archived,_that.trackPreconfigured,_that.preconfiguredPromptId,_that.deletedAt);case AiConfigInferenceProfile() when inferenceProfile != null:
+return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.thinkingHighEndModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.seedGeneration,_that.skillAssignments,_that.pinnedHostId,_that.updatedAt,_that.description,_that.deletedAt);case AiConfigSkill() when skill != null:
+return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredInputModalities,_that.systemInstructions,_that.userInstructions,_that.contextPolicy,_that.isPreconfigured,_that.useReasoning,_that.updatedAt,_that.description,_that.deletedAt);case _:
   return orElse();
 
 }
@@ -222,14 +228,14 @@ return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredI
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description)  inferenceProvider,required TResult Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  String? publisher,  bool supportsFunctionCalling,  GeminiThinkingMode geminiThinkingMode,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens)  model,required TResult Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId)  prompt,required TResult Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? thinkingHighEndModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  int seedGeneration,  List<SkillAssignment> skillAssignments,  String? pinnedHostId,  DateTime? updatedAt,  String? description)  inferenceProfile,required TResult Function( String id,  String name,  DateTime createdAt,  SkillType skillType,  List<Modality> requiredInputModalities,  String systemInstructions,  String userInstructions,  ContextPolicy contextPolicy,  bool isPreconfigured,  bool useReasoning,  DateTime? updatedAt,  String? description)  skill,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description,  DateTime? deletedAt)  inferenceProvider,required TResult Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  String? publisher,  bool supportsFunctionCalling,  GeminiThinkingMode geminiThinkingMode,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens,  DateTime? deletedAt)  model,required TResult Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId,  DateTime? deletedAt)  prompt,required TResult Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? thinkingHighEndModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  int seedGeneration,  List<SkillAssignment> skillAssignments,  String? pinnedHostId,  DateTime? updatedAt,  String? description,  DateTime? deletedAt)  inferenceProfile,required TResult Function( String id,  String name,  DateTime createdAt,  SkillType skillType,  List<Modality> requiredInputModalities,  String systemInstructions,  String userInstructions,  ContextPolicy contextPolicy,  bool isPreconfigured,  bool useReasoning,  DateTime? updatedAt,  String? description,  DateTime? deletedAt)  skill,}) {final _that = this;
 switch (_that) {
 case AiConfigInferenceProvider():
-return inferenceProvider(_that.id,_that.baseUrl,_that.apiKey,_that.name,_that.createdAt,_that.inferenceProviderType,_that.updatedAt,_that.description);case AiConfigModel():
-return model(_that.id,_that.name,_that.providerModelId,_that.inferenceProviderId,_that.createdAt,_that.inputModalities,_that.outputModalities,_that.isReasoningModel,_that.publisher,_that.supportsFunctionCalling,_that.geminiThinkingMode,_that.updatedAt,_that.description,_that.maxCompletionTokens);case AiConfigPrompt():
-return prompt(_that.id,_that.name,_that.systemMessage,_that.userMessage,_that.defaultModelId,_that.modelIds,_that.createdAt,_that.useReasoning,_that.requiredInputData,_that.aiResponseType,_that.comment,_that.updatedAt,_that.description,_that.defaultVariables,_that.category,_that.archived,_that.trackPreconfigured,_that.preconfiguredPromptId);case AiConfigInferenceProfile():
-return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.thinkingHighEndModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.seedGeneration,_that.skillAssignments,_that.pinnedHostId,_that.updatedAt,_that.description);case AiConfigSkill():
-return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredInputModalities,_that.systemInstructions,_that.userInstructions,_that.contextPolicy,_that.isPreconfigured,_that.useReasoning,_that.updatedAt,_that.description);}
+return inferenceProvider(_that.id,_that.baseUrl,_that.apiKey,_that.name,_that.createdAt,_that.inferenceProviderType,_that.updatedAt,_that.description,_that.deletedAt);case AiConfigModel():
+return model(_that.id,_that.name,_that.providerModelId,_that.inferenceProviderId,_that.createdAt,_that.inputModalities,_that.outputModalities,_that.isReasoningModel,_that.publisher,_that.supportsFunctionCalling,_that.geminiThinkingMode,_that.updatedAt,_that.description,_that.maxCompletionTokens,_that.deletedAt);case AiConfigPrompt():
+return prompt(_that.id,_that.name,_that.systemMessage,_that.userMessage,_that.defaultModelId,_that.modelIds,_that.createdAt,_that.useReasoning,_that.requiredInputData,_that.aiResponseType,_that.comment,_that.updatedAt,_that.description,_that.defaultVariables,_that.category,_that.archived,_that.trackPreconfigured,_that.preconfiguredPromptId,_that.deletedAt);case AiConfigInferenceProfile():
+return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.thinkingHighEndModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.seedGeneration,_that.skillAssignments,_that.pinnedHostId,_that.updatedAt,_that.description,_that.deletedAt);case AiConfigSkill():
+return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredInputModalities,_that.systemInstructions,_that.userInstructions,_that.contextPolicy,_that.isPreconfigured,_that.useReasoning,_that.updatedAt,_that.description,_that.deletedAt);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -243,14 +249,14 @@ return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredI
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description)?  inferenceProvider,TResult? Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  String? publisher,  bool supportsFunctionCalling,  GeminiThinkingMode geminiThinkingMode,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens)?  model,TResult? Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId)?  prompt,TResult? Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? thinkingHighEndModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  int seedGeneration,  List<SkillAssignment> skillAssignments,  String? pinnedHostId,  DateTime? updatedAt,  String? description)?  inferenceProfile,TResult? Function( String id,  String name,  DateTime createdAt,  SkillType skillType,  List<Modality> requiredInputModalities,  String systemInstructions,  String userInstructions,  ContextPolicy contextPolicy,  bool isPreconfigured,  bool useReasoning,  DateTime? updatedAt,  String? description)?  skill,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description,  DateTime? deletedAt)?  inferenceProvider,TResult? Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  String? publisher,  bool supportsFunctionCalling,  GeminiThinkingMode geminiThinkingMode,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens,  DateTime? deletedAt)?  model,TResult? Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId,  DateTime? deletedAt)?  prompt,TResult? Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? thinkingHighEndModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  int seedGeneration,  List<SkillAssignment> skillAssignments,  String? pinnedHostId,  DateTime? updatedAt,  String? description,  DateTime? deletedAt)?  inferenceProfile,TResult? Function( String id,  String name,  DateTime createdAt,  SkillType skillType,  List<Modality> requiredInputModalities,  String systemInstructions,  String userInstructions,  ContextPolicy contextPolicy,  bool isPreconfigured,  bool useReasoning,  DateTime? updatedAt,  String? description,  DateTime? deletedAt)?  skill,}) {final _that = this;
 switch (_that) {
 case AiConfigInferenceProvider() when inferenceProvider != null:
-return inferenceProvider(_that.id,_that.baseUrl,_that.apiKey,_that.name,_that.createdAt,_that.inferenceProviderType,_that.updatedAt,_that.description);case AiConfigModel() when model != null:
-return model(_that.id,_that.name,_that.providerModelId,_that.inferenceProviderId,_that.createdAt,_that.inputModalities,_that.outputModalities,_that.isReasoningModel,_that.publisher,_that.supportsFunctionCalling,_that.geminiThinkingMode,_that.updatedAt,_that.description,_that.maxCompletionTokens);case AiConfigPrompt() when prompt != null:
-return prompt(_that.id,_that.name,_that.systemMessage,_that.userMessage,_that.defaultModelId,_that.modelIds,_that.createdAt,_that.useReasoning,_that.requiredInputData,_that.aiResponseType,_that.comment,_that.updatedAt,_that.description,_that.defaultVariables,_that.category,_that.archived,_that.trackPreconfigured,_that.preconfiguredPromptId);case AiConfigInferenceProfile() when inferenceProfile != null:
-return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.thinkingHighEndModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.seedGeneration,_that.skillAssignments,_that.pinnedHostId,_that.updatedAt,_that.description);case AiConfigSkill() when skill != null:
-return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredInputModalities,_that.systemInstructions,_that.userInstructions,_that.contextPolicy,_that.isPreconfigured,_that.useReasoning,_that.updatedAt,_that.description);case _:
+return inferenceProvider(_that.id,_that.baseUrl,_that.apiKey,_that.name,_that.createdAt,_that.inferenceProviderType,_that.updatedAt,_that.description,_that.deletedAt);case AiConfigModel() when model != null:
+return model(_that.id,_that.name,_that.providerModelId,_that.inferenceProviderId,_that.createdAt,_that.inputModalities,_that.outputModalities,_that.isReasoningModel,_that.publisher,_that.supportsFunctionCalling,_that.geminiThinkingMode,_that.updatedAt,_that.description,_that.maxCompletionTokens,_that.deletedAt);case AiConfigPrompt() when prompt != null:
+return prompt(_that.id,_that.name,_that.systemMessage,_that.userMessage,_that.defaultModelId,_that.modelIds,_that.createdAt,_that.useReasoning,_that.requiredInputData,_that.aiResponseType,_that.comment,_that.updatedAt,_that.description,_that.defaultVariables,_that.category,_that.archived,_that.trackPreconfigured,_that.preconfiguredPromptId,_that.deletedAt);case AiConfigInferenceProfile() when inferenceProfile != null:
+return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.thinkingHighEndModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.seedGeneration,_that.skillAssignments,_that.pinnedHostId,_that.updatedAt,_that.description,_that.deletedAt);case AiConfigSkill() when skill != null:
+return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredInputModalities,_that.systemInstructions,_that.userInstructions,_that.contextPolicy,_that.isPreconfigured,_that.useReasoning,_that.updatedAt,_that.description,_that.deletedAt);case _:
   return null;
 
 }
@@ -262,7 +268,7 @@ return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredI
 @JsonSerializable()
 
 class AiConfigInferenceProvider implements AiConfig {
-  const AiConfigInferenceProvider({required this.id, required this.baseUrl, required this.apiKey, required this.name, required this.createdAt, required this.inferenceProviderType, this.updatedAt, this.description, final  String? $type}): $type = $type ?? 'inferenceProvider';
+  const AiConfigInferenceProvider({required this.id, required this.baseUrl, required this.apiKey, required this.name, required this.createdAt, required this.inferenceProviderType, this.updatedAt, this.description, this.deletedAt, final  String? $type}): $type = $type ?? 'inferenceProvider';
   factory AiConfigInferenceProvider.fromJson(Map<String, dynamic> json) => _$AiConfigInferenceProviderFromJson(json);
 
 @override final  String id;
@@ -273,6 +279,12 @@ class AiConfigInferenceProvider implements AiConfig {
  final  InferenceProviderType inferenceProviderType;
 @override final  DateTime? updatedAt;
 @override final  String? description;
+/// When set, the user deleted this config. The row is kept so the deletion
+/// replicates through the normal config sync path — a hard delete would
+/// leave every peer free to re-seed a bundled default it never saw removed
+/// — and so the seeding passes can tell "deleted" apart from "missing".
+/// Reads hide these rows unless a caller explicitly asks for them.
+@override final  DateTime? deletedAt;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -291,12 +303,12 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigInferenceProvider&&(identical(other.id, id) || other.id == id)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.apiKey, apiKey) || other.apiKey == apiKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.inferenceProviderType, inferenceProviderType) || other.inferenceProviderType == inferenceProviderType)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigInferenceProvider&&(identical(other.id, id) || other.id == id)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.apiKey, apiKey) || other.apiKey == apiKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.inferenceProviderType, inferenceProviderType) || other.inferenceProviderType == inferenceProviderType)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,baseUrl,apiKey,name,createdAt,inferenceProviderType,updatedAt,description);
+int get hashCode => Object.hash(runtimeType,id,baseUrl,apiKey,name,createdAt,inferenceProviderType,updatedAt,description,deletedAt);
 
 
 
@@ -307,7 +319,7 @@ abstract mixin class $AiConfigInferenceProviderCopyWith<$Res> implements $AiConf
   factory $AiConfigInferenceProviderCopyWith(AiConfigInferenceProvider value, $Res Function(AiConfigInferenceProvider) _then) = _$AiConfigInferenceProviderCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String baseUrl, String apiKey, String name, DateTime createdAt, InferenceProviderType inferenceProviderType, DateTime? updatedAt, String? description
+ String id, String baseUrl, String apiKey, String name, DateTime createdAt, InferenceProviderType inferenceProviderType, DateTime? updatedAt, String? description, DateTime? deletedAt
 });
 
 
@@ -324,7 +336,7 @@ class _$AiConfigInferenceProviderCopyWithImpl<$Res>
 
 /// Create a copy of AiConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? baseUrl = null,Object? apiKey = null,Object? name = null,Object? createdAt = null,Object? inferenceProviderType = null,Object? updatedAt = freezed,Object? description = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? baseUrl = null,Object? apiKey = null,Object? name = null,Object? createdAt = null,Object? inferenceProviderType = null,Object? updatedAt = freezed,Object? description = freezed,Object? deletedAt = freezed,}) {
   return _then(AiConfigInferenceProvider(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,baseUrl: null == baseUrl ? _self.baseUrl : baseUrl // ignore: cast_nullable_to_non_nullable
@@ -334,7 +346,8 @@ as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: 
 as DateTime,inferenceProviderType: null == inferenceProviderType ? _self.inferenceProviderType : inferenceProviderType // ignore: cast_nullable_to_non_nullable
 as InferenceProviderType,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -345,7 +358,7 @@ as String?,
 @JsonSerializable()
 
 class AiConfigModel implements AiConfig {
-  const AiConfigModel({required this.id, required this.name, required this.providerModelId, required this.inferenceProviderId, required this.createdAt, required final  List<Modality> inputModalities, required final  List<Modality> outputModalities, required this.isReasoningModel, this.publisher, this.supportsFunctionCalling = false, this.geminiThinkingMode = GeminiThinkingMode.low, this.updatedAt, this.description, this.maxCompletionTokens, final  String? $type}): _inputModalities = inputModalities,_outputModalities = outputModalities,$type = $type ?? 'model';
+  const AiConfigModel({required this.id, required this.name, required this.providerModelId, required this.inferenceProviderId, required this.createdAt, required final  List<Modality> inputModalities, required final  List<Modality> outputModalities, required this.isReasoningModel, this.publisher, this.supportsFunctionCalling = false, this.geminiThinkingMode = GeminiThinkingMode.low, this.updatedAt, this.description, this.maxCompletionTokens, this.deletedAt, final  String? $type}): _inputModalities = inputModalities,_outputModalities = outputModalities,$type = $type ?? 'model';
   factory AiConfigModel.fromJson(Map<String, dynamic> json) => _$AiConfigModelFromJson(json);
 
 @override final  String id;
@@ -377,6 +390,12 @@ class AiConfigModel implements AiConfig {
 @override final  DateTime? updatedAt;
 @override final  String? description;
  final  int? maxCompletionTokens;
+/// When set, the user deleted this config. The row is kept so the deletion
+/// replicates through the normal config sync path — a hard delete would
+/// leave every peer free to re-seed a bundled default it never saw removed
+/// — and so the seeding passes can tell "deleted" apart from "missing".
+/// Reads hide these rows unless a caller explicitly asks for them.
+@override final  DateTime? deletedAt;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -395,12 +414,12 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.providerModelId, providerModelId) || other.providerModelId == providerModelId)&&(identical(other.inferenceProviderId, inferenceProviderId) || other.inferenceProviderId == inferenceProviderId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other._inputModalities, _inputModalities)&&const DeepCollectionEquality().equals(other._outputModalities, _outputModalities)&&(identical(other.isReasoningModel, isReasoningModel) || other.isReasoningModel == isReasoningModel)&&(identical(other.publisher, publisher) || other.publisher == publisher)&&(identical(other.supportsFunctionCalling, supportsFunctionCalling) || other.supportsFunctionCalling == supportsFunctionCalling)&&(identical(other.geminiThinkingMode, geminiThinkingMode) || other.geminiThinkingMode == geminiThinkingMode)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description)&&(identical(other.maxCompletionTokens, maxCompletionTokens) || other.maxCompletionTokens == maxCompletionTokens));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.providerModelId, providerModelId) || other.providerModelId == providerModelId)&&(identical(other.inferenceProviderId, inferenceProviderId) || other.inferenceProviderId == inferenceProviderId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other._inputModalities, _inputModalities)&&const DeepCollectionEquality().equals(other._outputModalities, _outputModalities)&&(identical(other.isReasoningModel, isReasoningModel) || other.isReasoningModel == isReasoningModel)&&(identical(other.publisher, publisher) || other.publisher == publisher)&&(identical(other.supportsFunctionCalling, supportsFunctionCalling) || other.supportsFunctionCalling == supportsFunctionCalling)&&(identical(other.geminiThinkingMode, geminiThinkingMode) || other.geminiThinkingMode == geminiThinkingMode)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description)&&(identical(other.maxCompletionTokens, maxCompletionTokens) || other.maxCompletionTokens == maxCompletionTokens)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,providerModelId,inferenceProviderId,createdAt,const DeepCollectionEquality().hash(_inputModalities),const DeepCollectionEquality().hash(_outputModalities),isReasoningModel,publisher,supportsFunctionCalling,geminiThinkingMode,updatedAt,description,maxCompletionTokens);
+int get hashCode => Object.hash(runtimeType,id,name,providerModelId,inferenceProviderId,createdAt,const DeepCollectionEquality().hash(_inputModalities),const DeepCollectionEquality().hash(_outputModalities),isReasoningModel,publisher,supportsFunctionCalling,geminiThinkingMode,updatedAt,description,maxCompletionTokens,deletedAt);
 
 
 
@@ -411,7 +430,7 @@ abstract mixin class $AiConfigModelCopyWith<$Res> implements $AiConfigCopyWith<$
   factory $AiConfigModelCopyWith(AiConfigModel value, $Res Function(AiConfigModel) _then) = _$AiConfigModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String providerModelId, String inferenceProviderId, DateTime createdAt, List<Modality> inputModalities, List<Modality> outputModalities, bool isReasoningModel, String? publisher, bool supportsFunctionCalling, GeminiThinkingMode geminiThinkingMode, DateTime? updatedAt, String? description, int? maxCompletionTokens
+ String id, String name, String providerModelId, String inferenceProviderId, DateTime createdAt, List<Modality> inputModalities, List<Modality> outputModalities, bool isReasoningModel, String? publisher, bool supportsFunctionCalling, GeminiThinkingMode geminiThinkingMode, DateTime? updatedAt, String? description, int? maxCompletionTokens, DateTime? deletedAt
 });
 
 
@@ -428,7 +447,7 @@ class _$AiConfigModelCopyWithImpl<$Res>
 
 /// Create a copy of AiConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? providerModelId = null,Object? inferenceProviderId = null,Object? createdAt = null,Object? inputModalities = null,Object? outputModalities = null,Object? isReasoningModel = null,Object? publisher = freezed,Object? supportsFunctionCalling = null,Object? geminiThinkingMode = null,Object? updatedAt = freezed,Object? description = freezed,Object? maxCompletionTokens = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? providerModelId = null,Object? inferenceProviderId = null,Object? createdAt = null,Object? inputModalities = null,Object? outputModalities = null,Object? isReasoningModel = null,Object? publisher = freezed,Object? supportsFunctionCalling = null,Object? geminiThinkingMode = null,Object? updatedAt = freezed,Object? description = freezed,Object? maxCompletionTokens = freezed,Object? deletedAt = freezed,}) {
   return _then(AiConfigModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -444,7 +463,8 @@ as bool,geminiThinkingMode: null == geminiThinkingMode ? _self.geminiThinkingMod
 as GeminiThinkingMode,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,maxCompletionTokens: freezed == maxCompletionTokens ? _self.maxCompletionTokens : maxCompletionTokens // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -455,7 +475,7 @@ as int?,
 @JsonSerializable()
 
 class AiConfigPrompt implements AiConfig {
-  const AiConfigPrompt({required this.id, required this.name, required this.systemMessage, required this.userMessage, required this.defaultModelId, required final  List<String> modelIds, required this.createdAt, required this.useReasoning, required final  List<InputDataType> requiredInputData, required this.aiResponseType, this.comment, this.updatedAt, this.description, final  Map<String, String>? defaultVariables, this.category, this.archived = false, this.trackPreconfigured = false, this.preconfiguredPromptId, final  String? $type}): _modelIds = modelIds,_requiredInputData = requiredInputData,_defaultVariables = defaultVariables,$type = $type ?? 'prompt';
+  const AiConfigPrompt({required this.id, required this.name, required this.systemMessage, required this.userMessage, required this.defaultModelId, required final  List<String> modelIds, required this.createdAt, required this.useReasoning, required final  List<InputDataType> requiredInputData, required this.aiResponseType, this.comment, this.updatedAt, this.description, final  Map<String, String>? defaultVariables, this.category, this.archived = false, this.trackPreconfigured = false, this.preconfiguredPromptId, this.deletedAt, final  String? $type}): _modelIds = modelIds,_requiredInputData = requiredInputData,_defaultVariables = defaultVariables,$type = $type ?? 'prompt';
   factory AiConfigPrompt.fromJson(Map<String, dynamic> json) => _$AiConfigPromptFromJson(json);
 
 @override final  String id;
@@ -496,6 +516,12 @@ class AiConfigPrompt implements AiConfig {
 @JsonKey() final  bool archived;
 @JsonKey() final  bool trackPreconfigured;
  final  String? preconfiguredPromptId;
+/// When set, the user deleted this config. The row is kept so the deletion
+/// replicates through the normal config sync path — a hard delete would
+/// leave every peer free to re-seed a bundled default it never saw removed
+/// — and so the seeding passes can tell "deleted" apart from "missing".
+/// Reads hide these rows unless a caller explicitly asks for them.
+@override final  DateTime? deletedAt;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -514,12 +540,12 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigPrompt&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.systemMessage, systemMessage) || other.systemMessage == systemMessage)&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&(identical(other.defaultModelId, defaultModelId) || other.defaultModelId == defaultModelId)&&const DeepCollectionEquality().equals(other._modelIds, _modelIds)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.useReasoning, useReasoning) || other.useReasoning == useReasoning)&&const DeepCollectionEquality().equals(other._requiredInputData, _requiredInputData)&&(identical(other.aiResponseType, aiResponseType) || other.aiResponseType == aiResponseType)&&(identical(other.comment, comment) || other.comment == comment)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._defaultVariables, _defaultVariables)&&(identical(other.category, category) || other.category == category)&&(identical(other.archived, archived) || other.archived == archived)&&(identical(other.trackPreconfigured, trackPreconfigured) || other.trackPreconfigured == trackPreconfigured)&&(identical(other.preconfiguredPromptId, preconfiguredPromptId) || other.preconfiguredPromptId == preconfiguredPromptId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigPrompt&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.systemMessage, systemMessage) || other.systemMessage == systemMessage)&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&(identical(other.defaultModelId, defaultModelId) || other.defaultModelId == defaultModelId)&&const DeepCollectionEquality().equals(other._modelIds, _modelIds)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.useReasoning, useReasoning) || other.useReasoning == useReasoning)&&const DeepCollectionEquality().equals(other._requiredInputData, _requiredInputData)&&(identical(other.aiResponseType, aiResponseType) || other.aiResponseType == aiResponseType)&&(identical(other.comment, comment) || other.comment == comment)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._defaultVariables, _defaultVariables)&&(identical(other.category, category) || other.category == category)&&(identical(other.archived, archived) || other.archived == archived)&&(identical(other.trackPreconfigured, trackPreconfigured) || other.trackPreconfigured == trackPreconfigured)&&(identical(other.preconfiguredPromptId, preconfiguredPromptId) || other.preconfiguredPromptId == preconfiguredPromptId)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,systemMessage,userMessage,defaultModelId,const DeepCollectionEquality().hash(_modelIds),createdAt,useReasoning,const DeepCollectionEquality().hash(_requiredInputData),aiResponseType,comment,updatedAt,description,const DeepCollectionEquality().hash(_defaultVariables),category,archived,trackPreconfigured,preconfiguredPromptId);
+int get hashCode => Object.hashAll([runtimeType,id,name,systemMessage,userMessage,defaultModelId,const DeepCollectionEquality().hash(_modelIds),createdAt,useReasoning,const DeepCollectionEquality().hash(_requiredInputData),aiResponseType,comment,updatedAt,description,const DeepCollectionEquality().hash(_defaultVariables),category,archived,trackPreconfigured,preconfiguredPromptId,deletedAt]);
 
 
 
@@ -530,7 +556,7 @@ abstract mixin class $AiConfigPromptCopyWith<$Res> implements $AiConfigCopyWith<
   factory $AiConfigPromptCopyWith(AiConfigPrompt value, $Res Function(AiConfigPrompt) _then) = _$AiConfigPromptCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String systemMessage, String userMessage, String defaultModelId, List<String> modelIds, DateTime createdAt, bool useReasoning, List<InputDataType> requiredInputData, AiResponseType aiResponseType, String? comment, DateTime? updatedAt, String? description, Map<String, String>? defaultVariables, String? category, bool archived, bool trackPreconfigured, String? preconfiguredPromptId
+ String id, String name, String systemMessage, String userMessage, String defaultModelId, List<String> modelIds, DateTime createdAt, bool useReasoning, List<InputDataType> requiredInputData, AiResponseType aiResponseType, String? comment, DateTime? updatedAt, String? description, Map<String, String>? defaultVariables, String? category, bool archived, bool trackPreconfigured, String? preconfiguredPromptId, DateTime? deletedAt
 });
 
 
@@ -547,7 +573,7 @@ class _$AiConfigPromptCopyWithImpl<$Res>
 
 /// Create a copy of AiConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? systemMessage = null,Object? userMessage = null,Object? defaultModelId = null,Object? modelIds = null,Object? createdAt = null,Object? useReasoning = null,Object? requiredInputData = null,Object? aiResponseType = null,Object? comment = freezed,Object? updatedAt = freezed,Object? description = freezed,Object? defaultVariables = freezed,Object? category = freezed,Object? archived = null,Object? trackPreconfigured = null,Object? preconfiguredPromptId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? systemMessage = null,Object? userMessage = null,Object? defaultModelId = null,Object? modelIds = null,Object? createdAt = null,Object? useReasoning = null,Object? requiredInputData = null,Object? aiResponseType = null,Object? comment = freezed,Object? updatedAt = freezed,Object? description = freezed,Object? defaultVariables = freezed,Object? category = freezed,Object? archived = null,Object? trackPreconfigured = null,Object? preconfiguredPromptId = freezed,Object? deletedAt = freezed,}) {
   return _then(AiConfigPrompt(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -567,7 +593,8 @@ as Map<String, String>?,category: freezed == category ? _self.category : categor
 as String?,archived: null == archived ? _self.archived : archived // ignore: cast_nullable_to_non_nullable
 as bool,trackPreconfigured: null == trackPreconfigured ? _self.trackPreconfigured : trackPreconfigured // ignore: cast_nullable_to_non_nullable
 as bool,preconfiguredPromptId: freezed == preconfiguredPromptId ? _self.preconfiguredPromptId : preconfiguredPromptId // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -578,7 +605,7 @@ as String?,
 @JsonSerializable()
 
 class AiConfigInferenceProfile implements AiConfig {
-  const AiConfigInferenceProfile({required this.id, required this.name, required this.createdAt, required this.thinkingModelId, this.thinkingHighEndModelId, this.imageRecognitionModelId, this.transcriptionModelId, this.imageGenerationModelId, this.isDefault = false, this.desktopOnly = false, this.seedGeneration = 0, final  List<SkillAssignment> skillAssignments = const [], this.pinnedHostId, this.updatedAt, this.description, final  String? $type}): _skillAssignments = skillAssignments,$type = $type ?? 'inferenceProfile';
+  const AiConfigInferenceProfile({required this.id, required this.name, required this.createdAt, required this.thinkingModelId, this.thinkingHighEndModelId, this.imageRecognitionModelId, this.transcriptionModelId, this.imageGenerationModelId, this.isDefault = false, this.desktopOnly = false, this.seedGeneration = 0, final  List<SkillAssignment> skillAssignments = const [], this.pinnedHostId, this.updatedAt, this.description, this.deletedAt, final  String? $type}): _skillAssignments = skillAssignments,$type = $type ?? 'inferenceProfile';
   factory AiConfigInferenceProfile.fromJson(Map<String, dynamic> json) => _$AiConfigInferenceProfileFromJson(json);
 
 @override final  String id;
@@ -628,6 +655,12 @@ class AiConfigInferenceProfile implements AiConfig {
  final  String? pinnedHostId;
 @override final  DateTime? updatedAt;
 @override final  String? description;
+/// When set, the user deleted this config. The row is kept so the deletion
+/// replicates through the normal config sync path — a hard delete would
+/// leave every peer free to re-seed a bundled default it never saw removed
+/// — and so the seeding passes can tell "deleted" apart from "missing".
+/// Reads hide these rows unless a caller explicitly asks for them.
+@override final  DateTime? deletedAt;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -646,12 +679,12 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigInferenceProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.thinkingModelId, thinkingModelId) || other.thinkingModelId == thinkingModelId)&&(identical(other.thinkingHighEndModelId, thinkingHighEndModelId) || other.thinkingHighEndModelId == thinkingHighEndModelId)&&(identical(other.imageRecognitionModelId, imageRecognitionModelId) || other.imageRecognitionModelId == imageRecognitionModelId)&&(identical(other.transcriptionModelId, transcriptionModelId) || other.transcriptionModelId == transcriptionModelId)&&(identical(other.imageGenerationModelId, imageGenerationModelId) || other.imageGenerationModelId == imageGenerationModelId)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.desktopOnly, desktopOnly) || other.desktopOnly == desktopOnly)&&(identical(other.seedGeneration, seedGeneration) || other.seedGeneration == seedGeneration)&&const DeepCollectionEquality().equals(other._skillAssignments, _skillAssignments)&&(identical(other.pinnedHostId, pinnedHostId) || other.pinnedHostId == pinnedHostId)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigInferenceProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.thinkingModelId, thinkingModelId) || other.thinkingModelId == thinkingModelId)&&(identical(other.thinkingHighEndModelId, thinkingHighEndModelId) || other.thinkingHighEndModelId == thinkingHighEndModelId)&&(identical(other.imageRecognitionModelId, imageRecognitionModelId) || other.imageRecognitionModelId == imageRecognitionModelId)&&(identical(other.transcriptionModelId, transcriptionModelId) || other.transcriptionModelId == transcriptionModelId)&&(identical(other.imageGenerationModelId, imageGenerationModelId) || other.imageGenerationModelId == imageGenerationModelId)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.desktopOnly, desktopOnly) || other.desktopOnly == desktopOnly)&&(identical(other.seedGeneration, seedGeneration) || other.seedGeneration == seedGeneration)&&const DeepCollectionEquality().equals(other._skillAssignments, _skillAssignments)&&(identical(other.pinnedHostId, pinnedHostId) || other.pinnedHostId == pinnedHostId)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,createdAt,thinkingModelId,thinkingHighEndModelId,imageRecognitionModelId,transcriptionModelId,imageGenerationModelId,isDefault,desktopOnly,seedGeneration,const DeepCollectionEquality().hash(_skillAssignments),pinnedHostId,updatedAt,description);
+int get hashCode => Object.hash(runtimeType,id,name,createdAt,thinkingModelId,thinkingHighEndModelId,imageRecognitionModelId,transcriptionModelId,imageGenerationModelId,isDefault,desktopOnly,seedGeneration,const DeepCollectionEquality().hash(_skillAssignments),pinnedHostId,updatedAt,description,deletedAt);
 
 
 
@@ -662,7 +695,7 @@ abstract mixin class $AiConfigInferenceProfileCopyWith<$Res> implements $AiConfi
   factory $AiConfigInferenceProfileCopyWith(AiConfigInferenceProfile value, $Res Function(AiConfigInferenceProfile) _then) = _$AiConfigInferenceProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, DateTime createdAt, String thinkingModelId, String? thinkingHighEndModelId, String? imageRecognitionModelId, String? transcriptionModelId, String? imageGenerationModelId, bool isDefault, bool desktopOnly, int seedGeneration, List<SkillAssignment> skillAssignments, String? pinnedHostId, DateTime? updatedAt, String? description
+ String id, String name, DateTime createdAt, String thinkingModelId, String? thinkingHighEndModelId, String? imageRecognitionModelId, String? transcriptionModelId, String? imageGenerationModelId, bool isDefault, bool desktopOnly, int seedGeneration, List<SkillAssignment> skillAssignments, String? pinnedHostId, DateTime? updatedAt, String? description, DateTime? deletedAt
 });
 
 
@@ -679,7 +712,7 @@ class _$AiConfigInferenceProfileCopyWithImpl<$Res>
 
 /// Create a copy of AiConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? createdAt = null,Object? thinkingModelId = null,Object? thinkingHighEndModelId = freezed,Object? imageRecognitionModelId = freezed,Object? transcriptionModelId = freezed,Object? imageGenerationModelId = freezed,Object? isDefault = null,Object? desktopOnly = null,Object? seedGeneration = null,Object? skillAssignments = null,Object? pinnedHostId = freezed,Object? updatedAt = freezed,Object? description = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? createdAt = null,Object? thinkingModelId = null,Object? thinkingHighEndModelId = freezed,Object? imageRecognitionModelId = freezed,Object? transcriptionModelId = freezed,Object? imageGenerationModelId = freezed,Object? isDefault = null,Object? desktopOnly = null,Object? seedGeneration = null,Object? skillAssignments = null,Object? pinnedHostId = freezed,Object? updatedAt = freezed,Object? description = freezed,Object? deletedAt = freezed,}) {
   return _then(AiConfigInferenceProfile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -696,7 +729,8 @@ as int,skillAssignments: null == skillAssignments ? _self._skillAssignments : sk
 as List<SkillAssignment>,pinnedHostId: freezed == pinnedHostId ? _self.pinnedHostId : pinnedHostId // ignore: cast_nullable_to_non_nullable
 as String?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -707,7 +741,7 @@ as String?,
 @JsonSerializable()
 
 class AiConfigSkill implements AiConfig {
-  const AiConfigSkill({required this.id, required this.name, required this.createdAt, required this.skillType, required final  List<Modality> requiredInputModalities, required this.systemInstructions, required this.userInstructions, this.contextPolicy = ContextPolicy.none, this.isPreconfigured = false, this.useReasoning = false, this.updatedAt, this.description, final  String? $type}): _requiredInputModalities = requiredInputModalities,$type = $type ?? 'skill';
+  const AiConfigSkill({required this.id, required this.name, required this.createdAt, required this.skillType, required final  List<Modality> requiredInputModalities, required this.systemInstructions, required this.userInstructions, this.contextPolicy = ContextPolicy.none, this.isPreconfigured = false, this.useReasoning = false, this.updatedAt, this.description, this.deletedAt, final  String? $type}): _requiredInputModalities = requiredInputModalities,$type = $type ?? 'skill';
   factory AiConfigSkill.fromJson(Map<String, dynamic> json) => _$AiConfigSkillFromJson(json);
 
 @override final  String id;
@@ -737,6 +771,12 @@ class AiConfigSkill implements AiConfig {
 @JsonKey() final  bool useReasoning;
 @override final  DateTime? updatedAt;
 @override final  String? description;
+/// When set, the user deleted this config. The row is kept so the deletion
+/// replicates through the normal config sync path — a hard delete would
+/// leave every peer free to re-seed a bundled default it never saw removed
+/// — and so the seeding passes can tell "deleted" apart from "missing".
+/// Reads hide these rows unless a caller explicitly asks for them.
+@override final  DateTime? deletedAt;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -755,12 +795,12 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigSkill&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.skillType, skillType) || other.skillType == skillType)&&const DeepCollectionEquality().equals(other._requiredInputModalities, _requiredInputModalities)&&(identical(other.systemInstructions, systemInstructions) || other.systemInstructions == systemInstructions)&&(identical(other.userInstructions, userInstructions) || other.userInstructions == userInstructions)&&(identical(other.contextPolicy, contextPolicy) || other.contextPolicy == contextPolicy)&&(identical(other.isPreconfigured, isPreconfigured) || other.isPreconfigured == isPreconfigured)&&(identical(other.useReasoning, useReasoning) || other.useReasoning == useReasoning)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigSkill&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.skillType, skillType) || other.skillType == skillType)&&const DeepCollectionEquality().equals(other._requiredInputModalities, _requiredInputModalities)&&(identical(other.systemInstructions, systemInstructions) || other.systemInstructions == systemInstructions)&&(identical(other.userInstructions, userInstructions) || other.userInstructions == userInstructions)&&(identical(other.contextPolicy, contextPolicy) || other.contextPolicy == contextPolicy)&&(identical(other.isPreconfigured, isPreconfigured) || other.isPreconfigured == isPreconfigured)&&(identical(other.useReasoning, useReasoning) || other.useReasoning == useReasoning)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,createdAt,skillType,const DeepCollectionEquality().hash(_requiredInputModalities),systemInstructions,userInstructions,contextPolicy,isPreconfigured,useReasoning,updatedAt,description);
+int get hashCode => Object.hash(runtimeType,id,name,createdAt,skillType,const DeepCollectionEquality().hash(_requiredInputModalities),systemInstructions,userInstructions,contextPolicy,isPreconfigured,useReasoning,updatedAt,description,deletedAt);
 
 
 
@@ -771,7 +811,7 @@ abstract mixin class $AiConfigSkillCopyWith<$Res> implements $AiConfigCopyWith<$
   factory $AiConfigSkillCopyWith(AiConfigSkill value, $Res Function(AiConfigSkill) _then) = _$AiConfigSkillCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, DateTime createdAt, SkillType skillType, List<Modality> requiredInputModalities, String systemInstructions, String userInstructions, ContextPolicy contextPolicy, bool isPreconfigured, bool useReasoning, DateTime? updatedAt, String? description
+ String id, String name, DateTime createdAt, SkillType skillType, List<Modality> requiredInputModalities, String systemInstructions, String userInstructions, ContextPolicy contextPolicy, bool isPreconfigured, bool useReasoning, DateTime? updatedAt, String? description, DateTime? deletedAt
 });
 
 
@@ -788,7 +828,7 @@ class _$AiConfigSkillCopyWithImpl<$Res>
 
 /// Create a copy of AiConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? createdAt = null,Object? skillType = null,Object? requiredInputModalities = null,Object? systemInstructions = null,Object? userInstructions = null,Object? contextPolicy = null,Object? isPreconfigured = null,Object? useReasoning = null,Object? updatedAt = freezed,Object? description = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? createdAt = null,Object? skillType = null,Object? requiredInputModalities = null,Object? systemInstructions = null,Object? userInstructions = null,Object? contextPolicy = null,Object? isPreconfigured = null,Object? useReasoning = null,Object? updatedAt = freezed,Object? description = freezed,Object? deletedAt = freezed,}) {
   return _then(AiConfigSkill(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -802,7 +842,8 @@ as ContextPolicy,isPreconfigured: null == isPreconfigured ? _self.isPreconfigure
 as bool,useReasoning: null == useReasoning ? _self.useReasoning : useReasoning // ignore: cast_nullable_to_non_nullable
 as bool,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
