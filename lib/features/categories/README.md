@@ -12,7 +12,7 @@ Categories are persisted `CategoryDefinition` entities. In the current codebase 
 - Settings surfaces: `CategoriesListPage`, `CategoryDetailsPage`, and create mode
 - Reusable picker surfaces: `CategoryField`, `CategoryPickerSheet`, and `CategoryCreateModal`
 - Category presentation metadata: `name`, `color`, `icon`
-- Category flags: `private`, `active`, `favorite`, `isAvailableForDayPlan`, `automaticInferenceEnabled`
+- Category flags: `private`, `active`, `favorite`, `isAvailableForDayPlan`, `automaticInferenceEnabled`, `automaticAgentWakesEnabled`
 - Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`, `defaultEventTemplateId`
 - Category-scoped AI and speech context: `speechDictionary`, `correctionExamples`
 
@@ -114,6 +114,16 @@ The fields with verified runtime consumers are:
   Copied into `TaskData.profileId` when tasks are created from category-aware entry points.
 - `defaultTemplateId`
   Used to auto-create a task agent in content-awaiting mode for new tasks.
+- `automaticAgentWakesEnabled`
+  Seeds `AgentConfig.automaticUpdatesEnabled` on those task agents — whether
+  each one wakes on task changes or only when asked. `assignCategoryDefaultTaskAgent()`
+  forwards it to `TaskAgentService.createTaskAgent()`, which hardcoded `false`
+  before this existed. A *seed*, not a gate: the per-task switch on the AI
+  summary card owns the preference afterwards, so turning this on later does
+  not reach back into tasks that already exist. The details-page row is hidden
+  without a `defaultTemplateId`, since no agent is created there for it to
+  govern. Independent of `automaticInferenceEnabled` — switching wakes off
+  leaves automatic transcription and image analysis running.
 - `defaultEventTemplateId`
   Used to auto-create an event agent in content-awaiting mode for new events
   (`autoAssignCategoryEventAgentWith()`). Independent of `defaultTemplateId` so

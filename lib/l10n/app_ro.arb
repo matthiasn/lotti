@@ -1257,6 +1257,8 @@
   "categoryActiveSwitchDescription": "Selectabil pentru intrări noi",
   "categoryAiDefaultsDescription": "Setați profilul AI și șablonul de agent implicit pentru sarcinile noi din această categorie",
   "categoryAiDefaultsTitle": "Setări implicite AI",
+  "categoryAutomaticAgentWakesDescription": "Lăsați asistentul din această categorie să se actualizeze singur când o sarcină se modifică. Se aplică sarcinilor noi; cele existente își păstrează propria setare.",
+  "categoryAutomaticAgentWakesLabel": "Trezește asistentul automat",
   "categoryAutomaticInferenceDescription": "Transcrie automat audio nou și analizează imaginile noi din această categorie",
   "categoryAutomaticInferenceLabel": "Inferență automată",
   "categoryCreationError": "Nu s-a putut crea categoria. Vă rugăm să încercați din nou.",

@@ -2669,6 +2669,14 @@ class AppLocalizationsDa extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'AI-standardindstillinger';
 
   @override
+  String get categoryAutomaticAgentWakesDescription =>
+      'Let the assistant in this category update itself when a task changes. Applies to new tasks; existing ones keep their own setting.';
+
+  @override
+  String get categoryAutomaticAgentWakesLabel =>
+      'Wake the assistant automatically';
+
+  @override
   String get categoryAutomaticInferenceDescription =>
       'Transcribe new audio and analyze new images in this category automatically';
 

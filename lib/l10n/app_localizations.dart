@@ -4614,6 +4614,18 @@ abstract class AppLocalizations {
   /// **'AI defaults'**
   String get categoryAiDefaultsTitle;
 
+  /// No description provided for @categoryAutomaticAgentWakesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Let the assistant in this category update itself when a task changes. Applies to new tasks; existing ones keep their own setting.'**
+  String get categoryAutomaticAgentWakesDescription;
+
+  /// No description provided for @categoryAutomaticAgentWakesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake the assistant automatically'**
+  String get categoryAutomaticAgentWakesLabel;
+
   /// No description provided for @categoryAutomaticInferenceDescription.
   ///
   /// In en, this message translates to:

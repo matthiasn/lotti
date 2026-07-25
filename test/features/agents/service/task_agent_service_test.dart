@@ -1155,6 +1155,84 @@ void main() {
           expect(identity.agentId, 'agent-1');
         });
       });
+
+      // The category's `automaticAgentWakesEnabled` seeds this. Before it
+      // existed the value was hardcoded `false`, so every new task agent
+      // started with wakes off no matter what the category wanted.
+      group('automatic updates seed', () {
+        Future<AgentConfig> createWith({bool? automaticUpdatesEnabled}) async {
+          when(
+            () => mockRepository.getLinksTo('task-seed', type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => makeIdentity());
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+          when(
+            () => mockOrchestrator.setAwaitingContent(
+              any(),
+              awaiting: any(named: 'awaiting'),
+            ),
+          ).thenReturn(null);
+
+          await service.createTaskAgent(
+            taskId: 'task-seed',
+            templateId: kTestTemplateId,
+            allowedCategoryIds: const {},
+            automaticUpdatesEnabled: automaticUpdatesEnabled ?? false,
+          );
+
+          return verify(
+                () => mockAgentService.createAgent(
+                  kind: any(named: 'kind'),
+                  displayName: any(named: 'displayName'),
+                  config: captureAny(named: 'config'),
+                  allowedCategoryIds: any(named: 'allowedCategoryIds'),
+                ),
+              ).captured.single
+              as AgentConfig;
+        }
+
+        test('persists the seeded preference on the new agent', () async {
+          final config = await createWith(automaticUpdatesEnabled: true);
+
+          expect(config.automaticUpdatesEnabled, isTrue);
+          expect(config.automaticUpdatesEnabledEffective, isTrue);
+        });
+
+        test(
+          'defaults to off when the caller expresses no preference',
+          () async {
+            final config = await createWith();
+
+            expect(config.automaticUpdatesEnabled, isFalse);
+          },
+        );
+
+        // Seeding must not arm the runtime by itself — the creation wake is
+        // still the only inference this path triggers.
+        test(
+          'seeding on does not enable automatic updates at runtime',
+          () async {
+            await createWith(automaticUpdatesEnabled: true);
+
+            verify(
+              () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+            ).called(1);
+            verifyNever(
+              () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+            );
+          },
+        );
+      });
     });
 
     group('getTaskAgentForTask', () {

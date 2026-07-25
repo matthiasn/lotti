@@ -127,6 +127,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
             _originalCategory!.defaultProfileId ||
         _pendingCategory!.automaticInferenceEnabled !=
             _originalCategory!.automaticInferenceEnabled ||
+        _pendingCategory!.automaticAgentWakesEnabled !=
+            _originalCategory!.automaticAgentWakesEnabled ||
         _pendingCategory!.defaultTemplateId !=
             _originalCategory!.defaultTemplateId ||
         _pendingCategory!.defaultEventTemplateId !=
@@ -212,6 +214,19 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   void setAutomaticInferenceEnabled({required bool enabled}) {
     _updatePendingCategory(
       (c) => c.copyWith(automaticInferenceEnabled: enabled),
+    );
+  }
+
+  /// Sets whether task agents created in this category start out waking
+  /// automatically when their task changes.
+  ///
+  /// Seeds new agents only — the per-task switch on the AI summary card owns
+  /// the preference from then on, so this never reaches back into tasks that
+  /// already exist. Independent of [setAutomaticInferenceEnabled]: turning
+  /// wakes off leaves automatic transcription and image analysis running.
+  void setAutomaticAgentWakesEnabled({required bool enabled}) {
+    _updatePendingCategory(
+      (c) => c.copyWith(automaticAgentWakesEnabled: enabled),
     );
   }
 

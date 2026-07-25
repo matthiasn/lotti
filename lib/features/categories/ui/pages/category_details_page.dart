@@ -298,6 +298,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
               _buildDefaultProfilePicker(category),
               _buildAutomaticInferenceSwitch(category),
               _buildDefaultTemplatePicker(category),
+              _buildAutomaticAgentWakesSwitch(category),
               if (ref.watch(configFlagProvider(enableEventsFlag)).value ??
                   false)
                 _buildDefaultEventTemplatePicker(category),

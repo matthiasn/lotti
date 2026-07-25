@@ -1527,6 +1527,8 @@
   "categoryActiveSwitchDescription": "Selectable for new entries",
   "categoryAiDefaultsDescription": "Set default AI profile and agent template for new tasks in this category",
   "categoryAiDefaultsTitle": "AI defaults",
+  "categoryAutomaticAgentWakesDescription": "Let the assistant in this category update itself when a task changes. Applies to new tasks; existing ones keep their own setting.",
+  "categoryAutomaticAgentWakesLabel": "Wake the assistant automatically",
   "categoryAutomaticInferenceDescription": "Transcribe new audio and analyze new images in this category automatically",
   "categoryAutomaticInferenceLabel": "Automatic inference",
   "categoryCreationError": "Failed to create category. Please try again.",

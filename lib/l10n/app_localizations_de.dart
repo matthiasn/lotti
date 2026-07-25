@@ -2690,6 +2690,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'KI-Standardwerte';
 
   @override
+  String get categoryAutomaticAgentWakesDescription =>
+      'Lass den Assistenten in dieser Kategorie sich selbst aktualisieren, wenn sich eine Aufgabe ändert. Gilt für neue Aufgaben; bestehende behalten ihre eigene Einstellung.';
+
+  @override
+  String get categoryAutomaticAgentWakesLabel =>
+      'Assistent automatisch aktualisieren';
+
+  @override
   String get categoryAutomaticInferenceDescription =>
       'Neue Audioaufnahmen und Bilder in dieser Kategorie automatisch auswerten';
 

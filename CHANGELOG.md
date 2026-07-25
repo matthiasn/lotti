@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1070]
+### Added
+- **Decide per area whether assistants keep themselves up to date.** New tasks
+  in an area got an assistant that only ever updated when you asked it to, and
+  turning that on was a per-task chore. Areas with an agent template now carry
+  a "Wake the assistant automatically" switch that decides what new tasks start
+  with. It's separate from the area's automatic-AI switch on purpose —
+  transcription and image analysis keep running whether or not assistants
+  update themselves. The switch applies to tasks created after you flip it;
+  tasks you already have keep whatever their own switch says, so nothing you
+  set by hand gets overwritten.
+
 ### Changed
 - **The AI summary card's update controls read as two clear groups.** "Is this
   current, and can I refresh it now" sits on the left — a freshness word next

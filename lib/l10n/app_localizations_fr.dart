@@ -2709,6 +2709,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'Paramètres IA par défaut';
 
   @override
+  String get categoryAutomaticAgentWakesDescription =>
+      'Laisse l\'assistant de cette catégorie se mettre à jour quand une tâche change. S\'applique aux nouvelles tâches ; les tâches existantes gardent leur propre réglage.';
+
+  @override
+  String get categoryAutomaticAgentWakesLabel =>
+      'Réveille l\'assistant automatiquement';
+
+  @override
   String get categoryAutomaticInferenceDescription =>
       'Transcris les nouveaux audios et analyse les nouvelles images de cette catégorie automatiquement';
 

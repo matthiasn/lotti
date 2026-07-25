@@ -65,6 +65,12 @@ class TaskAgentAssignmentResult {
 /// Daily OS capture-created tasks. Failures are captured in the returned result
 /// so callers can decide whether and how to report them without duplicating the
 /// task/category/template checks.
+///
+/// The category's defaults travel with the new agent: its inference profile,
+/// and its `automaticAgentWakesEnabled` preference as the agent's starting
+/// automatic-updates value. Being the single funnel for every UI creation path
+/// is what makes seeding here enough — nothing else constructs a
+/// category-default task agent.
 Future<TaskAgentAssignmentResult> assignCategoryDefaultTaskAgent({
   required TaskAgentService service,
   required Task task,
@@ -86,6 +92,7 @@ Future<TaskAgentAssignmentResult> assignCategoryDefaultTaskAgent({
       setupOriginEntityId: categoryId,
       allowedCategoryIds: {categoryId},
       awaitContent: awaitContent,
+      automaticUpdatesEnabled: category.automaticAgentWakesEnabledEffective,
     );
     return TaskAgentAssignmentResult.assigned(agent);
   } catch (e, s) {

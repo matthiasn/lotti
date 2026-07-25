@@ -78,6 +78,13 @@ class TaskAgentService {
   /// agent's first turn attends to the spoken capture the same way a
   /// `transcriptionComplete` wake would after an in-task recording.
   ///
+  /// [automaticUpdatesEnabled] is the agent's *starting* preference for waking
+  /// on task changes, seeded from `CategoryDefinition.automaticAgentWakesEnabled`
+  /// by `assignCategoryDefaultTaskAgent`. The per-task switch on the AI summary
+  /// card owns it from then on, so a later category edit does not reach back
+  /// into agents that already exist. Defaults to off, which is what this
+  /// hardcoded before the category could express a preference.
+  ///
   /// Throws [StateError] if a Task Agent already exists for [taskId].
   Future<AgentIdentityEntity> createTaskAgent({
     required String taskId,
@@ -88,6 +95,7 @@ class TaskAgentService {
     String? setupOriginEntityId,
     String? displayName,
     bool awaitContent = false,
+    bool automaticUpdatesEnabled = false,
     Set<String> additionalWakeTokens = const {},
   }) async {
     // Resolve template: use the provided ID or fall back to the first
@@ -156,7 +164,7 @@ class TaskAgentService {
           modelId: templateEntity.modelId,
           profileId: baseProfileId,
           inferenceSetup: inferenceSetup,
-          automaticUpdatesEnabled: false,
+          automaticUpdatesEnabled: automaticUpdatesEnabled,
         ),
         allowedCategoryIds: allowedCategoryIds,
       );

@@ -1152,6 +1152,17 @@ the write."
    passes the already-transcribed audio entry, so the first turn attends to
    the spoken capture like a `transcriptionComplete` wake would)
 
+Step 3 seeds `AgentConfig.automaticUpdatesEnabled` from the caller's
+`automaticUpdatesEnabled` argument, which `assignCategoryDefaultTaskAgent()`
+fills from `CategoryDefinition.automaticAgentWakesEnabled`. It hardcoded
+`false` before the category could express a preference, so an absent category
+value still produces exactly that. Seeding sets the agent's *starting*
+preference only — the per-task switch on the AI summary card owns it from then
+on, and a later category edit does not reach back into existing agents.
+Seeding on does not arm the runtime by itself either: `createTaskAgent` still
+calls `disableAutomaticUpdatesRuntime`, so the creation wake remains the only
+inference this path triggers.
+
 ### Assignment announcement
 
 `taskAgentProvider` — what the AI summary card watches — keys its refresh on

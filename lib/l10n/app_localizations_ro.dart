@@ -2712,6 +2712,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get categoryAiDefaultsTitle => 'Setări implicite AI';
 
   @override
+  String get categoryAutomaticAgentWakesDescription =>
+      'Lăsați asistentul din această categorie să se actualizeze singur când o sarcină se modifică. Se aplică sarcinilor noi; cele existente își păstrează propria setare.';
+
+  @override
+  String get categoryAutomaticAgentWakesLabel => 'Trezește asistentul automat';
+
+  @override
   String get categoryAutomaticInferenceDescription =>
       'Transcrie automat audio nou și analizează imaginile noi din această categorie';
 

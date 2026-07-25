@@ -165,6 +165,20 @@ sealed class EntityDefinition with _$EntityDefinition {
     /// An agent is auto-created from this template when a task is created.
     String? defaultTemplateId,
 
+    /// Seed value for `AgentConfig.automaticUpdatesEnabled` on task agents
+    /// created in this category — whether their agent wakes automatically
+    /// when the task changes, rather than only when asked.
+    ///
+    /// This is a starting value, not a live gate: the per-task switch on the
+    /// AI summary card stays authoritative afterwards, so turning this on
+    /// later does not reach back into tasks that already exist. Independent
+    /// of `automaticInferenceEnabled` — switching wakes off leaves automatic
+    /// transcription and image analysis running.
+    ///
+    /// Nullable for JSON backward compatibility (absent key ⇒ `null` ⇒ off),
+    /// which is the value `createTaskAgent` hardcoded before this existed.
+    bool? automaticAgentWakesEnabled,
+
     /// Default event-agent template ID for new events in this category.
     /// An event agent is auto-created from this template when an event is
     /// created. Independent of `defaultTemplateId` so enabling task agents
@@ -245,6 +259,12 @@ extension CategoryAutomation on CategoryDefinition {
   /// this on.
   bool get automaticInferenceEnabledEffective =>
       automaticInferenceEnabled ?? false;
+
+  /// Automatic agent wakes are opt-in too, so an unset preference is off —
+  /// the value `TaskAgentService.createTaskAgent` hardcoded before the
+  /// category could express a preference, so upgrading changes nothing.
+  bool get automaticAgentWakesEnabledEffective =>
+      automaticAgentWakesEnabled ?? false;
 }
 
 @freezed
