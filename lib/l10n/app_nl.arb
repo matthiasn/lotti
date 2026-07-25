@@ -4626,6 +4626,7 @@
   "taskAgentAutomaticUpdatesLabel": "Automatische updates",
   "taskAgentAutomaticUpdatesNeedsSetup": "Kies een AI-configuratie voordat u automatisch updates aan zet.",
   "taskAgentCancelTimerTooltip": "Annuleren in afwachting van automatische update",
+  "taskAgentChangeSetupTooltip": "AI-instelling wijzigen",
   "taskAgentChooseModel": "Kies een denkmodel",
   "taskAgentChooseProfile": "Kies een inferentieprofiel",
   "taskAgentCountdownTooltip": "Volgende auto-run in {countdown}",
@@ -4717,7 +4718,7 @@
     }
   },
   "taskAgentSetupTitle": "Agent setup",
-  "taskAgentSkipScheduledUpdate": "Overslaan",
+  "taskAgentSkipScheduledUpdate": "Eén keer overslaan",
   "taskAgentStatusOutOfDate": "Verouderd",
   "taskAgentStatusUpToDate": "Actueel",
   "taskAgentThinkingModelLabel": "Denkmodel",

@@ -4627,6 +4627,7 @@
   "taskAgentAutomaticUpdatesLabel": "Aggiornamenti automatici",
   "taskAgentAutomaticUpdatesNeedsSetup": "Scegli una configurazione AI prima di attivare aggiornamenti automatici.",
   "taskAgentCancelTimerTooltip": "Annulla aggiornamento automatico in attesa",
+  "taskAgentChangeSetupTooltip": "Cambia configurazione IA",
   "taskAgentChooseModel": "Scegli un modello di pensiero",
   "taskAgentChooseProfile": "Scegli un profilo di inferenza",
   "taskAgentCountdownTooltip": "Il prossimo auto-run in {countdown}",
@@ -4718,7 +4719,7 @@
     }
   },
   "taskAgentSetupTitle": "Impostazione dell'agente",
-  "taskAgentSkipScheduledUpdate": "Salta",
+  "taskAgentSkipScheduledUpdate": "Salta una volta",
   "taskAgentStatusOutOfDate": "Non aggiornato",
   "taskAgentStatusUpToDate": "Aggiornato",
   "taskAgentThinkingModelLabel": "Modella di pensiero",

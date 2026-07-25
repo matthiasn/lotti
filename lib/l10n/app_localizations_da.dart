@@ -9993,6 +9993,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Annuller afventende automatisk opdatering';
 
   @override
+  String get taskAgentChangeSetupTooltip => 'Skift AI-opsætning';
+
+  @override
   String get taskAgentChooseModel => 'Vælg en tænkemodel';
 
   @override
@@ -10138,7 +10141,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskAgentSetupTitle => 'Agentopsætning';
 
   @override
-  String get taskAgentSkipScheduledUpdate => 'Spring over';
+  String get taskAgentSkipScheduledUpdate => 'Spring over én gang';
 
   @override
   String get taskAgentStatusOutOfDate => 'Forældet';

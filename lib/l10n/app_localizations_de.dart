@@ -10050,6 +10050,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ausstehende automatische Aktualisierung abbrechen';
 
   @override
+  String get taskAgentChangeSetupTooltip => 'KI-Setup ändern';
+
+  @override
   String get taskAgentChooseModel => 'Denkmodell wählen';
 
   @override
@@ -10198,7 +10201,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskAgentSetupTitle => 'Agent-Einrichtung';
 
   @override
-  String get taskAgentSkipScheduledUpdate => 'Überspringen';
+  String get taskAgentSkipScheduledUpdate => 'Einmal überspringen';
 
   @override
   String get taskAgentStatusOutOfDate => 'Veraltet';

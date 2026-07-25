@@ -9921,6 +9921,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentCancelTimerTooltip => 'Cancel pending automatic update';
 
   @override
+  String get taskAgentChangeSetupTooltip => 'Change AI setup';
+
+  @override
   String get taskAgentChooseModel => 'Choose a thinking model';
 
   @override
@@ -10065,7 +10068,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentSetupTitle => 'Agent setup';
 
   @override
-  String get taskAgentSkipScheduledUpdate => 'Skip';
+  String get taskAgentSkipScheduledUpdate => 'Skip once';
 
   @override
   String get taskAgentStatusOutOfDate => 'Out of date';

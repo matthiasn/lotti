@@ -4627,6 +4627,7 @@
   "taskAgentAutomaticUpdatesLabel": "Automatiske opdateringer",
   "taskAgentAutomaticUpdatesNeedsSetup": "Vælg en AI-opsætning, før du aktiverer automatiske opdateringer.",
   "taskAgentCancelTimerTooltip": "Annuller afventende automatisk opdatering",
+  "taskAgentChangeSetupTooltip": "Skift AI-opsætning",
   "taskAgentChooseModel": "Vælg en tænkemodel",
   "taskAgentChooseProfile": "Vælg en inferensprofil",
   "taskAgentCountdownTooltip": "Næste auto-run i {countdown}",
@@ -4718,7 +4719,7 @@
     }
   },
   "taskAgentSetupTitle": "Agentopsætning",
-  "taskAgentSkipScheduledUpdate": "Spring over",
+  "taskAgentSkipScheduledUpdate": "Spring over én gang",
   "taskAgentStatusOutOfDate": "Forældet",
   "taskAgentStatusUpToDate": "Opdateret",
   "taskAgentThinkingModelLabel": "Tænkningsmodel",

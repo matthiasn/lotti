@@ -9996,6 +9996,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Avboka väntande automatisk uppdatering';
 
   @override
+  String get taskAgentChangeSetupTooltip => 'Ändra AI-inställning';
+
+  @override
   String get taskAgentChooseModel => 'Välj en tänkande modell';
 
   @override
@@ -10141,7 +10144,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskAgentSetupTitle => 'Agentuppsättning';
 
   @override
-  String get taskAgentSkipScheduledUpdate => 'Hoppa över';
+  String get taskAgentSkipScheduledUpdate => 'Hoppa över en gång';
 
   @override
   String get taskAgentStatusOutOfDate => 'Inaktuell';

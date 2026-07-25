@@ -10121,6 +10121,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zrušit čekající automatickou aktualizaci';
 
   @override
+  String get taskAgentChangeSetupTooltip => 'Změnit nastavení AI';
+
+  @override
   String get taskAgentChooseModel => 'Vybrat model pro uvažování';
 
   @override
@@ -10266,7 +10269,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentSetupTitle => 'Nastavení agenta';
 
   @override
-  String get taskAgentSkipScheduledUpdate => 'Přeskočit';
+  String get taskAgentSkipScheduledUpdate => 'Přeskočit jednou';
 
   @override
   String get taskAgentStatusOutOfDate => 'Neaktuální';

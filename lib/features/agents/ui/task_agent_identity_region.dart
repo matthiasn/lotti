@@ -30,12 +30,13 @@ class TaskAgentIdentityRegion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final currentIdentity = data.currentRoute == null
+    final currentTiers = data.currentRoute == null
         ? null
-        : formatInferenceRouteIdentity(
+        : inferenceRouteIdentityTiers(
             data.currentRoute!,
             viaLabel: messages.taskAgentRouteVia,
           );
+    final currentIdentity = currentTiers?.first;
     final combined =
         data.presentation == TaskAgentIdentityPresentation.combined;
     final semanticsLabel = switch (data.presentation) {
@@ -54,21 +55,24 @@ class TaskAgentIdentityRegion extends StatelessWidget {
     final rows = <Widget>[
       if (data.presentation == TaskAgentIdentityPresentation.disabled)
         _SetupIdentityRow(
-          value: messages.taskAgentNoProfileSelectedDescription,
+          tiers: [messages.taskAgentNoProfileSelectedDescription],
+          tooltip: messages.taskAgentChangeSetupTooltip,
           onTap: onSetupTap,
           semanticsLabel: semanticsLabel,
           isError: true,
         )
       else if (data.presentation == TaskAgentIdentityPresentation.broken)
         _SetupIdentityRow(
-          value: messages.taskAgentSetupBroken,
+          tiers: [messages.taskAgentSetupBroken],
+          tooltip: messages.taskAgentChangeSetupTooltip,
           onTap: onSetupTap,
           semanticsLabel: semanticsLabel,
           isError: true,
         )
-      else if (currentIdentity != null)
+      else if (currentTiers != null)
         _SetupIdentityRow(
-          value: currentIdentity,
+          tiers: currentTiers,
+          tooltip: messages.taskAgentChangeSetupTooltip,
           onTap: onSetupTap,
           semanticsLabel: semanticsLabel,
         ),
@@ -79,9 +83,9 @@ class TaskAgentIdentityRegion extends StatelessWidget {
               (data.reportRoute != null || data.reportAttributionUnavailable)))
         _ReportIdentityRow(
           label: messages.taskAgentThisReportHeader,
-          value: (data.reportAttributionUnavailable || data.reportRoute == null)
-              ? messages.taskAgentAttributionUnavailable
-              : formatInferenceRouteIdentity(
+          tiers: (data.reportAttributionUnavailable || data.reportRoute == null)
+              ? [messages.taskAgentAttributionUnavailable]
+              : inferenceRouteIdentityTiers(
                   data.reportRoute!,
                   viaLabel: messages.taskAgentRouteVia,
                 ),
@@ -100,13 +104,16 @@ class TaskAgentIdentityRegion extends StatelessWidget {
 
 class _SetupIdentityRow extends StatelessWidget {
   const _SetupIdentityRow({
-    required this.value,
+    required this.tiers,
     required this.onTap,
     required this.semanticsLabel,
+    required this.tooltip,
     this.isError = false,
   });
 
-  final String value;
+  /// Wordings longest-first; the widest one that fits is shown.
+  final List<String> tiers;
+  final String tooltip;
   final VoidCallback onTap;
   final String semanticsLabel;
   final bool isError;
@@ -124,9 +131,9 @@ class _SetupIdentityRow extends StatelessWidget {
       label: semanticsLabel,
       excludeSemantics: true,
       child: Tooltip(
-        // The value ellipsizes on narrow surfaces so the chevron stays glued
-        // to it; the tooltip (and the semantics label) carry the full text.
-        message: value,
+        // Names the action rather than repeating a route that is usually
+        // fully visible; the full route lives in the semantics label.
+        message: tooltip,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -156,10 +163,8 @@ class _SetupIdentityRow extends StatelessWidget {
                     ),
                     SizedBox(width: tokens.spacing.step2),
                     Flexible(
-                      child: Text(
-                        value,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: _TieredIdentityText(
+                        tiers: tiers,
                         style: tokens.typography.styles.others.caption.copyWith(
                           color: color,
                         ),
@@ -183,10 +188,12 @@ class _SetupIdentityRow extends StatelessWidget {
 }
 
 class _ReportIdentityRow extends StatelessWidget {
-  const _ReportIdentityRow({required this.label, required this.value});
+  const _ReportIdentityRow({required this.label, required this.tiers});
 
   final String label;
-  final String value;
+
+  /// Wordings longest-first; the widest one that fits is shown.
+  final List<String> tiers;
 
   @override
   Widget build(BuildContext context) {
@@ -194,16 +201,19 @@ class _ReportIdentityRow extends StatelessWidget {
     final ai = tokens.colors.aiCard;
     final caption = tokens.typography.styles.others.caption;
     // Matches the tappable row's inset so both glyphs share a leading edge.
+    // Top-only vertical space: a symmetric inset made the card's bottom
+    // margin depend on whether the attribution happened to be present.
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step2,
+      padding: EdgeInsets.only(
+        left: tokens.spacing.step2,
+        right: tokens.spacing.step2,
+        top: tokens.spacing.step2,
       ),
       // The full attribution lives in the tooltip; on screen it truncates
       // rather than wrapping, so a long route cannot spill a stray fragment
       // onto a second line under the row it belongs to.
       child: Tooltip(
-        message: '$label $value',
+        message: '$label ${tiers.first}',
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -213,29 +223,69 @@ class _ReportIdentityRow extends StatelessWidget {
               color: ai.metaText,
             ),
             SizedBox(width: tokens.spacing.step2),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: caption.copyWith(color: ai.metaText),
-              ),
+            // Not flexible: the label is short fixed vocabulary, and
+            // "This rep…" tells the reader strictly less than nothing. It
+            // costs a bounded ~60px, so only the route below can be squeezed.
+            Text(
+              label,
+              maxLines: 1,
+              style: caption.copyWith(color: ai.metaText),
             ),
             SizedBox(width: tokens.spacing.step2),
-            // The route is the payload and the label a fixed-vocabulary
-            // prefix, so the route wins the contested space.
+            // The route sheds whole segments rather than characters; the
+            // label above it never gives ground.
             Flexible(
-              flex: 3,
-              child: Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: caption.copyWith(color: ai.metaText),
+              child: _TieredIdentityText(
+                tiers: tiers,
+                style: caption.copyWith(color: ai.faintMeta),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Renders the widest wording from [tiers] that fits the space it is given.
+///
+/// The strings are structured (model · publisher · via provider), so dropping
+/// a whole segment keeps every remaining fact legible, where an ellipsis would
+/// chop the serving provider mid-word and leave the connective "via" behind.
+class _TieredIdentityText extends StatelessWidget {
+  const _TieredIdentityText({required this.tiers, required this.style});
+
+  final List<String> tiers;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final direction = Directionality.of(context);
+    final scaler = MediaQuery.textScalerOf(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var chosen = tiers.last;
+        for (final tier in tiers) {
+          final painter = TextPainter(
+            text: TextSpan(text: tier, style: style),
+            textDirection: direction,
+            textScaler: scaler,
+            maxLines: 1,
+          )..layout();
+          if (painter.width <= constraints.maxWidth) {
+            chosen = tier;
+            break;
+          }
+        }
+        return Text(
+          chosen,
+          maxLines: 1,
+          // The last tier is the bare model name; if even that will not fit,
+          // an ellipsis is the honest end of the ladder.
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        );
+      },
     );
   }
 }

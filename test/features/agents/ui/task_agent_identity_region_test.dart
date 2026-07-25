@@ -216,9 +216,12 @@ void main() {
     expect(ink.height, greaterThanOrEqualTo(tokens.spacing.step8));
   });
 
-  testWidgets('both identity lines truncate rather than wrap when squeezed', (
+  testWidgets('a squeezed route sheds whole segments, not characters', (
     tester,
   ) async {
+    // Widths here are calibrated against the test font, whose glyphs advance
+    // ~1em each — far wider than Inter — so the rung a given pixel width
+    // selects is not the rung the same width selects in the app.
     await pumpRegion(
       tester,
       data: const TaskAgentModelIdentityViewData(
@@ -226,28 +229,59 @@ void main() {
         currentRoute: route,
         reportRoute: priorRoute,
       ),
-      width: 200,
+      width: 520,
     );
 
-    expect(isTruncated(tester, find.text(routeLabel)), isTrue);
-    expect(isTruncated(tester, find.text(priorRouteLabel)), isTrue);
+    // The full wording no longer fits, so the publisher and the connective
+    // word go — rather than an ellipsis eating the serving provider, which is
+    // the fact the row exists to disclose.
+    expect(find.text(routeLabel), findsNothing);
+    expect(find.text('Qwen 3.5 Plus · Melious.ai'), findsOneWidget);
+    expect(find.text(priorRouteLabel), findsNothing);
+    expect(find.text('GLM 5.2 · OpenRouter'), findsOneWidget);
 
     final tokens = tester
         .element(find.byType(TaskAgentIdentityRegion))
         .designTokens;
     final caption = tokens.typography.styles.others.caption;
-    final singleLine = caption.fontSize! * caption.height!;
-    for (final label in [routeLabel, priorRouteLabel, 'This report']) {
+    for (final label in [
+      'Qwen 3.5 Plus · Melious.ai',
+      'GLM 5.2 · OpenRouter',
+      'This report',
+    ]) {
+      expect(
+        isTruncated(tester, find.text(label)),
+        isFalse,
+        reason: '"$label" was chopped instead of stepping down a tier',
+      );
       expect(
         tester.getSize(find.text(label)).height,
-        lessThan(singleLine * 2),
+        lessThan(caption.fontSize! * caption.height! * 2),
         reason: '"$label" wrapped to a second line',
       );
     }
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('the attribution line keeps the route when space runs out', (
+  testWidgets('the bare model name survives even the narrowest measure', (
+    tester,
+  ) async {
+    await pumpRegion(
+      tester,
+      data: const TaskAgentModelIdentityViewData(
+        presentation: TaskAgentIdentityPresentation.combined,
+        currentRoute: route,
+        reportRoute: route,
+      ),
+      width: 260,
+    );
+
+    // Last rung of the ladder: everything but the model is gone, and the
+    // model itself is still whole.
+    expect(find.text('Qwen 3.5 Plus'), findsOneWidget);
+  });
+
+  testWidgets('the attribution label never gives ground, only its route', (
     tester,
   ) async {
     await pumpRegion(
@@ -257,14 +291,14 @@ void main() {
         currentRoute: route,
         reportRoute: priorRoute,
       ),
-      width: 200,
+      width: 520,
     );
 
-    // The label is a fixed-vocabulary prefix and the route is the payload, so
-    // the route must not be the one squeezed out.
-    expect(
-      tester.getSize(find.text(priorRouteLabel)).width,
-      greaterThan(tester.getSize(find.text('This report')).width),
-    );
+    // "This rep…" tells the reader strictly less than nothing, so the fixed
+    // label holds while the route steps down a tier.
+    expect(isTruncated(tester, find.text('This report')), isFalse);
+    expect(find.text(priorRouteLabel), findsNothing);
+    expect(find.text('GLM 5.2 · OpenRouter'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

@@ -10146,6 +10146,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cancelar la actualización automática pendiente';
 
   @override
+  String get taskAgentChangeSetupTooltip => 'Cambiar configuración de IA';
+
+  @override
   String get taskAgentChooseModel => 'Elegir un modelo de razonamiento';
 
   @override
@@ -10293,7 +10296,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskAgentSetupTitle => 'Configuración del agente';
 
   @override
-  String get taskAgentSkipScheduledUpdate => 'Omitir';
+  String get taskAgentSkipScheduledUpdate => 'Omitir una vez';
 
   @override
   String get taskAgentStatusOutOfDate => 'Desactualizado';
