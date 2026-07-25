@@ -6771,6 +6771,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkPhraseSupersedesPrimary => 'Reemplaza';
 
   @override
+  String linkPickerCreateTaskSemanticLabel(String title) {
+    return 'Crear tarea: $title';
+  }
+
+  @override
   String get linkTaskButton => 'Vincular';
 
   @override

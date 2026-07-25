@@ -213,6 +213,7 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     String? linkedId,
     String? categoryId,
     List<String>? labelIds,
+    bool? private,
   }) async {
     try {
       final task = Task(
@@ -225,10 +226,21 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
           categoryId: categoryId,
           labelIds: labelIds,
           starred: false,
+          // Only a link-free creation context supplies this: with a
+          // `linkedId`, `createDbEntity` copies privacy off the linked entity
+          // instead. Without either, a task created from a private parent
+          // persists as public.
+          private: private,
         ),
       );
 
-      await logic.createDbEntity(task, linkedId: linkedId);
+      // The write's own verdict, not just the absence of a throw.
+      // `createDbEntity` returns `res.applied` and burns the unbound vector
+      // clock when a write is *rejected* rather than failing — discarding that
+      // returned a Task that does not exist in the database, which every
+      // caller then navigates to, links, or confirms as created.
+      final saved = await logic.createDbEntity(task, linkedId: linkedId);
+      if (saved != true) return null;
 
       return task;
     } catch (exception, stackTrace) {

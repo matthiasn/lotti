@@ -98,6 +98,47 @@ void main() {
   );
 
   test(
+    'createDbEntity reports failure when a requested link write throws',
+    () async {
+      // The verdict is preserved for *ancillary* post-commit work, not
+      // for the link itself: a caller that asked for a link did not get
+      // what it asked for, and reporting success would have it navigate
+      // to an entity whose link does not exist.
+      // The parent has to resolve, or createLink is never reached and the
+      // test passes for the wrong reason.
+      when(
+        () => mocks.journalDb.journalEntityById('parent-id'),
+      ).thenAnswer((_) async => testTextEntry);
+      when(
+        () => mocks.journalDb.upsertEntryLink(any()),
+      ).thenThrow(StateError('link'));
+
+      final saved = await entries.createDbEntity(
+        testTextEntry,
+        linkedId: 'parent-id',
+      );
+
+      expect(saved, isNull);
+    },
+  );
+
+  test(
+    'createDbEntity keeps the applied verdict when a post-commit side '
+    'effect throws',
+    () async {
+      // The row is already in the database by the time the badge update
+      // runs. Reporting failure here told the caller nothing was stored,
+      // so it left the persisted entity unlinked and invited a retry
+      // straight into a duplicate.
+      when(notificationService.updateBadge).thenThrow(StateError('badge'));
+
+      final saved = await entries.createDbEntity(testTextEntry);
+
+      expect(saved, isTrue);
+    },
+  );
+
+  test(
     'createDbEntity skips addGeolocation when shouldAddGeolocation is false',
     () async {
       await entries.createDbEntity(

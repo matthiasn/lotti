@@ -2822,6 +2822,7 @@
   "linkPhraseFollowsUpPrimary": "Folgt auf",
   "linkPhraseSupersedesInverse": "Wird ersetzt durch",
   "linkPhraseSupersedesPrimary": "Ersetzt",
+  "linkPickerCreateTaskSemanticLabel": "Aufgabe erstellen: {title}",
   "linkTaskButton": "Verknüpfen",
   "logbookEmptyHint": "Erstelle deinen ersten Eintrag, um mit dem Logbuch zu starten.",
   "logbookEmptyTitle": "Dein Logbuch ist leer",

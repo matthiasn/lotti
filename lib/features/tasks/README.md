@@ -696,6 +696,106 @@ outbox-sync and notification plumbing, and re-runs the cycle guard with the
 edited link's own row excluded so a legitimate direction flip is not rejected
 against its own stale state).
 
+#### Creating from a search miss
+
+`TaskSearchPickerBody` takes an optional `onCreateTask`. Supplied, a query for
+which no *selectable* task has exactly that title offers to create it rather
+than dead-ending on "No tasks found" — the query the user typed already *is*
+the title. The gate is an exact-title match against the same filtered set the
+rows are built from, not "zero search results": a partial match still offers
+the create, and an excluded task (the anchor itself, or one already holding
+this relation) does not suppress it. Only
+`LinkTaskModal` passes it today; `BlockingTaskPickerModal` stays search-only,
+because a blocker that isn't tracked yet is usually external (a person, a
+delivery, a decision) rather than a task waiting to be written down.
+
+The created task is fed straight back through the picker's own pick callback,
+so creating and picking are one act:
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant P as TaskSearchPickerBody
+  participant M as LinkTaskModal
+  participant C as createTask
+  U->>P: types a title that matches nothing
+  P-->>U: "+ <query>" create row
+  U->>P: taps it
+  P->>M: onCreateTask(query)
+  M->>C: createTask(title: query, context: anchor's)
+  C-->>M: Task
+  M-->>P: Task (registered in the candidate pool)
+  P->>M: onTaskSelected(task) — the ordinary pick path
+  M->>M: createLink(selected relation) → toast with Undo → pop
+```
+
+Three consequences of that shape:
+
+- **One edge, not two.** `createTask` is called without `linkedId`, so no plain
+  link is written that a typed relation would then have to unpick. The card's
+  overflow flow has to do that dance because it creates before it knows the
+  relation; here the relation is already chosen above the search field.
+- **The category, the project and the privacy are inherited** from the task
+  being linked from. A task created inside another task's picker belongs with
+  it: leaving it uncategorized drops it out of every category-scoped view the
+  parent appears in, omitting the project leaves it linked to the anchor but
+  missing from that project's lists and rollups, and — the one that actually
+  leaks — a task created from a *private* anchor would persist public. All
+  three travel via `createTask`'s `inheritContextFrom`, which names the parent
+  for inheritance *without* writing a link to it. `linkedId` does both at once
+  (`createDbEntity` copies category and privacy off the linked entity), and
+  the link is the part this flow owns itself.
+- **The title is indexed on creation.** `createDbEntity` does not touch FTS5 —
+  only the update path and the manual rebuild do — so a task created *with* a
+  title and never edited stayed permanently unsearchable. That matters here
+  more than anywhere: the duplicate check falls back to full text once a task
+  leaves the 200-row prefetch, and an unindexed title reads as "does not
+  exist" and offers to create it a second time.
+- **Linking, confirmation and undo are unchanged** — they are literally the
+  same code path a normal pick takes, so there are not two flows that must
+  agree.
+
+The create row appears on an exact-title miss, matching the category and label
+pickers: typing "Migrate" still offers to create it when "Migrate the database"
+exists, because the shorter title is a legitimately different task.
+
+Three races the shape has to survive, each pinned by a test:
+
+- **The pool must be current before it can prove absence.** On a backlog larger
+  than the 200-row prefetch an exact-title match can live outside the window, so
+  the create row is withheld until that query's full-text lookup resolves —
+  otherwise the picker offers to create a duplicate of a task that already
+  exists. A *failed* lookup releases it: the pool is then as complete as it is
+  going to get, and withholding forever would make an unavailable index look
+  like a missing feature.
+- **Creation is exclusive.** `EntityPickerSheet` serializes `createFromQuery`
+  *and* makes every other row inert while one is in flight. The rows stay
+  mounted across the await, so without this a double tap persists two
+  entities, and picking an existing result mid-create commits and pops while
+  the create is still pending — whose completion then commits a second link
+  and a second confirmation for a task the user had already moved on from.
+  `LinkTaskModal` keeps a `_linkCommitted` backstop so the one-edge invariant
+  holds regardless of what the picker allows.
+- **A dismissal must not strand the task.** Persistence can outlive the sheet.
+  `LinkTaskModal` captures every tree-bound dependency — messenger, repository,
+  localizations, the resolved relation phrase — into `_LinkCommitDeps` *before*
+  the write, and if the sheet is gone when it lands, commits the link on those
+  captured deps instead of returning null. `mounted` gates only the pop.
+  `showLinkCreatedFeedback` takes `messages` and a resolved `phrase` rather
+  than a `BuildContext` for exactly this reason.
+
+A fourth guarantee sits below all three: `createTask` returning non-null now
+means the row is actually in the database. `PersistenceCreateOps` reports a
+*rejected* write by returning false (and burning the unbound vector clock)
+rather than throwing, and `createTaskEntryImpl` used to discard that verdict —
+handing back a Task that does not exist, which this flow would then link and
+confirm as created.
+
+The card's overflow "Create new linked task…" entry is deliberately kept. The
+two now express different intents: the overflow creates a *blank* task and
+navigates to it (for writing it out properly), the picker creates a *titled*
+task and links it without leaving the flow.
+
 `TaskLinkGroupsController` (`taskLinkGroupsControllerProvider(taskId)`)
 resolves every plain and typed link touching a task, both directions, from one
 batched `JournalRepository.getTypedLinksForTaskIds` call, and buckets the

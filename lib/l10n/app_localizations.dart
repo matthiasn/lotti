@@ -11663,6 +11663,12 @@ abstract class AppLocalizations {
   /// **'Supersedes'**
   String get linkPhraseSupersedesPrimary;
 
+  /// Spoken name for the link picker's create row. States that activating it creates a task rather than selecting an existing one.
+  ///
+  /// In en, this message translates to:
+  /// **'Create task: {title}'**
+  String linkPickerCreateTaskSemanticLabel(String title);
+
   /// Short verb label for the Linked Tasks card header action that opens the link picker. Mirrors the Done button occupying the same slot in manage mode.
   ///
   /// In en, this message translates to:

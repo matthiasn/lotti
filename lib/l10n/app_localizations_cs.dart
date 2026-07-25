@@ -6764,6 +6764,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkPhraseSupersedesPrimary => 'Nahrazuje';
 
   @override
+  String linkPickerCreateTaskSemanticLabel(String title) {
+    return 'Vytvořit úkol: $title';
+  }
+
+  @override
   String get linkTaskButton => 'Propojit';
 
   @override

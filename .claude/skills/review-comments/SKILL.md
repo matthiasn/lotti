@@ -86,6 +86,117 @@ resolution.
 6. **Verify** — run analyzer and affected tests to confirm all changes compile
    and pass.
 
+7. **Babysit the PR until it is actually done.** Opening a PR and replying once
+   is not the end of the job. A PR is finished only when all three hold at the
+   same time:
+
+   - **mergeable** — `gh pr view <n> --json mergeable` is `MERGEABLE`
+   - **all green** — every check passed, not merely "not failing": zero
+     `pending` and zero failures, including `codecov/patch`
+   - **all replied** — every top-level review comment has a reply, with a real
+     fix or a stated reason for declining
+
+   **Pushing requires authorization.** Commits, rebases and pushes need
+   explicit user or orchestrator approval (AGENTS.md, "Security &
+   Configuration"). Being asked to *address review comments* authorizes the
+   code changes, not the push — confirm before the first push of a session,
+   and never force-push a branch you did not create in this session.
+   `--force-with-lease` guards against clobbering a concurrent update; it is
+   not a substitute for approval.
+
+   Reviews arrive *after* pushes, so pushing fixes restarts the loop: the
+   reviewer re-reviews the new commit and may file new findings. Bots also
+   rate-limit and arrive late (CodeRabbit will say "next review available in
+   N minutes" and skip the run entirely). Keep watching until the three
+   conditions hold together.
+
+   Poll on the structured status rather than the display columns — the table
+   format is human-facing, and a failed API or auth call prints to stderr and
+   would otherwise read as "no pending checks".
+
+   Note `gh pr checks` has **no** `--json` flag (checked on gh 2.45); the
+   structured source is `gh pr view --json statusCheckRollup`. Verify whatever
+   command you poll with actually works *before* wrapping it in an `until`
+   loop: a command that errors makes the loop exit immediately and every
+   subsequent report a lie.
+
+   For a CheckRun, `status` is the lifecycle (`COMPLETED`) and `conclusion`
+   carries the verdict (`SUCCESS` / `FAILURE` / `CANCELLED`) — a failed check
+   is `COMPLETED`, so keying on `status` alone reports a red run as done and
+   green. Read the conclusion for completed checks and the state for
+   StatusContexts:
+
+   ```bash
+   # one "<verdict>\t<name>" line per check; empty output means the query
+   # failed, not that everything passed — so treat it as not-done.
+   rollup() {
+     gh pr view "$1" --json statusCheckRollup --jq '
+       .statusCheckRollup[]
+       | if .status == "COMPLETED" then .conclusion
+         elif .status then .status
+         else .state end
+       + "\t" + (.name // .context)'
+   }
+   # Capture once per iteration and check the exit status: an errored or
+   # empty result is "not done", never "done and green".
+   while :; do
+     out=$(rollup <n>) || { echo "poll failed"; sleep 30; continue; }
+     [ -n "$out" ] || { echo "empty rollup — treating as not done"; sleep 30; continue; }
+     printf '%s\n' "$out" | grep -qE '^(IN_PROGRESS|QUEUED|PENDING)' || break
+     sleep 30
+   done
+   bad=$(printf '%s\n' "$out" | grep -vE '^(SUCCESS|NEUTRAL|SKIPPED)')
+   [ -z "$bad" ] && echo "all green (${#out} bytes of verdicts)" || printf '%s\n' "$bad"
+   ```
+
+   Three ways these snippets lie if written casually, all worth guarding:
+   an errored command inside `$( )` yields empty output that a
+   `grep -q pending` reads as "nothing pending"; `grep … || echo "all green"`
+   turns *no output at all* into a pass; and a background poller whose result
+   is never collected lets the summary be written before it finishes. Capture
+   the output, check the status, and `wait` for the poller before reporting.
+
+   Cross-check the total against `gh pr checks <n>` before declaring green:
+   the honest failure mode here was a poller that exited on its first
+   iteration and reported "settled" while 15 checks were still queued.
+
+   Run that in the background (`run_in_background: true`, or `… &` with the
+   PID kept) so replying to comments proceeds concurrently rather than
+   blocking on CI.
+
+   Then re-check for comments filed against the new commits — including
+   top-level ones with no reply yet:
+
+   `gh api` returns **one page (30 comments)** unless `--paginate` is passed,
+   and `--jq` then runs per page — so a comment and its reply landing on
+   different pages makes an answered comment look unanswered, and a comment on
+   a later page look absent. Fetch every page and aggregate once with `jq -s`:
+
+   ```bash
+   # `set -o pipefail` so an API failure fails the pipeline instead of
+   # producing an empty list that reads as "nothing unanswered".
+   ( set -o pipefail
+     gh api --paginate repos/{owner}/{repo}/pulls/<n>/comments --jq '.[]' | jq -s -r '
+       [.[] | select(.in_reply_to_id != null) | .in_reply_to_id] as $replied
+       | [.[] | select(.in_reply_to_id == null)] as $top
+       | "top-level: \($top | length), answered: \([$top[] | select(.id as $i | $replied | index($i))] | length)",
+         ($top[] | select(.id as $i | ($replied | index($i)) | not)
+          | "UNANSWERED \(.id) \(.user.login) \(.path)")'
+   ) || echo "comment query FAILED — do not report all-replied"
+   ```
+
+   Print the counted totals, not just the unanswered lines: "top-level: 26,
+   answered: 22" is checkable, whereas empty output is indistinguishable from
+   a query that never ran.
+
+   Post replies with `-F body=@file` rather than an inline shell string.
+   Review bodies contain backticks, quotes and code fences; nested shell
+   quoting silently mangles them, and a failed POST inside a loop can still
+   look like it succeeded.
+
+   Report the real state — "27 pass, 1 pending" is the honest answer while a
+   check is still running, not "all green".
+
 ## Guidelines
 
 - Address ALL comments — do not skip any.

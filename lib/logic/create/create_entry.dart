@@ -7,6 +7,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/service/event_agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
@@ -59,12 +60,24 @@ Future<JournalEntity?> createChecklist({
 
 /// Creates a blank task and applies any unambiguous creation context.
 ///
-/// Category, labels, and status are part of the initial entity write. An
-/// explicit [projectId] is validated before that write, its category is
+/// Category, labels, status, and [title] are part of the initial entity write.
+/// An explicit [projectId] is validated before that write, its category is
 /// authoritative, and the project is linked before this future completes.
 /// Invalid projects or failed explicit links return `null`. Without these
 /// optional values, the existing open, uncategorized, unlabeled, project-free
 /// defaults are kept.
+///
+/// [title] defaults to empty, which is what every caller that opens the new
+/// task for editing wants. Callers that already know the title — the link
+/// picker, where the search query the user typed *is* the title — pass it so
+/// the task is never briefly nameless; a non-empty title is also indexed for
+/// full-text search here, which nothing on the create path otherwise does.
+///
+/// [inheritContextFrom] names a parent task whose project *and* privacy the
+/// new task adopts, without writing a link to it. [linkedId] does both
+/// together; callers that own their own linking (the link picker writes one
+/// typed edge) would otherwise have to unpick a plain link to get the context
+/// across.
 Future<Task?> createTask({
   String? linkedId,
   String? categoryId,
@@ -72,6 +85,8 @@ Future<Task?> createTask({
   List<String>? labelIds,
   String? status,
   DateTime? due,
+  String title = '',
+  String? inheritContextFrom,
 }) async {
   final now = DateTime.now();
   final projectRepository = projectId != null
@@ -111,10 +126,22 @@ Future<Task?> createTask({
       ? getIt<EntitiesCacheService>().getCategoryById(effectiveCategoryId)
       : null;
 
+  // Privacy travels with a link-free context too. With a `linkedId`,
+  // `createDbEntity` copies it off the linked entity; without one the new task
+  // persists as public, so a task created from inside a *private* task's
+  // picker would expose it.
+  bool? inheritedPrivate;
+  if (inheritContextFrom != null) {
+    final parent = await getIt<JournalDb>().journalEntityById(
+      inheritContextFrom,
+    );
+    inheritedPrivate = parent?.meta.private;
+  }
+
   final task = await getIt<PersistenceLogic>().createTaskEntry(
     data: TaskData(
       status: taskStatusFromString(status ?? ''),
-      title: '',
+      title: title,
       statusHistory: [],
       dateTo: now,
       dateFrom: now,
@@ -125,6 +152,7 @@ Future<Task?> createTask({
     entryText: const EntryText(plainText: ''),
     linkedId: linkedId,
     categoryId: effectiveCategoryId,
+    private: inheritedPrivate,
     labelIds: nonEmptyLabelIds == null || nonEmptyLabelIds.isEmpty
         ? null
         : nonEmptyLabelIds,
@@ -137,13 +165,38 @@ Future<Task?> createTask({
       taskId: task.meta.id,
     );
     if (!assigned) return null;
-  } else if (task != null && linkedId != null) {
-    // Inherit project from the linked parent task when no explicit project was
+  } else if (task != null && (linkedId ?? inheritContextFrom) != null) {
+    // Inherit project from the parent task when no explicit project was
     // requested by the creation context.
+    //
+    // [inheritContextFrom] names that parent *without* writing a link to it.
+    // A caller that owns the linking itself — the link picker, which writes
+    // one typed edge with the relation the user already chose — must not pass
+    // `linkedId` just to get the project across, because that writes a plain
+    // link it would then have to unpick. Without either, the new task is
+    // linked to its parent but absent from that parent's project lists and
+    // rollups.
     await _inheritProjectFromLinkedTask(
-      linkedId: linkedId,
+      linkedId: (linkedId ?? inheritContextFrom)!,
       newTaskId: task.meta.id,
     );
+  }
+
+  // Index the initial title. `createDbEntity` does not touch FTS5 — only the
+  // update path and the manual rebuild do — so a task created *with* a title
+  // and never edited stayed permanently unsearchable. That is load-bearing
+  // here: the link picker's duplicate check falls back to full text once a
+  // task drops out of the 200-row prefetch, and an unindexed title reads as
+  // "does not exist" and offers to create it again.
+  if (task != null && title.isNotEmpty) {
+    try {
+      await getIt<Fts5Db>().insertText(task);
+    } catch (error) {
+      developer.log(
+        'Failed to index title for task ${task.meta.id}: $error',
+        name: 'createTask',
+      );
+    }
   }
 
   return task;

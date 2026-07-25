@@ -13,6 +13,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   takes its models with it and still restores them if you add that provider
   again, and re-running onboarding still brings back that provider's bundled
   profile.
+- **Entries you mark private are stored private.** Anything created with
+  privacy set but without being attached to a parent entry — a private
+  measurement, a completion of a private habit — had that flag cleared as it
+  was written, and was stored as an ordinary entry. Privacy is now kept
+  through the write. Entries attached to a parent still take the parent's
+  setting, which is unchanged.
+
+### Added
+- **Link a task that doesn't exist yet, without leaving the picker.** Searching
+  for a task to link used to dead-end on "No tasks found" when the work simply
+  hadn't been written down. Typing a title that matches nothing now offers to
+  create it: the task is made with that title, put in the same category and
+  project as the task you're linking from, connected with the relationship you
+  already picked, and you stay where you were — with the usual Undo. The
+  "Create new linked task…" menu entry still does what it always did, creating
+  a blank task and taking you to it.
 
 ## [0.9.1068]
 ### Changed

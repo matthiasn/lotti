@@ -194,6 +194,59 @@ void main() {
       expect(retrieved, isA<Task>());
     });
 
+    test(
+      'createTask writes a supplied title into the initial entity',
+      () async {
+        // The link picker creates from a search miss, where the query the user
+        // typed already is the title. Applying it after the write would leave
+        // the task briefly nameless in every list that reads it.
+        final task = await createTask(title: 'Write the migration guide');
+
+        expect(task?.data.title, 'Write the migration guide');
+
+        final persisted = await getIt<JournalDb>().journalEntityById(
+          task!.meta.id,
+        );
+        expect((persisted! as Task).data.title, 'Write the migration guide');
+      },
+    );
+
+    test(
+      'createTask inherits privacy from a link-free context and indexes the '
+      'title',
+      () async {
+        final parent = await createTask(title: 'Private parent');
+        await getIt<PersistenceLogic>().updateJournalEntity(
+          parent!.copyWith(meta: parent.meta.copyWith(private: true)),
+          parent.meta.copyWith(private: true),
+        );
+
+        final child = await createTask(
+          title: 'Child of a private task',
+          inheritContextFrom: parent.meta.id,
+        );
+
+        // Re-read from the database, not the returned object. createDbEntity
+        // saves a copyWith'd clone, so asserting on the in-memory Task the
+        // caller got back passes even while the stored row is public — which
+        // is exactly how the first version of this fix shipped broken.
+        final stored = await getIt<JournalDb>().journalEntityById(
+          child!.meta.id,
+        );
+        expect(stored?.meta.private, isTrue);
+
+        // createDbEntity does not touch FTS5, so a titled task that is never
+        // edited would stay permanently unsearchable — and the link picker
+        // would offer to create it again once it left the prefetch window.
+        verify(
+          () => mockFts5Db.insertText(
+            any(that: isA<Task>()),
+            removePrevious: any(named: 'removePrevious'),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
     test('createTask persists inherited task filters', () async {
       const categoryId = 'filtered-category';
       const projectId = 'filtered-project';

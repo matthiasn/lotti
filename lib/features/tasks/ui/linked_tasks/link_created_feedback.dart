@@ -4,7 +4,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 /// How long the undo offer stays reachable.
 ///
@@ -26,9 +26,14 @@ const _undoWindow = Duration(seconds: 10);
 /// commit still happens on one tap, and undoing it is one more.
 ///
 /// Shown on [messenger] rather than the modal's own context because the modal
-/// pops as part of committing — capture the messenger before popping.
+/// pops as part of committing — capture the messenger before popping. For the
+/// same reason it takes [messages] and the resolved [phrase] rather than a
+/// `BuildContext`: a link can commit after the sheet that started it is gone
+/// (dismissed while the write was in flight), and the confirmation still has
+/// to be sayable.
 void showLinkCreatedFeedback({
-  required BuildContext context,
+  required AppLocalizations messages,
+  required String phrase,
   required ScaffoldMessengerState messenger,
   required JournalRepository repository,
   required DirectedRelation relation,
@@ -36,9 +41,6 @@ void showLinkCreatedFeedback({
   required String toId,
   required String linkedTaskTitle,
 }) {
-  final messages = context.messages;
-  final phrase = directedRelationLabel(context, relation);
-
   messenger.showDesignSystemToast(
     tone: DesignSystemToastTone.success,
     // Relation in the title, task in the description: the toast caps its

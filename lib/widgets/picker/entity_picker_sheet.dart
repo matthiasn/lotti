@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -68,6 +69,7 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
     this.createFromQuery,
     this.shouldShowCreate,
     this.createRowKey,
+    this.createSemanticsLabel,
     this.reserveFooterInset = true,
     this.titleMaxLines = 1,
     this.topInset = true,
@@ -99,7 +101,13 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
   final String? selectedId;
 
   /// Single mode: invoked with the tapped item id (the caller pops/applies).
-  final void Function(String id)? onPick;
+  ///
+  /// May return a future. When it does, the create flow holds its exclusivity
+  /// lock until that future completes — a pick usually kicks off a write of
+  /// its own (linking, in the task picker), and releasing the lock the moment
+  /// the callback *returned* would re-enable every row while that write was
+  /// still in flight.
+  final FutureOr<void> Function(String id)? onPick;
 
   /// Optional create-from-search. Returns the new id (or null if cancelled);
   /// in multi mode it is staged, in single mode it is picked.
@@ -109,6 +117,11 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
   final bool Function(String query)? shouldShowCreate;
 
   final Key? createRowKey;
+
+  /// Builds the create row's spoken name from the current query. Without it
+  /// the row announces only the query, indistinguishable from an existing
+  /// result — see [_PickerCreateRow.semanticsLabel].
+  final String Function(String query)? createSemanticsLabel;
 
   /// Multi mode: reserve bottom space for the glass Apply footer. Embedded
   /// callers that supply their own action bar pass `false`.
@@ -134,6 +147,9 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
   final _searchController = TextEditingController();
   String _query = '';
 
+  /// A create is in flight. Guards [_create] against re-entry.
+  bool _creating = false;
+
   bool get _multi => widget.mode == PickerMode.multi;
 
   @override
@@ -152,10 +168,25 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
   }
 
   Future<void> _create() async {
-    final newId = await widget.createFromQuery!(_query.trim());
-    if (!mounted || newId == null) {
-      return;
+    // Serialized: the row stays mounted and hit-testable across the await, so
+    // a double tap (or a repeated Enter on a slow write) otherwise starts a
+    // second create for the same query and persists a duplicate entity —
+    // which, depending on completion order, may then be linked twice or not
+    // at all. One in-flight create per sheet.
+    if (_creating) return;
+    setState(() => _creating = true);
+    try {
+      final newId = await widget.createFromQuery!(_query.trim());
+      if (!mounted || newId == null) {
+        return;
+      }
+      await _onCreated(newId);
+    } finally {
+      if (mounted) setState(() => _creating = false);
     }
+  }
+
+  Future<void> _onCreated(String newId) async {
     if (_multi) {
       final notifier = widget.stagedNotifier!;
       notifier.value = {...notifier.value, newId};
@@ -166,7 +197,8 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
         _searchController.clear();
       });
     } else {
-      widget.onPick?.call(newId);
+      // Awaited, so the lock outlives whatever the pick starts.
+      await widget.onPick?.call(newId);
     }
   }
 
@@ -216,6 +248,12 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
               semanticsLabel: widget.searchHintText,
               onChanged: (value) => setState(() => _query = value),
               onSubmitted: (_) {
+                // The same exclusivity the rows have. The field stays enabled
+                // during a create — the query is still worth editing — so
+                // without this a user could change it and press Enter, picking
+                // an existing item while the create's own link was still in
+                // flight, and land two links or an orphaned new task.
+                if (_creating) return;
                 if (showCreate) {
                   _create();
                 } else if (!_multi && items.isNotEmpty) {
@@ -279,8 +317,11 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
         if (showCreate)
           _PickerCreateRow(
             query: _query.trim(),
-            onTap: _create,
+            // Null while a create is in flight so the row reads as
+            // unavailable rather than silently swallowing a second tap.
+            onTap: _creating ? null : _create,
             rowKey: widget.createRowKey,
+            semanticsLabel: widget.createSemanticsLabel?.call(_query.trim()),
           ),
       ],
     );
@@ -296,7 +337,12 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
       selected: selected,
       titleMaxLines: widget.titleMaxLines,
       rowSize: widget.rowSize,
-      onTap: !item.enabled
+      // Creation is exclusive: while a create is in flight every other row is
+      // inert. Left tappable, picking an existing result would commit and pop
+      // while the create was still pending, and the create's own completion
+      // would then commit a second link and a second confirmation for a task
+      // the user had already moved on from.
+      onTap: (!item.enabled || _creating)
           ? null
           : () => _multi ? _toggle(item.id) : widget.onPick?.call(item.id),
     );
@@ -376,20 +422,37 @@ class _PickerCreateRow extends StatelessWidget {
     required this.query,
     required this.onTap,
     this.rowKey,
+    this.semanticsLabel,
   });
 
   final String query;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Key? rowKey;
+
+  /// Spoken name for the row. Without it a screen reader announces only the
+  /// raw query — "Write the guide, button" — identical to how it announces an
+  /// existing result, while the plus glyph that visually distinguishes the two
+  /// is decorative and carries no semantics. Callers pass a phrasing that
+  /// states the row *creates*.
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
-    return DesignSystemSelectionRow(
+    final row = DesignSystemSelectionRow(
       key: rowKey,
       title: query,
       leading: const Icon(Icons.add_circle_outline),
       type: DesignSystemSelectionRowType.action,
       onTap: onTap,
+    );
+    final label = semanticsLabel;
+    if (label == null) return row;
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: label,
+      onTap: onTap,
+      child: ExcludeSemantics(child: row),
     );
   }
 }

@@ -2822,6 +2822,7 @@
   "linkPhraseFollowsUpPrimary": "Continuă",
   "linkPhraseSupersedesInverse": "Este înlocuită de",
   "linkPhraseSupersedesPrimary": "Înlocuiește",
+  "linkPickerCreateTaskSemanticLabel": "Creați sarcina: {title}",
   "linkTaskButton": "Asociați",
   "logbookEmptyHint": "Creați prima dvs. intrare pentru a începe jurnalul.",
   "logbookEmptyTitle": "Jurnalul dvs. este gol",
