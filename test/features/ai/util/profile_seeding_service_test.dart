@@ -99,7 +99,7 @@ void main() {
       // transaction spans them. Seeding only ever creates, so nothing else
       // would clean up the resurrected row — the pass has to reconcile.
       test('drops a profile tombstoned while the pass was running', () async {
-        final store = _LateTombstoneStore(
+        final store = LateTombstoneStore(
           await createTombstoneStore(),
           appearsAfterFirstRead: SeedTombstoneStore.profileKey(
             profileGeminiFlashId,
@@ -952,28 +952,4 @@ void main() {
       );
     });
   });
-}
-
-/// A store that starts reporting [appearsAfterFirstRead] from its *second*
-/// read, standing in for a user deletion that lands after a seeding pass has
-/// already checked the ledger.
-class _LateTombstoneStore implements SeedTombstoneStore {
-  _LateTombstoneStore(this._delegate, {required this.appearsAfterFirstRead});
-
-  final SeedTombstoneStore _delegate;
-  final String appearsAfterFirstRead;
-  var _reads = 0;
-
-  @override
-  Future<Set<String>> deletedIdentities() async {
-    final current = await _delegate.deletedIdentities();
-    if (_reads++ == 0) return current;
-    return {...current, appearsAfterFirstRead};
-  }
-
-  @override
-  Future<void> remember(String identity) => _delegate.remember(identity);
-
-  @override
-  Future<void> forget(String identity) => _delegate.forget(identity);
 }

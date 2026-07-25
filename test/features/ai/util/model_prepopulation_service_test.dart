@@ -158,6 +158,62 @@ void main() {
         },
       );
 
+      // Mirror of the profile-seeding race: a deletion can land after the
+      // pass read the ledger but before it wrote the row. Model rows and the
+      // ledger live in different databases, so no transaction spans them and
+      // the pass has to reconcile — backfill only ever creates, so nothing
+      // else would remove the resurrected row.
+      test('drops a model tombstoned while the pass was running', () async {
+        const providerId = 'gemini-provider-id';
+        final provider = AiConfigInferenceProvider(
+          id: providerId,
+          baseUrl: 'https://api.gemini.com',
+          apiKey: 'test-key',
+          name: 'Gemini',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+        final knownModel =
+            knownModelsByProvider[InferenceProviderType.gemini]!.first;
+        stubRepo(providers: [provider]);
+        when(
+          () => mockRepository.deleteConfig(
+            any(),
+            fromSync: any(named: 'fromSync'),
+            recordTombstone: any(named: 'recordTombstone'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final racing = ModelPrepopulationService(
+          repository: mockRepository,
+          tombstoneStore: LateTombstoneStore(
+            await createTombstoneStore(),
+            appearsAfterFirstRead: SeedTombstoneStore.modelKey(
+              inferenceProviderId: providerId,
+              providerModelId: knownModel.providerModelId,
+            ),
+          ),
+        );
+
+        await racing.prepopulateModelsForProvider(provider);
+
+        // It was created (the first read saw no tombstone)…
+        final saved = verify(() => mockRepository.saveConfig(captureAny()))
+            .captured
+            .cast<AiConfigModel>()
+            .where(
+              (model) => model.providerModelId == knownModel.providerModelId,
+            );
+        expect(saved, hasLength(1));
+        // …then removed again, without recording a second tombstone.
+        verify(
+          () => mockRepository.deleteConfig(
+            saved.single.id,
+            recordTombstone: false,
+          ),
+        ).called(1);
+      });
+
       // Backfill recreates any known model a configured provider lacks, so
       // without a tombstone a model the user removed returns on next launch.
       test('does not recreate a model the user deleted', () async {

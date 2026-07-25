@@ -449,3 +449,27 @@ Future<SeedTombstoneStore> createTombstoneStore({
   }
   return store;
 }
+
+/// A store that starts reporting [appearsAfterFirstRead] from its *second*
+/// read, standing in for a user deletion that lands after a seeding pass has
+/// already checked the ledger.
+class LateTombstoneStore implements SeedTombstoneStore {
+  LateTombstoneStore(this._delegate, {required this.appearsAfterFirstRead});
+
+  final SeedTombstoneStore _delegate;
+  final String appearsAfterFirstRead;
+  var _reads = 0;
+
+  @override
+  Future<Set<String>> deletedIdentities() async {
+    final current = await _delegate.deletedIdentities();
+    if (_reads++ == 0) return current;
+    return {...current, appearsAfterFirstRead};
+  }
+
+  @override
+  Future<void> remember(String identity) => _delegate.remember(identity);
+
+  @override
+  Future<void> forget(String identity) => _delegate.forget(identity);
+}
