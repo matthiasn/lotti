@@ -118,7 +118,7 @@ class LinkedTaskRow extends StatelessWidget {
                   // Pinned to the same width the browse chevron reserves, so a
                   // row that offers only one action still leaves the title the
                   // same space as one that offers two.
-                  width: tokens.spacing.step8 * 2,
+                  width: tokens.spacing.step9 * 2,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
@@ -151,11 +151,11 @@ class LinkedTaskRow extends StatelessWidget {
                 )
               : SizedBox(
                   // Both axes of the action pair, not just the width: manage
-                  // mode occupies two step8-wide boxes each step9 tall, so
+                  // mode occupies two step9 boxes, so
                   // reserving only the width still let the row grow taller on
                   // toggle and the card jump with it.
-                  width: tokens.spacing.step8 * 2,
-                  height: tokens.spacing.step8,
+                  width: tokens.spacing.step9 * 2,
+                  height: tokens.spacing.step9,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -163,7 +163,7 @@ class LinkedTaskRow extends StatelessWidget {
                       // the chevron lands on the same vertical line the unlink
                       // button occupies instead of sitting further out.
                       SizedBox(
-                        width: tokens.spacing.step8,
+                        width: tokens.spacing.step9,
                         child: Center(
                           child: Icon(
                             Icons.arrow_forward_ios,
@@ -205,9 +205,11 @@ class LinkedTaskRow extends StatelessWidget {
   }
 }
 
-/// One manage-mode action on a [LinkedTaskRow]. A fixed `step8` box so the
+/// One manage-mode action on a [LinkedTaskRow]. A fixed `step9` box so the
 /// trailing rail keeps one width whether the row shows actions or a chevron,
-/// with the design system's minimum interactive target as its hit area.
+/// with a 48pt hit area — the Material minimum, and above Apple's 44pt. The
+/// previous `step8` box was 40pt, under both, on controls sitting in adjacent
+/// pairs above a row that is itself tappable.
 class _RowAction extends StatelessWidget {
   const _RowAction({
     required this.tooltip,
@@ -227,16 +229,20 @@ class _RowAction extends StatelessWidget {
     return IconButton(
       tooltip: tooltip,
       onPressed: onPressed,
-      // Compact density trims Material's padded 48pt tap target to the step8
-      // box this rail reserves; without it two actions overflow the rail.
-      visualDensity: VisualDensity.compact,
+      // No compact density: it shrank the button 4pt inside its own
+      // constraints, which both undercut the 48pt target and made the action
+      // pair a different height from the chevron reserving the same box. The
+      // rail is wide enough for two full-size buttons.
       padding: EdgeInsets.zero,
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
       // Tight, not minimums: two of these have to fit the exact rail the
       // browse chevron reserves, and their height has to match it, or toggling
       // the mode resizes every row on the card.
       constraints: BoxConstraints.tightFor(
-        width: tokens.spacing.step8,
-        height: tokens.spacing.step8,
+        width: tokens.spacing.step9,
+        height: tokens.spacing.step9,
       ),
       icon: Icon(
         icon,

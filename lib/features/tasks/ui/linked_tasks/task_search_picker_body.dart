@@ -12,6 +12,7 @@ import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 
 /// Search-and-pick body shared by `LinkTaskModal` and `BlockingTaskPickerModal`:
@@ -25,6 +26,7 @@ class TaskSearchPickerBody extends StatefulWidget {
   const TaskSearchPickerBody({
     required this.excludeIds,
     required this.onTaskSelected,
+    this.taskStatuses = allTaskStatuses,
     this.topInset = true,
     super.key,
   });
@@ -36,6 +38,14 @@ class TaskSearchPickerBody extends StatefulWidget {
   /// Called when the user taps a result. The body does not close itself or
   /// persist anything — the caller decides what selecting a task means.
   final ValueChanged<Task> onTaskSelected;
+
+  /// Statuses a candidate may hold. Defaults to every status: "Follows up
+  /// on", "Duplicates", "Fixes" and "Supersedes" all routinely reference work
+  /// that is already finished, and excluding closed tasks made those links
+  /// impossible to express while the modal reported "No tasks found" for a
+  /// task the user could see elsewhere in the app. The blocker picker narrows
+  /// this to open statuses, since a finished task cannot block anything.
+  final List<String> taskStatuses;
 
   /// False when this body sits below other modal content that already
   /// supplies the gap under the header (the link modal's relation dropdown).
@@ -78,10 +88,20 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
     setState(() => _isLoading = true);
 
     try {
+      // Every category plus '' for uncategorized. An empty list does NOT mean
+      // "no category filter" — the query builder short-circuits it to
+      // `WHERE 1 = 0` (database_task_query_builders.dart), so passing []
+      // returned nothing at all in production while every mocked test passed.
+      // JournalQueryRunner expands the same way for the same reason.
+      final categoryIds = [
+        ...getIt<EntitiesCacheService>().sortedCategories.map((c) => c.id),
+        '',
+      ];
+
       final tasks = await _db.getTasks(
         starredStatuses: [false, true],
-        taskStatuses: openTaskStatuses,
-        categoryIds: [],
+        taskStatuses: widget.taskStatuses,
+        categoryIds: categoryIds,
         limit: 200,
       );
 
@@ -116,8 +136,9 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
           : (await _db.getJournalEntitiesForIds(unloaded))
                 .whereType<Task>()
                 .where(
-                  (task) =>
-                      openTaskStatuses.contains(task.data.status.toDbString),
+                  (task) => widget.taskStatuses.contains(
+                    task.data.status.toDbString,
+                  ),
                 )
                 .toList();
 

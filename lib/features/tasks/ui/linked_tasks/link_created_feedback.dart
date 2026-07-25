@@ -4,6 +4,9 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// How long the undo offer stays reachable.
+const _undoWindow = Duration(seconds: 10);
+
 /// Confirms a link that was just created, and offers to take it back.
 ///
 /// Picking a task in the link and blocker pickers commits on the single tap
@@ -30,17 +33,32 @@ void showLinkCreatedFeedback({
   messenger.showSnackBar(
     SnackBar(
       content: Text(messages.linkCreatedMessage(phrase, linkedTaskTitle)),
+      // Longer than the 4s default. This is the only recovery from a link
+      // that commits on a single tap, and it arrives at the bottom of the
+      // window while the eye is still on the modal that was just dismissed —
+      // at large accessibility text sizes, four seconds is not enough to
+      // read it and reach Undo.
+      duration: _undoWindow,
       action: SnackBarAction(
         label: messages.linkCreatedUndo,
-        onPressed: () {
+        onPressed: () async {
           // Same triple the link was written under, so undo can only ever
           // remove the edge this message is about — not some other
           // relationship the two tasks also hold.
-          repository.removeTypedLink(
-            fromId: fromId,
-            toId: toId,
-            linkType: entryLinkTypeDbName(relation.type),
-          );
+          try {
+            await repository.removeTypedLink(
+              fromId: fromId,
+              toId: toId,
+              linkType: entryLinkTypeDbName(relation.type),
+            );
+          } catch (_) {
+            // Awaited and reported, matching the unlink path. Fire-and-forget
+            // made a failed undo indistinguishable from a successful one, on
+            // the one control whose entire job is taking something back.
+            messenger.showSnackBar(
+              SnackBar(content: Text(messages.unlinkTaskFailedMessage)),
+            );
+          }
         },
       ),
     ),

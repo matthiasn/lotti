@@ -12,11 +12,13 @@ import 'package:lotti/features/tasks/ui/linked_tasks/blocking_task_picker_modal.
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../categories/test_utils.dart';
 
 void main() {
   group('BlockingTaskPickerModal', () {
@@ -125,7 +127,13 @@ void main() {
         () => mockFts5Db.watchFullTextMatches(any()),
       ).thenAnswer((_) => Stream.value(<String>[]));
 
+      final cache = MockEntitiesCacheService();
+      when(() => cache.sortedCategories).thenReturn([
+        CategoryTestUtils.createTestCategory(id: 'cat-a', name: 'A'),
+      ]);
+
       getIt
+        ..registerSingleton<EntitiesCacheService>(cache)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<Fts5Db>(mockFts5Db)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
@@ -262,6 +270,34 @@ void main() {
           ),
           findsWidgets,
         );
+      },
+    );
+
+    testWidgets(
+      'a finished task is not offered as a blocker — it cannot block anything, '
+      'so the open-only filter stays on this picker even though the link '
+      'picker drops it',
+      (tester) async {
+        final captured = <List<String>>[];
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((invocation) async {
+          captured.add(
+            invocation.namedArguments[#taskStatuses] as List<String>,
+          );
+          return <JournalEntity>[];
+        });
+
+        await openModal(tester);
+
+        expect(captured, isNotEmpty);
+        expect(captured.last, isNot(contains('DONE')));
+        expect(captured.last, isNot(contains('REJECTED')));
       },
     );
   });

@@ -345,6 +345,46 @@ void main() {
     );
   });
 
+  group('LinkedTaskRow manage-mode hit areas', () {
+    testWidgets(
+      'both actions meet the 48pt minimum target — they sit in an adjacent '
+      'pair above a row that is itself tappable, so an undersized box costs '
+      'the wrong action or the page the user was reading',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 900,
+                child: LinkedTaskRow(
+                  taskId: 'anchor-task',
+                  data: buildRowData(),
+                  manageMode: true,
+                  onEdit: () async {},
+                  onUnlink: () async {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        for (final icon in [Icons.swap_horiz_rounded, Icons.close_rounded]) {
+          final size = tester.getSize(
+            find
+                .ancestor(
+                  of: find.byIcon(icon),
+                  matching: find.byType(IconButton),
+                )
+                .first,
+          );
+          expect(size.width, greaterThanOrEqualTo(48));
+          expect(size.height, greaterThanOrEqualTo(48));
+        }
+      },
+    );
+  });
+
   group('LinkedTaskRow emphasis ladder', () {
     /// The colour the status label is actually painted at, at a given row width.
     ///

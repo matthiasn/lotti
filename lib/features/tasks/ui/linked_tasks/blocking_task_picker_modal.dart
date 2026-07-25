@@ -9,6 +9,7 @@ import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart'
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_relationship_sections.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -121,6 +122,9 @@ class BlockingTaskPickerModal extends ConsumerWidget {
         ),
         Flexible(
           child: TaskSearchPickerBody(
+            // A finished task cannot block anything, so this picker keeps the
+            // open-only filter the shared body no longer applies by default.
+            taskStatuses: openTaskStatuses,
             topInset: false,
             excludeIds: {blockedTaskId, ...existingBlockerIds},
             onTaskSelected: (task) => _selectBlocker(context, ref, task),

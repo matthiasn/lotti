@@ -59,10 +59,14 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
   Widget build(BuildContext context) {
     final taskId = widget.taskId;
     final uiState = ref.watch(linkedTasksControllerProvider(taskId));
-    final linkGroups =
-        ref.watch(taskLinkGroupsControllerProvider(taskId)).value ??
-        TaskLinkGroups.empty;
+    final groupsAsync = ref.watch(taskLinkGroupsControllerProvider(taskId));
+    final linkGroups = groupsAsync.value ?? TaskLinkGroups.empty;
 
+    // Two DB round trips resolve before this provider has a value, and until
+    // it does an unloaded task is indistinguishable from a task with no
+    // links. Treating "no value yet" as "no links" showed a definitive "you
+    // have no links" CTA on the first open of every task that has some.
+    final resolved = groupsAsync.hasValue || groupsAsync.hasError;
     final hasLinks = linkGroups.totalCount > 0;
 
     final flatRows = linkGroups.flat
@@ -97,7 +101,10 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                     ? () => setState(() => _expanded = !_expanded)
                     : null,
               ),
-              if (!hasLinks)
+              // Only once the answer is actually known. While it is loading
+              // the header alone stands in — no empty CTA, no spinner
+              // flashing in and out for two fast local queries.
+              if (!hasLinks && resolved)
                 _LinkedTasksEmptyAction(
                   onTap: () => _showLinkTaskModal(context, ref, taskId),
                 ),

@@ -18,12 +18,14 @@ import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../categories/test_utils.dart';
 
 void main() {
   group('LinkTaskModal', () {
@@ -155,7 +157,14 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
+      final cache = MockEntitiesCacheService();
+      when(() => cache.sortedCategories).thenReturn([
+        CategoryTestUtils.createTestCategory(id: 'cat-a', name: 'A'),
+        CategoryTestUtils.createTestCategory(id: 'cat-b', name: 'B'),
+      ]);
+
       getIt
+        ..registerSingleton<EntitiesCacheService>(cache)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<Fts5Db>(mockFts5Db)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
@@ -216,8 +225,8 @@ void main() {
     );
 
     testWidgets(
-      'a closed task matching the query is not offered, even when full-text '
-      'search returns it from outside the window',
+      'a finished task is offered — "Follows up on", "Duplicates", "Fixes" and '
+      '"Supersedes" all routinely reference work that is already done',
       (tester) async {
         stubTasks([]);
         when(
@@ -242,7 +251,34 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(find.text('Already finished'), findsNothing);
+        expect(find.text('Already finished'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the browse prefetch names every category plus uncategorized — an empty '
+      'category list is not "no filter", it short-circuits the query to match '
+      'nothing at all',
+      (tester) async {
+        stubTasks([buildTask(id: 't1', title: 'Some task')]);
+
+        await openModal(tester);
+
+        final captured =
+            verify(
+                  () => mockJournalDb.getTasks(
+                    starredStatuses: any(named: 'starredStatuses'),
+                    taskStatuses: any(named: 'taskStatuses'),
+                    categoryIds: captureAny(named: 'categoryIds'),
+                    limit: any(named: 'limit'),
+                  ),
+                ).captured.last
+                as List<String>;
+
+        expect(captured, containsAll(<String>['cat-a', 'cat-b']));
+        // The empty string is how the query builder spells "uncategorized";
+        // without it, tasks with no category are unreachable.
+        expect(captured, contains(''));
       },
     );
 
