@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1068]
+### Changed
+- **Areas you create during onboarding start with automatic AI on.** Automatic
+  transcription and image analysis remain off by default for every category
+  you make later — but the onboarding flow, where you connect a provider and
+  record your first capture on purpose, now switches it on for the areas it
+  creates, so the app keeps working the way onboarding just showed you. If you
+  reuse an area where you had already switched automation off, it stays off.
+
+### Fixed
+- **Re-running onboarding restores a bundled profile you had deleted.** Setting
+  up a provider through onboarding again now brings back that provider's
+  bundled profile even if you had removed it earlier, so the areas onboarding
+  creates always point at a profile that exists. Deleting it stays permanent
+  everywhere else.
+
 ## [0.9.1067]
 ### Fixed
 - **Deleting a bundled AI profile or model now sticks.** The app re-created

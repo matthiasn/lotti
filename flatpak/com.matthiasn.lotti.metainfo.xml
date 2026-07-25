@@ -35,6 +35,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1068" date="2026-07-25">
+      <description>
+        <p>Areas created during onboarding now start with automatic AI on. Automatic transcription and image analysis stay off by default for categories you create later, but the onboarding flow — where you connect a provider and record a first capture on purpose — switches it on for the areas it creates, so the app keeps working the way onboarding just showed you. Reusing an area where you had already switched automation off leaves it off.</p>
+        <p>Fixed: re-running onboarding restores a bundled profile you had deleted. Setting up a provider through onboarding again now brings back that provider's bundled profile even if you had removed it earlier, so the areas onboarding creates always point at a profile that exists. Deleting it stays permanent everywhere else.</p>
+      </description>
+    </release>
     <release version="0.9.1067" date="2026-07-25">
       <description>
         <p>Fixed: deleting a bundled AI profile or model now sticks. The app re-created its bundled defaults whenever one was missing — at every launch, and again each time you saved a provider — so deleting one you did not want brought it straight back. Deletions are now remembered. Removing a provider still takes its models with it and still restores them if you add that provider again.</p>

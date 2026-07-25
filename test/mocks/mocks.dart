@@ -81,6 +81,7 @@ import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
+import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
@@ -1036,6 +1037,9 @@ class MockTaskAgentWorkflow extends Mock implements TaskAgentWorkflow {}
 class MockTaskToolDispatcher extends Mock implements TaskToolDispatcher {}
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+class MockProviderPromptSetupService extends Mock
+    implements ProviderPromptSetupService {}
 
 class MockSavedTaskFiltersRepository extends Mock
     implements SavedTaskFiltersRepository {}

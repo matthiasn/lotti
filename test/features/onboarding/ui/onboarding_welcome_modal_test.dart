@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -55,6 +56,10 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
+  /// Whether this suite's setUp registered the SettingsDb, so tearDown only
+  /// removes a registration it owns.
+  var registeredSettingsDb = false;
+
   setUp(() {
     idSeq = 0;
     db = OnboardingMetricsDb(inMemoryDatabase: true);
@@ -69,10 +74,28 @@ void main() {
     if (!getIt.isRegistered<LoggingService>()) {
       getIt.registerSingleton<LoggingService>(LoggingService());
     }
+    // The key step clears the seed tombstone for the provider being set up,
+    // which reads the settings database — registered at startup in production.
+    // A mock keeps it free of real database I/O, which the widget pumps below
+    // cannot await.
+    registeredSettingsDb = !getIt.isRegistered<SettingsDb>();
+    if (registeredSettingsDb) {
+      final settingsDb = MockSettingsDb();
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      getIt.registerSingleton<SettingsDb>(settingsDb);
+    }
   });
 
   tearDown(() async {
     await db.close();
+    // Only tear down what this setUp put there; a suite-provided registration
+    // must outlive this test.
+    if (registeredSettingsDb && getIt.isRegistered<SettingsDb>()) {
+      getIt.unregister<SettingsDb>();
+    }
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
@@ -444,6 +467,7 @@ void main() {
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
           defaultTemplateId: any(named: 'defaultTemplateId'),
+          automaticInferenceEnabled: any(named: 'automaticInferenceEnabled'),
         ),
       ).thenThrow(Exception('category db down'));
     } else {
@@ -453,6 +477,7 @@ void main() {
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
           defaultTemplateId: any(named: 'defaultTemplateId'),
+          automaticInferenceEnabled: any(named: 'automaticInferenceEnabled'),
         ),
       ).thenAnswer(
         (_) async => CategoryTestUtils.createTestCategory(id: 'c1', name: 'AI'),
@@ -591,6 +616,8 @@ void main() {
         color: any(named: 'color'),
         defaultProfileId: profileLocalId,
         defaultTemplateId: lauraTemplateId,
+        // Onboarding is the one caller that opts new areas into automation.
+        automaticInferenceEnabled: true,
       ),
     ).called(1);
     verify(
@@ -599,6 +626,7 @@ void main() {
         color: any(named: 'color'),
         defaultProfileId: profileLocalId,
         defaultTemplateId: lauraTemplateId,
+        automaticInferenceEnabled: true,
       ),
     ).called(1);
 
@@ -729,6 +757,7 @@ void main() {
         color: any(named: 'color'),
         defaultProfileId: any(named: 'defaultProfileId'),
         defaultTemplateId: any(named: 'defaultTemplateId'),
+        automaticInferenceEnabled: any(named: 'automaticInferenceEnabled'),
       ),
     );
     verify(
@@ -737,6 +766,7 @@ void main() {
         color: any(named: 'color'),
         defaultProfileId: profileLocalId,
         defaultTemplateId: lauraTemplateId,
+        automaticInferenceEnabled: true,
       ),
     ).called(1);
 
@@ -752,6 +782,8 @@ void main() {
     expect(updated.active, isTrue);
     expect(updated.defaultProfileId, profileLocalId);
     expect(updated.defaultTemplateId, lauraTemplateId);
+    // A category that never decided gets automation on, like a fresh one.
+    expect(updated.automaticInferenceEnabled, isTrue);
 
     // …and the reused category is the pre-selected destination, so the
     // structured task lands in the user's real existing area.
@@ -784,6 +816,36 @@ void main() {
         audioId: null,
       ),
     ).called(1);
+  });
+
+  // Automation is opt-in per category, and onboarding turns it on for the
+  // areas it creates. Reuse is the one case where the user may already have
+  // answered — and an explicit "off" must survive, or onboarding becomes a
+  // back door around the switch.
+  testWidgets('reusing a category respects an explicit automation opt-out', (
+    tester,
+  ) async {
+    final mocks = await driveToFirstTaskStep(
+      tester,
+      existingCategories: [
+        CategoryTestUtils.createTestCategory(
+          id: 'existing-work',
+          name: 'work',
+          automaticInferenceEnabled: false,
+        ),
+      ],
+    );
+
+    final updated =
+        verify(
+              () => mocks.catRepo.updateCategory(captureAny()),
+            ).captured.single
+            as CategoryDefinition;
+    expect(updated.id, 'existing-work');
+    // Rebound to the seeded profile like any reused area…
+    expect(updated.defaultProfileId, profileLocalId);
+    // …but the user's "no" is left standing.
+    expect(updated.automaticInferenceEnabled, isFalse);
   });
 
   testWidgets('reusing a category preserves a user-chosen default agent '
