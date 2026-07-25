@@ -393,8 +393,47 @@ capacity also changes what the scenarios ask for, and would make
 `requiredWorkPlaced` and `withinCapacity` mutually unsatisfiable on a crowded
 day.
 
-**Not yet judged.** The report and judge bundle the runner's results feed are
-tracked separately, as is the live entry point that points it at real models.
+### Reading a run
+
+`framework/eval_report.dart` aggregates results into JSON + Markdown under the
+git-ignored `tmp/day-planning-eval/` (env-overridable via
+`DAY_PLANNING_EVAL_DIR`, or per-file with `DAY_PLANNING_EVAL_JSON` /
+`DAY_PLANNING_EVAL_MARKDOWN`), so runs accumulate and can be diffed.
+
+The report leads with a **model leaderboard**, then per-constraint rates, cost,
+prompt stability, and failure excerpts. Two properties carry it:
+
+- **Rates are over *applicable* results only.** A constraint that did not apply
+  is neither a pass nor a fail, and folding it in either direction produces a
+  plausible-looking number that is wrong: counting it as a pass makes the
+  laziest model look best, counting it as a fail punishes a scenario for not
+  exercising a dimension. A constraint nothing exercised reports `—`, never
+  100%.
+- **Prompt stability is measured per model across scenarios**, not per cell.
+  Within one scenario the prompt barely varies, so a per-cell figure just
+  restates the prompt size — which is exactly what the first generated report
+  showed before it was fixed. Across wakes it answers the question that
+  matters: how much of the prompt a provider could cache. On the current
+  prompt that is the whole 7.7 KB system message, with all variation in the
+  user message.
+
+Plan *quality* is judged by a person (or Opus 5 reading the repo), not by an
+in-harness LLM judge — that would bake scoring noise and cost into every run
+while saying little you can act on. So the report also emits a **judge
+bundle**: one self-sufficient JSON object per (scenario, model, variant,
+sample) carrying the scenario and its intent, the exact prompts, every tool
+call including rejections and their text, the persisted plan, and that run's
+constraint results and cost.
+
+The bundle is bounded (newest samples per cell) and **states what it dropped**,
+because a truncated bundle that does not say so reads as complete. Each corpus
+row carries `visibleToModel`: the corpus is ground truth and is rendered only
+inside the capture context, so on a capture-less wake the model saw none of it
+— and a judge reading `blockedBy` without that flag would blame the model for
+ignoring a dependency it never received.
+
+**Not yet judged against real models.** The live entry point that points the
+matrix at providers is tracked separately.
 
 ### Measuring that it does not degrade
 
