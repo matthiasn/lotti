@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:meta/meta.dart';
 
 part 'agent_database.g.dart';
 
@@ -30,7 +33,56 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
+
+  /// Re-derives `subtype` for the entity types that became day-scoped.
+  ///
+  /// `capture` used to store the capture's own id (redundant with the primary
+  /// key) and `dayStatusEvent` its status name, so neither could serve a
+  /// day-scoped read and both were loaded whole and filtered in Dart. Both now
+  /// store the day workspace, which `idx_agent_entities_agent_type_sub`
+  /// already indexes.
+  ///
+  /// Deliberately run through the Dart projection rather than as a SQL
+  /// `UPDATE … json_extract(…)`: a capture with no `dayId` derives its day
+  /// from `capturedAt` **in local time**, and the backfill must agree with the
+  /// writer exactly. A row whose subtype disagreed would simply go missing
+  /// from its day.
+  @visibleForTesting
+  Future<void> backfillDayScopedSubtypes() async {
+    const types = <String>[
+      AgentEntityTypes.capture,
+      AgentEntityTypes.dayStatusEvent,
+    ];
+    for (final type in types) {
+      final rows = await customSelect(
+        'SELECT id, serialized FROM agent_entities WHERE type = ?1',
+        variables: [Variable.withString(type)],
+      ).get();
+      for (final row in rows) {
+        final AgentDomainEntity entity;
+        try {
+          entity = AgentDbConversions.fromSerialized(
+            row.read<String>('serialized'),
+          );
+        } catch (_) {
+          // A row that cannot be decoded cannot be read by the app either;
+          // leaving its stale subtype behind is strictly better than aborting
+          // the upgrade for every other row.
+          continue;
+        }
+        final subtype = AgentDbConversions.entitySubtype(entity);
+        if (subtype == null) continue;
+        await customUpdate(
+          'UPDATE agent_entities SET subtype = ?1 WHERE id = ?2',
+          variables: [
+            Variable.withString(subtype),
+            Variable.withString(row.read<String>('id')),
+          ],
+        );
+      }
+    }
+  }
 
   @override
   MigrationStrategy get migration {
@@ -378,6 +430,10 @@ class AgentDatabase extends _$AgentDatabase {
             r"AND json_extract(serialized, '$.status') = 'pending' "
             r"AND json_extract(serialized, '$.scheduledAt') IS NOT NULL",
           );
+          await customStatement('ANALYZE');
+        }
+        if (from < 17) {
+          await backfillDayScopedSubtypes();
           await customStatement('ANALYZE');
         }
       },

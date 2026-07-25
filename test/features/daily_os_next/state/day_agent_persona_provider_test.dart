@@ -32,9 +32,10 @@ void main() {
   }) {
     final repository = MockAgentRepository();
     when(
-      () => repository.getEntitiesByAgentId(
+      () => repository.getEntitiesByAgentIdAndSubtype(
         any(),
         type: AgentEntityTypes.dayStatusEvent,
+        subtype: any(named: 'subtype'),
       ),
     ).thenAnswer((_) async => ownerEntities);
     when(

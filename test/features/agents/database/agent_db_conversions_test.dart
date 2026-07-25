@@ -403,7 +403,7 @@ void main() {
   });
 
   group('AgentDbConversions — Daily OS capture reconcile variants', () {
-    test('toEntityCompanion writes capture type and timestamps', () {
+    test('toEntityCompanion writes capture type, day subtype, timestamps', () {
       final entity = AgentDomainEntity.capture(
         id: 'capture-001',
         agentId: agentId,
@@ -417,9 +417,30 @@ void main() {
 
       expect(companion.id, const Value('capture-001'));
       expect(companion.type, const Value(AgentEntityTypes.capture));
-      expect(companion.subtype, const Value('capture-001'));
+      // The day workspace, not the capture id: this is the key a day-scoped
+      // read indexes on. Derived from capturedAt because this capture carries
+      // no explicit dayId, exactly as captureDayId would.
+      expect(companion.subtype, const Value('dayplan-2026-02-21'));
       expect(companion.createdAt, Value(createdAt));
       expect(companion.updatedAt, Value(createdAt));
+    });
+
+    test('an explicit capture dayId wins over the derived one', () {
+      final entity = AgentDomainEntity.capture(
+        id: 'capture-002',
+        agentId: agentId,
+        transcript: 'Prep demo',
+        capturedAt: DateTime(2026, 2, 21, 8, 15),
+        createdAt: createdAt,
+        dayId: 'dayplan-2026-02-20',
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      // A capture recorded after midnight can still belong to the previous
+      // planning day; the stored day must follow the capture, not the clock.
+      expect(companion.subtype, const Value('dayplan-2026-02-20'));
     });
 
     test('fromEntityRow roundtrips parsedItem variant', () {
@@ -603,15 +624,16 @@ void main() {
       expect(companion.updatedAt, Value(updatedAt));
     });
 
-    test('dayStatusEvent writes type and status-name subtype', () {
+    test('dayStatusEvent writes type and day subtype', () {
       final entity = makeTestDayStatusEvent(createdAt: createdAt);
 
       final companion = AgentDbConversions.toEntityCompanion(entity);
 
       expect(companion.type, const Value(AgentEntityTypes.dayStatusEvent));
-      // Subtype is the status name so a filtered scan (e.g. only
-      // attentionNeeded) can use the type+subtype index.
-      expect(companion.subtype, const Value('attentionNeeded'));
+      // Subtype is the day, so the persona provider's per-day read uses the
+      // type+subtype index instead of scanning every event the agent ever
+      // raised.
+      expect(companion.subtype, const Value('dayplan-2026-05-25'));
       expect(companion.createdAt, Value(createdAt));
       // Append-only variant: updated_at mirrors created_at.
       expect(companion.updatedAt, Value(createdAt));

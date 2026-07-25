@@ -111,6 +111,20 @@ class AgentRepository {
     int limit = -1,
   }) => _core.getEntitiesByAgentId(agentId, type: type, limit: limit);
 
+  /// Entities of [type] for [agentId] narrowed to one [subtype], served by the
+  /// `(agent_id, type, subtype, …)` index.
+  Future<List<AgentDomainEntity>> getEntitiesByAgentIdAndSubtype(
+    String agentId, {
+    required String type,
+    required String subtype,
+    int limit = -1,
+  }) => _core.getEntitiesByAgentIdAndSubtype(
+    agentId,
+    type: type,
+    subtype: subtype,
+    limit: limit,
+  );
+
   Future<
     List<
       ({

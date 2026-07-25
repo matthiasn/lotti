@@ -629,6 +629,51 @@ void main() {
       expect(agent.config.maxTurnsPerWake, 10);
     });
 
+    group('getEntitiesByAgentIdAndSubtype', () {
+      test("narrows to one day and excludes the agent's other days", () async {
+        await repo.upsertEntity(
+          makeTestCapture(
+            id: 'capture-target',
+            dayId: 'dayplan-2026-05-25',
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestCapture(
+            id: 'capture-other-day',
+            dayId: 'dayplan-2026-05-26',
+          ),
+        );
+
+        final results = await repo.getEntitiesByAgentIdAndSubtype(
+          testAgentId,
+          type: AgentEntityTypes.capture,
+          subtype: 'dayplan-2026-05-25',
+        );
+
+        expect(results.map((e) => e.id), ['capture-target']);
+      });
+
+      test('honours the limit', () async {
+        for (var i = 0; i < 3; i++) {
+          await repo.upsertEntity(
+            makeTestCapture(
+              id: 'capture-$i',
+              dayId: 'dayplan-2026-05-25',
+            ),
+          );
+        }
+
+        final results = await repo.getEntitiesByAgentIdAndSubtype(
+          testAgentId,
+          type: AgentEntityTypes.capture,
+          subtype: 'dayplan-2026-05-25',
+          limit: 2,
+        );
+
+        expect(results, hasLength(2));
+      });
+    });
+
     group('getEntitiesByAgentId', () {
       test('returns all entities for an agent', () async {
         await repo.upsertEntity(makeAgent());

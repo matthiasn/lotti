@@ -192,6 +192,25 @@ class AgentRepoCore {
   ///
   /// Results are always sorted newest-first (`created_at DESC`). Pass [limit]
   /// to cap the number of rows returned (defaults to unlimited).
+  /// Entities of [type] for [agentId] narrowed to one [subtype].
+  ///
+  /// Served by `idx_agent_entities_agent_type_sub`, so cost tracks the rows
+  /// actually returned rather than everything the agent owns. This is what
+  /// makes a day-scoped read of a long-lived agent's captures or status
+  /// events viable — the alternative is loading the agent's whole history and
+  /// filtering in Dart.
+  Future<List<AgentDomainEntity>> getEntitiesByAgentIdAndSubtype(
+    String agentId, {
+    required String type,
+    required String subtype,
+    int limit = -1,
+  }) async {
+    final rows = await _db
+        .getAgentEntitiesByTypeAndSubtype(agentId, type, subtype, limit)
+        .get();
+    return rows.map(AgentDbConversions.fromEntityRow).toList();
+  }
+
   Future<List<AgentDomainEntity>> getEntitiesByAgentId(
     String agentId, {
     String? type,
