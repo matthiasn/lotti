@@ -6,8 +6,8 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_widgets.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
-import 'package:lotti/features/ai/ui/settings/util/active_profile.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
+import 'package:lotti/features/ai/ui/settings/util/profile_usage.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -176,12 +176,12 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
             data: (rows) => rows.whereType<AiConfigModel>().toList(),
             orElse: () => const <AiConfigModel>[],
           );
-          final activeProfile = profilesAsync.maybeWhen(
-            data: (rows) => pickActiveProfileForProvider(
+          final profilesUsingProvider = profilesAsync.maybeWhen(
+            data: (rows) => profilesUsingProviderModels(
               profiles: rows.whereType<AiConfigInferenceProfile>().toList(),
               providerModels: models,
             ),
-            orElse: () => null,
+            orElse: () => const <AiConfigInferenceProfile>[],
           );
 
           // Fire the Fix-flow once per mount, after the data has
@@ -213,7 +213,7 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
             provider: config,
             models: models,
             allModels: allModels,
-            activeProfile: activeProfile,
+            profilesUsingProvider: profilesUsingProvider,
             onAddModel: () => _navigationService.navigateToCreateModel(
               context,
               preselectedProviderId: widget.providerId,

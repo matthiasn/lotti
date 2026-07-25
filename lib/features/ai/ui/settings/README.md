@@ -25,7 +25,7 @@ contains the inference edit pages (`inference_model_edit_page.dart`,
 `inference_provider_form_create.dart` / `_edit.dart`), layout helpers
 (`breakpoints.dart`, `form_bottom_bar.dart`,
 `embedding_backfill_modal.dart`), the `provider/` subtree (provider
-detail page + sections), the `util/` subtree (`active_profile.dart`,
+detail page + sections), the `util/` subtree (`profile_usage.dart`,
 `ai_provider_status.dart`, `ai_provider_visual.dart`,
 `ai_settings_back_nav.dart`), and additional `services/` entries
 (per-provider `*_ftue_setup.dart`, `gemini_setup_prompt_service.dart`,
@@ -46,7 +46,7 @@ lib/features/ai/ui/settings/
 │   ├── ai_provider_connection_section.dart
 │   └── ai_provider_models_section.dart
 ├── util/                                   # Shared status/visual/nav helpers
-│   ├── active_profile.dart
+│   ├── profile_usage.dart
 │   ├── ai_provider_status.dart
 │   ├── ai_provider_visual.dart
 │   └── ai_settings_back_nav.dart
@@ -169,8 +169,14 @@ overflow menu (`AiCardActionMenuButton`) with `Edit` and `Delete` rows.
   status footer (`AiProviderCard.statusFor`) and an optional `onFix`
   action when the stored API key is invalid.
 - `AiModelCard` — list card for the Models tab.
-- `AiProfileCard` — grid card for the Profiles tab. Takes an `isActive`
-  flag that marks the currently-active inference profile.
+- `AiProfileCard` — grid card for the Profiles tab. Takes an `isInUse`
+  flag, fed by `profileIdsInUseProvider`: a profile is badged only when a
+  category default or an agent inference setup actually references it. It is
+  deliberately *not* derived from which provider owns the profile's model
+  slots — that older heuristic badged whichever profile a configured provider
+  happened to touch first, preferring the never-user-settable `isDefault`
+  flag, so a freshly seeded profile appeared "active" with no user action able
+  to grant or revoke it.
 
 > Note: `AiConfigCard` (`ai_config_card.dart`, with a `compact` flag) and
 > its `DismissibleConfigCard` wrapper are legacy widgets that are no

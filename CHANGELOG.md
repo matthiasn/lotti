@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1066]
+### Changed
+- **The "Active" badge on inference profiles now means something you can
+  control.** A profile was badged Active purely because one of its models
+  belonged to a provider you had connected — so a profile could appear active
+  the moment you set up a provider, with nothing you could do to turn it on or
+  off, while the profile your categories actually used showed nothing. The
+  badge now reads **In use** and appears only when a category or a task agent
+  actually routes through that profile.
+- **A provider's page now lists every profile that depends on it**, under
+  "Profiles using this provider", instead of naming a single arbitrary
+  "Active profile" — so you can see what would break before removing a
+  provider.
+
 ## [0.9.1065]
 ### Changed
 - **Automatic AI now waits to be asked, per category.** Transcribing new audio

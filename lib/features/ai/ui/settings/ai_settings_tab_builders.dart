@@ -124,19 +124,16 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
       for (final p in providers) p.id: p.inferenceProviderType,
     };
     final modelsBySlotId = modelByProfileSlotId(models);
-    // A profile earns the Active badge iff it's the winning candidate
-    // for at least one configured provider — same rule the detail
-    // page uses for its "Active profile" section.
-    final activeProfileIds = activeProfileIdsForProviders(
-      providers: providers,
-      models: models,
-      profiles: profiles,
-    );
+    // A profile is badged iff something actually routes through it — a
+    // category default or an agent's inference setup. While the lookup is in
+    // flight nothing is badged, rather than guessing and flickering.
+    final inUseProfileIds =
+        ref.watch(profileIdsInUseProvider).value ?? const <String>{};
 
     AiProfileCard buildCard(AiConfigInferenceProfile profile) {
       return AiProfileCard(
         profile: profile,
-        isActive: activeProfileIds.contains(profile.id),
+        isInUse: inUseProfileIds.contains(profile.id),
         providerTypeFor: () => _providerTypeForProfile(
           profile,
           modelsBySlotId,

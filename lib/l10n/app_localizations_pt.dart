@@ -1653,7 +1653,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Escolha um provedor para começar. Configuraremos modelos e um perfil inicial automaticamente.';
 
   @override
-  String get aiProfileCardActiveBadge => 'Ativo';
+  String get aiProfileCardInUseBadge => 'Em uso';
 
   @override
   String get aiProfileModelPickerSearchHint => 'Pesquisar modelos…';
@@ -1844,7 +1844,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Revisão';
 
   @override
-  String get aiProviderDetailActiveProfileTitle => 'Perfil ativo';
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Perfis que usam este provedor';
 
   @override
   String get aiProviderDetailAddModelButton => 'Adicionar modelo';

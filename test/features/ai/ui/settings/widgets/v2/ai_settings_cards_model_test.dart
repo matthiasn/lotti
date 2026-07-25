@@ -209,7 +209,7 @@ void main() {
 
   group('AiProfileCard rendering', () {
     testWidgets(
-      'default (isDefault: true) profiles render the Active badge',
+      'profiles something routes through render the in-use badge',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidget(
@@ -219,7 +219,7 @@ void main() {
                 description: 'Fast multimodal default',
                 isDefault: true,
               ),
-              isActive: true,
+              isInUse: true,
               providerTypeFor: () => InferenceProviderType.gemini,
               modelLookup: (id) => 'Gemini 3 Flash',
               onTap: () {},
@@ -229,18 +229,18 @@ void main() {
         await tester.pump();
         expect(find.text('Gemini Flash'), findsOneWidget);
         expect(find.text('Fast multimodal default'), findsOneWidget);
-        expect(find.text('Active'), findsOneWidget);
+        expect(find.text('In use'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'non-active profiles render without the Active badge',
+      'profiles nothing references render without the in-use badge',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidget(
             AiProfileCard(
               profile: hProfile(name: 'Custom Profile'),
-              isActive: false,
+              isInUse: false,
               providerTypeFor: () => InferenceProviderType.gemini,
               modelLookup: (id) => 'Some Model',
               onTap: () {},
@@ -248,7 +248,7 @@ void main() {
           ),
         );
         await tester.pump();
-        expect(find.text('Active'), findsNothing);
+        expect(find.text('In use'), findsNothing);
       },
     );
 
@@ -264,7 +264,7 @@ void main() {
                 imageRecognition: 'vision-id',
                 // transcription + imageGeneration left null.
               ),
-              isActive: false,
+              isInUse: false,
               providerTypeFor: () => InferenceProviderType.anthropic,
               modelLookup: (id) =>
                   id == 'reasoning-id' ? 'Reasoning Model' : 'Vision Model',
@@ -294,7 +294,7 @@ void main() {
           makeTestableWidget(
             AiProfileCard(
               profile: hProfile(thinking: 'deleted-model-id'),
-              isActive: false,
+              isInUse: false,
               providerTypeFor: () => InferenceProviderType.anthropic,
               modelLookup: (id) => null,
               onTap: () {},
@@ -369,7 +369,7 @@ void main() {
       makeTestableWidget(
         AiProfileCard(
           profile: hProfile(isDefault: true),
-          isActive: true,
+          isInUse: true,
           providerTypeFor: () => InferenceProviderType.gemini,
           modelLookup: (id) => 'Mock Model',
           onTap: () {},

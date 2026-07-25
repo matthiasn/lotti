@@ -1,18 +1,18 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/ai/state/profile_usage_provider.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_service.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/breakpoints.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
-import 'package:lotti/features/ai/ui/settings/util/active_profile.dart';
+import 'package:lotti/features/ai/ui/settings/util/profile_usage.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
@@ -30,6 +30,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+
 
 part 'ai_settings_tab_builders.dart';
 
