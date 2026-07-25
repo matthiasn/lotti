@@ -131,10 +131,28 @@ class DayAgentPlanWriter {
       // *resolving* agent's allowed categories so a synced ChangeItem
       // cannot smuggle an unauthorized category or out-of-day timestamp
       // past the apply path.
+      // Task references and the clock are re-resolved here, not carried over
+      // from proposal time: a ChangeSet is durable and synced, so it can be
+      // accepted long after it was written — by which point the task may have
+      // been deleted or moved out of scope, and the part of the day it aimed
+      // at may already have passed — or arrive from a peer on an older build
+      // that never ran these checks at all.
+      final proposedTaskIds = {
+        for (final entry in pendingByIndex.entries)
+          if (entry.value.args['taskId'] case final String taskId) taskId,
+      };
       validateApplicablePlanDiffBatch(
         pendingByIndex.entries,
         plan,
         identity.allowedCategoryIds,
+        earliestStart: localDay(plan.planDate) == localDay(clock.now())
+            ? clock.now()
+            : null,
+        allowedTaskIds: await resolveAllowedTaskIds(
+          journalDb: journalDb,
+          taskIds: proposedTaskIds,
+          allowedCategoryIds: identity.allowedCategoryIds,
+        ),
       );
     }
 
@@ -308,12 +326,12 @@ class DayAgentPlanWriter {
         'with propose_plan_diff instead so the user can approve them.',
       );
     }
-    // Start times of the blocks already on the plan, so a redraft that repeats
-    // one unchanged is not treated as newly planning the past.
-    final carriedBlockStarts = {
+    // The blocks already on the plan. A redraft may repeat one that has
+    // already started; it may not invent one there.
+    final baselineBlocks = {
       for (final block
           in existing?.data.plannedBlocks ?? const <PlannedBlock>[])
-        block.id: block.startTime,
+        block.id: block,
     };
     final blocks = <PlannedBlock>[];
     for (final raw in rawBlocks) {
@@ -325,7 +343,7 @@ class DayAgentPlanWriter {
           allowedCategoryIds: allowedCategoryIds,
           decidedTaskIds: decidedTasks,
           allowedExistingTaskIds: allowedExistingTaskIds,
-          carriedBlockStarts: carriedBlockStarts,
+          baselineBlocks: baselineBlocks,
         ),
       );
     }

@@ -39,13 +39,12 @@ Future<Set<String>> resolveAllowedTaskIds({
 }
 
 /// Block states that represent a *plan* rather than a record of something that
-/// already happened, and so may never start before the current time on a
-/// same-day draft.
+/// already happened.
 ///
-/// The distinction is what the state means, not which types carry it: history
-/// (`inProgress`, `completed`, `dropped`) is legitimately in the past when a
-/// re-draft carries it forward, while everything else is the agent proposing
-/// work.
+/// Used to decide whether a carried-forward block may change state: history
+/// (`inProgress`, `completed`, `dropped`) is a legitimate progression for work
+/// already on the plan, while adopting a plan state the baseline did not hold
+/// would let a known block id be reused to place new work in the past.
 const plannedBlockStatesGuardedFromThePast = <PlannedBlockState>{
   PlannedBlockState.drafted,
   PlannedBlockState.committed,
@@ -66,7 +65,7 @@ PlannedBlock parsePlannedBlock({
   required Set<String> decidedTaskIds,
   required Set<String> allowedExistingTaskIds,
   DateTime? earliestDraftStart,
-  Map<String, DateTime> carriedBlockStarts = const {},
+  Map<String, PlannedBlock> baselineBlocks = const {},
 }) {
   if (raw is! Map) {
     throw const DayAgentCaptureException('block must be an object');
@@ -125,19 +124,41 @@ PlannedBlock parsePlannedBlock({
   // past-starting block `buffer` to slip an ai/manual-only guard — the same
   // probing, one field over. Guarding by what a state *means* closes both.
   final blockId = optionalStringArg(data['id']);
-  // A block re-emitted unchanged from the persisted baseline is being carried
-  // forward, not newly planned. A legacy `agreed` plan can hold `committed`
-  // blocks the user already approved, and once one of those has started a
-  // redraft must still be able to include it — rejecting the whole draft for
-  // faithfully repeating what is already on the plan would be the guard
-  // punishing the correct behaviour. Both id and start must match, so the
-  // exemption cannot be used to move approved work into the past.
+  // One rule for the past, keyed on evidence rather than on the state label:
+  // a block that starts before now is only acceptable if the baseline already
+  // had that block at that time. Anything else is either planning the past or
+  // fabricating history, and the state name cannot tell the two apart — a
+  // fresh block claiming `completed` at 09:00 is exactly as invented as a
+  // fresh `committed` one, which is why guarding a list of "planning" states
+  // left the other half of the bypass open.
+  //
+  // State may still progress on a carried block (in-progress work finishes),
+  // but it may not become a *plan* state that the baseline did not already
+  // hold — otherwise a known id could be reused to slip a new committed block
+  // into a past slot.
+  final baseline = blockId == null ? null : baselineBlocks[blockId];
+  // A *plan* state in the past is only acceptable as a faithful repeat of a
+  // block the plan already had: same id, same start, and the same state it
+  // already held. Matching on id and start alone would let a known 09:00 id
+  // be reused to drop a brand-new `committed` block into that slot,
+  // rewriting approved work without the refinement approval that normally
+  // gates it.
+  //
+  // History states (`inProgress`, `completed`, `dropped`) stay exempt. They
+  // can legitimately have no baseline: the first draft of the day may happen
+  // in the afternoon, and the capture is where the agent learns what the
+  // morning actually contained. Whether a model should be able to *invent*
+  // that history is a real question — the eval's `noHistoryFabrication`
+  // measures it — but it is a product decision about what a plan may record,
+  // not something to settle by tightening a guard mid-fix.
   final carriedForward =
-      blockId != null && carriedBlockStarts[blockId] == start;
+      baseline != null &&
+      baseline.startTime == start &&
+      baseline.state == blockState;
   if (earliestDraftStart != null &&
-      !carriedForward &&
       plannedBlockStatesGuardedFromThePast.contains(blockState) &&
-      start.isBefore(earliestDraftStart)) {
+      start.isBefore(earliestDraftStart) &&
+      !carriedForward) {
     throw const DayAgentCaptureException(
       'blocks planned for today must not start before current time',
     );

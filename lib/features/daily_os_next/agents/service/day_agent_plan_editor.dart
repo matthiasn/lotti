@@ -291,6 +291,19 @@ class DayAgentPlanEditor {
     // deleted task, a non-existent one, or one from a category this agent may
     // not touch, which is the draft-path hole reopened one door over.
     final identity = await reads.requireIdentity(agentId);
+    // Refining today's plan cannot place work in a part of the day that has
+    // already gone, any more than drafting it can.
+    if (localDay(plan.planDate) == localDay(clock.now())) {
+      final now = clock.now();
+      for (final change in parsed) {
+        final start = change.to?.start;
+        if (start != null && start.isBefore(now)) {
+          throw const DayAgentCaptureException(
+            'proposed blocks for today must not start before current time',
+          );
+        }
+      }
+    }
     final proposedTaskIds = {for (final change in parsed) ?change.to?.taskId};
     if (proposedTaskIds.isNotEmpty) {
       final allowed = await resolveAllowedTaskIds(

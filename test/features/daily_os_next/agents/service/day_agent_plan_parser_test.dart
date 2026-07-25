@@ -33,7 +33,7 @@ void main() {
     Set<String> decidedTaskIds = const {},
     Set<String> allowedExistingTaskIds = const {},
     DateTime? earliestDraftStart,
-    Map<String, DateTime> carriedBlockStarts = const {},
+    Map<String, PlannedBlock> baselineBlocks = const {},
   }) {
     return parsePlannedBlock(
       raw: raw,
@@ -42,7 +42,7 @@ void main() {
       decidedTaskIds: decidedTaskIds,
       allowedExistingTaskIds: allowedExistingTaskIds,
       earliestDraftStart: earliestDraftStart,
-      carriedBlockStarts: carriedBlockStarts,
+      baselineBlocks: baselineBlocks,
     );
   }
 
@@ -160,7 +160,13 @@ void main() {
             ..['state'] = 'committed'
             ..['id'] = 'block-existing',
           earliestDraftStart: earliest,
-          carriedBlockStarts: {'block-existing': DateTime(2026, 3, 16, 9)},
+          baselineBlocks: {
+            'block-existing': _baselineBlock(
+              id: 'block-existing',
+              start: DateTime(2026, 3, 16, 9),
+              state: PlannedBlockState.committed,
+            ),
+          },
         );
 
         expect(block.id, 'block-existing');
@@ -176,7 +182,13 @@ void main() {
               ..['state'] = 'committed'
               ..['id'] = 'block-existing',
             earliestDraftStart: earliest,
-            carriedBlockStarts: {'block-existing': DateTime(2026, 3, 16, 11)},
+            baselineBlocks: {
+              'block-existing': _baselineBlock(
+                id: 'block-existing',
+                start: DateTime(2026, 3, 16, 11),
+                state: PlannedBlockState.committed,
+              ),
+            },
           ),
           throwsA(
             isA<DayAgentCaptureException>().having(
@@ -185,6 +197,29 @@ void main() {
               contains('must not start before current time'),
             ),
           ),
+        );
+      });
+
+      test('will not let a baseline id adopt a new plan state in the past', () {
+        // The attack the id+start match alone allowed: reuse a known 09:00
+        // block id and drop a brand-new committed block into that slot,
+        // rewriting approved work without the refinement approval that
+        // normally gates it.
+        expect(
+          () => parse(
+            rawBlock()
+              ..['state'] = 'committed'
+              ..['id'] = 'block-existing',
+            earliestDraftStart: earliest,
+            baselineBlocks: {
+              'block-existing': _baselineBlock(
+                id: 'block-existing',
+                start: DateTime(2026, 3, 16, 9),
+                state: PlannedBlockState.drafted,
+              ),
+            },
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
         );
       });
 
@@ -288,3 +323,16 @@ void main() {
     });
   });
 }
+
+PlannedBlock _baselineBlock({
+  required String id,
+  required DateTime start,
+  required PlannedBlockState state,
+}) => PlannedBlock(
+  id: id,
+  categoryId: 'cat-1',
+  startTime: start,
+  endTime: start.add(const Duration(hours: 1)),
+  title: id,
+  state: state,
+);
