@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:meta/meta.dart';
 
 /// Well-known IDs for default inference profiles (idempotent seeding).
@@ -64,9 +65,12 @@ const _mistralSkillAssignments = [
 class ProfileSeedingService {
   const ProfileSeedingService({
     required AiConfigRepository aiConfigRepository,
-  }) : _repo = aiConfigRepository;
+    required SeedTombstoneStore tombstoneStore,
+  }) : _repo = aiConfigRepository,
+       _tombstones = tombstoneStore;
 
   final AiConfigRepository _repo;
+  final SeedTombstoneStore _tombstones;
 
   /// The provider type whose setup makes each default profile functional.
   ///
@@ -105,7 +109,10 @@ class ProfileSeedingService {
   /// created, updated, or finishes FTUE setup, so completing a provider
   /// setup surfaces its profile immediately.
   Future<void> seedDefaults() async {
-    var seededCount = 0;
+    final seededIds = <String>[];
+    // Seeding is idempotent by presence, so without this the user's deletion
+    // would be undone on the next launch or provider save.
+    final deleted = await _tombstones.deletedIdentities();
     final models = await _fetchModelRows();
     final usableProviders = (await _fetchProviderRows())
         .where((provider) => provider.isUsable)
@@ -116,6 +123,9 @@ class ProfileSeedingService {
 
     for (final template in defaultProfiles) {
       if (!usableTypes.contains(providerTypeByProfileId[template.id])) {
+        continue;
+      }
+      if (deleted.contains(SeedTombstoneStore.profileKey(template.id))) {
         continue;
       }
       final existing = await _repo.getConfigById(template.id);
@@ -129,11 +139,41 @@ class ProfileSeedingService {
         ),
       );
       await _repo.saveConfig(profile);
-      seededCount++;
+      seededIds.add(template.id);
     }
 
-    if (seededCount > 0) {
-      developer.log('Profiles: seeded $seededCount', name: _logTag);
+    await _dropSeedsTombstonedDuringPass(seededIds);
+
+    if (seededIds.isNotEmpty) {
+      developer.log('Profiles: seeded ${seededIds.length}', name: _logTag);
+    }
+  }
+
+  /// Removes anything this pass created that the user deleted while it ran.
+  ///
+  /// The row and its tombstone live in different databases (`ai_config.sqlite`
+  /// and `settings.sqlite`), so no transaction can span the deletion and the
+  /// seeding check. A deletion landing after this pass read the ledger but
+  /// before it wrote the row would otherwise leave the row resurrected with a
+  /// tombstone recorded — and since seeding only ever *creates*, nothing would
+  /// clean it up. Re-reading here restores the invariant at the end of every
+  /// pass instead.
+  ///
+  /// The re-read is skipped entirely when the pass wrote nothing, which is the
+  /// overwhelmingly common case.
+  Future<void> _dropSeedsTombstonedDuringPass(List<String> seededIds) async {
+    if (seededIds.isEmpty) return;
+    final deletedNow = await _tombstones.deletedIdentities();
+    for (final id in seededIds) {
+      if (!deletedNow.contains(SeedTombstoneStore.profileKey(id))) continue;
+      // The tombstone already exists — recording it again would be a no-op,
+      // but passing false keeps the intent explicit: this is the app undoing
+      // its own write, not a new user deletion.
+      await _repo.deleteConfig(id, recordTombstone: false);
+      developer.log(
+        'Profiles: dropped $id, deleted while seeding ran',
+        name: _logTag,
+      );
     }
   }
 
@@ -194,7 +234,9 @@ class ProfileSeedingService {
       )) {
         continue;
       }
-      await _repo.deleteConfig(config.id);
+      // Not a user deletion: this pass removes seeds whose provider became
+      // unusable and deliberately re-seeds them if the provider returns.
+      await _repo.deleteConfig(config.id, recordTombstone: false);
       removedCount++;
     }
 
@@ -268,23 +310,12 @@ class ProfileSeedingService {
             : null,
       );
 
-      // Only backfill default skill assignments for default profiles with
-      // empty assignments. Non-empty assignment lists and non-default profiles
-      // are user-authored and must be preserved.
-      if (template != null &&
-          config.isDefault &&
-          config.skillAssignments.isEmpty &&
-          template.skillAssignments.isNotEmpty) {
-        final sanitized = template.skillAssignments.where((a) {
-          final skill = findBuiltInSkill(a.skillId);
-          if (skill == null) return true; // keep unknown skills as-is
-          return hasSlotForSkillType(upgraded, skill.skillType, models);
-        }).toList();
-
-        if (sanitized.isNotEmpty) {
-          upgraded = upgraded.copyWith(skillAssignments: sanitized);
-        }
-      }
+      // NOTE: default skill assignments are deliberately NOT backfilled here.
+      // The guard used to be `skillAssignments.isEmpty`, so clearing every
+      // assignment — the obvious way to say "stop doing things automatically"
+      // — was exactly what triggered restoring them with `automate: true` on
+      // the next launch. Seeding a profile at creation is the only place
+      // automation defaults are written.
 
       if (upgraded == config) continue;
       await _repo.saveConfig(upgraded);

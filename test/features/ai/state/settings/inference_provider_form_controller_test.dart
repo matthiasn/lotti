@@ -1,12 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/settings/inference_provider_form_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -215,7 +217,7 @@ void main() {
     registerFallbackValue(AiConfigType.model);
   });
 
-  setUp(() {
+  setUp(() async {
     mockRepository = MockAiConfigRepository();
     container = ProviderContainer(
       overrides: [
@@ -223,6 +225,14 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+    // Saving a provider runs seeding, which consults the tombstone ledger in
+    // the settings db.
+    await getIt.reset();
+    getIt.registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true));
+    addTearDown(() async {
+      await getIt<SettingsDb>().close();
+      await getIt.reset();
+    });
   });
 
   group('ApiKeyFormController Tests', () {

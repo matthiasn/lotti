@@ -3,9 +3,11 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/provider_type_utils.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -65,18 +67,49 @@ class AiConfigRepository {
     }
   }
 
-  /// Delete an AI configuration by its ID
+  /// Delete an AI configuration by its ID.
+  ///
+  /// A user-initiated deletion also records a seed tombstone, so the seeding
+  /// passes stop recreating the row on the next launch or provider save. Set
+  /// [recordTombstone] to false for deletions the app performs on the user's
+  /// behalf and expects to undo later — the orphaned-seed cleanup, and the
+  /// model rows removed by a provider cascade (re-adding that provider must
+  /// bring its models back).
   Future<void> deleteConfig(
     String id, {
     bool fromSync = false,
+    bool recordTombstone = true,
   }) async {
+    // Read before the delete: the identity a tombstone needs (a model's
+    // provider-native id and owning provider) only exists on the row.
+    final config = recordTombstone ? await getConfigById(id) : null;
     await _db.deleteConfig(id);
     _invalidateConfig(id);
+    if (config != null) {
+      await _rememberSeedTombstone(config);
+    }
     if (!fromSync) {
       await getIt<OutboxService>().enqueueMessage(
         SyncMessage.aiConfigDelete(id: id),
       );
     }
+  }
+
+  /// Records the deleted [config] so seeding does not bring it back.
+  ///
+  /// Only profiles and models are seeded, so nothing else needs a tombstone.
+  Future<void> _rememberSeedTombstone(AiConfig config) async {
+    final identity = config.mapOrNull(
+      inferenceProfile: (profile) => SeedTombstoneStore.profileKey(profile.id),
+      model: (model) => SeedTombstoneStore.modelKey(
+        inferenceProviderId: model.inferenceProviderId,
+        providerModelId: model.providerModelId,
+      ),
+    );
+    if (identity == null) return;
+    await SeedTombstoneStore(
+      settingsDb: getIt<SettingsDb>(),
+    ).remember(identity);
   }
 
   /// Delete an inference provider and all its associated models.
@@ -111,7 +144,11 @@ class AiConfigRepository {
         // Delete all associated models with detailed error tracking
         for (final model in associatedModels) {
           try {
-            await deleteConfig(model.id, fromSync: fromSync);
+            await deleteConfig(
+              model.id,
+              fromSync: fromSync,
+              recordTombstone: false,
+            );
           } catch (e) {
             // Re-throw to trigger transaction rollback
             rethrow;

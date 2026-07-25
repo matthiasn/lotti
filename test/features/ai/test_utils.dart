@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -426,4 +429,47 @@ class ChecklistTestDataFactory {
       ),
     );
   }
+}
+
+/// A [SeedTombstoneStore] backed by a real in-memory settings database, so
+/// reads and writes behave exactly as they do in production.
+///
+/// Pass [deleted] to start with tombstones already recorded. The database is
+/// closed automatically when the test ends.
+Future<SeedTombstoneStore> createTombstoneStore({
+  Set<String> deleted = const {},
+}) async {
+  final settingsDb = SettingsDb(inMemoryDatabase: true);
+  // Without this the executor for every setUp's database stays alive for the
+  // whole test process.
+  addTearDown(settingsDb.close);
+  final store = SeedTombstoneStore(settingsDb: settingsDb);
+  for (final identity in deleted) {
+    await store.remember(identity);
+  }
+  return store;
+}
+
+/// A store that starts reporting [appearsAfterFirstRead] from its *second*
+/// read, standing in for a user deletion that lands after a seeding pass has
+/// already checked the ledger.
+class LateTombstoneStore implements SeedTombstoneStore {
+  LateTombstoneStore(this._delegate, {required this.appearsAfterFirstRead});
+
+  final SeedTombstoneStore _delegate;
+  final String appearsAfterFirstRead;
+  var _reads = 0;
+
+  @override
+  Future<Set<String>> deletedIdentities() async {
+    final current = await _delegate.deletedIdentities();
+    if (_reads++ == 0) return current;
+    return {...current, appearsAfterFirstRead};
+  }
+
+  @override
+  Future<void> remember(String identity) => _delegate.remember(identity);
+
+  @override
+  Future<void> forget(String identity) => _delegate.forget(identity);
 }
