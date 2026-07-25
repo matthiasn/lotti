@@ -53,6 +53,8 @@ class EvalFixtureInputs {
     required this.planDate,
     this.corpus = const [],
     this.decidedTaskIds = const [],
+    this.permittedOmissions = const {},
+    this.visibleTaskIds,
     this.capacityMinutes = 480,
     this.now,
   });
@@ -64,11 +66,33 @@ class EvalFixtureInputs {
   /// Tasks the user explicitly approved for placement.
   final List<String> decidedTaskIds;
 
+  /// Decided tasks whose *omission* is the correct outcome.
+  ///
+  /// Some scenarios hand the model a decided task it should deliberately not
+  /// place — one the capture says is already done, or one that is blocked. A
+  /// scorer that required every decided task would then fail precisely when
+  /// the model behaves well, which is worse than not measuring at all.
+  final Set<String> permittedOmissions;
+
+  /// Task ids the model could actually reference.
+  ///
+  /// Not the same as [corpus]: the task corpus is rendered only inside the
+  /// capture context, so a wake without a capture sees nothing but its decided
+  /// tasks. [corpus] stays ground truth — it is what makes a scenario's
+  /// blocked work knowable to the *scorer* — while this is what the model was
+  /// shown. Null means everything in [corpus] was visible.
+  final Set<String>? visibleTaskIds;
+
   final int capacityMinutes;
 
   /// Wall instant the draft ran at, for same-day scenarios. Null for a
   /// future-day draft, where "the past" has no meaning.
   final DateTime? now;
+
+  /// Ids the model could legitimately have used.
+  Set<String> get referenceableTaskIds =>
+      visibleTaskIds ??
+      {for (final task in corpus) task.taskId, ...decidedTaskIds};
 
   EvalCorpusTask? taskById(String id) {
     for (final task in corpus) {

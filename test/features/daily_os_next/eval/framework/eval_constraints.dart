@@ -130,20 +130,28 @@ EvalConstraintResult scoreWithinCapacity(EvalRunOutcome outcome) {
 /// and still persist.
 EvalConstraintResult scoreDecidedTasksPlaced(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.decidedTasksPlaced;
-  final decided = outcome.inputs.decidedTaskIds;
-  if (decided.isEmpty) {
-    return const EvalConstraintResult.notApplicable(id, 'no decided tasks');
+  // Only the decided tasks the scenario actually requires. One it expects to
+  // be left out — already done, or blocked — must not be scored as a miss.
+  final required = [
+    for (final taskId in outcome.inputs.decidedTaskIds)
+      if (!outcome.inputs.permittedOmissions.contains(taskId)) taskId,
+  ];
+  if (required.isEmpty) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'no decided task is required to be placed',
+    );
   }
   final placed = {for (final block in outcome.blocks) ?block.taskId};
   final missing = [
-    for (final id in decided)
-      if (!placed.contains(id)) id,
+    for (final taskId in required)
+      if (!placed.contains(taskId)) taskId,
   ];
   return EvalConstraintResult(
     id: id,
     passed: missing.isEmpty,
     detail: missing.isEmpty
-        ? 'all ${decided.length} decided task(s) placed'
+        ? 'all ${required.length} required decided task(s) placed'
         : 'not placed: ${missing.join(', ')}',
   );
 }
@@ -218,10 +226,10 @@ EvalConstraintResult scoreNoFabricatedTaskIds(EvalRunOutcome outcome) {
       'no block references a task',
     );
   }
-  final known = {
-    for (final task in outcome.inputs.corpus) task.taskId,
-    ...outcome.inputs.decidedTaskIds,
-  };
+  // What the model was SHOWN, not what is true. Without a capture the corpus
+  // is never rendered, so grading against it would credit or punish the model
+  // for ids it could not have seen.
+  final known = outcome.inputs.referenceableTaskIds;
   final fabricated = {
     for (final taskId in referenced)
       if (!known.contains(taskId)) taskId,

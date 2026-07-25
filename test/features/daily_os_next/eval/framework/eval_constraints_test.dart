@@ -34,6 +34,8 @@ void main() {
     List<PlannedBlock> blocks = const [],
     List<EvalCorpusTask> corpus = const [],
     List<String> decidedTaskIds = const [],
+    Set<String> permittedOmissions = const {},
+    Set<String>? visibleTaskIds,
     List<EvalToolCall> toolCalls = const [],
     int capacityMinutes = 480,
   }) => EvalRunOutcome(
@@ -42,6 +44,8 @@ void main() {
       planDate: planDate,
       corpus: corpus,
       decidedTaskIds: decidedTaskIds,
+      permittedOmissions: permittedOmissions,
+      visibleTaskIds: visibleTaskIds,
       capacityMinutes: capacityMinutes,
     ),
     blocks: blocks,
@@ -182,6 +186,48 @@ void main() {
     test('is not applicable when nothing was decided', () {
       expect(scoreDecidedTasksPlaced(outcome()).isApplicable, isFalse);
     });
+
+    test('a permitted omission is not counted as a miss', () {
+      // The scenario handed the model a task it should deliberately leave
+      // out — already done, or blocked. Requiring it would fail the model
+      // precisely when it behaves correctly.
+      final result = scoreDecidedTasksPlaced(
+        outcome(
+          blocks: [block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-1')],
+          decidedTaskIds: const ['task-1', 'task-stale'],
+          permittedOmissions: const {'task-stale'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('is not applicable when every decided task may be omitted', () {
+      final result = scoreDecidedTasksPlaced(
+        outcome(
+          decidedTaskIds: const ['task-blocked'],
+          permittedOmissions: const {'task-blocked'},
+        ),
+      );
+
+      expect(result.isApplicable, isFalse);
+    });
+
+    test(
+      'a required decided task is still enforced alongside one that is not',
+      () {
+        final result = scoreDecidedTasksPlaced(
+          outcome(
+            decidedTaskIds: const ['task-1', 'task-stale'],
+            permittedOmissions: const {'task-stale'},
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('task-1'));
+        expect(result.detail, isNot(contains('task-stale')));
+      },
+    );
   });
 
   group('blockerBeforeBlocked', () {
@@ -340,6 +386,24 @@ void main() {
       );
 
       expect(result.passed, isTrue);
+    });
+
+    test('judges against what the model was shown, not what is true', () {
+      // Without a capture the corpus is never rendered, so a corpus id the
+      // model could not have seen must not be credited as legitimate.
+      final result = scoreNoFabricatedTaskIds(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-hidden'),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-hidden', title: 'Real')],
+          decidedTaskIds: const ['task-decided'],
+          visibleTaskIds: const {'task-decided'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-hidden'));
     });
 
     test('fails for a task id the model was never shown', () {

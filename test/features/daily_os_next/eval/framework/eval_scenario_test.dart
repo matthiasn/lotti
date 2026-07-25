@@ -95,6 +95,47 @@ void main() {
     expect(withoutCapture.startHour, withCapture.startHour);
   });
 
+  test('a scenario that wants an omission says so', () {
+    // Otherwise the decided-tasks-placed constraint fails exactly when the
+    // model does the right thing.
+    final stale = byId('staleDecidedTask');
+    expect(stale.permittedOmissions, contains('task-stale-invoice'));
+    expect(
+      stale.permittedOmissions,
+      isNot(contains('task-real-review')),
+      reason: 'the genuinely required task must still be required',
+    );
+
+    for (final id in ['blockedChain', 'blockedWithoutCorpus']) {
+      expect(
+        byId(id).permittedOmissions,
+        contains('task-c-leaf'),
+        reason: '$id asks the planner to avoid its blocked leaf',
+      );
+    }
+  });
+
+  test('a capture-less scenario hides the corpus from the scorers', () {
+    // The corpus is rendered only inside the capture context, so scoring
+    // reference legitimacy against it would grade the model on ids it never
+    // received. Ground truth stays available for the constraints that need it.
+    final inputs = byId('blockedWithoutCorpus').inputsFor(planDate);
+
+    expect(inputs.referenceableTaskIds, {'task-c-leaf'});
+    expect(
+      inputs.corpus.map((task) => task.taskId),
+      contains('task-a-root'),
+      reason: 'ground truth must survive so blocker ordering is still knowable',
+    );
+  });
+
+  test('a scenario with a capture leaves the whole corpus referenceable', () {
+    final inputs = byId('blockedChain').inputsFor(planDate);
+
+    expect(inputs.referenceableTaskIds, contains('task-a-root'));
+    expect(inputs.referenceableTaskIds, contains('task-unrelated'));
+  });
+
   test('overCommitted genuinely does not fit', () {
     final scenario = byId('overCommitted');
     final decidedMinutes = scenario.tasks

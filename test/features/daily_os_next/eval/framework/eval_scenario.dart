@@ -62,6 +62,7 @@ class EvalScenario {
     required this.intent,
     required this.tasks,
     this.decidedTaskIds = const [],
+    this.permittedOmissions = const {},
     this.capacityMinutes = 480,
     this.startHour,
     this.includeCapture = true,
@@ -76,6 +77,14 @@ class EvalScenario {
 
   final List<EvalTaskSpec> tasks;
   final List<String> decidedTaskIds;
+
+  /// Decided tasks this scenario expects the planner to leave out.
+  ///
+  /// They are still handed to the model — that is the input under test — but
+  /// omitting them is the correct answer, so they must not count against the
+  /// decided-tasks-placed constraint.
+  final Set<String> permittedOmissions;
+
   final int capacityMinutes;
 
   /// Local hour the draft runs at, for same-day scenarios. Null drafts a
@@ -128,6 +137,11 @@ class EvalScenario {
         ),
     ],
     decidedTaskIds: decidedTaskIds,
+    permittedOmissions: permittedOmissions,
+    // Without a capture the task corpus is never rendered, so the only ids
+    // the model can name are its decided ones. The corpus above stays as
+    // ground truth for constraints that need to know what is actually true.
+    visibleTaskIds: includeCapture ? null : {...decidedTaskIds},
     capacityMinutes: capacityMinutes,
     now: startHour == null
         ? null
@@ -411,6 +425,9 @@ const _blockedChain = EvalScenario(
       'by B — does the plan reach A first, and does it avoid placing C?',
   tasks: _vendorChainTasks,
   decidedTaskIds: ['task-c-leaf'],
+  // Leaving the blocked leaf out is a correct outcome, not a miss — the rule
+  // says place it only behind its blocker or with the blocker named.
+  permittedOmissions: {'task-c-leaf'},
   captureTranscript: 'I want to get the vendor integration shipped today.',
 );
 
@@ -423,6 +440,7 @@ const _blockedWithoutCorpus = EvalScenario(
       'Measures what the model does when told a rule it cannot apply.',
   tasks: _vendorChainTasks,
   decidedTaskIds: ['task-c-leaf'],
+  permittedOmissions: {'task-c-leaf'},
   includeCapture: false,
 );
 
@@ -448,6 +466,10 @@ const _staleDecidedTask = EvalScenario(
     ),
   ],
   decidedTaskIds: ['task-stale-invoice', 'task-real-review'],
+  // The transcript says the invoice is already sent, and the prompt tells the
+  // model not to force a stale placement. Requiring it would fail the model
+  // exactly when it obeys.
+  permittedOmissions: {'task-stale-invoice'},
   captureTranscript:
       'I already sent that invoice last week, it is done. Today I need to get '
       'through the security questionnaire.',
