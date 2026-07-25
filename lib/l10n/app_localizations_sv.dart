@@ -5228,6 +5228,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get doneButton => 'Klart';
 
   @override
+  String editLinkTypeCounterpart(String title) {
+    return '…$title';
+  }
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Couldn\'t update the relationship. Please try again.';
 

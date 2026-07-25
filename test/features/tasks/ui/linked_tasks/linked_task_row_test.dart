@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -91,7 +92,7 @@ void main() {
 
         // Confirmation dialog gates the callback.
         expect(unlinkCalled, isFalse);
-        await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -165,7 +166,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -189,7 +190,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.close_rounded));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

@@ -24,6 +24,7 @@ abstract final class EditLinkTypeModal {
     required String linkId,
     required EntryLinkType currentType,
     required TaskLinkDirection currentDirection,
+    required String linkedTaskTitle,
   }) async {
     final relation = ValueNotifier(
       DirectedRelation(
@@ -41,7 +42,10 @@ abstract final class EditLinkTypeModal {
           currentDirection: currentDirection,
           relation: relation,
         ),
-        builder: (_) => _EditLinkTypeBody(relation: relation),
+        builder: (_) => _EditLinkTypeBody(
+          relation: relation,
+          linkedTaskTitle: linkedTaskTitle,
+        ),
       );
     } finally {
       relation.dispose();
@@ -50,9 +54,16 @@ abstract final class EditLinkTypeModal {
 }
 
 class _EditLinkTypeBody extends StatelessWidget {
-  const _EditLinkTypeBody({required this.relation});
+  const _EditLinkTypeBody({
+    required this.relation,
+    required this.linkedTaskTitle,
+  });
 
   final ValueNotifier<DirectedRelation> relation;
+
+  /// The task on the other end. Without it the modal reads "This task… / Is
+  /// blocked by" with no object — a sentence with its subject missing.
+  final String linkedTaskTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -68,12 +79,27 @@ class _EditLinkTypeBody extends StatelessWidget {
         DesignSystemGlassActionFooter.reservedHeightFor(context) +
             tokens.spacing.step5,
       ),
-      child: ValueListenableBuilder<DirectedRelation>(
-        valueListenable: relation,
-        builder: (context, value, _) => RelationshipTypeSelector(
-          selected: value,
-          onChanged: (next) => relation.value = next,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ValueListenableBuilder<DirectedRelation>(
+            valueListenable: relation,
+            builder: (context, value, _) => RelationshipTypeSelector(
+              selected: value,
+              onChanged: (next) => relation.value = next,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            context.messages.editLinkTypeCounterpart(linkedTaskTitle),
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

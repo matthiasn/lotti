@@ -2326,6 +2326,14 @@
     }
   },
   "doneButton": "Listo",
+  "editLinkTypeCounterpart": "…{title}",
+  "@editLinkTypeCounterpart": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "editLinkTypeFailedMessage": "No se pudo actualizar la relación. Inténtalo de nuevo.",
   "editLinkTypeTitle": "Editar relación",
   "editLinkTypeTooltip": "Editar relación",

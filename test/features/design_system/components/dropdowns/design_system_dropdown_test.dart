@@ -41,7 +41,9 @@ void main() {
       );
       expectTextStyle(
         inputText.text.style!,
-        dsTokensLight.typography.styles.body.bodyLarge,
+        // bodyMedium: the field's value must not outrank the content it
+        // describes on hosting surfaces.
+        dsTokensLight.typography.styles.body.bodyMedium,
         dsTokensLight.colors.text.highEmphasis,
       );
       expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);

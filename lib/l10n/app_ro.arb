@@ -2326,6 +2326,14 @@
     }
   },
   "doneButton": "Gata",
+  "editLinkTypeCounterpart": "…{title}",
+  "@editLinkTypeCounterpart": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "editLinkTypeFailedMessage": "Relația nu a putut fi actualizată. Vă rugăm să încercați din nou.",
   "editLinkTypeTitle": "Editați relația",
   "editLinkTypeTooltip": "Editați relația",

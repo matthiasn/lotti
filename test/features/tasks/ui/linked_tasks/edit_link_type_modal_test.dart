@@ -70,6 +70,7 @@ void main() {
                   linkId: 'link-1',
                   currentType: currentType,
                   currentDirection: currentDirection,
+                  linkedTaskTitle: 'Calibrate the feeder',
                 );
               },
               child: const Text('Open Modal'),

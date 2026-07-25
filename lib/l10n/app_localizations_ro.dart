@@ -5311,6 +5311,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get doneButton => 'Gata';
 
   @override
+  String editLinkTypeCounterpart(String title) {
+    return '…$title';
+  }
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Relația nu a putut fi actualizată. Vă rugăm să încercați din nou.';
 

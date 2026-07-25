@@ -146,6 +146,7 @@ class TaskRelationshipSections extends ConsumerWidget {
               linkId: entry.linkId,
               currentType: entryLinkTypeForTaskLinkKind(entry.kind),
               currentDirection: entry.direction,
+              linkedTaskTitle: entry.task.data.title,
             ),
             onUnlink: () {
               final fromId = entry.direction == TaskLinkDirection.outgoing
@@ -223,9 +224,12 @@ class LinkedTaskSectionHeader extends StatelessWidget {
       // insets are taken off a phone-width card.
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: accent ?? tokens.colors.text.mediumEmphasis,
-        fontWeight: FontWeight.w600,
+      // Overline, not caption+w600: its tracking is what distinguishes a
+      // section eyebrow from row metadata at the same size, and it removes an
+      // off-ramp weight override. High-emphasis so the relationship outranks
+      // the "Open"/"In Progress" text on the rows beneath it.
+      style: tokens.typography.styles.others.overline.copyWith(
+        color: accent ?? tokens.colors.text.highEmphasis,
       ),
     );
     return Padding(

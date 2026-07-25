@@ -5227,6 +5227,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get doneButton => 'Færdig';
 
   @override
+  String editLinkTypeCounterpart(String title) {
+    return '…$title';
+  }
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Couldn\'t update the relationship. Please try again.';
 

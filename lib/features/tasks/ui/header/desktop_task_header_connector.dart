@@ -11,6 +11,7 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
@@ -469,14 +470,20 @@ class _TaskBlockedByChip extends ConsumerWidget {
       // entity (conservative default, ADR 0042 §4) — nothing to name or
       // navigate to, so render a bare label with no tap affordance.
       return DsPill(
-        variant: DsPillVariant.tinted,
+        variant: DsPillVariant.outline,
         color: accent,
-        leading: Icon(Icons.block, size: 12, color: accent),
+        labelColor: context.designTokens.colors.text.highEmphasis,
+        leading: Icon(
+          Icons.block,
+          size: context.designTokens.spacing.step4,
+          color: accent,
+        ),
         label: context.messages.taskBlockedByUnresolvedLabel,
       );
     }
 
     final single = blockers.length == 1;
+    final tokens = context.designTokens;
 
     return Tooltip(
       message: context.messages.taskBlockedByChipTooltip(
@@ -489,7 +496,15 @@ class _TaskBlockedByChip extends ConsumerWidget {
         // stated one fact at two severities and competed for the same glance.
         variant: DsPillVariant.outline,
         color: accent,
-        leading: Icon(Icons.block, size: 12, color: accent),
+        // Amber marks the border and the glyph; the label itself reads as
+        // ordinary text. An explanatory chip should not out-shout the status
+        // pill it explains.
+        labelColor: tokens.colors.text.highEmphasis,
+        leading: Icon(
+          Icons.block,
+          size: tokens.spacing.step4,
+          color: accent,
+        ),
         // Count only, no blocker title. Embedding the title made the chip
         // grow with it — on a long title it spanned the header and out-shouted
         // the status pill beside it. That the task is waiting is the header's
@@ -500,9 +515,7 @@ class _TaskBlockedByChip extends ConsumerWidget {
         // navigates reads as tappable, not just as a status readout.
         trailing: Icon(
           Icons.arrow_forward_ios,
-          size: linkedRowChevronSize,
-          // Same accent as the chip's label and glyph: a chip that is one
-          // colour reads as one control.
+          size: tokens.spacing.step4,
           color: accent,
         ),
         onTap: () => single

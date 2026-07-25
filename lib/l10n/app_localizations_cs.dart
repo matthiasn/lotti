@@ -5285,6 +5285,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get doneButton => 'Hotovo';
 
   @override
+  String editLinkTypeCounterpart(String title) {
+    return '…$title';
+  }
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Vztah se nepodařilo upravit. Zkuste to prosím znovu.';
 

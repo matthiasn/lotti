@@ -2333,6 +2333,14 @@
     }
   },
   "doneButton": "Hotovo",
+  "editLinkTypeCounterpart": "…{title}",
+  "@editLinkTypeCounterpart": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "editLinkTypeFailedMessage": "Vztah se nepodařilo upravit. Zkuste to prosím znovu.",
   "editLinkTypeTitle": "Upravit vztah",
   "editLinkTypeTooltip": "Upravit vztah",

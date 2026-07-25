@@ -132,6 +132,7 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                       linkId: linkGroups.flat[i].linkId,
                       currentType: EntryLinkType.basic,
                       currentDirection: linkGroups.flat[i].direction,
+                      linkedTaskTitle: linkGroups.flat[i].task.data.title,
                     ),
                     onUnlink: () {
                       final entry = linkGroups.flat[i];
@@ -177,6 +178,11 @@ class _LinkedTasksEmptyAction extends StatelessWidget {
         Icons.add_link,
         size: tokens.spacing.step5,
         color: tokens.colors.interactive.enabled,
+      ),
+      trailing: Icon(
+        Icons.arrow_forward_ios,
+        size: linkedRowChevronSize,
+        color: tokens.colors.text.lowEmphasis,
       ),
     );
   }
@@ -280,8 +286,10 @@ class _LinkedTasksHeader extends ConsumerWidget {
                 tooltip: context.messages.linkedTasksMenuTooltip,
                 icon: Icon(
                   Icons.more_vert,
-                  color: tokens.colors.text.highEmphasis,
-                  size: 20,
+                  // The overflow is the least important control in the header;
+                  // it was also the heaviest mark in it.
+                  color: tokens.colors.text.mediumEmphasis,
+                  size: tokens.spacing.step5,
                 ),
                 position: PopupMenuPosition.under,
                 onSelected: (value) async {
@@ -297,8 +305,8 @@ class _LinkedTasksHeader extends ConsumerWidget {
                     value: 'create_new',
                     child: Row(
                       children: [
-                        const Icon(Icons.add, size: 18),
-                        const SizedBox(width: 8),
+                        Icon(Icons.add, size: tokens.spacing.step5),
+                        SizedBox(width: tokens.spacing.step3),
                         Flexible(
                           child: Text(context.messages.createNewLinkedTask),
                         ),

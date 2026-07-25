@@ -2326,6 +2326,14 @@
     }
   },
   "doneButton": "Fertig",
+  "editLinkTypeCounterpart": "…{title}",
+  "@editLinkTypeCounterpart": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "editLinkTypeFailedMessage": "Die Beziehung konnte nicht aktualisiert werden. Bitte versuch es erneut.",
   "editLinkTypeTitle": "Beziehung bearbeiten",
   "editLinkTypeTooltip": "Beziehung bearbeiten",

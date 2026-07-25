@@ -782,9 +782,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Confirmation dialog.
-      expect(find.text('Unlink'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+      // Shared confirmation modal (it uppercases its confirm label).
+      expect(find.text('UNLINK'), findsOneWidget);
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -810,7 +810,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -856,7 +856,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

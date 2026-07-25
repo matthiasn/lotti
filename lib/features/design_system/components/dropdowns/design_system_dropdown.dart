@@ -312,9 +312,12 @@ class _DropdownSizeSpec {
   factory _DropdownSizeSpec.fromTokens(DsTokens tokens) {
     final fieldHeight =
         tokens.typography.lineHeight.bodyLarge + tokens.spacing.step5 * 2;
-    final panelMaxHeight = tokens.spacing.step13 * 2;
+    // A one-word option was costing more height than a two-line task row, and
+    // the panel ended mid-row so the last visible option looked sliced. Tie the
+    // ceiling to a whole number of rows instead.
     final menuItemMinHeight =
-        tokens.typography.lineHeight.bodyLarge + tokens.spacing.step5 * 2;
+        tokens.typography.lineHeight.bodySmall + tokens.spacing.step4 * 2;
+    final panelMaxHeight = menuItemMinHeight * 7;
     final checkboxSize =
         tokens.typography.lineHeight.bodySmall + tokens.spacing.step2;
 
@@ -346,8 +349,11 @@ class _DropdownSizeSpec {
       checkboxBorderWidth: tokens.spacing.step1 / 2,
       checkboxGlyphSize: checkboxSize - tokens.spacing.step3,
       labelStyle: tokens.typography.styles.others.caption,
-      inputStyle: tokens.typography.styles.body.bodyLarge,
-      menuItemStyle: tokens.typography.styles.body.bodyLarge,
+      // bodyMedium, not bodyLarge: as a relation phrase this sat a rung above
+      // the task titles it describes and above the card header, inverting the
+      // ramp on every surface that hosts the control.
+      inputStyle: tokens.typography.styles.body.bodyMedium,
+      menuItemStyle: tokens.typography.styles.body.bodyMedium,
     );
   }
 

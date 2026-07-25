@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 /// Size of the "this navigates somewhere" chevron, shared by [LinkedTaskRow]
 /// and the header's blocked-by chip so the same affordance is the same glyph
@@ -116,8 +117,6 @@ class LinkedTaskRow extends StatelessWidget {
                         // different meanings right next to each other.
                         icon: Icons.swap_horiz_rounded,
                       ),
-                    if (onEdit != null && onUnlink != null)
-                      SizedBox(width: tokens.spacing.step2),
                     if (onUnlink != null)
                       _RowAction(
                         tooltip: context.messages.unlinkButton,
@@ -129,10 +128,16 @@ class LinkedTaskRow extends StatelessWidget {
                       ),
                   ],
                 )
-              : Icon(
-                  Icons.arrow_forward_ios,
-                  size: linkedRowChevronSize,
-                  color: tokens.colors.text.lowEmphasis,
+              : SizedBox(
+                  // Same box the manage-mode actions occupy, so the trailing
+                  // rail is a fixed width and toggling the mode never reflows
+                  // the titles beside it.
+                  width: tokens.spacing.step8,
+                  child: Icon(
+                    Icons.arrow_forward_ios,
+                    size: linkedRowChevronSize,
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
                 ),
         );
       },
@@ -140,24 +145,17 @@ class LinkedTaskRow extends StatelessWidget {
   }
 
   Future<void> _confirmUnlink(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+    // The shared confirmation modal, not a raw AlertDialog: this was the last
+    // place in the feature that dropped out of the design system and rendered
+    // Material defaults inside an otherwise tokenised surface.
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(ctx.messages.unlinkTaskTitle),
-        content: Text(ctx.messages.unlinkTaskConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(ctx.messages.cancelButton),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(ctx.messages.unlinkButton),
-          ),
-        ],
-      ),
+      title: context.messages.unlinkTaskTitle,
+      message: context.messages.unlinkTaskConfirm,
+      confirmLabel: context.messages.unlinkButton,
+      cancelLabel: context.messages.cancelButton,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       await onUnlink?.call();
@@ -171,9 +169,9 @@ class LinkedTaskRow extends StatelessWidget {
   }
 }
 
-/// One manage-mode action on a [LinkedTaskRow]. Sized from the design
-/// system's own minimum interactive target rather than a 32px literal, so the
-/// edit and unlink glyphs are comfortably hittable.
+/// One manage-mode action on a [LinkedTaskRow]. A fixed `step8` box so the
+/// trailing rail keeps one width whether the row shows actions or a chevron,
+/// with the design system's minimum interactive target as its hit area.
 class _RowAction extends StatelessWidget {
   const _RowAction({
     required this.tooltip,
@@ -190,13 +188,15 @@ class _RowAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final target = tokens.spacing.step9;
     return IconButton(
       tooltip: tooltip,
       onPressed: onPressed,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: BoxConstraints(minWidth: target, minHeight: target),
+      constraints: BoxConstraints(
+        minWidth: tokens.spacing.step8,
+        minHeight: tokens.spacing.step9,
+      ),
       icon: Icon(
         icon,
         size: tokens.spacing.step5,

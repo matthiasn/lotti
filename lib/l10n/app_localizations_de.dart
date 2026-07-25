@@ -5261,6 +5261,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get doneButton => 'Fertig';
 
   @override
+  String editLinkTypeCounterpart(String title) {
+    return '…$title';
+  }
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Die Beziehung konnte nicht aktualisiert werden. Bitte versuch es erneut.';
 

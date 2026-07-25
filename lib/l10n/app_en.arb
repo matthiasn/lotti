@@ -2722,6 +2722,14 @@
     }
   },
   "doneButton": "Done",
+  "editLinkTypeCounterpart": "…{title}",
+  "@editLinkTypeCounterpart": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "editLinkTypeFailedMessage": "Couldn't update the relationship. Please try again.",
   "editLinkTypeTitle": "Edit relationship",
   "editLinkTypeTooltip": "Edit relationship",

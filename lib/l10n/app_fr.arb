@@ -2326,6 +2326,14 @@
     }
   },
   "doneButton": "Terminé",
+  "editLinkTypeCounterpart": "…{title}",
+  "@editLinkTypeCounterpart": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "editLinkTypeFailedMessage": "Impossible de mettre à jour la relation. Réessaie.",
   "editLinkTypeTitle": "Modifier la relation",
   "editLinkTypeTooltip": "Modifier la relation",

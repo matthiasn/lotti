@@ -9077,6 +9077,12 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get doneButton;
 
+  /// No description provided for @editLinkTypeCounterpart.
+  ///
+  /// In en, this message translates to:
+  /// **'…{title}'**
+  String editLinkTypeCounterpart(String title);
+
   /// No description provided for @editLinkTypeFailedMessage.
   ///
   /// In en, this message translates to:
