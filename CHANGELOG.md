@@ -58,6 +58,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through Manage links.
 
 ### Fixed
+- **The Linked Tasks header broke at larger text sizes.** At accessibility text
+  scales the Link button was cut off and the ⋯ menu vanished entirely — which,
+  while editing links, was one of only two ways out.
+- **Undo after linking left the message on screen.** It removed the link but
+  kept showing the confirmation and a live Undo button for another ten
+  seconds, offering to undo something already undone.
+- The confirmation now shows the linked task's full name instead of cutting it
+  off, and modal titles shorten with an ellipsis rather than reflowing their
+  bar in longer languages.
 - **A task you had already linked could be linked again.** A plain link reads
   the same from either end, but the picker only recognised it from the side it
   was created on — so a task already listed on the card was offered again, and
