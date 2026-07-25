@@ -9,6 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
@@ -679,6 +680,28 @@ void main() {
                 'the card truncates its own name in "$locale" at default text '
                 'size: ${title.size.width}pt granted against '
                 '${title.getMaxIntrinsicWidth(double.infinity)}pt needed',
+          );
+
+          // The other direction, which is what an allowance being too large
+          // hides: only the two locales whose title and label genuinely
+          // collide should lose the word. Asserting the title survives says
+          // nothing about labels dropped that had room.
+          // Both branches render a DesignSystemButton — the fallback is
+          // icon-only, not a different component — so the label is what
+          // distinguishes them.
+          final worded = tester
+              .widgetList<DesignSystemButton>(find.byType(DesignSystemButton))
+              .any((button) => button.label.isNotEmpty);
+          final expectsWordedAction = !const {'de', 'es'}.contains(locale);
+          expect(
+            worded,
+            expectsWordedAction,
+            reason: expectsWordedAction
+                ? 'the link action should keep its word in "$locale" — an '
+                      "allowance larger than the button's real chrome takes "
+                      'the label from locales that had room for it'
+                : 'the link action cannot keep its word in "$locale" without '
+                      "truncating the card's own name",
           );
         },
       );

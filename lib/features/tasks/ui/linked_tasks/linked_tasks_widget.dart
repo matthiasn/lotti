@@ -296,9 +296,17 @@ class _LinkedTasksHeader extends ConsumerWidget {
               context.messages.linkTaskButton,
               titleStyle,
             );
-            // The worded button costs its label plus its own icon and padding.
+            // The worded button costs its label plus the button's own chrome:
+            // horizontal padding either side, its leading icon, and the gap
+            // between. Derived from DesignSystemButtonSize.small's spec, not
+            // guessed — a stand-in 2.4x too large silently took the label away
+            // from locales that had room for it.
+            final buttonChrome =
+                tokens.spacing.step3 * 2 +
+                tokens.typography.lineHeight.subtitle2 +
+                tokens.spacing.step2;
             final wordedFits =
-                titleWidth + actionWidth + tokens.spacing.step12 <= available;
+                titleWidth + actionWidth + buttonChrome <= available;
 
             return Row(
               children: [
