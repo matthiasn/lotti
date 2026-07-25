@@ -53,7 +53,16 @@ class EvalFixtureInputs {
     required this.planDate,
     this.corpus = const [],
     this.decidedTaskIds = const [],
+    this.permittedOmissions = const {},
+    this.expectedOmissions = const {},
+    this.visibleTaskIds,
+    this.requiredTaskIds = const {},
+    this.requiresConflictSurfaced = false,
+    this.forbidsInventedWork = false,
+    this.conflictEscalationReasons = const {},
     this.capacityMinutes = 480,
+    this.workingHoursStartHour = 9,
+    this.workingHoursEndHour = 17,
     this.now,
   });
 
@@ -64,11 +73,86 @@ class EvalFixtureInputs {
   /// Tasks the user explicitly approved for placement.
   final List<String> decidedTaskIds;
 
+  /// Decided tasks the model *may* leave out without it counting against it.
+  ///
+  /// Distinct from [expectedOmissions]: a blocked task may legitimately be
+  /// placed behind its blocker, so omitting it is acceptable but not required.
+  /// Requiring it would fail a model that correctly declined; forbidding it
+  /// would fail a model that correctly sequenced.
+  final Set<String> permittedOmissions;
+
+  /// Decided tasks the model is expected to leave out, where placing them is
+  /// itself the failure.
+  ///
+  /// The stale-task case: the capture says the work is already done, and the
+  /// prompt tells the model not to force the placement. Merely dropping these
+  /// from the positive requirement would let a model place them and still
+  /// score clean, so the scenario could not measure the behaviour it exists
+  /// for.
+  final Set<String> expectedOmissions;
+
+  /// Task ids the model could actually reference.
+  ///
+  /// Not the same as [corpus]: the task corpus is rendered only inside the
+  /// capture context, so a wake without a capture sees nothing but its decided
+  /// tasks. [corpus] stays ground truth — it is what makes a scenario's
+  /// blocked work knowable to the *scorer* — while this is what the model was
+  /// shown. Null means everything in [corpus] was visible.
+  final Set<String>? visibleTaskIds;
+
+  /// Tasks the scenario expects to appear in any competent plan.
+  ///
+  /// Distinct from [decidedTaskIds], which is an *input* the user approved.
+  /// These are the scenario's own expectations — the overdue invoice a
+  /// crowded day must not ignore — and without them a scenario about
+  /// prioritisation cannot tell a good plan from one that scheduled the least
+  /// urgent thing on the list.
+  final Set<String> requiredTaskIds;
+
+  /// Whether the scenario is impossible as stated, so a competent plan has to
+  /// say so rather than quietly absorb it.
+  final bool requiresConflictSurfaced;
+
+  /// Whether the scenario has no real work, so any substantive block the
+  /// planner adds is invented rather than scheduled.
+  final bool forbidsInventedWork;
+
+  /// `raise_day_status` reasons that count as escalating *this* conflict.
+  ///
+  /// Scenario-specific on purpose. A shared default accepting both
+  /// `overCommitted` and `directiveUnsatisfiable` would let a model escalate
+  /// an over-committed day — which seeds no directive — by claiming its
+  /// directive was unsatisfiable, and be credited for a reason that cannot be
+  /// true. The tool's `userDivergence` and `processingBlocked` describe
+  /// different problems again.
+  final Set<String> conflictEscalationReasons;
+
   final int capacityMinutes;
+
+  /// Local hour the working day starts, mirroring `DayAgentConfig`'s 09:00.
+  ///
+  /// Enforced as well as the end: on a future-day draft the same-day guard is
+  /// deliberately inert, so without a lower bound a plan could run overnight
+  /// and still score clean.
+  final int workingHoursStartHour;
+
+  /// Local hour the working day ends, mirroring the planner's own default
+  /// (`DayAgentConfig.workingHoursEnd`, 17:00).
+  ///
+  /// Carried here because capacity alone cannot catch a model that pushes work
+  /// past the end of the day: a 180-minute block from 15:00 consumes only 180
+  /// of 480 minutes and stays inside the calendar day, so every other
+  /// constraint is satisfied while the plan is unusable.
+  final int workingHoursEndHour;
 
   /// Wall instant the draft ran at, for same-day scenarios. Null for a
   /// future-day draft, where "the past" has no meaning.
   final DateTime? now;
+
+  /// Ids the model could legitimately have used.
+  Set<String> get referenceableTaskIds =>
+      visibleTaskIds ??
+      {for (final task in corpus) task.taskId, ...decidedTaskIds};
 
   EvalCorpusTask? taskById(String id) {
     for (final task in corpus) {

@@ -30,6 +30,14 @@ abstract final class EvalConstraintIds {
   static const noFabricatedTaskIds = 'noFabricatedTaskIds';
   static const noHistoryFabrication = 'noHistoryFabrication';
   static const uniqueBlockIds = 'uniqueBlockIds';
+  static const expectedOmissionsHonoured = 'expectedOmissionsHonoured';
+  static const withinWorkingHours = 'withinWorkingHours';
+  static const respectsEstimates = 'respectsEstimates';
+  static const withinCapacityByEstimate = 'withinCapacityByEstimate';
+  static const requiredWorkPlaced = 'requiredWorkPlaced';
+  static const surfacedConflict = 'surfacedConflict';
+  static const noInventedWork = 'noInventedWork';
+  static const taskWorkIsTyped = 'taskWorkIsTyped';
 
   /// Guarded — scored on rejections rather than on the plan.
   static const compliedWithoutRejection = 'compliedWithoutRejection';
@@ -42,6 +50,14 @@ abstract final class EvalConstraintIds {
     noFabricatedTaskIds,
     noHistoryFabrication,
     uniqueBlockIds,
+    expectedOmissionsHonoured,
+    withinWorkingHours,
+    respectsEstimates,
+    withinCapacityByEstimate,
+    requiredWorkPlaced,
+    surfacedConflict,
+    noInventedWork,
+    taskWorkIsTyped,
     compliedWithoutRejection,
   ];
 }
@@ -55,6 +71,14 @@ List<EvalConstraintResult> scoreAll(EvalRunOutcome outcome) => [
   scoreNoFabricatedTaskIds(outcome),
   scoreNoHistoryFabrication(outcome),
   scoreUniqueBlockIds(outcome),
+  scoreExpectedOmissionsHonoured(outcome),
+  scoreWithinWorkingHours(outcome),
+  scoreRespectsEstimates(outcome),
+  scoreWithinCapacityByEstimate(outcome),
+  scoreRequiredWorkPlaced(outcome),
+  scoreSurfacedConflict(outcome),
+  scoreNoInventedWork(outcome),
+  scoreTaskWorkIsTyped(outcome),
   scoreCompliedWithoutRejection(outcome),
 ];
 
@@ -65,6 +89,8 @@ List<EvalConstraintResult> scoreAll(EvalRunOutcome outcome) => [
 /// durations.
 EvalConstraintResult scoreNoOverlappingBlocks(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.noOverlappingBlocks;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
   final blocks = _scheduled(outcome);
   if (blocks.length < 2) {
     return const EvalConstraintResult.notApplicable(
@@ -105,6 +131,8 @@ EvalConstraintResult scoreNoOverlappingBlocks(EvalRunOutcome outcome) {
 /// argument.
 EvalConstraintResult scoreWithinCapacity(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.withinCapacity;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
   final blocks = _scheduled(outcome);
   if (blocks.isEmpty) {
     return const EvalConstraintResult.notApplicable(id, 'no scheduled blocks');
@@ -130,20 +158,30 @@ EvalConstraintResult scoreWithinCapacity(EvalRunOutcome outcome) {
 /// and still persist.
 EvalConstraintResult scoreDecidedTasksPlaced(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.decidedTasksPlaced;
-  final decided = outcome.inputs.decidedTaskIds;
-  if (decided.isEmpty) {
-    return const EvalConstraintResult.notApplicable(id, 'no decided tasks');
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  // Only the decided tasks the scenario actually requires. One it expects to
+  // be left out — already done, or blocked — must not be scored as a miss.
+  final required = [
+    for (final taskId in outcome.inputs.decidedTaskIds)
+      if (!outcome.inputs.permittedOmissions.contains(taskId)) taskId,
+  ];
+  if (required.isEmpty) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'no decided task is required to be placed',
+    );
   }
-  final placed = {for (final block in outcome.blocks) ?block.taskId};
+  final placed = _placedTaskIds(outcome);
   final missing = [
-    for (final id in decided)
-      if (!placed.contains(id)) id,
+    for (final taskId in required)
+      if (!placed.contains(taskId)) taskId,
   ];
   return EvalConstraintResult(
     id: id,
     passed: missing.isEmpty,
     detail: missing.isEmpty
-        ? 'all ${decided.length} decided task(s) placed'
+        ? 'all ${required.length} required decided task(s) placed'
         : 'not placed: ${missing.join(', ')}',
   );
 }
@@ -155,8 +193,10 @@ EvalConstraintResult scoreDecidedTasksPlaced(EvalRunOutcome outcome) {
 /// dependency resolver, by explicit ADR decision.
 EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.blockerBeforeBlocked;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
   final blocked = <PlannedBlock, EvalCorpusTask>{};
-  for (final block in outcome.blocks) {
+  for (final block in _scheduled(outcome)) {
     final taskId = block.taskId;
     if (taskId == null) continue;
     final task = outcome.inputs.taskById(taskId);
@@ -172,7 +212,7 @@ EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
   for (final entry in blocked.entries) {
     final block = entry.key;
     final task = entry.value;
-    final blockerScheduledEarlier = outcome.blocks.any(
+    final blockerScheduledEarlier = _scheduled(outcome).any(
       (other) =>
           other.taskId != null &&
           task.blockedBy.contains(other.taskId) &&
@@ -211,6 +251,8 @@ EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
 /// the wake context or the database.
 EvalConstraintResult scoreNoFabricatedTaskIds(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.noFabricatedTaskIds;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
   final referenced = [for (final block in outcome.blocks) ?block.taskId];
   if (referenced.isEmpty) {
     return const EvalConstraintResult.notApplicable(
@@ -218,10 +260,10 @@ EvalConstraintResult scoreNoFabricatedTaskIds(EvalRunOutcome outcome) {
       'no block references a task',
     );
   }
-  final known = {
-    for (final task in outcome.inputs.corpus) task.taskId,
-    ...outcome.inputs.decidedTaskIds,
-  };
+  // What the model was SHOWN, not what is true. Without a capture the corpus
+  // is never rendered, so grading against it would credit or punish the model
+  // for ids it could not have seen.
+  final known = outcome.inputs.referenceableTaskIds;
   final fabricated = {
     for (final taskId in referenced)
       if (!known.contains(taskId)) taskId,
@@ -238,18 +280,22 @@ EvalConstraintResult scoreNoFabricatedTaskIds(EvalRunOutcome outcome) {
 /// A freshly drafted plan must not claim work already happened.
 ///
 /// `state` is a model-writable enum that nothing validates, so a model can
-/// assert `completed`/`inProgress` on a brand-new draft — which both fabricates
-/// history and slips the same-day past-start guard, since that guard only
-/// fires for `drafted`.
+/// assert `completed`, `inProgress` or `committed` on a brand-new draft. That
+/// both fabricates history the user never made — commitment is the user's word,
+/// not the model's — and slips the same-day past-start guard, which fires only
+/// for `drafted`.
 EvalConstraintResult scoreNoHistoryFabrication(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.noHistoryFabrication;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
   if (outcome.blocks.isEmpty) {
     return const EvalConstraintResult.notApplicable(id, 'no blocks');
   }
   final fabricated = [
     for (final block in outcome.blocks)
       if (block.state == PlannedBlockState.completed ||
-          block.state == PlannedBlockState.inProgress)
+          block.state == PlannedBlockState.inProgress ||
+          block.state == PlannedBlockState.committed)
         '"${block.title ?? block.id}" as ${block.state.name}',
   ];
   return EvalConstraintResult(
@@ -267,6 +313,8 @@ EvalConstraintResult scoreNoHistoryFabrication(EvalRunOutcome outcome) {
 /// make later `move_block` / `drop_block` targeting ambiguous.
 EvalConstraintResult scoreUniqueBlockIds(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.uniqueBlockIds;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
   if (outcome.blocks.length < 2) {
     return const EvalConstraintResult.notApplicable(
       id,
@@ -287,6 +335,360 @@ EvalConstraintResult scoreUniqueBlockIds(EvalRunOutcome outcome) {
   );
 }
 
+/// Work the scenario expects to be left out must actually be left out.
+///
+/// The complement to [EvalFixtureInputs.permittedOmissions]: dropping a task
+/// from the positive requirement stops a correct omission failing, but on its
+/// own it also lets a model place the task and still score clean — so the
+/// scenario could not distinguish the behaviour it was built to measure.
+EvalConstraintResult scoreExpectedOmissionsHonoured(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.expectedOmissionsHonoured;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  final expected = outcome.inputs.expectedOmissions;
+  if (expected.isEmpty) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'no omission is expected',
+    );
+  }
+  final placed = _placedTaskIds(outcome);
+  final wronglyPlaced = [
+    for (final taskId in expected)
+      if (placed.contains(taskId)) taskId,
+  ];
+  return EvalConstraintResult(
+    id: id,
+    passed: wronglyPlaced.isEmpty,
+    detail: wronglyPlaced.isEmpty
+        ? 'left out ${expected.length} task(s) it was meant to'
+        : 'placed work it should have left out: ${wronglyPlaced.join(', ')}',
+  );
+}
+
+/// Blocks must not run past the end of the working day.
+///
+/// Capacity cannot catch this on its own: a 180-minute block starting at 15:00
+/// consumes 180 of 480 minutes and stays inside the calendar day, so every
+/// other constraint passes while the plan runs to 18:00.
+EvalConstraintResult scoreWithinWorkingHours(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.withinWorkingHours;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  final blocks = _scheduled(outcome);
+  if (blocks.isEmpty) {
+    return const EvalConstraintResult.notApplicable(id, 'no scheduled blocks');
+  }
+  final planDate = outcome.inputs.planDate;
+  final workingStart = DateTime(
+    planDate.year,
+    planDate.month,
+    planDate.day,
+    outcome.inputs.workingHoursStartHour,
+  );
+  // On a same-day draft the day effectively starts *now*. Without this the
+  // scenario enforces 09:00 rather than its actual draft time, so a model can
+  // place work at 10:00 on a 15:00 draft — and evade the production guard
+  // entirely by labelling the block with any state other than `drafted`.
+  final now = outcome.inputs.now;
+  final startOfDay = now != null && now.isAfter(workingStart)
+      ? now
+      : workingStart;
+  final endOfDay = DateTime(
+    planDate.year,
+    planDate.month,
+    planDate.day,
+    outcome.inputs.workingHoursEndHour,
+  );
+  final outside = [
+    for (final block in blocks)
+      if (block.endTime.isAfter(endOfDay))
+        '"${block.title ?? block.id}" ends ${_hhmm(block.endTime)}'
+      else if (block.startTime.isBefore(startOfDay))
+        '"${block.title ?? block.id}" starts ${_hhmm(block.startTime)}',
+  ];
+  return EvalConstraintResult(
+    id: id,
+    passed: outside.isEmpty,
+    detail: outside.isEmpty
+        ? 'all blocks inside ${_hhmm(startOfDay)}-${_hhmm(endOfDay)}'
+        : 'outside ${_hhmm(startOfDay)}-${_hhmm(endOfDay)}: '
+              '${outside.join(', ')}',
+  );
+}
+
+/// A block for an estimated task must reflect that estimate.
+///
+/// The cheapest way to make an impossible day look feasible is to shrink the
+/// work: four multi-hour tasks become four short blocks, capacity is
+/// satisfied, and nothing surfaces the conflict the scenario was built to
+/// provoke. Allows generous slack — the point is catching compression, not
+/// policing estimation.
+EvalConstraintResult scoreRespectsEstimates(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.respectsEstimates;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  // Summed per task, not per block: splitting a 180-minute task into 60 + 120
+  // is a legitimate shape, and comparing each block against the whole estimate
+  // would fail the first half of a correctly scheduled task.
+  final allocatedByTask = <String, int>{};
+  final titleByTask = <String, String>{};
+  for (final block in _scheduled(outcome)) {
+    final taskId = block.taskId;
+    if (taskId == null) continue;
+    allocatedByTask.update(
+      taskId,
+      (minutes) =>
+          minutes + block.endTime.difference(block.startTime).inMinutes,
+      ifAbsent: () => block.endTime.difference(block.startTime).inMinutes,
+    );
+    titleByTask.putIfAbsent(taskId, () => block.title ?? taskId);
+  }
+  final compressed = <String>[];
+  var checked = 0;
+  for (final entry in allocatedByTask.entries) {
+    final estimate = outcome.inputs.taskById(entry.key)?.estimateMinutes;
+    if (estimate == null || estimate <= 0) continue;
+    checked++;
+    if (entry.value * 2 < estimate) {
+      compressed.add(
+        '"${titleByTask[entry.key]}" allocated ${entry.value}min '
+        'across its blocks against a ${estimate}min estimate',
+      );
+    }
+  }
+  if (checked == 0) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'no placed task carries an estimate',
+    );
+  }
+  return EvalConstraintResult(
+    id: id,
+    passed: compressed.isEmpty,
+    detail: compressed.isEmpty
+        ? '$checked estimated task(s) placed at a plausible length'
+        : compressed.join('; '),
+  );
+}
+
+/// Placed work must fit the day at its *estimated* length, not its written
+/// one.
+///
+/// The per-task [scoreRespectsEstimates] check cannot catch a coordinated
+/// shrink: 240/180/120/180-minute tasks written as 160/120/80/120 all clear a
+/// per-task ratio while summing to exactly the 480-minute capacity. Summing
+/// estimates instead makes the arithmetic honest — 720 minutes of work does
+/// not fit in 480 however the blocks are labelled.
+EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.withinCapacityByEstimate;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  var estimated = 0;
+  var counted = 0;
+  final seen = <String>{};
+  for (final block in _scheduled(outcome)) {
+    final taskId = block.taskId;
+    if (taskId == null || !seen.add(taskId)) continue;
+    final estimate = outcome.inputs.taskById(taskId)?.estimateMinutes;
+    if (estimate == null || estimate <= 0) continue;
+    estimated += estimate;
+    counted++;
+  }
+  if (counted == 0) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'no placed task carries an estimate',
+    );
+  }
+  final capacity = outcome.inputs.capacityMinutes;
+  return EvalConstraintResult(
+    id: id,
+    passed: estimated <= capacity,
+    detail:
+        '$counted placed task(s) estimated at ${estimated}min against '
+        '${capacity}min capacity'
+        '${estimated > capacity ? ' (over by ${estimated - capacity})' : ''}',
+  );
+}
+
+/// Work the scenario says any competent plan must include.
+///
+/// Without this a prioritisation scenario cannot tell a good plan from one
+/// that scheduled the least urgent thing on the list: generic constraints are
+/// all satisfied by a plan containing a single well-formed block.
+EvalConstraintResult scoreRequiredWorkPlaced(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.requiredWorkPlaced;
+  final required = outcome.inputs.requiredTaskIds;
+  if (required.isEmpty) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'the scenario names no required work',
+    );
+  }
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  final placed = _placedTaskIds(outcome);
+  final missing = [
+    for (final taskId in required)
+      if (!placed.contains(taskId)) taskId,
+  ];
+  return EvalConstraintResult(
+    id: id,
+    passed: missing.isEmpty,
+    detail: missing.isEmpty
+        ? 'placed all ${required.length} task(s) the day turns on'
+        : 'ignored: ${missing.join(', ')}',
+  );
+}
+
+/// An impossible day has to be named, not quietly absorbed.
+///
+/// Permitting omissions stops a planner being punished for dropping work it
+/// cannot fit — but on its own it also lets one emit a single buffer block,
+/// ignore twelve hours of requested work, and score clean. The prompt gives
+/// two legitimate ways out: escalate via `raise_day_status`, or state the
+/// trade in a block reason. Either satisfies this; silence does not.
+EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.surfacedConflict;
+  if (!outcome.inputs.requiresConflictSurfaced) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'the scenario is satisfiable as stated',
+    );
+  }
+  // The tool accepts onTrack and dayClosed too, and attentionNeeded with
+  // reasons like processingBlocked that say nothing about this conflict.
+  // Matching the call by name alone would let any of those pass.
+  final escalated = outcome.toolCalls.any((call) {
+    if (!call.accepted || !call.name.contains('raise_day_status')) return false;
+    if (call.arguments['status'] != 'attentionNeeded') return false;
+    final reasons = switch (call.arguments['reasons']) {
+      final List<Object?> list => list.map((r) => '$r').toSet(),
+      _ => const <String>{},
+    };
+    return reasons.any(outcome.inputs.conflictEscalationReasons.contains);
+  });
+  if (escalated) {
+    return const EvalConstraintResult(
+      id: id,
+      passed: true,
+      detail: 'escalated through raise_day_status',
+    );
+  }
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  // The prompt asks for "which commitments collide and what trade would make
+  // it fit", so a bare "Deferred" is not surfacing anything — it names no
+  // casualty and gives the user nothing to act on. Require the text to
+  // identify at least one piece of work that was actually left out.
+  final placed = _placedTaskIds(outcome);
+  final omitted = [
+    for (final taskId in outcome.inputs.decidedTaskIds)
+      if (!placed.contains(taskId)) taskId,
+  ];
+  if (omitted.isEmpty) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'nothing was left out, so there is no trade to name',
+    );
+  }
+  final prose = [
+    for (final block in outcome.blocks)
+      '${block.reason ?? ''} ${block.note ?? ''}',
+  ].join(' ').toLowerCase();
+  final namedCasualties = [
+    for (final taskId in omitted)
+      if (prose.contains(taskId.toLowerCase()) ||
+          _titleNamed(outcome, taskId, prose))
+        taskId,
+  ];
+  return EvalConstraintResult(
+    id: id,
+    passed: namedCasualties.isNotEmpty,
+    detail: namedCasualties.isNotEmpty
+        ? 'named what it left out: ${namedCasualties.join(', ')}'
+        : 'absorbed an impossible day without naming a casualty — '
+              '${omitted.length} decided task(s) dropped in silence',
+  );
+}
+
+/// The planner must not invent work that was never asked for.
+///
+/// Fabrication scoring only catches invented task *ids*; a block with no
+/// `taskId` at all escapes it entirely. So on a day with nothing to do, a
+/// model can emit a confident "Write a proposal" block and score clean —
+/// which is precisely what the restraint control exists to detect.
+///
+/// Only `buffer` is exempt: structuring open time is not inventing work. A
+/// `cal` block is not, because the prompt defines `cal` as mirroring a real
+/// calendar event and no scenario seeds one — so on these days an invented
+/// "Dentist appointment" is exactly the hallucination this control exists to
+/// catch. The exemption comes back with calendar-seeding, which needs it for
+/// a different reason anyway (a `cal` block is the one remaining way past the
+/// production same-day guard).
+EvalConstraintResult scoreNoInventedWork(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.noInventedWork;
+  if (!outcome.inputs.forbidsInventedWork) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'the scenario has real work to schedule',
+    );
+  }
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  final invented = [
+    for (final block in _scheduled(outcome))
+      if (block.taskId == null && block.type != PlannedBlockType.buffer)
+        '"${block.title ?? block.id}" (${block.type.name})',
+  ];
+  return EvalConstraintResult(
+    id: id,
+    passed: invented.isEmpty,
+    detail: invented.isEmpty
+        ? 'added no work of its own'
+        : 'invented work nobody asked for: ${invented.join(', ')}',
+  );
+}
+
+/// Buffer and calendar blocks must not carry a task.
+///
+/// The prompt is explicit that `taskId` belongs on work blocks and is omitted
+/// for buffer and calendar ones, but the parser does not enforce it. Scoring
+/// it separately means a model that attaches tasks to buffers is reported for
+/// that specifically, rather than silently losing placement credit and looking
+/// like it simply skipped the work.
+EvalConstraintResult scoreTaskWorkIsTyped(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.taskWorkIsTyped;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  final mistyped = <String>[];
+  for (final block in outcome.blocks) {
+    if (block.taskId == null) continue;
+    if (block.type != PlannedBlockType.buffer &&
+        block.type != PlannedBlockType.cal) {
+      continue;
+    }
+    mistyped.add(
+      '"${block.title ?? block.id}" is a ${block.type.name} block carrying '
+      'task ${block.taskId}',
+    );
+  }
+  if (mistyped.isEmpty && outcome.blocks.every((b) => b.taskId == null)) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'no block references a task',
+    );
+  }
+  return EvalConstraintResult(
+    id: id,
+    passed: mistyped.isEmpty,
+    detail: mistyped.isEmpty
+        ? 'task work is on work blocks'
+        : mistyped.join('; '),
+  );
+}
+
 /// Whether the model produced a legal plan without being corrected.
 ///
 /// This is the guarded half. The persisted plan is always legal — the write
@@ -304,6 +706,42 @@ EvalConstraintResult scoreCompliedWithoutRejection(EvalRunOutcome outcome) {
         : '${rejections.length} rejection(s): '
               '${rejections.map((r) => r.rejectionMessage ?? 'unknown').join(' | ')}',
   );
+}
+
+/// Guard for every constraint that reads the plan.
+///
+/// A run that produced no plan has not demonstrated anything about plan
+/// quality — its empty block list would otherwise read as "no overlaps, no
+/// fabricated ids, every omission honoured", handing a failed run a clean
+/// sweep. Those constraints are inapplicable, not passed.
+EvalConstraintResult? _requirePlan(EvalRunOutcome outcome, String id) =>
+    outcome.planPersisted
+    ? null
+    : EvalConstraintResult.notApplicable(id, 'no plan was persisted');
+
+/// Task ids the plan actually commits to.
+///
+/// Derived from scheduled blocks, not every block: a `dropped` block is the
+/// model explicitly declining the work, and production's `scheduledMinutesFor`
+/// excludes it from the day too. Counting it as placed was inconsistent in
+/// both directions at once — a dropped stale task failed the omission
+/// constraint while a dropped required task satisfied the placement one.
+Set<String> _placedTaskIds(EvalRunOutcome outcome) => {
+  for (final block in _scheduled(outcome))
+    // Only work blocks carry a placement. The prompt tells the model to omit
+    // `taskId` on buffer and calendar blocks, but nothing enforces it — so
+    // without this a model could label a plausible-length buffer with every
+    // required task id and satisfy placement, capacity and estimate scoring
+    // without scheduling any actual work.
+    if (block.type == PlannedBlockType.ai ||
+        block.type == PlannedBlockType.manual)
+      ?block.taskId,
+};
+
+/// Whether [prose] mentions the title of [taskId].
+bool _titleNamed(EvalRunOutcome outcome, String taskId, String prose) {
+  final title = outcome.inputs.taskById(taskId)?.title.toLowerCase();
+  return title != null && title.isNotEmpty && prose.contains(title);
 }
 
 /// Blocks that consume capacity — `dropped` ones are recorded but not

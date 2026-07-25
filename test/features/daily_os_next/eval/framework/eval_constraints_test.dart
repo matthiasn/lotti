@@ -34,6 +34,17 @@ void main() {
     List<PlannedBlock> blocks = const [],
     List<EvalCorpusTask> corpus = const [],
     List<String> decidedTaskIds = const [],
+    Set<String> permittedOmissions = const {},
+    Set<String> expectedOmissions = const {},
+    Set<String> requiredTaskIds = const {},
+    bool requiresConflictSurfaced = false,
+    bool forbidsInventedWork = false,
+    Set<String> conflictEscalationReasons = const {'overCommitted'},
+    DateTime? now,
+    bool planPersisted = true,
+    int workingHoursStartHour = 9,
+    int workingHoursEndHour = 17,
+    Set<String>? visibleTaskIds,
     List<EvalToolCall> toolCalls = const [],
     int capacityMinutes = 480,
   }) => EvalRunOutcome(
@@ -42,10 +53,21 @@ void main() {
       planDate: planDate,
       corpus: corpus,
       decidedTaskIds: decidedTaskIds,
+      permittedOmissions: permittedOmissions,
+      expectedOmissions: expectedOmissions,
+      requiredTaskIds: requiredTaskIds,
+      requiresConflictSurfaced: requiresConflictSurfaced,
+      forbidsInventedWork: forbidsInventedWork,
+      conflictEscalationReasons: conflictEscalationReasons,
+      now: now,
+      visibleTaskIds: visibleTaskIds,
+      workingHoursStartHour: workingHoursStartHour,
+      workingHoursEndHour: workingHoursEndHour,
       capacityMinutes: capacityMinutes,
     ),
     blocks: blocks,
     toolCalls: toolCalls,
+    planPersisted: planPersisted,
   );
 
   group('noOverlappingBlocks', () {
@@ -182,6 +204,48 @@ void main() {
     test('is not applicable when nothing was decided', () {
       expect(scoreDecidedTasksPlaced(outcome()).isApplicable, isFalse);
     });
+
+    test('a permitted omission is not counted as a miss', () {
+      // The scenario handed the model a task it should deliberately leave
+      // out — already done, or blocked. Requiring it would fail the model
+      // precisely when it behaves correctly.
+      final result = scoreDecidedTasksPlaced(
+        outcome(
+          blocks: [block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-1')],
+          decidedTaskIds: const ['task-1', 'task-stale'],
+          permittedOmissions: const {'task-stale'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('is not applicable when every decided task may be omitted', () {
+      final result = scoreDecidedTasksPlaced(
+        outcome(
+          decidedTaskIds: const ['task-blocked'],
+          permittedOmissions: const {'task-blocked'},
+        ),
+      );
+
+      expect(result.isApplicable, isFalse);
+    });
+
+    test(
+      'a required decided task is still enforced alongside one that is not',
+      () {
+        final result = scoreDecidedTasksPlaced(
+          outcome(
+            decidedTaskIds: const ['task-1', 'task-stale'],
+            permittedOmissions: const {'task-stale'},
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('task-1'));
+        expect(result.detail, isNot(contains('task-stale')));
+      },
+    );
   });
 
   group('blockerBeforeBlocked', () {
@@ -342,6 +406,24 @@ void main() {
       expect(result.passed, isTrue);
     });
 
+    test('judges against what the model was shown, not what is true', () {
+      // Without a capture the corpus is never rendered, so a corpus id the
+      // model could not have seen must not be credited as legitimate.
+      final result = scoreNoFabricatedTaskIds(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-hidden'),
+          ],
+          corpus: const [EvalCorpusTask(taskId: 'task-hidden', title: 'Real')],
+          decidedTaskIds: const ['task-decided'],
+          visibleTaskIds: const {'task-decided'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-hidden'));
+    });
+
     test('fails for a task id the model was never shown', () {
       final result = scoreNoFabricatedTaskIds(
         outcome(
@@ -417,6 +499,288 @@ void main() {
     });
   });
 
+  group('expectedOmissionsHonoured', () {
+    test('passes when the work was left out as expected', () {
+      final result = scoreExpectedOmissionsHonoured(
+        outcome(
+          blocks: [block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-1')],
+          expectedOmissions: const {'task-stale'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('fails when the model placed work it should have left out', () {
+      // Without this, permitting the omission would let a model place the
+      // stale task and still score clean — the scenario could not measure
+      // the thing it exists for.
+      final result = scoreExpectedOmissionsHonoured(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-stale'),
+          ],
+          expectedOmissions: const {'task-stale'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-stale'));
+    });
+
+    test('is not applicable when nothing is expected to be omitted', () {
+      expect(scoreExpectedOmissionsHonoured(outcome()).isApplicable, isFalse);
+    });
+  });
+
+  group('withinWorkingHours', () {
+    test('passes when the day ends on time', () {
+      final result = scoreWithinWorkingHours(
+        outcome(blocks: [block(id: 'a', startHour: 15, endHour: 17)]),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('catches work scheduled before the working day starts', () {
+      // On a future-day draft the same-day guard is inert, so without a lower
+      // bound an overnight plan would score clean.
+      final result = scoreWithinWorkingHours(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 6, endHour: 8, title: 'Early grind'),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Early grind'));
+      expect(result.detail, contains('06:00'));
+    });
+
+    test('catches work pushed past the end of the working day', () {
+      // The failure capacity cannot see: 180 minutes from 15:00 uses only
+      // 180 of 480 and stays inside the calendar day, yet runs to 18:00.
+      final result = scoreWithinWorkingHours(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 15,
+              endHour: 18,
+              title: 'Finish the migration',
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Finish the migration'));
+      expect(result.detail, contains('18:00'));
+    });
+  });
+
+  group('a same-day draft', () {
+    test('cannot schedule work before the draft began', () {
+      // Enforcing only working hours would let a model place work at 10:00 on
+      // a 15:00 draft — and the production guard misses it too, because that
+      // guard fires only for `drafted` state.
+      final result = scoreWithinWorkingHours(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 10,
+              endHour: 12,
+              title: 'Long migration',
+              state: PlannedBlockState.committed,
+            ),
+          ],
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Long migration'));
+    });
+
+    test('still allows work after the draft time', () {
+      final result = scoreWithinWorkingHours(
+        outcome(
+          blocks: [block(id: 'a', startHour: 15, endHour: 17)],
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('a fresh draft may not assert committed state', () {
+      // Commitment is the user's word, not the model's — and asserting it is
+      // also how a block slips the production past-start guard.
+      final result = scoreNoHistoryFabrication(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              title: 'Already agreed',
+              state: PlannedBlockState.committed,
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Already agreed'));
+    });
+  });
+
+  group('noInventedWork', () {
+    test('catches substantive work on a day with nothing to do', () {
+      // The gap the restraint control could not see: no taskId means
+      // fabrication scoring is inapplicable, and everything else passes.
+      final result = scoreNoInventedWork(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 11,
+              title: 'Write a proposal',
+            ),
+          ],
+          forbidsInventedWork: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Write a proposal'));
+    });
+
+    test('an invented calendar event is still invented', () {
+      // `cal` mirrors a real event, so on a day with no calendar seeded an
+      // appointment the model made up is exactly what this control is for.
+      final result = scoreNoInventedWork(
+        outcome(
+          blocks: [
+            PlannedBlock(
+              id: 'a',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 7, 18, 9),
+              endTime: DateTime(2026, 7, 18, 10),
+              title: 'Dentist appointment',
+              type: PlannedBlockType.cal,
+            ),
+          ],
+          forbidsInventedWork: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Dentist appointment'));
+    });
+
+    test('a buffer block is structuring open time, not inventing work', () {
+      final result = scoreNoInventedWork(
+        outcome(
+          blocks: [
+            PlannedBlock(
+              id: 'a',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 7, 18, 9),
+              endTime: DateTime(2026, 7, 18, 11),
+              title: 'Open buffer',
+              type: PlannedBlockType.buffer,
+            ),
+          ],
+          forbidsInventedWork: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('is not applicable when the day has real work', () {
+      expect(scoreNoInventedWork(outcome()).isApplicable, isFalse);
+    });
+  });
+
+  group('respectsEstimates', () {
+    const bigTask = EvalCorpusTask(
+      taskId: 'task-big',
+      title: 'Rewrite the ingestion pipeline',
+      estimateMinutes: 240,
+    );
+
+    test('passes when the block roughly matches the estimate', () {
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 13, taskId: 'task-big'),
+          ],
+          corpus: const [bigTask],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('catches an impossible day made to look feasible by compression', () {
+      // The cheapest way to fit four multi-hour tasks into one day is to
+      // pretend each takes an hour. Capacity alone would call that a pass.
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-big'),
+          ],
+          corpus: const [bigTask],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('60min'));
+      expect(result.detail, contains('240min'));
+    });
+
+    test('sums a task split across blocks before judging it', () {
+      // 60 + 120 fully schedules a 180-minute task. Comparing each block
+      // against the whole estimate would fail the first half of a correctly
+      // scheduled task.
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: '1', startHour: 9, endHour: 10, taskId: 'task-split'),
+            block(id: '2', startHour: 10, endHour: 12, taskId: 'task-split'),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-split',
+              title: 'Split work',
+              estimateMinutes: 180,
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('is not applicable when no placed task carries an estimate', () {
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-x')],
+          corpus: const [
+            EvalCorpusTask(taskId: 'task-x', title: 'No estimate'),
+          ],
+        ),
+      );
+
+      expect(result.isApplicable, isFalse);
+    });
+  });
+
   group('compliedWithoutRejection', () {
     test('passes when the first tool call was accepted', () {
       final result = scoreCompliedWithoutRejection(
@@ -450,6 +814,448 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('must not start before current time'));
+    });
+  });
+
+  group('dropped blocks are not placements', () {
+    test('a dropped required task does not count as placed', () {
+      // Production excludes dropped blocks from the day, so crediting one as
+      // a placement would let a model satisfy every placement constraint
+      // while committing to nothing.
+      final result = scoreRequiredWorkPlaced(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-overdue',
+              state: PlannedBlockState.dropped,
+            ),
+          ],
+          requiredTaskIds: const {'task-overdue'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('a dropped decided task does not count as placed', () {
+      final result = scoreDecidedTasksPlaced(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-1',
+              state: PlannedBlockState.dropped,
+            ),
+          ],
+          decidedTaskIds: const ['task-1'],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('dropping work the scenario wanted omitted honours the omission', () {
+      // The other direction of the same inconsistency: a dropped stale task
+      // used to fail the omission constraint even though it was not scheduled.
+      final result = scoreExpectedOmissionsHonoured(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-stale',
+              state: PlannedBlockState.dropped,
+            ),
+          ],
+          expectedOmissions: const {'task-stale'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+  });
+
+  group('taskWorkIsTyped', () {
+    PlannedBlock typed({
+      required String id,
+      required PlannedBlockType type,
+      String? taskId,
+      int startHour = 9,
+      int endHour = 11,
+    }) => PlannedBlock(
+      id: id,
+      categoryId: 'cat-1',
+      startTime: DateTime(2026, 7, 18, startHour),
+      endTime: DateTime(2026, 7, 18, endHour),
+      title: id,
+      taskId: taskId,
+      type: type,
+    );
+
+    test('a buffer carrying a task is reported, not silently uncredited', () {
+      final result = scoreTaskWorkIsTyped(
+        outcome(
+          blocks: [
+            typed(
+              id: 'buffer-1',
+              type: PlannedBlockType.buffer,
+              taskId: 'task-1',
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('buffer'));
+      expect(result.detail, contains('task-1'));
+    });
+
+    test('work blocks carrying tasks are fine', () {
+      final result = scoreTaskWorkIsTyped(
+        outcome(
+          blocks: [
+            typed(id: 'ai-1', type: PlannedBlockType.ai, taskId: 'task-1'),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('a task on a buffer earns no placement credit', () {
+      // The attack this closes: label a plausible-length buffer with every
+      // required task id and satisfy placement, capacity and estimates
+      // without scheduling any actual work.
+      final result = scoreRequiredWorkPlaced(
+        outcome(
+          blocks: [
+            typed(
+              id: 'buffer-1',
+              type: PlannedBlockType.buffer,
+              taskId: 'task-required',
+            ),
+          ],
+          requiredTaskIds: const {'task-required'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+  });
+
+  group('withinCapacityByEstimate', () {
+    const tasks = [
+      EvalCorpusTask(taskId: 'task-a', title: 'A', estimateMinutes: 240),
+      EvalCorpusTask(taskId: 'task-b', title: 'B', estimateMinutes: 180),
+      EvalCorpusTask(taskId: 'task-c', title: 'C', estimateMinutes: 120),
+      EvalCorpusTask(taskId: 'task-d', title: 'D', estimateMinutes: 180),
+    ];
+
+    test('catches a coordinated shrink that clears every per-task ratio', () {
+      // 160/120/80/120 sums to exactly 480 and each allocation exceeds half
+      // its estimate, so the per-task check passes — but 720 minutes of work
+      // does not fit in 480 however the blocks are labelled.
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(id: '1', startHour: 9, endHour: 11, taskId: 'task-a'),
+            block(id: '2', startHour: 11, endHour: 13, taskId: 'task-b'),
+            block(id: '3', startHour: 13, endHour: 14, taskId: 'task-c'),
+            block(id: '4', startHour: 14, endHour: 16, taskId: 'task-d'),
+          ],
+          corpus: tasks,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('720min'));
+      expect(result.detail, contains('over by 240'));
+    });
+
+    test('passes when the placed work genuinely fits', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(id: '1', startHour: 9, endHour: 13, taskId: 'task-a'),
+            block(id: '2', startHour: 13, endHour: 16, taskId: 'task-b'),
+          ],
+          corpus: tasks,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+  });
+
+  group('requiredWorkPlaced', () {
+    test('fails when the day ignores the work it turns on', () {
+      final result = scoreRequiredWorkPlaced(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 11, taskId: 'task-later'),
+          ],
+          requiredTaskIds: const {'task-overdue', 'task-today'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-overdue'));
+    });
+
+    test('passes when every named task is placed', () {
+      final result = scoreRequiredWorkPlaced(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-overdue'),
+            block(id: 'b', startHour: 10, endHour: 11, taskId: 'task-today'),
+          ],
+          requiredTaskIds: const {'task-overdue', 'task-today'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+  });
+
+  group('surfacedConflict', () {
+    const dropped = [
+      EvalCorpusTask(taskId: 'task-deck', title: 'Prepare the board deck'),
+      EvalCorpusTask(taskId: 'task-report', title: 'Close the quarterly'),
+    ];
+
+    test('fails when an impossible day is absorbed in silence', () {
+      // The gap permitting omissions opened: one ordinary buffer block,
+      // hours of requested work ignored, nothing said.
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              reason: 'Open buffer for the morning.',
+            ),
+          ],
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
+    });
+
+    test('a conflict word alone is not surfacing anything', () {
+      // "Deferred" names no casualty and gives the user nothing to act on.
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              reason: 'Deferred — preserving capacity.',
+            ),
+          ],
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('passes when the reason names what was left out', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 13,
+              reason:
+                  'Prepare the board deck moved to tomorrow — all four '
+                  'do not fit today.',
+            ),
+          ],
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-deck'));
+    });
+
+    test('is not applicable when nothing was actually left out', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-deck'),
+          ],
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.isApplicable, isFalse);
+    });
+
+    test('passes when the escalation actually names the conflict', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['overCommitted'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('an onTrack status is not an escalation', () {
+      // The tool accepts onTrack and dayClosed too; matching the call by name
+      // alone would let a model satisfy this by reporting the day is fine.
+      final result = scoreSurfacedConflict(
+        outcome(
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {'status': 'onTrack'},
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('a reason that cannot be true of this day is not an escalation', () {
+      // The scenario seeds no directive, so escalating as
+      // directiveUnsatisfiable claims something false. A shared default
+      // accepting both reasons would have credited it.
+      final result = scoreSurfacedConflict(
+        outcome(
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+          // ignore: avoid_redundant_argument_values
+          conflictEscalationReasons: const {'overCommitted'},
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['directiveUnsatisfiable'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('an unrelated attentionNeeded reason is not an escalation', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['processingBlocked'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        result.passed,
+        isFalse,
+        reason: 'processingBlocked describes a different problem entirely',
+      );
+    });
+
+    test('a rejected escalation does not count', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          corpus: dropped,
+          decidedTaskIds: const ['task-deck', 'task-report'],
+          requiresConflictSurfaced: true,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: false,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['overCommitted'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('is not applicable when the day is satisfiable', () {
+      expect(scoreSurfacedConflict(outcome()).isApplicable, isFalse);
+    });
+  });
+
+  group('a run that produced no plan', () {
+    test('scores every plan-reading constraint as inapplicable', () {
+      // An empty block list would otherwise read as "no overlaps, nothing
+      // fabricated, every omission honoured" — a clean sweep for a failed run.
+      final results = scoreAll(
+        outcome(
+          planPersisted: false,
+          decidedTaskIds: const ['task-1'],
+          expectedOmissions: const {'task-stale'},
+          requiredTaskIds: const {'task-1'},
+          corpus: const [EvalCorpusTask(taskId: 'task-1', title: 'A')],
+        ),
+      );
+
+      for (final result in results) {
+        if (result.id == EvalConstraintIds.compliedWithoutRejection) continue;
+        expect(
+          result.isApplicable,
+          isFalse,
+          reason: '${result.id} credited a run that produced no plan',
+        );
+      }
     });
   });
 

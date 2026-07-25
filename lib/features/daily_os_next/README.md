@@ -250,6 +250,74 @@ device-local processing outbox that transcription uses (`services/day_processing
 a sealed `DayProcessingPayload` per kind (`TranscribeAudioPayload`,
 `ParseCapturePayload`, `DraftPlanPayload`, `RefinePlanPayload`).
 
+### Evaluating what the model actually plans
+
+`test/features/daily_os_next/eval/` is a development instrument for improving
+the day-agent's prompt and context. The storage benchmark above measures what
+the *repositories* cost; this measures what the *model* produces.
+
+Two lanes, and the distinction matters:
+
+- **`framework/` runs in ordinary CI.** The scorers, the value types and the
+  fixture-coherence checks are deterministic and provider-free, so they are
+  plain tests and are expected to stay green like any other.
+- **The live runner is opt-in and never in CI.** It spends money against a real
+  provider and is non-deterministic by nature, so it always passes and reports
+  rather than failing — a red build people learn to ignore is worse than no
+  signal.
+
+Its shape follows from how the write path enforces things. Hard constraints —
+day boundaries, `end > start`, same-day past-start, allowed categories,
+committed-plan overwrite — throw `DayAgentCaptureException`, rejecting the
+whole `draft_day_plan` call and handing the message back to the model, which
+retries. Everything else — block overlap, capacity, decided tasks actually
+being placed, ADR 0043 blocker ordering — is prompt contract only.
+
+So the persisted plan is always *legal*, and inspecting it alone measures the
+guards rather than the model. The scorers in `framework/eval_constraints.dart`
+therefore split:
+
+| scored on | constraints |
+| --- | --- |
+| the persisted plan | overlap, capacity (as written *and* as estimated), working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, conflict surfaced, blocker-before-blocked, fabricated task ids, fabricated history, duplicate ids |
+| the rejection count | whether the model complied without being corrected |
+
+A constraint that reads the plan is **inapplicable when no plan was
+persisted** — an empty block list would otherwise read as "no overlaps,
+nothing fabricated, every omission honoured" and hand a failed run a clean
+sweep.
+
+Three semantics are load-bearing and easy to get wrong:
+
+- **"Not applicable" is a third result, not a pass.** A scenario with no
+  blocked tasks says nothing about blocker handling; counting it as a pass
+  would make the laziest model look like the best one.
+- **Some decided tasks must *not* be placed.** A stale task the capture says is
+  done is an `expectedOmission` — placing it fails. A blocked task is a
+  `permittedOmission` — omitting or correctly sequencing it both pass.
+- **Permitting an omission is not enough on its own.** A scenario that lets
+  the planner drop work must also require it to *say so* — otherwise a single
+  buffer block that ignores twelve hours of requested work scores clean.
+  Capacity is likewise checked against task *estimates*, not the block lengths
+  the model wrote, since the cheapest way to make an impossible day fit is to
+  claim each task is shorter than it is.
+- **Fabrication is judged against what the model was shown.** The task corpus
+  renders only inside the capture context, so a wake without a capture sees
+  only its decided tasks. `EvalFixtureInputs.corpus` stays ground truth (the
+  scorer must still know what is blocked) while `visibleTaskIds` bounds what
+  the model could legitimately name.
+
+Scenarios (`framework/eval_scenario.dart`) each encode a tension the planner
+must resolve: a crowded day, a mid-afternoon start with a task too long to
+fit, four decided tasks that cannot all happen, a two-hop blocker chain, and
+that same chain with the capture removed so ADR 0043's rule arrives without
+its data. Fixtures seed through the `journalDb` stubs the pipeline harness
+already installs.
+
+**Not yet wired to a model.** The matrix runner that feeds scenarios to
+providers, and the report it produces, are tracked separately; until then the
+fixtures are verified for internal coherence only.
+
 ### Measuring that it does not degrade
 
 `test/features/daily_os_next/benchmark/` seeds a synthetic corpus at 1, 6 and
