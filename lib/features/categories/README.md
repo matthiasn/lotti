@@ -29,6 +29,12 @@ Categories are persisted `CategoryDefinition` entities. In the current codebase 
   `ProfileAutomationService` consults it before every automatic path — the
   profile-driven one and the direct transcription fallback alike — so this
   flag, not the profile, is the switch that decides whether automation runs.
+  The one caller that sets it to `true` is onboarding
+  (`OnboardingWelcomeModal`): connecting a provider and recording a first
+  capture on purpose is the consent, and without it the flow would teach
+  "speak and it transcribes" while the app stopped doing so the next day.
+  Reused categories are the exception — an existing `false` is the user having
+  switched automation off, so onboarding only fills in a `null`.
 - In this code sweep, `defaultLanguageCode` is referenced by the categories model, controller, and UI, but I did not find a downstream consumer outside this feature.
 
 ## Runtime Architecture

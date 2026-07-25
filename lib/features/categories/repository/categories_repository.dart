@@ -104,12 +104,18 @@ class CategoryRepository {
   /// CSS hex string. The persisted record is returned (including its generated
   /// `id`/timestamps) so callers (e.g. the category create modal) can use it
   /// immediately without waiting for the cache to refresh.
+  ///
+  /// [automaticInferenceEnabled] stays null (⇒ off) for ordinary creation.
+  /// Only onboarding passes `true`, where connecting a provider and recording
+  /// a first capture is the user's explicit consent to automation; every other
+  /// entry point leaves the opt-in to the category's own switch.
   Future<CategoryDefinition> createCategory({
     required String name,
     required String color,
     CategoryIcon? icon,
     String? defaultProfileId,
     String? defaultTemplateId,
+    bool? automaticInferenceEnabled,
   }) async {
     final now = DateTime.now();
 
@@ -125,6 +131,7 @@ class CategoryRepository {
       icon: icon,
       defaultProfileId: defaultProfileId,
       defaultTemplateId: defaultTemplateId,
+      automaticInferenceEnabled: automaticInferenceEnabled,
     );
 
     await _persistenceLogic.upsertEntityDefinition(category);

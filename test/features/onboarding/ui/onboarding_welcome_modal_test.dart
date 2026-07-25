@@ -444,6 +444,7 @@ void main() {
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
           defaultTemplateId: any(named: 'defaultTemplateId'),
+          automaticInferenceEnabled: any(named: 'automaticInferenceEnabled'),
         ),
       ).thenThrow(Exception('category db down'));
     } else {
@@ -453,6 +454,7 @@ void main() {
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
           defaultTemplateId: any(named: 'defaultTemplateId'),
+          automaticInferenceEnabled: any(named: 'automaticInferenceEnabled'),
         ),
       ).thenAnswer(
         (_) async => CategoryTestUtils.createTestCategory(id: 'c1', name: 'AI'),
@@ -591,6 +593,8 @@ void main() {
         color: any(named: 'color'),
         defaultProfileId: profileLocalId,
         defaultTemplateId: lauraTemplateId,
+        // Onboarding is the one caller that opts new areas into automation.
+        automaticInferenceEnabled: true,
       ),
     ).called(1);
     verify(
@@ -599,6 +603,7 @@ void main() {
         color: any(named: 'color'),
         defaultProfileId: profileLocalId,
         defaultTemplateId: lauraTemplateId,
+        automaticInferenceEnabled: true,
       ),
     ).called(1);
 
@@ -729,6 +734,7 @@ void main() {
         color: any(named: 'color'),
         defaultProfileId: any(named: 'defaultProfileId'),
         defaultTemplateId: any(named: 'defaultTemplateId'),
+        automaticInferenceEnabled: any(named: 'automaticInferenceEnabled'),
       ),
     );
     verify(
@@ -737,6 +743,7 @@ void main() {
         color: any(named: 'color'),
         defaultProfileId: profileLocalId,
         defaultTemplateId: lauraTemplateId,
+        automaticInferenceEnabled: true,
       ),
     ).called(1);
 
@@ -752,6 +759,8 @@ void main() {
     expect(updated.active, isTrue);
     expect(updated.defaultProfileId, profileLocalId);
     expect(updated.defaultTemplateId, lauraTemplateId);
+    // A category that never decided gets automation on, like a fresh one.
+    expect(updated.automaticInferenceEnabled, isTrue);
 
     // …and the reused category is the pre-selected destination, so the
     // structured task lands in the user's real existing area.
@@ -784,6 +793,36 @@ void main() {
         audioId: null,
       ),
     ).called(1);
+  });
+
+  // Automation is opt-in per category, and onboarding turns it on for the
+  // areas it creates. Reuse is the one case where the user may already have
+  // answered — and an explicit "off" must survive, or onboarding becomes a
+  // back door around the switch.
+  testWidgets('reusing a category respects an explicit automation opt-out', (
+    tester,
+  ) async {
+    final mocks = await driveToFirstTaskStep(
+      tester,
+      existingCategories: [
+        CategoryTestUtils.createTestCategory(
+          id: 'existing-work',
+          name: 'work',
+          automaticInferenceEnabled: false,
+        ),
+      ],
+    );
+
+    final updated =
+        verify(
+              () => mocks.catRepo.updateCategory(captureAny()),
+            ).captured.single
+            as CategoryDefinition;
+    expect(updated.id, 'existing-work');
+    // Rebound to the seeded profile like any reused area…
+    expect(updated.defaultProfileId, profileLocalId);
+    // …but the user's "no" is left standing.
+    expect(updated.automaticInferenceEnabled, isFalse);
   });
 
   testWidgets('reusing a category preserves a user-chosen default agent '

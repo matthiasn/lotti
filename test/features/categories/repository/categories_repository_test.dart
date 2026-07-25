@@ -226,6 +226,45 @@ void main() {
         expect(captured.color, equals(color));
       });
 
+      // Automation is opt-in per category: ordinary creation must leave the
+      // preference unset (⇒ off) so nothing starts spending tokens on its own.
+      test('leaves automatic inference unset by default', () async {
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        final result = await repository.createCategory(
+          name: 'New Category',
+          color: '#FF0000',
+        );
+
+        expect(result.automaticInferenceEnabled, isNull);
+        expect(result.automaticInferenceEnabledEffective, isFalse);
+      });
+
+      // Onboarding is the one caller that passes true — see the welcome
+      // modal, where connecting a provider and recording is the consent.
+      test('persists an explicit automatic inference opt-in', () async {
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        final result = await repository.createCategory(
+          name: 'Onboarding Area',
+          color: '#FF0000',
+          automaticInferenceEnabled: true,
+        );
+
+        expect(result.automaticInferenceEnabled, isTrue);
+        final captured =
+            verify(
+                  () =>
+                      mockPersistenceLogic.upsertEntityDefinition(captureAny()),
+                ).captured.single
+                as CategoryDefinition;
+        expect(captured.automaticInferenceEnabled, isTrue);
+      });
+
       test('generates unique ID for new category', () async {
         when(
           () => mockPersistenceLogic.upsertEntityDefinition(any()),

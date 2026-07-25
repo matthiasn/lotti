@@ -561,6 +561,13 @@ class _OnboardingCategoryStepState
             if (reusable.defaultTemplateId == null) {
               reusable = reusable.copyWith(defaultTemplateId: lauraTemplateId);
             }
+            // Turning automation on here is safe only for a category that
+            // never decided: an explicit `false` is the user having switched
+            // it off, and silently flipping that back is exactly the implicit
+            // enablement the per-category opt-in exists to prevent.
+            if (reusable.automaticInferenceEnabled == null) {
+              reusable = reusable.copyWith(automaticInferenceEnabled: true);
+            }
           }
           final reused = await repository.updateCategory(reusable);
           created.add(
@@ -576,6 +583,14 @@ class _OnboardingCategoryStepState
           color: _palette[i % _palette.length],
           defaultProfileId: profileId,
           defaultTemplateId: profileId != null ? lauraTemplateId : null,
+          // Automatic transcription and image analysis are opt-in per
+          // category, and default to off everywhere else. Onboarding is the
+          // one place the user has just connected a provider and recorded a
+          // capture on purpose, so the areas it creates start with automation
+          // on — otherwise the flow teaches "speak and it transcribes" and the
+          // app stops doing it the next day. Null (⇒ off) without a profile:
+          // nothing could run anyway.
+          automaticInferenceEnabled: profileId != null ? true : null,
         );
         created.add(
           OnboardingCaptureCategory(id: category.id, label: category.name),
