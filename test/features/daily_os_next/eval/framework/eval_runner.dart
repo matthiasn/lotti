@@ -193,16 +193,41 @@ Future<List<EvalRunResult>> runEvalMatrix({
   if (samples < 1) {
     throw RangeError.value(samples, 'samples', 'must be at least 1');
   }
-  if (!variants.any((variant) => variant.id == evalBaselineVariantId)) {
+  final controls = variants.where(
+    (variant) => variant.id == evalBaselineVariantId,
+  );
+  if (controls.length != 1 || controls.single.configure != null) {
+    // Not just "an entry named baseline": a baseline carrying a transform is
+    // not a control, and every A/B in the report would be a delta against
+    // something that had itself been changed.
     throw ArgumentError.value(
       variants,
       'variants',
-      'must include "$evalBaselineVariantId" — a variant delta without a '
-          'control measures nothing',
+      'must include exactly one "$evalBaselineVariantId" variant with no '
+          'transform — a delta measured against a modified control measures '
+          'nothing',
+    );
+  }
+  // Ids are the report keys — the model id is the leaderboard row, and
+  // `EvalRunRequest.label` is scenario/model/variant. A duplicate anywhere
+  // silently collapses two different cells into one row.
+  _requireUniqueIds(models.map((model) => model.id), 'models');
+  _requireUniqueIds(scenarios.map((scenario) => scenario.id), 'scenarios');
+  _requireUniqueIds(variants.map((variant) => variant.id), 'variants');
+
+  final anchorCandidate = today ?? clock.now();
+  if (anchorCandidate.isUtc) {
+    // Everything downstream is local-day: `localDay`, the working-hours
+    // window, and production's same-day guard. Quietly reinterpreting a UTC
+    // anchor as local would plan a different day than the caller asked for.
+    throw ArgumentError.value(
+      today,
+      'today',
+      'must be a local DateTime — the day agent plans local days',
     );
   }
 
-  final anchor = today ?? clock.now();
+  final anchor = anchorCandidate;
   final results = <EvalRunResult>[];
   for (final scenario in scenarios) {
     for (final model in models) {
@@ -253,6 +278,22 @@ Future<List<EvalRunResult>> runEvalMatrix({
     }
   }
   return results;
+}
+
+void _requireUniqueIds(Iterable<String> ids, String field) {
+  final seen = <String>{};
+  final duplicates = {
+    for (final id in ids)
+      if (!seen.add(id)) id,
+  };
+  if (duplicates.isNotEmpty) {
+    throw ArgumentError.value(
+      duplicates.toList()..sort(),
+      field,
+      'ids must be unique — duplicates collapse distinct cells into one '
+      'report row',
+    );
+  }
 }
 
 /// The day a scenario plans for, given [anchor] as today.
@@ -355,11 +396,16 @@ Future<EvalRunResult> _runCell(
       planDate: planDate,
     );
 
+    // Seeded before the timer starts: agent lookup/creation and fixture
+    // persistence are the harness's cost, not the model's, and including them
+    // only for capture-bearing scenarios would make latency mean a different
+    // thing per scenario type.
+    final captureId = scenario.includeCapture
+        ? await _seedCapture(harness, scenario, planDate)
+        : const CaptureId('');
+
     stopwatch.start();
     try {
-      final captureId = scenario.includeCapture
-          ? await _seedCapture(harness, scenario, planDate)
-          : const CaptureId('');
       await harness.realDayAgent.draftDayPlan(
         captureId: captureId,
         decidedTaskIds: scenario.decidedTaskIds,

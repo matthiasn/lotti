@@ -269,6 +269,99 @@ void main() {
       );
     });
 
+    test('rejects a baseline that carries a transform', () async {
+      // "An entry named baseline" is not a control. A baseline with a
+      // transform makes every A/B a delta against something that was itself
+      // changed — the check has to catch its own subject.
+      expect(
+        () => runEvalMatrix(
+          models: [scriptedTarget(turns: const [])],
+          variants: const [
+            EvalVariant(
+              id: evalBaselineVariantId,
+              rationale: 'looks like a control, is not one',
+              configure: _halfDay,
+            ),
+          ],
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('no transform'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects two variants claiming to be the control', () async {
+      expect(
+        () => runEvalMatrix(
+          models: [scriptedTarget(turns: const [])],
+          variants: const [evalBaselineVariant, evalBaselineVariant],
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('rejects duplicate ids in any matrix dimension', () async {
+      // Ids are report keys: the model id is the leaderboard row and `label`
+      // is scenario/model/variant, so a duplicate silently merges two cells.
+      final scenario = evalScenarios.first;
+      expect(
+        () => runEvalMatrix(
+          models: [
+            scriptedTarget(id: 'same', turns: const []),
+            scriptedTarget(id: 'same', turns: const []),
+          ],
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('unique'),
+          ),
+        ),
+      );
+      expect(
+        () => runEvalMatrix(
+          models: [scriptedTarget(turns: const [])],
+          scenarios: [scenario, scenario],
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => runEvalMatrix(
+          models: [scriptedTarget(turns: const [])],
+          variants: const [
+            evalBaselineVariant,
+            EvalVariant(id: 'dup', rationale: 'x'),
+            EvalVariant(id: 'dup', rationale: 'x'),
+          ],
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('rejects a UTC anchor', () async {
+      // localDay, the working-hours window and production's same-day guard are
+      // all local, so reinterpreting a UTC anchor would plan a different day
+      // than the caller asked for.
+      expect(
+        () => runEvalMatrix(
+          models: [scriptedTarget(turns: const [])],
+          today: DateTime.utc(2030, 1, 15),
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('local DateTime'),
+          ),
+        ),
+      );
+    });
+
     test('rejects an empty matrix or a sample count below one', () async {
       expect(
         () => runEvalMatrix(models: const []),
