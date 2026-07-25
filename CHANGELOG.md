@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1066]
+### Added
+- **You now hear about a day plan that failed, not just one that worked.**
+  If drafting or refining a plan gave up while Lotti was in the background,
+  nothing told you — you came back to a day that had simply never been
+  planned, with no explanation. Those failures now raise a notification that
+  takes you to the day so you can retry.
+
 ### Changed
 - **The "Active" badge on inference profiles now means something you can
   control.** A profile was badged Active purely because one of its models

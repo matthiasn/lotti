@@ -1855,10 +1855,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Recensione';
 
   @override
-  String get aiProviderDetailProfilesUsingTitle =>
-      'Profili che usano questo provider';
-
-  @override
   String get aiProviderDetailAddModelButton => 'Aggiungi il modello';
 
   @override
@@ -1911,6 +1907,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get aiProviderDetailPageTitle => 'Dettagli del fornitore';
+
+  @override
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profili che usano questo provider';
 
   @override
   String get aiProviderDetailRemoveButton => 'Rimuovere il fornitore';
@@ -4052,12 +4052,28 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Collegamento di rottura';
 
   @override
+  String get dailyOsNextPlanChangesFailedNotificationBody =>
+      'Open Lotti to see what happened and try again.';
+
+  @override
+  String get dailyOsNextPlanChangesFailedNotificationTitle =>
+      'Your plan changes didn\'t finish';
+
+  @override
   String get dailyOsNextPlanChangesReadyNotificationBody =>
       'The proposed changes are waiting for your review.';
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationTitle =>
       'Your plan changes are ready';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationBody =>
+      'Open Lotti to see what happened and try again.';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationTitle =>
+      'Your day plan didn\'t finish';
 
   @override
   String get dailyOsNextPlanReadyNotificationBody =>

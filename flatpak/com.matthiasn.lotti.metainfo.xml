@@ -37,6 +37,7 @@
   <releases>
     <release version="0.9.1066" date="2026-07-25">
       <description>
+        <p>You now hear about a day plan that failed, not just one that worked. If drafting or refining a plan gave up while Lotti was in the background, nothing told you — you came back to a day that had simply never been planned, with no explanation. Those failures now raise a notification that takes you to the day so you can retry.</p>
         <p>The "Active" badge on inference profiles now means something you can control. A profile was badged Active purely because one of its models belonged to a provider you had connected, so it could appear active the moment you set up a provider with nothing you could do to change it, while the profile your categories actually used showed nothing. The badge now reads "In use" and appears only when a category or a task agent routes through that profile.</p>
         <p>A provider's page now lists every profile that depends on it, under "Profiles using this provider", instead of naming a single arbitrary "Active profile" — so you can see what would break before removing a provider.</p>
       </description>

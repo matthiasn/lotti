@@ -1836,10 +1836,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Granska';
 
   @override
-  String get aiProviderDetailProfilesUsingTitle =>
-      'Profiler som använder den här leverantören';
-
-  @override
   String get aiProviderDetailAddModelButton => 'Lägg till modell';
 
   @override
@@ -1892,6 +1888,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiProviderDetailPageTitle => 'Leverantörsdetaljer';
+
+  @override
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profiler som använder den här leverantören';
 
   @override
   String get aiProviderDetailRemoveButton => 'Ta bort vårdgivaren';
@@ -4006,12 +4006,28 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Brytlänk';
 
   @override
+  String get dailyOsNextPlanChangesFailedNotificationBody =>
+      'Open Lotti to see what happened and try again.';
+
+  @override
+  String get dailyOsNextPlanChangesFailedNotificationTitle =>
+      'Your plan changes didn\'t finish';
+
+  @override
   String get dailyOsNextPlanChangesReadyNotificationBody =>
       'The proposed changes are waiting for your review.';
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationTitle =>
       'Your plan changes are ready';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationBody =>
+      'Open Lotti to see what happened and try again.';
+
+  @override
+  String get dailyOsNextPlanFailedNotificationTitle =>
+      'Your day plan didn\'t finish';
 
   @override
   String get dailyOsNextPlanReadyNotificationBody =>
