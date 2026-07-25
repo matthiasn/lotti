@@ -249,27 +249,34 @@ class _LinkedTasksHeader extends ConsumerWidget {
               ),
               SizedBox(width: tokens.spacing.step2),
             ],
-            // Flexible, and the first thing to give: at large accessibility
-            // text sizes the header's fixed parts — badge, action, overflow —
-            // no longer fit beside a full-width title, and the Row overflowed
-            // by up to 158pt, clipping the action and dropping the overflow
-            // menu that is manage mode's other way out. The card's own name is
-            // the one thing here the user can afford to read in part.
-            Flexible(
-              child: Text(
-                context.messages.linkedTasksTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
+            // One Expanded holding the title and its badge, and no Spacer.
+            // A Flexible title beside a Spacer splits the free space between
+            // them, so the card truncated its own name to "Linked T…" at
+            // default text size with most of the row sitting empty. Expanded
+            // gives the group all the room the trailing controls do not need,
+            // so the title gives way only when there is genuinely nothing
+            // left — which is what keeps the header whole at large
+            // accessibility text sizes without starving it at normal ones.
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      context.messages.linkedTasksTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(color: tokens.colors.text.highEmphasis),
+                    ),
+                  ),
+                  if (hasLinkedTasks) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    _CountBadge(count: count),
+                  ],
+                ],
               ),
             ),
-            if (hasLinkedTasks) ...[
-              SizedBox(width: tokens.spacing.step3),
-              _CountBadge(count: count),
-            ],
-            const Spacer(),
             // Manage mode is otherwise invisible except for two icons
             // appearing per row, and the only way out used to be the same
             // unlabelled overflow menu it was entered from. While it is on,

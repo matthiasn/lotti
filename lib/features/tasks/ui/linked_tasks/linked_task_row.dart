@@ -141,7 +141,12 @@ class LinkedTaskRow extends StatelessWidget {
                         _RowAction(
                           tooltip: context.messages.unlinkButton,
                           onPressed: () => _confirmUnlink(context),
-                          icon: Icons.close_rounded,
+                          // Not Icons.close_rounded — that glyph is
+                          // StatusGlyph's own icon for TaskStatus.rejected, so
+                          // a Rejected row in manage mode showed the same mark
+                          // twice with two different meanings. Same collision
+                          // the edit action already avoids for Groomed.
+                          icon: Icons.link_off,
                           // Quieter than its neighbour, not louder: the
                           // confirmation modal is what makes unlinking safe,
                           // and painting the destructive action as the

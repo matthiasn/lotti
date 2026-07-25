@@ -65,7 +65,7 @@ void main() {
         );
 
         expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(Icons.link_off), findsNothing);
       },
     );
 
@@ -84,10 +84,10 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.link_off), findsOneWidget);
         expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(Icons.link_off));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -119,7 +119,7 @@ void main() {
         );
 
         expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.link_off), findsOneWidget);
         expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
 
         await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
@@ -144,7 +144,7 @@ void main() {
         );
 
         expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(Icons.link_off), findsNothing);
         expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
       },
     );
@@ -164,7 +164,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
@@ -188,7 +188,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(Icons.link_off));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
@@ -369,7 +369,7 @@ void main() {
           ),
         );
 
-        for (final icon in [Icons.swap_horiz_rounded, Icons.close_rounded]) {
+        for (final icon in [Icons.swap_horiz_rounded, Icons.link_off]) {
           final size = tester.getSize(
             find
                 .ancestor(

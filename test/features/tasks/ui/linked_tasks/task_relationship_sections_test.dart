@@ -286,7 +286,7 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
@@ -321,7 +321,7 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));

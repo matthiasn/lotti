@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -25,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -212,7 +214,13 @@ void main() {
   late MockVectorClockService mockVectorClockService;
   late TestGetItMocks getItMocks;
 
-  setUpAll(registerAllFallbackValues);
+  setUpAll(() async {
+    registerAllFallbackValues();
+    // Real font metrics: the fallback test font is far wider than Inter, so
+    // width assertions measured against it describe a layout that does not
+    // ship.
+    await loadAppFonts();
+  });
 
   setUp(() async {
     mockNavService = MockNavService();
@@ -631,6 +639,47 @@ void main() {
       expect(find.text('Outgoing Task'), findsOneWidget);
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
+
+    // The other half of the header contract. The scale loop below proves the
+    // header does not overflow; it says nothing about whether the title is
+    // being eaten while space sits idle beside it — which is exactly how a
+    // default-scale truncation shipped under a green suite.
+    // The card sits inside the detail page's horizontal padding, so its real
+    // width on a 390pt phone is ~357 — measuring at the full viewport width
+    // hands the header 33pt it never has, which is enough to hide the
+    // truncation entirely.
+    const phoneCardWidth = 357.0;
+
+    for (final manageMode in [false, true]) {
+      testWidgets(
+        'the header title is not truncated at default text size '
+        '(manage: $manageMode) — it may give way only when the trailing '
+        'controls genuinely leave it no room',
+        (tester) async {
+          await pumpWidget(
+            tester,
+            incoming: [],
+            outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+            manageMode: manageMode,
+            width: phoneCardWidth,
+            mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          );
+
+          final titleFinder = find.text('Linked Tasks');
+          expect(titleFinder, findsOneWidget);
+
+          final painted = tester.renderObject<RenderParagraph>(titleFinder);
+          expect(
+            painted.didExceedMaxLines,
+            isFalse,
+            reason:
+                'the card is truncating its own name at default text size; '
+                'the granted width is ${painted.size.width}pt against an '
+                'intrinsic ${painted.getMaxIntrinsicWidth(double.infinity)}pt',
+          );
+        },
+      );
+    }
 
     // Large accessibility text sizes are a supported configuration, not an
     // edge case, and the card header is the densest row in the feature: a

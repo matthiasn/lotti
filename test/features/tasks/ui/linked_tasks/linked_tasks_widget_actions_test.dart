@@ -280,7 +280,7 @@ void main() {
 
       // Default chevron in browse mode.
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.byIcon(Icons.link_off), findsNothing);
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pump();
@@ -291,7 +291,7 @@ void main() {
 
       // Chevron replaced by the unlink X.
       expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.link_off), findsOneWidget);
 
       // The mode now says so in the header and offers its own way out, rather
       // than hiding the exit back inside the menu it was entered from.
@@ -304,7 +304,7 @@ void main() {
 
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
       expect(find.widgetWithText(DesignSystemButton, 'Done'), findsNothing);
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.byIcon(Icons.link_off), findsNothing);
     });
 
     testWidgets(
@@ -799,7 +799,7 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -827,7 +827,7 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -874,7 +874,7 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
