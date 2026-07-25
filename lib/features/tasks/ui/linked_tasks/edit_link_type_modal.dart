@@ -91,13 +91,30 @@ class _EditLinkTypeBody extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step3),
-          Text(
-            context.messages.editLinkTypeCounterpart(linkedTaskTitle),
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+          Padding(
+            // On the dropdown's own value rail, so the task completing the
+            // sentence lines up under the phrase rather than hanging left of it.
+            padding: EdgeInsets.only(left: tokens.spacing.step5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.messages.editLinkTypeCounterpartLabel,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step1),
+                Text(
+                  linkedTaskTitle,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

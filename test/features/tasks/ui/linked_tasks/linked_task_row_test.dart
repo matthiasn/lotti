@@ -244,6 +244,61 @@ void main() {
     );
   });
 
+  group('LinkedTaskRow trailing-rail geometry', () {
+    /// Renders one row at a fixed width and reports the box the title got.
+    ///
+    /// Measured rather than asserted from the source: a rail "reserved" by a
+    /// SizedBox the actions then overflow, or sized from a text style the rows
+    /// do not render at, still reads as correct in the widget tree while
+    /// visibly re-wrapping the title. Only the laid-out width catches that.
+    Future<Size> titleBoxAt(
+      WidgetTester tester, {
+      required bool manageMode,
+    }) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: SizedBox(
+            width: 390,
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: LinkedTaskRowData(
+                task: TestTaskFactory.create(
+                  id: 'other-task',
+                  title: 'Migrate the relationship picker to the shared sheet',
+                ),
+              ),
+              manageMode: manageMode,
+              onEdit: () async {},
+              onUnlink: () async {},
+            ),
+          ),
+        ),
+      );
+      return tester.getSize(
+        find.text('Migrate the relationship picker to the shared sheet'),
+      );
+    }
+
+    testWidgets(
+      'the title keeps the same box when manage mode is toggled, so entering '
+      'manage mode never re-wraps every row',
+      (tester) async {
+        final browsing = await titleBoxAt(tester, manageMode: false);
+        final managing = await titleBoxAt(tester, manageMode: true);
+
+        expect(managing.width, browsing.width);
+        expect(managing.height, browsing.height);
+      },
+    );
+
+    testWidgets('the row offers no unbounded trailing content to overflow', (
+      tester,
+    ) async {
+      await titleBoxAt(tester, manageMode: true);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('StatusGlyph', () {
     testWidgets('renders an icon colored for the given status', (
       tester,

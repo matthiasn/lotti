@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -20,6 +21,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 
 /// Linked tasks card on the task detail view.
 ///
@@ -181,7 +184,7 @@ class _LinkedTasksEmptyAction extends StatelessWidget {
       ),
       trailing: Icon(
         Icons.arrow_forward_ios,
-        size: linkedRowChevronSize,
+        size: tokens.spacing.step4,
         color: tokens.colors.text.lowEmphasis,
       ),
     );
@@ -422,42 +425,57 @@ Future<void> _createNewLinkedTask(
 /// Prompts for the relationship the new task will have to the current one,
 /// or null if cancelled. Defaults to today's plain-link direction (current
 /// task → new task); picking an inverse phrase swaps it.
+///
+/// On the shared modal, not showDialog: this was the last surface in the
+/// feature rendering raw Material defaults inside an otherwise tokenised flow,
+/// and it sits between two modals that already use it.
 Future<DirectedRelation?> _pickRelationshipType(BuildContext context) async {
-  return showDialog<DirectedRelation>(
-    context: context,
-    builder: (context) => const _RelationshipPickerDialog(),
+  final relation = ValueNotifier<DirectedRelation>(
+    const DirectedRelation(EntryLinkType.basic),
   );
+  try {
+    return await ModalUtils.showSinglePageModal<DirectedRelation>(
+      context: context,
+      title: context.messages.createNewLinkedTask,
+      padding: EdgeInsets.zero,
+      stickyActionBarBuilder: (BuildContext modalContext) =>
+          buildPickerApplyFooter(
+            context: modalContext,
+            label: modalContext.messages.createButton,
+            onTap: () => Navigator.of(modalContext).pop(relation.value),
+          ),
+      builder: (_) => _RelationshipPickerBody(relation: relation),
+    );
+  } finally {
+    relation.dispose();
+  }
 }
 
-class _RelationshipPickerDialog extends StatefulWidget {
-  const _RelationshipPickerDialog();
+class _RelationshipPickerBody extends StatelessWidget {
+  const _RelationshipPickerBody({required this.relation});
 
-  @override
-  State<_RelationshipPickerDialog> createState() =>
-      _RelationshipPickerDialogState();
-}
-
-class _RelationshipPickerDialogState extends State<_RelationshipPickerDialog> {
-  DirectedRelation _relation = const DirectedRelation(EntryLinkType.basic);
+  final ValueNotifier<DirectedRelation> relation;
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(context.messages.createNewLinkedTask),
-      content: RelationshipTypeSelector(
-        selected: _relation,
-        onChanged: (relation) => setState(() => _relation = relation),
+    final tokens = context.designTokens;
+    // The Create footer is a sticky overlay rather than a sibling, so its
+    // height has to be reserved or the selector renders underneath it.
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step5,
+        tokens.spacing.step5,
+        DesignSystemGlassActionFooter.reservedHeightFor(context) +
+            tokens.spacing.step5,
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.messages.cancelButton),
+      child: ValueListenableBuilder<DirectedRelation>(
+        valueListenable: relation,
+        builder: (context, value, _) => RelationshipTypeSelector(
+          selected: value,
+          onChanged: (next) => relation.value = next,
         ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(_relation),
-          child: Text(context.messages.createButton),
-        ),
-      ],
+      ),
     );
   }
 }

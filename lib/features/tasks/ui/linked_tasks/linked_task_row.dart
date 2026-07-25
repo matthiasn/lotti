@@ -8,11 +8,6 @@ import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
-/// Size of the "this navigates somewhere" chevron, shared by [LinkedTaskRow]
-/// and the header's blocked-by chip so the same affordance is the same glyph
-/// at the same size everywhere it appears in this feature.
-const double linkedRowChevronSize = 14;
-
 /// Row width from which a status label can share the title's line without
 /// crowding it. Deliberately well below the detail reading measure the card is
 /// capped at on wide windows: a window-level desktop check would read true
@@ -92,51 +87,62 @@ class LinkedTaskRow extends StatelessWidget {
           // Status as a trailing anchor rather than a second line: it keeps the
           // row one line tall, and on a wide detail pane it stops the trailing
           // affordance floating alone at the far edge of an otherwise empty row.
-          subtitle: showActions || wideEnoughForTrailingStatus
-              ? null
-              : statusLabel,
-          trailing: showActions || !wideEnoughForTrailingStatus
+          // Kept in manage mode too: curating links is exactly when knowing a
+          // blocker is already Done matters most, and dropping it there cost
+          // the row its second type level during the one task it serves.
+          subtitle: wideEnoughForTrailingStatus ? null : statusLabel,
+          trailing: !wideEnoughForTrailingStatus
               ? null
               : Text(
                   statusLabel,
                   style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
+                    color: tokens.colors.text.lowEmphasis,
                   ),
                 ),
           trailingExtra: showActions
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (onEdit != null)
-                      _RowAction(
-                        tooltip: context.messages.editLinkTypeTooltip,
-                        onPressed: () => onEdit?.call(),
-                        // Not Icons.edit_outlined — that glyph is StatusGlyph's
-                        // own icon for TaskStatus.groomed, so a Groomed row in
-                        // manage mode would show the same pencil twice with two
-                        // different meanings right next to each other.
-                        icon: Icons.swap_horiz_rounded,
-                      ),
-                    if (onUnlink != null)
-                      _RowAction(
-                        tooltip: context.messages.unlinkButton,
-                        onPressed: () => _confirmUnlink(context),
-                        icon: Icons.close_rounded,
-                        // The destructive one carries more weight than its
-                        // neighbour so the two aren't interchangeable smudges.
-                        emphasis: tokens.colors.text.mediumEmphasis,
-                      ),
-                  ],
+              ? SizedBox(
+                  // Pinned to the same width the browse chevron reserves, so a
+                  // row that offers only one action still leaves the title the
+                  // same space as one that offers two.
+                  width: tokens.spacing.step8 * 2,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (onEdit != null)
+                        _RowAction(
+                          tooltip: context.messages.editLinkTypeTooltip,
+                          onPressed: () => onEdit?.call(),
+                          // Not Icons.edit_outlined — that glyph is StatusGlyph's
+                          // own icon for TaskStatus.groomed, so a Groomed row in
+                          // manage mode would show the same pencil twice with two
+                          // different meanings right next to each other.
+                          icon: Icons.swap_horiz_rounded,
+                        ),
+                      if (onUnlink != null)
+                        _RowAction(
+                          tooltip: context.messages.unlinkButton,
+                          onPressed: () => _confirmUnlink(context),
+                          icon: Icons.close_rounded,
+                          // The destructive one carries more weight than its
+                          // neighbour so the two aren't interchangeable smudges.
+                          emphasis: tokens.colors.text.mediumEmphasis,
+                        ),
+                    ],
+                  ),
                 )
               : SizedBox(
-                  // Same box the manage-mode actions occupy, so the trailing
-                  // rail is a fixed width and toggling the mode never reflows
-                  // the titles beside it.
-                  width: tokens.spacing.step8,
-                  child: Icon(
-                    Icons.arrow_forward_ios,
-                    size: linkedRowChevronSize,
-                    color: tokens.colors.text.lowEmphasis,
+                  // Manage mode occupies two step8 action boxes, so browse
+                  // mode must reserve the same total or toggling the mode
+                  // changes the width left for the title and re-wraps it.
+                  width: tokens.spacing.step8 * 2,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Icon(
+                      Icons.arrow_forward_ios,
+                      size: tokens.spacing.step4,
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
                   ),
                 ),
         );

@@ -512,11 +512,13 @@ class _TaskBlockedByChip extends ConsumerWidget {
         // card, and the tooltip still names it.
         label: context.messages.taskBlockedByChipLabel(blockers.length),
         // Matches LinkedTaskRow's own browse-mode chevron so a chip that
-        // navigates reads as tappable, not just as a status readout.
+        // navigates reads as tappable, not just as a status readout. Neutral,
+        // not amber: "go here" is not part of the blocked semantic, and a third
+        // amber mark is what made the chip compete with the status pill.
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: tokens.spacing.step4,
-          color: accent,
+          color: tokens.colors.text.lowEmphasis,
         ),
         onTap: () => single
             ? openLinkedTaskDetail(context: context, taskId: blockers.first.id)

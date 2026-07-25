@@ -316,7 +316,11 @@ class _DropdownSizeSpec {
     // the panel ended mid-row so the last visible option looked sliced. Tie the
     // ceiling to a whole number of rows instead.
     final menuItemMinHeight =
-        tokens.typography.lineHeight.bodySmall + tokens.spacing.step4 * 2;
+        // Derived from the style the rows actually render (menuItemStyle
+        // below). Computed against a shorter style than exists, the ceiling
+        // lands mid-row and the last visible option is sliced through its
+        // glyphs — invisible in the widget tree, obvious on screen.
+        tokens.typography.lineHeight.bodyMedium + tokens.spacing.step4 * 2;
     final panelMaxHeight = menuItemMinHeight * 7;
     final checkboxSize =
         tokens.typography.lineHeight.bodySmall + tokens.spacing.step2;

@@ -9,6 +9,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  _panelHeightGroup();
+
   group('DesignSystemDropdown', () {
     testWidgets('renders the closed dropdown trigger from tokens', (
       tester,
@@ -490,6 +492,72 @@ void main() {
             items: _items(['Title']),
           ),
           throwsAssertionError,
+        );
+      },
+    );
+  });
+}
+
+/// The open panel must end on a row boundary.
+///
+/// Its ceiling is computed from a size spec, while the row height comes from
+/// whatever text style the rows actually render. When those two drift apart the
+/// widget tree still looks right and the panel visibly slices its last option
+/// through the glyphs — so this measures both from the laid-out result.
+void _panelHeightGroup() {
+  group('DesignSystemDropdown open panel', () {
+    testWidgets(
+      'shows whole options — the scroll viewport is an exact multiple of the '
+      'height its rows actually render at',
+      (tester) async {
+        await _pumpDropdown(
+          tester,
+          SizedBox(
+            width: 320,
+            child: DesignSystemDropdown(
+              label: 'Label',
+              inputLabel: 'Input',
+              // More options than the panel can show, so it is at its ceiling.
+              items: _items([
+                'Alpha',
+                'Bravo',
+                'Charlie',
+                'Delta',
+                'Echo',
+                'Foxtrot',
+                'Golf',
+                'Hotel',
+                'India',
+              ]),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Input'));
+        await tester.pumpAndSettle();
+
+        // The pitch between two adjacent options is the row height, whatever
+        // the size spec believes it to be.
+        final rowHeight =
+            tester.getTopLeft(find.text('Bravo')).dy -
+            tester.getTopLeft(find.text('Alpha')).dy;
+        final viewportHeight = tester
+            .getSize(
+              find
+                  .ancestor(
+                    of: find.text('Alpha'),
+                    matching: find.byType(ListView),
+                  )
+                  .first,
+            )
+            .height;
+
+        expect(
+          viewportHeight % rowHeight,
+          0,
+          reason:
+              'panel is $viewportHeight tall but rows are $rowHeight — the '
+              'last visible option is cut through its glyphs',
         );
       },
     );

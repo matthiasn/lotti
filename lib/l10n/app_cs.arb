@@ -1,5 +1,4 @@
 {
-  "@@locale": "cs",
   "activeLabel": "Aktivní",
   "addActionAddAudioRecording": "Audiozáznam",
   "addActionAddChecklist": "Kontrolní seznam",
@@ -8,8 +7,8 @@
   "addActionAddScreenshot": "Snímek obrazovky",
   "addActionAddTask": "Úkol",
   "addActionAddText": "Textový záznam",
-  "addActionAddTimer": "Časovač",
   "addActionAddTimeRecording": "Záznam času",
+  "addActionAddTimer": "Časovač",
   "addActionImportImage": "Importovat obrázek",
   "addHabitCommentLabel": "Komentář",
   "addHabitDateLabel": "Dokončeno dne",
@@ -330,8 +329,8 @@
   "agentSoulAssignedTemplatesTitle": "Přiřazené šablony",
   "agentSoulAssignmentLabel": "Duše",
   "agentSoulCoachingStyleLabel": "Styl koučování",
-  "agentSoulCreatedSuccess": "Duše vytvořena",
   "agentSoulCreateTitle": "Vytvořit duši",
+  "agentSoulCreatedSuccess": "Duše vytvořena",
   "agentSoulDeleteConfirmBody": "Tím se odstraní duše a všechny její verze.",
   "agentSoulDeleteConfirmTitle": "Smazat duši",
   "agentSoulDetailTitle": "Detail duše",
@@ -369,10 +368,7 @@
     }
   },
   "agentSoulSelectTitle": "Vybrat duši",
-  "agentSoulsEmptyFiltered": "Žádné duše neodpovídají tvým filtrům.",
   "agentSoulSettingsTab": "Nastavení",
-  "agentSoulsSearchPlaceholder": "Hledat duše…",
-  "agentSoulsTitle": "Duše",
   "agentSoulToneBoundsLabel": "Hranice tónu",
   "agentSoulVersionHistoryTitle": "Historie verzí",
   "agentSoulVersionLabel": "Verze {version}",
@@ -385,6 +381,9 @@
   },
   "agentSoulVersionSaved": "Nová verze duše uložena",
   "agentSoulVoiceDirectiveLabel": "Hlasová direktiva",
+  "agentSoulsEmptyFiltered": "Žádné duše neodpovídají tvým filtrům.",
+  "agentSoulsSearchPlaceholder": "Hledat duše…",
+  "agentSoulsTitle": "Duše",
   "agentStateConsecutiveFailures": "Po sobě jdoucí selhání",
   "agentStateErrorLoading": "Nepodařilo se načíst stav: {error}",
   "@agentStateErrorLoading": {
@@ -411,8 +410,8 @@
   "agentTabStats": "Statistiky",
   "agentTemplateAggregateTokenUsageHeading": "Celkové využití tokenů",
   "agentTemplateAssignedLabel": "Šablona",
-  "agentTemplateCreatedSuccess": "Šablona vytvořena",
   "agentTemplateCreateTitle": "Vytvořit šablonu",
+  "agentTemplateCreatedSuccess": "Šablona vytvořena",
   "agentTemplateDeleteConfirm": "Smazat tuto šablonu? Tuto akci nelze vrátit zpět.",
   "agentTemplateDeleteHasInstances": "Nelze smazat: tuto šablonu používají aktivní agenti.",
   "agentTemplateDisplayNameLabel": "Název",
@@ -428,10 +427,10 @@
   "agentTemplateKindProjectAgent": "Agent projektu",
   "agentTemplateKindTaskAgent": "Agent úkolů",
   "agentTemplateMetricsTotalWakes": "Celkový počet probuzení",
-  "agentTemplateNoneAssigned": "Není přiřazena žádná šablona",
   "agentTemplateNoTemplates": "Nejsou k dispozici žádné šablony. Nejdřív vytvoř šablonu v Nastavení.",
-  "agentTemplateNotFound": "Šablona nenalezena",
   "agentTemplateNoVersions": "Žádné verze",
+  "agentTemplateNoneAssigned": "Není přiřazena žádná šablona",
+  "agentTemplateNotFound": "Šablona nenalezena",
   "agentTemplateReportDirectiveHint": "Definuj strukturu reportu, povinné sekce a pravidla formátování...",
   "agentTemplateReportDirectiveLabel": "Direktiva reportu",
   "agentTemplateReportsEmpty": "Zatím žádné zprávy.",
@@ -447,16 +446,10 @@
   },
   "agentTemplateSaveNewVersion": "Uložit",
   "agentTemplateSelectTitle": "Vybrat šablonu",
-  "agentTemplatesEmptyFiltered": "Žádné šablony neodpovídají tvým filtrům.",
   "agentTemplateSettingsTab": "Nastavení",
-  "agentTemplatesFilterSectionKind": "Druh",
-  "agentTemplatesGroupByKind": "Druh",
-  "agentTemplatesGroupNone": "Vše",
-  "agentTemplatesSearchPlaceholder": "Hledat šablony…",
   "agentTemplateStatsTab": "Statistiky",
   "agentTemplateStatusActive": "Aktivní",
   "agentTemplateStatusArchived": "Archivovaná",
-  "agentTemplatesTitle": "Šablony agentů",
   "agentTemplateSwitchHint": "Chceš-li použít jinou šablonu, znič tohoto agenta a vytvoř nového.",
   "agentTemplateVersionHistoryTitle": "Historie verzí",
   "agentTemplateVersionLabel": "Verze {version}",
@@ -468,6 +461,12 @@
     }
   },
   "agentTemplateVersionSaved": "Nová verze šablony uložena",
+  "agentTemplatesEmptyFiltered": "Žádné šablony neodpovídají tvým filtrům.",
+  "agentTemplatesFilterSectionKind": "Druh",
+  "agentTemplatesGroupByKind": "Druh",
+  "agentTemplatesGroupNone": "Vše",
+  "agentTemplatesSearchPlaceholder": "Hledat šablony…",
+  "agentTemplatesTitle": "Šablony agentů",
   "agentThreadReportLabel": "Zpráva vytvořená během tohoto probuzení",
   "agentTokenUsageCachedTokens": "Z mezipaměti",
   "agentTokenUsageEmpty": "Zatím nebyla zaznamenána žádná spotřeba tokenů.",
@@ -530,8 +529,8 @@
       }
     }
   },
-  "aiAttributionTokens": "Tokeny",
   "aiAttributionTokenUsageUnknown": "Využití tokenů není známé",
+  "aiAttributionTokens": "Tokeny",
   "aiAttributionTrigger": "Spouštěč",
   "aiAttributionTriggerAgent": "Agent",
   "aiAttributionTriggerAutomatic": "Automaticky",
@@ -795,6 +794,30 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "Základní URL (volitelné)",
   "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Zobrazí se v tvém seznamu poskytovatelů",
+  "aiProviderConnectKeyHelperLink": "Klíč získáš na {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Skryto",
+  "aiProviderConnectKeyPrivacyHint": "Tvůj API klíč nikdy neopustí toto zařízení.",
+  "aiProviderConnectPageTitle": "Připojit {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Uložit a pokračovat",
+  "aiProviderConnectSaveAsDraft": "Uložit jako koncept",
+  "aiProviderConnectSavedAsDraftToast": "Uloženo jako koncept",
+  "aiProviderConnectStepChoose": "Vyber poskytovatele",
+  "aiProviderConnectStepConnect": "Připojit",
+  "aiProviderConnectStepReview": "Zkontrolovat",
   "aiProviderConnectionCheckingLabel": "Ověřuji klíč, načítám dostupné modely…",
   "aiProviderConnectionFailedBadResponseDetail": "Neočekávaný tvar odpovědi: {type}",
   "@aiProviderConnectionFailedBadResponseDetail": {
@@ -847,31 +870,6 @@
     }
   },
   "aiProviderConnectionVerifiedTitle": "Připojení ověřeno",
-  "aiProviderConnectKeyHelperLink": "Klíč získáš na {url}",
-  "@aiProviderConnectKeyHelperLink": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectKeyHiddenLabel": "Skryto",
-  "aiProviderConnectKeyPrivacyHint": "Tvůj API klíč nikdy neopustí toto zařízení.",
-  "aiProviderConnectPageTitle": "Připojit {providerName}",
-  "@aiProviderConnectPageTitle": {
-    "placeholders": {
-      "providerName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectSaveAndContinue": "Uložit a pokračovat",
-  "aiProviderConnectSaveAsDraft": "Uložit jako koncept",
-  "aiProviderConnectSavedAsDraftToast": "Uloženo jako koncept",
-  "aiProviderConnectStepChoose": "Vyber poskytovatele",
-  "aiProviderConnectStepConnect": "Připojit",
-  "aiProviderConnectStepReview": "Zkontrolovat",
-  "aiProviderDetailProfilesUsingTitle": "Profily využívající tohoto poskytovatele",
   "aiProviderDetailAddModelButton": "Přidat model",
   "aiProviderDetailApiKeyLabel": "API klíč",
   "aiProviderDetailBackTooltip": "Zpět",
@@ -886,6 +884,7 @@
   "aiProviderDetailModelsTitle": "{count, plural, =0{Modely} =1{Model · 1} few{Modely · {count}} many{Modelů · {count}} other{Modelů · {count}}}",
   "aiProviderDetailNoModelsMessage": "Zatím žádné modely. Přidej jeden, abys mohl tohoto poskytovatele používat.",
   "aiProviderDetailPageTitle": "Detail poskytovatele",
+  "aiProviderDetailProfilesUsingTitle": "Profily využívající tohoto poskytovatele",
   "aiProviderDetailRemoveButton": "Odstranit poskytovatele",
   "aiProviderDetailRemoveDescription": "Smaže poskytovatele a všechny modely, které jej používají. Tuto akci nelze vrátit.",
   "aiProviderDetailRemoveTitle": "Odstranit tohoto poskytovatele",
@@ -938,13 +937,13 @@
   "aiResponseTypePromptGeneration": "Vygenerovaný prompt",
   "aiResponseTypeTaskSummary": "Shrnutí úkolu",
   "aiRunningActivityOpenProgress": "Zobrazit průběh AI",
-  "aiSettingsAddedLabel": "Přidáno",
   "aiSettingsAddModelButton": "Přidat model",
   "aiSettingsAddModelErrorDescription": "Při přidávání modelu se něco pokazilo. Zkus to prosím znovu.",
   "aiSettingsAddModelErrorTitle": "Model se nepodařilo přidat",
   "aiSettingsAddModelTooltip": "Přidat tento model ke svému poskytovateli",
   "aiSettingsAddProfileButton": "Přidat profil",
   "aiSettingsAddProviderButton": "Přidat poskytovatele",
+  "aiSettingsAddedLabel": "Přidáno",
   "aiSettingsAgentWakeConcurrencyDescription": "Zvol, kolik různých agentů může současně spouštět inferenci. Vyšší hodnoty zrychlí odpovědi, ale více zatíží poskytovatele i zařízení.",
   "aiSettingsAgentWakeConcurrencyLabel": "Souběžná probuzení agentů",
   "aiSettingsClearAllFiltersTooltip": "Vymazat všechny filtry",
@@ -1164,8 +1163,8 @@
   "audioRecordingDiscardDialogTitle": "Zahodit nahrávku?",
   "audioRecordingPause": "POZASTAVIT",
   "audioRecordingResume": "POKRAČOVAT",
-  "audioRecordings": "Audiozáznamy",
   "audioRecordingStop": "STOP",
+  "audioRecordings": "Audiozáznamy",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 akce} few{{count} akce} other{{count} akcí}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1365,12 +1364,12 @@
   "checklistExpandTooltip": "Rozbalit",
   "checklistExportAsMarkdown": "Exportovat kontrolní seznam jako Markdown",
   "checklistExportFailed": "Export selhal",
-  "checklistItemArchived": "Položka archivována",
   "checklistItemArchiveUndo": "Zpět",
+  "checklistItemArchived": "Položka archivována",
   "checklistItemDeleteCancel": "Zrušit",
   "checklistItemDeleteConfirm": "Potvrdit",
-  "checklistItemDeleted": "Položka smazána",
   "checklistItemDeleteWarning": "Tuto akci nelze vrátit zpět.",
+  "checklistItemDeleted": "Položka smazána",
   "checklistMarkdownCopied": "Kontrolní seznam zkopírován jako Markdown",
   "checklistMoreTooltip": "Více",
   "checklistNoneDone": "Zatím žádné dokončené položky.",
@@ -1577,12 +1576,8 @@
   "conflictPickerUseFromSync": "Použít ze synchronizace",
   "conflictPickerUseThisDevice": "Použít toto zařízení",
   "conflictResolvedToast": "Konflikt vyřešen",
-  "conflictsEmptyDescription": "Všechno je teď synchronizované. Vyřešené položky zůstávají dostupné v druhém filtru.",
-  "conflictsEmptyTitle": "Nebyly zjištěny žádné konflikty",
   "conflictSideFromSync": "ZE SYNCHRONIZACE",
   "conflictSideThisDevice": "TOTO ZAŘÍZENÍ",
-  "conflictsResolved": "vyřešeno",
-  "conflictsUnresolved": "nevyřešeno",
   "conflictValueAbsent": "Nenastaveno",
   "conflictValueNo": "Ne",
   "conflictValueYes": "Ano",
@@ -1596,6 +1591,10 @@
       }
     }
   },
+  "conflictsEmptyDescription": "Všechno je teď synchronizované. Vyřešené položky zůstávají dostupné v druhém filtru.",
+  "conflictsEmptyTitle": "Nebyly zjištěny žádné konflikty",
+  "conflictsResolved": "vyřešeno",
+  "conflictsUnresolved": "nevyřešeno",
   "copyAsMarkdown": "Kopírovat jako Markdown",
   "copyAsText": "Kopírovat jako text",
   "correctionExampleCancel": "ZRUŠIT",
@@ -1745,7 +1744,6 @@
   "dailyOsNextCapturePastPrompt": "Chceš ještě něco zapsat k {date}?",
   "dailyOsNextCaptureReconcileCta": "Zkontrolovat",
   "dailyOsNextCaptureRecordingSavedStatus": "Nahrávka je uložená",
-  "dailyOsNextCapturesPanelTitle": "Záznamy",
   "dailyOsNextCaptureTranscribing": "Přepisuji…",
   "dailyOsNextCaptureTranscriptHint": "Oprav cokoli, co přepis spletl, než začne plánování.",
   "dailyOsNextCaptureTranscriptLabel": "Zkontroluj přepis",
@@ -1753,6 +1751,7 @@
   "dailyOsNextCaptureVoiceButtonReset": "Začít znovu",
   "dailyOsNextCaptureVoiceButtonStart": "Začít poslouchat",
   "dailyOsNextCaptureVoiceButtonStop": "Zastavit",
+  "dailyOsNextCapturesPanelTitle": "Záznamy",
   "dailyOsNextCategoryFilterAll": "Všechny kategorie",
   "dailyOsNextCategoryFilterDescription": "Automatické zpracování Daily OS používá jen kategorie zapnuté pro denní plánování.",
   "dailyOsNextCategoryFilterEmpty": "Zatím nejsou aktivované žádné kategorie pro denní plánování.",
@@ -1991,6 +1990,11 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Opakující · zmeškané",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 starší záznam} few{{count} starší záznamy} other{{count} starších záznamů}}",
+  "dailyOsNextTimeSpentShowLess": "Zobrazit méně",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} hotovo",
+  "dailyOsNextTimeSpentTitle": "DNES ZATÍM",
+  "dailyOsNextTimeSpentTitlePast": "STRÁVENÝ ČAS",
   "dailyOsNextTimelineActual": "Skutečnost",
   "dailyOsNextTimelineArrange": "Uspořádat bloky",
   "dailyOsNextTimelineBoth": "Plán a skutečnost",
@@ -2004,19 +2008,14 @@
   "dailyOsNextTimelineShowPaged": "Zobrazit plán a skutečnost posouváním",
   "dailyOsNextTimelineSwipeHint": "Přejeď na Skutečnost · svislým sevřením prstů přiblížíš",
   "dailyOsNextTimelineTracked": "zaznamenáno",
-  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 starší záznam} few{{count} starší záznamy} other{{count} starších záznamů}}",
-  "dailyOsNextTimeSpentShowLess": "Zobrazit méně",
-  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} hotovo",
-  "dailyOsNextTimeSpentTitle": "DNES ZATÍM",
-  "dailyOsNextTimeSpentTitlePast": "STRÁVENÝ ČAS",
   "dailyOsNextTriageConfirmDefer": "Odloženo",
-  "dailyOsNextTriageConfirmDone": "Označeno jako hotové",
   "dailyOsNextTriageConfirmDoNow": "Hotovo hned",
+  "dailyOsNextTriageConfirmDone": "Označeno jako hotové",
   "dailyOsNextTriageConfirmDrop": "Zahozeno",
   "dailyOsNextTriageConfirmToday": "Přidáno na dnes",
   "dailyOsNextTriageDefer": "Odložit",
-  "dailyOsNextTriageDone": "Hotovo",
   "dailyOsNextTriageDoNow": "Udělat teď",
+  "dailyOsNextTriageDone": "Hotovo",
   "dailyOsNextTriageDrop": "Zahodit",
   "dailyOsNextTriageToday": "Dnes",
   "dailyOsOnboardingCoachCapture": "Řekni, co ti leží v hlavě.",
@@ -2265,8 +2264,8 @@
   "designSystemSmallLabel": "Malý",
   "designSystemSpinnerPlainLabel": "Bez pozadí",
   "designSystemSpinnerSkeletonPulseLabel": "Pulz",
-  "designSystemSpinnerSkeletonsTitle": "Skelety",
   "designSystemSpinnerSkeletonWaveLabel": "Vlna",
+  "designSystemSpinnerSkeletonsTitle": "Skelety",
   "designSystemSpinnerSpinnersTitle": "Spinnery",
   "designSystemSpinnerTrackLabel": "Se stopou",
   "designSystemSplitButtonDropdownSemantics": "Otevřít možnosti pro {label}",
@@ -2316,18 +2315,18 @@
   "desktopEmptyStateSelectDashboard": "Vyber panel, jehož podrobnosti chceš zobrazit",
   "desktopEmptyStateSelectProject": "Vyber projekt pro zobrazení podrobností",
   "desktopEmptyStateSelectTask": "Vyber úkol pro zobrazení podrobností",
-  "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {
-        "type": "String"
-      }
-    }
-  },
   "deviceDeleteFailed": "Zařízení se nepodařilo odstranit: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
       "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {
         "type": "String"
       }
     }
@@ -2341,6 +2340,7 @@
       }
     }
   },
+  "editLinkTypeCounterpartLabel": "Propojený úkol",
   "editLinkTypeFailedMessage": "Vztah se nepodařilo upravit. Zkuste to prosím znovu.",
   "editLinkTypeTitle": "Upravit vztah",
   "editLinkTypeTooltip": "Upravit vztah",
@@ -2441,6 +2441,11 @@
   "habitLogOtherDayHint": "Podržením zaznamenáš jiný den",
   "habitNotRecordedLabel": "Nezaznamenáno",
   "habitPriorityLabel": "Priorita",
+  "habitSectionOptionsTitle": "Možnosti",
+  "habitSectionScheduleTitle": "Rozvrh",
+  "habitShowAlertAtLabel": "Zobrazit upozornění v",
+  "habitShowFromLabel": "Zobrazit od",
+  "habitStreakDaysSemantic": "{count, plural, one{1 den v řadě} few{{count} dny v řadě} other{{count} dní v řadě}}",
   "habitsAboveGoal": "Podle plánu",
   "habitsActiveHabitsCount": "{count, plural, one{1 aktivní návyk} few{{count} aktivní návyky} other{{count} aktivních návyků}}",
   "habitsAllDoneToday": "Dnes hotovo vše",
@@ -2453,8 +2458,6 @@
   "habitsDaySkippedPercent": "{percent}% přeskočeno",
   "habitsDaySuccessfulPercent": "{percent}% úspěšně",
   "habitsDoneTodayLabel": "Hotovo dnes",
-  "habitSectionOptionsTitle": "Možnosti",
-  "habitSectionScheduleTitle": "Rozvrh",
   "habitsFilterAll": "všechny",
   "habitsFilterCompleted": "hotovo",
   "habitsFilterOpenNow": "nyní",
@@ -2463,8 +2466,6 @@
   "habitsHeatmapEmpty": "Přidej návyk a začni budovat svou důslednost",
   "habitsHeatmapLess": "Méně",
   "habitsHeatmapMore": "Více",
-  "habitShowAlertAtLabel": "Zobrazit upozornění v",
-  "habitShowFromLabel": "Zobrazit od",
   "habitsLaggardHint": "{habit} — splněno {kept} z {active}",
   "habitsOpenHeader": "K splnění",
   "habitsPendingLaterHeader": "Později dnes",
@@ -2476,7 +2477,6 @@
   "habitsStreakShortCount": "{count} se sérií 3 dnů",
   "habitsTapForBreakdown": "Klepnutím na den zobrazíš rozpis",
   "habitsToGoCount": "{count, plural, one{zbývá 1} few{zbývají {count}} other{zbývá {count}}}",
-  "habitStreakDaysSemantic": "{count, plural, one{1 den v řadě} few{{count} dny v řadě} other{{count} dní v řadě}}",
   "habitsVsPreviousWeek": "vs. minulý týden",
   "helpMenuCommandPalette": "Paleta příkazů…",
   "helpMenuKeyboardShortcuts": "Klávesové zkratky…",
@@ -2498,9 +2498,7 @@
   "imagePromptGenerationCopyTooltip": "Kopírovat prompt obrázku do schránky",
   "imagePromptGenerationExpandTooltip": "Zobrazit celý prompt",
   "imagePromptGenerationFullPromptLabel": "Celý prompt obrázku:",
-  "images": "Obrázky",
   "imageViewerDownloadFailed": "Obrázek se nepodařilo uložit",
-  "imageViewerDownloadingTooltip": "Ukládám obrázek",
   "imageViewerDownloadPermissionDenied": "Přístup k fotkám zamítnut – povol jej v Nastavení",
   "imageViewerDownloadSaved": "Uloženo {fileName}",
   "@imageViewerDownloadSaved": {
@@ -2512,6 +2510,8 @@
   },
   "imageViewerDownloadSavedToGallery": "Uloženo do Fotek",
   "imageViewerDownloadTooltip": "Stáhnout obrázek",
+  "imageViewerDownloadingTooltip": "Ukládám obrázek",
+  "images": "Obrázky",
   "inactiveLabel": "Neaktivní",
   "inactiveSwitchDescription": "Lze vybrat pro nové záznamy, když je zapnuto",
   "inferenceProfileChooseModelTitle": "Vyber model",
@@ -2544,7 +2544,6 @@
   "inferenceProfileSaveButton": "Uložit",
   "inferenceProfileSelectModel": "Vyber model…",
   "inferenceProfileSelectProfile": "Vyber profil…",
-  "inferenceProfilesEmpty": "Zatím žádné inferenční profily",
   "inferenceProfileSkillModelRequired": "Vyžaduje nastavení modelu {slotName}",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -2553,7 +2552,6 @@
       }
     }
   },
-  "inferenceProfileSkillsSection": "Automatizované dovednosti",
   "inferenceProfileSkillUsesModel": "Používá model {slotName}",
   "@inferenceProfileSkillUsesModel": {
     "placeholders": {
@@ -2562,12 +2560,14 @@
       }
     }
   },
-  "inferenceProfilesTitle": "Inferenční profily",
+  "inferenceProfileSkillsSection": "Automatizované dovednosti",
   "inferenceProfileThinking": "Uvažování",
   "inferenceProfileThinkingHighEnd": "Uvažování (pokročilé)",
   "inferenceProfileThinkingRequired": "Je potřeba model pro uvažování",
   "inferenceProfileTranscription": "Přepis",
   "inferenceProfileUnavailable": "Inferenční profil není k dispozici",
+  "inferenceProfilesEmpty": "Zatím žádné inferenční profily",
+  "inferenceProfilesTitle": "Inferenční profily",
   "inputDataTypeAudioFilesDescription": "Použijte audio soubory jako vstup",
   "inputDataTypeAudioFilesName": "Audio soubory",
   "inputDataTypeImagesDescription": "Použijte obrázky jako vstup",
@@ -2651,9 +2651,9 @@
   "journalDeleteQuestion": "Opravdu chcete smazat tento deníkový záznam?",
   "journalDurationLabel": "Doba trvání",
   "journalEndDateLabel": "Datum konce",
+  "journalEndTimeLabel": "Čas konce",
   "journalEndsAnotherDayHint": "Vyber samostatné datum konce",
   "journalEndsAnotherDayLabel": "Končí jiný den",
-  "journalEndTimeLabel": "Čas konce",
   "journalEntryExpandLabel": "Rozbalit záznam",
   "journalFilterEntryTypesTitle": "Typy záznamů",
   "journalFilterFlagged": "Označené",
@@ -2663,6 +2663,8 @@
   "journalFilterTitle": "Filtrovat deník",
   "journalHideLinkHint": "Skrýt odkaz",
   "journalHideMapHint": "Skrýt mapu",
+  "journalLinkFromHint": "Odkaz z",
+  "journalLinkToHint": "Odkaz na",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
   "journalLinkedEntriesActivityFilterCode": "Kód",
   "journalLinkedEntriesActivityFilterImages": "Obrázky",
@@ -2674,8 +2676,6 @@
   "journalLinkedEntriesSortNewestFirst": "Nejnovější první",
   "journalLinkedEntriesSortOldestFirst": "Nejstarší první",
   "journalLinkedFromLabel": "Odkaz z:",
-  "journalLinkFromHint": "Odkaz z",
-  "journalLinkToHint": "Odkaz na",
   "journalOvernightNextDay": "Končí {date} (další den)",
   "journalPrivateTooltip": "pouze soukromé",
   "journalSearchHint": "Hledat deník...",
@@ -2785,8 +2785,8 @@
   "knowledgeGraphNodeTypeRating": "Hodnocení",
   "knowledgeGraphNodeTypeTask": "Úkol",
   "knowledgeGraphOpenDetails": "Otevřít podrobnosti",
-  "knowledgeGraphRecenter": "Znovu vystředit",
   "knowledgeGraphRecentToOlder": "Novější → starší",
+  "knowledgeGraphRecenter": "Znovu vystředit",
   "knowledgeGraphRelationAiSource": "Zdroj AI",
   "knowledgeGraphRelationChecklist": "Kontrolní seznam",
   "knowledgeGraphRelationInProject": "V projektu",
@@ -2811,12 +2811,6 @@
   },
   "linkCreatedUndo": "Zpět",
   "linkDirectionLabel": "Tento úkol…",
-  "linkedTaskImageBadge": "Z propojené úlohy",
-  "linkedTasksBlockedBySectionTitle": "Blokováno",
-  "linkedTasksEmptyAction": "Propojit úkol…",
-  "linkedTasksEmptyHint": "Propoj tento úkol s jiným — blokátorem, navazujícím nebo duplicitou.",
-  "linkedTasksMenuTooltip": "Možnosti propojených úkolů",
-  "linkedTasksTitle": "Propojené úkoly",
   "linkExistingTask": "Propojit existující úkol…",
   "linkPhraseBasic": "Souvisí s",
   "linkPhraseBlocksInverse": "Je blokováno",
@@ -2829,6 +2823,13 @@
   "linkPhraseFollowsUpPrimary": "Navazuje na",
   "linkPhraseSupersedesInverse": "Je nahrazeno",
   "linkPhraseSupersedesPrimary": "Nahrazuje",
+  "linkedTaskImageBadge": "Z propojené úlohy",
+  "linkedTasksBlockedBySectionTitle": "Blokováno",
+  "linkedTasksEmptyAction": "Propojit úkol…",
+  "linkedTasksEmptyHint": "Propoj tento úkol s jiným — blokátorem, navazujícím nebo duplicitou.",
+  "linkedTasksMenuTooltip": "Možnosti propojených úkolů",
+  "linkedTasksTitle": "Propojené úkoly",
+  "@@locale": "cs",
   "logbookEmptyHint": "Vytvoř svůj první záznam a začni si psát deník.",
   "logbookEmptyTitle": "Tvůj deník je prázdný",
   "logbookNewEntriesHint": "Nové záznamy se otevřou tady.",
@@ -2915,10 +2916,6 @@
   "maintenancePurgeSentOutboxConfirm": "ANO, VYČISTIT",
   "maintenancePurgeSentOutboxDescription": "Smazat řádky odchozí pošty odeslané před více než 7 dny a uvolnit místo na disku",
   "maintenancePurgeSentOutboxQuestion": "Vyčistit položky odchozí pošty odeslané před více než 7 dny? Tato akce smaže již odeslané řádky po blocích a spustí VACUUM pro uvolnění místa na disku. Čekající a chybové položky zůstanou zachovány.",
-  "maintenanceRecreateFts5": "Znovu vytvořit index plného textu",
-  "maintenanceRecreateFts5Confirm": "ANO, ZNOVU VYTVOŘIT INDEX",
-  "maintenanceRecreateFts5Description": "Znovu vytvořit index fulltextového vyhledávání",
-  "maintenanceRecreateFts5Message": "Opravdu chcete znovu vytvořit index fulltextového vyhledávání? Toto může chvíli trvat.",
   "maintenanceReSync": "Znovu synchronizovat zprávy",
   "maintenanceReSyncAgentEntities": "Entity agentů",
   "maintenanceReSyncDescription": "Znovu synchronizovat zprávy ze serveru",
@@ -2926,6 +2923,10 @@
   "maintenanceReSyncJournalEntities": "Záznamy v deníku",
   "maintenanceReSyncSelectAtLeastOne": "Vyber alespoň jeden typ entity",
   "maintenanceReSyncStart": "Spustit",
+  "maintenanceRecreateFts5": "Znovu vytvořit index plného textu",
+  "maintenanceRecreateFts5Confirm": "ANO, ZNOVU VYTVOŘIT INDEX",
+  "maintenanceRecreateFts5Description": "Znovu vytvořit index fulltextového vyhledávání",
+  "maintenanceRecreateFts5Message": "Opravdu chcete znovu vytvořit index fulltextového vyhledávání? Toto může chvíli trvat.",
   "maintenanceSyncDefinitions": "Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie, AI nastavení",
   "maintenanceSyncDefinitionsDescription": "Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie a AI nastavení",
   "manageLinks": "Spravovat propojení…",
@@ -3298,10 +3299,8 @@
   "projectPickerUnassigned": "Žádný projekt",
   "projectRecommendationDismissTooltip": "Zahodit",
   "projectRecommendationResolveTooltip": "Označit jako vyřešené",
-  "projectRecommendationsTitle": "Doporučené další kroky",
   "projectRecommendationUpdateError": "Doporučení se nepodařilo aktualizovat. Zkus to prosím znovu.",
-  "projectsFilterStatusLabel": "Stav:",
-  "projectsFilterTooltip": "Filtrovat projekty",
+  "projectRecommendationsTitle": "Doporučené další kroky",
   "projectShowcaseAiReportTitle": "AI report",
   "projectShowcaseBlockedLegend": "{count} blokováno",
   "@projectShowcaseBlockedLegend": {
@@ -3402,6 +3401,8 @@
   "projectTargetDateLabel": "Cílové datum",
   "projectTitleLabel": "Název projektu",
   "projectTitleRequired": "Název projektu nesmí být prázdný",
+  "projectsFilterStatusLabel": "Stav:",
+  "projectsFilterTooltip": "Filtrovat projekty",
   "promptDefaultModelBadge": "Výchozí",
   "promptGenerationCardTitle": "AI kódovací prompt",
   "promptGenerationCopiedSnackbar": "Prompt zkopírován do schránky",
@@ -3539,6 +3540,8 @@
   "sessionRatingSkipButton": "Přeskočit",
   "sessionRatingTitle": "Ohodnoť toto sezení",
   "sessionRatingViewAction": "Zobrazit hodnocení",
+  "settingThemingDark": "Tmavé téma",
+  "settingThemingLight": "Světlé téma",
   "settingsAboutAppInformation": "Informace o aplikaci",
   "settingsAboutAppTagline": "Váš osobní deník",
   "settingsAboutBuildType": "Typ sestavení",
@@ -3659,8 +3662,8 @@
   "settingsCelebrationsPreviewSample3": "Zalít rostliny",
   "settingsCelebrationsPreviewTitle": "Vyzkoušet",
   "settingsCelebrationsReplay": "Přehrát znovu",
-  "settingsCelebrationsResetToast": "Styl obnoven na výchozí",
   "settingsCelebrationsResetToDefault": "Obnovit výchozí",
+  "settingsCelebrationsResetToast": "Styl obnoven na výchozí",
   "settingsCelebrationsResetUndo": "Zpět",
   "settingsCelebrationsSectionDescription": "Malá oslava, když něco dokončíš. Když některou vypneš, dokončení (i jeho vibrace) zůstane — jen se vynechá animace.",
   "settingsCelebrationsSectionTitle": "Oslavy při dokončení",
@@ -3823,7 +3826,6 @@
     }
   },
   "settingsMatrixRoomInviteTitle": "Pozvánka do místnosti",
-  "settingsMatrixSentMessagesLabel": "Odeslané zprávy:",
   "settingsMatrixSentMessageType": "Odesláno ({eventType})",
   "@settingsMatrixSentMessageType": {
     "placeholders": {
@@ -3832,6 +3834,7 @@
       }
     }
   },
+  "settingsMatrixSentMessagesLabel": "Odeslané zprávy:",
   "settingsMatrixStartVerificationLabel": "Spustit ověření",
   "settingsMatrixStatsTitle": "Statistiky Matrix",
   "settingsMatrixTitle": "Nastavení synchronizace",
@@ -3860,6 +3863,7 @@
   "settingsMeasurableNameLabel": "Název měřitelného",
   "settingsMeasurablePrivateLabel": "Soukromé: ",
   "settingsMeasurableSaveLabel": "Uložit",
+  "settingsMeasurableUnitLabel": "Zkratka jednotky (volitelné)",
   "settingsMeasurablesCreateTitle": "Vytvořit měřitelný typ",
   "settingsMeasurablesEmptyState": "Zatím žádné měřitelné typy",
   "settingsMeasurablesEmptyStateHint": "Měřitelné typy jsou čísla sledovaná v čase — váha, voda, kroky.",
@@ -3875,7 +3879,6 @@
   "settingsMeasurablesSearchHint": "Hledat měřitelné typy",
   "settingsMeasurablesSubtitle": "Konfigurace měřitelných datových typů",
   "settingsMeasurablesTitle": "Měřitelné typy",
-  "settingsMeasurableUnitLabel": "Zkratka jednotky (volitelné)",
   "settingsOnboardingActionSubtitle": "Znovu otevři uvítací postup — připoj svou AI a vytvoř úkol",
   "settingsOnboardingMetricsSubtitle": "FTUE trychtýř — instalace, aktivace, retence (ladění)",
   "settingsOnboardingMetricsTitle": "Metriky onboardingu",
@@ -3943,8 +3946,6 @@
   "settingsV2UnimplementedTitle": "Panel zatím není k dispozici",
   "settingsWhatsNewSubtitle": "Podívej se na nejnovější aktualizace a funkce",
   "settingsWhatsNewTitle": "Co je nového",
-  "settingThemingDark": "Tmavé téma",
-  "settingThemingLight": "Světlé téma",
   "sidebarActiveSectionTitle": "Aktivita",
   "sidebarActivityCollapseTooltip": "Sbalit aktivitu",
   "sidebarActivityExpandTooltip": "Rozbalit aktivitu",
@@ -4105,9 +4106,9 @@
   "taskAgentNoAiSetup": "Bez nastavení AI",
   "taskAgentNoAiSetupDescription": "Pozastaví inferenci, dokud nevybereš profil nebo model.",
   "taskAgentNoModelsAvailable": "Nejsou dostupné žádné kompatibilní modely",
-  "taskAgentNoProfilesAvailable": "Na tomto zařízení nejsou dostupné žádné profily",
   "taskAgentNoProfileSelected": "Žádné nastavení AI",
   "taskAgentNoProfileSelectedDescription": "Než agenta spustíš, vyber uložené nastavení nebo model.",
+  "taskAgentNoProfilesAvailable": "Na tomto zařízení nejsou dostupné žádné profily",
   "taskAgentProfileChangedToast": "Pro všechny budoucí aktualizace agenta se bude používat {profile}, dokud ho nezměníš.",
   "@taskAgentProfileChangedToast": {
     "placeholders": {
@@ -4141,7 +4142,7 @@
   "taskAgentUseCategoryDefaultDescription": "Zkopíruje aktuální nastavení kategorie. Pozdější změny kategorie tohoto agenta neovlivní.",
   "taskAgentUseProfileDefault": "Použít výchozí model profilu",
   "taskAgentWakeAgent": "Probudit agenta",
-  "taskBlockedByChipLabel": "{count, plural, =1{Čeká na 1 úkol} few{Čeká na {count} úkoly} other{Čeká na {count} úkolů}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Blokováno 1 úkolem} other{Blokováno {count} úkoly}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4149,7 +4150,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Čeká se na {title}} few{Klepnutím zobrazíte {count} blokující úkoly} other{Klepnutím zobrazíte {count} blokujících úkolů}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Blokováno úkolem {title}} other{Klepni pro {count} blokujících}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4282,14 +4283,6 @@
   "taskPriorityLow": "Nízká",
   "taskPriorityMedium": "Střední",
   "taskPriorityUrgent": "Naléhavá",
-  "tasksAddLabelButton": "Přidat štítek",
-  "tasksAgentFilterAll": "Vše",
-  "tasksAgentFilterHasAgent": "Má agenta",
-  "tasksAgentFilterNoAgent": "Bez agenta",
-  "tasksAgentFilterTitle": "Agent",
-  "tasksFilterApplyTitle": "Použít filtr",
-  "tasksFilterClearAll": "Vymazat vše",
-  "tasksFilterTitle": "Filtrovat úkoly",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} hotovo",
   "@taskShowcaseCompletedCount": {
@@ -4334,6 +4327,25 @@
   "taskShowcaseTimeTracker": "Sledování času",
   "taskShowcaseTodo": "Úkol",
   "taskShowcaseTodos": "Úkoly",
+  "taskStatusAll": "Vše",
+  "taskStatusBlocked": "Blokováno",
+  "taskStatusDone": "Hotovo",
+  "taskStatusGroomed": "Připraveno",
+  "taskStatusInProgress": "Probíhá",
+  "taskStatusLabel": "Stav:",
+  "taskStatusOnHold": "Pozastaveno",
+  "taskStatusOpen": "Otevřeno",
+  "taskStatusRejected": "Odmítnuto",
+  "taskTitleEmpty": "Bez názvu",
+  "taskUntitled": "(bez názvu)",
+  "tasksAddLabelButton": "Přidat štítek",
+  "tasksAgentFilterAll": "Vše",
+  "tasksAgentFilterHasAgent": "Má agenta",
+  "tasksAgentFilterNoAgent": "Bez agenta",
+  "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Použít filtr",
+  "tasksFilterClearAll": "Vymazat vše",
+  "tasksFilterTitle": "Filtrovat úkoly",
   "tasksLabelFilterAll": "Vše",
   "tasksLabelFilterTitle": "Štítek",
   "tasksLabelFilterUnlabeled": "Bez štítku",
@@ -4357,6 +4369,23 @@
   "tasksSavedFilterDeleteTooltip": "Smazat uložený filtr",
   "tasksSavedFilterDragHandleSemantics": "Přetáhni pro změnu pořadí",
   "tasksSavedFilterRenameSemantics": "Přejmenovat uložený filtr",
+  "tasksSavedFilterToastDeleted": "Filtr smazán",
+  "tasksSavedFilterToastSaved": "Uloženo „{name}“",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "Aktualizováno „{name}“",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSavedFiltersAllShort": "Vše",
   "tasksSavedFiltersAllTasks": "Všechny úkoly",
   "tasksSavedFiltersCustom": "Vlastní",
@@ -4392,23 +4421,6 @@
   "tasksSavedFiltersUpdateButtonLabel": "Aktualizovat filtr",
   "tasksSavedFiltersUpdateExistingDescription": "Nahraď jeho uložená kritéria aktuálním nastavením filtru.",
   "tasksSavedFiltersUpdateExistingTitle": "Aktualizovat stávající filtr",
-  "tasksSavedFilterToastDeleted": "Filtr smazán",
-  "tasksSavedFilterToastSaved": "Uloženo „{name}“",
-  "@tasksSavedFilterToastSaved": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "tasksSavedFilterToastUpdated": "Aktualizováno „{name}“",
-  "@tasksSavedFilterToastUpdated": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "tasksSearchModeLabel": "Režim hledání",
   "tasksShowCreationDate": "Zobrazit datum vytvoření na kartách",
   "tasksShowDueDate": "Zobrazit datum splnění na kartách",
@@ -4416,17 +4428,6 @@
   "tasksSortByDueDate": "Termín dokončení",
   "tasksSortByLabel": "Seřadit podle",
   "tasksSortByPriority": "Priorita",
-  "taskStatusAll": "Vše",
-  "taskStatusBlocked": "Blokováno",
-  "taskStatusDone": "Hotovo",
-  "taskStatusGroomed": "Připraveno",
-  "taskStatusInProgress": "Probíhá",
-  "taskStatusLabel": "Stav:",
-  "taskStatusOnHold": "Pozastaveno",
-  "taskStatusOpen": "Otevřeno",
-  "taskStatusRejected": "Odmítnuto",
-  "taskTitleEmpty": "Bez názvu",
-  "taskUntitled": "(bez názvu)",
   "thinkingDisclosureCopied": "Úvaha zkopírována",
   "thinkingDisclosureCopy": "Kopírovat úvahu",
   "thinkingDisclosureHide": "Skrýt úvahu",

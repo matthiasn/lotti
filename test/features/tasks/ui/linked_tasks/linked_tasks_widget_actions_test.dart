@@ -558,8 +558,8 @@ void main() {
     );
 
     testWidgets(
-      'relationship picker dialog defaults to "Link" and cancel does not '
-      'create a task',
+      'relationship picker modal defaults to "Link", and dismissing it '
+      'without confirming does not create a task',
       (tester) async {
         await pumpWidget(
           tester,
@@ -584,7 +584,9 @@ void main() {
           'Relates to',
         );
 
-        await tester.tap(find.text('Cancel'));
+        // The shared modal dismisses via its own close affordance; there is
+        // no bespoke Cancel button to press.
+        await tester.tap(find.byIcon(Icons.close_rounded));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

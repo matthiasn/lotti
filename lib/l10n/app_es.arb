@@ -1,5 +1,4 @@
 {
-  "@@locale": "es",
   "activeLabel": "Activo",
   "addActionAddAudioRecording": "Grabación de audio",
   "addActionAddChecklist": "Lista de verificación",
@@ -8,8 +7,8 @@
   "addActionAddScreenshot": "Captura de pantalla",
   "addActionAddTask": "Tarea",
   "addActionAddText": "Entrada de texto",
-  "addActionAddTimer": "Temporizador",
   "addActionAddTimeRecording": "Registro de tiempo",
+  "addActionAddTimer": "Temporizador",
   "addActionImportImage": "Importar imagen",
   "addHabitCommentLabel": "Comentario",
   "addHabitDateLabel": "Completado a las",
@@ -323,8 +322,8 @@
   "agentSoulAssignedTemplatesTitle": "Plantillas asignadas",
   "agentSoulAssignmentLabel": "Alma",
   "agentSoulCoachingStyleLabel": "Estilo de coaching",
-  "agentSoulCreatedSuccess": "Alma creada",
   "agentSoulCreateTitle": "Crear alma",
+  "agentSoulCreatedSuccess": "Alma creada",
   "agentSoulDeleteConfirmBody": "Esto eliminará el alma y todas sus versiones.",
   "agentSoulDeleteConfirmTitle": "Eliminar alma",
   "agentSoulDetailTitle": "Detalle del alma",
@@ -362,10 +361,7 @@
     }
   },
   "agentSoulSelectTitle": "Seleccionar alma",
-  "agentSoulsEmptyFiltered": "Ningún alma coincide con tus filtros.",
   "agentSoulSettingsTab": "Configuración",
-  "agentSoulsSearchPlaceholder": "Buscar almas…",
-  "agentSoulsTitle": "Almas",
   "agentSoulToneBoundsLabel": "Límites de tono",
   "agentSoulVersionHistoryTitle": "Historial de versiones",
   "agentSoulVersionLabel": "Versión {version}",
@@ -378,6 +374,9 @@
   },
   "agentSoulVersionSaved": "Nueva versión de alma guardada",
   "agentSoulVoiceDirectiveLabel": "Directiva de voz",
+  "agentSoulsEmptyFiltered": "Ningún alma coincide con tus filtros.",
+  "agentSoulsSearchPlaceholder": "Buscar almas…",
+  "agentSoulsTitle": "Almas",
   "agentStateConsecutiveFailures": "Fallos consecutivos",
   "agentStateErrorLoading": "Error al cargar el estado: {error}",
   "@agentStateErrorLoading": {
@@ -404,8 +403,8 @@
   "agentTabStats": "Estadísticas",
   "agentTemplateAggregateTokenUsageHeading": "Uso total de tokens",
   "agentTemplateAssignedLabel": "Plantilla",
-  "agentTemplateCreatedSuccess": "Plantilla creada",
   "agentTemplateCreateTitle": "Crear plantilla",
+  "agentTemplateCreatedSuccess": "Plantilla creada",
   "agentTemplateDeleteConfirm": "¿Eliminar esta plantilla? Esto no se puede deshacer.",
   "agentTemplateDeleteHasInstances": "No se puede eliminar: agentes activos están usando esta plantilla.",
   "agentTemplateDisplayNameLabel": "Nombre",
@@ -421,10 +420,10 @@
   "agentTemplateKindProjectAgent": "Agente de proyecto",
   "agentTemplateKindTaskAgent": "Agente de tareas",
   "agentTemplateMetricsTotalWakes": "Activaciones totales",
-  "agentTemplateNoneAssigned": "Sin plantilla asignada",
   "agentTemplateNoTemplates": "No hay plantillas disponibles. Crea una primero en Ajustes.",
-  "agentTemplateNotFound": "Plantilla no encontrada",
   "agentTemplateNoVersions": "Sin versiones",
+  "agentTemplateNoneAssigned": "Sin plantilla asignada",
+  "agentTemplateNotFound": "Plantilla no encontrada",
   "agentTemplateReportDirectiveHint": "Define la estructura del informe, secciones requeridas y reglas de formato...",
   "agentTemplateReportDirectiveLabel": "Directiva de informe",
   "agentTemplateReportsEmpty": "Aún no hay informes.",
@@ -440,16 +439,10 @@
   },
   "agentTemplateSaveNewVersion": "Guardar",
   "agentTemplateSelectTitle": "Seleccionar plantilla",
-  "agentTemplatesEmptyFiltered": "Ninguna plantilla coincide con tus filtros.",
   "agentTemplateSettingsTab": "Ajustes",
-  "agentTemplatesFilterSectionKind": "Tipo",
-  "agentTemplatesGroupByKind": "Tipo",
-  "agentTemplatesGroupNone": "Todas",
-  "agentTemplatesSearchPlaceholder": "Buscar plantillas…",
   "agentTemplateStatsTab": "Estadísticas",
   "agentTemplateStatusActive": "Activo",
   "agentTemplateStatusArchived": "Archivado",
-  "agentTemplatesTitle": "Plantillas de agentes",
   "agentTemplateSwitchHint": "Para usar una plantilla diferente, destruye este agente y crea uno nuevo.",
   "agentTemplateVersionHistoryTitle": "Historial de versiones",
   "agentTemplateVersionLabel": "Versión {version}",
@@ -461,6 +454,12 @@
     }
   },
   "agentTemplateVersionSaved": "Se guardó una nueva versión",
+  "agentTemplatesEmptyFiltered": "Ninguna plantilla coincide con tus filtros.",
+  "agentTemplatesFilterSectionKind": "Tipo",
+  "agentTemplatesGroupByKind": "Tipo",
+  "agentTemplatesGroupNone": "Todas",
+  "agentTemplatesSearchPlaceholder": "Buscar plantillas…",
+  "agentTemplatesTitle": "Plantillas de agentes",
   "agentThreadReportLabel": "Informe producido durante este ciclo",
   "agentTokenUsageCachedTokens": "En caché",
   "agentTokenUsageEmpty": "Aún no se ha registrado el uso de tokens.",
@@ -523,8 +522,8 @@
       }
     }
   },
-  "aiAttributionTokens": "Tokens",
   "aiAttributionTokenUsageUnknown": "Uso de tokens desconocido",
+  "aiAttributionTokens": "Tokens",
   "aiAttributionTrigger": "Activador",
   "aiAttributionTriggerAgent": "Agente",
   "aiAttributionTriggerAutomatic": "Automático",
@@ -788,6 +787,30 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "URL base (opcional)",
   "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Se mostrará en tu lista de proveedores",
+  "aiProviderConnectKeyHelperLink": "Consigue una clave en {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Oculta",
+  "aiProviderConnectKeyPrivacyHint": "Tu clave API nunca sale de tu dispositivo.",
+  "aiProviderConnectPageTitle": "Conectar {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Guardar y continuar",
+  "aiProviderConnectSaveAsDraft": "Guardar como borrador",
+  "aiProviderConnectSavedAsDraftToast": "Guardado como borrador",
+  "aiProviderConnectStepChoose": "Elegir proveedor",
+  "aiProviderConnectStepConnect": "Conectar",
+  "aiProviderConnectStepReview": "Revisar",
   "aiProviderConnectionCheckingLabel": "Comprobando la clave, listando los modelos disponibles…",
   "aiProviderConnectionFailedBadResponseDetail": "Forma de respuesta inesperada: {type}",
   "@aiProviderConnectionFailedBadResponseDetail": {
@@ -840,31 +863,6 @@
     }
   },
   "aiProviderConnectionVerifiedTitle": "Conexión verificada",
-  "aiProviderConnectKeyHelperLink": "Consigue una clave en {url}",
-  "@aiProviderConnectKeyHelperLink": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectKeyHiddenLabel": "Oculta",
-  "aiProviderConnectKeyPrivacyHint": "Tu clave API nunca sale de tu dispositivo.",
-  "aiProviderConnectPageTitle": "Conectar {providerName}",
-  "@aiProviderConnectPageTitle": {
-    "placeholders": {
-      "providerName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectSaveAndContinue": "Guardar y continuar",
-  "aiProviderConnectSaveAsDraft": "Guardar como borrador",
-  "aiProviderConnectSavedAsDraftToast": "Guardado como borrador",
-  "aiProviderConnectStepChoose": "Elegir proveedor",
-  "aiProviderConnectStepConnect": "Conectar",
-  "aiProviderConnectStepReview": "Revisar",
-  "aiProviderDetailProfilesUsingTitle": "Perfiles que usan este proveedor",
   "aiProviderDetailAddModelButton": "Añadir modelo",
   "aiProviderDetailApiKeyLabel": "Clave API",
   "aiProviderDetailBackTooltip": "Atrás",
@@ -879,6 +877,7 @@
   "aiProviderDetailModelsTitle": "{count, plural, =0{Modelos} =1{Modelos · 1} other{Modelos · {count}}}",
   "aiProviderDetailNoModelsMessage": "Aún no hay modelos. Añade uno para empezar a usar este proveedor.",
   "aiProviderDetailPageTitle": "Detalles del proveedor",
+  "aiProviderDetailProfilesUsingTitle": "Perfiles que usan este proveedor",
   "aiProviderDetailRemoveButton": "Eliminar proveedor",
   "aiProviderDetailRemoveDescription": "Elimina el proveedor y todos los modelos que dependen de él. No se puede deshacer.",
   "aiProviderDetailRemoveTitle": "Eliminar este proveedor",
@@ -931,13 +930,13 @@
   "aiResponseTypePromptGeneration": "Prompt generado",
   "aiResponseTypeTaskSummary": "Resumen de tarea",
   "aiRunningActivityOpenProgress": "Mostrar el progreso de la IA",
-  "aiSettingsAddedLabel": "Añadido",
   "aiSettingsAddModelButton": "Añadir modelo",
   "aiSettingsAddModelErrorDescription": "Algo salió mal al añadir el modelo. Inténtalo de nuevo.",
   "aiSettingsAddModelErrorTitle": "No se pudo añadir el modelo",
   "aiSettingsAddModelTooltip": "Añadir este modelo a tu proveedor",
   "aiSettingsAddProfileButton": "Añadir perfil",
   "aiSettingsAddProviderButton": "Añadir proveedor",
+  "aiSettingsAddedLabel": "Añadido",
   "aiSettingsAgentWakeConcurrencyDescription": "Elige cuántos agentes distintos pueden ejecutar inferencias a la vez. Los valores altos aceleran las respuestas, pero usan más capacidad del proveedor y del dispositivo.",
   "aiSettingsAgentWakeConcurrencyLabel": "Activaciones simultáneas de agentes",
   "aiSettingsClearAllFiltersTooltip": "Borrar todos los filtros",
@@ -1157,8 +1156,8 @@
   "audioRecordingDiscardDialogTitle": "¿Descartar grabación?",
   "audioRecordingPause": "PAUSAR",
   "audioRecordingResume": "REANUDAR",
-  "audioRecordings": "Grabaciones de audio",
   "audioRecordingStop": "PARAR",
+  "audioRecordings": "Grabaciones de audio",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 acción} other{{count} acciones}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1358,12 +1357,12 @@
   "checklistExpandTooltip": "Expandir",
   "checklistExportAsMarkdown": "Exportar lista de verificación como Markdown",
   "checklistExportFailed": "Error en la exportación",
-  "checklistItemArchived": "Elemento archivado",
   "checklistItemArchiveUndo": "Deshacer",
+  "checklistItemArchived": "Elemento archivado",
   "checklistItemDeleteCancel": "Cancelar",
   "checklistItemDeleteConfirm": "Confirmar",
-  "checklistItemDeleted": "Elemento eliminado",
   "checklistItemDeleteWarning": "Esta acción no se puede deshacer.",
+  "checklistItemDeleted": "Elemento eliminado",
   "checklistMarkdownCopied": "Lista de verificación copiada como Markdown",
   "checklistMoreTooltip": "Más",
   "checklistNoneDone": "Aún no hay elementos completados.",
@@ -1570,12 +1569,8 @@
   "conflictPickerUseFromSync": "Usar desde sincronización",
   "conflictPickerUseThisDevice": "Usar este dispositivo",
   "conflictResolvedToast": "Conflicto resuelto",
-  "conflictsEmptyDescription": "Todo está sincronizado. Los elementos resueltos siguen disponibles en el otro filtro.",
-  "conflictsEmptyTitle": "No se detectaron conflictos",
   "conflictSideFromSync": "DESDE SINCRONIZACIÓN",
   "conflictSideThisDevice": "ESTE DISPOSITIVO",
-  "conflictsResolved": "resueltos",
-  "conflictsUnresolved": "sin resolver",
   "conflictValueAbsent": "Sin definir",
   "conflictValueNo": "No",
   "conflictValueYes": "Sí",
@@ -1589,6 +1584,10 @@
       }
     }
   },
+  "conflictsEmptyDescription": "Todo está sincronizado. Los elementos resueltos siguen disponibles en el otro filtro.",
+  "conflictsEmptyTitle": "No se detectaron conflictos",
+  "conflictsResolved": "resueltos",
+  "conflictsUnresolved": "sin resolver",
   "copyAsMarkdown": "Copiar como Markdown",
   "copyAsText": "Copiar como texto",
   "correctionExampleCancel": "CANCELAR",
@@ -1738,7 +1737,6 @@
   "dailyOsNextCapturePastPrompt": "¿Quieres registrar algo del {date}?",
   "dailyOsNextCaptureReconcileCta": "Revisar",
   "dailyOsNextCaptureRecordingSavedStatus": "Grabación guardada",
-  "dailyOsNextCapturesPanelTitle": "Capturas",
   "dailyOsNextCaptureTranscribing": "Transcribiendo…",
   "dailyOsNextCaptureTranscriptHint": "Corrige lo que la transcripción haya entendido mal antes de planificar.",
   "dailyOsNextCaptureTranscriptLabel": "Revisa la transcripción",
@@ -1746,6 +1744,7 @@
   "dailyOsNextCaptureVoiceButtonReset": "Empezar de nuevo",
   "dailyOsNextCaptureVoiceButtonStart": "Empezar a escuchar",
   "dailyOsNextCaptureVoiceButtonStop": "Detener",
+  "dailyOsNextCapturesPanelTitle": "Capturas",
   "dailyOsNextCategoryFilterAll": "Todas las categorías",
   "dailyOsNextCategoryFilterDescription": "Solo las categorías activadas para el plan del día se usan en el procesamiento automático de Daily OS.",
   "dailyOsNextCategoryFilterEmpty": "Aún no hay categorías activadas para el plan del día.",
@@ -1984,6 +1983,11 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Recurrente · no realizada",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesión anterior} other{{count} sesiones anteriores}}",
+  "dailyOsNextTimeSpentShowLess": "Mostrar menos",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount, plural, =1{1 tarea completada} other{{completedCount} tareas completadas}}",
+  "dailyOsNextTimeSpentTitle": "HOY HASTA AHORA",
+  "dailyOsNextTimeSpentTitlePast": "TIEMPO REGISTRADO",
   "dailyOsNextTimelineActual": "Real",
   "dailyOsNextTimelineArrange": "Organizar bloques",
   "dailyOsNextTimelineBoth": "Plan y real",
@@ -1997,19 +2001,14 @@
   "dailyOsNextTimelineShowPaged": "Mostrar plan y real deslizable",
   "dailyOsNextTimelineSwipeHint": "Desliza para ver lo real · pellizca verticalmente para zoom",
   "dailyOsNextTimelineTracked": "registrado",
-  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesión anterior} other{{count} sesiones anteriores}}",
-  "dailyOsNextTimeSpentShowLess": "Mostrar menos",
-  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount, plural, =1{1 tarea completada} other{{completedCount} tareas completadas}}",
-  "dailyOsNextTimeSpentTitle": "HOY HASTA AHORA",
-  "dailyOsNextTimeSpentTitlePast": "TIEMPO REGISTRADO",
   "dailyOsNextTriageConfirmDefer": "Aplazado",
-  "dailyOsNextTriageConfirmDone": "Marcado como hecho",
   "dailyOsNextTriageConfirmDoNow": "Hecho ya",
+  "dailyOsNextTriageConfirmDone": "Marcado como hecho",
   "dailyOsNextTriageConfirmDrop": "Descartado",
   "dailyOsNextTriageConfirmToday": "Añadido a hoy",
   "dailyOsNextTriageDefer": "Aplazar",
-  "dailyOsNextTriageDone": "Hecho",
   "dailyOsNextTriageDoNow": "Hacer ahora",
+  "dailyOsNextTriageDone": "Hecho",
   "dailyOsNextTriageDrop": "Descartar",
   "dailyOsNextTriageToday": "Hoy",
   "dailyOsOnboardingCoachCapture": "Di lo que te ronda la cabeza.",
@@ -2258,8 +2257,8 @@
   "designSystemSmallLabel": "Pequeño",
   "designSystemSpinnerPlainLabel": "Sin fondo",
   "designSystemSpinnerSkeletonPulseLabel": "Pulso",
-  "designSystemSpinnerSkeletonsTitle": "Esqueletos",
   "designSystemSpinnerSkeletonWaveLabel": "Onda",
+  "designSystemSpinnerSkeletonsTitle": "Esqueletos",
   "designSystemSpinnerSpinnersTitle": "Indicadores de carga",
   "designSystemSpinnerTrackLabel": "Con pista",
   "designSystemSplitButtonDropdownSemantics": "Abrir opciones de {label}",
@@ -2309,18 +2308,18 @@
   "desktopEmptyStateSelectDashboard": "Selecciona un panel para ver los detalles",
   "desktopEmptyStateSelectProject": "Selecciona un proyecto para ver los detalles",
   "desktopEmptyStateSelectTask": "Selecciona una tarea para ver los detalles",
-  "deviceDeletedSuccess": "Dispositivo {deviceName} eliminado correctamente",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {
-        "type": "String"
-      }
-    }
-  },
   "deviceDeleteFailed": "Error al eliminar el dispositivo: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
       "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceDeletedSuccess": "Dispositivo {deviceName} eliminado correctamente",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {
         "type": "String"
       }
     }
@@ -2334,6 +2333,7 @@
       }
     }
   },
+  "editLinkTypeCounterpartLabel": "Tarea vinculada",
   "editLinkTypeFailedMessage": "No se pudo actualizar la relación. Inténtalo de nuevo.",
   "editLinkTypeTitle": "Editar relación",
   "editLinkTypeTooltip": "Editar relación",
@@ -2434,6 +2434,11 @@
   "habitLogOtherDayHint": "Mantén pulsado para registrar otro día",
   "habitNotRecordedLabel": "Sin registrar",
   "habitPriorityLabel": "Prioridad",
+  "habitSectionOptionsTitle": "Opciones",
+  "habitSectionScheduleTitle": "Programación",
+  "habitShowAlertAtLabel": "Mostrar alerta a las",
+  "habitShowFromLabel": "Mostrar desde",
+  "habitStreakDaysSemantic": "{count, plural, one{1 día seguido} other{{count} días seguidos}}",
   "habitsAboveGoal": "En marcha",
   "habitsActiveHabitsCount": "{count, plural, one{1 hábito activo} other{{count} hábitos activos}}",
   "habitsAllDoneToday": "Todo hecho hoy",
@@ -2446,8 +2451,6 @@
   "habitsDaySkippedPercent": "{percent}% omitidos",
   "habitsDaySuccessfulPercent": "{percent}% con éxito",
   "habitsDoneTodayLabel": "Hecho hoy",
-  "habitSectionOptionsTitle": "Opciones",
-  "habitSectionScheduleTitle": "Programación",
   "habitsFilterAll": "todos",
   "habitsFilterCompleted": "hecho",
   "habitsFilterOpenNow": "vencido",
@@ -2456,8 +2459,6 @@
   "habitsHeatmapEmpty": "Añade un hábito para empezar a construir tu constancia",
   "habitsHeatmapLess": "Menos",
   "habitsHeatmapMore": "Más",
-  "habitShowAlertAtLabel": "Mostrar alerta a las",
-  "habitShowFromLabel": "Mostrar desde",
   "habitsLaggardHint": "{habit} — {kept} de {active} cumplidos",
   "habitsOpenHeader": "Vencido ahora",
   "habitsPendingLaterHeader": "Más tarde hoy",
@@ -2469,7 +2470,6 @@
   "habitsStreakShortCount": "{count} con racha de 3 días",
   "habitsTapForBreakdown": "Toca un día para ver el desglose",
   "habitsToGoCount": "{count, plural, one{falta 1} other{faltan {count}}}",
-  "habitStreakDaysSemantic": "{count, plural, one{1 día seguido} other{{count} días seguidos}}",
   "habitsVsPreviousWeek": "vs. semana anterior",
   "helpMenuCommandPalette": "Paleta de comandos…",
   "helpMenuKeyboardShortcuts": "Atajos de teclado…",
@@ -2491,9 +2491,7 @@
   "imagePromptGenerationCopyTooltip": "Copiar prompt de imagen al portapapeles",
   "imagePromptGenerationExpandTooltip": "Mostrar prompt completo",
   "imagePromptGenerationFullPromptLabel": "Prompt de Imagen Completo:",
-  "images": "Imágenes",
   "imageViewerDownloadFailed": "No se pudo guardar la imagen",
-  "imageViewerDownloadingTooltip": "Guardando imagen",
   "imageViewerDownloadPermissionDenied": "Acceso a fotos denegado: actívalo en Ajustes",
   "imageViewerDownloadSaved": "Se guardó {fileName}",
   "@imageViewerDownloadSaved": {
@@ -2505,6 +2503,8 @@
   },
   "imageViewerDownloadSavedToGallery": "Guardado en Fotos",
   "imageViewerDownloadTooltip": "Descargar imagen",
+  "imageViewerDownloadingTooltip": "Guardando imagen",
+  "images": "Imágenes",
   "inactiveLabel": "Inactivo",
   "inactiveSwitchDescription": "Se puede elegir para nuevas entradas cuando está activo",
   "inferenceProfileChooseModelTitle": "Elige un modelo",
@@ -2537,7 +2537,6 @@
   "inferenceProfileSaveButton": "Guardar",
   "inferenceProfileSelectModel": "Elige un modelo…",
   "inferenceProfileSelectProfile": "Elige un perfil…",
-  "inferenceProfilesEmpty": "Aún no hay perfiles de inferencia",
   "inferenceProfileSkillModelRequired": "Requiere modelo de {slotName}",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -2546,7 +2545,6 @@
       }
     }
   },
-  "inferenceProfileSkillsSection": "Habilidades automatizadas",
   "inferenceProfileSkillUsesModel": "Usa modelo de {slotName}",
   "@inferenceProfileSkillUsesModel": {
     "placeholders": {
@@ -2555,12 +2553,14 @@
       }
     }
   },
-  "inferenceProfilesTitle": "Perfiles de inferencia",
+  "inferenceProfileSkillsSection": "Habilidades automatizadas",
   "inferenceProfileThinking": "Pensamiento",
   "inferenceProfileThinkingHighEnd": "Pensamiento (alta gama)",
   "inferenceProfileThinkingRequired": "Se requiere un modelo de pensamiento",
   "inferenceProfileTranscription": "Transcripción",
   "inferenceProfileUnavailable": "Perfil de inferencia no disponible",
+  "inferenceProfilesEmpty": "Aún no hay perfiles de inferencia",
+  "inferenceProfilesTitle": "Perfiles de inferencia",
   "inputDataTypeAudioFilesDescription": "Usar archivos de audio como entrada",
   "inputDataTypeAudioFilesName": "Archivos de audio",
   "inputDataTypeImagesDescription": "Usar imágenes como entrada",
@@ -2644,9 +2644,9 @@
   "journalDeleteQuestion": "¿Quieres borrar esta entrada del diario?",
   "journalDurationLabel": "Duración",
   "journalEndDateLabel": "Fecha de fin",
+  "journalEndTimeLabel": "Hora de fin",
   "journalEndsAnotherDayHint": "Elige una fecha de fin distinta",
   "journalEndsAnotherDayLabel": "Termina otro día",
-  "journalEndTimeLabel": "Hora de fin",
   "journalEntryExpandLabel": "Expandir entrada",
   "journalFilterEntryTypesTitle": "Tipos de entrada",
   "journalFilterFlagged": "Marcados",
@@ -2656,6 +2656,8 @@
   "journalFilterTitle": "Filtrar diario",
   "journalHideLinkHint": "Ocultar enlace",
   "journalHideMapHint": "Ocultar mapa",
+  "journalLinkFromHint": "Vincular desde",
+  "journalLinkToHint": "Vincular a",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
   "journalLinkedEntriesActivityFilterCode": "Código",
   "journalLinkedEntriesActivityFilterImages": "Imágenes",
@@ -2667,8 +2669,6 @@
   "journalLinkedEntriesSortNewestFirst": "Más recientes primero",
   "journalLinkedEntriesSortOldestFirst": "Más antiguas primero",
   "journalLinkedFromLabel": "Vinculado de:",
-  "journalLinkFromHint": "Vincular desde",
-  "journalLinkToHint": "Vincular a",
   "journalOvernightNextDay": "Termina {date} (día siguiente)",
   "journalPrivateTooltip": "solo privado",
   "journalSearchHint": "Buscar en el diario...",
@@ -2778,8 +2778,8 @@
   "knowledgeGraphNodeTypeRating": "Valoración",
   "knowledgeGraphNodeTypeTask": "Tarea",
   "knowledgeGraphOpenDetails": "Abrir detalles",
-  "knowledgeGraphRecenter": "Volver a centrar",
   "knowledgeGraphRecentToOlder": "Reciente → antiguo",
+  "knowledgeGraphRecenter": "Volver a centrar",
   "knowledgeGraphRelationAiSource": "Fuente de IA",
   "knowledgeGraphRelationChecklist": "Lista de comprobación",
   "knowledgeGraphRelationInProject": "En el proyecto",
@@ -2804,12 +2804,6 @@
   },
   "linkCreatedUndo": "Deshacer",
   "linkDirectionLabel": "Esta tarea…",
-  "linkedTaskImageBadge": "De tarea vinculada",
-  "linkedTasksBlockedBySectionTitle": "Bloqueada por",
-  "linkedTasksEmptyAction": "Vincular una tarea…",
-  "linkedTasksEmptyHint": "Conecta esta tarea con otra: un bloqueo, un seguimiento o un duplicado.",
-  "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
-  "linkedTasksTitle": "Tareas vinculadas",
   "linkExistingTask": "Vincular tarea existente…",
   "linkPhraseBasic": "Se relaciona con",
   "linkPhraseBlocksInverse": "Está bloqueada por",
@@ -2822,6 +2816,13 @@
   "linkPhraseFollowsUpPrimary": "Da seguimiento a",
   "linkPhraseSupersedesInverse": "Está reemplazada por",
   "linkPhraseSupersedesPrimary": "Reemplaza",
+  "linkedTaskImageBadge": "De tarea vinculada",
+  "linkedTasksBlockedBySectionTitle": "Bloqueada por",
+  "linkedTasksEmptyAction": "Vincular una tarea…",
+  "linkedTasksEmptyHint": "Conecta esta tarea con otra: un bloqueo, un seguimiento o un duplicado.",
+  "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
+  "linkedTasksTitle": "Tareas vinculadas",
+  "@@locale": "es",
   "logbookEmptyHint": "Crea tu primera entrada para empezar tu diario.",
   "logbookEmptyTitle": "Tu diario está vacío",
   "logbookNewEntriesHint": "Las nuevas entradas se abrirán aquí.",
@@ -2908,10 +2909,6 @@
   "maintenancePurgeSentOutboxConfirm": "SÍ, PURGAR",
   "maintenancePurgeSentOutboxDescription": "Eliminar filas de la bandeja de salida enviadas hace más de 7 días y liberar disco",
   "maintenancePurgeSentOutboxQuestion": "¿Purgar elementos de la bandeja de salida enviados hace más de 7 días? Esto elimina las filas ya enviadas por bloques y ejecuta VACUUM para liberar disco. Los elementos pendientes y con error se conservan.",
-  "maintenanceRecreateFts5": "Recrear el índice de texto completo",
-  "maintenanceRecreateFts5Confirm": "SÍ, RECREAR ÍNDICE",
-  "maintenanceRecreateFts5Description": "Recrear índice de búsqueda de texto completo",
-  "maintenanceRecreateFts5Message": "¿Estás seguro de que quieres recrear el índice de texto completo? Esto puede tardar un tiempo.",
   "maintenanceReSync": "Volver a sincronizar mensajes",
   "maintenanceReSyncAgentEntities": "Entidades de agente",
   "maintenanceReSyncDescription": "Resincronizar mensajes desde el servidor",
@@ -2919,6 +2916,10 @@
   "maintenanceReSyncJournalEntities": "Entradas del diario",
   "maintenanceReSyncSelectAtLeastOne": "Selecciona al menos un tipo de entidad",
   "maintenanceReSyncStart": "Iniciar",
+  "maintenanceRecreateFts5": "Recrear el índice de texto completo",
+  "maintenanceRecreateFts5Confirm": "SÍ, RECREAR ÍNDICE",
+  "maintenanceRecreateFts5Description": "Recrear índice de búsqueda de texto completo",
+  "maintenanceRecreateFts5Message": "¿Estás seguro de que quieres recrear el índice de texto completo? Esto puede tardar un tiempo.",
   "maintenanceSyncDefinitions": "Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA",
   "maintenanceSyncDefinitionsDescription": "Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA",
   "manageLinks": "Gestionar vínculos…",
@@ -3291,10 +3292,8 @@
   "projectPickerUnassigned": "Sin proyecto",
   "projectRecommendationDismissTooltip": "Descartar",
   "projectRecommendationResolveTooltip": "Marcar como resuelto",
-  "projectRecommendationsTitle": "Siguientes pasos recomendados",
   "projectRecommendationUpdateError": "No se pudo actualizar la recomendación. Inténtalo de nuevo.",
-  "projectsFilterStatusLabel": "Estado:",
-  "projectsFilterTooltip": "Filtrar proyectos",
+  "projectRecommendationsTitle": "Siguientes pasos recomendados",
   "projectShowcaseAiReportTitle": "Informe de IA",
   "projectShowcaseBlockedLegend": "{count, plural, one{{count} bloqueada} other{{count} bloqueadas}}",
   "@projectShowcaseBlockedLegend": {
@@ -3395,6 +3394,8 @@
   "projectTargetDateLabel": "Fecha objetivo",
   "projectTitleLabel": "Título del proyecto",
   "projectTitleRequired": "El título del proyecto no puede estar vacío",
+  "projectsFilterStatusLabel": "Estado:",
+  "projectsFilterTooltip": "Filtrar proyectos",
   "promptDefaultModelBadge": "Predeterminado",
   "promptGenerationCardTitle": "Prompt de programación con IA",
   "promptGenerationCopiedSnackbar": "Prompt copiado al portapapeles",
@@ -3532,6 +3533,8 @@
   "sessionRatingSkipButton": "Omitir",
   "sessionRatingTitle": "Calificar esta sesión",
   "sessionRatingViewAction": "Ver calificación",
+  "settingThemingDark": "Tema oscuro",
+  "settingThemingLight": "Tema claro",
   "settingsAboutAppInformation": "Información de la aplicación",
   "settingsAboutAppTagline": "Tu diario personal",
   "settingsAboutBuildType": "Tipo de compilación",
@@ -3652,8 +3655,8 @@
   "settingsCelebrationsPreviewSample3": "Regar las plantas",
   "settingsCelebrationsPreviewTitle": "Pruébalo",
   "settingsCelebrationsReplay": "Repetir",
-  "settingsCelebrationsResetToast": "Estilo restablecido a predeterminado",
   "settingsCelebrationsResetToDefault": "Restablecer valores",
+  "settingsCelebrationsResetToast": "Estilo restablecido a predeterminado",
   "settingsCelebrationsResetUndo": "Deshacer",
   "settingsCelebrationsSectionDescription": "Una pequeña celebración cuando terminas algo. Si desactivas una, la finalización y su vibración se mantienen; solo se omite la animación.",
   "settingsCelebrationsSectionTitle": "Celebraciones al completar",
@@ -3816,7 +3819,6 @@
     }
   },
   "settingsMatrixRoomInviteTitle": "Invitación a sala",
-  "settingsMatrixSentMessagesLabel": "Mensajes enviados:",
   "settingsMatrixSentMessageType": "Enviado ({eventType})",
   "@settingsMatrixSentMessageType": {
     "placeholders": {
@@ -3825,6 +3827,7 @@
       }
     }
   },
+  "settingsMatrixSentMessagesLabel": "Mensajes enviados:",
   "settingsMatrixStartVerificationLabel": "Iniciar verificación",
   "settingsMatrixStatsTitle": "Estadísticas de Matrix",
   "settingsMatrixTitle": "Ajustes de sincronización de Matrix",
@@ -3853,6 +3856,7 @@
   "settingsMeasurableNameLabel": "Nombre de la medición",
   "settingsMeasurablePrivateLabel": "Privado: ",
   "settingsMeasurableSaveLabel": "Guardar",
+  "settingsMeasurableUnitLabel": "Abreviatura de la unidad (opcional)",
   "settingsMeasurablesCreateTitle": "Crear valor medible",
   "settingsMeasurablesEmptyState": "Aún no hay valores medibles",
   "settingsMeasurablesEmptyStateHint": "Los valores medibles son números que sigues a lo largo del tiempo: peso, agua o pasos.",
@@ -3868,7 +3872,6 @@
   "settingsMeasurablesSearchHint": "Buscar valores medibles…",
   "settingsMeasurablesSubtitle": "Configurar los valores que mides",
   "settingsMeasurablesTitle": "Valores medibles",
-  "settingsMeasurableUnitLabel": "Abreviatura de la unidad (opcional)",
   "settingsOnboardingActionSubtitle": "Vuelve a abrir el flujo de bienvenida: conecta tu cerebro de IA y crea una tarea",
   "settingsOnboardingMetricsSubtitle": "Embudo FTUE: instalación, activación, retención (depuración)",
   "settingsOnboardingMetricsTitle": "Métricas de onboarding",
@@ -3936,8 +3939,6 @@
   "settingsV2UnimplementedTitle": "Panel aún no disponible",
   "settingsWhatsNewSubtitle": "Mira las últimas actualizaciones y funciones",
   "settingsWhatsNewTitle": "Novedades",
-  "settingThemingDark": "Tema oscuro",
-  "settingThemingLight": "Tema claro",
   "sidebarActiveSectionTitle": "Actividad",
   "sidebarActivityCollapseTooltip": "Contraer actividad",
   "sidebarActivityExpandTooltip": "Expandir actividad",
@@ -4098,9 +4099,9 @@
   "taskAgentNoAiSetup": "Sin configuración de IA",
   "taskAgentNoAiSetupDescription": "Pausa la inferencia hasta que elijas un perfil o modelo.",
   "taskAgentNoModelsAvailable": "No hay modelos de razonamiento compatibles",
-  "taskAgentNoProfilesAvailable": "No hay perfiles disponibles en este dispositivo",
   "taskAgentNoProfileSelected": "Sin configuración de IA",
   "taskAgentNoProfileSelectedDescription": "Elige una configuración guardada o un modelo antes de ejecutar el agente.",
+  "taskAgentNoProfilesAvailable": "No hay perfiles disponibles en este dispositivo",
   "taskAgentProfileChangedToast": "Se usará {profile} para todas las futuras actualizaciones del agente hasta que lo cambies.",
   "@taskAgentProfileChangedToast": {
     "placeholders": {
@@ -4134,7 +4135,7 @@
   "taskAgentUseCategoryDefaultDescription": "Copia la configuración actual de la categoría. Los cambios posteriores de la categoría no afectarán a este agente.",
   "taskAgentUseProfileDefault": "Usar el valor predeterminado del perfil",
   "taskAgentWakeAgent": "Ejecutar agente",
-  "taskBlockedByChipLabel": "{count, plural, =1{Esperando 1 tarea} other{Esperando {count} tareas}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Bloqueada por 1 tarea} other{Bloqueada por {count} tareas}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4142,7 +4143,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Esperando {title}} other{Toca para ver {count} bloqueos}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Bloqueada por {title}} other{Toca para ver {count} bloqueos}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4275,14 +4276,6 @@
   "taskPriorityLow": "Baja",
   "taskPriorityMedium": "Media",
   "taskPriorityUrgent": "Urgente",
-  "tasksAddLabelButton": "Añadir etiqueta",
-  "tasksAgentFilterAll": "Todos",
-  "tasksAgentFilterHasAgent": "Con agente",
-  "tasksAgentFilterNoAgent": "Sin agente",
-  "tasksAgentFilterTitle": "Agente",
-  "tasksFilterApplyTitle": "Aplicar filtro",
-  "tasksFilterClearAll": "Borrar todo",
-  "tasksFilterTitle": "Filtrar tareas",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed, plural, =1{1 / {total} hecho} other{{completed} / {total} hechos}}",
   "@taskShowcaseCompletedCount": {
@@ -4327,6 +4320,25 @@
   "taskShowcaseTimeTracker": "Registro de tiempo",
   "taskShowcaseTodo": "Pendiente",
   "taskShowcaseTodos": "Pendientes",
+  "taskStatusAll": "Todos",
+  "taskStatusBlocked": "Bloqueado",
+  "taskStatusDone": "Completado",
+  "taskStatusGroomed": "Preparado",
+  "taskStatusInProgress": "En curso",
+  "taskStatusLabel": "Estado:",
+  "taskStatusOnHold": "En espera",
+  "taskStatusOpen": "Abierto",
+  "taskStatusRejected": "Rechazado",
+  "taskTitleEmpty": "Sin título",
+  "taskUntitled": "(sin título)",
+  "tasksAddLabelButton": "Añadir etiqueta",
+  "tasksAgentFilterAll": "Todos",
+  "tasksAgentFilterHasAgent": "Con agente",
+  "tasksAgentFilterNoAgent": "Sin agente",
+  "tasksAgentFilterTitle": "Agente",
+  "tasksFilterApplyTitle": "Aplicar filtro",
+  "tasksFilterClearAll": "Borrar todo",
+  "tasksFilterTitle": "Filtrar tareas",
   "tasksLabelFilterAll": "Todas",
   "tasksLabelFilterTitle": "Etiqueta",
   "tasksLabelFilterUnlabeled": "Sin etiqueta",
@@ -4350,6 +4362,23 @@
   "tasksSavedFilterDeleteTooltip": "Eliminar filtro guardado",
   "tasksSavedFilterDragHandleSemantics": "Arrastra para reordenar",
   "tasksSavedFilterRenameSemantics": "Renombrar filtro guardado",
+  "tasksSavedFilterToastDeleted": "Filtro eliminado",
+  "tasksSavedFilterToastSaved": "Guardado «{name}»",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "Actualizado «{name}»",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSavedFiltersAllShort": "Todas",
   "tasksSavedFiltersAllTasks": "Todas las tareas",
   "tasksSavedFiltersCustom": "Personalizado",
@@ -4385,23 +4414,6 @@
   "tasksSavedFiltersUpdateButtonLabel": "Actualizar filtro",
   "tasksSavedFiltersUpdateExistingDescription": "Sustituye los criterios guardados por la configuración actual del filtro.",
   "tasksSavedFiltersUpdateExistingTitle": "Actualizar filtro existente",
-  "tasksSavedFilterToastDeleted": "Filtro eliminado",
-  "tasksSavedFilterToastSaved": "Guardado «{name}»",
-  "@tasksSavedFilterToastSaved": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "tasksSavedFilterToastUpdated": "Actualizado «{name}»",
-  "@tasksSavedFilterToastUpdated": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "tasksSearchModeLabel": "Modo de búsqueda",
   "tasksShowCreationDate": "Mostrar fecha de creación en tarjetas",
   "tasksShowDueDate": "Mostrar fecha de vencimiento en tarjetas",
@@ -4409,17 +4421,6 @@
   "tasksSortByDueDate": "Vencimiento",
   "tasksSortByLabel": "Ordenar por",
   "tasksSortByPriority": "Prioridad",
-  "taskStatusAll": "Todos",
-  "taskStatusBlocked": "Bloqueado",
-  "taskStatusDone": "Completado",
-  "taskStatusGroomed": "Preparado",
-  "taskStatusInProgress": "En curso",
-  "taskStatusLabel": "Estado:",
-  "taskStatusOnHold": "En espera",
-  "taskStatusOpen": "Abierto",
-  "taskStatusRejected": "Rechazado",
-  "taskTitleEmpty": "Sin título",
-  "taskUntitled": "(sin título)",
   "thinkingDisclosureCopied": "Razonamiento copiado",
   "thinkingDisclosureCopy": "Copiar razonamiento",
   "thinkingDisclosureHide": "Ocultar razonamiento",

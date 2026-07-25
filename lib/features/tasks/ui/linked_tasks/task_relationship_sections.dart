@@ -27,7 +27,7 @@ class _Section {
   final List<TaskLinkEntry> entries;
 
   /// Optional header accent. Only "Blocked by" uses one — it's the single
-  /// relationship the task header also surfaces (as the amber "Waiting on X"
+  /// relationship the task header also surfaces (as the amber "Blocked by N"
   /// chip), and without it the most consequential section rendered
   /// indistinguishably from a stray plain link.
   final Color? accent;
@@ -226,10 +226,11 @@ class LinkedTaskSectionHeader extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       // Overline, not caption+w600: its tracking is what distinguishes a
       // section eyebrow from row metadata at the same size, and it removes an
-      // off-ramp weight override. High-emphasis so the relationship outranks
-      // the "Open"/"In Progress" text on the rows beneath it.
+      // off-ramp weight override. Medium, not high: the titles beneath own the
+      // card's brightest ink, and three roles tied at #FFFFFF read as one flat
+      // plane no matter how the sizes rank.
       style: tokens.typography.styles.others.overline.copyWith(
-        color: accent ?? tokens.colors.text.highEmphasis,
+        color: accent ?? tokens.colors.text.mediumEmphasis,
       ),
     );
     return Padding(

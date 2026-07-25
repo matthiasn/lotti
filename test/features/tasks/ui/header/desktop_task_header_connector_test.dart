@@ -1436,7 +1436,7 @@ void main() {
     });
 
     testWidgets(
-      'states only that the task is waiting, naming the blocker in the '
+      'states only that the task is blocked, naming the blocker in the '
       'tooltip, and navigates to it when there is exactly one open blocker',
       (tester) async {
         final task = buildTask();
@@ -1478,7 +1478,7 @@ void main() {
 
         // The chip is count-only: embedding the title made it grow with the
         // title and out-shout the status pill beside it.
-        expect(find.text('Waiting on 1 task'), findsOneWidget);
+        expect(find.text('Blocked by 1 task'), findsOneWidget);
         expect(find.textContaining('Fix the outage'), findsNothing);
         final tooltip = tester.widget<Tooltip>(
           find.ancestor(
@@ -1487,7 +1487,7 @@ void main() {
           ),
         );
         // ...but the tooltip still names it, at no layout cost.
-        expect(tooltip.message, 'Waiting on Fix the outage');
+        expect(tooltip.message, 'Blocked by Fix the outage');
 
         await tester.tap(find.byIcon(Icons.block));
         await tester.pump();
