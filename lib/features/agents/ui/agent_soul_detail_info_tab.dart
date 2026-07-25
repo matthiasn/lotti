@@ -78,10 +78,12 @@ class _VersionHistorySection extends ConsumerWidget {
         ),
         const SizedBox(height: AppTheme.spacingSmall),
         historyAsync.when(
-          // Soul edits re-run this provider; the established version list must
-          // stay put through the refresh rather than collapsing to a spinner.
+          // Any agent change reloads this list (the provider watches the shared
+          // agent topic), so it has to survive the reload in place rather than
+          // collapsing to a spinner and back.
           skipLoadingOnReload: true,
           skipLoadingOnRefresh: true,
+          skipError: true,
           data: (versions) {
             final typed = versions
                 .whereType<SoulDocumentVersionEntity>()
@@ -232,10 +234,11 @@ class _SoulEvolutionHistorySection extends ConsumerWidget {
         ),
         const SizedBox(height: AppTheme.spacingSmall),
         historyAsync.when(
-          // A finished ritual session re-runs this provider; keep the rendered
+          // A finished ritual session reloads this list; keep the rendered
           // history rather than flashing a spinner where it was.
           skipLoadingOnReload: true,
           skipLoadingOnRefresh: true,
+          skipError: true,
           data: (entries) {
             if (entries.isEmpty) {
               return Text(

@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_info_tab.dart';
+import 'package:lotti/services/db_notification.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -84,7 +85,11 @@ void main() {
       final testable = makeTestableWidgetWithContainer(
         _subject(),
         overrides: [
-          agentUpdateStreamProvider.overrideWith((ref, id) => updates.stream),
+          // Mirrors agentUpdateStream's own filter, so a test that emits the
+          // wrong shape fails instead of quietly passing.
+          agentUpdateStreamProvider.overrideWith(
+            (ref, id) => updates.stream.where((ids) => ids.contains(id)),
+          ),
           ..._overrides(
             evolutionHistory: soulEvolutionSessionHistoryProvider.overrideWith((
               ref,
@@ -92,7 +97,7 @@ void main() {
             ) {
               // Mirrors the real provider's dependency, which is what makes a
               // stream emission a reload rather than a refresh.
-              ref.watch(agentUpdateStreamProvider(soulId));
+              ref.watch(agentUpdateStreamProvider(agentNotification));
               builds++;
               if (builds == 1) {
                 return Future.value(const <RitualSessionHistoryEntry>[]);
@@ -110,7 +115,10 @@ void main() {
       await tester.pump();
       expect(find.text(_noSessions), findsOneWidget);
 
-      updates.add({_soulId});
+      // The shape production actually emits. Nothing ever puts a soul id in a
+      // notification set, which is why the provider had to start watching the
+      // shared topic.
+      updates.add({'agent-7', agentNotification});
       // Two pumps: the first lets the reload propagate, the second lets the
       // widget rebuild with the resulting state. Asserting after only one
       // reads the previous frame and passes whatever the widget would do.
@@ -140,13 +148,17 @@ void main() {
       final testable = makeTestableWidgetWithContainer(
         _subject(),
         overrides: [
-          agentUpdateStreamProvider.overrideWith((ref, id) => updates.stream),
+          // Mirrors agentUpdateStream's own filter, so a test that emits the
+          // wrong shape fails instead of quietly passing.
+          agentUpdateStreamProvider.overrideWith(
+            (ref, id) => updates.stream.where((ids) => ids.contains(id)),
+          ),
           ..._overrides(
             versionHistory: soulVersionHistoryProvider.overrideWith((
               ref,
               soulId,
             ) {
-              ref.watch(agentUpdateStreamProvider(soulId));
+              ref.watch(agentUpdateStreamProvider(agentNotification));
               builds++;
               if (builds == 1) return Future.value(const <AgentDomainEntity>[]);
               return reload.future;
@@ -160,7 +172,10 @@ void main() {
       await tester.pump();
       expect(find.text(_noVersions), findsOneWidget);
 
-      updates.add({_soulId});
+      // The shape production actually emits. Nothing ever puts a soul id in a
+      // notification set, which is why the provider had to start watching the
+      // shared topic.
+      updates.add({'agent-7', agentNotification});
       await tester.pump();
       await tester.pump();
 

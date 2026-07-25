@@ -2216,6 +2216,50 @@ Key invariants:
   travel — the row is pruned instantly; pill swaps instantly; the entrance
   reveal is instant; the haptic still fires (feedback, not motion).
 
+### History sections: how they refresh, and what they show while refreshing
+
+Four list sections on the template and soul detail pages read a
+`FutureProvider.autoDispose.family` and render it with `AsyncValue.when`:
+
+| Section | Provider |
+|---|---|
+| Template → Reports tab | `templateRecentReportsProvider` |
+| Template → Stats → Version History | `templateVersionHistoryProvider` |
+| Soul → Info → Version History | `soulVersionHistoryProvider` |
+| Soul → Info → Soul Evolution History | `soulEvolutionSessionHistoryProvider` |
+
+**What reloads them.** `agentUpdateStreamProvider(id)` filters
+`UpdateNotifications.updateStream` down to sets *containing* `id`, so watching a
+template or soul id only fires when something puts that id in a notification
+set. Almost nothing does: `persistedStateChangedNotifier` emits
+`{agentId, agentNotification}`, and the sync handler adds a template id only for
+`WakeTokenUsageEntity`. A soul id never appears at all. So each of these four
+also watches `agentUpdateStreamProvider(agentNotification)` — the shared topic
+every producer includes — which is the same idiom `allEvolutionSessionsProvider`,
+`ritualReviewProviders` and `agentPendingWakeProviders` use. Without it these
+lists stayed stale until the page was reopened.
+
+**What they show while reloading.** Reloading through the shared topic is
+routine, so each `when` passes `skipLoadingOnReload: true` and `skipError: true`.
+The distinction matters: `AsyncValue.when` already defaults
+`skipLoadingOnRefresh` to `true`, so an explicit `invalidate` was never the risk
+— a *reload* from a watched dependency is, and it defaults to showing the
+spinner. `skipError` covers the other half: a reload that throws yields
+`AsyncError` carrying the previous value, and the default would swap the list for
+the error widget. Both would collapse the section's height and shift everything
+below it mid-read. An initial load still shows the spinner, and an initial
+failure still shows the error, because neither has a previous value to keep.
+
+```mermaid
+flowchart LR
+  Write[agent write / sync] --> Notify["notifyUiOnly({agentId, agentNotification})"]
+  Notify --> Topic["agentUpdateStreamProvider(agentNotification)"]
+  Topic --> Reload[history provider reloads]
+  Reload --> Keep["when(skipLoadingOnReload, skipError)"]
+  Keep --> Paint[previous list stays on screen]
+  Reload -. first load only .-> Shell[spinner / error]
+```
+
 ### `AgentInternalsPanel` — right-side overlay
 
 `lib/features/agents/ui/agent_internals_panel.dart` is a dismissable

@@ -79,6 +79,10 @@ Future<List<AgentDomainEntity>> templateVersionHistory(
   Ref ref,
   String templateId,
 ) async {
+  // The shared topic, not just the template id: version writes notify
+  // {agentId, agentNotification} and never carry a template id, so watching
+  // the id alone leaves this list stale until the page is reopened.
+  ref.watch(agentUpdateStreamProvider(agentNotification));
   final service = ref.watch(agentTemplateServiceProvider);
   return service.getVersionHistory(templateId);
 }
@@ -117,7 +121,13 @@ Future<List<AgentDomainEntity>> templateTokenUsageRecords(
   Ref ref,
   String templateId,
 ) async {
-  ref.watch(agentUpdateStreamProvider(templateId));
+  // The template id catches agent initialization, template evolution and
+  // synced token usage, which are the only notifications carrying it. Reports
+  // themselves notify {agentId, agentNotification}, so the shared topic is
+  // what makes a landing report show up here.
+  ref
+    ..watch(agentUpdateStreamProvider(templateId))
+    ..watch(agentUpdateStreamProvider(agentNotification));
   final repository = ref.watch(agentRepositoryProvider);
   final records = await repository.getTokenUsageForTemplate(
     templateId,
