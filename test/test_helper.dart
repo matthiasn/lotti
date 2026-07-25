@@ -112,6 +112,7 @@ class RiverpodWidgetTestBench extends StatelessWidget {
     this.theme,
     this.mediaQueryData,
     this.surfaceConstraints,
+    this.locale,
     super.key,
   });
 
@@ -120,6 +121,11 @@ class RiverpodWidgetTestBench extends StatelessWidget {
   final ThemeData? theme;
   final MediaQueryData? mediaQueryData;
   final BoxConstraints? surfaceConstraints;
+
+  /// Forces a specific UI language. Null follows the platform locale (English
+  /// under the test binding). Set it to exercise the long-string locales —
+  /// German in particular is where single-line layouts break.
+  final Locale? locale;
 
   @override
   Widget build(BuildContext context) {
@@ -142,6 +148,7 @@ class RiverpodWidgetTestBench extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: locale,
           home: Scaffold(
             body: ConstrainedBox(
               constraints: constraints,

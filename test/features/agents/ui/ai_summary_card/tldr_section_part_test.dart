@@ -73,6 +73,82 @@ void main() {
       await tester.tap(find.text('Task Laura'));
       expect(agentTaps, 1);
     });
+
+    testWidgets('the tap target hugs the badge and title, not the whole row', (
+      tester,
+    ) async {
+      const width = 900.0;
+      tester.view
+        ..physicalSize = const Size(width, 400)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(
+            agentName: 'Task Laura',
+            onAgentTap: () {},
+            playbackControl: const SizedBox(
+              key: ValueKey('playback'),
+              width: 48,
+              height: 48,
+            ),
+          ),
+        ),
+      );
+
+      final tokens = tester.element(find.byType(TldrHeader)).designTokens;
+      final ink = tester.getRect(
+        find.ancestor(
+          of: find.text('Task Laura'),
+          matching: find.byType(InkWell),
+        ),
+      );
+      final playback = tester.getRect(find.byKey(const ValueKey('playback')));
+
+      // The hover/press layer must stop after the title block instead of
+      // running to the playback control at the far end of the header.
+      expect(ink.right, lessThan(playback.left - tokens.spacing.step3));
+      expect(ink.width, greaterThanOrEqualTo(kMinInteractiveDimension));
+      // Shrink-wrapping the button must not unpin the playback control from
+      // the card's trailing edge.
+      expect(
+        playback.right,
+        moreOrLessEquals(
+          tester.getRect(find.byType(TldrHeader)).right -
+              tokens.spacing.cardPadding,
+          epsilon: 0.5,
+        ),
+      );
+    });
+
+    testWidgets('a long agent name truncates instead of wrapping', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(320, 400)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const longName = 'Task Laura the Extremely Thorough Release Coordinator';
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(agentName: longName, onAgentTap: () {}),
+        ),
+      );
+
+      // The agent's name is metadata and truncates; the card's own title is
+      // allowed a second line rather than being cut to nonsense.
+      expect(tester.widget<Text>(find.text(longName)).maxLines, 1);
+      expect(
+        tester.widget<Text>(find.text(longName)).overflow,
+        TextOverflow.ellipsis,
+      );
+      expect(tester.widget<Text>(find.text('AI summary')).maxLines, 2);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('TldrBody', () {

@@ -26,7 +26,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('AI summary'), findsOneWidget);
-      expect(find.text('Wake agent'), findsOneWidget);
+      expect(find.text('Update now'), findsOneWidget);
       expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
     });
 
@@ -48,7 +48,7 @@ void main() {
     });
 
     testWidgets(
-      'tapping Wake agent triggers a re-analysis on the task agent service',
+      'tapping Update now triggers a re-analysis on the task agent service',
       (tester) async {
         final taskAgentService = MockTaskAgentService();
         when(
@@ -71,10 +71,18 @@ void main() {
     );
 
     testWidgets(
-      'scheduled countdown replaces the manual wake button entirely',
+      'a scheduled countdown keeps the manual trigger live beside it',
       (
         tester,
       ) async {
+        final taskAgentService = MockTaskAgentService();
+        when(
+          () => taskAgentService.triggerReanalysis(any()),
+        ).thenAnswer((_) {});
+        when(
+          () => taskAgentService.cancelScheduledWake(any()),
+        ).thenAnswer((_) {});
+
         await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
           final state = makeTestState(
             nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30),
@@ -85,17 +93,24 @@ void main() {
           final bench = AgentTestBench(
             identity: identity,
             state: state,
+            taskAgentService: taskAgentService,
             report: makeTestReport(tldr: 'Tldr line.'),
           );
 
           await tester.pumpWidget(bench.build());
           await tester.pumpAndSettle();
 
-          // One wake affordance per state: while the countdown runs, the
-          // scheduled update IS the pending wake — no second button.
-          expect(find.text('Wake agent'), findsNothing);
-          expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-          expect(find.text('Next update in 0:30'), findsOneWidget);
+          // The schedule is information, not a replacement for the action:
+          // running the agent by hand must never require cancelling it first.
+          expect(find.textContaining('0:30'), findsOneWidget);
+          expect(find.text('Update now'), findsOneWidget);
+
+          await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
+          await tester.pumpAndSettle();
+
+          verify(() => taskAgentService.triggerReanalysis(any())).called(1);
+          // ...and running it by hand does not silently drop the schedule.
+          verifyNever(() => taskAgentService.cancelScheduledWake(any()));
         });
       },
     );
@@ -125,7 +140,7 @@ void main() {
           find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
           findsOneWidget,
         );
-        expect(find.text('Wake agent'), findsOneWidget);
+        expect(find.text('Update now'), findsOneWidget);
         expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
         expect(find.byIcon(Icons.close_rounded), findsNothing);
         expect(find.textContaining('0:30'), findsNothing);
@@ -327,14 +342,14 @@ void main() {
         await tester.pumpWidget(bench.build());
         await tester.pumpAndSettle();
 
-        expect(find.text('Wake agent'), findsNothing);
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
         expect(find.text('Next update in 5:39:14'), findsOneWidget);
         expect(find.textContaining('339:14'), findsNothing);
+        // The trigger is present in this state too.
+        expect(find.text('Update now'), findsOneWidget);
       });
     });
 
-    testWidgets('cancel-timer button cancels the scheduled wake', (
+    testWidgets('Skip cancels the scheduled wake but leaves automation on', (
       tester,
     ) async {
       await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
@@ -359,13 +374,27 @@ void main() {
         await tester.pumpWidget(bench.build());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(
+          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+        );
         await tester.pumpAndSettle();
 
         verify(() => taskAgentService.cancelScheduledWake(any())).called(1);
 
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
-        expect(find.text('Wake agent'), findsOneWidget);
+        // The pending run is gone, but the switch stays on and the row keeps
+        // saying what happens next — skipping one update is not the same as
+        // turning automation off.
+        expect(find.textContaining('0:30'), findsNothing);
+        expect(find.text('Updates when this task changes'), findsOneWidget);
+        expect(
+          tester
+              .widget<DesignSystemToggle>(
+                find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
+              )
+              .value,
+          isTrue,
+        );
+        expect(find.text('Update now'), findsOneWidget);
       });
     });
   });

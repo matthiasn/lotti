@@ -4883,6 +4883,16 @@
       }
     }
   },
+  "taskAgentNextUpdateInShort": "in {countdown}",
+  "@taskAgentNextUpdateInShort": {
+    "description": "Shorter form of taskAgentNextUpdateIn, used when the footer cannot fit the full sentence. The countdown value itself must never be truncated.",
+    "placeholders": {
+      "countdown": {
+        "type": "String",
+        "example": "1:30"
+      }
+    }
+  },
   "taskAgentNoAiSetup": "No AI setup",
   "taskAgentNoAiSetupDescription": "Pauses agent inference until you choose a profile or model.",
   "taskAgentNoModelsAvailable": "No compatible thinking models available",
@@ -4936,13 +4946,32 @@
     }
   },
   "taskAgentSetupTitle": "Agent setup",
+  "taskAgentSkipScheduledUpdate": "Skip",
+  "@taskAgentSkipScheduledUpdate": {
+    "description": "Quiet action beside the countdown that cancels the pending automatic update without turning automatic updates off."
+  },
+  "taskAgentStatusOutOfDate": "Out of date",
+  "@taskAgentStatusOutOfDate": {
+    "description": "Short freshness caption in the task-agent card footer, paired with a warning glyph."
+  },
+  "taskAgentStatusUpToDate": "Up to date",
+  "@taskAgentStatusUpToDate": {
+    "description": "Short freshness caption in the task-agent card footer, paired with a check glyph."
+  },
   "taskAgentThinkingModelLabel": "Thinking model",
   "taskAgentThisReportHeader": "This report",
   "taskAgentTurnOffSetup": "Turn off AI for this agent",
+  "taskAgentUpdateNow": "Update now",
+  "@taskAgentUpdateNow": {
+    "description": "Manual trigger in the task-agent card footer. Always present: it runs the agent immediately whether or not an automatic update is scheduled."
+  },
+  "taskAgentUpdatesOnChange": "Updates when this task changes",
+  "@taskAgentUpdatesOnChange": {
+    "description": "Schedule line in the task-agent card footer when automatic updates are on but no wake is currently pending. Keeps the line reserved so toggling automation does not resize the card."
+  },
   "taskAgentUseCategoryDefault": "Copy category default",
   "taskAgentUseCategoryDefaultDescription": "Copies the category’s current setup. Later category changes won’t affect this agent.",
   "taskAgentUseProfileDefault": "Use profile default",
-  "taskAgentWakeAgent": "Wake agent",
   "taskBlockedByChipLabel": "{count, plural, =1{Blocked by 1 task} other{Blocked by {count} tasks}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {

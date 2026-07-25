@@ -710,11 +710,11 @@ void main() {
             findsOneWidget,
           );
           expect(
-            find.bySemanticsLabel(messages.taskAgentWakeAgent),
+            find.bySemanticsLabel(messages.taskAgentUpdateNow),
             findsOneWidget,
           );
         } else {
-          expect(find.text(messages.taskAgentWakeAgent), findsOneWidget);
+          expect(find.text(messages.taskAgentUpdateNow), findsOneWidget);
         }
         await captureScreenshot(
           tester,

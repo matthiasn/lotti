@@ -4663,6 +4663,7 @@
       }
     }
   },
+  "taskAgentNextUpdateInShort": "over {countdown}",
   "taskAgentNoAiSetup": "Geen AI-opstelling",
   "taskAgentNoAiSetupDescription": "Pauzeert agent gevolgtrekking totdat u een profiel of model kiest.",
   "taskAgentNoModelsAvailable": "Geen compatibele denkmodellen beschikbaar",
@@ -4716,13 +4717,17 @@
     }
   },
   "taskAgentSetupTitle": "Agent setup",
+  "taskAgentSkipScheduledUpdate": "Overslaan",
+  "taskAgentStatusOutOfDate": "Verouderd",
+  "taskAgentStatusUpToDate": "Actueel",
   "taskAgentThinkingModelLabel": "Denkmodel",
   "taskAgentThisReportHeader": "Dit verslag",
   "taskAgentTurnOffSetup": "Zet AI uit voor deze agent.",
+  "taskAgentUpdateNow": "Nu bijwerken",
+  "taskAgentUpdatesOnChange": "Werkt bij wanneer deze taak verandert",
   "taskAgentUseCategoryDefault": "Standaard categorie kopiëren",
   "taskAgentUseCategoryDefaultDescription": "Kopieert de categorie . Huidige setup. Latere categorie wijzigingen zal dit agent niet beïnvloeden.",
   "taskAgentUseProfileDefault": "Standaardprofiel gebruiken",
-  "taskAgentWakeAgent": "Wake agent",
   "taskCategoryAllLabel": "alle",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "niet toegewezen",

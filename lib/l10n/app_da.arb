@@ -4664,6 +4664,7 @@
       }
     }
   },
+  "taskAgentNextUpdateInShort": "om {countdown}",
   "taskAgentNoAiSetup": "Ingen AI-opsætning",
   "taskAgentNoAiSetupDescription": "Pauser agentens slutning, indtil du vælger en profil eller model.",
   "taskAgentNoModelsAvailable": "Ingen kompatible tænkemodeller tilgængelige",
@@ -4717,13 +4718,17 @@
     }
   },
   "taskAgentSetupTitle": "Agentopsætning",
+  "taskAgentSkipScheduledUpdate": "Spring over",
+  "taskAgentStatusOutOfDate": "Forældet",
+  "taskAgentStatusUpToDate": "Opdateret",
   "taskAgentThinkingModelLabel": "Tænkningsmodel",
   "taskAgentThisReportHeader": "Denne rapport",
   "taskAgentTurnOffSetup": "Sluk AI for denne agent",
+  "taskAgentUpdateNow": "Opdater nu",
+  "taskAgentUpdatesOnChange": "Opdateres, når opgaven ændres",
   "taskAgentUseCategoryDefault": "Kopier kategori standard",
   "taskAgentUseCategoryDefaultDescription": "Kopierer kategoriens nuværende opsætning. Senere kategoriændringer vil ikke påvirke denne agent.",
   "taskAgentUseProfileDefault": "Brug profilstandard",
-  "taskAgentWakeAgent": "Wake-agent",
   "taskCategoryAllLabel": "Alle",
   "taskCategoryLabel": "Kategori:",
   "taskCategoryUnassignedLabel": "Ikke tildelt",

@@ -41,64 +41,92 @@ class TldrHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // `Expanded` keeps the slot so the playback control stays pinned to
+          // the card's trailing edge, while `Align` hands the button loose
+          // constraints — without it the ink target stretches across the whole
+          // header instead of hugging the badge and the title.
           Expanded(
-            child: Semantics(
-              button: true,
-              label: hasName
-                  ? '${messages.aiCardTitle}. $displayName'
-                  : messages.aiCardTitle,
-              excludeSemantics: true,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: onAgentTap,
-                  borderRadius: BorderRadius.circular(tokens.radii.m),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: kMinInteractiveDimension,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: tokens.spacing.step8,
-                          height: tokens.spacing.step8,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: ai.accentSoft,
-                            borderRadius: BorderRadius.circular(tokens.radii.m),
-                            border: Border.all(color: ai.border),
-                          ),
-                          child: Icon(
-                            Icons.auto_awesome_rounded,
-                            size: tokens.spacing.step6,
-                            color: ai.accent,
-                          ),
-                        ),
-                        SizedBox(width: tokens.spacing.step3),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                messages.aiCardTitle,
-                                style: tokens
-                                    .typography
-                                    .styles
-                                    .subtitle
-                                    .subtitle1
-                                    .copyWith(color: ai.titleText),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Semantics(
+                button: true,
+                label: hasName
+                    ? '${messages.aiCardTitle}. $displayName'
+                    : messages.aiCardTitle,
+                excludeSemantics: true,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onAgentTap,
+                    borderRadius: BorderRadius.circular(tokens.radii.m),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: kMinInteractiveDimension,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: tokens.spacing.step8,
+                            height: tokens.spacing.step8,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: ai.accentSoft,
+                              borderRadius: BorderRadius.circular(
+                                tokens.radii.m,
                               ),
-                              if (hasName)
-                                Text(
-                                  displayName,
-                                  style: tokens.typography.styles.others.caption
-                                      .copyWith(color: ai.metaText),
-                                ),
-                            ],
+                              border: Border.all(color: ai.border),
+                            ),
+                            child: Icon(
+                              Icons.auto_awesome_rounded,
+                              size: tokens.spacing.step6,
+                              color: ai.accent,
+                            ),
                           ),
-                        ),
-                      ],
+                          SizedBox(width: tokens.spacing.step3),
+                          // `Flexible` + single-line text is what makes the
+                          // shrink-wrap real: text allowed to wrap would
+                          // report the full available width straight back and
+                          // re-inflate the row.
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  messages.aiCardTitle,
+                                  // Two lines, not one: the card's own name
+                                  // must stay readable, and "KI-Zusammen…"
+                                  // at phone width is not a name. Where it
+                                  // fits on one line — which is everywhere
+                                  // the ink extent is actually noticeable —
+                                  // the button still shrink-wraps.
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tokens
+                                      .typography
+                                      .styles
+                                      .subtitle
+                                      .subtitle1
+                                      .copyWith(color: ai.titleText),
+                                ),
+                                if (hasName)
+                                  Text(
+                                    displayName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .others
+                                        .caption
+                                        .copyWith(color: ai.metaText),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

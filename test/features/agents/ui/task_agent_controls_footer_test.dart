@@ -2,17 +2,20 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
+import 'package:lotti/features/agents/ui/task_agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 
+/// The footer is a composition root: it owns the band chrome, the shared
+/// leading edge, and the order of its three bands. Everything the automation
+/// controls themselves do is covered by
+/// `task_agent_automation_row_test.dart`, and everything the identity rows do
+/// by `task_agent_identity_region_test.dart`.
 void main() {
   const route = InferenceRouteSnapshot(
     providerModelId: 'qwen3.5-plus',
@@ -39,7 +42,7 @@ void main() {
     bool isStale = false,
     ValueChanged<bool>? onAutomaticUpdatesChanged,
     VoidCallback? onRunNow,
-    VoidCallback? onCancelTimer,
+    VoidCallback? onSkipScheduledUpdate,
     VoidCallback? onCountdownExpired,
     VoidCallback? onSetupTap,
   }) {
@@ -54,566 +57,205 @@ void main() {
       isStale: isStale,
       onAutomaticUpdatesChanged: onAutomaticUpdatesChanged ?? (_) {},
       onRunNow: onRunNow,
-      onCancelTimer: onCancelTimer ?? () {},
+      onSkipScheduledUpdate: onSkipScheduledUpdate ?? () {},
       onCountdownExpired: onCountdownExpired ?? () {},
       identityData: identityData,
       onSetupTap: onSetupTap ?? () {},
     );
   }
 
-  testWidgets('wake button fires and the toggle opts in', (tester) async {
-    var wakes = 0;
-    bool? changedTo;
-    await tester.pumpWidget(
+  Future<void> pumpFooter(
+    WidgetTester tester,
+    Widget child, {
+    double width = 730,
+    Locale? locale,
+    TextScaler textScaler = TextScaler.noScaling,
+  }) {
+    tester.view
+      ..physicalSize = Size(width, 1200)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    return tester.pumpWidget(
       makeTestableWidget(
-        subject(
-          onRunNow: () => wakes++,
-          onAutomaticUpdatesChanged: (value) => changedTo = value,
+        child,
+        mediaQueryData: MediaQueryData(
+          size: Size(width, 1200),
+          textScaler: textScaler,
         ),
+        locale: locale,
+      ),
+    );
+  }
+
+  Finder footer() => find.byKey(const ValueKey('taskAgentControlsFooter'));
+
+  DsTokens tokensOf(WidgetTester tester) =>
+      tester.element(find.byType(TaskAgentControlsFooter)).designTokens;
+
+  testWidgets('wires the automation controls and the identity region', (
+    tester,
+  ) async {
+    var runs = 0;
+    bool? changedTo;
+    var setupTaps = 0;
+    await pumpFooter(
+      tester,
+      subject(
+        onRunNow: () => runs++,
+        onAutomaticUpdatesChanged: (value) => changedTo = value,
+        onSetupTap: () => setupTaps++,
       ),
     );
 
-    expect(find.text('Automatic updates'), findsOneWidget);
-    expect(
-      find.text('Qwen 3.5 Plus · Alibaba · via Melious.ai'),
-      findsOneWidget,
-    );
-    // The wake control and the switch always live in one cluster, and
-    // identity always sits in its own row below — the layout never has a
-    // "wide, side by side" variant to switch to.
-    expect(
-      find.byKey(const ValueKey('taskAgentFooterLayout')),
-      findsOneWidget,
-    );
-
     await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
-    expect(wakes, 1);
+    expect(runs, 1);
 
     await tester.tap(
       find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
     );
     expect(changedTo, isTrue);
-  });
-
-  group('freshness indicator', () {
-    testWidgets('omitted entirely without report content', (tester) async {
-      await tester.pumpWidget(makeTestableWidget(subject()));
-
-      expect(find.byKey(const ValueKey('taskAgentStaleGlyph')), findsNothing);
-      expect(find.byKey(const ValueKey('taskAgentFreshGlyph')), findsNothing);
-    });
-
-    testWidgets('shows the stale glyph next to the wake control', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          subject(hasReportContent: true, isStale: true, onRunNow: () {}),
-        ),
-      );
-
-      expect(find.byKey(const ValueKey('taskAgentStaleGlyph')), findsOneWidget);
-      expect(find.byKey(const ValueKey('taskAgentFreshGlyph')), findsNothing);
-      final tooltip = tester.widget<Tooltip>(
-        find.ancestor(
-          of: find.byKey(const ValueKey('taskAgentStaleGlyph')),
-          matching: find.byType(Tooltip),
-        ),
-      );
-      expect(tooltip.message, 'This summary is out of date');
-      // Same cluster as the wake control and switch — not a separate row.
-      final glyph = find.byKey(const ValueKey('taskAgentStaleGlyph'));
-      final wakeButton = find.byKey(const ValueKey('taskAgentWakeButton'));
-      expect(
-        tester.getCenter(glyph).dy,
-        moreOrLessEquals(tester.getCenter(wakeButton).dy, epsilon: 2),
-      );
-    });
-
-    testWidgets('shows the fresh glyph when the report is up to date', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          subject(hasReportContent: true, onRunNow: () {}),
-        ),
-      );
-
-      expect(find.byKey(const ValueKey('taskAgentFreshGlyph')), findsOneWidget);
-      expect(find.byKey(const ValueKey('taskAgentStaleGlyph')), findsNothing);
-      final tooltip = tester.widget<Tooltip>(
-        find.ancestor(
-          of: find.byKey(const ValueKey('taskAgentFreshGlyph')),
-          matching: find.byType(Tooltip),
-        ),
-      );
-      expect(tooltip.message, 'Summary is up to date');
-    });
-
-    testWidgets(
-      'stays with the wake control regardless of automatic-updates state',
-      (tester) async {
-        final now = DateTime(2026, 7, 16, 9);
-        await withClock(Clock.fixed(now), () async {
-          await tester.pumpWidget(
-            makeTestableWidget(
-              subject(
-                hasReportContent: true,
-                isStale: true,
-                automaticUpdatesEnabled: true,
-                showCountdown: true,
-                nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
-                onRunNow: () {},
-              ),
-            ),
-          );
-        });
-
-        // Same cluster key regardless of automaticUpdatesEnabled — the
-        // affordance never moves to a different part of the card.
-        expect(
-          find.byKey(const ValueKey('taskAgentStaleGlyph')),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(const ValueKey('taskAgentAutomationCluster')),
-          findsOneWidget,
-        );
-      },
-    );
-  });
-
-  testWidgets(
-    'scheduled wake replaces the button with an informational chip and a '
-    'dedicated cancel',
-    (tester) async {
-      final now = DateTime(2026, 7, 16, 9);
-      var cancellations = 0;
-      await withClock(Clock.fixed(now), () async {
-        await tester.pumpWidget(
-          makeTestableWidget(
-            subject(
-              automaticUpdatesEnabled: true,
-              showCountdown: true,
-              nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
-              onRunNow: () {},
-              onCancelTimer: () => cancellations++,
-            ),
-          ),
-        );
-
-        expect(find.text('Next update in 1:30'), findsOneWidget);
-        expect(find.byType(DsPill), findsOneWidget);
-        expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
-        // One wake affordance per state: the scheduled update replaces the
-        // manual wake button.
-        expect(find.byKey(const ValueKey('taskAgentWakeButton')), findsNothing);
-        // The chip itself is informational — only the close button cancels.
-        await tester.tap(find.text('Next update in 1:30'));
-        expect(cancellations, 0);
-        final context = tester.element(
-          find.byType(TaskAgentControlsFooter),
-        );
-        final tokens = context.designTokens;
-        final countdownPill = find.byType(DsPill);
-        final cancelIcon = find.byIcon(Icons.close_rounded);
-        expect(
-          tester.getSize(
-            find.byKey(
-              const ValueKey('taskAgentCancelCountdownTarget'),
-            ),
-          ),
-          Size.square(tokens.spacing.step9),
-        );
-        expect(
-          tester.getTopLeft(cancelIcon).dx -
-              tester.getTopRight(countdownPill).dx,
-          tokens.spacing.step1,
-        );
-        await tester.tap(cancelIcon);
-      });
-
-      expect(cancellations, 1);
-    },
-  );
-
-  testWidgets(
-    'a rescheduled wake resyncs the countdown chip in place',
-    (tester) async {
-      final now = DateTime(2026, 7, 16, 9);
-      await withClock(Clock.fixed(now), () async {
-        await tester.pumpWidget(
-          makeTestableWidget(
-            subject(
-              automaticUpdatesEnabled: true,
-              showCountdown: true,
-              nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
-              onRunNow: () {},
-            ),
-          ),
-        );
-        expect(find.text('Next update in 1:30'), findsOneWidget);
-
-        // Same widget position, new deadline → didUpdateWidget resyncs the
-        // ticking seconds instead of keeping the stale countdown.
-        await tester.pumpWidget(
-          makeTestableWidget(
-            subject(
-              automaticUpdatesEnabled: true,
-              showCountdown: true,
-              nextWakeAt: now.add(const Duration(seconds: 45)),
-              onRunNow: () {},
-            ),
-          ),
-        );
-        expect(find.text('Next update in 0:45'), findsOneWidget);
-        expect(find.text('Next update in 1:30'), findsNothing);
-      });
-    },
-  );
-
-  testWidgets(
-    'an already-expired deadline renders nothing and reports expiry',
-    (tester) async {
-      final now = DateTime(2026, 7, 16, 9);
-      var expiries = 0;
-      await withClock(Clock.fixed(now), () async {
-        await tester.pumpWidget(
-          makeTestableWidget(
-            subject(
-              automaticUpdatesEnabled: true,
-              showCountdown: true,
-              nextWakeAt: now.subtract(const Duration(seconds: 1)),
-              onCountdownExpired: () => expiries++,
-              onRunNow: () {},
-            ),
-          ),
-        );
-        // The expiry callback is delivered post-frame.
-        await tester.pump();
-      });
-
-      expect(find.textContaining('Next update in'), findsNothing);
-      expect(expiries, 1);
-    },
-  );
-
-  testWidgets('running wake shows the thinking state', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidget(subject(isRunning: true, onRunNow: () {})),
-    );
-
-    expect(find.text('Thinking…'), findsOneWidget);
-    expect(find.text('Wake agent'), findsNothing);
-
-    final context = tester.element(find.byType(TaskAgentControlsFooter));
-    final spinner = find.byKey(const ValueKey('taskAgentThinkingSpinner'));
-    final label = find.byKey(const ValueKey('taskAgentThinkingLabel'));
-    expect(
-      tester.getTopLeft(label).dx - tester.getTopRight(spinner).dx,
-      context.designTokens.spacing.step3,
-    );
-  });
-
-  testWidgets('narrow localized thinking status truncates without overflow', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        Center(
-          child: SizedBox(
-            width: 180,
-            child: subject(isRunning: true, onRunNow: () {}),
-          ),
-        ),
-        mediaQueryData: const MediaQueryData(size: Size(180, 800)),
-        locale: const Locale('de'),
-      ),
-    );
-
-    final label = tester.widget<Text>(
-      find.byKey(const ValueKey('taskAgentThinkingLabel')),
-    );
-    expect(label.maxLines, 1);
-    expect(label.overflow, TextOverflow.ellipsis);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets(
-    'missing setup disables wake and toggle and explains via tooltip',
-    (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(subject(inferenceAvailable: false)),
-      );
-
-      final wakeButton = tester.widget<DesignSystemButton>(
-        find.byKey(const ValueKey('taskAgentWakeButton')),
-      );
-      expect(wakeButton.onPressed, isNull);
-
-      final toggle = tester.widget<DesignSystemToggle>(
-        find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
-      );
-      expect(toggle.enabled, isFalse);
-      expect(
-        toggle.tooltipMessage,
-        'Choose an AI setup before turning on automatic updates.',
-      );
-      expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
-    },
-  );
-
-  testWidgets('busy automation write disables the toggle', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidget(subject(automationBusy: true)),
-    );
-
-    final toggle = tester.widget<DesignSystemToggle>(
-      find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
-    );
-    expect(toggle.enabled, isFalse);
-  });
-
-  testWidgets('model identity row opens the setup sheet callback', (
-    tester,
-  ) async {
-    var setupTaps = 0;
-    await tester.pumpWidget(
-      makeTestableWidget(subject(onSetupTap: () => setupTaps++)),
-    );
 
     await tester.tap(find.text('Qwen 3.5 Plus · Alibaba · via Melious.ai'));
     expect(setupTaps, 1);
   });
 
-  testWidgets(
-    'identity always sits below the automation cluster, at any width',
-    (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Center(
-            child: SizedBox(
-              width: 900,
-              child: subject(),
+  testWidgets('the band is the only surface in the footer', (tester) async {
+    await pumpFooter(tester, subject(hasReportContent: true, onRunNow: () {}));
+
+    final ai = tokensOf(tester).colors.aiCard;
+
+    // No card in a card. Asserted against the trigger's decorated ancestry
+    // rather than every `Container` in the subtree, because controls
+    // legitimately paint their own chrome — the switch's track is a rounded,
+    // filled, bordered box and always will be. What must not exist is a
+    // surface *wrapping* the controls: the band is the only one.
+    final wrappingSurfaces = tester
+        .widgetList<Container>(
+          find.ancestor(
+            of: find.byKey(const ValueKey('taskAgentWakeButton')),
+            matching: find.descendant(
+              of: footer(),
+              matching: find.byType(Container),
             ),
           ),
-          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        )
+        .map((container) => container.decoration)
+        .whereType<BoxDecoration>()
+        .toList();
+    expect(
+      wrappingSurfaces,
+      isEmpty,
+      reason: 'a surface reappeared between the band and the controls',
+    );
+
+    // The band's own chrome: one wash, one hairline, and that hairline is on
+    // the top edge only.
+    final band =
+        tester.widget<Container>(footer()).decoration! as BoxDecoration;
+    expect(band.color, ai.footerWash);
+    final border = band.border! as Border;
+    expect(border.top.color, ai.borderSoft);
+    expect(border.left, BorderSide.none);
+    expect(border.right, BorderSide.none);
+    expect(border.bottom, BorderSide.none);
+  });
+
+  testWidgets('every row starts on the card content edge', (tester) async {
+    await pumpFooter(
+      tester,
+      subject(hasReportContent: true, isStale: true, onRunNow: () {}),
+    );
+
+    final tokens = tokensOf(tester);
+    final edge = tester.getTopLeft(footer()).dx + tokens.spacing.cardPadding;
+
+    // The band pays step4 and each row adds its own step2, so glyphs land on
+    // cardPadding — the same column as the summary prose above — while the
+    // interactive rows still get ink that breathes around their content.
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('taskAgentStaleGlyph'))).dx,
+      moreOrLessEquals(edge, epsilon: 0.5),
+    );
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.psychology_outlined)).dx,
+      moreOrLessEquals(edge, epsilon: 0.5),
+    );
+  });
+
+  testWidgets('identity always sits below the automation controls', (
+    tester,
+  ) async {
+    for (final width in [320.0, 730.0, 1400.0]) {
+      await pumpFooter(
+        tester,
+        subject(hasReportContent: true, onRunNow: () {}),
+        width: width,
+      );
+
+      expect(
+        tester.getTopLeft(find.byType(TaskAgentIdentityRegion)).dy,
+        greaterThan(
+          tester.getBottomLeft(find.byType(TaskAgentAutomationRow)).dy - 1,
         ),
+        reason: 'identity moved out from under the controls at ${width}px',
       );
+    }
+  });
 
-      final identity = find.byType(TaskAgentIdentityRegion);
-      final cluster = find.byKey(
-        const ValueKey('taskAgentAutomationCluster'),
-      );
-      expect(cluster, findsOneWidget);
-      expect(
-        tester.getTopLeft(identity).dy,
-        greaterThan(tester.getBottomLeft(cluster).dy),
-      );
-    },
-  );
-
-  testWidgets(
-    'narrow scheduled cluster wraps countdown and switch without overflow',
-    (tester) async {
-      final now = DateTime(2026, 7, 16, 9);
-      await withClock(Clock.fixed(now), () async {
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            Center(
-              child: SizedBox(
-                width: 300,
-                child: subject(
-                  automaticUpdatesEnabled: true,
-                  showCountdown: true,
-                  nextWakeAt: now.add(
-                    const Duration(minutes: 1, seconds: 30),
-                  ),
-                  onRunNow: () {},
-                ),
-              ),
-            ),
-            mediaQueryData: const MediaQueryData(size: Size(300, 800)),
-          ),
-        );
-      });
-
-      final countdown = find.text('Next update in 1:30');
-      final automation = find.text('Automatic updates');
-      final identity = find.textContaining('Qwen 3.5 Plus').first;
-      expect(
-        tester.getCenter(automation).dy,
-        greaterThan(tester.getCenter(countdown).dy),
-      );
-      expect(
-        tester.getCenter(identity).dy,
-        greaterThan(tester.getCenter(automation).dy),
-      );
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
-    'wide countdown and switch comfortably share one row',
-    (tester) async {
-      final now = DateTime(2026, 7, 16, 9);
-      await withClock(Clock.fixed(now), () async {
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            Center(
-              child: SizedBox(
-                width: 730,
-                child: subject(
-                  automaticUpdatesEnabled: true,
-                  showCountdown: true,
-                  nextWakeAt: now.add(
-                    const Duration(minutes: 1, seconds: 30),
-                  ),
-                  onRunNow: () {},
-                ),
-              ),
-            ),
-            mediaQueryData: const MediaQueryData(size: Size(900, 800)),
-          ),
-        );
-      });
-
-      // Now that the cluster gets the whole footer width (identity is
-      // always a separate row below, never sharing a 60% split with it),
-      // 730px is comfortably enough to keep the countdown and the switch
-      // on one line — this used to require a fixed-breakpoint compact
-      // fallback when identity competed for the same row.
-      final countdown = find.text('Next update in 1:30');
-      final automation = find.text('Automatic updates');
-      expect(
-        tester.getCenter(countdown).dy,
-        moreOrLessEquals(tester.getCenter(automation).dy, epsilon: 1),
-      );
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets('countdown width and neighboring controls never jump', (
+  testWidgets('a ticking countdown never moves the identity region', (
     tester,
   ) async {
     var now = DateTime(2026, 7, 16, 9);
     await withClock(Clock(() => now), () async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Center(
-            child: SizedBox(
-              width: 730,
-              child: subject(
-                automaticUpdatesEnabled: true,
-                showCountdown: true,
-                nextWakeAt: now.add(const Duration(hours: 1)),
-                onRunNow: () {},
-              ),
-            ),
-          ),
-          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+      await pumpFooter(
+        tester,
+        subject(
+          hasReportContent: true,
+          automaticUpdatesEnabled: true,
+          showCountdown: true,
+          nextWakeAt: now.add(const Duration(hours: 1)),
+          onRunNow: () {},
         ),
       );
 
-      expect(find.text('Next update in 1:00:00'), findsOneWidget);
-      final pill = find.byType(DsPill);
-      final toggle = find.byKey(
-        const Key('taskAgentAutomaticUpdatesCheckbox'),
-      );
-      final identity = find.textContaining('Qwen 3.5 Plus').first;
-      final initialPillSize = tester.getSize(pill);
-      final initialToggleOffset = tester.getTopLeft(toggle);
-      final initialIdentityOffset = tester.getTopLeft(identity);
+      final identity = find.byType(TaskAgentIdentityRegion);
+      final footerSize = tester.getSize(footer());
+      final identityOffset = tester.getTopLeft(identity);
 
+      // Crosses the h:mm:ss → m:ss boundary: the label's text gets materially
+      // shorter, and nothing below it may notice.
       now = now.add(const Duration(seconds: 1));
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('Next update in 59:59'), findsOneWidget);
-      expect(tester.getSize(pill), initialPillSize);
-      expect(tester.getTopLeft(toggle), initialToggleOffset);
-      expect(tester.getTopLeft(identity), initialIdentityOffset);
+      expect(tester.getTopLeft(identity), identityOffset);
+      expect(tester.getSize(footer()), footerSize);
     });
   });
 
-  testWidgets(
-    'wide German automation label stays single-line even under constrained '
-    'width',
-    (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Center(
-            child: SizedBox(
-              width: 520,
-              child: subject(),
-            ),
-          ),
-          mediaQueryData: const MediaQueryData(
-            size: Size(520, 800),
-            textScaler: TextScaler.linear(1.2),
-          ),
-          locale: const Locale('de'),
-        ),
-      );
-
-      final label = tester.widget<Text>(
-        find.text('Automatische Aktualisierungen'),
-      );
-      expect(label.maxLines, 1);
-      expect(label.overflow, TextOverflow.ellipsis);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets('localized countdown stays single-line at phone width', (
+  testWidgets('renders without overflow at 320px in German at 1.3x', (
     tester,
   ) async {
     final now = DateTime(2026, 7, 16, 9);
     await withClock(Clock.fixed(now), () async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Center(
-            child: SizedBox(
-              width: 360,
-              child: subject(
-                automaticUpdatesEnabled: true,
-                showCountdown: true,
-                nextWakeAt: now.add(
-                  const Duration(minutes: 1, seconds: 30),
-                ),
-                onRunNow: () {},
-              ),
-            ),
-          ),
-          mediaQueryData: const MediaQueryData(size: Size(360, 800)),
-          locale: const Locale('de'),
+      await pumpFooter(
+        tester,
+        subject(
+          hasReportContent: true,
+          isStale: true,
+          automaticUpdatesEnabled: true,
+          showCountdown: true,
+          nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
+          onRunNow: () {},
         ),
+        width: 320,
+        locale: const Locale('de'),
+        textScaler: const TextScaler.linear(1.3),
       );
     });
 
-    final countdown = tester.widget<Text>(find.textContaining('1:30'));
-    expect(countdown.maxLines, 1);
-    expect(countdown.overflow, TextOverflow.ellipsis);
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('automatic-updates control has a step9 interaction slot', (
-    tester,
-  ) async {
-    await tester.pumpWidget(makeTestableWidget(subject()));
-
-    final context = tester.element(find.byType(TaskAgentControlsFooter));
-    final tokens = context.designTokens;
-    final target = find.byKey(
-      const ValueKey('taskAgentAutomaticUpdatesTarget'),
-    );
-    expect(
-      tester.getSize(target),
-      Size.square(tokens.spacing.step9),
-    );
-    expect(
-      tester.getTopLeft(target).dx -
-          tester.getTopRight(find.text('Automatic updates')).dx,
-      tokens.spacing.step3,
-    );
+    expect(find.byType(TaskAgentAutomationRow), findsOneWidget);
+    expect(find.byType(TaskAgentIdentityRegion), findsOneWidget);
   });
 }

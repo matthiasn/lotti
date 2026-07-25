@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1069]
 ### Fixed
+- **You can trigger an update at any time again.** While an automatic update was
+  scheduled, the manual button disappeared entirely, so the only way to run the
+  agent by hand was to cancel the countdown first. The button is now always
+  there, and using it no longer drops the schedule.
+- **The "This report …" line no longer breaks mid-sentence.** When the summary
+  on screen was written by a different model than the one currently selected,
+  the attribution wrapped onto a second line and left a stray fragment behind;
+  it now stays on one line, with the full text on hover.
+- **Hover highlights in the AI summary card no longer stretch across the whole
+  card.** Pointing at the model row or the card header highlighted the entire
+  width instead of the thing under the pointer.
 - **Answering a task suggestion no longer jumps the page.** Checklist
   suggestions already stayed put, but the others did not. Accepting or
   dismissing a due-date, language, priority, label or estimate suggestion while
@@ -39,6 +50,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already picked, and you stay where you were — with the usual Undo. The
   "Create new linked task…" menu entry still does what it always did, creating
   a blank task and taking you to it.
+
+### Changed
+- **The AI summary card's bottom section is simpler, and works on a phone.**
+  The update controls used to sit in a box inside a box; that inner box is gone,
+  so the whole strip reads as one quiet band and no longer runs out of room on
+  narrow screens or in longer languages. As space gets tight the countdown
+  shortens its wording — "Next update in 1:30", then "in 1:30", then just
+  "1:30" — instead of cutting off the time itself, and the controls stack in a
+  readable order rather than being flung to opposite edges.
+- **"Wake agent" is now "Update now",** and the summary says "Up to date" or
+  "Out of date" in words rather than only as a coloured icon.
+- **Cancelling a scheduled update is now a labelled "Skip"** instead of an
+  unmarked "✕" next to the Automatic updates switch. It still cancels only the
+  pending run and leaves automatic updates on.
 
 ## [0.9.1068]
 ### Changed

@@ -82,6 +82,7 @@ class AgentTestBench {
     this._mediaQueryData = desktopMediaQueryData,
     this.theme,
     this.surfaceConstraints,
+    this.locale,
     this.padding,
     this.provideAgentIdentity = false,
     this._isRunningOverride,
@@ -119,6 +120,10 @@ class AgentTestBench {
   final MediaQueryData _mediaQueryData;
   final ThemeData? theme;
   final BoxConstraints? surfaceConstraints;
+
+  /// Forces a UI language. German is the stress case for this card — every
+  /// footer label roughly doubles in length.
+  final Locale? locale;
   final EdgeInsetsGeometry? padding;
 
   /// When true, also overrides [agentIdentityProvider] (read by the
@@ -168,6 +173,7 @@ class AgentTestBench {
       mediaQueryData: _mediaQueryData,
       theme: theme,
       surfaceConstraints: surfaceConstraints,
+      locale: locale,
       overrides: [
         configFlagProvider.overrideWith(
           (ref, flagName) => Stream.value(

@@ -4663,6 +4663,7 @@
       }
     }
   },
+  "taskAgentNextUpdateInShort": "em {countdown}",
   "taskAgentNoAiSetup": "Sem configuração de IA",
   "taskAgentNoAiSetupDescription": "Pausa a inferência do agente até você escolher um perfil ou modelo.",
   "taskAgentNoModelsAvailable": "Nenhum modelo de pensamento compatível disponível",
@@ -4716,13 +4717,17 @@
     }
   },
   "taskAgentSetupTitle": "Configuração do agente",
+  "taskAgentSkipScheduledUpdate": "Ignorar",
+  "taskAgentStatusOutOfDate": "Desatualizado",
+  "taskAgentStatusUpToDate": "Atualizado",
   "taskAgentThinkingModelLabel": "Modelo de pensamento",
   "taskAgentThisReportHeader": "Este relatório",
   "taskAgentTurnOffSetup": "Desative a IA para este agente",
+  "taskAgentUpdateNow": "Atualizar agora",
+  "taskAgentUpdatesOnChange": "Atualiza quando esta tarefa muda",
   "taskAgentUseCategoryDefault": "Copiar categoria padrão",
   "taskAgentUseCategoryDefaultDescription": "Copia a configuração atual da categoria. Alterações posteriores de categoria não afetarão este agente.",
   "taskAgentUseProfileDefault": "Usar perfil padrão",
-  "taskAgentWakeAgent": "Agente de despertar",
   "taskCategoryAllLabel": "tudo",
   "taskCategoryLabel": "Categoria:",
   "taskCategoryUnassignedLabel": "não atribuído",

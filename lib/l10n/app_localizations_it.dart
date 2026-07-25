@@ -10175,6 +10175,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String taskAgentNextUpdateInShort(String countdown) {
+    return 'tra $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'Nessun setup dell\'AI';
 
   @override
@@ -10266,6 +10271,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskAgentSetupTitle => 'Impostazione dell\'agente';
 
   @override
+  String get taskAgentSkipScheduledUpdate => 'Salta';
+
+  @override
+  String get taskAgentStatusOutOfDate => 'Non aggiornato';
+
+  @override
+  String get taskAgentStatusUpToDate => 'Aggiornato';
+
+  @override
   String get taskAgentThinkingModelLabel => 'Modella di pensiero';
 
   @override
@@ -10273,6 +10287,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskAgentTurnOffSetup => 'Spegnere l\'IA per questo agente';
+
+  @override
+  String get taskAgentUpdateNow => 'Aggiorna ora';
+
+  @override
+  String get taskAgentUpdatesOnChange =>
+      'Si aggiorna quando questa attività cambia';
 
   @override
   String get taskAgentUseCategoryDefault => 'Copiare la categoria predefinita';
@@ -10283,9 +10304,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskAgentUseProfileDefault => 'Utilizzare il profilo predefinito';
-
-  @override
-  String get taskAgentWakeAgent => 'Agente sveglia';
 
   @override
   String taskBlockedByChipLabel(int count) {
