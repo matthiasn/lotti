@@ -933,6 +933,68 @@ void main() {
       },
     );
 
+    /// Drives a link commit through to its Undo, with [removeResult] deciding
+    /// what the removal reports back.
+    Future<void> undoWith(
+      WidgetTester tester, {
+      required Future<int> Function() removeResult,
+    }) async {
+      final repo = MockJournalRepository();
+      when(
+        () => repo.removeTypedLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenAnswer((_) => removeResult());
+      stubTasks([buildTask(id: 'other-task', title: 'Other Task')]);
+      when(
+        () => mockPersistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          // ignore: avoid_redundant_argument_values
+          linkType: EntryLinkType.basic,
+        ),
+      ).thenAnswer((_) async => true);
+
+      await openModal(tester, journalRepo: repo);
+      await tester.tap(find.text('Other Task'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('Undo').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    testWidgets(
+      'an undo that removed nothing says so — the delete returns a row count '
+      'and throws nothing, so silence read exactly like success',
+      (tester) async {
+        await undoWith(tester, removeResult: () async => 0);
+
+        expect(
+          find.text("Couldn't unlink the task. Please try again."),
+          findsWidgets,
+        );
+      },
+    );
+
+    testWidgets(
+      'an undo that throws says so too, rather than leaving the link in place '
+      'behind a dismissed confirmation',
+      (tester) async {
+        await undoWith(
+          tester,
+          removeResult: () async => throw Exception('remove failed'),
+        );
+
+        expect(
+          find.text("Couldn't unlink the task. Please try again."),
+          findsWidgets,
+        );
+      },
+    );
+
     testWidgets(
       'a rejected link is not confirmed and offers no undo',
       (tester) async {
