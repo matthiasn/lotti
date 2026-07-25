@@ -248,6 +248,12 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
               semanticsLabel: widget.searchHintText,
               onChanged: (value) => setState(() => _query = value),
               onSubmitted: (_) {
+                // The same exclusivity the rows have. The field stays enabled
+                // during a create — the query is still worth editing — so
+                // without this a user could change it and press Enter, picking
+                // an existing item while the create's own link was still in
+                // flight, and land two links or an orphaned new task.
+                if (_creating) return;
                 if (showCreate) {
                   _create();
                 } else if (!_multi && items.isNotEmpty) {

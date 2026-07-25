@@ -722,7 +722,7 @@ sequenceDiagram
   P-->>U: "+ <query>" create row
   U->>P: taps it
   P->>M: onCreateTask(query)
-  M->>C: createTask(title: query, category + project: anchor's)
+  M->>C: createTask(title: query, context: anchor's)
   C-->>M: Task
   M-->>P: Task (registered in the candidate pool)
   P->>M: onTaskSelected(task) — the ordinary pick path
@@ -735,14 +735,22 @@ Three consequences of that shape:
   link is written that a typed relation would then have to unpick. The card's
   overflow flow has to do that dance because it creates before it knows the
   relation; here the relation is already chosen above the search field.
-- **The category and the project are inherited** from the task being linked
-  from. A task created inside another task's picker belongs with it: leaving it
-  uncategorized would drop it out of every category-scoped view the parent
-  appears in, and omitting the project would leave it linked to the anchor but
-  missing from that project's task lists and rollups. The project travels via
-  `createTask`'s `inheritProjectFrom`, which names the parent for inheritance
-  *without* writing a link to it — `linkedId` would do both, and the link is
-  the part this flow owns itself.
+- **The category, the project and the privacy are inherited** from the task
+  being linked from. A task created inside another task's picker belongs with
+  it: leaving it uncategorized drops it out of every category-scoped view the
+  parent appears in, omitting the project leaves it linked to the anchor but
+  missing from that project's lists and rollups, and — the one that actually
+  leaks — a task created from a *private* anchor would persist public. All
+  three travel via `createTask`'s `inheritContextFrom`, which names the parent
+  for inheritance *without* writing a link to it. `linkedId` does both at once
+  (`createDbEntity` copies category and privacy off the linked entity), and
+  the link is the part this flow owns itself.
+- **The title is indexed on creation.** `createDbEntity` does not touch FTS5 —
+  only the update path and the manual rebuild do — so a task created *with* a
+  title and never edited stayed permanently unsearchable. That matters here
+  more than anywhere: the duplicate check falls back to full text once a task
+  leaves the 200-row prefetch, and an unindexed title reads as "does not
+  exist" and offers to create it a second time.
 - **Linking, confirmation and undo are unchanged** — they are literally the
   same code path a normal pick takes, so there are not two flows that must
   agree.

@@ -154,6 +154,11 @@ void main() {
         () => mockJournalDb.getJournalEntitiesForIds(any()),
       ).thenAnswer((_) async => <JournalEntity>[]);
 
+      // createTask reads the anchor to inherit its privacy.
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+
       when(
         () => mockPersistenceLogic.createLink(
           fromId: any(named: 'fromId'),

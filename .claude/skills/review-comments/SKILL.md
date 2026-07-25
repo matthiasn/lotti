@@ -137,11 +137,24 @@ resolution.
          else .state end
        + "\t" + (.name // .context)'
    }
-   until [ -n "$(rollup <n>)" ] && ! rollup <n> | grep -qE '^(IN_PROGRESS|QUEUED|PENDING)'; do
+   # Capture once per iteration and check the exit status: an errored or
+   # empty result is "not done", never "done and green".
+   while :; do
+     out=$(rollup <n>) || { echo "poll failed"; sleep 30; continue; }
+     [ -n "$out" ] || { echo "empty rollup — treating as not done"; sleep 30; continue; }
+     printf '%s\n' "$out" | grep -qE '^(IN_PROGRESS|QUEUED|PENDING)' || break
      sleep 30
    done
-   rollup <n> | grep -vE '^(SUCCESS|NEUTRAL|SKIPPED)' || echo "all green"
+   bad=$(printf '%s\n' "$out" | grep -vE '^(SUCCESS|NEUTRAL|SKIPPED)')
+   [ -z "$bad" ] && echo "all green (${#out} bytes of verdicts)" || printf '%s\n' "$bad"
    ```
+
+   Three ways these snippets lie if written casually, all worth guarding:
+   an errored command inside `$( )` yields empty output that a
+   `grep -q pending` reads as "nothing pending"; `grep … || echo "all green"`
+   turns *no output at all* into a pass; and a background poller whose result
+   is never collected lets the summary be written before it finishes. Capture
+   the output, check the status, and `wait` for the poller before reporting.
 
    Cross-check the total against `gh pr checks <n>` before declaring green:
    the honest failure mode here was a poller that exited on its first
@@ -160,12 +173,21 @@ resolution.
    a later page look absent. Fetch every page and aggregate once with `jq -s`:
 
    ```bash
-   gh api --paginate repos/{owner}/{repo}/pulls/<n>/comments --jq '.[]' | jq -s '
-     [.[] | select(.in_reply_to_id != null) | .in_reply_to_id] as $replied
-     | .[] | select(.in_reply_to_id == null)
-     | select(.id as $i | ($replied | index($i)) | not)
-     | "UNANSWERED \(.id) \(.user.login) \(.path)"'
+   # `set -o pipefail` so an API failure fails the pipeline instead of
+   # producing an empty list that reads as "nothing unanswered".
+   ( set -o pipefail
+     gh api --paginate repos/{owner}/{repo}/pulls/<n>/comments --jq '.[]' | jq -s -r '
+       [.[] | select(.in_reply_to_id != null) | .in_reply_to_id] as $replied
+       | [.[] | select(.in_reply_to_id == null)] as $top
+       | "top-level: \($top | length), answered: \([$top[] | select(.id as $i | $replied | index($i))] | length)",
+         ($top[] | select(.id as $i | ($replied | index($i)) | not)
+          | "UNANSWERED \(.id) \(.user.login) \(.path)")'
+   ) || echo "comment query FAILED — do not report all-replied"
    ```
+
+   Print the counted totals, not just the unanswered lines: "top-level: 26,
+   answered: 22" is checkable, whereas empty output is indistinguishable from
+   a query that never ran.
 
    Post replies with `-F body=@file` rather than an inline shell string.
    Review bodies contain backticks, quotes and code fences; nested shell

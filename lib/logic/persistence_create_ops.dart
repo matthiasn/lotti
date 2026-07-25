@@ -213,6 +213,7 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     String? linkedId,
     String? categoryId,
     List<String>? labelIds,
+    bool? private,
   }) async {
     try {
       final task = Task(
@@ -225,6 +226,11 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
           categoryId: categoryId,
           labelIds: labelIds,
           starred: false,
+          // Only a link-free creation context supplies this: with a
+          // `linkedId`, `createDbEntity` copies privacy off the linked entity
+          // instead. Without either, a task created from a private parent
+          // persists as public.
+          private: private,
         ),
       );
 

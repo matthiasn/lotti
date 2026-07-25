@@ -140,6 +140,41 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets(
+      'Enter cannot pick an existing item while a create is pending',
+      (
+        tester,
+      ) async {
+        final write = Completer<String?>();
+        String? picked;
+
+        await pumpSheet(
+          tester,
+          mode: PickerMode.single,
+          onPick: (id) => picked = id,
+          entriesBuilder: (_) => [item('alpha')],
+          shouldShowCreate: (query) => query == 'brand new',
+          createFromQuery: (_) => write.future,
+        );
+
+        await tester.enterText(find.byType(TextField), 'brand new');
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('create')));
+        await tester.pump();
+
+        // The field stays enabled during a create — the query is still worth
+        // editing — so changing it to something that matches and pressing Enter
+        // would otherwise pick an existing item mid-create.
+        await tester.enterText(find.byType(TextField), 'alpha');
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pump();
+        expect(picked, isNull);
+
+        write.complete(null);
+        await tester.pumpAndSettle();
+      },
+    );
+
     testWidgets("the lock is held until the pick's own work completes", (
       tester,
     ) async {

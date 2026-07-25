@@ -144,9 +144,10 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
   /// overflow flow has to do because it creates before it knows the relation.
   /// Here the relation is already selected above the search field, so the
   /// task is created bare and [_selectTask] writes exactly one edge.
-  /// `inheritProjectFrom` still carries the anchor's project across, which
-  /// `linkedId` would otherwise have been doing; without it the new task is
-  /// linked to the anchor but missing from that project's lists and rollups.
+  /// `inheritContextFrom` still carries the anchor's project *and privacy*
+  /// across, which `linkedId` would otherwise have been doing; without it the
+  /// new task is missing from that project's lists and rollups, and a task
+  /// created from inside a private task's picker persists as public.
   ///
   /// The category is likewise inherited from the task being linked from: a
   /// task created from inside another task's link picker belongs with it, and
@@ -163,7 +164,7 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
     final created = await createTask(
       title: title,
       categoryId: entryState.value?.entry?.meta.categoryId,
-      inheritProjectFrom: widget.currentTaskId,
+      inheritContextFrom: widget.currentTaskId,
     );
     if (created == null) return null;
 

@@ -211,6 +211,37 @@ void main() {
       },
     );
 
+    test(
+      'createTask inherits privacy from a link-free context and indexes the '
+      'title',
+      () async {
+        final parent = await createTask(title: 'Private parent');
+        await getIt<PersistenceLogic>().updateJournalEntity(
+          parent!.copyWith(meta: parent.meta.copyWith(private: true)),
+          parent.meta.copyWith(private: true),
+        );
+
+        final child = await createTask(
+          title: 'Child of a private task',
+          inheritContextFrom: parent.meta.id,
+        );
+
+        // Without a linkedId nothing else carries privacy across, so a task
+        // created from inside a private task's picker would persist public.
+        expect(child?.meta.private, isTrue);
+
+        // createDbEntity does not touch FTS5, so a titled task that is never
+        // edited would stay permanently unsearchable — and the link picker
+        // would offer to create it again once it left the prefetch window.
+        verify(
+          () => mockFts5Db.insertText(
+            any(that: isA<Task>()),
+            removePrevious: any(named: 'removePrevious'),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
     test('createTask persists inherited task filters', () async {
       const categoryId = 'filtered-category';
       const projectId = 'filtered-project';
