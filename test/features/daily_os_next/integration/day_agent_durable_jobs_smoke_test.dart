@@ -1,27 +1,20 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:lotti/features/ai/conversation/conversation_repository.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/inference_usage.dart';
-import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/ai_config_factories.dart';
 import '../services/day_processing_test_db.dart';
 import 'day_agent_pipeline_harness.dart';
+import 'scripted_conversation_repository.dart';
 
 /// End-to-end smoke test for the ADR 0032 durable draft/refine pipeline.
 ///
@@ -49,11 +42,11 @@ void main() {
   final dayDate = DateTime(2030, 1, 15);
   final dayId = dayAgentIdForDate(dayDate);
 
-  late _ScriptedConversationRepository conversationRepository;
+  late ScriptedConversationRepository conversationRepository;
   late DayAgentPipelineHarness harness;
 
   setUp(() {
-    conversationRepository = _ScriptedConversationRepository();
+    conversationRepository = ScriptedConversationRepository();
     harness = DayAgentPipelineHarness.create(
       now: now,
       conversationRepository: conversationRepository,
@@ -80,8 +73,8 @@ void main() {
     'orchestrator/workflow chain, with only the LLM response scripted',
     () async {
       // ── Draft ────────────────────────────────────────────────────────────
-      conversationRepository.toolCalls = [
-        _toolCall(
+      conversationRepository.script([
+        scriptedToolCall(
           id: 'draft-call',
           name: DayAgentToolNames.draftDayPlan,
           args: {
@@ -99,7 +92,7 @@ void main() {
             ],
           },
         ),
-      ];
+      ]);
 
       final draft = await harness.realDayAgent.draftDayPlan(
         captureId: const CaptureId(''),
@@ -125,8 +118,8 @@ void main() {
       expect(identity, isA<AgentIdentityEntity>());
 
       // ── Refine ───────────────────────────────────────────────────────────
-      conversationRepository.toolCalls = [
-        _toolCall(
+      conversationRepository.script([
+        scriptedToolCall(
           id: 'refine-call',
           name: DayAgentToolNames.proposePlanDiff,
           args: {
@@ -149,7 +142,7 @@ void main() {
             ],
           },
         ),
-      ];
+      ]);
 
       final diff = await harness.realDayAgent.proposePlanDiff(
         currentPlan: draft,
@@ -177,8 +170,8 @@ void main() {
       // The coordinator identity must exist for a digest to run under it.
       final coordinator = await harness.dayAgentService
           .getOrCreatePlannerAgent();
-      conversationRepository.toolCalls = [
-        _toolCall(
+      conversationRepository.script([
+        scriptedToolCall(
           id: 'issue-call',
           name: DayAgentToolNames.issueDayDirective,
           args: {
@@ -195,7 +188,7 @@ void main() {
             'attentionNotes': ['Light day after two heavy ones.'],
           },
         ),
-      ];
+      ]);
       final digestRunKey = harness.orchestrator.enqueueManualWake(
         agentId: coordinator.agentId,
         reason: dayAgentDigestReason,
@@ -227,8 +220,8 @@ void main() {
       expect(nextDigest!.status, ScheduledWakeStatus.pending);
 
       // ── A draft wake for the same day sees the directive ─────────────────
-      conversationRepository.toolCalls = [
-        _toolCall(
+      conversationRepository.script([
+        scriptedToolCall(
           id: 'draft-call',
           name: DayAgentToolNames.draftDayPlan,
           args: {
@@ -246,7 +239,7 @@ void main() {
             ],
           },
         ),
-      ];
+      ]);
       final draft = await harness.realDayAgent.draftDayPlan(
         captureId: const CaptureId(''),
         decidedTaskIds: const [],
@@ -266,8 +259,8 @@ void main() {
       final dayAgent = await harness.agentRepository.getEntity(
         perDayAgentId(dayId),
       );
-      conversationRepository.toolCalls = [
-        _toolCall(
+      conversationRepository.script([
+        scriptedToolCall(
           id: 'status-call',
           name: DayAgentToolNames.raiseDayStatus,
           args: {
@@ -277,7 +270,7 @@ void main() {
             'note': 'The afternoon filled up.',
           },
         ),
-      ];
+      ]);
       final statusRunKey = harness.orchestrator.enqueueManualWake(
         agentId: (dayAgent! as AgentIdentityEntity).agentId,
         reason: dayAgentDraftingReason,
@@ -302,76 +295,4 @@ void main() {
       expect(events.single.agentId, perDayAgentId(dayId));
     },
   );
-}
-
-ChatCompletionMessageToolCall _toolCall({
-  required String id,
-  required String name,
-  required Map<String, Object?> args,
-}) {
-  return ChatCompletionMessageToolCall(
-    id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: jsonEncode(args),
-    ),
-  );
-}
-
-/// Fake, in-process [ConversationRepository]: applies the scripted
-/// [toolCalls] through the *real* `DayAgentStrategy`/tool dispatch (so real
-/// production tool handlers run), without any network call. Mirrors
-/// `_ConversationHarness` in `day_agent_workflow_test.dart`.
-class _ScriptedConversationRepository extends ConversationRepository {
-  final Map<String, ConversationManager> _managers = {};
-  int _createdCount = 0;
-
-  List<ChatCompletionMessageToolCall> toolCalls = const [];
-  String? lastUserMessage;
-
-  @override
-  String createConversation({String? systemMessage, int maxTurns = 20}) {
-    _createdCount++;
-    final id = 'conversation-$_createdCount';
-    _managers[id] = ConversationManager(conversationId: id, maxTurns: maxTurns)
-      ..initialize(systemMessage: systemMessage);
-    return id;
-  }
-
-  @override
-  ConversationManager? getConversation(String conversationId) =>
-      _managers[conversationId];
-
-  @override
-  Future<InferenceUsage?> sendMessage({
-    required String conversationId,
-    required String message,
-    required String model,
-    required AiConfigInferenceProvider provider,
-    required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    double temperature = 0.7,
-    ConversationStrategy? strategy,
-    String? consumptionAgentId,
-    String? consumptionTaskId,
-    String? consumptionCategoryId,
-    String? consumptionWakeRunKey,
-    String? consumptionThreadId,
-    bool rethrowInferenceErrors = false,
-  }) async {
-    lastUserMessage = message;
-    final manager = _managers[conversationId]!..addUserMessage(message);
-    if (toolCalls.isNotEmpty) {
-      manager.addAssistantMessage(toolCalls: toolCalls);
-      await strategy!.processToolCalls(toolCalls: toolCalls, manager: manager);
-    }
-    return null;
-  }
-
-  @override
-  void deleteConversation(String conversationId) {
-    _managers.remove(conversationId)?.dispose();
-  }
 }

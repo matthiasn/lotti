@@ -329,9 +329,71 @@ that same chain with the capture removed so ADR 0043's rule arrives without
 its data. Fixtures seed through the `journalDb` stubs the pipeline harness
 already installs.
 
-**Not yet wired to a model.** The matrix runner that feeds scenarios to
-providers, and the report it produces, are tracked separately; until then the
-fixtures are verified for internal coherence only.
+The matrix runner (`framework/eval_runner.dart`) drives scenario x model x
+variant x sample through the **real** pipeline via `DayAgentPipelineHarness` —
+outbox, runtime, executor, orchestrator, workflow and plan writer are all
+production code, and only the inference layer is injected. That is what lets
+the same runner drive a scripted model in ordinary CI and a live provider
+behind an opt-in flag. Each cell gets its own harness, so no run can read
+another's plan, jobs or tool log, and a cell that fails is recorded and the
+matrix continues.
+
+```mermaid
+flowchart LR
+  cell["cell:\nscenario x model\nx variant x sample"] --> layer["EvalModelTarget.open()\n(scripted or live)"]
+  layer --> rec["EvalPromptRecorder\nwraps the repository"]
+  rec --> harness["DayAgentPipelineHarness\n(real pipeline)"]
+  harness --> wake["one drafting wake"]
+  wake -->|"agent log:\naction + toolResult"| calls["tool calls,\nincl. rejections"]
+  wake -->|"DayPlanEntity"| plan["persisted blocks"]
+  rec -->|"createConversation /\nsendMessage"| prompts["system + user prompts"]
+  calls --> score["scoreAll()"]
+  plan --> score
+  score --> result["EvalRunResult"]
+  prompts --> result
+```
+
+Four details carry the design:
+
+- **Rejections are recovered from the agent log.** `DayAgentStrategy` writes an
+  `action` message (arguments as its payload) before each tool call and a
+  `toolResult` after it, carrying the rejection text in
+  `metadata.errorMessage`. Nothing else keeps that text, and without it a plan
+  that only became legal on the third attempt is indistinguishable from a
+  first-time-right one.
+- **The prompts are captured by wrapping the conversation repository.** The
+  system prompt is built and handed straight to `createConversation` — it is
+  never persisted, so it cannot be read back. The wrapper records one
+  transcript *per conversation*, which is also what makes the forced-retry
+  signal trustworthy: `_forceDraftDayPlanIfMissing` sends a second message
+  into the **same** conversation, whereas a durable job retry opens a fresh
+  one and sends its normal first prompt. Counting messages across the whole
+  cell would report a transient provider failure as the model ignoring the
+  prompt; `jobAttempts` is where infrastructure retries belong.
+- **The dependency resolver is always wired**, matching production. It gates
+  both the corpus's `blockedBy` annotation and whether ADR 0043's blocked-work
+  rule reaches the prompt at all, so a null resolver would quietly measure a
+  prompt the app never sends.
+- **The capture is seeded directly, without its parse job.** Production's
+  `submitCapture` also enqueues `parseCapture`, which the runtime drains as a
+  *second* wake with its own prompt and tool calls. The unit of measurement
+  here is one drafting wake, so the runner writes the capture entity itself —
+  which is what makes `captureContext` non-null and therefore what renders the
+  transcript and task corpus into the prompt. Parse quality would need its own
+  scenario type.
+
+Variants (`framework/eval_variant.dart`) are a matrix dimension rather than a
+separate run, so one pass yields the A/B. A variant transforms the
+`DayAgentConfig` a scenario asks for, which is what renders into the system
+prompt's planning defaults — and the same effective config is what the scorers
+grade against, so a variant can never be graded against a contract the model
+was not given. The shipped set is the control only: a variant that tightens
+capacity also changes what the scenarios ask for, and would make
+`requiredWorkPlaced` and `withinCapacity` mutually unsatisfiable on a crowded
+day.
+
+**Not yet judged.** The report and judge bundle the runner's results feed are
+tracked separately, as is the live entry point that points it at real models.
 
 ### Measuring that it does not degrade
 
