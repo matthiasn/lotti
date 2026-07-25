@@ -35,6 +35,8 @@ void main() {
     List<EvalCorpusTask> corpus = const [],
     List<String> decidedTaskIds = const [],
     Set<String> permittedOmissions = const {},
+    Set<String> expectedOmissions = const {},
+    int workingHoursEndHour = 17,
     Set<String>? visibleTaskIds,
     List<EvalToolCall> toolCalls = const [],
     int capacityMinutes = 480,
@@ -45,7 +47,9 @@ void main() {
       corpus: corpus,
       decidedTaskIds: decidedTaskIds,
       permittedOmissions: permittedOmissions,
+      expectedOmissions: expectedOmissions,
       visibleTaskIds: visibleTaskIds,
+      workingHoursEndHour: workingHoursEndHour,
       capacityMinutes: capacityMinutes,
     ),
     blocks: blocks,
@@ -478,6 +482,122 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('same'));
+    });
+  });
+
+  group('expectedOmissionsHonoured', () {
+    test('passes when the work was left out as expected', () {
+      final result = scoreExpectedOmissionsHonoured(
+        outcome(
+          blocks: [block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-1')],
+          expectedOmissions: const {'task-stale'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('fails when the model placed work it should have left out', () {
+      // Without this, permitting the omission would let a model place the
+      // stale task and still score clean — the scenario could not measure
+      // the thing it exists for.
+      final result = scoreExpectedOmissionsHonoured(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-stale'),
+          ],
+          expectedOmissions: const {'task-stale'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-stale'));
+    });
+
+    test('is not applicable when nothing is expected to be omitted', () {
+      expect(scoreExpectedOmissionsHonoured(outcome()).isApplicable, isFalse);
+    });
+  });
+
+  group('withinWorkingHours', () {
+    test('passes when the day ends on time', () {
+      final result = scoreWithinWorkingHours(
+        outcome(blocks: [block(id: 'a', startHour: 15, endHour: 17)]),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('catches work pushed past the end of the working day', () {
+      // The failure capacity cannot see: 180 minutes from 15:00 uses only
+      // 180 of 480 and stays inside the calendar day, yet runs to 18:00.
+      final result = scoreWithinWorkingHours(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 15,
+              endHour: 18,
+              title: 'Finish the migration',
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Finish the migration'));
+      expect(result.detail, contains('18:00'));
+    });
+  });
+
+  group('respectsEstimates', () {
+    const bigTask = EvalCorpusTask(
+      taskId: 'task-big',
+      title: 'Rewrite the ingestion pipeline',
+      estimateMinutes: 240,
+    );
+
+    test('passes when the block roughly matches the estimate', () {
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 13, taskId: 'task-big'),
+          ],
+          corpus: const [bigTask],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('catches an impossible day made to look feasible by compression', () {
+      // The cheapest way to fit four multi-hour tasks into one day is to
+      // pretend each takes an hour. Capacity alone would call that a pass.
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-big'),
+          ],
+          corpus: const [bigTask],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('60min'));
+      expect(result.detail, contains('240min'));
+    });
+
+    test('is not applicable when no placed task carries an estimate', () {
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-x')],
+          corpus: const [
+            EvalCorpusTask(taskId: 'task-x', title: 'No estimate'),
+          ],
+        ),
+      );
+
+      expect(result.isApplicable, isFalse);
     });
   });
 

@@ -54,8 +54,10 @@ class EvalFixtureInputs {
     this.corpus = const [],
     this.decidedTaskIds = const [],
     this.permittedOmissions = const {},
+    this.expectedOmissions = const {},
     this.visibleTaskIds,
     this.capacityMinutes = 480,
+    this.workingHoursEndHour = 17,
     this.now,
   });
 
@@ -66,13 +68,23 @@ class EvalFixtureInputs {
   /// Tasks the user explicitly approved for placement.
   final List<String> decidedTaskIds;
 
-  /// Decided tasks whose *omission* is the correct outcome.
+  /// Decided tasks the model *may* leave out without it counting against it.
   ///
-  /// Some scenarios hand the model a decided task it should deliberately not
-  /// place — one the capture says is already done, or one that is blocked. A
-  /// scorer that required every decided task would then fail precisely when
-  /// the model behaves well, which is worse than not measuring at all.
+  /// Distinct from [expectedOmissions]: a blocked task may legitimately be
+  /// placed behind its blocker, so omitting it is acceptable but not required.
+  /// Requiring it would fail a model that correctly declined; forbidding it
+  /// would fail a model that correctly sequenced.
   final Set<String> permittedOmissions;
+
+  /// Decided tasks the model is expected to leave out, where placing them is
+  /// itself the failure.
+  ///
+  /// The stale-task case: the capture says the work is already done, and the
+  /// prompt tells the model not to force the placement. Merely dropping these
+  /// from the positive requirement would let a model place them and still
+  /// score clean, so the scenario could not measure the behaviour it exists
+  /// for.
+  final Set<String> expectedOmissions;
 
   /// Task ids the model could actually reference.
   ///
@@ -84,6 +96,15 @@ class EvalFixtureInputs {
   final Set<String>? visibleTaskIds;
 
   final int capacityMinutes;
+
+  /// Local hour the working day ends, mirroring the planner's own default
+  /// (`DayAgentConfig.workingHoursEnd`, 17:00).
+  ///
+  /// Carried here because capacity alone cannot catch a model that pushes work
+  /// past the end of the day: a 180-minute block from 15:00 consumes only 180
+  /// of 480 minutes and stays inside the calendar day, so every other
+  /// constraint is satisfied while the plan is unusable.
+  final int workingHoursEndHour;
 
   /// Wall instant the draft ran at, for same-day scenarios. Null for a
   /// future-day draft, where "the past" has no meaning.

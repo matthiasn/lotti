@@ -95,45 +95,76 @@ void main() {
     expect(withoutCapture.startHour, withCapture.startHour);
   });
 
-  test('a scenario that wants an omission says so', () {
-    // Otherwise the decided-tasks-placed constraint fails exactly when the
-    // model does the right thing.
+  test('a stale task must be left out, not merely allowed to be', () {
+    // Two different things: permitting the omission stops a correct model
+    // failing, but only expecting it catches a model that places the work
+    // anyway — which is the behaviour this scenario exists to measure.
     final stale = byId('staleDecidedTask');
-    expect(stale.permittedOmissions, contains('task-stale-invoice'));
+
+    expect(stale.expectedOmissions, contains('task-stale-invoice'));
     expect(
-      stale.permittedOmissions,
+      stale.expectedOmissions,
       isNot(contains('task-real-review')),
       reason: 'the genuinely required task must still be required',
     );
-
-    for (final id in ['blockedChain', 'blockedWithoutCorpus']) {
-      expect(
-        byId(id).permittedOmissions,
-        contains('task-c-leaf'),
-        reason: '$id asks the planner to avoid its blocked leaf',
-      );
-    }
-  });
-
-  test('a capture-less scenario hides the corpus from the scorers', () {
-    // The corpus is rendered only inside the capture context, so scoring
-    // reference legitimacy against it would grade the model on ids it never
-    // received. Ground truth stays available for the constraints that need it.
-    final inputs = byId('blockedWithoutCorpus').inputsFor(planDate);
-
-    expect(inputs.referenceableTaskIds, {'task-c-leaf'});
     expect(
-      inputs.corpus.map((task) => task.taskId),
-      contains('task-a-root'),
-      reason: 'ground truth must survive so blocker ordering is still knowable',
+      stale.inputsFor(planDate).permittedOmissions,
+      contains('task-stale-invoice'),
+      reason: 'an expected omission is permitted by construction',
     );
   });
 
-  test('a scenario with a capture leaves the whole corpus referenceable', () {
-    final inputs = byId('blockedChain').inputsFor(planDate);
+  test(
+    'a blocked leaf may be omitted or sequenced, so it is only permitted',
+    () {
+      // Placing it behind its blocker is equally correct, so expecting the
+      // omission would fail a model that sequenced the day properly.
+      for (final id in ['blockedChain', 'blockedWithoutCorpus']) {
+        final scenario = byId(id);
+        expect(scenario.permittedOmissions, contains('task-c-leaf'));
+        expect(
+          scenario.expectedOmissions,
+          isEmpty,
+          reason: '$id must not punish a correctly sequenced placement',
+        );
+      }
+    },
+  );
 
-    expect(inputs.referenceableTaskIds, contains('task-a-root'));
-    expect(inputs.referenceableTaskIds, contains('task-unrelated'));
+  test('overCommitted may drop work, since that is how it surfaces', () {
+    final scenario = byId('overCommitted');
+
+    expect(
+      scenario.permittedOmissions,
+      containsAll(scenario.decidedTaskIds),
+      reason: 'requiring all four would punish surfacing the conflict',
+    );
+  });
+
+  test('lateStart carries the working-hours end the scenario turns on', () {
+    final inputs = byId('lateStart').inputsFor(planDate);
+
+    expect(inputs.workingHoursEndHour, 17);
+    expect(
+      inputs.now!.hour,
+      lessThan(inputs.workingHoursEndHour),
+      reason: 'the draft must start while working hours remain',
+    );
+  });
+
+  test('a capture-less scenario declares the corpus invisible', () {
+    // The visibility semantics themselves are covered in eval_models_test;
+    // what belongs here is that the fixture actually sets them, since the
+    // scenario pair is meaningless otherwise.
+    expect(
+      byId('blockedWithoutCorpus').inputsFor(planDate).visibleTaskIds,
+      isNotNull,
+    );
+    expect(
+      byId('blockedChain').inputsFor(planDate).visibleTaskIds,
+      isNull,
+      reason: 'a scenario with a capture shows the model everything',
+    );
   });
 
   test('overCommitted genuinely does not fit', () {

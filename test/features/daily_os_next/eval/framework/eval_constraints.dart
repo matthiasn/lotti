@@ -30,6 +30,9 @@ abstract final class EvalConstraintIds {
   static const noFabricatedTaskIds = 'noFabricatedTaskIds';
   static const noHistoryFabrication = 'noHistoryFabrication';
   static const uniqueBlockIds = 'uniqueBlockIds';
+  static const expectedOmissionsHonoured = 'expectedOmissionsHonoured';
+  static const withinWorkingHours = 'withinWorkingHours';
+  static const respectsEstimates = 'respectsEstimates';
 
   /// Guarded — scored on rejections rather than on the plan.
   static const compliedWithoutRejection = 'compliedWithoutRejection';
@@ -42,6 +45,9 @@ abstract final class EvalConstraintIds {
     noFabricatedTaskIds,
     noHistoryFabrication,
     uniqueBlockIds,
+    expectedOmissionsHonoured,
+    withinWorkingHours,
+    respectsEstimates,
     compliedWithoutRejection,
   ];
 }
@@ -55,6 +61,9 @@ List<EvalConstraintResult> scoreAll(EvalRunOutcome outcome) => [
   scoreNoFabricatedTaskIds(outcome),
   scoreNoHistoryFabrication(outcome),
   scoreUniqueBlockIds(outcome),
+  scoreExpectedOmissionsHonoured(outcome),
+  scoreWithinWorkingHours(outcome),
+  scoreRespectsEstimates(outcome),
   scoreCompliedWithoutRejection(outcome),
 ];
 
@@ -292,6 +301,107 @@ EvalConstraintResult scoreUniqueBlockIds(EvalRunOutcome outcome) {
     detail: duplicates.isEmpty
         ? '${outcome.blocks.length} unique block ids'
         : 'duplicate id(s): ${duplicates.join(', ')}',
+  );
+}
+
+/// Work the scenario expects to be left out must actually be left out.
+///
+/// The complement to [EvalFixtureInputs.permittedOmissions]: dropping a task
+/// from the positive requirement stops a correct omission failing, but on its
+/// own it also lets a model place the task and still score clean — so the
+/// scenario could not distinguish the behaviour it was built to measure.
+EvalConstraintResult scoreExpectedOmissionsHonoured(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.expectedOmissionsHonoured;
+  final expected = outcome.inputs.expectedOmissions;
+  if (expected.isEmpty) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'no omission is expected',
+    );
+  }
+  final placed = {for (final block in outcome.blocks) ?block.taskId};
+  final wronglyPlaced = [
+    for (final taskId in expected)
+      if (placed.contains(taskId)) taskId,
+  ];
+  return EvalConstraintResult(
+    id: id,
+    passed: wronglyPlaced.isEmpty,
+    detail: wronglyPlaced.isEmpty
+        ? 'left out ${expected.length} task(s) it was meant to'
+        : 'placed work it should have left out: ${wronglyPlaced.join(', ')}',
+  );
+}
+
+/// Blocks must not run past the end of the working day.
+///
+/// Capacity cannot catch this on its own: a 180-minute block starting at 15:00
+/// consumes 180 of 480 minutes and stays inside the calendar day, so every
+/// other constraint passes while the plan runs to 18:00.
+EvalConstraintResult scoreWithinWorkingHours(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.withinWorkingHours;
+  final blocks = _scheduled(outcome);
+  if (blocks.isEmpty) {
+    return const EvalConstraintResult.notApplicable(id, 'no scheduled blocks');
+  }
+  final planDate = outcome.inputs.planDate;
+  final endOfDay = DateTime(
+    planDate.year,
+    planDate.month,
+    planDate.day,
+    outcome.inputs.workingHoursEndHour,
+  );
+  final overruns = [
+    for (final block in blocks)
+      if (block.endTime.isAfter(endOfDay))
+        '"${block.title ?? block.id}" ends ${_hhmm(block.endTime)}',
+  ];
+  return EvalConstraintResult(
+    id: id,
+    passed: overruns.isEmpty,
+    detail: overruns.isEmpty
+        ? 'all blocks end by ${_hhmm(endOfDay)}'
+        : 'past ${_hhmm(endOfDay)}: ${overruns.join(', ')}',
+  );
+}
+
+/// A block for an estimated task must reflect that estimate.
+///
+/// The cheapest way to make an impossible day look feasible is to shrink the
+/// work: four multi-hour tasks become four short blocks, capacity is
+/// satisfied, and nothing surfaces the conflict the scenario was built to
+/// provoke. Allows generous slack — the point is catching compression, not
+/// policing estimation.
+EvalConstraintResult scoreRespectsEstimates(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.respectsEstimates;
+  final compressed = <String>[];
+  var checked = 0;
+  for (final block in _scheduled(outcome)) {
+    final taskId = block.taskId;
+    if (taskId == null) continue;
+    final estimate = outcome.inputs.taskById(taskId)?.estimateMinutes;
+    if (estimate == null || estimate <= 0) continue;
+    checked++;
+    final allocated = block.endTime.difference(block.startTime).inMinutes;
+    if (allocated * 2 < estimate) {
+      compressed.add(
+        '"${block.title ?? taskId}" allocated ${allocated}min '
+        'against a ${estimate}min estimate',
+      );
+    }
+  }
+  if (checked == 0) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'no placed task carries an estimate',
+    );
+  }
+  return EvalConstraintResult(
+    id: id,
+    passed: compressed.isEmpty,
+    detail: compressed.isEmpty
+        ? '$checked estimated task(s) placed at a plausible length'
+        : compressed.join('; '),
   );
 }
 

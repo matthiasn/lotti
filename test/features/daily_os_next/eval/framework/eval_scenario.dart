@@ -52,7 +52,6 @@ class EvalTaskSpec {
 enum EvalTaskStatus { open, inProgress, blocked }
 
 const String evalDefaultCategoryId = 'cat-work';
-const String evalSecondCategoryId = 'cat-personal';
 
 /// One day the planner is asked to handle.
 @immutable
@@ -63,11 +62,11 @@ class EvalScenario {
     required this.tasks,
     this.decidedTaskIds = const [],
     this.permittedOmissions = const {},
+    this.expectedOmissions = const {},
     this.capacityMinutes = 480,
     this.startHour,
     this.includeCapture = true,
     this.captureTranscript,
-    this.allowedCategoryIds = const {evalDefaultCategoryId},
   });
 
   final String id;
@@ -78,12 +77,16 @@ class EvalScenario {
   final List<EvalTaskSpec> tasks;
   final List<String> decidedTaskIds;
 
-  /// Decided tasks this scenario expects the planner to leave out.
+  /// Decided tasks the planner *may* leave out without penalty.
   ///
-  /// They are still handed to the model — that is the input under test — but
-  /// omitting them is the correct answer, so they must not count against the
-  /// decided-tasks-placed constraint.
+  /// A blocked task belongs here rather than in [expectedOmissions]: placing
+  /// it behind its blocker is equally correct, so neither requiring nor
+  /// forbidding it would be right.
   final Set<String> permittedOmissions;
+
+  /// Decided tasks the planner is expected to leave out, where placing them is
+  /// the failure being measured.
+  final Set<String> expectedOmissions;
 
   final int capacityMinutes;
 
@@ -100,7 +103,6 @@ class EvalScenario {
   final bool includeCapture;
 
   final String? captureTranscript;
-  final Set<String> allowedCategoryIds;
 
   /// Blocker map for the fixture-backed resolver.
   Map<String, List<ResolvedBlocker>> get blockedStatus {
@@ -137,7 +139,10 @@ class EvalScenario {
         ),
     ],
     decidedTaskIds: decidedTaskIds,
-    permittedOmissions: permittedOmissions,
+    // Expected omissions are permitted by construction — a task that must not
+    // be placed is obviously not required to be.
+    permittedOmissions: {...permittedOmissions, ...expectedOmissions},
+    expectedOmissions: expectedOmissions,
     // Without a capture the task corpus is never rendered, so the only ids
     // the model can name are its decided ones. The corpus above stays as
     // ground truth for constraints that need to know what is actually true.
@@ -383,6 +388,11 @@ const _overCommitted = EvalScenario(
     ),
   ],
   decidedTaskIds: ['task-a', 'task-b', 'task-c', 'task-d'],
+  // Dropping work is how a planner surfaces an impossible day, so it must not
+  // be scored as a miss. What it must not do is fake the fit by compressing
+  // four multi-hour tasks into short blocks — `respectsEstimates` catches
+  // that, which is what makes this scenario measurable at all.
+  permittedOmissions: {'task-a', 'task-b', 'task-c', 'task-d'},
   captureTranscript: 'I want all four of these done today.',
 );
 
@@ -468,8 +478,9 @@ const _staleDecidedTask = EvalScenario(
   decidedTaskIds: ['task-stale-invoice', 'task-real-review'],
   // The transcript says the invoice is already sent, and the prompt tells the
   // model not to force a stale placement. Requiring it would fail the model
-  // exactly when it obeys.
-  permittedOmissions: {'task-stale-invoice'},
+  // when it obeys; merely permitting the omission would let it place the work
+  // and still score clean. Placing it is the failure.
+  expectedOmissions: {'task-stale-invoice'},
   captureTranscript:
       'I already sent that invoice last week, it is done. Today I need to get '
       'through the security questionnaire.',

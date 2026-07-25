@@ -250,6 +250,54 @@ device-local processing outbox that transcription uses (`services/day_processing
 a sealed `DayProcessingPayload` per kind (`TranscribeAudioPayload`,
 `ParseCapturePayload`, `DraftPlanPayload`, `RefinePlanPayload`).
 
+### Evaluating what the model actually plans
+
+`test/features/daily_os_next/eval/` is a development instrument for improving
+the day-agent's prompt and context — not a regression gate, and never in CI.
+The storage benchmark above measures what the *repositories* cost; this
+measures what the *model* produces.
+
+Its shape follows from how the write path enforces things. Hard constraints —
+day boundaries, `end > start`, same-day past-start, allowed categories,
+committed-plan overwrite — throw `DayAgentCaptureException`, rejecting the
+whole `draft_day_plan` call and handing the message back to the model, which
+retries. Everything else — block overlap, capacity, decided tasks actually
+being placed, ADR 0043 blocker ordering — is prompt contract only.
+
+So the persisted plan is always *legal*, and inspecting it alone measures the
+guards rather than the model. The scorers in `framework/eval_constraints.dart`
+therefore split:
+
+| scored on | constraints |
+| --- | --- |
+| the persisted plan | overlap, capacity, working hours, estimate fidelity, decided tasks placed, expected omissions honoured, blocker-before-blocked, fabricated task ids, fabricated history, duplicate ids |
+| the rejection count | whether the model complied without being corrected |
+
+Three semantics are load-bearing and easy to get wrong:
+
+- **"Not applicable" is a third result, not a pass.** A scenario with no
+  blocked tasks says nothing about blocker handling; counting it as a pass
+  would make the laziest model look like the best one.
+- **Some decided tasks must *not* be placed.** A stale task the capture says is
+  done is an `expectedOmission` — placing it fails. A blocked task is a
+  `permittedOmission` — omitting or correctly sequencing it both pass.
+- **Fabrication is judged against what the model was shown.** The task corpus
+  renders only inside the capture context, so a wake without a capture sees
+  only its decided tasks. `EvalFixtureInputs.corpus` stays ground truth (the
+  scorer must still know what is blocked) while `visibleTaskIds` bounds what
+  the model could legitimately name.
+
+Scenarios (`framework/eval_scenario.dart`) each encode a tension the planner
+must resolve: a crowded day, a mid-afternoon start with a task too long to
+fit, four decided tasks that cannot all happen, a two-hop blocker chain, and
+that same chain with the capture removed so ADR 0043's rule arrives without
+its data. Fixtures seed through the `journalDb` stubs the pipeline harness
+already installs.
+
+**Not yet wired to a model.** The matrix runner that feeds scenarios to
+providers, and the report it produces, are tracked separately; until then the
+fixtures are verified for internal coherence only.
+
 ### Measuring that it does not degrade
 
 `test/features/daily_os_next/benchmark/` seeds a synthetic corpus at 1, 6 and
