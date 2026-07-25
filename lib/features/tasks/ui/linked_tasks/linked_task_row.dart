@@ -82,12 +82,13 @@ class LinkedTaskRow extends StatelessWidget {
   /// the barrier, and the tap reads as doing nothing at all.
   final VoidCallback? onOpen;
 
-  /// Invoked after the user confirms the unlink dialog; awaited so a failure
-  /// can be surfaced via a SnackBar instead of silently leaving the row
-  /// displayed with no feedback. Null hides the unlink affordance even in
-  /// manage mode (falls back to the plain chevron) rather than showing a
-  /// control that does nothing.
-  final Future<void> Function()? onUnlink;
+  /// Invoked after the user confirms the unlink dialog. Returns the number of
+  /// links removed: a delete that matches nothing returns zero and throws
+  /// nothing, so without the count a no-op unlink is indistinguishable from a
+  /// successful one and the row simply stays put. Null hides the unlink
+  /// affordance even in manage mode (falls back to the plain chevron) rather
+  /// than showing a control that does nothing.
+  final Future<int> Function()? onUnlink;
 
   @override
   Widget build(BuildContext context) {
@@ -210,7 +211,13 @@ class LinkedTaskRow extends StatelessWidget {
     if (!confirmed) return;
 
     try {
-      await onUnlink?.call();
+      final removed = await onUnlink?.call();
+      if (removed != null && removed <= 0 && context.mounted) {
+        showLinkFailureMessage(
+          messenger: ScaffoldMessenger.of(context),
+          message: context.messages.unlinkTaskFailedMessage,
+        );
+      }
     } catch (_) {
       if (context.mounted) {
         showLinkFailureMessage(

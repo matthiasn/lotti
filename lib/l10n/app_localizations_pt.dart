@@ -33,10 +33,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addActionAddText => 'Entrada de texto';
 
   @override
-  String get addActionAddTimeRecording => 'Entrada do temporizador';
+  String get addActionAddTimer => 'Temporizador';
 
   @override
-  String get addActionAddTimer => 'Temporizador';
+  String get addActionAddTimeRecording => 'Entrada do temporizador';
 
   @override
   String get addActionImportImage => 'Importar imagem';
@@ -665,10 +665,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentSoulCoachingStyleLabel => 'Estilo de treinamento';
 
   @override
-  String get agentSoulCreateTitle => 'Criar alma';
+  String get agentSoulCreatedSuccess => 'Alma criada';
 
   @override
-  String get agentSoulCreatedSuccess => 'Alma criada';
+  String get agentSoulCreateTitle => 'Criar alma';
 
   @override
   String get agentSoulDeleteConfirmBody =>
@@ -754,7 +754,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentSoulSelectTitle => 'Selecione Alma';
 
   @override
+  String get agentSoulsEmptyFiltered =>
+      'Nenhuma alma corresponde aos seus filtros.';
+
+  @override
   String get agentSoulSettingsTab => 'Configurações';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Procure almas…';
+
+  @override
+  String get agentSoulsTitle => 'Almas';
 
   @override
   String get agentSoulToneBoundsLabel => 'Limites de tom';
@@ -772,16 +782,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Diretiva de Voz';
-
-  @override
-  String get agentSoulsEmptyFiltered =>
-      'Nenhuma alma corresponde aos seus filtros.';
-
-  @override
-  String get agentSoulsSearchPlaceholder => 'Procure almas…';
-
-  @override
-  String get agentSoulsTitle => 'Almas';
 
   @override
   String get agentStateConsecutiveFailures => 'Falhas consecutivas';
@@ -844,10 +844,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentTemplateAssignedLabel => 'Modelo';
 
   @override
-  String get agentTemplateCreateTitle => 'Criar modelo';
+  String get agentTemplateCreatedSuccess => 'Modelo criado';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Modelo criado';
+  String get agentTemplateCreateTitle => 'Criar modelo';
 
   @override
   String get agentTemplateDeleteConfirm =>
@@ -899,17 +899,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentTemplateMetricsTotalWakes => 'Total de despertares';
 
   @override
+  String get agentTemplateNoneAssigned => 'Nenhum modelo atribuído';
+
+  @override
   String get agentTemplateNoTemplates =>
       'Nenhum modelo disponível. Crie um em Configurações primeiro.';
 
   @override
-  String get agentTemplateNoVersions => 'Nenhuma versão';
-
-  @override
-  String get agentTemplateNoneAssigned => 'Nenhum modelo atribuído';
-
-  @override
   String get agentTemplateNotFound => 'Modelo não encontrado';
+
+  @override
+  String get agentTemplateNoVersions => 'Nenhuma versão';
 
   @override
   String get agentTemplateReportDirectiveHint =>
@@ -939,7 +939,23 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Selecione o modelo';
 
   @override
+  String get agentTemplatesEmptyFiltered =>
+      'Nenhum modelo corresponde aos seus filtros.';
+
+  @override
   String get agentTemplateSettingsTab => 'Configurações';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Gentil';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Gentil';
+
+  @override
+  String get agentTemplatesGroupNone => 'Todos';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Pesquisar modelos…';
 
   @override
   String get agentTemplateStatsTab => 'Estatísticas';
@@ -949,6 +965,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentTemplateStatusArchived => 'Arquivado';
+
+  @override
+  String get agentTemplatesTitle => 'Modelos de agente';
 
   @override
   String get agentTemplateSwitchHint =>
@@ -964,25 +983,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentTemplateVersionSaved => 'Nova versão salva';
-
-  @override
-  String get agentTemplatesEmptyFiltered =>
-      'Nenhum modelo corresponde aos seus filtros.';
-
-  @override
-  String get agentTemplatesFilterSectionKind => 'Gentil';
-
-  @override
-  String get agentTemplatesGroupByKind => 'Gentil';
-
-  @override
-  String get agentTemplatesGroupNone => 'Todos';
-
-  @override
-  String get agentTemplatesSearchPlaceholder => 'Pesquisar modelos…';
-
-  @override
-  String get agentTemplatesTitle => 'Modelos de agente';
 
   @override
   String get agentThreadReportLabel =>
@@ -1124,10 +1124,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
+  String get aiAttributionTokens => 'Tokens';
 
   @override
-  String get aiAttributionTokens => 'Tokens';
+  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
 
   @override
   String get aiAttributionTrigger => 'Trigger';
@@ -1758,41 +1758,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Exibido na sua lista de provedores';
 
   @override
-  String aiProviderConnectKeyHelperLink(String url) {
-    return 'Obtenha uma chave em $url';
-  }
-
-  @override
-  String get aiProviderConnectKeyHiddenLabel => 'Oculto';
-
-  @override
-  String get aiProviderConnectKeyPrivacyHint =>
-      'Sua chave API nunca sai do seu dispositivo.';
-
-  @override
-  String aiProviderConnectPageTitle(String providerName) {
-    return 'Conectar $providerName';
-  }
-
-  @override
-  String get aiProviderConnectSaveAndContinue => 'Salvar e continuar';
-
-  @override
-  String get aiProviderConnectSaveAsDraft => 'Salvar como rascunho';
-
-  @override
-  String get aiProviderConnectSavedAsDraftToast => 'Salvo como rascunho';
-
-  @override
-  String get aiProviderConnectStepChoose => 'Escolha o provedor';
-
-  @override
-  String get aiProviderConnectStepConnect => 'Conectar';
-
-  @override
-  String get aiProviderConnectStepReview => 'Revisão';
-
-  @override
   String get aiProviderConnectionCheckingLabel =>
       'Verificando chave, listando modelos disponíveis…';
 
@@ -1842,6 +1807,45 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get aiProviderConnectionVerifiedTitle => 'Conexão verificada';
+
+  @override
+  String aiProviderConnectKeyHelperLink(String url) {
+    return 'Obtenha uma chave em $url';
+  }
+
+  @override
+  String get aiProviderConnectKeyHiddenLabel => 'Oculto';
+
+  @override
+  String get aiProviderConnectKeyPrivacyHint =>
+      'Sua chave API nunca sai do seu dispositivo.';
+
+  @override
+  String aiProviderConnectPageTitle(String providerName) {
+    return 'Conectar $providerName';
+  }
+
+  @override
+  String get aiProviderConnectSaveAndContinue => 'Salvar e continuar';
+
+  @override
+  String get aiProviderConnectSaveAsDraft => 'Salvar como rascunho';
+
+  @override
+  String get aiProviderConnectSavedAsDraftToast => 'Salvo como rascunho';
+
+  @override
+  String get aiProviderConnectStepChoose => 'Escolha o provedor';
+
+  @override
+  String get aiProviderConnectStepConnect => 'Conectar';
+
+  @override
+  String get aiProviderConnectStepReview => 'Revisão';
+
+  @override
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Perfis que usam este provedor';
 
   @override
   String get aiProviderDetailAddModelButton => 'Adicionar modelo';
@@ -1896,10 +1900,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get aiProviderDetailPageTitle => 'Detalhes do provedor';
-
-  @override
-  String get aiProviderDetailProfilesUsingTitle =>
-      'Perfis que usam este provedor';
 
   @override
   String get aiProviderDetailRemoveButton => 'Remover provedor';
@@ -2077,6 +2077,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Mostrar o progresso da IA';
 
   @override
+  String get aiSettingsAddedLabel => 'Adicionado';
+
+  @override
   String get aiSettingsAddModelButton => 'Adicionar modelo';
 
   @override
@@ -2096,9 +2099,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get aiSettingsAddProviderButton => 'Adicionar provedor';
-
-  @override
-  String get aiSettingsAddedLabel => 'Adicionado';
 
   @override
   String get aiSettingsAgentWakeConcurrencyDescription =>
@@ -2454,10 +2454,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get audioRecordingResume => 'RETOMAR';
 
   @override
-  String get audioRecordingStop => 'PARAR';
+  String get audioRecordings => 'Gravações de áudio';
 
   @override
-  String get audioRecordings => 'Gravações de áudio';
+  String get audioRecordingStop => 'PARAR';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -2905,10 +2905,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checklistExportFailed => 'Falha na exportação';
 
   @override
-  String get checklistItemArchiveUndo => 'Desfazer';
+  String get checklistItemArchived => 'Item arquivado';
 
   @override
-  String get checklistItemArchived => 'Item arquivado';
+  String get checklistItemArchiveUndo => 'Desfazer';
 
   @override
   String get checklistItemDeleteCancel => 'Cancelar';
@@ -2917,10 +2917,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Confirmar';
 
   @override
-  String get checklistItemDeleteWarning => 'Esta ação não pode ser desfeita.';
+  String get checklistItemDeleted => 'Item excluído';
 
   @override
-  String get checklistItemDeleted => 'Item excluído';
+  String get checklistItemDeleteWarning => 'Esta ação não pode ser desfeita.';
 
   @override
   String get checklistMarkdownCopied =>
@@ -3368,10 +3368,23 @@ class AppLocalizationsPt extends AppLocalizations {
   String get conflictResolvedToast => 'Conflito resolvido';
 
   @override
+  String get conflictsEmptyDescription =>
+      'Tudo está sincronizado agora. Os itens resolvidos permanecem disponíveis no outro filtro.';
+
+  @override
+  String get conflictsEmptyTitle => 'Nenhum conflito detectado';
+
+  @override
   String get conflictSideFromSync => 'DA SINCRONIZAÇÃO';
 
   @override
   String get conflictSideThisDevice => 'ESTE DISPOSITIVO';
+
+  @override
+  String get conflictsResolved => 'resolvido';
+
+  @override
+  String get conflictsUnresolved => 'não resolvido';
 
   @override
   String get conflictValueAbsent => 'Não definido';
@@ -3392,19 +3405,6 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get conflictsEmptyDescription =>
-      'Tudo está sincronizado agora. Os itens resolvidos permanecem disponíveis no outro filtro.';
-
-  @override
-  String get conflictsEmptyTitle => 'Nenhum conflito detectado';
-
-  @override
-  String get conflictsResolved => 'resolvido';
-
-  @override
-  String get conflictsUnresolved => 'não resolvido';
 
   @override
   String get copyAsMarkdown => 'Copiar como Markdown';
@@ -3737,6 +3737,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextCaptureRecordingSavedStatus => 'Recording saved';
 
   @override
+  String get dailyOsNextCapturesPanelTitle => 'Capturas';
+
+  @override
   String get dailyOsNextCaptureTranscribing => 'Transcrevendo…';
 
   @override
@@ -3757,9 +3760,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureVoiceButtonStop => 'Pare de ouvir';
-
-  @override
-  String get dailyOsNextCapturesPanelTitle => 'Capturas';
 
   @override
   String get dailyOsNextCategoryFilterAll => 'Todas as categorias';
@@ -4329,31 +4329,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextStateRecurringMissed => 'Recorrente · perdido';
 
   @override
-  String dailyOsNextTimeSpentEarlierSessions(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count sessões anteriores',
-      one: '1 sessão anterior',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get dailyOsNextTimeSpentShowLess => 'Mostrar menos';
-
-  @override
-  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration · $completedCount concluído';
-  }
-
-  @override
-  String get dailyOsNextTimeSpentTitle => 'HOJE ATÉ AGORA';
-
-  @override
-  String get dailyOsNextTimeSpentTitlePast => 'TEMPO GASTO';
-
-  @override
   String get dailyOsNextTimelineActual => 'Real';
 
   @override
@@ -4396,13 +4371,38 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextTimelineTracked => 'rastreado';
 
   @override
+  String dailyOsNextTimeSpentEarlierSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sessões anteriores',
+      one: '1 sessão anterior',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentShowLess => 'Mostrar menos';
+
+  @override
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
+    return '$duration · $completedCount concluído';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentTitle => 'HOJE ATÉ AGORA';
+
+  @override
+  String get dailyOsNextTimeSpentTitlePast => 'TEMPO GASTO';
+
+  @override
   String get dailyOsNextTriageConfirmDefer => 'Adiado';
 
   @override
-  String get dailyOsNextTriageConfirmDoNow => 'Feito agora';
+  String get dailyOsNextTriageConfirmDone => 'Marcado como concluído';
 
   @override
-  String get dailyOsNextTriageConfirmDone => 'Marcado como concluído';
+  String get dailyOsNextTriageConfirmDoNow => 'Feito agora';
 
   @override
   String get dailyOsNextTriageConfirmDrop => 'Caiu';
@@ -4414,10 +4414,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextTriageDefer => 'Adiar';
 
   @override
-  String get dailyOsNextTriageDoNow => 'Faça agora';
+  String get dailyOsNextTriageDone => 'Concluído';
 
   @override
-  String get dailyOsNextTriageDone => 'Concluído';
+  String get dailyOsNextTriageDoNow => 'Faça agora';
 
   @override
   String get dailyOsNextTriageDrop => 'Soltar';
@@ -5126,10 +5126,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get designSystemSpinnerSkeletonPulseLabel => 'Pulso';
 
   @override
-  String get designSystemSpinnerSkeletonWaveLabel => 'Onda';
+  String get designSystemSpinnerSkeletonsTitle => 'Esqueletos';
 
   @override
-  String get designSystemSpinnerSkeletonsTitle => 'Esqueletos';
+  String get designSystemSpinnerSkeletonWaveLabel => 'Onda';
 
   @override
   String get designSystemSpinnerSpinnersTitle => 'Fiandeiros';
@@ -5266,22 +5266,17 @@ class AppLocalizationsPt extends AppLocalizations {
       'Selecione uma tarefa para ver detalhes';
 
   @override
-  String deviceDeleteFailed(String error) {
-    return 'Falha ao excluir o dispositivo: $error';
-  }
-
-  @override
   String deviceDeletedSuccess(String deviceName) {
     return 'Dispositivo $deviceName excluído com sucesso';
   }
 
   @override
-  String get doneButton => 'Concluído';
+  String deviceDeleteFailed(String error) {
+    return 'Falha ao excluir o dispositivo: $error';
+  }
 
   @override
-  String editLinkTypeCounterpart(String title) {
-    return '…$title';
-  }
+  String get doneButton => 'Concluído';
 
   @override
   String get editLinkTypeCounterpartLabel => 'Linked task';
@@ -5621,23 +5616,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitPriorityLabel => 'Prioridade';
 
   @override
-  String get habitSectionOptionsTitle => 'Opções';
-
-  @override
-  String get habitSectionScheduleTitle => 'Cronograma';
-
-  @override
-  String get habitShowAlertAtLabel => 'Mostrar alerta em';
-
-  @override
-  String get habitShowFromLabel => 'Mostrar de';
-
-  @override
-  String habitStreakDaysSemantic(int count) {
-    return 'sequência de $count dias';
-  }
-
-  @override
   String get habitsAboveGoal => 'No caminho certo';
 
   @override
@@ -5688,6 +5666,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitsDoneTodayLabel => 'Feito hoje';
 
   @override
+  String get habitSectionOptionsTitle => 'Opções';
+
+  @override
+  String get habitSectionScheduleTitle => 'Cronograma';
+
+  @override
   String get habitsFilterAll => 'tudo';
 
   @override
@@ -5711,6 +5695,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get habitsHeatmapMore => 'Mais';
+
+  @override
+  String get habitShowAlertAtLabel => 'Mostrar alerta em';
+
+  @override
+  String get habitShowFromLabel => 'Mostrar de';
 
   @override
   String habitsLaggardHint(String habit, int kept, int active) {
@@ -5759,6 +5749,11 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String habitsToGoCount(int count) {
     return '$count para ir';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    return 'sequência de $count dias';
   }
 
   @override
@@ -5817,7 +5812,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Prompt de imagem completo:';
 
   @override
+  String get images => 'Imagens';
+
+  @override
   String get imageViewerDownloadFailed => 'Não foi possível salvar a imagem';
+
+  @override
+  String get imageViewerDownloadingTooltip => 'Salvando imagem';
 
   @override
   String get imageViewerDownloadPermissionDenied =>
@@ -5833,12 +5834,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get imageViewerDownloadTooltip => 'Baixar imagem';
-
-  @override
-  String get imageViewerDownloadingTooltip => 'Salvando imagem';
-
-  @override
-  String get images => 'Imagens';
 
   @override
   String get inactiveLabel => 'Inativo';
@@ -5925,9 +5920,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inferenceProfileSelectProfile => 'Escolha um perfil…';
 
   @override
+  String get inferenceProfilesEmpty => 'Ainda não há perfis de inferência';
+
+  @override
   String inferenceProfileSkillModelRequired(String slotName) {
     return 'Requer que o modelo $slotName seja definido';
   }
+
+  @override
+  String get inferenceProfileSkillsSection => 'Habilidades Automatizadas';
 
   @override
   String inferenceProfileSkillUsesModel(String slotName) {
@@ -5935,7 +5936,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get inferenceProfileSkillsSection => 'Habilidades Automatizadas';
+  String get inferenceProfilesTitle => 'Perfis de inferência';
 
   @override
   String get inferenceProfileThinking => 'Pensando';
@@ -5952,12 +5953,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get inferenceProfileUnavailable => 'Perfil de inferência indisponível';
-
-  @override
-  String get inferenceProfilesEmpty => 'Ainda não há perfis de inferência';
-
-  @override
-  String get inferenceProfilesTitle => 'Perfis de inferência';
 
   @override
   String get inputDataTypeAudioFilesDescription =>
@@ -6221,14 +6216,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get journalEndDateLabel => 'Data de término';
 
   @override
-  String get journalEndTimeLabel => 'Hora de término';
-
-  @override
   String get journalEndsAnotherDayHint =>
       'Escolha uma data de término separada';
 
   @override
   String get journalEndsAnotherDayLabel => 'Termina em outro dia';
+
+  @override
+  String get journalEndTimeLabel => 'Hora de término';
 
   @override
   String get journalEntryExpandLabel => 'Expandir entrada';
@@ -6256,12 +6251,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get journalHideMapHint => 'Ocultar mapa';
-
-  @override
-  String get journalLinkFromHint => 'Link de';
-
-  @override
-  String get journalLinkToHint => 'Link para';
 
   @override
   String get journalLinkedEntriesActivityFilterAudio => 'Áudio';
@@ -6296,6 +6285,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get journalLinkedFromLabel => 'Vinculado de:';
+
+  @override
+  String get journalLinkFromHint => 'Link de';
+
+  @override
+  String get journalLinkToHint => 'Link para';
 
   @override
   String journalOvernightNextDay(String date) {
@@ -6613,10 +6608,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get knowledgeGraphOpenDetails => 'Abrir detalhes';
 
   @override
-  String get knowledgeGraphRecentToOlder => 'recente → mais antigo';
+  String get knowledgeGraphRecenter => 'Recentrador';
 
   @override
-  String get knowledgeGraphRecenter => 'Recentrador';
+  String get knowledgeGraphRecentToOlder => 'recente → mais antigo';
 
   @override
   String get knowledgeGraphRelationAiSource => 'Fonte de IA';
@@ -6661,10 +6656,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'This would create a blocking cycle — choose a different task.';
 
   @override
-  String get linkCreateFailedMessage =>
-      'Couldn\'t create the link. Please try again.';
-
-  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation: $title';
   }
@@ -6673,7 +6664,30 @@ class AppLocalizationsPt extends AppLocalizations {
   String get linkCreatedUndo => 'Undo';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Couldn\'t create the link. Please try again.';
+
+  @override
   String get linkDirectionLabel => 'This task…';
+
+  @override
+  String get linkedTaskImageBadge => 'Da tarefa vinculada';
+
+  @override
+  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
+
+  @override
+  String get linkedTasksEmptyAction => 'Link a task…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Connect this task to another — a blocker, a follow-up, a duplicate.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Opções de tarefas vinculadas';
+
+  @override
+  String get linkedTasksTitle => 'Tarefas Vinculadas';
 
   @override
   String get linkExistingTask => 'Vincular tarefa existente…';
@@ -6716,25 +6730,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get linkTaskButton => 'Link';
-
-  @override
-  String get linkedTaskImageBadge => 'Da tarefa vinculada';
-
-  @override
-  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
-
-  @override
-  String get linkedTasksEmptyAction => 'Link a task…';
-
-  @override
-  String get linkedTasksEmptyHint =>
-      'Connect this task to another — a blocker, a follow-up, a duplicate.';
-
-  @override
-  String get linkedTasksMenuTooltip => 'Opções de tarefas vinculadas';
-
-  @override
-  String get linkedTasksTitle => 'Tarefas Vinculadas';
 
   @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
@@ -6948,6 +6943,20 @@ class AppLocalizationsPt extends AppLocalizations {
       'Limpar itens da caixa de saída enviados há mais de 7 dias? Isso exclui linhas já enviadas em partes e executa VACUUM para recuperar o disco. Os itens pendentes e com erro são mantidos.';
 
   @override
+  String get maintenanceRecreateFts5 => 'Recrie o índice de texto completo';
+
+  @override
+  String get maintenanceRecreateFts5Confirm => 'SIM, RECRIAR ÍNDICE';
+
+  @override
+  String get maintenanceRecreateFts5Description =>
+      'Recrie o índice de pesquisa de texto completo';
+
+  @override
+  String get maintenanceRecreateFts5Message =>
+      'Tem certeza de que deseja recriar o índice de texto completo? Isso pode levar algum tempo.';
+
+  @override
   String get maintenanceReSync => 'Sincronizar novamente mensagens';
 
   @override
@@ -6969,20 +6978,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get maintenanceReSyncStart => 'Começar';
-
-  @override
-  String get maintenanceRecreateFts5 => 'Recrie o índice de texto completo';
-
-  @override
-  String get maintenanceRecreateFts5Confirm => 'SIM, RECRIAR ÍNDICE';
-
-  @override
-  String get maintenanceRecreateFts5Description =>
-      'Recrie o índice de pesquisa de texto completo';
-
-  @override
-  String get maintenanceRecreateFts5Message =>
-      'Tem certeza de que deseja recriar o índice de texto completo? Isso pode levar algum tempo.';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -8044,11 +8039,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get projectRecommendationResolveTooltip => 'Marcar como resolvido';
 
   @override
+  String get projectRecommendationsTitle => 'Próximas etapas recomendadas';
+
+  @override
   String get projectRecommendationUpdateError =>
       'Não foi possível atualizar a recomendação. Por favor, tente novamente.';
 
   @override
-  String get projectRecommendationsTitle => 'Próximas etapas recomendadas';
+  String get projectsFilterStatusLabel => 'Estado:';
+
+  @override
+  String get projectsFilterTooltip => 'Filtrar projetos';
 
   @override
   String get projectShowcaseAiReportTitle => 'Relatório de IA';
@@ -8180,12 +8181,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get projectTitleRequired => 'O título do projeto não pode ficar vazio';
-
-  @override
-  String get projectsFilterStatusLabel => 'Estado:';
-
-  @override
-  String get projectsFilterTooltip => 'Filtrar projetos';
 
   @override
   String get promptDefaultModelBadge => 'Padrão';
@@ -8543,12 +8538,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get sessionRatingViewAction => 'Ver classificação';
-
-  @override
-  String get settingThemingDark => 'Tema escuro';
-
-  @override
-  String get settingThemingLight => 'Tema claro';
 
   @override
   String get settingsAboutAppInformation => 'Informações do aplicativo';
@@ -8929,11 +8918,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsCelebrationsReplay => 'Repetir';
 
   @override
-  String get settingsCelebrationsResetToDefault => 'Redefinir para o padrão';
-
-  @override
   String get settingsCelebrationsResetToast =>
       'Estilo redefinido para o padrão';
+
+  @override
+  String get settingsCelebrationsResetToDefault => 'Redefinir para o padrão';
 
   @override
   String get settingsCelebrationsResetUndo => 'Desfazer';
@@ -9388,12 +9377,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsMatrixRoomInviteTitle => 'Convite para sala';
 
   @override
+  String get settingsMatrixSentMessagesLabel => 'Mensagens enviadas:';
+
+  @override
   String settingsMatrixSentMessageType(String eventType) {
     return 'Enviado ($eventType)';
   }
-
-  @override
-  String get settingsMatrixSentMessagesLabel => 'Mensagens enviadas:';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Iniciar verificação';
@@ -9460,9 +9449,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Salvar';
 
   @override
-  String get settingsMeasurableUnitLabel => 'Abreviatura da unidade (opcional)';
-
-  @override
   String get settingsMeasurablesCreateTitle => 'Crie mensuráveis';
 
   @override
@@ -9489,6 +9475,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsMeasurablesTitle => 'Mensuráveis';
+
+  @override
+  String get settingsMeasurableUnitLabel => 'Abreviatura da unidade (opcional)';
 
   @override
   String get settingsOnboardingActionSubtitle =>
@@ -9707,6 +9696,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsWhatsNewTitle => 'Novidades';
+
+  @override
+  String get settingThemingDark => 'Tema escuro';
+
+  @override
+  String get settingThemingLight => 'Tema claro';
 
   @override
   String get sidebarActiveSectionTitle => 'Atividade';
@@ -10139,15 +10134,15 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhum modelo de pensamento compatível disponível';
 
   @override
+  String get taskAgentNoProfilesAvailable =>
+      'Nenhum perfil disponível neste dispositivo';
+
+  @override
   String get taskAgentNoProfileSelected => 'Sem configuração de IA';
 
   @override
   String get taskAgentNoProfileSelectedDescription =>
       'Escolha uma configuração salva ou um modelo de pensamento antes que este agente possa ser executado.';
-
-  @override
-  String get taskAgentNoProfilesAvailable =>
-      'Nenhum perfil disponível neste dispositivo';
 
   @override
   String taskAgentProfileChangedToast(String profile) {
@@ -10502,6 +10497,30 @@ class AppLocalizationsPt extends AppLocalizations {
   String get taskPriorityUrgent => 'Urgente';
 
   @override
+  String get tasksAddLabelButton => 'Adicionar rótulo';
+
+  @override
+  String get tasksAgentFilterAll => 'Todos';
+
+  @override
+  String get tasksAgentFilterHasAgent => 'Tem agente';
+
+  @override
+  String get tasksAgentFilterNoAgent => 'Nenhum agente';
+
+  @override
+  String get tasksAgentFilterTitle => 'Agente';
+
+  @override
+  String get tasksFilterApplyTitle => 'Aplicar filtro';
+
+  @override
+  String get tasksFilterClearAll => 'Limpar tudo';
+
+  @override
+  String get tasksFilterTitle => 'Filtrar tarefas';
+
+  @override
   String get taskShowcaseAudio => 'Áudio';
 
   @override
@@ -10560,63 +10579,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get taskShowcaseTodos => 'Todos';
-
-  @override
-  String get taskStatusAll => 'Todos';
-
-  @override
-  String get taskStatusBlocked => 'Bloqueado';
-
-  @override
-  String get taskStatusDone => 'Concluído';
-
-  @override
-  String get taskStatusGroomed => 'Preparado';
-
-  @override
-  String get taskStatusInProgress => 'Em andamento';
-
-  @override
-  String get taskStatusLabel => 'Estado:';
-
-  @override
-  String get taskStatusOnHold => 'Em espera';
-
-  @override
-  String get taskStatusOpen => 'Abrir';
-
-  @override
-  String get taskStatusRejected => 'Rejeitado';
-
-  @override
-  String get taskTitleEmpty => 'Sem título';
-
-  @override
-  String get taskUntitled => '(sem título)';
-
-  @override
-  String get tasksAddLabelButton => 'Adicionar rótulo';
-
-  @override
-  String get tasksAgentFilterAll => 'Todos';
-
-  @override
-  String get tasksAgentFilterHasAgent => 'Tem agente';
-
-  @override
-  String get tasksAgentFilterNoAgent => 'Nenhum agente';
-
-  @override
-  String get tasksAgentFilterTitle => 'Agente';
-
-  @override
-  String get tasksFilterApplyTitle => 'Aplicar filtro';
-
-  @override
-  String get tasksFilterClearAll => 'Limpar tudo';
-
-  @override
-  String get tasksFilterTitle => 'Filtrar tarefas';
 
   @override
   String get tasksLabelFilterAll => 'Todos';
@@ -10687,19 +10649,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Renomear filtro salvo';
-
-  @override
-  String get tasksSavedFilterToastDeleted => 'Filtro excluído';
-
-  @override
-  String tasksSavedFilterToastSaved(String name) {
-    return '\'$name\' salvo';
-  }
-
-  @override
-  String tasksSavedFilterToastUpdated(String name) {
-    return '\'$name\' atualizado';
-  }
 
   @override
   String get tasksSavedFiltersAllShort => 'Todos';
@@ -10839,6 +10788,19 @@ class AppLocalizationsPt extends AppLocalizations {
       'Atualizar filtro existente';
 
   @override
+  String get tasksSavedFilterToastDeleted => 'Filtro excluído';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return '\'$name\' salvo';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return '\'$name\' atualizado';
+  }
+
+  @override
   String get tasksSearchModeLabel => 'Modo de pesquisa';
 
   @override
@@ -10858,6 +10820,39 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tasksSortByPriority => 'Prioridade';
+
+  @override
+  String get taskStatusAll => 'Todos';
+
+  @override
+  String get taskStatusBlocked => 'Bloqueado';
+
+  @override
+  String get taskStatusDone => 'Concluído';
+
+  @override
+  String get taskStatusGroomed => 'Preparado';
+
+  @override
+  String get taskStatusInProgress => 'Em andamento';
+
+  @override
+  String get taskStatusLabel => 'Estado:';
+
+  @override
+  String get taskStatusOnHold => 'Em espera';
+
+  @override
+  String get taskStatusOpen => 'Abrir';
+
+  @override
+  String get taskStatusRejected => 'Rejeitado';
+
+  @override
+  String get taskTitleEmpty => 'Sem título';
+
+  @override
+  String get taskUntitled => '(sem título)';
 
   @override
   String get thinkingDisclosureCopied => 'Raciocínio copiado';

@@ -507,6 +507,64 @@ void main() {
 void _panelHeightGroup() {
   group('DesignSystemDropdown open panel', () {
     testWidgets(
+      'the ceiling scales with the text size the rows render at — an unscaled '
+      'ceiling stops mid-row exactly where enlarged text needs it not to',
+      (tester) async {
+        await _pumpDropdown(
+          tester,
+          const MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(1.6)),
+            child: SizedBox(
+              width: 320,
+              child: DesignSystemDropdown(
+                label: 'Label',
+                inputLabel: 'Input',
+                items: [
+                  DesignSystemDropdownItem(id: 'a', label: 'Alpha'),
+                  DesignSystemDropdownItem(id: 'b', label: 'Bravo'),
+                  DesignSystemDropdownItem(id: 'c', label: 'Charlie'),
+                  DesignSystemDropdownItem(id: 'd', label: 'Delta'),
+                  DesignSystemDropdownItem(id: 'e', label: 'Echo'),
+                  DesignSystemDropdownItem(id: 'f', label: 'Foxtrot'),
+                  DesignSystemDropdownItem(id: 'g', label: 'Golf'),
+                  DesignSystemDropdownItem(id: 'h', label: 'Hotel'),
+                  DesignSystemDropdownItem(id: 'i', label: 'India'),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Input'));
+        await tester.pumpAndSettle();
+
+        final rowHeight =
+            tester.getTopLeft(find.text('Bravo')).dy -
+            tester.getTopLeft(find.text('Alpha')).dy;
+        final viewportHeight = tester
+            .getSize(
+              find
+                  .ancestor(
+                    of: find.text('Alpha'),
+                    matching: find.byType(ListView),
+                  )
+                  .first,
+            )
+            .height;
+
+        // A tolerance, not equality: the scaled row height is a float, so an
+        // exact modulo leaves sub-picometre residue that means nothing.
+        expect(
+          viewportHeight % rowHeight,
+          closeTo(0, 0.01),
+          reason:
+              'at 1.6x the panel is $viewportHeight tall against $rowHeight '
+              'rows — the last option is cut through its glyphs',
+        );
+      },
+    );
+
+    testWidgets(
       'shows whole options — the scroll viewport is an exact multiple of the '
       'height its rows actually render at',
       (tester) async {

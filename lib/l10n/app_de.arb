@@ -1,4 +1,5 @@
 {
+  "@@locale": "de",
   "activeLabel": "Aktiv",
   "addActionAddAudioRecording": "Audioaufnahme",
   "addActionAddChecklist": "Checkliste",
@@ -7,8 +8,8 @@
   "addActionAddScreenshot": "Screenshot",
   "addActionAddTask": "Aufgabe",
   "addActionAddText": "Texteingabe",
-  "addActionAddTimeRecording": "Zeiteingabe",
   "addActionAddTimer": "Timer",
+  "addActionAddTimeRecording": "Zeiteingabe",
   "addActionImportImage": "Bild importieren",
   "addHabitCommentLabel": "Kommentar",
   "addHabitDateLabel": "Abgeschlossen um",
@@ -322,8 +323,8 @@
   "agentSoulAssignedTemplatesTitle": "Zugewiesene Vorlagen",
   "agentSoulAssignmentLabel": "Seele",
   "agentSoulCoachingStyleLabel": "Coaching-Stil",
-  "agentSoulCreateTitle": "Seele erstellen",
   "agentSoulCreatedSuccess": "Seele erstellt",
+  "agentSoulCreateTitle": "Seele erstellen",
   "agentSoulDeleteConfirmBody": "Das entfernt die Seele und alle ihre Versionen.",
   "agentSoulDeleteConfirmTitle": "Seele löschen",
   "agentSoulDetailTitle": "Seelen-Details",
@@ -361,7 +362,10 @@
     }
   },
   "agentSoulSelectTitle": "Seele auswählen",
+  "agentSoulsEmptyFiltered": "Keine Seelen passen zu deinen Filtern.",
   "agentSoulSettingsTab": "Einstellungen",
+  "agentSoulsSearchPlaceholder": "Seelen suchen…",
+  "agentSoulsTitle": "Seelen",
   "agentSoulToneBoundsLabel": "Tonfall-Grenzen",
   "agentSoulVersionHistoryTitle": "Versionsverlauf",
   "agentSoulVersionLabel": "Version {version}",
@@ -374,9 +378,6 @@
   },
   "agentSoulVersionSaved": "Neue Seelenversion gespeichert",
   "agentSoulVoiceDirectiveLabel": "Stimm-Direktive",
-  "agentSoulsEmptyFiltered": "Keine Seelen passen zu deinen Filtern.",
-  "agentSoulsSearchPlaceholder": "Seelen suchen…",
-  "agentSoulsTitle": "Seelen",
   "agentStateConsecutiveFailures": "Aufeinanderfolgende Fehler",
   "agentStateErrorLoading": "Status konnte nicht geladen werden: {error}",
   "@agentStateErrorLoading": {
@@ -403,8 +404,8 @@
   "agentTabStats": "Statistik",
   "agentTemplateAggregateTokenUsageHeading": "Token-Verbrauch (gesamt)",
   "agentTemplateAssignedLabel": "Vorlage",
-  "agentTemplateCreateTitle": "Vorlage erstellen",
   "agentTemplateCreatedSuccess": "Vorlage erstellt",
+  "agentTemplateCreateTitle": "Vorlage erstellen",
   "agentTemplateDeleteConfirm": "Diese Vorlage löschen? Das kann nicht rückgängig gemacht werden.",
   "agentTemplateDeleteHasInstances": "Kann nicht gelöscht werden: Aktive Agenten verwenden diese Vorlage.",
   "agentTemplateDisplayNameLabel": "Name",
@@ -420,10 +421,10 @@
   "agentTemplateKindProjectAgent": "Projekt-Agent",
   "agentTemplateKindTaskAgent": "Aufgaben-Agent",
   "agentTemplateMetricsTotalWakes": "Aktivierungen gesamt",
-  "agentTemplateNoTemplates": "Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.",
-  "agentTemplateNoVersions": "Keine Versionen",
   "agentTemplateNoneAssigned": "Keine Vorlage zugewiesen",
+  "agentTemplateNoTemplates": "Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.",
   "agentTemplateNotFound": "Vorlage nicht gefunden",
+  "agentTemplateNoVersions": "Keine Versionen",
   "agentTemplateReportDirectiveHint": "Definiere die Berichtsstruktur, erforderliche Abschnitte und Formatierungsregeln...",
   "agentTemplateReportDirectiveLabel": "Berichtsanweisung",
   "agentTemplateReportsEmpty": "Noch keine Berichte.",
@@ -439,10 +440,16 @@
   },
   "agentTemplateSaveNewVersion": "Speichern",
   "agentTemplateSelectTitle": "Vorlage auswählen",
+  "agentTemplatesEmptyFiltered": "Keine Vorlagen passen zu deinen Filtern.",
   "agentTemplateSettingsTab": "Einstellungen",
+  "agentTemplatesFilterSectionKind": "Art",
+  "agentTemplatesGroupByKind": "Art",
+  "agentTemplatesGroupNone": "Alle",
+  "agentTemplatesSearchPlaceholder": "Vorlagen suchen…",
   "agentTemplateStatsTab": "Statistiken",
   "agentTemplateStatusActive": "Aktiv",
   "agentTemplateStatusArchived": "Archiviert",
+  "agentTemplatesTitle": "Agenten-Vorlagen",
   "agentTemplateSwitchHint": "Um eine andere Vorlage zu verwenden, lösche diesen Agenten und erstelle einen neuen.",
   "agentTemplateVersionHistoryTitle": "Versionshistorie",
   "agentTemplateVersionLabel": "Version {version}",
@@ -454,12 +461,6 @@
     }
   },
   "agentTemplateVersionSaved": "Neue Version gespeichert",
-  "agentTemplatesEmptyFiltered": "Keine Vorlagen passen zu deinen Filtern.",
-  "agentTemplatesFilterSectionKind": "Art",
-  "agentTemplatesGroupByKind": "Art",
-  "agentTemplatesGroupNone": "Alle",
-  "agentTemplatesSearchPlaceholder": "Vorlagen suchen…",
-  "agentTemplatesTitle": "Agenten-Vorlagen",
   "agentThreadReportLabel": "Bericht aus diesem Aufwachzyklus",
   "agentTokenUsageCachedTokens": "Gecacht",
   "agentTokenUsageEmpty": "Noch kein Token-Verbrauch aufgezeichnet.",
@@ -522,8 +523,8 @@
       }
     }
   },
-  "aiAttributionTokenUsageUnknown": "Token-Nutzung unbekannt",
   "aiAttributionTokens": "Tokens",
+  "aiAttributionTokenUsageUnknown": "Token-Nutzung unbekannt",
   "aiAttributionTrigger": "Auslöser",
   "aiAttributionTriggerAgent": "Agent",
   "aiAttributionTriggerAutomatic": "Automatisch",
@@ -787,30 +788,6 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "Basis-URL (optional)",
   "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Wird in deiner Anbieterliste angezeigt",
-  "aiProviderConnectKeyHelperLink": "Schlüssel holen auf {url}",
-  "@aiProviderConnectKeyHelperLink": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectKeyHiddenLabel": "Verborgen",
-  "aiProviderConnectKeyPrivacyHint": "Dein API-Schlüssel verlässt nie dein Gerät.",
-  "aiProviderConnectPageTitle": "{providerName} verbinden",
-  "@aiProviderConnectPageTitle": {
-    "placeholders": {
-      "providerName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectSaveAndContinue": "Speichern und fortfahren",
-  "aiProviderConnectSaveAsDraft": "Als Entwurf speichern",
-  "aiProviderConnectSavedAsDraftToast": "Als Entwurf gespeichert",
-  "aiProviderConnectStepChoose": "Anbieter wählen",
-  "aiProviderConnectStepConnect": "Verbinden",
-  "aiProviderConnectStepReview": "Überprüfen",
   "aiProviderConnectionCheckingLabel": "Schlüssel wird geprüft, verfügbare Modelle werden geladen…",
   "aiProviderConnectionFailedBadResponseDetail": "Unerwartete Antwortform: {type}",
   "@aiProviderConnectionFailedBadResponseDetail": {
@@ -863,6 +840,31 @@
     }
   },
   "aiProviderConnectionVerifiedTitle": "Verbindung bestätigt",
+  "aiProviderConnectKeyHelperLink": "Schlüssel holen auf {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Verborgen",
+  "aiProviderConnectKeyPrivacyHint": "Dein API-Schlüssel verlässt nie dein Gerät.",
+  "aiProviderConnectPageTitle": "{providerName} verbinden",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Speichern und fortfahren",
+  "aiProviderConnectSaveAsDraft": "Als Entwurf speichern",
+  "aiProviderConnectSavedAsDraftToast": "Als Entwurf gespeichert",
+  "aiProviderConnectStepChoose": "Anbieter wählen",
+  "aiProviderConnectStepConnect": "Verbinden",
+  "aiProviderConnectStepReview": "Überprüfen",
+  "aiProviderDetailProfilesUsingTitle": "Profile, die diesen Anbieter nutzen",
   "aiProviderDetailAddModelButton": "Modell hinzufügen",
   "aiProviderDetailApiKeyLabel": "API-Schlüssel",
   "aiProviderDetailBackTooltip": "Zurück",
@@ -877,7 +879,6 @@
   "aiProviderDetailModelsTitle": "{count, plural, =0{Modelle} =1{Modelle · 1} other{Modelle · {count}}}",
   "aiProviderDetailNoModelsMessage": "Noch keine Modelle. Füge eines hinzu, um diesen Anbieter zu nutzen.",
   "aiProviderDetailPageTitle": "Anbieter-Details",
-  "aiProviderDetailProfilesUsingTitle": "Profile, die diesen Anbieter nutzen",
   "aiProviderDetailRemoveButton": "Anbieter entfernen",
   "aiProviderDetailRemoveDescription": "Löscht den Anbieter und alle Modelle, die ihn nutzen. Das lässt sich nicht rückgängig machen.",
   "aiProviderDetailRemoveTitle": "Diesen Anbieter entfernen",
@@ -930,13 +931,13 @@
   "aiResponseTypePromptGeneration": "Generierter Prompt",
   "aiResponseTypeTaskSummary": "Aufgabenzusammenfassung",
   "aiRunningActivityOpenProgress": "KI-Fortschritt anzeigen",
+  "aiSettingsAddedLabel": "Hinzugefügt",
   "aiSettingsAddModelButton": "Modell hinzufügen",
   "aiSettingsAddModelErrorDescription": "Beim Hinzufügen des Modells ist etwas schiefgelaufen. Bitte versuche es erneut.",
   "aiSettingsAddModelErrorTitle": "Modell konnte nicht hinzugefügt werden",
   "aiSettingsAddModelTooltip": "Dieses Modell zu deinem Anbieter hinzufügen",
   "aiSettingsAddProfileButton": "Profil hinzufügen",
   "aiSettingsAddProviderButton": "Anbieter hinzufügen",
-  "aiSettingsAddedLabel": "Hinzugefügt",
   "aiSettingsAgentWakeConcurrencyDescription": "Wähle, wie viele verschiedene Agenten gleichzeitig Inferenz ausführen dürfen. Höhere Werte liefern schnellere Antworten, beanspruchen aber mehr Kapazität beim Anbieter und auf deinem Gerät.",
   "aiSettingsAgentWakeConcurrencyLabel": "Parallele Agenten-Aktivierungen",
   "aiSettingsClearAllFiltersTooltip": "Alle Filter zurücksetzen",
@@ -1156,8 +1157,8 @@
   "audioRecordingDiscardDialogTitle": "Aufnahme verwerfen?",
   "audioRecordingPause": "PAUSE",
   "audioRecordingResume": "FORTSETZEN",
-  "audioRecordingStop": "STOPP",
   "audioRecordings": "Audioaufnahmen",
+  "audioRecordingStop": "STOPP",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 Aktion} other{{count} Aktionen}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1357,12 +1358,12 @@
   "checklistExpandTooltip": "Ausklappen",
   "checklistExportAsMarkdown": "Checkliste als Markdown exportieren",
   "checklistExportFailed": "Export fehlgeschlagen",
-  "checklistItemArchiveUndo": "Rückgängig",
   "checklistItemArchived": "Element archiviert",
+  "checklistItemArchiveUndo": "Rückgängig",
   "checklistItemDeleteCancel": "Abbrechen",
   "checklistItemDeleteConfirm": "Bestätigen",
-  "checklistItemDeleteWarning": "Diese Aktion kann nicht rückgängig gemacht werden.",
   "checklistItemDeleted": "Element gelöscht",
+  "checklistItemDeleteWarning": "Diese Aktion kann nicht rückgängig gemacht werden.",
   "checklistMarkdownCopied": "Checkliste als Markdown kopiert",
   "checklistMoreTooltip": "Mehr",
   "checklistNoneDone": "Noch keine erledigten Punkte.",
@@ -1569,8 +1570,12 @@
   "conflictPickerUseFromSync": "Aus Sync verwenden",
   "conflictPickerUseThisDevice": "Dieses Gerät verwenden",
   "conflictResolvedToast": "Konflikt gelöst",
+  "conflictsEmptyDescription": "Alles ist synchronisiert. Gelöste Einträge bleiben im anderen Filter verfügbar.",
+  "conflictsEmptyTitle": "Keine Konflikte erkannt",
   "conflictSideFromSync": "AUS SYNC",
   "conflictSideThisDevice": "DIESES GERÄT",
+  "conflictsResolved": "gelöst",
+  "conflictsUnresolved": "ungelöst",
   "conflictValueAbsent": "Nicht gesetzt",
   "conflictValueNo": "Nein",
   "conflictValueYes": "Ja",
@@ -1584,10 +1589,6 @@
       }
     }
   },
-  "conflictsEmptyDescription": "Alles ist synchronisiert. Gelöste Einträge bleiben im anderen Filter verfügbar.",
-  "conflictsEmptyTitle": "Keine Konflikte erkannt",
-  "conflictsResolved": "gelöst",
-  "conflictsUnresolved": "ungelöst",
   "copyAsMarkdown": "Als Markdown kopieren",
   "copyAsText": "Als Text kopieren",
   "correctionExampleCancel": "ABBRECHEN",
@@ -1738,6 +1739,7 @@
   "dailyOsNextCapturePastPrompt": "Möchtest du für {date} noch etwas erfassen?",
   "dailyOsNextCaptureReconcileCta": "Prüfen",
   "dailyOsNextCaptureRecordingSavedStatus": "Aufnahme gespeichert",
+  "dailyOsNextCapturesPanelTitle": "Aufnahmen",
   "dailyOsNextCaptureTranscribing": "Wird transkribiert…",
   "dailyOsNextCaptureTranscriptHint": "Korrigiere alles, was der Text falsch erkannt hat, bevor du planst.",
   "dailyOsNextCaptureTranscriptLabel": "Transkript prüfen",
@@ -1745,7 +1747,6 @@
   "dailyOsNextCaptureVoiceButtonReset": "Von vorne beginnen",
   "dailyOsNextCaptureVoiceButtonStart": "Aufnahme starten",
   "dailyOsNextCaptureVoiceButtonStop": "Aufnahme stoppen",
-  "dailyOsNextCapturesPanelTitle": "Aufnahmen",
   "dailyOsNextCategoryFilterAll": "Alle Kategorien",
   "dailyOsNextCategoryFilterDescription": "Nur für die Tagesplanung aktivierte Kategorien werden für die automatische Daily-OS-Verarbeitung berücksichtigt.",
   "dailyOsNextCategoryFilterEmpty": "Noch keine Kategorien für die Tagesplanung aktiviert.",
@@ -1984,11 +1985,6 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Wiederkehrend · verpasst",
-  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 frühere Sitzung} other{{count} frühere Sitzungen}}",
-  "dailyOsNextTimeSpentShowLess": "Weniger anzeigen",
-  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} erledigt",
-  "dailyOsNextTimeSpentTitle": "HEUTE BISHER",
-  "dailyOsNextTimeSpentTitlePast": "ERFASSTE ZEIT",
   "dailyOsNextTimelineActual": "Ist",
   "dailyOsNextTimelineArrange": "Blöcke anordnen",
   "dailyOsNextTimelineBoth": "Plan und Ist",
@@ -2002,14 +1998,19 @@
   "dailyOsNextTimelineShowPaged": "Plan und Ist zum Wischen anzeigen",
   "dailyOsNextTimelineSwipeHint": "Wische zu Ist · vertikal kneifen zum Zoomen",
   "dailyOsNextTimelineTracked": "erfasst",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 frühere Sitzung} other{{count} frühere Sitzungen}}",
+  "dailyOsNextTimeSpentShowLess": "Weniger anzeigen",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} erledigt",
+  "dailyOsNextTimeSpentTitle": "HEUTE BISHER",
+  "dailyOsNextTimeSpentTitlePast": "ERFASSTE ZEIT",
   "dailyOsNextTriageConfirmDefer": "Verschoben",
-  "dailyOsNextTriageConfirmDoNow": "Sofort erledigt",
   "dailyOsNextTriageConfirmDone": "Erledigt markiert",
+  "dailyOsNextTriageConfirmDoNow": "Sofort erledigt",
   "dailyOsNextTriageConfirmDrop": "Verworfen",
   "dailyOsNextTriageConfirmToday": "Heute hinzugefügt",
   "dailyOsNextTriageDefer": "Verschieben",
-  "dailyOsNextTriageDoNow": "Jetzt machen",
   "dailyOsNextTriageDone": "Erledigt",
+  "dailyOsNextTriageDoNow": "Jetzt machen",
   "dailyOsNextTriageDrop": "Verwerfen",
   "dailyOsNextTriageToday": "Heute",
   "dailyOsOnboardingCoachCapture": "Sag, was dir im Kopf herumgeht.",
@@ -2258,8 +2259,8 @@
   "designSystemSmallLabel": "Klein",
   "designSystemSpinnerPlainLabel": "Ohne Spur",
   "designSystemSpinnerSkeletonPulseLabel": "Puls",
-  "designSystemSpinnerSkeletonWaveLabel": "Welle",
   "designSystemSpinnerSkeletonsTitle": "Skelette",
+  "designSystemSpinnerSkeletonWaveLabel": "Welle",
   "designSystemSpinnerSpinnersTitle": "Spinner",
   "designSystemSpinnerTrackLabel": "Mit Spur",
   "designSystemSplitButtonDropdownSemantics": "Optionen für {label} öffnen",
@@ -2309,14 +2310,6 @@
   "desktopEmptyStateSelectDashboard": "Wähle ein Dashboard aus, um Details anzuzeigen",
   "desktopEmptyStateSelectProject": "Wähle ein Projekt aus, um Details anzuzeigen",
   "desktopEmptyStateSelectTask": "Wähle eine Aufgabe aus, um Details anzuzeigen",
-  "deviceDeleteFailed": "Gerät konnte nicht gelöscht werden: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "deviceDeletedSuccess": "Gerät {deviceName} erfolgreich gelöscht",
   "@deviceDeletedSuccess": {
     "placeholders": {
@@ -2325,15 +2318,15 @@
       }
     }
   },
-  "doneButton": "Fertig",
-  "editLinkTypeCounterpart": "…{title}",
-  "@editLinkTypeCounterpart": {
+  "deviceDeleteFailed": "Gerät konnte nicht gelöscht werden: {error}",
+  "@deviceDeleteFailed": {
     "placeholders": {
-      "title": {
+      "error": {
         "type": "String"
       }
     }
   },
+  "doneButton": "Fertig",
   "editLinkTypeCounterpartLabel": "Verknüpfte Aufgabe",
   "editLinkTypeFailedMessage": "Die Beziehung konnte nicht aktualisiert werden. Bitte versuch es erneut.",
   "editLinkTypeTitle": "Beziehung bearbeiten",
@@ -2435,11 +2428,6 @@
   "habitLogOtherDayHint": "Halten, um einen anderen Tag einzutragen",
   "habitNotRecordedLabel": "Nicht erfasst",
   "habitPriorityLabel": "Priorität",
-  "habitSectionOptionsTitle": "Optionen",
-  "habitSectionScheduleTitle": "Zeitplan",
-  "habitShowAlertAtLabel": "Alarm anzeigen um",
-  "habitShowFromLabel": "Anzeigen ab",
-  "habitStreakDaysSemantic": "{count, plural, one{1 Tag in Folge} other{{count} Tage in Folge}}",
   "habitsAboveGoal": "Im Plan",
   "habitsActiveHabitsCount": "{count, plural, one{1 aktive Gewohnheit} other{{count} aktive Gewohnheiten}}",
   "habitsAllDoneToday": "Heute alles erledigt",
@@ -2452,6 +2440,8 @@
   "habitsDaySkippedPercent": "{percent}% übersprungen",
   "habitsDaySuccessfulPercent": "{percent}% erfolgreich",
   "habitsDoneTodayLabel": "Heute erledigt",
+  "habitSectionOptionsTitle": "Optionen",
+  "habitSectionScheduleTitle": "Zeitplan",
   "habitsFilterAll": "alle",
   "habitsFilterCompleted": "erledigt",
   "habitsFilterOpenNow": "fällig",
@@ -2460,6 +2450,8 @@
   "habitsHeatmapEmpty": "Füge eine Gewohnheit hinzu, um deine Beständigkeit aufzubauen",
   "habitsHeatmapLess": "Weniger",
   "habitsHeatmapMore": "Mehr",
+  "habitShowAlertAtLabel": "Alarm anzeigen um",
+  "habitShowFromLabel": "Anzeigen ab",
   "habitsLaggardHint": "{habit} — {kept} von {active} geschafft",
   "habitsOpenHeader": "Jetzt fällig",
   "habitsPendingLaterHeader": "Später heute",
@@ -2471,6 +2463,7 @@
   "habitsStreakShortCount": "{count} mit 3-Tage-Serie",
   "habitsTapForBreakdown": "Tippe auf einen Tag für die Aufschlüsselung",
   "habitsToGoCount": "noch {count}",
+  "habitStreakDaysSemantic": "{count, plural, one{1 Tag in Folge} other{{count} Tage in Folge}}",
   "habitsVsPreviousWeek": "ggü. Vorwoche",
   "helpMenuCommandPalette": "Befehlspalette…",
   "helpMenuKeyboardShortcuts": "Tastaturkurzbefehle…",
@@ -2492,7 +2485,9 @@
   "imagePromptGenerationCopyTooltip": "Bild-Prompt in Zwischenablage kopieren",
   "imagePromptGenerationExpandTooltip": "Vollständigen Prompt anzeigen",
   "imagePromptGenerationFullPromptLabel": "Vollständiger Bild-Prompt:",
+  "images": "Bilder",
   "imageViewerDownloadFailed": "Bild konnte nicht gespeichert werden",
+  "imageViewerDownloadingTooltip": "Bild wird gespeichert",
   "imageViewerDownloadPermissionDenied": "Fotozugriff verweigert – aktiviere ihn in den Einstellungen",
   "imageViewerDownloadSaved": "{fileName} gespeichert",
   "@imageViewerDownloadSaved": {
@@ -2504,8 +2499,6 @@
   },
   "imageViewerDownloadSavedToGallery": "In Fotos gespeichert",
   "imageViewerDownloadTooltip": "Bild herunterladen",
-  "imageViewerDownloadingTooltip": "Bild wird gespeichert",
-  "images": "Bilder",
   "inactiveLabel": "Inaktiv",
   "inactiveSwitchDescription": "Kann für neue Einträge gewählt werden, wenn aktiv",
   "inferenceProfileChooseModelTitle": "Modell auswählen",
@@ -2538,6 +2531,7 @@
   "inferenceProfileSaveButton": "Speichern",
   "inferenceProfileSelectModel": "Modell auswählen…",
   "inferenceProfileSelectProfile": "Profil auswählen…",
+  "inferenceProfilesEmpty": "Noch keine Inferenz-Profile",
   "inferenceProfileSkillModelRequired": "{slotName}-Modell muss gesetzt sein",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -2546,6 +2540,7 @@
       }
     }
   },
+  "inferenceProfileSkillsSection": "Automatisierte Fähigkeiten",
   "inferenceProfileSkillUsesModel": "Verwendet {slotName}-Modell",
   "@inferenceProfileSkillUsesModel": {
     "placeholders": {
@@ -2554,14 +2549,12 @@
       }
     }
   },
-  "inferenceProfileSkillsSection": "Automatisierte Fähigkeiten",
+  "inferenceProfilesTitle": "Inferenz-Profile",
   "inferenceProfileThinking": "Denken",
   "inferenceProfileThinkingHighEnd": "Denken (High-End)",
   "inferenceProfileThinkingRequired": "Ein Denk-Modell ist erforderlich",
   "inferenceProfileTranscription": "Transkription",
   "inferenceProfileUnavailable": "Inferenzprofil nicht verfügbar",
-  "inferenceProfilesEmpty": "Noch keine Inferenz-Profile",
-  "inferenceProfilesTitle": "Inferenz-Profile",
   "inputDataTypeAudioFilesDescription": "Audiodateien als Eingabe verwenden",
   "inputDataTypeAudioFilesName": "Audiodateien",
   "inputDataTypeImagesDescription": "Bilder als Eingabe verwenden",
@@ -2645,9 +2638,9 @@
   "journalDeleteQuestion": "Möchtest du diesen Journaleintrag löschen?",
   "journalDurationLabel": "Dauer",
   "journalEndDateLabel": "Enddatum",
-  "journalEndTimeLabel": "Endzeit",
   "journalEndsAnotherDayHint": "Eigenes Enddatum wählen",
   "journalEndsAnotherDayLabel": "Endet an einem anderen Tag",
+  "journalEndTimeLabel": "Endzeit",
   "journalEntryExpandLabel": "Eintrag erweitern",
   "journalFilterEntryTypesTitle": "Eintragstypen",
   "journalFilterFlagged": "Markiert",
@@ -2657,8 +2650,6 @@
   "journalFilterTitle": "Tagebuch filtern",
   "journalHideLinkHint": "Link ausblenden",
   "journalHideMapHint": "Karte ausblenden",
-  "journalLinkFromHint": "Verknüpfen von",
-  "journalLinkToHint": "Verknüpfen mit",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
   "journalLinkedEntriesActivityFilterCode": "Code",
   "journalLinkedEntriesActivityFilterImages": "Bilder",
@@ -2670,6 +2661,8 @@
   "journalLinkedEntriesSortNewestFirst": "Neueste zuerst",
   "journalLinkedEntriesSortOldestFirst": "Älteste zuerst",
   "journalLinkedFromLabel": "Verknüpft von:",
+  "journalLinkFromHint": "Verknüpfen von",
+  "journalLinkToHint": "Verknüpfen mit",
   "journalOvernightNextDay": "Endet {date} (nächster Tag)",
   "journalPrivateTooltip": "nur privat",
   "journalSearchHint": "Tagebuch durchsuchen...",
@@ -2779,8 +2772,8 @@
   "knowledgeGraphNodeTypeRating": "Bewertung",
   "knowledgeGraphNodeTypeTask": "Aufgabe",
   "knowledgeGraphOpenDetails": "Details öffnen",
-  "knowledgeGraphRecentToOlder": "Neu → älter",
   "knowledgeGraphRecenter": "Neu zentrieren",
+  "knowledgeGraphRecentToOlder": "Neu → älter",
   "knowledgeGraphRelationAiSource": "KI-Quelle",
   "knowledgeGraphRelationChecklist": "Checkliste",
   "knowledgeGraphRelationInProject": "Im Projekt",
@@ -2792,7 +2785,6 @@
   "knowledgeGraphTooltip": "Verknüpfungen erkunden",
   "knowledgeGraphWalkHint": "Tippe auf einen Knoten · Knoten: {count}",
   "linkBlocksCycleErrorMessage": "Das würde einen blockierenden Kreislauf erzeugen — wähle eine andere Aufgabe.",
-  "linkCreateFailedMessage": "Die Verknüpfung konnte nicht erstellt werden. Bitte versuche es erneut.",
   "linkCreatedMessage": "{relation}: {title}",
   "@linkCreatedMessage": {
     "placeholders": {
@@ -2805,7 +2797,14 @@
     }
   },
   "linkCreatedUndo": "Rückgängig",
+  "linkCreateFailedMessage": "Die Verknüpfung konnte nicht erstellt werden. Bitte versuche es erneut.",
   "linkDirectionLabel": "Diese Aufgabe…",
+  "linkedTaskImageBadge": "Von verknüpfter Aufgabe",
+  "linkedTasksBlockedBySectionTitle": "Blockiert von",
+  "linkedTasksEmptyAction": "Aufgabe verknüpfen…",
+  "linkedTasksEmptyHint": "Verknüpfe diese Aufgabe mit einer anderen — Blocker, Folgeaufgabe oder Duplikat.",
+  "linkedTasksMenuTooltip": "Optionen für verknüpfte Aufgaben",
+  "linkedTasksTitle": "Verknüpfte Aufgaben",
   "linkExistingTask": "Vorhandene Aufgabe verknüpfen…",
   "linkExistingTaskTitle": "Verknüpfen",
   "linkPhraseBasic": "Bezieht sich auf",
@@ -2820,13 +2819,6 @@
   "linkPhraseSupersedesInverse": "Wird ersetzt durch",
   "linkPhraseSupersedesPrimary": "Ersetzt",
   "linkTaskButton": "Verknüpfen",
-  "linkedTaskImageBadge": "Von verknüpfter Aufgabe",
-  "linkedTasksBlockedBySectionTitle": "Blockiert von",
-  "linkedTasksEmptyAction": "Aufgabe verknüpfen…",
-  "linkedTasksEmptyHint": "Verknüpfe diese Aufgabe mit einer anderen — Blocker, Folgeaufgabe oder Duplikat.",
-  "linkedTasksMenuTooltip": "Optionen für verknüpfte Aufgaben",
-  "linkedTasksTitle": "Verknüpfte Aufgaben",
-  "@@locale": "de",
   "logbookEmptyHint": "Erstelle deinen ersten Eintrag, um mit dem Logbuch zu starten.",
   "logbookEmptyTitle": "Dein Logbuch ist leer",
   "logbookNewEntriesHint": "Neue Einträge erscheinen hier.",
@@ -2913,6 +2905,10 @@
   "maintenancePurgeSentOutboxConfirm": "JA, LÖSCHEN",
   "maintenancePurgeSentOutboxDescription": "Gesendete Outbox-Zeilen, die älter als 7 Tage sind, löschen und Speicherplatz freigeben",
   "maintenancePurgeSentOutboxQuestion": "Gesendete Outbox-Einträge löschen, die älter als 7 Tage sind? Bereits gesendete Zeilen werden in Blöcken gelöscht und VACUUM gibt Speicherplatz frei. Ausstehende und fehlerhafte Einträge bleiben erhalten.",
+  "maintenanceRecreateFts5": "Volltextindex neu erstellen",
+  "maintenanceRecreateFts5Confirm": "JA, INDEX NEU ERSTELLEN",
+  "maintenanceRecreateFts5Description": "Volltextsuchindex neu erstellen",
+  "maintenanceRecreateFts5Message": "Möchtest du den Volltextindex wirklich neu erstellen? Dies kann einige Zeit dauern.",
   "maintenanceReSync": "Nachrichten erneut synchronisieren",
   "maintenanceReSyncAgentEntities": "Agenten-Entitäten",
   "maintenanceReSyncDescription": "Nachrichten vom Server erneut synchronisieren",
@@ -2920,10 +2916,6 @@
   "maintenanceReSyncJournalEntities": "Journal-Einträge",
   "maintenanceReSyncSelectAtLeastOne": "Wähle mindestens einen Entitätstyp aus",
   "maintenanceReSyncStart": "Starten",
-  "maintenanceRecreateFts5": "Volltextindex neu erstellen",
-  "maintenanceRecreateFts5Confirm": "JA, INDEX NEU ERSTELLEN",
-  "maintenanceRecreateFts5Description": "Volltextsuchindex neu erstellen",
-  "maintenanceRecreateFts5Message": "Möchtest du den Volltextindex wirklich neu erstellen? Dies kann einige Zeit dauern.",
   "maintenanceSyncDefinitions": "Messgrößen, Dashboards, Gewohnheiten, Kategorien, AI-Einstellungen synchronisieren",
   "maintenanceSyncDefinitionsDescription": "Messgrößen, Dashboards, Gewohnheiten, Kategorien und AI-Einstellungen synchronisieren",
   "manageLinks": "Verknüpfungen verwalten…",
@@ -3296,8 +3288,10 @@
   "projectPickerUnassigned": "Kein Projekt",
   "projectRecommendationDismissTooltip": "Ausblenden",
   "projectRecommendationResolveTooltip": "Als erledigt markieren",
-  "projectRecommendationUpdateError": "Die Empfehlung konnte nicht aktualisiert werden. Bitte versuche es erneut.",
   "projectRecommendationsTitle": "Empfohlene nächste Schritte",
+  "projectRecommendationUpdateError": "Die Empfehlung konnte nicht aktualisiert werden. Bitte versuche es erneut.",
+  "projectsFilterStatusLabel": "Status:",
+  "projectsFilterTooltip": "Projekte filtern",
   "projectShowcaseAiReportTitle": "AI-Bericht",
   "projectShowcaseBlockedLegend": "{count} Blockiert",
   "@projectShowcaseBlockedLegend": {
@@ -3398,8 +3392,6 @@
   "projectTargetDateLabel": "Zieldatum",
   "projectTitleLabel": "Projekttitel",
   "projectTitleRequired": "Der Projekttitel darf nicht leer sein",
-  "projectsFilterStatusLabel": "Status:",
-  "projectsFilterTooltip": "Projekte filtern",
   "promptDefaultModelBadge": "Standard",
   "promptGenerationCardTitle": "KI-Coding-Prompt",
   "promptGenerationCopiedSnackbar": "Prompt in Zwischenablage kopiert",
@@ -3537,8 +3529,6 @@
   "sessionRatingSkipButton": "Überspringen",
   "sessionRatingTitle": "Sitzung bewerten",
   "sessionRatingViewAction": "Bewertung anzeigen",
-  "settingThemingDark": "Dunkles Design",
-  "settingThemingLight": "Helles Design",
   "settingsAboutAppInformation": "App-Informationen",
   "settingsAboutAppTagline": "Dein persönliches Tagebuch",
   "settingsAboutBuildType": "Build-Typ",
@@ -3659,8 +3649,8 @@
   "settingsCelebrationsPreviewSample3": "Pflanzen gießen",
   "settingsCelebrationsPreviewTitle": "Ausprobieren",
   "settingsCelebrationsReplay": "Erneut abspielen",
-  "settingsCelebrationsResetToDefault": "Auf Standard zurücksetzen",
   "settingsCelebrationsResetToast": "Stil auf Standard zurückgesetzt",
+  "settingsCelebrationsResetToDefault": "Auf Standard zurücksetzen",
   "settingsCelebrationsResetUndo": "Rückgängig",
   "settingsCelebrationsSectionDescription": "Eine kleine Feier, wenn du etwas abschließt. Schaltest du eine aus, bleibt der Abschluss samt Haptik erhalten – nur die Animation entfällt.",
   "settingsCelebrationsSectionTitle": "Feiern beim Abschließen",
@@ -3823,6 +3813,7 @@
     }
   },
   "settingsMatrixRoomInviteTitle": "Raumeinladung",
+  "settingsMatrixSentMessagesLabel": "Gesendete Nachrichten:",
   "settingsMatrixSentMessageType": "Gesendet ({eventType})",
   "@settingsMatrixSentMessageType": {
     "placeholders": {
@@ -3831,7 +3822,6 @@
       }
     }
   },
-  "settingsMatrixSentMessagesLabel": "Gesendete Nachrichten:",
   "settingsMatrixStartVerificationLabel": "Verifizierung starten",
   "settingsMatrixStatsTitle": "Matrix-Statistiken",
   "settingsMatrixTitle": "Matrix-Synchronisierungseinstellungen",
@@ -3860,7 +3850,6 @@
   "settingsMeasurableNameLabel": "Name der Messgröße",
   "settingsMeasurablePrivateLabel": "Privat: ",
   "settingsMeasurableSaveLabel": "Speichern",
-  "settingsMeasurableUnitLabel": "Einheitenabkürzung (optional)",
   "settingsMeasurablesCreateTitle": "Messgröße erstellen",
   "settingsMeasurablesEmptyState": "Noch keine Messgrößen",
   "settingsMeasurablesEmptyStateHint": "Messgrößen sind Zahlen, die du über die Zeit verfolgst — Gewicht, Wasser, Schritte.",
@@ -3876,6 +3865,7 @@
   "settingsMeasurablesSearchHint": "Messgrößen durchsuchen…",
   "settingsMeasurablesSubtitle": "Messbare Datentypen konfigurieren",
   "settingsMeasurablesTitle": "Messgrößen",
+  "settingsMeasurableUnitLabel": "Einheitenabkürzung (optional)",
   "settingsOnboardingActionSubtitle": "Öffne den Willkommens-Ablauf erneut – verbinde dein KI-Gehirn und erstelle eine Aufgabe",
   "settingsOnboardingMetricsSubtitle": "FTUE-Funnel – Installation, Aktivierung, Bindung (Debug)",
   "settingsOnboardingMetricsTitle": "Onboarding-Metriken",
@@ -3943,6 +3933,8 @@
   "settingsV2UnimplementedTitle": "Bereich noch nicht verfügbar",
   "settingsWhatsNewSubtitle": "Sieh dir die neuesten Neuigkeiten und Funktionen an",
   "settingsWhatsNewTitle": "Was gibt's Neues",
+  "settingThemingDark": "Dunkles Design",
+  "settingThemingLight": "Helles Design",
   "sidebarActiveSectionTitle": "Aktivität",
   "sidebarActivityCollapseTooltip": "Aktivität einklappen",
   "sidebarActivityExpandTooltip": "Aktivität ausklappen",
@@ -4103,9 +4095,9 @@
   "taskAgentNoAiSetup": "Keine KI-Einrichtung",
   "taskAgentNoAiSetupDescription": "Pausiert die Inferenz, bis du ein Profil oder Modell auswählst.",
   "taskAgentNoModelsAvailable": "Keine kompatiblen Denkmodelle verfügbar",
+  "taskAgentNoProfilesAvailable": "Auf diesem Gerät sind keine Profile verfügbar",
   "taskAgentNoProfileSelected": "Kein KI-Setup",
   "taskAgentNoProfileSelectedDescription": "Wähle eine gespeicherte Einrichtung oder ein Denkmodell, bevor der Agent laufen kann.",
-  "taskAgentNoProfilesAvailable": "Auf diesem Gerät sind keine Profile verfügbar",
   "taskAgentProfileChangedToast": "{profile} wird für jede künftige Aktualisierung des Agenten verwendet, bis du es änderst.",
   "@taskAgentProfileChangedToast": {
     "placeholders": {
@@ -4280,6 +4272,14 @@
   "taskPriorityLow": "Niedrig",
   "taskPriorityMedium": "Mittel",
   "taskPriorityUrgent": "Dringend",
+  "tasksAddLabelButton": "Label hinzufügen",
+  "tasksAgentFilterAll": "Alle",
+  "tasksAgentFilterHasAgent": "Hat Agent",
+  "tasksAgentFilterNoAgent": "Kein Agent",
+  "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Filter anwenden",
+  "tasksFilterClearAll": "Alles löschen",
+  "tasksFilterTitle": "Aufgaben filtern",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} erledigt",
   "@taskShowcaseCompletedCount": {
@@ -4324,25 +4324,6 @@
   "taskShowcaseTimeTracker": "Zeiterfassung",
   "taskShowcaseTodo": "Todo",
   "taskShowcaseTodos": "Todos",
-  "taskStatusAll": "Alle",
-  "taskStatusBlocked": "Blockiert",
-  "taskStatusDone": "Erledigt",
-  "taskStatusGroomed": "Gepflegt",
-  "taskStatusInProgress": "In Bearbeitung",
-  "taskStatusLabel": "Status:",
-  "taskStatusOnHold": "Zurückgestellt",
-  "taskStatusOpen": "Offen",
-  "taskStatusRejected": "Abgelehnt",
-  "taskTitleEmpty": "Kein Titel",
-  "taskUntitled": "(ohne Titel)",
-  "tasksAddLabelButton": "Label hinzufügen",
-  "tasksAgentFilterAll": "Alle",
-  "tasksAgentFilterHasAgent": "Hat Agent",
-  "tasksAgentFilterNoAgent": "Kein Agent",
-  "tasksAgentFilterTitle": "Agent",
-  "tasksFilterApplyTitle": "Filter anwenden",
-  "tasksFilterClearAll": "Alles löschen",
-  "tasksFilterTitle": "Aufgaben filtern",
   "tasksLabelFilterAll": "Alle",
   "tasksLabelFilterTitle": "Label",
   "tasksLabelFilterUnlabeled": "Ohne Label",
@@ -4366,23 +4347,6 @@
   "tasksSavedFilterDeleteTooltip": "Gespeicherten Filter löschen",
   "tasksSavedFilterDragHandleSemantics": "Ziehen, um die Reihenfolge zu ändern",
   "tasksSavedFilterRenameSemantics": "Gespeicherten Filter umbenennen",
-  "tasksSavedFilterToastDeleted": "Filter gelöscht",
-  "tasksSavedFilterToastSaved": "„{name}“ gespeichert",
-  "@tasksSavedFilterToastSaved": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "tasksSavedFilterToastUpdated": "„{name}“ aktualisiert",
-  "@tasksSavedFilterToastUpdated": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "tasksSavedFiltersAllShort": "Alle",
   "tasksSavedFiltersAllTasks": "Alle Aufgaben",
   "tasksSavedFiltersCustom": "Eigene",
@@ -4418,6 +4382,23 @@
   "tasksSavedFiltersUpdateButtonLabel": "Filter aktualisieren",
   "tasksSavedFiltersUpdateExistingDescription": "Ersetze seine gespeicherten Kriterien durch die aktuelle Filterkonfiguration.",
   "tasksSavedFiltersUpdateExistingTitle": "Bestehenden Filter aktualisieren",
+  "tasksSavedFilterToastDeleted": "Filter gelöscht",
+  "tasksSavedFilterToastSaved": "„{name}“ gespeichert",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "„{name}“ aktualisiert",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSearchModeLabel": "Suchmodus",
   "tasksShowCreationDate": "Erstellungsdatum auf Karten anzeigen",
   "tasksShowDueDate": "Fälligkeitsdatum auf Karten anzeigen",
@@ -4425,6 +4406,17 @@
   "tasksSortByDueDate": "Fälligkeit",
   "tasksSortByLabel": "Sortieren nach",
   "tasksSortByPriority": "Priorität",
+  "taskStatusAll": "Alle",
+  "taskStatusBlocked": "Blockiert",
+  "taskStatusDone": "Erledigt",
+  "taskStatusGroomed": "Gepflegt",
+  "taskStatusInProgress": "In Bearbeitung",
+  "taskStatusLabel": "Status:",
+  "taskStatusOnHold": "Zurückgestellt",
+  "taskStatusOpen": "Offen",
+  "taskStatusRejected": "Abgelehnt",
+  "taskTitleEmpty": "Kein Titel",
+  "taskUntitled": "(ohne Titel)",
   "thinkingDisclosureCopied": "Begründung kopiert",
   "thinkingDisclosureCopy": "Begründung kopieren",
   "thinkingDisclosureHide": "Begründung ausblenden",

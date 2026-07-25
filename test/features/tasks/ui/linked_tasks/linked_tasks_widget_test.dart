@@ -753,7 +753,12 @@ void main() {
               incoming: [],
               outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
               manageMode: manageMode,
-              width: 390,
+              // The card's real width, like every other assertion in this
+              // file. Measuring at the full viewport hands the header 33pt it
+              // never has — which is exactly the headroom that can keep the
+              // overflow menu visible at a large text scale while the shipped
+              // card drops it.
+              width: phoneCardWidth,
               mediaQueryData: MediaQueryData(
                 size: const Size(390, 844),
                 textScaler: TextScaler.linear(scale),

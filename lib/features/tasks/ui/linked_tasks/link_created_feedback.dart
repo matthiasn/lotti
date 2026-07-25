@@ -62,11 +62,20 @@ void showLinkCreatedFeedback({
         // remove the edge this message is about — not some other
         // relationship the two tasks also hold.
         try {
-          await repository.removeTypedLink(
+          final removed = await repository.removeTypedLink(
             fromId: fromId,
             toId: toId,
             linkType: entryLinkTypeDbName(relation.type),
           );
+          // A count, not a bool: zero rows means the link was already gone or
+          // never matched, which is a failed undo that threw nothing. Left
+          // unchecked it read exactly like a successful one.
+          if (removed <= 0) {
+            showLinkFailureMessage(
+              messenger: messenger,
+              message: messages.unlinkTaskFailedMessage,
+            );
+          }
         } catch (_) {
           // Awaited and reported, matching the unlink path. Fire-and-forget
           // made a failed undo indistinguishable from a successful one, on

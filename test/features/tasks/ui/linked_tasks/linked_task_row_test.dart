@@ -79,7 +79,10 @@ void main() {
               taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: true,
-              onUnlink: () async => unlinkCalled = true,
+              onUnlink: () async {
+                unlinkCalled = true;
+                return 1;
+              },
             ),
           ),
         );
@@ -113,7 +116,7 @@ void main() {
               data: buildRowData(),
               manageMode: true,
               onEdit: () async => editCalled = true,
-              onUnlink: () async {},
+              onUnlink: () async => 1,
             ),
           ),
         );
@@ -159,7 +162,10 @@ void main() {
             taskId: 'anchor-task',
             data: buildRowData(),
             manageMode: true,
-            onUnlink: () async => unlinkCalled = true,
+            onUnlink: () async {
+              unlinkCalled = true;
+              return 1;
+            },
           ),
         ),
       );
@@ -173,6 +179,33 @@ void main() {
 
       expect(unlinkCalled, isFalse);
     });
+
+    testWidgets(
+      'reports a failure when the unlink removed nothing — a delete that '
+      'matches no row returns zero and throws nothing, so without the count '
+      'it looked exactly like a successful unlink',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: true,
+              onUnlink: () async => 0,
+            ),
+          ),
+        );
+
+        await tester.tap(find.byIcon(Icons.link_off));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(SnackBar), findsWidgets);
+      },
+    );
 
     testWidgets(
       'shows a SnackBar when onUnlink throws',
@@ -276,7 +309,7 @@ void main() {
                 ),
                 manageMode: manageMode,
                 onEdit: () async {},
-                onUnlink: () async {},
+                onUnlink: () async => 1,
               ),
             ),
           ),
@@ -324,7 +357,7 @@ void main() {
                 data: buildRowData(),
                 manageMode: manageMode,
                 onEdit: () async {},
-                onUnlink: () async {},
+                onUnlink: () async => 1,
               ),
             ),
           ),
@@ -362,7 +395,7 @@ void main() {
                   data: buildRowData(),
                   manageMode: true,
                   onEdit: () async {},
-                  onUnlink: () async {},
+                  onUnlink: () async => 1,
                 ),
               ),
             ),

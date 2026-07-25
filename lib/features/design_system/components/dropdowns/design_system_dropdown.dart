@@ -96,7 +96,10 @@ class _DesignSystemDropdownState extends State<DesignSystemDropdown> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final sizeSpec = _DropdownSizeSpec.fromTokens(tokens);
+    final sizeSpec = _DropdownSizeSpec.fromTokens(
+      tokens,
+      MediaQuery.textScalerOf(context),
+    );
     final styleSpec = _DropdownStyleSpec.fromTokens(
       tokens: tokens,
       expanded: _expanded,
@@ -309,18 +312,26 @@ class _DropdownSizeSpec {
     required this.menuItemStyle,
   });
 
-  factory _DropdownSizeSpec.fromTokens(DsTokens tokens) {
+  /// [textScaler] is the effective scaler the rows will render at. The row
+  /// height grows with the user's text size while the padding around it does
+  /// not, so a ceiling computed from unscaled metrics stops mid-row at large
+  /// text sizes — the exact defect this whole calculation exists to prevent,
+  /// reappearing one accessibility setting out.
+  factory _DropdownSizeSpec.fromTokens(DsTokens tokens, TextScaler textScaler) {
     final fieldHeight =
-        tokens.typography.lineHeight.bodyLarge + tokens.spacing.step5 * 2;
+        textScaler.scale(tokens.typography.lineHeight.bodyLarge) +
+        tokens.spacing.step5 * 2;
     // A one-word option was costing more height than a two-line task row, and
     // the panel ended mid-row so the last visible option looked sliced. Tie the
     // ceiling to a whole number of rows instead.
     final menuItemMinHeight =
         // Derived from the style the rows actually render (menuItemStyle
-        // below). Computed against a shorter style than exists, the ceiling
-        // lands mid-row and the last visible option is sliced through its
-        // glyphs — invisible in the widget tree, obvious on screen.
-        tokens.typography.lineHeight.bodyMedium + tokens.spacing.step4 * 2;
+        // below), at the size they will actually render it. Computed against a
+        // shorter style than exists, the ceiling lands mid-row and the last
+        // visible option is sliced through its glyphs — invisible in the
+        // widget tree, obvious on screen.
+        textScaler.scale(tokens.typography.lineHeight.bodyMedium) +
+        tokens.spacing.step4 * 2;
     final panelMaxHeight = menuItemMinHeight * 7;
     final checkboxSize =
         tokens.typography.lineHeight.bodySmall + tokens.spacing.step2;

@@ -646,7 +646,12 @@ double _measureText(BuildContext context, String text, TextStyle style) {
     textDirection: Directionality.of(context),
     textScaler: MediaQuery.textScalerOf(context),
   )..layout();
-  return painter.width;
+  // Disposed before returning: this runs on every header build, and the
+  // painter holds native paragraph resources that the garbage collector does
+  // not release for it.
+  final width = painter.width;
+  painter.dispose();
+  return width;
 }
 
 class _CountBadge extends StatelessWidget {

@@ -33,10 +33,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addActionAddText => 'Tekstinvoer';
 
   @override
-  String get addActionAddTimeRecording => 'Timerinvoer';
+  String get addActionAddTimer => 'Timer';
 
   @override
-  String get addActionAddTimer => 'Timer';
+  String get addActionAddTimeRecording => 'Timerinvoer';
 
   @override
   String get addActionImportImage => 'Afbeelding importeren';
@@ -662,10 +662,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentSoulCoachingStyleLabel => 'Coaching Style';
 
   @override
-  String get agentSoulCreateTitle => 'Ziel aanmaken';
+  String get agentSoulCreatedSuccess => 'Ziel aangemaakt';
 
   @override
-  String get agentSoulCreatedSuccess => 'Ziel aangemaakt';
+  String get agentSoulCreateTitle => 'Ziel aanmaken';
 
   @override
   String get agentSoulDeleteConfirmBody =>
@@ -751,7 +751,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentSoulSelectTitle => 'Selecteer Ziel';
 
   @override
+  String get agentSoulsEmptyFiltered =>
+      'Geen zielen die overeenkomen met je filters.';
+
+  @override
   String get agentSoulSettingsTab => 'Instellingen';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Zoek zielen...';
+
+  @override
+  String get agentSoulsTitle => 'Zielen';
 
   @override
   String get agentSoulToneBoundsLabel => 'Toongrenzen';
@@ -769,16 +779,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Spraakrichtlijn';
-
-  @override
-  String get agentSoulsEmptyFiltered =>
-      'Geen zielen die overeenkomen met je filters.';
-
-  @override
-  String get agentSoulsSearchPlaceholder => 'Zoek zielen...';
-
-  @override
-  String get agentSoulsTitle => 'Zielen';
 
   @override
   String get agentStateConsecutiveFailures => 'Consecutieve storingen';
@@ -842,10 +842,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentTemplateAssignedLabel => 'Sjabloon';
 
   @override
-  String get agentTemplateCreateTitle => 'Sjabloon aanmaken';
+  String get agentTemplateCreatedSuccess => 'Sjabloon aangemaakt';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Sjabloon aangemaakt';
+  String get agentTemplateCreateTitle => 'Sjabloon aanmaken';
 
   @override
   String get agentTemplateDeleteConfirm =>
@@ -896,17 +896,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentTemplateMetricsTotalWakes => 'Totaal Wakker worden';
 
   @override
+  String get agentTemplateNoneAssigned => 'Geen sjabloon toegewezen';
+
+  @override
   String get agentTemplateNoTemplates =>
       'Geen sjablonen beschikbaar. Maak er eerst een in Instellingen.';
 
   @override
-  String get agentTemplateNoVersions => 'Geen versies';
-
-  @override
-  String get agentTemplateNoneAssigned => 'Geen sjabloon toegewezen';
-
-  @override
   String get agentTemplateNotFound => 'Sjabloon niet gevonden';
+
+  @override
+  String get agentTemplateNoVersions => 'Geen versies';
 
   @override
   String get agentTemplateReportDirectiveHint =>
@@ -936,7 +936,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Selecteer sjabloon';
 
   @override
+  String get agentTemplatesEmptyFiltered =>
+      'Geen sjablonen die overeenkomen met uw filters.';
+
+  @override
   String get agentTemplateSettingsTab => 'Instellingen';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Aardig';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Aardig';
+
+  @override
+  String get agentTemplatesGroupNone => 'Alles';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Sjablonen zoeken...';
 
   @override
   String get agentTemplateStatsTab => 'Statistieken';
@@ -946,6 +962,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentTemplateStatusArchived => 'Gearchiveerd';
+
+  @override
+  String get agentTemplatesTitle => 'Agent-sjablonen';
 
   @override
   String get agentTemplateSwitchHint =>
@@ -961,25 +980,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentTemplateVersionSaved => 'Nieuwe versie opgeslagen';
-
-  @override
-  String get agentTemplatesEmptyFiltered =>
-      'Geen sjablonen die overeenkomen met uw filters.';
-
-  @override
-  String get agentTemplatesFilterSectionKind => 'Aardig';
-
-  @override
-  String get agentTemplatesGroupByKind => 'Aardig';
-
-  @override
-  String get agentTemplatesGroupNone => 'Alles';
-
-  @override
-  String get agentTemplatesSearchPlaceholder => 'Sjablonen zoeken...';
-
-  @override
-  String get agentTemplatesTitle => 'Agent-sjablonen';
 
   @override
   String get agentThreadReportLabel =>
@@ -1122,10 +1122,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
+  String get aiAttributionTokens => 'Tokens';
 
   @override
-  String get aiAttributionTokens => 'Tokens';
+  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
 
   @override
   String get aiAttributionTrigger => 'Trigger';
@@ -1753,41 +1753,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Getoond in uw provider lijst';
 
   @override
-  String aiProviderConnectKeyHelperLink(String url) {
-    return 'Pak een sleutel bij $url';
-  }
-
-  @override
-  String get aiProviderConnectKeyHiddenLabel => 'Verborgen';
-
-  @override
-  String get aiProviderConnectKeyPrivacyHint =>
-      'Je API sleutel blijft nooit achter bij je apparaat.';
-
-  @override
-  String aiProviderConnectPageTitle(String providerName) {
-    return 'Verbinden $providerName';
-  }
-
-  @override
-  String get aiProviderConnectSaveAndContinue => 'Opslaan & doorgaan';
-
-  @override
-  String get aiProviderConnectSaveAsDraft => 'Als concept opslaan';
-
-  @override
-  String get aiProviderConnectSavedAsDraftToast => 'Opgeslagen als concept';
-
-  @override
-  String get aiProviderConnectStepChoose => 'Kies provider';
-
-  @override
-  String get aiProviderConnectStepConnect => 'Verbinden';
-
-  @override
-  String get aiProviderConnectStepReview => 'Evaluatie';
-
-  @override
   String get aiProviderConnectionCheckingLabel =>
       'Sleutel controleren, beschikbare modellen weergeven...';
 
@@ -1838,6 +1803,45 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiProviderConnectionVerifiedTitle => 'Verbinding geverifieerd';
+
+  @override
+  String aiProviderConnectKeyHelperLink(String url) {
+    return 'Pak een sleutel bij $url';
+  }
+
+  @override
+  String get aiProviderConnectKeyHiddenLabel => 'Verborgen';
+
+  @override
+  String get aiProviderConnectKeyPrivacyHint =>
+      'Je API sleutel blijft nooit achter bij je apparaat.';
+
+  @override
+  String aiProviderConnectPageTitle(String providerName) {
+    return 'Verbinden $providerName';
+  }
+
+  @override
+  String get aiProviderConnectSaveAndContinue => 'Opslaan & doorgaan';
+
+  @override
+  String get aiProviderConnectSaveAsDraft => 'Als concept opslaan';
+
+  @override
+  String get aiProviderConnectSavedAsDraftToast => 'Opgeslagen als concept';
+
+  @override
+  String get aiProviderConnectStepChoose => 'Kies provider';
+
+  @override
+  String get aiProviderConnectStepConnect => 'Verbinden';
+
+  @override
+  String get aiProviderConnectStepReview => 'Evaluatie';
+
+  @override
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profielen die deze provider gebruiken';
 
   @override
   String get aiProviderDetailAddModelButton => 'Model toevoegen';
@@ -1892,10 +1896,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiProviderDetailPageTitle => 'Gegevens van de aanbieder';
-
-  @override
-  String get aiProviderDetailProfilesUsingTitle =>
-      'Profielen die deze provider gebruiken';
 
   @override
   String get aiProviderDetailRemoveButton => 'Verwijder provider';
@@ -2070,6 +2070,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'AI-voortgang tonen';
 
   @override
+  String get aiSettingsAddedLabel => 'Toegevoegd';
+
+  @override
   String get aiSettingsAddModelButton => 'Model toevoegen';
 
   @override
@@ -2087,9 +2090,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiSettingsAddProviderButton => 'Leverancier toevoegen';
-
-  @override
-  String get aiSettingsAddedLabel => 'Toegevoegd';
 
   @override
   String get aiSettingsAgentWakeConcurrencyDescription =>
@@ -2441,10 +2441,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioRecordingResume => 'Hervatten';
 
   @override
-  String get audioRecordingStop => 'Stoppen';
+  String get audioRecordings => 'Audio-opnames';
 
   @override
-  String get audioRecordings => 'Audio-opnames';
+  String get audioRecordingStop => 'Stoppen';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -2886,10 +2886,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checklistExportFailed => 'Exporteren mislukt';
 
   @override
-  String get checklistItemArchiveUndo => 'Ongedaan maken';
+  String get checklistItemArchived => 'Gearchiveerd item';
 
   @override
-  String get checklistItemArchived => 'Gearchiveerd item';
+  String get checklistItemArchiveUndo => 'Ongedaan maken';
 
   @override
   String get checklistItemDeleteCancel => 'Annuleren';
@@ -2898,11 +2898,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Bevestigen';
 
   @override
-  String get checklistItemDeleteWarning =>
-      'Deze actie kan niet ongedaan worden gemaakt.';
+  String get checklistItemDeleted => 'Item verwijderd';
 
   @override
-  String get checklistItemDeleted => 'Item verwijderd';
+  String get checklistItemDeleteWarning =>
+      'Deze actie kan niet ongedaan worden gemaakt.';
 
   @override
   String get checklistMarkdownCopied => 'Checklist gekopieerd als Markdown';
@@ -3348,10 +3348,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get conflictResolvedToast => 'Conflict opgelost';
 
   @override
+  String get conflictsEmptyDescription =>
+      'Alles is nu in sync. Opgelost items blijven beschikbaar in de andere filter.';
+
+  @override
+  String get conflictsEmptyTitle => 'Geen conflicten gevonden';
+
+  @override
   String get conflictSideFromSync => 'VAN SYNC';
 
   @override
   String get conflictSideThisDevice => 'DIT DOEL';
+
+  @override
+  String get conflictsResolved => 'opgelost';
+
+  @override
+  String get conflictsUnresolved => 'onopgelost';
 
   @override
   String get conflictValueAbsent => 'Niet ingesteld';
@@ -3372,19 +3385,6 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get conflictsEmptyDescription =>
-      'Alles is nu in sync. Opgelost items blijven beschikbaar in de andere filter.';
-
-  @override
-  String get conflictsEmptyTitle => 'Geen conflicten gevonden';
-
-  @override
-  String get conflictsResolved => 'opgelost';
-
-  @override
-  String get conflictsUnresolved => 'onopgelost';
 
   @override
   String get copyAsMarkdown => 'Kopiëren als markdown';
@@ -3717,6 +3717,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextCaptureRecordingSavedStatus => 'Recording saved';
 
   @override
+  String get dailyOsNextCapturesPanelTitle => 'Opnames';
+
+  @override
   String get dailyOsNextCaptureTranscribing => 'Afschrijven...';
 
   @override
@@ -3737,9 +3740,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureVoiceButtonStop => 'Stop met luisteren.';
-
-  @override
-  String get dailyOsNextCapturesPanelTitle => 'Opnames';
 
   @override
   String get dailyOsNextCategoryFilterAll => 'Alle categorieën';
@@ -4306,31 +4306,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextStateRecurringMissed => 'Terugkerend · gemist';
 
   @override
-  String dailyOsNextTimeSpentEarlierSessions(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count eerdere sessies',
-      one: '1 vorige zitting',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get dailyOsNextTimeSpentShowLess => 'Minder tonen';
-
-  @override
-  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration · $completedCount klaar';
-  }
-
-  @override
-  String get dailyOsNextTimeSpentTitle => 'Vandaag zo ver';
-
-  @override
-  String get dailyOsNextTimeSpentTitlePast => 'TERMIJN';
-
-  @override
   String get dailyOsNextTimelineActual => 'Werkelijk';
 
   @override
@@ -4374,13 +4349,38 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextTimelineTracked => 'traced';
 
   @override
+  String dailyOsNextTimeSpentEarlierSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count eerdere sessies',
+      one: '1 vorige zitting',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentShowLess => 'Minder tonen';
+
+  @override
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
+    return '$duration · $completedCount klaar';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentTitle => 'Vandaag zo ver';
+
+  @override
+  String get dailyOsNextTimeSpentTitlePast => 'TERMIJN';
+
+  @override
   String get dailyOsNextTriageConfirmDefer => 'Afgeleid';
 
   @override
-  String get dailyOsNextTriageConfirmDoNow => 'Klaar nu';
+  String get dailyOsNextTriageConfirmDone => 'Gemarkeerd';
 
   @override
-  String get dailyOsNextTriageConfirmDone => 'Gemarkeerd';
+  String get dailyOsNextTriageConfirmDoNow => 'Klaar nu';
 
   @override
   String get dailyOsNextTriageConfirmDrop => 'Gedropt';
@@ -4392,10 +4392,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextTriageDefer => 'Uitstel';
 
   @override
-  String get dailyOsNextTriageDoNow => 'Nu';
+  String get dailyOsNextTriageDone => 'Klaar';
 
   @override
-  String get dailyOsNextTriageDone => 'Klaar';
+  String get dailyOsNextTriageDoNow => 'Nu';
 
   @override
   String get dailyOsNextTriageDrop => 'Laat vallen';
@@ -5095,10 +5095,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get designSystemSpinnerSkeletonPulseLabel => 'Pols';
 
   @override
-  String get designSystemSpinnerSkeletonWaveLabel => 'Golf';
+  String get designSystemSpinnerSkeletonsTitle => 'Skeletten';
 
   @override
-  String get designSystemSpinnerSkeletonsTitle => 'Skeletten';
+  String get designSystemSpinnerSkeletonWaveLabel => 'Golf';
 
   @override
   String get designSystemSpinnerSpinnersTitle => 'Spinners';
@@ -5234,22 +5234,17 @@ class AppLocalizationsNl extends AppLocalizations {
       'Selecteer een taak om details te bekijken';
 
   @override
-  String deviceDeleteFailed(String error) {
-    return 'Verwijderen van apparaat is mislukt: $error';
-  }
-
-  @override
   String deviceDeletedSuccess(String deviceName) {
     return 'Apparaat $deviceName verwijderd met succes';
   }
 
   @override
-  String get doneButton => 'Klaar';
+  String deviceDeleteFailed(String error) {
+    return 'Verwijderen van apparaat is mislukt: $error';
+  }
 
   @override
-  String editLinkTypeCounterpart(String title) {
-    return '…$title';
-  }
+  String get doneButton => 'Klaar';
 
   @override
   String get editLinkTypeCounterpartLabel => 'Linked task';
@@ -5587,23 +5582,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitPriorityLabel => 'Prioriteit';
 
   @override
-  String get habitSectionOptionsTitle => 'Opties';
-
-  @override
-  String get habitSectionScheduleTitle => 'Schema';
-
-  @override
-  String get habitShowAlertAtLabel => 'Alert tonen op';
-
-  @override
-  String get habitShowFromLabel => 'Tonen van';
-
-  @override
-  String habitStreakDaysSemantic(int count) {
-    return '$count-dagstreak';
-  }
-
-  @override
   String get habitsAboveGoal => 'Op het spoor';
 
   @override
@@ -5654,6 +5632,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitsDoneTodayLabel => 'Vandaag klaar';
 
   @override
+  String get habitSectionOptionsTitle => 'Opties';
+
+  @override
+  String get habitSectionScheduleTitle => 'Schema';
+
+  @override
   String get habitsFilterAll => 'alle';
 
   @override
@@ -5677,6 +5661,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get habitsHeatmapMore => 'Meer';
+
+  @override
+  String get habitShowAlertAtLabel => 'Alert tonen op';
+
+  @override
+  String get habitShowFromLabel => 'Tonen van';
 
   @override
   String habitsLaggardHint(String habit, int kept, int active) {
@@ -5725,6 +5715,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String habitsToGoCount(int count) {
     return '$count om te gaan';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    return '$count-dagstreak';
   }
 
   @override
@@ -5783,7 +5778,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Volledige afbeeldingsprompt:';
 
   @override
+  String get images => 'Afbeeldingen';
+
+  @override
   String get imageViewerDownloadFailed => 'Kon afbeelding niet opslaan';
+
+  @override
+  String get imageViewerDownloadingTooltip => 'Afbeelding opslaan';
 
   @override
   String get imageViewerDownloadPermissionDenied => 'Fototoegang geweigerd';
@@ -5798,12 +5799,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get imageViewerDownloadTooltip => 'Afbeelding downloaden';
-
-  @override
-  String get imageViewerDownloadingTooltip => 'Afbeelding opslaan';
-
-  @override
-  String get images => 'Afbeeldingen';
 
   @override
   String get inactiveLabel => 'Inactief';
@@ -5890,9 +5885,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inferenceProfileSelectProfile => 'Kies een profiel...';
 
   @override
+  String get inferenceProfilesEmpty => 'Nog geen gevolgtrekkingensprofielen';
+
+  @override
   String inferenceProfileSkillModelRequired(String slotName) {
     return 'Vereist $slotName in te stellen model';
   }
+
+  @override
+  String get inferenceProfileSkillsSection => 'Geautomatiseerde vaardigheden';
 
   @override
   String inferenceProfileSkillUsesModel(String slotName) {
@@ -5900,7 +5901,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get inferenceProfileSkillsSection => 'Geautomatiseerde vaardigheden';
+  String get inferenceProfilesTitle => 'Inferentieprofielen';
 
   @override
   String get inferenceProfileThinking => 'Denken';
@@ -5917,12 +5918,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get inferenceProfileUnavailable =>
       'Inferentieprofiel niet beschikbaar';
-
-  @override
-  String get inferenceProfilesEmpty => 'Nog geen gevolgtrekkingensprofielen';
-
-  @override
-  String get inferenceProfilesTitle => 'Inferentieprofielen';
 
   @override
   String get inputDataTypeAudioFilesDescription =>
@@ -6184,13 +6179,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get journalEndDateLabel => 'Einddatum';
 
   @override
-  String get journalEndTimeLabel => 'Eindtijd';
-
-  @override
   String get journalEndsAnotherDayHint => 'Kies een aparte einddatum';
 
   @override
   String get journalEndsAnotherDayLabel => 'Eindigt op een andere dag';
+
+  @override
+  String get journalEndTimeLabel => 'Eindtijd';
 
   @override
   String get journalEntryExpandLabel => 'Item uitklappen';
@@ -6218,12 +6213,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get journalHideMapHint => 'Kaart verbergen';
-
-  @override
-  String get journalLinkFromHint => 'Link van';
-
-  @override
-  String get journalLinkToHint => 'Link naar';
 
   @override
   String get journalLinkedEntriesActivityFilterAudio => 'Audio';
@@ -6258,6 +6247,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get journalLinkedFromLabel => 'Verbonden met:';
+
+  @override
+  String get journalLinkFromHint => 'Link van';
+
+  @override
+  String get journalLinkToHint => 'Link naar';
 
   @override
   String journalOvernightNextDay(String date) {
@@ -6573,10 +6568,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get knowledgeGraphOpenDetails => 'Open details';
 
   @override
-  String get knowledgeGraphRecentToOlder => 'recent → ouder';
+  String get knowledgeGraphRecenter => 'Recent';
 
   @override
-  String get knowledgeGraphRecenter => 'Recent';
+  String get knowledgeGraphRecentToOlder => 'recent → ouder';
 
   @override
   String get knowledgeGraphRelationAiSource => 'AI bron';
@@ -6621,10 +6616,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'This would create a blocking cycle — choose a different task.';
 
   @override
-  String get linkCreateFailedMessage =>
-      'Couldn\'t create the link. Please try again.';
-
-  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation: $title';
   }
@@ -6633,7 +6624,30 @@ class AppLocalizationsNl extends AppLocalizations {
   String get linkCreatedUndo => 'Undo';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Couldn\'t create the link. Please try again.';
+
+  @override
   String get linkDirectionLabel => 'This task…';
+
+  @override
+  String get linkedTaskImageBadge => 'Van verbonden taak';
+
+  @override
+  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
+
+  @override
+  String get linkedTasksEmptyAction => 'Link a task…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Connect this task to another — a blocker, a follow-up, a duplicate.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Gekoppelde takenopties';
+
+  @override
+  String get linkedTasksTitle => 'Gekoppelde taken';
 
   @override
   String get linkExistingTask => 'Bestaande taak koppelen…';
@@ -6676,25 +6690,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get linkTaskButton => 'Link';
-
-  @override
-  String get linkedTaskImageBadge => 'Van verbonden taak';
-
-  @override
-  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
-
-  @override
-  String get linkedTasksEmptyAction => 'Link a task…';
-
-  @override
-  String get linkedTasksEmptyHint =>
-      'Connect this task to another — a blocker, a follow-up, a duplicate.';
-
-  @override
-  String get linkedTasksMenuTooltip => 'Gekoppelde takenopties';
-
-  @override
-  String get linkedTasksTitle => 'Gekoppelde taken';
 
   @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
@@ -6904,6 +6899,21 @@ class AppLocalizationsNl extends AppLocalizations {
       'Verwijder verzonden postvak UIT items ouder dan 7 dagen? Dit verwijdert reeds verzonden rijen in blokken en draait VACUUM om schijf terug te vorderen. In afwachting en fout items worden bewaard.';
 
   @override
+  String get maintenanceRecreateFts5 =>
+      'Volledige tekst-index opnieuw aanmaken';
+
+  @override
+  String get maintenanceRecreateFts5Confirm => 'Ja, RECREATE INDEX';
+
+  @override
+  String get maintenanceRecreateFts5Description =>
+      'Volledige-tekstzoekindex opnieuw aanmaken';
+
+  @override
+  String get maintenanceRecreateFts5Message =>
+      'Weet u zeker dat u de volledige tekstindex wilt namaken? Dit kan enige tijd duren.';
+
+  @override
   String get maintenanceReSync => 'Berichten opnieuw synchroniseren';
 
   @override
@@ -6925,21 +6935,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get maintenanceReSyncStart => 'Begin';
-
-  @override
-  String get maintenanceRecreateFts5 =>
-      'Volledige tekst-index opnieuw aanmaken';
-
-  @override
-  String get maintenanceRecreateFts5Confirm => 'Ja, RECREATE INDEX';
-
-  @override
-  String get maintenanceRecreateFts5Description =>
-      'Volledige-tekstzoekindex opnieuw aanmaken';
-
-  @override
-  String get maintenanceRecreateFts5Message =>
-      'Weet u zeker dat u de volledige tekstindex wilt namaken? Dit kan enige tijd duren.';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -7989,11 +7984,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectRecommendationResolveTooltip => 'Markering is opgelost';
 
   @override
+  String get projectRecommendationsTitle => 'Aanbevolen volgende stappen';
+
+  @override
   String get projectRecommendationUpdateError =>
       'Ik kon de aanbeveling niet bijwerken.';
 
   @override
-  String get projectRecommendationsTitle => 'Aanbevolen volgende stappen';
+  String get projectsFilterStatusLabel => 'Status:';
+
+  @override
+  String get projectsFilterTooltip => 'Projecten filteren';
 
   @override
   String get projectShowcaseAiReportTitle => 'AI-verslag';
@@ -8125,12 +8126,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get projectTitleRequired => 'Projecttitel kan niet leeg zijn';
-
-  @override
-  String get projectsFilterStatusLabel => 'Status:';
-
-  @override
-  String get projectsFilterTooltip => 'Projecten filteren';
 
   @override
   String get promptDefaultModelBadge => 'Standaard';
@@ -8483,12 +8478,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get sessionRatingViewAction => 'Waardering weergeven';
-
-  @override
-  String get settingThemingDark => 'Donker thema';
-
-  @override
-  String get settingThemingLight => 'Lichtthema';
 
   @override
   String get settingsAboutAppInformation => 'App-informatie';
@@ -8868,10 +8857,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsCelebrationsReplay => 'Herspelen';
 
   @override
-  String get settingsCelebrationsResetToDefault => 'Standaard terugzetten';
+  String get settingsCelebrationsResetToast => 'Standaard stijl terugzetten';
 
   @override
-  String get settingsCelebrationsResetToast => 'Standaard stijl terugzetten';
+  String get settingsCelebrationsResetToDefault => 'Standaard terugzetten';
 
   @override
   String get settingsCelebrationsResetUndo => 'Ongedaan maken';
@@ -9322,12 +9311,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsMatrixRoomInviteTitle => 'Kameruitnodiging';
 
   @override
+  String get settingsMatrixSentMessagesLabel => 'Verzonden berichten:';
+
+  @override
   String settingsMatrixSentMessageType(String eventType) {
     return 'Verzonden ($eventType)';
   }
-
-  @override
-  String get settingsMatrixSentMessagesLabel => 'Verzonden berichten:';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Begincontrole';
@@ -9394,9 +9383,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Opslaan';
 
   @override
-  String get settingsMeasurableUnitLabel => 'Eenheidsafkorting (facultatief)';
-
-  @override
   String get settingsMeasurablesCreateTitle => 'Meetbaar maken';
 
   @override
@@ -9424,6 +9410,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsMeasurablesTitle => 'Meetbare';
+
+  @override
+  String get settingsMeasurableUnitLabel => 'Eenheidsafkorting (facultatief)';
 
   @override
   String get settingsOnboardingActionSubtitle =>
@@ -9639,6 +9628,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsWhatsNewTitle => 'Wat is er nieuw?';
+
+  @override
+  String get settingThemingDark => 'Donker thema';
+
+  @override
+  String get settingThemingLight => 'Lichtthema';
 
   @override
   String get sidebarActiveSectionTitle => 'Activiteit';
@@ -10071,15 +10066,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geen compatibele denkmodellen beschikbaar';
 
   @override
+  String get taskAgentNoProfilesAvailable =>
+      'Geen profielen beschikbaar op dit apparaat';
+
+  @override
   String get taskAgentNoProfileSelected => 'Geen AI-opstelling';
 
   @override
   String get taskAgentNoProfileSelectedDescription =>
       'Kies een opgeslagen setup of denkmodel voordat dit middel kan draaien.';
-
-  @override
-  String get taskAgentNoProfilesAvailable =>
-      'Geen profielen beschikbaar op dit apparaat';
 
   @override
   String taskAgentProfileChangedToast(String profile) {
@@ -10435,6 +10430,30 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskPriorityUrgent => 'Dringend';
 
   @override
+  String get tasksAddLabelButton => 'Label toevoegen';
+
+  @override
+  String get tasksAgentFilterAll => 'Alles';
+
+  @override
+  String get tasksAgentFilterHasAgent => 'Heeft agent';
+
+  @override
+  String get tasksAgentFilterNoAgent => 'Geen agent.';
+
+  @override
+  String get tasksAgentFilterTitle => 'Agent';
+
+  @override
+  String get tasksFilterApplyTitle => 'Filter toepassen';
+
+  @override
+  String get tasksFilterClearAll => 'Alles wissen';
+
+  @override
+  String get tasksFilterTitle => 'Filtertaken';
+
+  @override
   String get taskShowcaseAudio => 'Audio';
 
   @override
@@ -10493,63 +10512,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get taskShowcaseTodos => 'Taken';
-
-  @override
-  String get taskStatusAll => 'Alles';
-
-  @override
-  String get taskStatusBlocked => 'Geblokkeerd';
-
-  @override
-  String get taskStatusDone => 'Klaar';
-
-  @override
-  String get taskStatusGroomed => 'Verfijnd';
-
-  @override
-  String get taskStatusInProgress => 'In behandeling';
-
-  @override
-  String get taskStatusLabel => 'Status:';
-
-  @override
-  String get taskStatusOnHold => 'In wacht';
-
-  @override
-  String get taskStatusOpen => 'Openen';
-
-  @override
-  String get taskStatusRejected => 'Afgewezen';
-
-  @override
-  String get taskTitleEmpty => 'Geen titel';
-
-  @override
-  String get taskUntitled => '(zonder titel)';
-
-  @override
-  String get tasksAddLabelButton => 'Label toevoegen';
-
-  @override
-  String get tasksAgentFilterAll => 'Alles';
-
-  @override
-  String get tasksAgentFilterHasAgent => 'Heeft agent';
-
-  @override
-  String get tasksAgentFilterNoAgent => 'Geen agent.';
-
-  @override
-  String get tasksAgentFilterTitle => 'Agent';
-
-  @override
-  String get tasksFilterApplyTitle => 'Filter toepassen';
-
-  @override
-  String get tasksFilterClearAll => 'Alles wissen';
-
-  @override
-  String get tasksFilterTitle => 'Filtertaken';
 
   @override
   String get tasksLabelFilterAll => 'Alles';
@@ -10620,19 +10582,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Opgeslagen filter hernoemen';
-
-  @override
-  String get tasksSavedFilterToastDeleted => 'Filter verwijderd';
-
-  @override
-  String tasksSavedFilterToastSaved(String name) {
-    return 'Opgeslagen \'$name\'';
-  }
-
-  @override
-  String tasksSavedFilterToastUpdated(String name) {
-    return 'Bijgewerkt \'$name\'';
-  }
 
   @override
   String get tasksSavedFiltersAllShort => 'Alles';
@@ -10772,6 +10721,19 @@ class AppLocalizationsNl extends AppLocalizations {
       'Bestaande filter bijwerken';
 
   @override
+  String get tasksSavedFilterToastDeleted => 'Filter verwijderd';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return 'Opgeslagen \'$name\'';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return 'Bijgewerkt \'$name\'';
+  }
+
+  @override
   String get tasksSearchModeLabel => 'Zoeken';
 
   @override
@@ -10791,6 +10753,39 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tasksSortByPriority => 'Prioriteit';
+
+  @override
+  String get taskStatusAll => 'Alles';
+
+  @override
+  String get taskStatusBlocked => 'Geblokkeerd';
+
+  @override
+  String get taskStatusDone => 'Klaar';
+
+  @override
+  String get taskStatusGroomed => 'Verfijnd';
+
+  @override
+  String get taskStatusInProgress => 'In behandeling';
+
+  @override
+  String get taskStatusLabel => 'Status:';
+
+  @override
+  String get taskStatusOnHold => 'In wacht';
+
+  @override
+  String get taskStatusOpen => 'Openen';
+
+  @override
+  String get taskStatusRejected => 'Afgewezen';
+
+  @override
+  String get taskTitleEmpty => 'Geen titel';
+
+  @override
+  String get taskUntitled => '(zonder titel)';
 
   @override
   String get thinkingDisclosureCopied => 'Redeneren gekopieerd';
