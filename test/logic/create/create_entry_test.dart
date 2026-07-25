@@ -226,9 +226,14 @@ void main() {
           inheritContextFrom: parent.meta.id,
         );
 
-        // Without a linkedId nothing else carries privacy across, so a task
-        // created from inside a private task's picker would persist public.
-        expect(child?.meta.private, isTrue);
+        // Re-read from the database, not the returned object. createDbEntity
+        // saves a copyWith'd clone, so asserting on the in-memory Task the
+        // caller got back passes even while the stored row is public — which
+        // is exactly how the first version of this fix shipped broken.
+        final stored = await getIt<JournalDb>().journalEntityById(
+          child!.meta.id,
+        );
+        expect(stored?.meta.private, isTrue);
 
         // createDbEntity does not touch FTS5, so a titled task that is never
         // edited would stay permanently unsearchable — and the link picker

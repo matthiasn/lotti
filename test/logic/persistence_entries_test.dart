@@ -98,6 +98,31 @@ void main() {
   );
 
   test(
+    'createDbEntity reports failure when a requested link write throws',
+    () async {
+      // The verdict is preserved for *ancillary* post-commit work, not
+      // for the link itself: a caller that asked for a link did not get
+      // what it asked for, and reporting success would have it navigate
+      // to an entity whose link does not exist.
+      // The parent has to resolve, or createLink is never reached and the
+      // test passes for the wrong reason.
+      when(
+        () => mocks.journalDb.journalEntityById('parent-id'),
+      ).thenAnswer((_) async => testTextEntry);
+      when(
+        () => mocks.journalDb.upsertEntryLink(any()),
+      ).thenThrow(StateError('link'));
+
+      final saved = await entries.createDbEntity(
+        testTextEntry,
+        linkedId: 'parent-id',
+      );
+
+      expect(saved, isNull);
+    },
+  );
+
+  test(
     'createDbEntity keeps the applied verdict when a post-commit side '
     'effect throws',
     () async {

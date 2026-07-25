@@ -143,7 +143,7 @@ class _GeneratedCreateDbEntityScenario {
     meta: _buildMetadata(
       id: entityId,
       categoryId: explicitCategoryId,
-      private: !linkedPrivate,
+      private: entityPrivate,
     ),
     entryText: EntryText(plainText: 'created text $seed'),
   );
@@ -162,7 +162,15 @@ class _GeneratedCreateDbEntityScenario {
 
   String? get expectedCategoryId => explicitCategoryId ?? linkedCategoryId;
 
-  bool? get expectedPrivate => hasLinkedEntity ? linkedPrivate : null;
+  /// The entity's own privacy, deliberately the opposite of the linked
+  /// parent's so the override below is non-vacuous.
+  bool get entityPrivate => !linkedPrivate;
+
+  /// A linked parent's privacy wins. Without a parent the entity keeps
+  /// what it was built with — writing `null` here erased privacy a
+  /// caller had explicitly set, so a measurement or task created private
+  /// but unlinked was persisted public.
+  bool? get expectedPrivate => hasLinkedEntity ? linkedPrivate : entityPrivate;
 
   bool get shouldEnqueueSync => saved && enqueueSync;
 

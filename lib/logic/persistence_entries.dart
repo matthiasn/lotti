@@ -251,9 +251,10 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     String? linkedId,
     bool linkCollapsed = false,
   }) async {
-    // Hoisted so the catch below can tell a *rejected* write from a
-    // post-commit side effect that threw. Once the row is in the database the
-    // create succeeded, whatever the badge update or geolocation call does
+    // Set once the entity write *and* any requested link have landed, so the
+    // catch below can tell those failures from ancillary post-commit work
+    // that threw. Once the row and its link are in the database the create
+    // succeeded, whatever the badge update or geolocation call does
     // afterwards — reporting failure there leaves the caller believing
     // nothing was stored and retrying into a duplicate.
     bool? applied;
@@ -269,7 +270,13 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
 
           final withContext = journalEntity.copyWith(
             meta: journalEntity.meta.copyWith(
-              private: linked?.meta.private,
+              // Fall back to what the entity already carries. Written as a
+              // bare `linked?.meta.private`, a link-free write passed an
+              // explicit null into copyWith and *erased* privacy the caller
+              // had set — so a task built private persisted public. A linked
+              // parent still wins when it has an opinion, which is the
+              // original intent.
+              private: linked?.meta.private ?? journalEntity.meta.private,
               categoryId: journalEntity.categoryId ?? linked?.categoryId,
             ),
           );
@@ -338,7 +345,6 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
         // accepted the row, the VC is baked into persisted state.
         commitWhen: (saved) => saved ?? false,
       );
-      applied = saved;
 
       // Keep link creation outside the entity VC scope. A link write claims a
       // separate counter and must be finalized by createLink's own scope even
@@ -351,6 +357,12 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
           collapsed: linkCollapsed,
         );
       }
+
+      // Only now. A caller that asked for a link did not get what it asked
+      // for if the link write threw, so that must still surface as failure —
+      // the verdict is preserved for *ancillary* post-commit work (badge,
+      // geolocation), not for the link itself.
+      applied = saved;
 
       updateNotifications.notify({
         ...?affectedIds,
