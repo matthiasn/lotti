@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/state/profile_usage_provider.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
@@ -457,7 +458,7 @@ void main() {
 
     testWidgets(
       'switching to the Profiles tab renders one AiProfileCard per profile '
-      'and the Active badge for `isDefault: true` profiles',
+      'and the in-use badge only for profiles something routes through',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -488,6 +489,11 @@ void main() {
               thinking: 'unknown-model-id',
             ),
           ],
+          // Only profile-1 is referenced by something. `isDefault` and which
+          // provider owns a slot no longer decide the badge.
+          additionalOverrides: [
+            profileIdsInUseProvider.overrideWith((ref) async => {'profile-1'}),
+          ],
         );
 
         await tester.tap(find.text('Profiles'));
@@ -497,8 +503,8 @@ void main() {
         expect(find.byType(AiProfileCard), findsNWidgets(2));
         expect(find.text('Anthropic Claude'), findsOneWidget);
         expect(find.text('Custom Profile'), findsOneWidget);
-        // Default profile renders the Active badge.
-        expect(find.text('Active'), findsOneWidget);
+        // Only the referenced profile is badged.
+        expect(find.text('In use'), findsOneWidget);
         // The thinking slot resolves on profile 1 (model name shown) and
         // misses on profile 2 (warning placeholder).
         expect(find.text('Claude Sonnet'), findsOneWidget);

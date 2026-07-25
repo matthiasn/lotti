@@ -1666,7 +1666,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisis un fournisseur pour commencer. Lotti configurera automatiquement les modèles et un profil de départ.';
 
   @override
-  String get aiProfileCardActiveBadge => 'Actif';
+  String get aiProfileCardInUseBadge => 'Utilisé';
 
   @override
   String get aiProfileModelPickerSearchHint => 'Rechercher des modèles…';
@@ -1857,7 +1857,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Vérifier';
 
   @override
-  String get aiProviderDetailActiveProfileTitle => 'Profil actif';
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profils utilisant ce fournisseur';
 
   @override
   String get aiProviderDetailAddModelButton => 'Ajouter un modèle';

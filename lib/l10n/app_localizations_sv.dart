@@ -1648,7 +1648,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Välj en leverantör för att komma igång. Vi sätter automatiskt upp modeller och en startprofil.';
 
   @override
-  String get aiProfileCardActiveBadge => 'Aktiv';
+  String get aiProfileCardInUseBadge => 'Används';
 
   @override
   String get aiProfileModelPickerSearchHint => 'Sök modeller...';
@@ -1836,7 +1836,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Granska';
 
   @override
-  String get aiProviderDetailActiveProfileTitle => 'Aktiv profil';
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profiler som använder den här leverantören';
 
   @override
   String get aiProviderDetailAddModelButton => 'Lägg till modell';

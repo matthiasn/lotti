@@ -35,6 +35,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1066" date="2026-07-25">
+      <description>
+        <p>The "Active" badge on inference profiles now means something you can control. A profile was badged Active purely because one of its models belonged to a provider you had connected, so it could appear active the moment you set up a provider with nothing you could do to change it, while the profile your categories actually used showed nothing. The badge now reads "In use" and appears only when a category or a task agent routes through that profile.</p>
+        <p>A provider's page now lists every profile that depends on it, under "Profiles using this provider", instead of naming a single arbitrary "Active profile" — so you can see what would break before removing a provider.</p>
+      </description>
+    </release>
     <release version="0.9.1065" date="2026-07-25">
       <description>
         <p>Automatic AI now waits to be asked, per category: transcribing new audio and analyzing new images automatically is an explicit per-category switch under the category's AI profile. Picking a profile used to be enough to start it, and audio could be transcribed automatically with no profile chosen at all. The switch starts off everywhere, including categories that already had a profile, so turn it on where you want AI to keep working in the background. Per-recording opt-out is unchanged.</p>

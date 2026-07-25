@@ -1651,7 +1651,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber poskytovatele a začni. Modely a počáteční profil nastavíme automaticky.';
 
   @override
-  String get aiProfileCardActiveBadge => 'Aktivní';
+  String get aiProfileCardInUseBadge => 'Používá se';
 
   @override
   String get aiProfileModelPickerSearchHint => 'Hledat modely…';
@@ -1845,7 +1845,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Zkontrolovat';
 
   @override
-  String get aiProviderDetailActiveProfileTitle => 'Aktivní profil';
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profily využívající tohoto poskytovatele';
 
   @override
   String get aiProviderDetailAddModelButton => 'Přidat model';

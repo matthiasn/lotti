@@ -9,7 +9,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// 2-column grid card for the redesigned Profiles tab.
 ///
-/// Renders the profile name, an optional ACTIVE badge (when [isActive]), the
+/// Renders the profile name, an optional IN USE badge (when [isInUse]), the
 /// optional description, and one row per configured skill slot (thinking /
 /// image recognition / transcription / image generation). Each populated slot
 /// resolves its `providerModelId` to a display name via [modelLookup];
@@ -20,7 +20,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 class AiProfileCard extends StatelessWidget {
   const AiProfileCard({
     required this.profile,
-    required this.isActive,
+    required this.isInUse,
     required this.providerTypeFor,
     required this.modelLookup,
     required this.onTap,
@@ -29,7 +29,11 @@ class AiProfileCard extends StatelessWidget {
   });
 
   final AiConfigInferenceProfile profile;
-  final bool isActive;
+
+  /// Whether something actually routes inference through this profile — a
+  /// category default or an agent setup references it. Not derived from which
+  /// provider owns its model slots.
+  final bool isInUse;
 
   /// Resolves the inference provider type that owns this profile, so
   /// the card can color its leading icon. The page wires this from a
@@ -130,10 +134,10 @@ class AiProfileCard extends StatelessWidget {
                       softWrap: true,
                     ),
                   ),
-                  if (isActive) ...[
+                  if (isInUse) ...[
                     SizedBox(width: tokens.spacing.step2),
                     DesignSystemBadge.filled(
-                      label: messages.aiProfileCardActiveBadge,
+                      label: messages.aiProfileCardInUseBadge,
                       tone: DesignSystemBadgeTone.success,
                     ),
                   ],

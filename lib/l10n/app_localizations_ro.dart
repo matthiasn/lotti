@@ -1664,7 +1664,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți un furnizor pentru a începe. Vom configura modelele și un profil de pornire automat.';
 
   @override
-  String get aiProfileCardActiveBadge => 'Activ';
+  String get aiProfileCardInUseBadge => 'În uz';
 
   @override
   String get aiProfileModelPickerSearchHint => 'Căutați modele…';
@@ -1858,7 +1858,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Verificați';
 
   @override
-  String get aiProviderDetailActiveProfileTitle => 'Profil activ';
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profiluri care folosesc acest furnizor';
 
   @override
   String get aiProviderDetailAddModelButton => 'Adăugați un model';

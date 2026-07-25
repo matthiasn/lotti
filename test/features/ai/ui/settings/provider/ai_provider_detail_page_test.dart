@@ -438,8 +438,8 @@ void main() {
     );
 
     testWidgets(
-      'active profile section appears when a default profile references one '
-      "of the provider's models",
+      'the section lists every profile referencing one of the '
+      "provider's models",
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -461,7 +461,7 @@ void main() {
           profiles: [defaultProfile],
         );
 
-        expect(find.text('Active profile'), findsOneWidget);
+        expect(find.text('Profiles using this provider'), findsOneWidget);
         expect(find.text('Default profile'), findsOneWidget);
         expect(find.byType(AiProfileCard), findsOneWidget);
 
@@ -470,7 +470,7 @@ void main() {
     );
 
     testWidgets(
-      'active profile summary resolves slots against every configured model',
+      'profile summary resolves slots against every configured model',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -508,7 +508,7 @@ void main() {
           profiles: [profile],
         );
 
-        expect(find.text('Active profile'), findsOneWidget);
+        expect(find.text('Profiles using this provider'), findsOneWidget);
         expect(find.text('Local (Ollama)'), findsOneWidget);
         expect(find.text('Qwen 3.6 35B-A3B Coding (NVFP4)'), findsOneWidget);
         expect(
@@ -525,7 +525,7 @@ void main() {
     );
 
     testWidgets(
-      'active profile summary resolves canonical model row ids, not only '
+      'profile summary resolves canonical model row ids, not only '
       'provider-native ids',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1800));
@@ -572,7 +572,7 @@ void main() {
           ],
         );
 
-        expect(find.text('Active profile'), findsOneWidget);
+        expect(find.text('Profiles using this provider'), findsOneWidget);
         expect(find.text('Mistral Small 4 119B Instruct'), findsWidgets);
         expect(find.text('Whisper Large v3 Turbo'), findsWidgets);
         expect(find.text('missing'), findsNothing);
@@ -582,7 +582,7 @@ void main() {
     );
 
     testWidgets(
-      'active profile section is omitted when no profile references any of '
+      'the section is omitted when no profile references any of '
       "the provider's models",
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
@@ -603,7 +603,7 @@ void main() {
           profiles: [orphanedProfile],
         );
 
-        expect(find.text('Active profile'), findsNothing);
+        expect(find.text('Profiles using this provider'), findsNothing);
         expect(find.text('Other profile'), findsNothing);
         expect(find.byType(AiProfileCard), findsNothing);
 

@@ -2976,11 +2976,11 @@ abstract class AppLocalizations {
   /// **'Pick a provider to get started. We\'ll set up models and a starting profile automatically.'**
   String get aiPickProviderSubtitle;
 
-  /// No description provided for @aiProfileCardActiveBadge.
+  /// No description provided for @aiProfileCardInUseBadge.
   ///
   /// In en, this message translates to:
-  /// **'Active'**
-  String get aiProfileCardActiveBadge;
+  /// **'In use'**
+  String get aiProfileCardInUseBadge;
 
   /// No description provided for @aiProfileModelPickerSearchHint.
   ///
@@ -3246,11 +3246,11 @@ abstract class AppLocalizations {
   /// **'Review'**
   String get aiProviderConnectStepReview;
 
-  /// No description provided for @aiProviderDetailActiveProfileTitle.
+  /// No description provided for @aiProviderDetailProfilesUsingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Active profile'**
-  String get aiProviderDetailActiveProfileTitle;
+  /// **'Profiles using this provider'**
+  String get aiProviderDetailProfilesUsingTitle;
 
   /// No description provided for @aiProviderDetailAddModelButton.
   ///

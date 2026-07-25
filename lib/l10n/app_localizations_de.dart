@@ -1655,7 +1655,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wähl einen Anbieter zum Loslegen. Wir richten Modelle und ein Startprofil automatisch für dich ein.';
 
   @override
-  String get aiProfileCardActiveBadge => 'Aktiv';
+  String get aiProfileCardInUseBadge => 'In Benutzung';
 
   @override
   String get aiProfileModelPickerSearchHint => 'Modelle suchen…';
@@ -1846,7 +1846,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderConnectStepReview => 'Überprüfen';
 
   @override
-  String get aiProviderDetailActiveProfileTitle => 'Aktives Profil';
+  String get aiProviderDetailProfilesUsingTitle =>
+      'Profile, die diesen Anbieter nutzen';
 
   @override
   String get aiProviderDetailAddModelButton => 'Modell hinzufügen';

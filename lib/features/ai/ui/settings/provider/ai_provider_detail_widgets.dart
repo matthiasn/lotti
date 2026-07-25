@@ -15,7 +15,7 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 /// Scrollable body of the provider detail page.
 ///
 /// Lays out the provider header strip (icon, name, status pill), the
-/// [ConnectionSection], the [ModelsSection], an optional [ActiveProfileSection]
+/// [ConnectionSection], the [ModelsSection], an optional [ProfilesUsingProviderSection]
 /// when a profile uses this provider, and a danger-zone delete action. Wires
 /// the page-level callbacks ([onAddModel], [onEdit], etc.) down to the
 /// individual sections.
@@ -24,7 +24,7 @@ class DetailBody extends StatelessWidget {
     required this.provider,
     required this.models,
     required this.allModels,
-    required this.activeProfile,
+    required this.profilesUsingProvider,
     required this.onAddModel,
     required this.onEdit,
     required this.onModelTap,
@@ -36,7 +36,11 @@ class DetailBody extends StatelessWidget {
   final AiConfigInferenceProvider provider;
   final List<AiConfigModel> models;
   final List<AiConfigModel> allModels;
-  final AiConfigInferenceProfile? activeProfile;
+
+  /// Every profile with a model slot pointing at one of this provider's
+  /// models — i.e. what would break if the provider were removed. Not a
+  /// claim that any of them is "the active" profile.
+  final List<AiConfigInferenceProfile> profilesUsingProvider;
   final VoidCallback onAddModel;
   final VoidCallback onEdit;
   final ValueChanged<AiConfigModel> onModelTap;
@@ -84,14 +88,15 @@ class DetailBody extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step6),
         ],
-        if (activeProfile != null)
-          ActiveProfileSection(
-            profile: activeProfile!,
+        if (profilesUsingProvider.isNotEmpty) ...[
+          ProfilesUsingProviderSection(
+            profiles: profilesUsingProvider,
             providerType: provider.inferenceProviderType,
             models: allModels,
             onProfileTap: onProfileTap,
           ),
-        if (activeProfile != null) SizedBox(height: tokens.spacing.step6),
+          SizedBox(height: tokens.spacing.step6),
+        ],
         _DangerZoneSection(onRemove: onRemove),
       ],
     );
