@@ -1,4 +1,5 @@
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 
 import 'eval_models.dart';
 
@@ -730,10 +731,20 @@ EvalConstraintResult scoreNoFabricatedCalendarBlocks(EvalRunOutcome outcome) {
       if (block.type == PlannedBlockType.cal) block,
   ];
   if (calendarBlocks.isEmpty) {
-    return const EvalConstraintResult.notApplicable(
-      id,
-      'the plan claims no calendar events',
-    );
+    // A plan with real blocks and no calendar claim is a *pass*, not an
+    // absence of evidence: the prompt explicitly offers `cal` as the way to
+    // place work before the current time, so declining it is the behaviour
+    // being measured. Only a plan with nothing scheduled says nothing.
+    final scheduled = _scheduled(outcome);
+    return scheduled.isEmpty
+        ? const EvalConstraintResult.notApplicable(id, 'no scheduled blocks')
+        : EvalConstraintResult(
+            id: id,
+            passed: true,
+            detail:
+                '${scheduled.length} scheduled block(s), none claiming to be '
+                'a calendar event',
+          );
   }
   final now = outcome.inputs.now;
   final described = [
@@ -762,17 +773,20 @@ EvalConstraintResult scoreNoFabricatedCalendarBlocks(EvalRunOutcome outcome) {
 /// rejections it collected on the way.
 EvalConstraintResult scoreCompliedWithoutRejection(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.compliedWithoutRejection;
-  if (outcome.toolCalls.isEmpty) {
-    // A run that called nothing cannot have complied with anything. Without
-    // this the empty rejection list reads as "accepted on the first attempt",
-    // so a model that was never reached — or that answered in prose and never
-    // called the tool — collects a compliance *pass* it did nothing to earn,
-    // and the leaderboard rewards failing loudest. Not calling the required
-    // tool is a real failure, but it is the wake's failure and shows up in the
-    // job status, not in this constraint.
+  final attemptedDraft = outcome.toolCalls.any(
+    (call) => call.name == DayAgentToolNames.draftDayPlan,
+  );
+  if (!attemptedDraft) {
+    // A run that never reached for the required tool cannot have complied with
+    // anything. Without this the empty rejection list reads as "accepted on
+    // the first attempt", so a model that was never reached, answered in
+    // prose, or called only `raise_day_status` and stopped, collects a
+    // compliance *pass* it did nothing to earn — and aggregate scores reward
+    // failing loudest. Failing to call the tool is a real failure, but it is
+    // the wake's, and it shows up in the job status.
     return const EvalConstraintResult.notApplicable(
       id,
-      'the model made no tool calls',
+      'the model never attempted draft_day_plan',
     );
   }
   final rejections = outcome.rejections.toList();

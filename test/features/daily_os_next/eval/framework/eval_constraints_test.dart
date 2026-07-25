@@ -782,6 +782,24 @@ void main() {
   });
 
   group('compliedWithoutRejection', () {
+    test('an accepted non-drafting call earns no compliance credit', () {
+      // The failure mode this guard exists for: a wake that called
+      // `raise_day_status` and stopped has a non-empty tool log and an empty
+      // rejection list, so a naive "no rejections" read would hand it a pass
+      // for a run that never attempted a plan.
+      final result = scoreCompliedWithoutRejection(
+        outcome(
+          planPersisted: false,
+          toolCalls: const [
+            EvalToolCall(name: 'raise_day_status', accepted: true),
+          ],
+        ),
+      );
+
+      expect(result.isApplicable, isFalse);
+      expect(result.detail, contains('draft_day_plan'));
+    });
+
     test('a run that called nothing is not applicable, not compliant', () {
       // An empty rejection list would otherwise read as "accepted on the first
       // attempt", so a model that was never reached, or that answered in prose
@@ -790,7 +808,7 @@ void main() {
       final result = scoreCompliedWithoutRejection(outcome());
 
       expect(result.isApplicable, isFalse);
-      expect(result.detail, contains('no tool calls'));
+      expect(result.detail, contains('draft_day_plan'));
     });
 
     test('a failed run with rejections is still scored as non-compliant', () {
@@ -1305,13 +1323,24 @@ void main() {
       type: PlannedBlockType.cal,
     );
 
-    test('a plan claiming no calendar events is not applicable', () {
+    test('a real plan with no calendar claim passes', () {
+      // The prompt explicitly offers `cal` as the way to place work before the
+      // current time, so declining it is the behaviour being measured. If this
+      // were merely inapplicable the constraint could only ever be n/a or fail
+      // and would never show a success rate.
       final result = scoreNoFabricatedCalendarBlocks(
         outcome(blocks: [block(id: 'b1', startHour: 9, endHour: 10)]),
       );
 
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('none claiming to be a calendar event'));
+    });
+
+    test('a plan with nothing scheduled is not applicable', () {
+      final result = scoreNoFabricatedCalendarBlocks(outcome());
+
       expect(result.isApplicable, isFalse);
-      expect(result.detail, contains('no calendar events'));
+      expect(result.detail, contains('no scheduled blocks'));
     });
 
     test('any calendar block fails, because there is no calendar to mirror', () {
