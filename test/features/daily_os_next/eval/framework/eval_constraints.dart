@@ -726,35 +726,34 @@ EvalConstraintResult scoreNoFabricatedCalendarBlocks(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.noFabricatedCalendarBlocks;
   final noPlan = _requirePlan(outcome, id);
   if (noPlan != null) return noPlan;
+  // Every block, not just the scheduled ones. A dropped `cal` block is still
+  // persisted, still projected by `_projectDayPlan` (only the capacity meter
+  // filters dropped), still drawn by the timeline, and still refused by the
+  // plan editor — so the user sees an uneditable phantom calendar event either
+  // way. Dropping is the model declining *work*; it does not retract the
+  // claim that an external event exists.
   final calendarBlocks = [
-    for (final block in _scheduled(outcome))
+    for (final block in outcome.blocks)
       if (block.type == PlannedBlockType.cal) block,
   ];
   if (calendarBlocks.isEmpty) {
     // A plan with real blocks and no calendar claim is a *pass*, not an
     // absence of evidence: the prompt explicitly offers `cal` as the way to
     // place work before the current time, so declining it is the behaviour
-    // being measured. Only a plan with nothing scheduled says nothing.
-    final scheduled = _scheduled(outcome);
-    return scheduled.isEmpty
-        ? const EvalConstraintResult.notApplicable(id, 'no scheduled blocks')
+    // being measured. Only a plan with no blocks at all says nothing.
+    return outcome.blocks.isEmpty
+        ? const EvalConstraintResult.notApplicable(id, 'the plan has no blocks')
         : EvalConstraintResult(
             id: id,
             passed: true,
             detail:
-                '${scheduled.length} scheduled block(s), none claiming to be '
-                'a calendar event',
+                '${outcome.blocks.length} block(s), none claiming to be a '
+                'calendar event',
           );
   }
   final now = outcome.inputs.now;
   final described = [
-    for (final block in calendarBlocks)
-      if (now != null && block.startTime.isBefore(now))
-        '"${block.title ?? block.id}" starts ${_hhmm(block.startTime)}, '
-            'before the ${_hhmm(now)} draft — the past-start guard exempts '
-            '`cal`, so this is how a model plans the past'
-      else
-        '"${block.title ?? block.id}" at ${_hhmm(block.startTime)}',
+    for (final block in calendarBlocks) _describeCalendarClaim(block, now),
   ];
   return EvalConstraintResult(
     id: id,
@@ -763,6 +762,27 @@ EvalConstraintResult scoreNoFabricatedCalendarBlocks(EvalRunOutcome outcome) {
         '${calendarBlocks.length} calendar block(s) with no calendar to '
         'mirror: ${described.join('; ')}',
   );
+}
+
+/// Describes one fabricated calendar claim, naming the *actual* reason it
+/// evaded the same-day guard.
+///
+/// The guard fires only for `state == drafted` and exempts `cal`, so a drafted
+/// past-starting calendar block slipped through on its type, while a
+/// `committed`/`completed`/`inProgress` one would have slipped through as `ai`
+/// or `manual` just as well. Blaming the calendar type in that second case
+/// would point a reader at the wrong fix.
+String _describeCalendarClaim(PlannedBlock block, DateTime? now) {
+  final name = '"${block.title ?? block.id}"';
+  final start = _hhmm(block.startTime);
+  if (now == null || !block.startTime.isBefore(now)) return '$name at $start';
+  if (block.state == PlannedBlockState.drafted) {
+    return '$name starts $start, before the ${_hhmm(now)} draft — the '
+        'past-start guard exempts `cal`, so this is how a model plans the past';
+  }
+  return '$name starts $start, before the ${_hhmm(now)} draft, in state '
+      '${block.state.name} — the past-start guard only covers drafted blocks, '
+      'so the state bypassed it here, not the type';
 }
 
 /// Whether the model produced a legal plan without being corrected.

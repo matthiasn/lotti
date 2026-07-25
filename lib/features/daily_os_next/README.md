@@ -288,7 +288,8 @@ constraint too, not a pass: an empty rejection list would otherwise read as
 prose, or called only `raise_day_status` and stopped would collect compliance
 credit it did nothing to earn.
 
-`noFabricatedCalendarBlocks` is the one constraint that reads block *type*.
+`noFabricatedCalendarBlocks` is the only constraint that scores a block's
+claimed *provenance* — whether it asserts an origin outside the app at all.
 `PlannedBlockType.cal` means "imported calendar event" and the plan editor
 refuses in-app edits to one, but the day agent is shown no calendar events at
 all — `calendarBlocks` is a deferred parameter `RealDayAgent` drops, and no
