@@ -39,6 +39,8 @@ void main() {
     Set<String> requiredTaskIds = const {},
     bool requiresConflictSurfaced = false,
     bool forbidsInventedWork = false,
+    bool hasSeededCalendar = false,
+    Set<String> conflictEscalationReasons = const {'overCommitted'},
     DateTime? now,
     bool planPersisted = true,
     int workingHoursStartHour = 9,
@@ -57,6 +59,8 @@ void main() {
       requiredTaskIds: requiredTaskIds,
       requiresConflictSurfaced: requiresConflictSurfaced,
       forbidsInventedWork: forbidsInventedWork,
+      hasSeededCalendar: hasSeededCalendar,
+      conflictEscalationReasons: conflictEscalationReasons,
       now: now,
       visibleTaskIds: visibleTaskIds,
       workingHoursStartHour: workingHoursStartHour,
@@ -657,6 +661,50 @@ void main() {
       expect(result.detail, contains('Write a proposal'));
     });
 
+    test('an invented calendar event is still invented', () {
+      // `cal` mirrors a real event, so on a day with no calendar seeded an
+      // appointment the model made up is exactly what this control is for.
+      final result = scoreNoInventedWork(
+        outcome(
+          blocks: [
+            PlannedBlock(
+              id: 'a',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 7, 18, 9),
+              endTime: DateTime(2026, 7, 18, 10),
+              title: 'Dentist appointment',
+              type: PlannedBlockType.cal,
+            ),
+          ],
+          forbidsInventedWork: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Dentist appointment'));
+    });
+
+    test('a calendar block is legitimate when the scenario seeds one', () {
+      final result = scoreNoInventedWork(
+        outcome(
+          blocks: [
+            PlannedBlock(
+              id: 'a',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 7, 18, 9),
+              endTime: DateTime(2026, 7, 18, 10),
+              title: 'Standup',
+              type: PlannedBlockType.cal,
+            ),
+          ],
+          forbidsInventedWork: true,
+          hasSeededCalendar: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
     test('a buffer block is structuring open time, not inventing work', () {
       final result = scoreNoInventedWork(
         outcome(
@@ -856,6 +904,74 @@ void main() {
     });
   });
 
+  group('taskWorkIsTyped', () {
+    PlannedBlock typed({
+      required String id,
+      required PlannedBlockType type,
+      String? taskId,
+      int startHour = 9,
+      int endHour = 11,
+    }) => PlannedBlock(
+      id: id,
+      categoryId: 'cat-1',
+      startTime: DateTime(2026, 7, 18, startHour),
+      endTime: DateTime(2026, 7, 18, endHour),
+      title: id,
+      taskId: taskId,
+      type: type,
+    );
+
+    test('a buffer carrying a task is reported, not silently uncredited', () {
+      final result = scoreTaskWorkIsTyped(
+        outcome(
+          blocks: [
+            typed(
+              id: 'buffer-1',
+              type: PlannedBlockType.buffer,
+              taskId: 'task-1',
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('buffer'));
+      expect(result.detail, contains('task-1'));
+    });
+
+    test('work blocks carrying tasks are fine', () {
+      final result = scoreTaskWorkIsTyped(
+        outcome(
+          blocks: [
+            typed(id: 'ai-1', type: PlannedBlockType.ai, taskId: 'task-1'),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('a task on a buffer earns no placement credit', () {
+      // The attack this closes: label a plausible-length buffer with every
+      // required task id and satisfy placement, capacity and estimates
+      // without scheduling any actual work.
+      final result = scoreRequiredWorkPlaced(
+        outcome(
+          blocks: [
+            typed(
+              id: 'buffer-1',
+              type: PlannedBlockType.buffer,
+              taskId: 'task-required',
+            ),
+          ],
+          requiredTaskIds: const {'task-required'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+  });
+
   group('withinCapacityByEstimate', () {
     const tasks = [
       EvalCorpusTask(taskId: 'task-a', title: 'A', estimateMinutes: 240),
@@ -1001,6 +1117,31 @@ void main() {
               name: 'raise_day_status',
               accepted: true,
               arguments: {'status': 'onTrack'},
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('a reason that cannot be true of this day is not an escalation', () {
+      // The scenario seeds no directive, so escalating as
+      // directiveUnsatisfiable claims something false. A shared default
+      // accepting both reasons would have credited it.
+      final result = scoreSurfacedConflict(
+        outcome(
+          requiresConflictSurfaced: true,
+          // ignore: avoid_redundant_argument_values
+          conflictEscalationReasons: const {'overCommitted'},
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['directiveUnsatisfiable'],
+              },
             ),
           ],
         ),

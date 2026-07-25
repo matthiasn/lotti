@@ -76,6 +76,21 @@ void main() {
     }
   });
 
+  test('a scenario requiring escalation says what reason would be true', () {
+    // An empty reason set with requiresConflictSurfaced would make escalation
+    // impossible to satisfy, leaving only the reason-text path.
+    for (final scenario in evalScenarios) {
+      if (!scenario.requiresConflictSurfaced) continue;
+      expect(
+        scenario.conflictEscalationReasons,
+        isNotEmpty,
+        reason:
+            '${scenario.id} requires a conflict to be surfaced but names '
+            'no escalation reason that could be true of it',
+      );
+    }
+  });
+
   test('the blocked pair differs only in whether a capture is present', () {
     // This pair exists to isolate one variable: the corpus is rendered only
     // inside the capture context, so without a capture the model gets ADR
@@ -93,6 +108,16 @@ void main() {
     expect(withoutCapture.decidedTaskIds, withCapture.decidedTaskIds);
     expect(withoutCapture.capacityMinutes, withCapture.capacityMinutes);
     expect(withoutCapture.startHour, withCapture.startHour);
+    expect(
+      withoutCapture.requiredTaskIds,
+      withCapture.requiredTaskIds,
+      reason:
+          'ground truth must not move with visibility, or an identical '
+          'plan would be graded differently in the two reports and the rate '
+          'gap could no longer be attributed to the hidden corpus',
+    );
+    expect(withoutCapture.permittedOmissions, withCapture.permittedOmissions);
+    expect(withoutCapture.expectedOmissions, withCapture.expectedOmissions);
   });
 
   test('a stale task must be left out, not merely allowed to be', () {

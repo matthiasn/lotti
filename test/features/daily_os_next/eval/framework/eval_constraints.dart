@@ -37,6 +37,7 @@ abstract final class EvalConstraintIds {
   static const requiredWorkPlaced = 'requiredWorkPlaced';
   static const surfacedConflict = 'surfacedConflict';
   static const noInventedWork = 'noInventedWork';
+  static const taskWorkIsTyped = 'taskWorkIsTyped';
 
   /// Guarded — scored on rejections rather than on the plan.
   static const compliedWithoutRejection = 'compliedWithoutRejection';
@@ -56,6 +57,7 @@ abstract final class EvalConstraintIds {
     requiredWorkPlaced,
     surfacedConflict,
     noInventedWork,
+    taskWorkIsTyped,
     compliedWithoutRejection,
   ];
 }
@@ -76,6 +78,7 @@ List<EvalConstraintResult> scoreAll(EvalRunOutcome outcome) => [
   scoreRequiredWorkPlaced(outcome),
   scoreSurfacedConflict(outcome),
   scoreNoInventedWork(outcome),
+  scoreTaskWorkIsTyped(outcome),
   scoreCompliedWithoutRejection(outcome),
 ];
 
@@ -610,8 +613,13 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
 /// Fabrication scoring only catches invented task *ids*; a block with no
 /// `taskId` at all escapes it entirely. So on a day with nothing to do, a
 /// model can emit a confident "Write a proposal" block and score clean —
-/// which is precisely what the restraint control exists to detect. Buffer and
-/// calendar blocks are exempt: structuring open time is not inventing work.
+/// which is precisely what the restraint control exists to detect.
+///
+/// Only `buffer` is exempt: structuring open time is not inventing work. A
+/// `cal` block is *not* exempt unless the scenario actually seeds calendar
+/// events, because the prompt defines `cal` as mirroring a real event — so on
+/// a day with no calendar, an invented "Dentist appointment" is exactly the
+/// hallucination this control exists to catch.
 EvalConstraintResult scoreNoInventedWork(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.noInventedWork;
   if (!outcome.inputs.forbidsInventedWork) {
@@ -626,7 +634,8 @@ EvalConstraintResult scoreNoInventedWork(EvalRunOutcome outcome) {
     for (final block in _scheduled(outcome))
       if (block.taskId == null &&
           block.type != PlannedBlockType.buffer &&
-          block.type != PlannedBlockType.cal)
+          !(block.type == PlannedBlockType.cal &&
+              outcome.inputs.hasSeededCalendar))
         '"${block.title ?? block.id}" (${block.type.name})',
   ];
   return EvalConstraintResult(
@@ -635,6 +644,44 @@ EvalConstraintResult scoreNoInventedWork(EvalRunOutcome outcome) {
     detail: invented.isEmpty
         ? 'added no work of its own'
         : 'invented work nobody asked for: ${invented.join(', ')}',
+  );
+}
+
+/// Buffer and calendar blocks must not carry a task.
+///
+/// The prompt is explicit that `taskId` belongs on work blocks and is omitted
+/// for buffer and calendar ones, but the parser does not enforce it. Scoring
+/// it separately means a model that attaches tasks to buffers is reported for
+/// that specifically, rather than silently losing placement credit and looking
+/// like it simply skipped the work.
+EvalConstraintResult scoreTaskWorkIsTyped(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.taskWorkIsTyped;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  final mistyped = <String>[];
+  for (final block in outcome.blocks) {
+    if (block.taskId == null) continue;
+    if (block.type != PlannedBlockType.buffer &&
+        block.type != PlannedBlockType.cal) {
+      continue;
+    }
+    mistyped.add(
+      '"${block.title ?? block.id}" is a ${block.type.name} block carrying '
+      'task ${block.taskId}',
+    );
+  }
+  if (mistyped.isEmpty && outcome.blocks.every((b) => b.taskId == null)) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'no block references a task',
+    );
+  }
+  return EvalConstraintResult(
+    id: id,
+    passed: mistyped.isEmpty,
+    detail: mistyped.isEmpty
+        ? 'task work is on work blocks'
+        : mistyped.join('; '),
   );
 }
 
@@ -676,7 +723,15 @@ EvalConstraintResult? _requirePlan(EvalRunOutcome outcome, String id) =>
 /// both directions at once — a dropped stale task failed the omission
 /// constraint while a dropped required task satisfied the placement one.
 Set<String> _placedTaskIds(EvalRunOutcome outcome) => {
-  for (final block in _scheduled(outcome)) ?block.taskId,
+  for (final block in _scheduled(outcome))
+    // Only work blocks carry a placement. The prompt tells the model to omit
+    // `taskId` on buffer and calendar blocks, but nothing enforces it — so
+    // without this a model could label a plausible-length buffer with every
+    // required task id and satisfy placement, capacity and estimate scoring
+    // without scheduling any actual work.
+    if (block.type == PlannedBlockType.ai ||
+        block.type == PlannedBlockType.manual)
+      ?block.taskId,
 };
 
 /// Blocks that consume capacity — `dropped` ones are recorded but not

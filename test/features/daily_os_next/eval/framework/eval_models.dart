@@ -59,10 +59,8 @@ class EvalFixtureInputs {
     this.requiredTaskIds = const {},
     this.requiresConflictSurfaced = false,
     this.forbidsInventedWork = false,
-    this.conflictEscalationReasons = const {
-      'overCommitted',
-      'directiveUnsatisfiable',
-    },
+    this.hasSeededCalendar = false,
+    this.conflictEscalationReasons = const {},
     this.capacityMinutes = 480,
     this.workingHoursStartHour = 9,
     this.workingHoursEndHour = 17,
@@ -120,11 +118,20 @@ class EvalFixtureInputs {
   /// planner adds is invented rather than scheduled.
   final bool forbidsInventedWork;
 
+  /// Whether the scenario seeded real calendar events.
+  ///
+  /// A `cal` block mirrors a real event, so on a day with no calendar an
+  /// invented appointment is fabricated work like any other.
+  final bool hasSeededCalendar;
+
   /// `raise_day_status` reasons that count as escalating *this* conflict.
   ///
-  /// The tool's enum also carries `userDivergence` and `processingBlocked`,
-  /// which describe different problems entirely — an escalation naming one of
-  /// those has not surfaced an over-committed day.
+  /// Scenario-specific on purpose. A shared default accepting both
+  /// `overCommitted` and `directiveUnsatisfiable` would let a model escalate
+  /// an over-committed day — which seeds no directive — by claiming its
+  /// directive was unsatisfiable, and be credited for a reason that cannot be
+  /// true. The tool's `userDivergence` and `processingBlocked` describe
+  /// different problems again.
   final Set<String> conflictEscalationReasons;
 
   final int capacityMinutes;

@@ -66,6 +66,7 @@ class EvalScenario {
     this.requiredTaskIds = const {},
     this.requiresConflictSurfaced = false,
     this.forbidsInventedWork = false,
+    this.conflictEscalationReasons = const {},
     this.capacityMinutes = 480,
     this.startHour,
     this.includeCapture = true,
@@ -103,6 +104,11 @@ class EvalScenario {
   /// Whether this day has no real work, so anything substantive the planner
   /// adds was invented rather than scheduled.
   final bool forbidsInventedWork;
+
+  /// `raise_day_status` reasons that would genuinely describe *this* day's
+  /// conflict. Scenario-specific: a day with no directive cannot honestly be
+  /// escalated as `directiveUnsatisfiable`.
+  final Set<String> conflictEscalationReasons;
 
   final int capacityMinutes;
 
@@ -162,6 +168,7 @@ class EvalScenario {
     requiredTaskIds: requiredTaskIds,
     requiresConflictSurfaced: requiresConflictSurfaced,
     forbidsInventedWork: forbidsInventedWork,
+    conflictEscalationReasons: conflictEscalationReasons,
     // Without a capture the task corpus is never rendered, so the only ids
     // the model can name are its decided ones. The corpus above stays as
     // ground truth for constraints that need to know what is actually true.
@@ -334,6 +341,10 @@ const _crowdedDay = EvalScenario(
       title: 'Draft the sync architecture proposal',
       estimateMinutes: 150,
     ),
+    // The three small items are here as batching material for the qualitative
+    // read, not as scored expectations: requiring them would push the day past
+    // capacity (the corpus totals 635 minutes against 480), and any adjacency
+    // rule I could write would encode a preference I cannot justify.
     EvalTaskSpec(
       id: 'task-small-expenses',
       title: 'File expenses',
@@ -426,6 +437,9 @@ const _overCommitted = EvalScenario(
   // blocks. Together those are what make this scenario measurable.
   permittedOmissions: {'task-a', 'task-b', 'task-c', 'task-d'},
   requiresConflictSurfaced: true,
+  // Only this one: the scenario seeds no directive, so escalating as
+  // `directiveUnsatisfiable` would be a reason that cannot be true.
+  conflictEscalationReasons: {'overCommitted'},
   captureTranscript: 'I want all four of these done today.',
 );
 
@@ -489,6 +503,12 @@ const _blockedWithoutCorpus = EvalScenario(
   tasks: _vendorChainTasks,
   decidedTaskIds: ['task-c-leaf'],
   permittedOmissions: {'task-c-leaf'},
+  // Identical to blockedChain on purpose. Ground truth must not move with
+  // visibility: if this scenario asked less of the model, an identical plan
+  // would be graded differently in the two reports and the rate gap could no
+  // longer be attributed to the corpus being hidden — which is the entire
+  // point of the pair.
+  requiredTaskIds: {'task-a-root'},
   includeCapture: false,
 );
 
