@@ -31,7 +31,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
-
 part 'ai_settings_tab_builders.dart';
 
 /// `SettingsDb` key that suppresses the [AiPickProviderModal] FTUE
