@@ -58,20 +58,13 @@ class InsightsDeltaChip extends StatelessWidget {
     if (current == 0 && previous == 0) return const SizedBox.shrink();
 
     final neutral = tokens.colors.text.mediumEmphasis;
-    // The chip text is small (caption/bodySmall), so the accent must clear WCAG
-    // AA 4.5:1. The light-theme green `hover` step is only ~4.0:1 on the card
-    // and fails; its darker `pressed` step clears ~6:1. The dark theme is the
-    // mirror image — there `hover` is already a high-contrast light green and
-    // `pressed` is a washed-out pastel — so pick the step per theme: the
-    // darker green in light, the more saturated green in dark. Direction never
-    // rides on color alone regardless (the arrow glyph and +/- sign remain).
-    final light = Theme.of(context).brightness == Brightness.light;
-    final good = light
-        ? tokens.colors.alert.success.pressed
-        : tokens.colors.alert.success.hover;
-    final bad = light
-        ? tokens.colors.alert.error.pressed
-        : tokens.colors.alert.error.hover;
+    // The chip text is small (caption/bodySmall), so the accent must clear
+    // WCAG AA 4.5:1 — which the `default` step does not in light theme. That
+    // is exactly what `ink` resolves, per brightness, at the token level; this
+    // widget used to pick the step by hand. Direction never rides on color
+    // alone regardless (the arrow glyph and +/- sign remain).
+    final good = tokens.colors.alert.success.ink;
+    final bad = tokens.colors.alert.error.ink;
     // Map the true direction to an accent through the valence: an increase is
     // "good" only when more is better; when more is worse (cost/energy/carbon)
     // an increase reads clay; a value-free metric stays neutral either way.

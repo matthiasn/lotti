@@ -86,12 +86,12 @@ class _KindBadge extends StatelessWidget {
         Icons.add_rounded,
       ),
       ParsedItemKind.matched => (
-        tokens.colors.alert.info.defaultColor,
+        tokens.colors.alert.info.ink,
         context.messages.dailyOsNextReconcileBadgeMatched,
         Icons.link_rounded,
       ),
       ParsedItemKind.update => (
-        tokens.colors.alert.success.defaultColor,
+        tokens.colors.alert.success.ink,
         context.messages.dailyOsNextReconcileBadgeUpdate,
         Icons.check_rounded,
       ),
@@ -157,8 +157,8 @@ class _MatchedTaskChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final accent = warning
-        ? tokens.colors.alert.warning.defaultColor
-        : tokens.colors.alert.info.defaultColor;
+        ? tokens.colors.alert.warning.ink
+        : tokens.colors.alert.info.ink;
     return Container(
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.08),
@@ -229,7 +229,7 @@ class _ProposedUpdateLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final success = tokens.colors.alert.success.defaultColor;
+    final success = tokens.colors.alert.success.ink;
     return Row(
       children: [
         Icon(
@@ -346,7 +346,7 @@ class _LowConfidenceTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final warning = tokens.colors.alert.warning.defaultColor;
+    final warning = tokens.colors.alert.warning.ink;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

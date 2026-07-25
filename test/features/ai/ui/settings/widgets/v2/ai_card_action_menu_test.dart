@@ -84,7 +84,7 @@ void main() {
         final tokens = tester.element(find.text('Delete')).designTokens;
         expect(
           tester.widget<Text>(find.text('Delete')).style!.color,
-          tokens.colors.alert.error.defaultColor,
+          tokens.colors.alert.error.ink,
         );
         expect(
           tester.widget<Text>(find.text('Edit')).style!.color,

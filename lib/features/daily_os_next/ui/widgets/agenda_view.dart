@@ -254,7 +254,7 @@ class _StatStrip extends StatelessWidget {
                     style: calmPageTitleStyle(
                       tokens,
                       color: !ratioIsCalm(ratio)
-                          ? tokens.colors.alert.error.defaultColor
+                          ? tokens.colors.alert.error.ink
                           : null,
                     ),
                   ),

@@ -564,7 +564,7 @@ class _TranscriptZone extends StatelessWidget {
                 context.messages.dailyOsNextCaptureIdleHint,
             textAlign: TextAlign.center,
             style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.alert.error.defaultColor,
+              color: tokens.colors.alert.error.ink,
             ),
           ),
         );

@@ -162,7 +162,7 @@ void main() {
 
       expect(
         matchedTaskIcon().color,
-        tokens.colors.alert.info.defaultColor,
+        tokens.colors.alert.info.ink,
       );
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -177,7 +177,7 @@ void main() {
 
       expect(
         matchedTaskIcon().color,
-        tokens.colors.alert.warning.defaultColor,
+        tokens.colors.alert.warning.ink,
       );
     });
   });

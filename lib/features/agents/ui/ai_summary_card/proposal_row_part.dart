@@ -831,7 +831,7 @@ class _ResolveBadge extends StatelessWidget {
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
     final accept = kind == ProposalResolveKind.accept;
-    final color = accept ? ai.accent : tokens.colors.alert.error.defaultColor;
+    final color = accept ? ai.accent : tokens.colors.alert.error.ink;
     final label = accept
         ? messages.aiCardProposalConfirmed
         : messages.aiCardProposalDismissed;

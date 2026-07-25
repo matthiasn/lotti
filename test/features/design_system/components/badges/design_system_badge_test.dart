@@ -206,7 +206,7 @@ void main() {
       expectTextStyle(
         richText.text.style!,
         dsTokensLight.typography.styles.others.caption,
-        dsTokensLight.colors.alert.info.defaultColor,
+        dsTokensLight.colors.alert.info.ink,
       );
     });
 
@@ -233,7 +233,7 @@ void main() {
       expectTextStyle(
         richText.text.style!,
         dsTokensLight.typography.styles.others.caption,
-        dsTokensLight.colors.alert.info.defaultColor,
+        dsTokensLight.colors.alert.info.ink,
       );
     });
 

@@ -287,8 +287,15 @@ class _BadgeStyleSpec {
     required _DesignSystemBadgeType type,
     required DesignSystemBadgeTone tone,
   }) {
+    // Two bindings per tone, because the accent plays two roles here. As a
+    // *fill* it owes 3:1 against the host surface (SC 1.4.11) and `default`
+    // carries it. As the *label and glyph* on an untinted or barely tinted
+    // badge it owes 4.5:1 (SC 1.4.3), which `default` misses in light theme —
+    // that is what `ink` is for. Borders are non-text and stay on the accent
+    // so an outlined badge keeps its tone at full saturation.
     if (tone == DesignSystemBadgeTone.secondary) {
       final accentColor = tokens.colors.alert.info.defaultColor;
+      final inkColor = tokens.colors.alert.info.ink;
       final surfaceColor = tokens.colors.surface.enabled;
 
       return switch (type) {
@@ -305,22 +312,34 @@ class _BadgeStyleSpec {
         _DesignSystemBadgeType.filled ||
         _DesignSystemBadgeType.icon => _BadgeStyleSpec(
           backgroundColor: surfaceColor,
-          foregroundColor: accentColor,
+          foregroundColor: inkColor,
           borderColor: null,
         ),
         _DesignSystemBadgeType.outlined => _BadgeStyleSpec(
           backgroundColor: surfaceColor,
-          foregroundColor: accentColor,
+          foregroundColor: inkColor,
           borderColor: accentColor,
         ),
       };
     }
 
-    final accentColor = switch (tone) {
-      DesignSystemBadgeTone.primary => tokens.colors.alert.info.defaultColor,
-      DesignSystemBadgeTone.danger => tokens.colors.alert.error.defaultColor,
-      DesignSystemBadgeTone.warning => tokens.colors.alert.warning.defaultColor,
-      DesignSystemBadgeTone.success => tokens.colors.alert.success.defaultColor,
+    final (accentColor, inkColor) = switch (tone) {
+      DesignSystemBadgeTone.primary => (
+        tokens.colors.alert.info.defaultColor,
+        tokens.colors.alert.info.ink,
+      ),
+      DesignSystemBadgeTone.danger => (
+        tokens.colors.alert.error.defaultColor,
+        tokens.colors.alert.error.ink,
+      ),
+      DesignSystemBadgeTone.warning => (
+        tokens.colors.alert.warning.defaultColor,
+        tokens.colors.alert.warning.ink,
+      ),
+      DesignSystemBadgeTone.success => (
+        tokens.colors.alert.success.defaultColor,
+        tokens.colors.alert.success.ink,
+      ),
       DesignSystemBadgeTone.secondary => throw StateError(
         'Secondary tone must be handled separately.',
       ),
@@ -341,7 +360,7 @@ class _BadgeStyleSpec {
       ),
       _DesignSystemBadgeType.outlined => _BadgeStyleSpec(
         backgroundColor: null,
-        foregroundColor: accentColor,
+        foregroundColor: inkColor,
         borderColor: accentColor,
       ),
     };

@@ -125,7 +125,7 @@ class _ChangeBadge extends StatelessWidget {
     final tokens = context.designTokens;
     switch (kind) {
       case PlanDiffChangeKind.moved:
-        return tokens.colors.alert.info.defaultColor;
+        return tokens.colors.alert.info.ink;
       case PlanDiffChangeKind.added:
         return tokens.colors.interactive.enabled;
       case PlanDiffChangeKind.dropped:
@@ -284,7 +284,7 @@ class _TimeChipsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final accent = change.kind == PlanDiffChangeKind.moved
-        ? tokens.colors.alert.info.defaultColor
+        ? tokens.colors.alert.info.ink
         : tokens.colors.interactive.enabled;
     return Wrap(
       spacing: tokens.spacing.step2,

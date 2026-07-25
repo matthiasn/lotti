@@ -113,8 +113,11 @@ class DesignSystemContextMenu extends StatelessWidget {
     _ContextMenuSpec spec,
     DesignSystemContextMenuItem item,
   ) {
+    // Ink, not the default red: this paints the item's label, and the default
+    // step only clears AA against the light surfaces — on a dark menu it
+    // measures 4.25:1.
     final textColor = item.isDestructive
-        ? tokens.colors.alert.error.defaultColor
+        ? tokens.colors.alert.error.ink
         : tokens.colors.text.highEmphasis;
 
     return Semantics(

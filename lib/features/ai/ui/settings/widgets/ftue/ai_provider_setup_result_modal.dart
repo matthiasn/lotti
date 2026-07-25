@@ -333,7 +333,7 @@ class _ErrorsBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final danger = tokens.colors.alert.error.defaultColor;
+    final danger = tokens.colors.alert.error.ink;
     return Container(
       padding: EdgeInsets.all(tokens.spacing.step4),
       decoration: BoxDecoration(

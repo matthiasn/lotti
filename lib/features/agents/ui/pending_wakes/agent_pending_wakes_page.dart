@@ -80,7 +80,7 @@ class _RunningInstancesBlock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final accent = tokens.colors.alert.success.defaultColor;
+    final accent = tokens.colors.alert.success.ink;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -138,7 +138,7 @@ class _RunningInstanceRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final accent = tokens.colors.alert.success.defaultColor;
+    final accent = tokens.colors.alert.success.ink;
     final elapsedLabel = ref.watch(
       wakeCountdownTickerProvider.select((async) {
         final now = async.value;

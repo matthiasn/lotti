@@ -270,7 +270,7 @@ class _ProviderStatusRow extends StatelessWidget {
             Text(
               messages.aiProviderCardStatusInvalidKey,
               style: caption.copyWith(
-                color: tokens.colors.alert.error.defaultColor,
+                color: tokens.colors.alert.error.ink,
               ),
             ),
             const Spacer(),

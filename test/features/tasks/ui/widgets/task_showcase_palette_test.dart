@@ -85,6 +85,14 @@ void main() {
             TaskShowcasePalette.info(context),
             tokens.colors.alert.info.defaultColor,
           );
+          expect(
+            TaskShowcasePalette.warningInk(context),
+            tokens.colors.alert.warning.ink,
+          );
+          expect(
+            TaskShowcasePalette.errorInk(context),
+            tokens.colors.alert.error.ink,
+          );
         },
       );
     }

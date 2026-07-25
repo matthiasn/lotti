@@ -93,7 +93,7 @@ class _AgentListingShellState extends State<AgentListingShell> {
           padding: EdgeInsets.all(tokens.spacing.step6),
           child: Text(
             messages.commonError,
-            style: TextStyle(color: tokens.colors.alert.error.defaultColor),
+            style: TextStyle(color: tokens.colors.alert.error.ink),
           ),
         ),
       );

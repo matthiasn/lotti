@@ -154,20 +154,22 @@ List<InlineSpan> _taskMetadataSpans({
     priorityIcon,
     iconSize,
   ) = switch (priority) {
+    // Ink throughout: this colour tints the glyph *and* the "P0"/"P1"/"P2"
+    // label rendered in the meta style, which is small enough to owe AA.
     DesignSystemTaskPriority.p0 => (
-      tokens.colors.alert.error.defaultColor,
+      tokens.colors.alert.error.ink,
       'P0',
       Icons.priority_high_rounded,
       spec.metaIconSize,
     ),
     DesignSystemTaskPriority.p1 => (
-      tokens.colors.alert.error.defaultColor,
+      tokens.colors.alert.error.ink,
       'P1',
       Icons.local_fire_department_rounded,
       spec.metaIconSize,
     ),
     DesignSystemTaskPriority.p2 => (
-      tokens.colors.alert.warning.defaultColor,
+      tokens.colors.alert.warning.ink,
       'P2',
       Icons.circle,
       spec.priorityDotSize,

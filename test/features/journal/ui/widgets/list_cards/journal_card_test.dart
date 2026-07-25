@@ -256,7 +256,7 @@ void main() {
       // silently blank card, matching the tasks list row.
       expect(
         text.style?.color,
-        context.designTokens.colors.alert.error.defaultColor,
+        context.designTokens.colors.alert.error.ink,
       );
       expect(text.style?.fontStyle, FontStyle.italic);
     });

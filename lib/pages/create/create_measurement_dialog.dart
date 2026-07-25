@@ -471,7 +471,7 @@ class _MeasurementEditorPageState extends State<_MeasurementEditorPage> {
                   saveState.error!,
                   key: const ValueKey('measurement-save-error'),
                   style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.alert.error.defaultColor,
+                    color: tokens.colors.alert.error.ink,
                   ),
                 ),
               ),

@@ -17,7 +17,7 @@ class LinkBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final info = tokens.colors.alert.info.defaultColor;
+    final info = tokens.colors.alert.info.ink;
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 220),
       child: DsPill(

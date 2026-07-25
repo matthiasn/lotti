@@ -100,7 +100,7 @@ void main() {
       final lightIcon = tester.widget<Icon>(
         find.byIcon(Icons.arrow_upward_rounded),
       );
-      expect(lightIcon.color, dsTokensLight.colors.alert.success.pressed);
+      expect(lightIcon.color, dsTokensLight.colors.alert.success.ink);
 
       await pump(
         tester,
@@ -111,7 +111,7 @@ void main() {
       final darkIcon = tester.widget<Icon>(
         find.byIcon(Icons.arrow_upward_rounded),
       );
-      expect(darkIcon.color, dsTokensDark.colors.alert.success.hover);
+      expect(darkIcon.color, dsTokensDark.colors.alert.success.ink);
     });
 
     testWidgets('decline accent uses the AA-safe red per theme', (
@@ -126,7 +126,7 @@ void main() {
       final lightIcon = tester.widget<Icon>(
         find.byIcon(Icons.arrow_downward_rounded),
       );
-      expect(lightIcon.color, dsTokensLight.colors.alert.error.pressed);
+      expect(lightIcon.color, dsTokensLight.colors.alert.error.ink);
 
       await pump(
         tester,
@@ -137,7 +137,7 @@ void main() {
       final darkIcon = tester.widget<Icon>(
         find.byIcon(Icons.arrow_downward_rounded),
       );
-      expect(darkIcon.color, dsTokensDark.colors.alert.error.hover);
+      expect(darkIcon.color, dsTokensDark.colors.alert.error.ink);
     });
 
     // Valence flips the accent while keeping the arrow + sign truthful: for a
@@ -157,7 +157,7 @@ void main() {
       final upIcon = tester.widget<Icon>(
         find.byIcon(Icons.arrow_upward_rounded),
       );
-      expect(upIcon.color, dsTokensLight.colors.alert.error.pressed);
+      expect(upIcon.color, dsTokensLight.colors.alert.error.ink);
 
       await pump(
         tester,
@@ -169,7 +169,7 @@ void main() {
       final downIcon = tester.widget<Icon>(
         find.byIcon(Icons.arrow_downward_rounded),
       );
-      expect(downIcon.color, dsTokensLight.colors.alert.success.pressed);
+      expect(downIcon.color, dsTokensLight.colors.alert.success.ink);
     });
 
     testWidgets('neutral valence keeps the arrow but drops the accent', (
@@ -188,8 +188,8 @@ void main() {
       );
       // The medium-emphasis neutral text colour — neither green nor clay.
       expect(icon.color, dsTokensLight.colors.text.mediumEmphasis);
-      expect(icon.color, isNot(dsTokensLight.colors.alert.success.pressed));
-      expect(icon.color, isNot(dsTokensLight.colors.alert.error.pressed));
+      expect(icon.color, isNot(dsTokensLight.colors.alert.success.ink));
+      expect(icon.color, isNot(dsTokensLight.colors.alert.error.ink));
     });
   });
 }

@@ -1,11 +1,16 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+import '../../../test_utils/wcag_contrast.dart';
+
 // Algebraic invariants of the hand-authored `lerp` logic in the generated
-// `design_tokens.g.dart`. The file itself is generated, but the generator's
-// lerp template is non-trivial — a generator regression would silently break
-// theme transitions, so the contract is pinned here from the outside.
+// `design_tokens.g.dart`, plus the palette's accessibility contract. The file
+// itself is generated, but the generator's lerp template is non-trivial — a
+// generator regression would silently break theme transitions — and the
+// palette values it emits carry contrast obligations that nothing else in the
+// build checks. Both are pinned here from the outside.
 //
 // The BuildContext `designTokens` extension getter (the only hand-written
 // code in `design_tokens.dart`) is covered in `design_system_theme_test.dart`
@@ -85,7 +90,115 @@ DsRadii _scaledRadii(DsRadii a, double factor) => a.copyWith(
   smallChips: a.smallChips * factor,
 );
 
+/// AA for body text (SC 1.4.3). The bar for `ink`, which exists precisely so
+/// small alert-toned labels have somewhere safe to bind.
+const _aaText = 4.5;
+
+/// Graphical objects and UI-component state (SC 1.4.11). The bar for
+/// `defaultColor`, which paints dots, borders, glyphs and chart series that
+/// carry their meaning through colour alone.
+const _uiComponent = 3.0;
+
+/// The four alert families, flattened — the generated classes are siblings
+/// with no common supertype, so the ramp has to be projected into records to
+/// be iterated over.
+List<({String name, Color defaultColor, Color ink})> _alertFamilies(
+  DsTokens tokens,
+) {
+  final alert = tokens.colors.alert;
+  return [
+    (
+      name: 'error',
+      defaultColor: alert.error.defaultColor,
+      ink: alert.error.ink,
+    ),
+    (
+      name: 'success',
+      defaultColor: alert.success.defaultColor,
+      ink: alert.success.ink,
+    ),
+    (
+      name: 'warning',
+      defaultColor: alert.warning.defaultColor,
+      ink: alert.warning.ink,
+    ),
+    (name: 'info', defaultColor: alert.info.defaultColor, ink: alert.info.ink),
+  ];
+}
+
+/// The surfaces an alert colour legitimately lands on: the page and the cards
+/// and sheets stacked on it.
+///
+/// `background.level03` is deliberately excluded. It is a mid-grey chip and
+/// panel *fill*, and in dark theme no step of the error ramp can reach AA
+/// against it — pure white tops out at 7.7:1 there, and a red light enough to
+/// clear 4.5:1 has stopped reading as an error. Alert-toned content on
+/// level03 needs a different treatment, not a different ramp step.
+List<({String name, Color color})> _alertSurfaces(DsTokens tokens) => [
+  (name: 'background.level01', color: tokens.colors.background.level01),
+  (name: 'background.level02', color: tokens.colors.background.level02),
+];
+
 void main() {
+  // Nothing in the build pipeline checks the palette the Figma export emits,
+  // so a light-theme ramp anchored for vibrancy shipped three families below
+  // the 1.4.11 floor (warning at 2.15:1 on level02) and stayed there until a
+  // reviewer read the token file by hand. These assertions are the check that
+  // was missing.
+  group('alert palette contrast', () {
+    const themes = [
+      (name: 'light', tokens: dsTokensLight),
+      (name: 'dark', tokens: dsTokensDark),
+    ];
+
+    for (final theme in themes) {
+      for (final family in _alertFamilies(theme.tokens)) {
+        for (final surface in _alertSurfaces(theme.tokens)) {
+          final label = '${theme.name} alert.${family.name} on ${surface.name}';
+
+          test('$label clears its WCAG floor', () {
+            final inkRatio = contrastRatio(family.ink, surface.color);
+            expect(
+              inkRatio,
+              greaterThanOrEqualTo(_aaText),
+              reason:
+                  '$label: ink ${family.ink} measures '
+                  '${inkRatio.toStringAsFixed(2)}:1, below AA text $_aaText:1',
+            );
+
+            final defaultRatio = contrastRatio(
+              family.defaultColor,
+              surface.color,
+            );
+            expect(
+              defaultRatio,
+              greaterThanOrEqualTo(_uiComponent),
+              reason:
+                  '$label: default ${family.defaultColor} measures '
+                  '${defaultRatio.toStringAsFixed(2)}:1, below the '
+                  'non-text floor $_uiComponent:1',
+            );
+          });
+
+          test('$label keeps ink at least as strong as default', () {
+            // The invariant that makes `ink` the always-safe binding: a caller
+            // moving text off `defaultColor` can never lose contrast by it.
+            expect(
+              contrastRatio(family.ink, surface.color),
+              greaterThanOrEqualTo(
+                contrastRatio(
+                  family.defaultColor,
+                  surface.color,
+                ),
+              ),
+              reason: '$label: ink is weaker than default',
+            );
+          });
+        }
+      }
+    }
+  });
+
   group('DsTokens.lerp endpoint identities', () {
     test('t=0 returns the receiver, t=1 returns the other endpoint', () {
       expect(dsTokensLight.lerp(dsTokensDark, 0), dsTokensLight);

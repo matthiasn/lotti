@@ -264,7 +264,7 @@ class _ErrorShell extends StatelessWidget {
           child: Text(
             error,
             style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.alert.error.defaultColor,
+              color: tokens.colors.alert.error.ink,
             ),
           ),
         ),

@@ -292,9 +292,16 @@ class _DuePill extends StatelessWidget {
     // (today / overdue) escalates to a tinted accent so it still reads as a
     // warning at a glance.
     final urgent = dueDate.urgency != DesktopTaskHeaderDueUrgency.normal;
+    // Ink, because an urgent chip leaves `labelColor` null and the tinted pill
+    // then paints its label in this colour — the fill strengths only clear the
+    // non-text floor.
     final accent = switch (dueDate.urgency) {
-      DesktopTaskHeaderDueUrgency.overdue => TaskShowcasePalette.error(context),
-      DesktopTaskHeaderDueUrgency.today => TaskShowcasePalette.warning(context),
+      DesktopTaskHeaderDueUrgency.overdue => TaskShowcasePalette.errorInk(
+        context,
+      ),
+      DesktopTaskHeaderDueUrgency.today => TaskShowcasePalette.warningInk(
+        context,
+      ),
       DesktopTaskHeaderDueUrgency.normal => TaskShowcasePalette.mediumText(
         context,
       ),

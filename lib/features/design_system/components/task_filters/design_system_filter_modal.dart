@@ -451,7 +451,7 @@ class _SaveFilterChoicePageState extends State<_SaveFilterChoicePage> {
             messages.tasksSavedFiltersSaveError,
             key: DesignSystemFilterSavePageKeys.error,
             style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.alert.error.defaultColor,
+              color: tokens.colors.alert.error.ink,
             ),
           ),
         ],

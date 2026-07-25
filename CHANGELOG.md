@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1068]
 ### Changed
+- **Warnings, errors and status text are readable in light mode.** The amber,
+  green and blue used for warnings, successes and information were mixed too
+  light to stand out against a white or off-white background — amber measured
+  barely above the page it sat on, so a "blocked" mark or a pending-sync
+  notice could all but disappear. Those three tones are now deep enough to
+  read, and any text carrying one of them — priority labels, status chips,
+  connection results, ledger figures — is picked to stay legible in whichever
+  theme you use. Dark mode is unchanged apart from error text, which lightens
+  slightly on cards.
+
 - **Areas you create during onboarding start with automatic AI on.** Automatic
   transcription and image analysis remain off by default for every category
   you make later — but the onboarding flow, where you connect a provider and

@@ -710,10 +710,18 @@ relationship in full, no row carries a per-row caption, and every row on the
 card renders from one template: status glyph, title, status label, trailing
 affordance. A section renders only when it has entries.
 
-"Is blocked by" leads and is the only accented header (an amber label plus a
-leading glyph, matching the task header's own "Blocked by N tasks" chip); every
-other section and every row stays neutral, so one accent reads as signal rather
-than as one more competing hue. Plain links follow under a "Relates to" header,
+"Is blocked by" leads and is the only accented header, matching the task
+header's own "Blocked by N tasks" chip. The accent is carried by the leading ⊘
+glyph alone — the label itself stays at medium emphasis, because the glyph
+already states the blocked semantic and an amber eyebrow beside an amber chip
+was one mark too many. Every other section and every row stays neutral, so one
+accent reads as signal rather than as one more competing hue.
+
+Both amber marks bind `alert.warning.defaultColor`, the ramp's fill strength,
+which is the correct step for a glyph and a border: those owe 3:1 (WCAG SC
+1.4.11), not 4.5:1. Neither is text. If a future iteration ever tints one of
+these *labels*, it has to move to `alert.warning.ink` — see the alert-ramp
+contract in the design system README. Plain links follow under a "Relates to" header,
 shown only when there are typed sections to distinguish them from.
 
 The chip, the section header, and the picker option that creates the link all

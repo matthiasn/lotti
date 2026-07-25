@@ -142,7 +142,7 @@ class _KnowledgeRow extends ConsumerWidget {
             Text(
               context.messages.dailyOsNextKnowledgeStale,
               style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.alert.warning.defaultColor,
+                color: tokens.colors.alert.warning.ink,
               ),
             ),
           ],

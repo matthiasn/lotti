@@ -276,7 +276,7 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
             child: Text(
               state.errorMessage!,
               style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.alert.error.defaultColor,
+                color: tokens.colors.alert.error.ink,
               ),
             ),
           ),

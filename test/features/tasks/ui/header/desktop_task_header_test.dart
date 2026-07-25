@@ -1255,10 +1255,12 @@ void main() {
       );
     }
 
-    Color paletteError(WidgetTester tester) => TaskShowcasePalette.error(
+    // Ink, not the fill strength: an urgent due pill leaves `labelColor`
+    // null, so this colour also paints the pill's label and owes AA.
+    Color paletteError(WidgetTester tester) => TaskShowcasePalette.errorInk(
       tester.element(find.byType(DesktopTaskHeader)),
     );
-    Color paletteWarning(WidgetTester tester) => TaskShowcasePalette.warning(
+    Color paletteWarning(WidgetTester tester) => TaskShowcasePalette.warningInk(
       tester.element(find.byType(DesktopTaskHeader)),
     );
     Color paletteHigh(WidgetTester tester) => TaskShowcasePalette.highText(

@@ -175,7 +175,7 @@ class _ErrorBody extends StatelessWidget {
       child: Text(
         '$error',
         style: tokens.typography.styles.body.bodyMedium.copyWith(
-          color: tokens.colors.alert.error.defaultColor,
+          color: tokens.colors.alert.error.ink,
         ),
       ),
     );

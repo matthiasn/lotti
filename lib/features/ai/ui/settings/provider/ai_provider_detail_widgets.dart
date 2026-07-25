@@ -217,7 +217,7 @@ class _StatusPill extends StatelessWidget {
       AiProviderCardStatus.invalidKey => (
         tokens.colors.alert.error.defaultColor,
         messages.aiProviderCardStatusInvalidKey,
-        tokens.colors.alert.error.defaultColor,
+        tokens.colors.alert.error.ink,
       ),
       AiProviderCardStatus.offline => (
         tokens.colors.text.lowEmphasis,

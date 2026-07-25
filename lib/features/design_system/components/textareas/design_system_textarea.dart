@@ -300,7 +300,7 @@ class _TextareaSpec {
         color: tokens.colors.text.mediumEmphasis,
       ),
       errorStyle: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.alert.error.defaultColor,
+        color: tokens.colors.alert.error.ink,
       ),
       counterStyle: tokens.typography.styles.others.caption.copyWith(
         color: tokens.colors.text.mediumEmphasis,

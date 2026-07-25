@@ -101,6 +101,39 @@ The current typed surface is therefore:
 
 Notably, the current importer does not generate separate sizing or motion groups yet. If the token export grows, the seam to update is the generator, not every component downstream.
 
+### The alert ramp: `default` fills, `ink` writes
+
+`colors.alert.{error,success,warning,info}` carries four steps, and which one a
+call site binds is a contrast decision, not a taste one:
+
+| step | role | obligation |
+| --- | --- | --- |
+| `defaultColor` | fills, dots, borders, glyphs, chart series | ≥ 3:1 on `background.level01`/`level02` (WCAG SC 1.4.11) |
+| `hover` / `pressed` | interaction states of a control already using the tone | inherits the control's |
+| `ink` | **any alert-toned text**, and the glyph paired with it | ≥ 4.5:1 on `background.level01`/`level02` (SC 1.4.3) |
+
+`ink` is not a fifth hue. It resolves per brightness to the least-extreme step
+of the same ramp that clears AA — `pressed` in light for success/warning/info,
+`hover` in light for error and in dark for error, `defaultColor` in dark for
+the rest. Widgets used to make that pick by hand with
+`Theme.of(context).brightness` branches; that is now the token's job.
+
+Two consequences worth stating plainly:
+
+- A component that paints the tone as **both** a fill and a label needs both
+  bindings, not one. `DesignSystemBadge` is the reference: the badge fill and
+  the outline border take `defaultColor`, the label and glyph take `ink`.
+- The light ramp's `defaultColor` and `hover` currently coincide for warning,
+  success and info. The exported light `default` sat at 2.15–2.96:1 against
+  level02 — below the non-text floor — so it was moved onto the `hover` value,
+  which is the nearest step that clears it. A future Figma pass should
+  re-derive a distinct light `hover`; nothing binds those three today.
+
+`test/features/design_system/theme/design_tokens_test.dart` pins both floors
+across all four families and both brightnesses. Nothing else in the build
+checks the palette, which is how the light ramp shipped below the floor and
+stayed there.
+
 ## Import Pipeline
 
 `make design_system_import` does two things:

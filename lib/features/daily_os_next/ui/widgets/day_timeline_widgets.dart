@@ -327,7 +327,7 @@ class _SharedHourRail extends StatelessWidget {
                     child: Text(
                       _formatNow(now!),
                       style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.alert.error.defaultColor,
+                        color: tokens.colors.alert.error.ink,
                         fontWeight: tokens.typography.weight.bold,
                       ),
                     ),

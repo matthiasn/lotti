@@ -154,11 +154,11 @@ class _StatusLine extends StatelessWidget {
       ),
       RefinePhase.diffReady => (
         messages.dailyOsNextRefineStatusDiffReady,
-        tokens.colors.alert.success.defaultColor,
+        tokens.colors.alert.success.ink,
       ),
       RefinePhase.accepted => (
         messages.dailyOsNextRefineStatusAccepted,
-        tokens.colors.alert.success.defaultColor,
+        tokens.colors.alert.success.ink,
       ),
     };
     return Text(
@@ -190,8 +190,8 @@ class _ProblemNotice extends StatelessWidget {
     };
     final warning = problem == RefineProblem.captureSavedPendingTranscription;
     final color = warning
-        ? tokens.colors.alert.warning.defaultColor
-        : tokens.colors.alert.error.defaultColor;
+        ? tokens.colors.alert.warning.ink
+        : tokens.colors.alert.error.ink;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),

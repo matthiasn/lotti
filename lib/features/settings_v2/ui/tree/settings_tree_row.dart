@@ -234,7 +234,7 @@ class _NodeBadgeChip extends StatelessWidget {
     final (bg, fg) = switch (badge.tone) {
       NodeTone.info => (
         tokens.colors.alert.info.defaultColor.withValues(alpha: bgAlpha),
-        tokens.colors.alert.info.defaultColor,
+        tokens.colors.alert.info.ink,
       ),
       NodeTone.teal => (
         tokens.colors.interactive.enabled.withValues(alpha: bgAlpha),
@@ -242,7 +242,7 @@ class _NodeBadgeChip extends StatelessWidget {
       ),
       NodeTone.error => (
         tokens.colors.alert.error.defaultColor.withValues(alpha: bgAlpha),
-        tokens.colors.alert.error.defaultColor,
+        tokens.colors.alert.error.ink,
       ),
     };
     return Container(

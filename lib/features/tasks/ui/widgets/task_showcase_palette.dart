@@ -48,4 +48,16 @@ class TaskShowcasePalette {
 
   static Color info(BuildContext context) =>
       context.designTokens.colors.alert.info.defaultColor;
+
+  /// The AA-safe step of the same ramps, for alert-toned *text*.
+  ///
+  /// [warning] and [error] are fill/glyph strengths: they clear the 3:1
+  /// non-text floor but not the 4.5:1 body-text one on every surface. A chip
+  /// whose label takes the tone — the urgent due chip — has to read these
+  /// instead.
+  static Color warningInk(BuildContext context) =>
+      context.designTokens.colors.alert.warning.ink;
+
+  static Color errorInk(BuildContext context) =>
+      context.designTokens.colors.alert.error.ink;
 }

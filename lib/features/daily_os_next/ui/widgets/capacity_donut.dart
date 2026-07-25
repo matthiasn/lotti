@@ -85,7 +85,7 @@ class CapacityDonut extends StatelessWidget {
     // 9h tracked against an 8h day is over, not "1h LEFT").
     final isOver = hasCapacity && remaining < 0;
     final over = !neutral && ratio > 1.0;
-    final overColor = tokens.colors.alert.error.defaultColor;
+    final overColor = tokens.colors.alert.error.ink;
 
     // Without a meaningful capacity there is no remainder to narrate —
     // show the scheduled total with no eyebrow word.

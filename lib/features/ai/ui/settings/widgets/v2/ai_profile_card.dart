@@ -224,7 +224,7 @@ class _ProfileSlotRow extends StatelessWidget {
             resolved,
             style: caption.copyWith(
               color: modelName == null
-                  ? tokens.colors.alert.warning.defaultColor
+                  ? tokens.colors.alert.warning.ink
                   : tokens.colors.text.highEmphasis,
               fontWeight: tokens.typography.weight.semiBold,
             ),
