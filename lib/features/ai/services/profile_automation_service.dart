@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -9,9 +7,9 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 
-const _logTag = 'ProfileAutomationService';
 const _fallbackTranscriptionAssignment = SkillAssignment(
   skillId: skillTranscribeContextId,
   automate: true,
@@ -105,11 +103,44 @@ class ProfileAutomationService {
     required this._resolver,
     required this._aiConfigRepository,
     this._categoryAutomationLookup,
+    this._domainLogger,
   });
 
   final ProfileAutomationResolver _resolver;
   final AiConfigRepository _aiConfigRepository;
   final CategoryAutomationLookup? _categoryAutomationLookup;
+
+  /// Where every "did not automate" decision goes.
+  ///
+  /// This service's whole failure mode is silence: five independent checks can
+  /// each decline, and the caller only ever reports the generic "profile
+  /// automation did not handle X". Routing the reasons to the app log is what
+  /// makes a missing transcript diagnosable from a log export instead of a
+  /// code read. Optional so tests and non-app callers can build the service
+  /// without a logger.
+  final DomainLogger? _domainLogger;
+
+  /// Records why automation declined, under [LogDomain.ai].
+  void _logSkip(String message, {required String subDomain}) {
+    _domainLogger?.log(
+      LogDomain.ai,
+      message,
+      subDomain: subDomain,
+    );
+  }
+
+  /// Records which profile and skill a run resolved to.
+  ///
+  /// The counterpart to [_logSkip]: without it a log export shows only the
+  /// declines, so "it ran, but with the wrong model" stays as opaque as "it
+  /// did not run".
+  void _logRun(String message) {
+    _domainLogger?.log(
+      LogDomain.ai,
+      message,
+      subDomain: 'resolved',
+    );
+  }
 
   /// The single consent gate for running inference without a user gesture.
   ///
@@ -122,18 +153,19 @@ class ProfileAutomationService {
   Future<bool> _categoryAllowsAutomation(String taskId) async {
     final lookup = _categoryAutomationLookup;
     if (lookup == null) {
-      developer.log(
-        'No category automation lookup wired — treating automation as off '
-        'for task $taskId',
-        name: _logTag,
+      _logSkip(
+        'no category automation lookup wired — treating automation as off '
+        'for task ${DomainLogger.sanitizeId(taskId)}',
+        subDomain: 'categoryGate',
       );
       return false;
     }
     final allowed = await lookup(taskId);
     if (!allowed) {
-      developer.log(
-        'Automatic inference is off for the category owning task $taskId',
-        name: _logTag,
+      _logSkip(
+        'automatic inference is switched off for the category owning task '
+        '${DomainLogger.sanitizeId(taskId)}',
+        subDomain: 'categoryGate',
       );
     }
     return allowed;
@@ -155,6 +187,11 @@ class ProfileAutomationService {
   }) async {
     // User explicitly opted out for this recording.
     if (enableSpeechRecognition == false) {
+      _logSkip(
+        'speech recognition was switched off for this recording on task '
+        '${DomainLogger.sanitizeId(taskId)}',
+        subDomain: 'perRecordingOptOut',
+      );
       return AutomationResult.notHandled;
     }
 
@@ -208,7 +245,13 @@ class ProfileAutomationService {
     required SkillType skillType,
   }) async {
     final primaryProfile = await _resolver.resolveForTask(taskId);
-    if (primaryProfile != null) {
+    if (primaryProfile == null) {
+      _logSkip(
+        'no profile resolves for task ${DomainLogger.sanitizeId(taskId)} — '
+        'trying the profiles it inherits for $skillType',
+        subDomain: 'profileResolution',
+      );
+    } else {
       final outcome = await _matchAutomatedSkill(
         profile: primaryProfile,
         skillType: skillType,
@@ -217,10 +260,9 @@ class ProfileAutomationService {
       if (outcome.ambiguous) return AutomationResult.notHandled;
       final match = outcome.match;
       if (match != null) {
-        developer.log(
-          'Profile automation: using skill "${match.skill.name}" for '
-          '$skillType on task $taskId',
-          name: _logTag,
+        _logRun(
+          'running $skillType on task ${DomainLogger.sanitizeId(taskId)} '
+          'with skill "${match.skill.name}" from the task-linked profile',
         );
         return AutomationResult(
           handled: true,
@@ -242,10 +284,9 @@ class ProfileAutomationService {
       final match = outcome.match;
       if (match == null) continue;
 
-      developer.log(
-        'Profile automation: task $taskId does not own $skillType, falling '
-        'back to inherited profile skill "${match.skill.name}"',
-        name: _logTag,
+      _logRun(
+        'task ${DomainLogger.sanitizeId(taskId)} does not own $skillType — '
+        'falling back to the inherited profile, skill "${match.skill.name}"',
       );
       return AutomationResult(
         handled: true,
@@ -255,6 +296,13 @@ class ProfileAutomationService {
       );
     }
 
+    _logSkip(
+      'no profile automates $skillType for task '
+      '${DomainLogger.sanitizeId(taskId)} — walked '
+      '${primaryProfile == null ? 0 : 1} task-linked and '
+      '${fallbacks.length} inherited profile(s)',
+      subDomain: 'profileResolution',
+    );
     return AutomationResult.notHandled;
   }
 
@@ -278,9 +326,12 @@ class ProfileAutomationService {
         assignment.skillId,
       );
       if (skillConfig is! AiConfigSkill) {
-        developer.log(
-          'Skill ${assignment.skillId} not found or wrong type',
-          name: _logTag,
+        _logSkip(
+          'skill ${DomainLogger.sanitizeId(assignment.skillId)} is automated '
+          'on the profile but its config is missing or not a skill — '
+          'ignoring it for $skillType on task '
+          '${DomainLogger.sanitizeId(taskId)}',
+          subDomain: 'skillMatch',
         );
         continue;
       }
@@ -288,10 +339,11 @@ class ProfileAutomationService {
       if (skillConfig.skillType != skillType) continue;
 
       if (!_hasModelSlotForSkillType(profile, skillType)) {
-        developer.log(
-          'Profile has no model slot for $skillType, skipping skill '
-          '${skillConfig.name}',
-          name: _logTag,
+        _logSkip(
+          'profile automates $skillType via "${skillConfig.name}" but its '
+          '$skillType model slot is empty or unresolvable — skipping it for '
+          'task ${DomainLogger.sanitizeId(taskId)}',
+          subDomain: 'skillMatch',
         );
         continue;
       }
@@ -302,10 +354,11 @@ class ProfileAutomationService {
     if (matches.isEmpty) return _noSkillMatch;
 
     if (matches.length > 1) {
-      developer.log(
-        'Ambiguous profile: ${matches.length} automated $skillType '
-        'skills found for task $taskId, treating as not handled',
-        name: _logTag,
+      _logSkip(
+        'ambiguous profile: ${matches.length} automated $skillType skills for '
+        'task ${DomainLogger.sanitizeId(taskId)} — declining rather than '
+        'guessing which one was meant',
+        subDomain: 'skillMatch',
       );
       return _ambiguousSkillMatch;
     }
@@ -374,10 +427,9 @@ class ProfileAutomationService {
     candidates.sort(_compareFallbackCandidates);
 
     final selected = candidates.first;
-    developer.log(
-      'Using direct transcription fallback model '
+    _logRun(
+      'no profile owns transcription — using the direct fallback model '
       '${selected.model.providerModelId}',
-      name: _logTag,
     );
 
     return AutomationResult(

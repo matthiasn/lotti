@@ -428,7 +428,13 @@ void main() {
             triggerTokens: {projectId},
           ),
         ).called(1);
-        expect(generatedNotifiedAgentIds, [agentId], reason: '$scenario');
+        // Both ids: the agent's own, and the project id `projectAgentProvider`
+        // keys its refresh on.
+        expect(
+          generatedNotifiedAgentIds,
+          [agentId, projectId],
+          reason: '$scenario',
+        );
       }, tags: 'glados');
 
       test('creates agent, updates state, creates links, and enqueues '
@@ -516,7 +522,9 @@ void main() {
             triggerTokens: {'project-1'},
           ),
         ).called(1);
-        expect(notifiedAgentIds, ['agent-1']);
+        // `projectAgentProvider` refreshes on the *project* id and nothing in
+        // the agent write path emits it, so the announcement carries both.
+        expect(notifiedAgentIds, ['agent-1', 'project-1']);
       });
 
       test(

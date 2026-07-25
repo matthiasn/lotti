@@ -204,7 +204,11 @@ void main() {
           triggerTokens: {eventId},
         ),
       ).called(1);
-      expect(notifiedAgentIds, ['agent-1']);
+      // `eventAgentProvider` refreshes on the *event* id and nothing in the
+      // agent write path emits it, so the announcement carries both — without
+      // the event id the freshly created agent stays invisible until an
+      // unrelated notification happens to mention the event.
+      expect(notifiedAgentIds, ['agent-1', eventId]);
     });
 
     test('awaitContent: false attaches without the content gate', () async {

@@ -32,6 +32,7 @@ void main() {
           agentTemplateServiceProvider.overrideWithValue(
             MockAgentTemplateService(),
           ),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
         ],
       );
     });
@@ -68,6 +69,7 @@ void main() {
             agentTemplateServiceProvider.overrideWithValue(
               MockAgentTemplateService(),
             ),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           ],
         );
         addTearDown(scoped.dispose);
@@ -109,6 +111,7 @@ void main() {
             agentTemplateServiceProvider.overrideWithValue(
               MockAgentTemplateService(),
             ),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
             journalDbProvider.overrideWithValue(mockDb),
           ],
         );
@@ -152,6 +155,7 @@ void main() {
           agentTemplateServiceProvider.overrideWithValue(
             MockAgentTemplateService(),
           ),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           journalDbProvider.overrideWithValue(mockDb),
         ],
       );
@@ -290,6 +294,7 @@ void main() {
           agentTemplateServiceProvider.overrideWithValue(
             MockAgentTemplateService(),
           ),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           journalDbProvider.overrideWithValue(mockDb),
         ],
       );
