@@ -276,6 +276,15 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required DateTime updatedAt,
     required VectorClock? vectorClock,
     String? captureId,
+
+    /// Run key of the wake that wrote this plan.
+    ///
+    /// Lets a durable draft job prove an artifact is *its* — matching by
+    /// timestamp alone cannot distinguish this job's plan from one a
+    /// concurrent wake happened to write inside the same window. Null for
+    /// plans written before the field existed, and for writes with no wake
+    /// behind them (a user edit).
+    String? runKey,
     @Default([]) List<DayAgentEnergyBand> energyBands,
     @Default(480) int capacityMinutes,
     @Default(0) int scheduledMinutes,

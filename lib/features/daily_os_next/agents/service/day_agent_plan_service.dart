@@ -280,6 +280,7 @@ class DayAgentPlanService {
     List<String> decidedTaskIds = const [],
     int capacityMinutes = 480,
     String? dayLabel,
+    String? runKey,
   }) => _writer.persistDraftPlan(
     agentId: agentId,
     dayId: dayId,
@@ -290,6 +291,7 @@ class DayAgentPlanService {
     decidedTaskIds: decidedTaskIds,
     capacityMinutes: capacityMinutes,
     dayLabel: dayLabel,
+    runKey: runKey,
   );
 
   /// Build transient learning cards from recently drafted day plans.

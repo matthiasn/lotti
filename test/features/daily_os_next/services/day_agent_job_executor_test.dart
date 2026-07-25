@@ -12,7 +12,10 @@ void main() {
   const dayId = 'dayplan-2026-07-22';
   const agentId = 'day_agent:dayplan-2026-07-22';
 
-  DayProcessingJob draftJob({DateTime? requested}) => DayProcessingJob(
+  DayProcessingJob draftJob({
+    DateTime? requested,
+    List<String> runKeys = const [],
+  }) => DayProcessingJob(
     id: 'draft_$dayId',
     status: DayProcessingJobStatus.queued,
     dayId: dayId,
@@ -23,6 +26,7 @@ void main() {
     nextAttemptAt: requested ?? requestedAt,
     attempts: 0,
     generation: 0,
+    runKeys: runKeys,
   );
 
   DayProcessingJob parseJob() => DayProcessingJob(
@@ -73,7 +77,10 @@ void main() {
     Future<String> Function(String dayId)? resolveAgentId,
     String Function(DayAgentJobWakeRequest request)? enqueueWake,
     Stream<WakeRunCompletion>? runCompletions,
-    Future<DateTime?> Function(String agentId, String dayId)?
+    Future<({DateTime updatedAt, String? runKey})?> Function(
+      String agentId,
+      String dayId,
+    )?
     draftPlanUpdatedAt,
     Future<String?> Function(String agentId, String dayId, DateTime since)?
     pendingDiffCreatedSince,
@@ -124,8 +131,10 @@ void main() {
       () async {
         var wakeEnqueued = false;
         final executor = buildExecutor(
-          draftPlanUpdatedAt: (agentId, dayId) async =>
-              requestedAt.add(const Duration(seconds: 1)),
+          draftPlanUpdatedAt: (agentId, dayId) async => (
+            updatedAt: requestedAt.add(const Duration(seconds: 1)),
+            runKey: null,
+          ),
           enqueueWake: (request) {
             wakeEnqueued = true;
             return 'run-key';
@@ -147,8 +156,10 @@ void main() {
         final completions = StreamController<WakeRunCompletion>.broadcast();
         addTearDown(completions.close);
         final executor = buildExecutor(
-          draftPlanUpdatedAt: (agentId, dayId) async =>
-              requestedAt.subtract(const Duration(minutes: 1)),
+          draftPlanUpdatedAt: (agentId, dayId) async => (
+            updatedAt: requestedAt.subtract(const Duration(minutes: 1)),
+            runKey: null,
+          ),
           enqueueWake: (request) {
             wakeEnqueued = true;
             return 'run-key';
@@ -179,7 +190,8 @@ void main() {
       () async {
         Set<String>? consultedRunKeys;
         final executor = buildExecutor(
-          draftPlanUpdatedAt: (agentId, dayId) async => requestedAt,
+          draftPlanUpdatedAt: (agentId, dayId) async =>
+              (updatedAt: requestedAt, runKey: null),
           pendingDiffForRuns: (agentId, dayId, runKeys) async {
             consultedRunKeys = runKeys;
             return runKeys.contains('recorded-key') ? 'diff-1' : null;
@@ -204,7 +216,8 @@ void main() {
         final completions = StreamController<WakeRunCompletion>.broadcast();
         addTearDown(completions.close);
         final executor = buildExecutor(
-          draftPlanUpdatedAt: (agentId, dayId) async => requestedAt,
+          draftPlanUpdatedAt: (agentId, dayId) async =>
+              (updatedAt: requestedAt, runKey: null),
           // A sibling refine's diff sits in the window — the old time-based
           // check would have returned it and dropped this job's transcript.
           pendingDiffCreatedSince: (agentId, dayId, since) async {
@@ -235,7 +248,8 @@ void main() {
       'back to the time-window check',
       () async {
         final executor = buildExecutor(
-          draftPlanUpdatedAt: (agentId, dayId) async => requestedAt,
+          draftPlanUpdatedAt: (agentId, dayId) async =>
+              (updatedAt: requestedAt, runKey: null),
           pendingDiffCreatedSince: (agentId, dayId, since) async => 'diff-1',
         );
         final job = refineJob().copyWith(attempts: 1);
@@ -255,7 +269,8 @@ void main() {
         final completions = StreamController<WakeRunCompletion>.broadcast();
         addTearDown(completions.close);
         final executor = buildExecutor(
-          draftPlanUpdatedAt: (agentId, dayId) async => requestedAt,
+          draftPlanUpdatedAt: (agentId, dayId) async =>
+              (updatedAt: requestedAt, runKey: null),
           recordRunKey: (jobId, runKey) async => recorded.add((jobId, runKey)),
           pendingDiffForRuns: (agentId, dayId, runKeys) async =>
               runKeys.contains('run-key-1') ? 'diff-from-this-wake' : null,
@@ -589,6 +604,89 @@ void main() {
         classifyDayAgentJobFailure(null),
         DayProcessingFailureClass.local,
       );
+    });
+  });
+
+  group('draft artifact provenance', () {
+    test("a concurrent wake's plan does not satisfy this job", () async {
+      // The defect a bare time window cannot see: another wake wrote the
+      // day's plan inside this job's window, so `updatedAt >= requestedAt`
+      // holds, but that plan does not carry this job's instruction.
+      var wakeEnqueued = false;
+      final completions = StreamController<WakeRunCompletion>.broadcast();
+      addTearDown(completions.close);
+      final executor = buildExecutor(
+        draftPlanUpdatedAt: (agentId, dayId) async => (
+          updatedAt: requestedAt.add(const Duration(seconds: 1)),
+          runKey: 'someone-elses-run',
+        ),
+        runCompletions: completions.stream,
+        enqueueWake: (request) {
+          wakeEnqueued = true;
+          return 'run-key';
+        },
+      );
+
+      final future = executor.execute(draftJob(runKeys: const ['my-run']));
+      await pumpEventQueue();
+      completions.add(
+        const WakeRunCompletion(
+          runKey: 'run-key',
+          agentId: agentId,
+          status: WakeRunStatus.completed,
+        ),
+      );
+      await future;
+
+      expect(
+        wakeEnqueued,
+        isTrue,
+        reason: "a sibling's plan must not satisfy this job",
+      );
+    });
+
+    test('a plan written by this job satisfies it without a wake', () async {
+      var wakeEnqueued = false;
+      final executor = buildExecutor(
+        // Deliberately *older* than requestedAt: provenance decides, so a
+        // timestamp that would fail the window check is irrelevant.
+        draftPlanUpdatedAt: (agentId, dayId) async => (
+          updatedAt: requestedAt.subtract(const Duration(minutes: 5)),
+          runKey: 'my-run',
+        ),
+        enqueueWake: (request) {
+          wakeEnqueued = true;
+          return 'run-key';
+        },
+      );
+
+      final outcome = await executor.execute(
+        draftJob(runKeys: const ['my-run']),
+      );
+
+      expect(outcome, isA<DayAgentJobSucceeded>());
+      expect(wakeEnqueued, isFalse, reason: 'no inference should be spent');
+    });
+
+    test('falls back to the window when the plan predates the field', () async {
+      var wakeEnqueued = false;
+      final executor = buildExecutor(
+        draftPlanUpdatedAt: (agentId, dayId) async => (
+          updatedAt: requestedAt.add(const Duration(seconds: 1)),
+          runKey: null,
+        ),
+        enqueueWake: (request) {
+          wakeEnqueued = true;
+          return 'run-key';
+        },
+      );
+
+      final outcome = await executor.execute(
+        draftJob(runKeys: const ['my-run']),
+      );
+
+      expect(outcome, isA<DayAgentJobSucceeded>());
+      expect(wakeEnqueued, isFalse);
     });
   });
 }
