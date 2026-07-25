@@ -58,6 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through Manage links.
 
 ### Fixed
+- **The Linked Tasks card cut off its own name** in German and Spanish, and at
+  larger text sizes in every language. The Link action now drops to its icon
+  where the label won't fit beside the heading, rather than the heading giving
+  way.
+- **The unlink confirmation names the task** you're removing, instead of asking
+  about "this task" from a row of unlabelled icons.
 - **The Linked Tasks header broke at larger text sizes.** At accessibility text
   scales the Link button was cut off and the ⋯ menu vanished entirely — which,
   while editing links, was one of only two ways out.
