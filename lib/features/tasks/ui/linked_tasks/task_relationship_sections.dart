@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
@@ -27,7 +29,7 @@ class _Section {
   final List<TaskLinkEntry> entries;
 
   /// Optional header accent. Only "Blocked by" uses one — it's the single
-  /// relationship the task header also surfaces (as the amber "Waiting on X"
+  /// relationship the task header also surfaces (as the amber "Blocked by N"
   /// chip), and without it the most consequential section rendered
   /// indistinguishably from a stray plain link.
   final Color? accent;
@@ -74,8 +76,6 @@ class TaskRelationshipSections extends ConsumerWidget {
         const [];
     if (typed.isEmpty) return const SizedBox.shrink();
 
-    final tokens = context.designTokens;
-
     List<TaskLinkEntry> entriesOf(
       TaskLinkKind kind, {
       TaskLinkDirection? direction,
@@ -88,6 +88,18 @@ class TaskRelationshipSections extends ConsumerWidget {
 
     // "Blocked by" leads: it's the one relationship the task header also
     // surfaces, and the one that gates whether work can start at all.
+    final blockedBy = entriesOf(
+      TaskLinkKind.blocks,
+      direction: TaskLinkDirection.incoming,
+    );
+    // Accented only while something is actually blocking. A closed blocker
+    // releases the dependent (ADR 0042 §4, task_blockers_controller.dart), so
+    // painting the section amber once every blocker is Done makes a claim the
+    // header has already retracted — on the feature's only semantic colour.
+    final stillBlocked = blockedBy.any(
+      (entry) => !isClosedTask(entry.task),
+    );
+
     final sections = <_Section>[
       _Section(
         title: _directionTitle(
@@ -95,11 +107,8 @@ class TaskRelationshipSections extends ConsumerWidget {
           TaskLinkKind.blocks,
           TaskLinkDirection.incoming,
         ),
-        entries: entriesOf(
-          TaskLinkKind.blocks,
-          direction: TaskLinkDirection.incoming,
-        ),
-        accent: TaskShowcasePalette.warning(context),
+        entries: blockedBy,
+        accent: stillBlocked ? TaskShowcasePalette.warning(context) : null,
       ),
       for (final kind in const [
         TaskLinkKind.blocks,
@@ -121,17 +130,14 @@ class TaskRelationshipSections extends ConsumerWidget {
     for (var s = 0; s < sections.length; s++) {
       if (s > 0) {
         children.add(
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: tokens.colors.decorative.level01,
-          ),
+          const DesignSystemDivider(),
         );
       }
       children.add(
         LinkedTaskSectionHeader(
           title: sections[s].title,
           accent: sections[s].accent,
+          tightTop: s == 0,
         ),
       );
       for (final entry in sections[s].entries) {
@@ -145,6 +151,7 @@ class TaskRelationshipSections extends ConsumerWidget {
               linkId: entry.linkId,
               currentType: entryLinkTypeForTaskLinkKind(entry.kind),
               currentDirection: entry.direction,
+              linkedTaskTitle: entry.task.data.title,
             ),
             onUnlink: () {
               final fromId = entry.direction == TaskLinkDirection.outgoing
@@ -193,14 +200,29 @@ String _directionTitle(
 /// `LinkedTasksWidget`, so a plain link is never left to read as an unlabeled
 /// continuation of the typed section above it.
 class LinkedTaskSectionHeader extends StatelessWidget {
-  const LinkedTaskSectionHeader({required this.title, this.accent, super.key});
+  const LinkedTaskSectionHeader({
+    required this.title,
+    this.accent,
+    this.tightTop = false,
+    this.leadingRailWidth,
+    super.key,
+  });
 
   final String title;
+
+  /// Set on the first section, which follows the card header's own bottom
+  /// padding — without it the two stack into the largest gap on the card.
+  final bool tightTop;
 
   /// Tints the label and adds a leading glyph. Deliberately the only colour
   /// on the card: rows stay neutral so a single accented header reads as
   /// signal rather than as one more competing hue.
   final Color? accent;
+
+  /// Width of the reserved glyph column. Defaults to the card's own leading
+  /// rail; the picker sheets reserve a wider one, and without matching it the
+  /// header sits left of the rows it labels instead of on their edge.
+  final double? leadingRailWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -213,16 +235,27 @@ class LinkedTaskSectionHeader extends StatelessWidget {
       // insets are taken off a phone-width card.
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: accent ?? tokens.colors.text.mediumEmphasis,
-        fontWeight: FontWeight.w600,
+      // Overline, not caption+w600: its tracking is what distinguishes a
+      // section eyebrow from row metadata at the same size, and it removes an
+      // off-ramp weight override. Medium, not high: the titles beneath own the
+      // card's brightest ink, and three roles tied at #FFFFFF read as one flat
+      // plane no matter how the sizes rank.
+      // Never the accent: the ⊘ glyph beside it already carries the blocked
+      // semantic in a shape no status glyph uses, and amber text here sits a
+      // hue apart from an On Hold row's own orange — close enough to read as
+      // the same thing while meaning something else.
+      style: tokens.typography.styles.others.overline.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
       ),
     );
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step5,
-        // Bound to the rows below it, not floated between two sections.
-        tokens.spacing.step6,
+        // Bound to the rows below it, not floated between two sections. The
+        // gap below looks smaller than it is — the row adds its own top
+        // padding and the title's line leading on top of that — so the gap
+        // above has to clear both for proximity to group the label downward.
+        tightTop ? tokens.spacing.step4 : tokens.spacing.step7,
         tokens.spacing.step5,
         tokens.spacing.step1,
       ),
@@ -233,12 +266,14 @@ class LinkedTaskSectionHeader extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: tokens.spacing.step5,
+            width: leadingRailWidth ?? tokens.spacing.step5,
             child: accent == null
                 ? null
-                : Icon(Icons.block, size: tokens.spacing.step4, color: accent),
+                : Icon(Icons.block, size: tokens.spacing.step5, color: accent),
           ),
-          SizedBox(width: tokens.spacing.step2),
+          // Same gap DesignSystemListItem puts after its leading slot, so the
+          // header label lands on the row title's left edge instead of near it.
+          SizedBox(width: tokens.spacing.step3),
           Flexible(child: label),
         ],
       ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -63,7 +65,7 @@ void main() {
         );
 
         expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(Icons.link_off), findsNothing);
       },
     );
 
@@ -77,21 +79,24 @@ void main() {
               taskId: 'anchor-task',
               data: buildRowData(),
               manageMode: true,
-              onUnlink: () async => unlinkCalled = true,
+              onUnlink: () async {
+                unlinkCalled = true;
+                return 1;
+              },
             ),
           ),
         );
 
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.link_off), findsOneWidget);
         expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(Icons.link_off));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
         // Confirmation dialog gates the callback.
         expect(unlinkCalled, isFalse);
-        await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -111,13 +116,13 @@ void main() {
               data: buildRowData(),
               manageMode: true,
               onEdit: () async => editCalled = true,
-              onUnlink: () async {},
+              onUnlink: () async => 1,
             ),
           ),
         );
 
         expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.link_off), findsOneWidget);
         expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
 
         await tester.tap(find.byIcon(Icons.swap_horiz_rounded));
@@ -142,7 +147,7 @@ void main() {
         );
 
         expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.byIcon(Icons.link_off), findsNothing);
         expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
       },
     );
@@ -157,20 +162,50 @@ void main() {
             taskId: 'anchor-task',
             data: buildRowData(),
             manageMode: true,
-            onUnlink: () async => unlinkCalled = true,
+            onUnlink: () async {
+              unlinkCalled = true;
+              return 1;
+            },
           ),
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(unlinkCalled, isFalse);
     });
+
+    testWidgets(
+      'reports a failure when the unlink removed nothing — a delete that '
+      'matches no row returns zero and throws nothing, so without the count '
+      'it looked exactly like a successful unlink',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: LinkedTaskRow(
+              taskId: 'anchor-task',
+              data: buildRowData(),
+              manageMode: true,
+              onUnlink: () async => 0,
+            ),
+          ),
+        );
+
+        await tester.tap(find.byIcon(Icons.link_off));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(SnackBar), findsWidgets);
+      },
+    );
 
     testWidgets(
       'shows a SnackBar when onUnlink throws',
@@ -186,10 +221,10 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(Icons.link_off));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -239,6 +274,206 @@ void main() {
 
         final rowInkWell = tester.widget<InkWell>(find.byType(InkWell).first);
         expect(rowInkWell.onTap, isNotNull);
+      },
+    );
+  });
+
+  group('LinkedTaskRow trailing-rail geometry', () {
+    /// Renders one row at a fixed width and reports the box the title got.
+    ///
+    /// Measured rather than asserted from the source: a rail "reserved" by a
+    /// SizedBox the actions then overflow, or sized from a text style the rows
+    /// do not render at, still reads as correct in the widget tree while
+    /// visibly re-wrapping the title. Only the laid-out width catches that.
+    Future<Size> titleBoxAt(
+      WidgetTester tester, {
+      required bool manageMode,
+    }) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          // Align, not a bare SizedBox: the bench hands its child tight
+          // constraints, so a width set any other way is silently ignored and
+          // the row is measured at the full 800pt surface instead of a phone.
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 390,
+              child: LinkedTaskRow(
+                taskId: 'anchor-task',
+                data: LinkedTaskRowData(
+                  task: TestTaskFactory.create(
+                    id: 'other-task',
+                    title:
+                        'Migrate the relationship picker to the shared sheet',
+                  ),
+                ),
+                manageMode: manageMode,
+                onEdit: () async {},
+                onUnlink: () async => 1,
+              ),
+            ),
+          ),
+        ),
+      );
+      return tester.getSize(
+        find.text('Migrate the relationship picker to the shared sheet'),
+      );
+    }
+
+    testWidgets(
+      'the title keeps the same box when manage mode is toggled, so entering '
+      'manage mode never re-wraps every row',
+      (tester) async {
+        final browsing = await titleBoxAt(tester, manageMode: false);
+        final managing = await titleBoxAt(tester, manageMode: true);
+
+        expect(managing.width, browsing.width);
+        expect(managing.height, browsing.height);
+      },
+    );
+
+    testWidgets('the row offers no unbounded trailing content to overflow', (
+      tester,
+    ) async {
+      await titleBoxAt(tester, manageMode: true);
+      expect(tester.takeException(), isNull);
+    });
+
+    /// Row height at a width where the title fits one line and the status sits
+    /// trailing — the case where the trailing rail, not the text, sets the
+    /// height, and so the only case that can catch the rail growing.
+    Future<double> wideRowHeight(
+      WidgetTester tester, {
+      required bool manageMode,
+    }) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 900,
+              child: LinkedTaskRow(
+                taskId: 'anchor-task',
+                data: buildRowData(),
+                manageMode: manageMode,
+                onEdit: () async {},
+                onUnlink: () async => 1,
+              ),
+            ),
+          ),
+        ),
+      );
+      return tester.getSize(find.byType(LinkedTaskRow)).height;
+    }
+
+    testWidgets(
+      'the row keeps its height across modes too, so turning Manage on does '
+      'not grow every row and jump the card taller',
+      (tester) async {
+        final browsing = await wideRowHeight(tester, manageMode: false);
+        final managing = await wideRowHeight(tester, manageMode: true);
+
+        expect(managing, browsing);
+      },
+    );
+  });
+
+  group('LinkedTaskRow manage-mode hit areas', () {
+    testWidgets(
+      'both actions meet the 48pt minimum target — they sit in an adjacent '
+      'pair above a row that is itself tappable, so an undersized box costs '
+      'the wrong action or the page the user was reading',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 900,
+                child: LinkedTaskRow(
+                  taskId: 'anchor-task',
+                  data: buildRowData(),
+                  manageMode: true,
+                  onEdit: () async {},
+                  onUnlink: () async => 1,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        for (final icon in [Icons.swap_horiz_rounded, Icons.link_off]) {
+          final size = tester.getSize(
+            find
+                .ancestor(
+                  of: find.byIcon(icon),
+                  matching: find.byType(IconButton),
+                )
+                .first,
+          );
+          expect(size.width, greaterThanOrEqualTo(48));
+          expect(size.height, greaterThanOrEqualTo(48));
+        }
+      },
+    );
+  });
+
+  group('LinkedTaskRow emphasis ladder', () {
+    /// The colour the status label is actually painted at, at a given row width.
+    ///
+    /// Asserted on the rendered ink rather than on which slot the label landed
+    /// in: the wide layout styles it directly while the narrow one inherits the
+    /// list item's subtitle style, so the same intent has two code paths and
+    /// only one of them was carrying the emphasis.
+    Future<Color?> statusInkAt(WidgetTester tester, double width) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          // Align, not a bare SizedBox: the bench hands its child tight
+          // constraints, so a width set any other way is silently ignored and
+          // every case ends up measuring the same 800pt row.
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              child: LinkedTaskRow(
+                taskId: 'anchor-task',
+                data: buildRowData(),
+                manageMode: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      final richText = tester.widget<RichText>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText && widget.text.toPlainText().contains('Open'),
+        ),
+      );
+      // The span carrying the label, not the root: the narrow path overrides
+      // the colour on a child span, so reading the root style reports the
+      // inherited value the override exists to replace.
+      Color? ink;
+      richText.text.visitChildren((span) {
+        if (span is TextSpan && (span.text?.contains('Open') ?? false)) {
+          ink = span.style?.color ?? richText.text.style?.color;
+        }
+        return true;
+      });
+      return ink;
+    }
+
+    testWidgets(
+      'the status label sits below the section eyebrow at both widths, so the '
+      'narrow layout ranks the same three roles the wide one does',
+      (tester) async {
+        final narrow = await statusInkAt(tester, 390);
+        final wide = await statusInkAt(tester, 720);
+
+        expect(narrow, dsTokensLight.colors.text.lowEmphasis);
+        expect(wide, dsTokensLight.colors.text.lowEmphasis);
+        // ...and strictly below the eyebrow that groups it.
+        expect(narrow, isNot(dsTokensLight.colors.text.mediumEmphasis));
       },
     );
   });

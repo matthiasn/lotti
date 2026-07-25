@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/breakpoints.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 
 import '../../../../../../widget_test_utils.dart';
 
@@ -274,12 +275,23 @@ void main() {
         );
         await tester.pump();
 
-        final cta = tester.getRect(find.text('Start using AI'));
-        // The button's text label is centred inside a button that itself
-        // fills the row; checking that the row size matches the modal
-        // content width is enough — if the layout regressed back to a
-        // hug-content size, the CTA would be a fraction of this width.
-        expect(cta.width, greaterThan(120));
+        // Measured on the button, not on its centred text label. The label's
+        // width is a property of the font, so an absolute pixel floor on it
+        // passes or fails on font metrics rather than on the layout this test
+        // names — it broke the moment real fonts were loaded elsewhere in the
+        // suite. The button is what has to fill the row.
+        final button = tester.getRect(
+          find
+              .ancestor(
+                of: find.text('Start using AI'),
+                matching: find.byType(DesignSystemButton),
+              )
+              .first,
+        );
+        final surface = tester.getRect(
+          find.byType(AiProviderSetupResultModal),
+        );
+        expect(button.width, greaterThan(surface.width / 2));
       },
     );
 

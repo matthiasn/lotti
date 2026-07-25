@@ -711,15 +711,37 @@ card renders from one template: status glyph, title, status label, trailing
 affordance. A section renders only when it has entries.
 
 "Is blocked by" leads and is the only accented header (an amber label plus a
-leading glyph, matching the task header's own "Waiting on X" chip); every other
-section and every row stays neutral, so one accent reads as signal rather than
-as one more competing hue. Plain links follow under a "Relates to" header,
+leading glyph, matching the task header's own "Blocked by N tasks" chip); every
+other section and every row stays neutral, so one accent reads as signal rather
+than as one more competing hue. Plain links follow under a "Relates to" header,
 shown only when there are typed sections to distinguish them from.
+
+The chip, the section header, and the picker option that creates the link all
+say "blocked by". An earlier iteration worded the chip "Waiting on" to keep it
+from echoing the red status pill beside it, but that redundancy was visual
+rather than lexical, and it is now handled visually: the chip is an outline
+pill with an ordinary label, carrying amber only on its border and the ⊘ glyph,
+and it states a count rather than embedding the blocker's title.
+
+Three text roles share each row — task title, relationship, status — and they
+are ranked by ink as well as by size: titles hold the card's brightest text,
+section eyebrows sit at medium emphasis, and the per-row status label at low.
+Tied at one emphasis level the card read as a flat plane no matter how the type
+scale ranked them.
 
 Rows compose `DesignSystemListItem`, and `EntityPickerSheet` takes the same
 `rowSize`, so one task title renders at one rank whether it is read on the card
 or in the picker one tap away. The status label sits as a trailing anchor where
-there is width for it and drops to the subtitle slot at narrow widths.
+there is width for it and drops to the subtitle slot at narrow widths — in both
+browse and manage mode, since knowing a blocker is already closed matters most
+while deciding what to unlink.
+
+Both modes reserve the *same* trailing width, so entering manage mode swaps the
+chevron for the edit/unlink pair without re-wrapping a single title. This is
+asserted on the laid-out geometry rather than the widget tree
+(`linked_task_row_test.dart`): an earlier fix reserved one action box against
+manage mode's two and read as correct in the tree while visibly reflowing every
+row.
 
 Manage mode (the card's edit/unlink affordances) says so while it is on: the
 header replaces its link action with an inline Done, and the overflow offers
@@ -731,6 +753,15 @@ The card always renders its header, including on a task with no links at all —
 where it shows a worded "Link a task…" action rather than nothing. Rendering
 nothing had left the feature with no reachable entry point, since the link
 modal's only call site lived inside that hidden card.
+
+All four surfaces the flow opens — link an existing task, pick a blocker,
+edit a relationship, and choose the relationship for a task being created —
+go through `ModalUtils.showSinglePageModal`, so each is a bottom sheet on a
+phone and a centred dialog on a wide window, with the shared glass action
+footer. Every one of them carries a sticky footer, which is an overlay rather
+than a sibling: bodies must reserve
+`DesignSystemGlassActionFooter.reservedHeightFor(context)` as bottom padding
+or their content renders underneath it.
 
 ### Blockedness: a derived fact, not a stored flag
 

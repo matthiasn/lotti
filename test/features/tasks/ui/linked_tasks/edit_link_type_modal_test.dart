@@ -70,6 +70,7 @@ void main() {
                   linkId: 'link-1',
                   currentType: currentType,
                   currentDirection: currentDirection,
+                  linkedTaskTitle: 'Calibrate the feeder',
                 );
               },
               child: const Text('Open Modal'),
@@ -124,29 +125,73 @@ void main() {
       },
     );
 
-    testWidgets('Save persists the unchanged type/direction as an identity '
-        'round-trip', (tester) async {
-      stubUpdateLinkType(result: true);
+    testWidgets(
+      'the relation control is visible, not hidden under the sticky Save '
+      'footer — the footer is an overlay, not a sibling',
+      (tester) async {
+        stubUpdateLinkType(result: true);
 
-      await openModal(
-        tester,
-        currentType: EntryLinkType.followsUp,
-        currentDirection: TaskLinkDirection.outgoing,
-      );
+        await openModal(tester);
 
-      await tester.tap(saveButton());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        // Driving the dropdown by callback (as the tests below do) cannot
+        // catch occlusion, so assert on geometry: the control must sit fully
+        // above the Save button rather than behind it.
+        final dropdownRect = tester.getRect(
+          find.byType(DesignSystemDropdown),
+        );
+        final saveRect = tester.getRect(saveButton());
 
-      verify(
-        () => journalRepo.updateLinkType(
-          linkId: 'link-1',
-          newType: EntryLinkType.followsUp,
-          swapDirection: false,
-        ),
-      ).called(1);
-      expect(find.text('Edit relationship'), findsNothing);
-    });
+        expect(dropdownRect.height, greaterThan(0));
+        expect(
+          dropdownRect.bottom,
+          lessThanOrEqualTo(saveRect.top),
+          reason: 'relation control overlaps the Save footer',
+        );
+      },
+    );
+
+    testWidgets(
+      'Save is inert until the relation actually changes, and arms once it '
+      'does — an identity round-trip would bump the vector clock and enqueue '
+      'a sync message for an edit nobody made',
+      (tester) async {
+        stubUpdateLinkType(result: true);
+
+        await openModal(
+          tester,
+          currentType: EntryLinkType.followsUp,
+          currentDirection: TaskLinkDirection.outgoing,
+        );
+
+        expect(
+          tester.widget<DesignSystemButton>(saveButton()).onPressed,
+          isNull,
+        );
+
+        await pickRelation(tester, 'Duplicates');
+        await tester.pump();
+        expect(
+          tester.widget<DesignSystemButton>(saveButton()).onPressed,
+          isNotNull,
+        );
+
+        // ...and disarms again on returning to the starting relation.
+        await pickRelation(tester, 'Follows up on');
+        await tester.pump();
+        expect(
+          tester.widget<DesignSystemButton>(saveButton()).onPressed,
+          isNull,
+        );
+
+        verifyNever(
+          () => journalRepo.updateLinkType(
+            linkId: any(named: 'linkId'),
+            newType: any(named: 'newType'),
+            swapDirection: any(named: 'swapDirection'),
+          ),
+        );
+      },
+    );
 
     testWidgets(
       'selecting a new type before Save persists that type',
@@ -258,6 +303,9 @@ void main() {
 
       await openModal(tester);
 
+      // Save only arms once something changed.
+      await pickRelation(tester, 'Duplicates');
+      await tester.pump();
       await tester.tap(saveButton());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -279,5 +327,33 @@ void main() {
       );
       expect(find.text('Edit relationship'), findsOneWidget);
     });
+
+    testWidgets(
+      'a rejected blocks retype names the cycle, not "try again" — the cycle '
+      'guard is the only thing that rejects a retype, and retrying cannot end '
+      'differently',
+      (tester) async {
+        stubUpdateLinkType(result: false);
+
+        await openModal(
+          tester,
+          currentType: EntryLinkType.followsUp,
+          currentDirection: TaskLinkDirection.outgoing,
+        );
+
+        await pickRelation(tester, 'Blocks');
+        await tester.pump();
+        await tester.tap(saveButton());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsWidgets,
+        );
+      },
+    );
   });
 }

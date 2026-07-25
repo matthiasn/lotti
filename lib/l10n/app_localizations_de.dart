@@ -3456,7 +3456,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get createEntryTitle => 'Hinzufügen';
 
   @override
-  String get createNewLinkedTask => 'Neue verknüpfte Aufgabe erstellen...';
+  String get createNewLinkedTask => 'Neue verknüpfte Aufgabe erstellen…';
+
+  @override
+  String get createNewLinkedTaskTitle => 'Neue Aufgabe';
 
   @override
   String get customColor => 'Benutzerdefinierte Farbe';
@@ -5261,6 +5264,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get doneButton => 'Fertig';
 
   @override
+  String get editLinkTypeCounterpartLabel => 'Verknüpfte Aufgabe';
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Die Beziehung konnte nicht aktualisiert werden. Bitte versuch es erneut.';
 
@@ -6634,6 +6640,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkCreatedUndo => 'Rückgängig';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Die Verknüpfung konnte nicht erstellt werden. Bitte versuche es erneut.';
+
+  @override
   String get linkDirectionLabel => 'Diese Aufgabe…';
 
   @override
@@ -6656,7 +6666,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkedTasksTitle => 'Verknüpfte Aufgaben';
 
   @override
-  String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
+  String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen…';
+
+  @override
+  String get linkExistingTaskTitle => 'Verknüpfen';
 
   @override
   String get linkPhraseBasic => 'Bezieht sich auf';
@@ -6690,6 +6703,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Ersetzt';
+
+  @override
+  String get linkTaskButton => 'Verknüpfen';
 
   @override
   String get logbookEmptyHint =>
@@ -6948,7 +6964,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Messgrößen, Dashboards, Gewohnheiten, Kategorien und AI-Einstellungen synchronisieren';
 
   @override
-  String get manageLinks => 'Verknüpfungen verwalten...';
+  String get manageLinks => 'Verknüpfungen verwalten…';
 
   @override
   String get matrixStatsCatchupBatches => 'Nachhol-Batches';
@@ -8426,7 +8442,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchModeVector => 'Vektor';
 
   @override
-  String get searchTasksHint => 'Aufgaben suchen...';
+  String get searchTasksHint => 'Aufgaben suchen…';
 
   @override
   String get selectButton => 'Auswählen';
@@ -10182,8 +10198,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Wartet auf $count Aufgaben',
-      one: 'Wartet auf 1 Aufgabe',
+      other: 'Blockiert von $count Aufgaben',
+      one: 'Blockiert von 1 Aufgabe',
     );
     return '$_temp0';
   }
@@ -10193,8 +10209,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Tippen, um $count Blockierer zu sehen',
-      one: 'Wartet auf $title',
+      other: 'Tippe für $count Blocker',
+      one: 'Blockiert von $title',
     );
     return '$_temp0';
   }
@@ -10844,6 +10860,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       'Bist du sicher, dass du die Verknüpfung zu dieser Aufgabe aufheben möchtest?';
+
+  @override
+  String unlinkTaskConfirmNamed(String title) {
+    return '„$title“ trennen? Die Aufgabe selbst wird nicht gelöscht.';
+  }
 
   @override
   String get unlinkTaskFailedMessage =>

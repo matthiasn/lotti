@@ -184,35 +184,48 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
                     Semantics(
                       container: true,
                       label: widget.semanticsLabel ?? widget.hintText,
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: widget.focusNode,
-                        autofocus: widget.autofocus,
-                        enabled: widget.enabled,
-                        onChanged: widget.onChanged,
-                        onSubmitted: widget.onSubmitted,
-                        textInputAction: TextInputAction.search,
-                        cursorHeight: scaledTextHeight,
-                        selectionHeightStyle: ui.BoxHeightStyle.tight,
-                        strutStyle: StrutStyle.fromTextStyle(
-                          textStyle,
-                          forceStrutHeight: true,
+                      child: TextSelectionTheme(
+                        data: TextSelectionThemeData(
+                          cursorColor: tokens.colors.interactive.enabled,
+                          selectionColor: tokens.colors.interactive.enabled
+                              .withValues(alpha: 0.3),
+                          selectionHandleColor:
+                              tokens.colors.interactive.enabled,
                         ),
-                        style: textStyle,
-                        textAlignVertical: const TextAlignVertical(y: -0.3),
-                        decoration: const InputDecoration(
-                          hint: ExcludeSemantics(
-                            child: SizedBox.shrink(),
+                        child: TextField(
+                          controller: _controller,
+                          focusNode: widget.focusNode,
+                          autofocus: widget.autofocus,
+                          enabled: widget.enabled,
+                          onChanged: widget.onChanged,
+                          onSubmitted: widget.onSubmitted,
+                          textInputAction: TextInputAction.search,
+                          // Material's default caret and selection are a lilac
+                          // that belongs to no token in this system, and it was
+                          // the only unowned hue on any surface using this field.
+                          cursorColor: tokens.colors.interactive.enabled,
+                          cursorHeight: scaledTextHeight,
+                          selectionHeightStyle: ui.BoxHeightStyle.tight,
+                          strutStyle: StrutStyle.fromTextStyle(
+                            textStyle,
+                            forceStrutHeight: true,
                           ),
-                          border: _noBorder,
-                          enabledBorder: _noBorder,
-                          disabledBorder: _noBorder,
-                          focusedBorder: _noBorder,
-                          errorBorder: _noBorder,
-                          focusedErrorBorder: _noBorder,
-                          contentPadding: EdgeInsets.zero,
-                          isDense: true,
-                          isCollapsed: true,
+                          style: textStyle,
+                          textAlignVertical: const TextAlignVertical(y: -0.3),
+                          decoration: const InputDecoration(
+                            hint: ExcludeSemantics(
+                              child: SizedBox.shrink(),
+                            ),
+                            border: _noBorder,
+                            enabledBorder: _noBorder,
+                            disabledBorder: _noBorder,
+                            focusedBorder: _noBorder,
+                            errorBorder: _noBorder,
+                            focusedErrorBorder: _noBorder,
+                            contentPadding: EdgeInsets.zero,
+                            isDense: true,
+                            isCollapsed: true,
+                          ),
                         ),
                       ),
                     ),

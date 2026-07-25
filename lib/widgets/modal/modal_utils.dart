@@ -66,7 +66,17 @@ class ModalUtils {
         scopesRoute: true,
         label: title,
         child: ExcludeSemantics(
-          child: Text(title, style: modalTitleStyle(context)),
+          // Bounded: the title bar is a fixed height with the close button's
+          // width mirrored on the leading edge, so a title that needs a second
+          // line silently reflows the bar or clips mid-word. A long string, a
+          // long locale or a large text scale should degrade to an ellipsis —
+          // the route's semantics above still announce the full title.
+          child: Text(
+            title,
+            style: modalTitleStyle(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ),
     );

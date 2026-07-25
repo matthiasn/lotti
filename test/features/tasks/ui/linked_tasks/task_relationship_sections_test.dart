@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -45,9 +46,10 @@ void main() {
     required String title,
     required TaskLinkKind kind,
     required TaskLinkDirection direction,
+    TaskStatus? status,
   }) => TaskLinkEntry(
     linkId: 'link-$id',
-    task: TestTaskFactory.create(id: id, title: title),
+    task: TestTaskFactory.create(id: id, title: title, status: status),
     kind: kind,
     direction: direction,
   );
@@ -286,10 +288,10 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -321,10 +323,10 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -338,8 +340,8 @@ void main() {
     });
 
     testWidgets(
-      'editing an incoming row opens the modal pre-selected to its type and '
-      'direction, and Save persists it unchanged (identity round-trip)',
+      'editing an incoming row opens the modal pre-selected to the inverse '
+      'phrase, and flipping it back persists as a direction swap',
       (tester) async {
         final repo = await pumpSections(
           tester,
@@ -363,6 +365,25 @@ void main() {
 
         expect(find.text('Edit relationship'), findsOneWidget);
 
+        // An incoming blocks edge reads as "Is blocked by" — the inverse
+        // phrase for the same stored row.
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
+        );
+        expect(dropdown.inputLabel, 'Is blocked by');
+        expect(
+          tester
+              .widget<DesignSystemButton>(
+                find.widgetWithText(DesignSystemButton, 'Save'),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        dropdown.onItemPressed!(
+          dropdown.items.firstWhere((item) => item.label == 'Blocks'),
+        );
+        await tester.pump();
         await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -371,14 +392,15 @@ void main() {
           () => repo.updateLinkType(
             linkId: 'link-blocker',
             newType: EntryLinkType.blocks,
-            swapDirection: false,
+            swapDirection: true,
           ),
         ).called(1);
       },
     );
 
     testWidgets(
-      'editing an outgoing row also round-trips unchanged through Save',
+      'editing an outgoing row opens on the primary phrase, and flipping it '
+      'persists as a direction swap from the opposite baseline',
       (tester) async {
         final repo = await pumpSections(
           tester,
@@ -400,6 +422,15 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
+        );
+        expect(dropdown.inputLabel, 'Blocks');
+
+        dropdown.onItemPressed!(
+          dropdown.items.firstWhere((item) => item.label == 'Is blocked by'),
+        );
+        await tester.pump();
         await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -408,7 +439,7 @@ void main() {
           () => repo.updateLinkType(
             linkId: 'link-blocked',
             newType: EntryLinkType.blocks,
-            swapDirection: false,
+            swapDirection: true,
           ),
         ).called(1);
       },
@@ -456,6 +487,36 @@ void main() {
             swapDirection: false,
           ),
         ).called(1);
+      },
+    );
+
+    testWidgets(
+      'the blocked-by accent drops once every blocker is closed — a closed '
+      'blocker releases the dependent, so amber there claims something the '
+      'header has already retracted',
+      (tester) async {
+        await pumpSections(
+          tester,
+          TaskLinkGroups(
+            flat: const [],
+            typed: [
+              entry(
+                id: 'blocker',
+                title: 'Finished Blocker',
+                kind: TaskLinkKind.blocks,
+                direction: TaskLinkDirection.incoming,
+                status: TaskStatus.done(
+                  id: 's',
+                  createdAt: DateTime(2024),
+                  utcOffset: 0,
+                ),
+              ),
+            ],
+          ),
+        );
+
+        expect(find.text('Is blocked by'), findsOneWidget);
+        expect(find.byIcon(Icons.block), findsNothing);
       },
     );
   });

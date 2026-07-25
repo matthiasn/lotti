@@ -3483,7 +3483,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get createEntryTitle => 'Adăugați';
 
   @override
-  String get createNewLinkedTask => 'Creați o sarcină nouă asociată...';
+  String get createNewLinkedTask => 'Creați o sarcină nouă asociată…';
+
+  @override
+  String get createNewLinkedTaskTitle => 'Sarcină nouă';
 
   @override
   String get customColor => 'Culoare personalizată';
@@ -5311,6 +5314,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get doneButton => 'Gata';
 
   @override
+  String get editLinkTypeCounterpartLabel => 'Sarcină asociată';
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Relația nu a putut fi actualizată. Vă rugăm să încercați din nou.';
 
@@ -6718,6 +6724,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkCreatedUndo => 'Anulați';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Legătura nu a putut fi creată. Vă rugăm să încercați din nou.';
+
+  @override
   String get linkDirectionLabel => 'Această sarcină…';
 
   @override
@@ -6740,7 +6750,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkedTasksTitle => 'Sarcini legate';
 
   @override
-  String get linkExistingTask => 'Leagă o sarcină existentă...';
+  String get linkExistingTask => 'Asociați o sarcină existentă…';
+
+  @override
+  String get linkExistingTaskTitle => 'Asociați';
 
   @override
   String get linkPhraseBasic => 'Are legătură cu';
@@ -6774,6 +6787,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Înlocuiește';
+
+  @override
+  String get linkTaskButton => 'Asociați';
 
   @override
   String get logbookEmptyHint =>
@@ -7045,7 +7061,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sincronizați din nou măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI';
 
   @override
-  String get manageLinks => 'Gestionează legăturile...';
+  String get manageLinks => 'Gestionați legăturile…';
 
   @override
   String get matrixStatsCatchupBatches => 'Loturi de recuperare';
@@ -8547,7 +8563,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get searchModeVector => 'Vector';
 
   @override
-  String get searchTasksHint => 'Căutați sarcini...';
+  String get searchTasksHint => 'Căutați sarcini…';
 
   @override
   String get selectButton => 'Selectați';
@@ -10310,9 +10326,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'În așteptarea a $count de sarcini',
-      few: 'În așteptarea a $count sarcini',
-      one: 'În așteptarea unei sarcini',
+      other: 'Blocată de $count sarcini',
+      one: 'Blocată de 1 sarcină',
     );
     return '$_temp0';
   }
@@ -10322,9 +10337,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Atingeți pentru a vedea $count de blocaje',
-      few: 'Atingeți pentru a vedea $count blocaje',
-      one: 'Se așteaptă $title',
+      other: 'Atingeți pentru $count blocaje',
+      one: 'Blocată de $title',
     );
     return '$_temp0';
   }
@@ -10901,28 +10915,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskStatusAll => 'Toate';
 
   @override
-  String get taskStatusBlocked => 'BLOCAT';
+  String get taskStatusBlocked => 'Blocat';
 
   @override
-  String get taskStatusDone => 'TERMINAT';
+  String get taskStatusDone => 'Terminat';
 
   @override
-  String get taskStatusGroomed => 'PREGĂTIT';
+  String get taskStatusGroomed => 'Pregătit';
 
   @override
-  String get taskStatusInProgress => 'ÎN PROGRES';
+  String get taskStatusInProgress => 'În progres';
 
   @override
   String get taskStatusLabel => 'Starea Sarcinii:';
 
   @override
-  String get taskStatusOnHold => 'ÎN AȘTEPTARE';
+  String get taskStatusOnHold => 'În așteptare';
 
   @override
-  String get taskStatusOpen => 'DESCHIS';
+  String get taskStatusOpen => 'Deschis';
 
   @override
-  String get taskStatusRejected => 'RESPINS';
+  String get taskStatusRejected => 'Respins';
 
   @override
   String get taskTitleEmpty => 'Fără titlu';
@@ -10973,6 +10987,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       'Sigur doriți să deconectați această sarcină?';
+
+  @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Deconectați „$title”? Sarcina în sine nu este ștearsă.';
+  }
 
   @override
   String get unlinkTaskFailedMessage =>

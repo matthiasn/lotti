@@ -1629,7 +1629,8 @@
   "createCategoryTitle": "Vytvořit kategorii",
   "createEntryLabel": "Vytvořit novou položku",
   "createEntryTitle": "Přidat",
-  "createNewLinkedTask": "Vytvořit nový propojený úkol...",
+  "createNewLinkedTask": "Vytvořit nový propojený úkol…",
+  "createNewLinkedTaskTitle": "Nový úkol",
   "customColor": "Vlastní barva",
   "dailyOsDayPlan": "Plán dne",
   "dailyOsNextActivityActionFailed": "Akci se nepodařilo dokončit. Nahrávka je pořád v bezpečí — zkus to znovu.",
@@ -2333,6 +2334,7 @@
     }
   },
   "doneButton": "Hotovo",
+  "editLinkTypeCounterpartLabel": "Propojený úkol",
   "editLinkTypeFailedMessage": "Vztah se nepodařilo upravit. Zkuste to prosím znovu.",
   "editLinkTypeTitle": "Upravit vztah",
   "editLinkTypeTooltip": "Upravit vztah",
@@ -2802,6 +2804,7 @@
     }
   },
   "linkCreatedUndo": "Zpět",
+  "linkCreateFailedMessage": "Propojení se nepodařilo vytvořit. Zkus to prosím znovu.",
   "linkDirectionLabel": "Tento úkol…",
   "linkedTaskImageBadge": "Z propojené úlohy",
   "linkedTasksBlockedBySectionTitle": "Blokováno",
@@ -2809,7 +2812,8 @@
   "linkedTasksEmptyHint": "Propoj tento úkol s jiným — blokátorem, navazujícím nebo duplicitou.",
   "linkedTasksMenuTooltip": "Možnosti propojených úkolů",
   "linkedTasksTitle": "Propojené úkoly",
-  "linkExistingTask": "Propojit existující úkol...",
+  "linkExistingTask": "Propojit existující úkol…",
+  "linkExistingTaskTitle": "Propojit",
   "linkPhraseBasic": "Souvisí s",
   "linkPhraseBlocksInverse": "Je blokováno",
   "linkPhraseBlocksPrimary": "Blokuje",
@@ -2821,6 +2825,7 @@
   "linkPhraseFollowsUpPrimary": "Navazuje na",
   "linkPhraseSupersedesInverse": "Je nahrazeno",
   "linkPhraseSupersedesPrimary": "Nahrazuje",
+  "linkTaskButton": "Propojit",
   "logbookEmptyHint": "Vytvoř svůj první záznam a začni si psát deník.",
   "logbookEmptyTitle": "Tvůj deník je prázdný",
   "logbookNewEntriesHint": "Nové záznamy se otevřou tady.",
@@ -2920,7 +2925,7 @@
   "maintenanceReSyncStart": "Spustit",
   "maintenanceSyncDefinitions": "Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie, AI nastavení",
   "maintenanceSyncDefinitionsDescription": "Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie a AI nastavení",
-  "manageLinks": "Spravovat propojení...",
+  "manageLinks": "Spravovat propojení…",
   "matrixStatsCatchupBatches": "Doháněcí dávky",
   "matrixStatsCircuitOpens": "Otevření přerušovače",
   "matrixStatsConflicts": "Konflikty",
@@ -3511,7 +3516,7 @@
   "searchHint": "Hledat...",
   "searchModeFullText": "Plný text",
   "searchModeVector": "Vektor",
-  "searchTasksHint": "Hledat úkoly...",
+  "searchTasksHint": "Hledat úkoly…",
   "selectButton": "Vybrat",
   "selectColor": "Vyberte barvu",
   "selectLanguage": "Vybrat jazyk",
@@ -4133,7 +4138,7 @@
   "taskAgentUseCategoryDefaultDescription": "Zkopíruje aktuální nastavení kategorie. Pozdější změny kategorie tohoto agenta neovlivní.",
   "taskAgentUseProfileDefault": "Použít výchozí model profilu",
   "taskAgentWakeAgent": "Probudit agenta",
-  "taskBlockedByChipLabel": "{count, plural, =1{Čeká na 1 úkol} few{Čeká na {count} úkoly} other{Čeká na {count} úkolů}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Blokováno 1 úkolem} other{Blokováno {count} úkoly}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4141,7 +4146,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Čeká se na {title}} few{Klepnutím zobrazíte {count} blokující úkoly} other{Klepnutím zobrazíte {count} blokujících úkolů}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Blokováno úkolem {title}} other{Klepni pro zobrazení {count} blokujících úkolů}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4432,6 +4437,7 @@
   "transcriptModelLabel": "Model: {provider}, {model}",
   "unlinkButton": "Zrušit propojení",
   "unlinkTaskConfirm": "Opravdu chcete zrušit propojení tohoto úkolu?",
+  "unlinkTaskConfirmNamed": "Odpojit „{title}“? Samotný úkol se nesmaže.",
   "unlinkTaskFailedMessage": "Propojení úkolu se nepodařilo zrušit. Zkuste to prosím znovu.",
   "unlinkTaskTitle": "Zrušit propojení úkolu",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} výsledek} few{{elapsed}ms, {count} výsledky} other{{elapsed}ms, {count} výsledků}}",

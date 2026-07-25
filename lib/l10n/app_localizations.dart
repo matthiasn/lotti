@@ -5864,8 +5864,14 @@ abstract class AppLocalizations {
   /// No description provided for @createNewLinkedTask.
   ///
   /// In en, this message translates to:
-  /// **'Create new linked task...'**
+  /// **'Create new linked task…'**
   String get createNewLinkedTask;
+
+  /// Modal title. Same wording as the control that opens it, without the trailing ellipsis — the modal is the further UI the ellipsis promises, so it must not promise it again.
+  ///
+  /// In en, this message translates to:
+  /// **'New linked task'**
+  String get createNewLinkedTaskTitle;
 
   /// No description provided for @customColor.
   ///
@@ -9077,6 +9083,12 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get doneButton;
 
+  /// Caption above the name of the task on the other end of the link being edited.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked task'**
+  String get editLinkTypeCounterpartLabel;
+
   /// No description provided for @editLinkTypeFailedMessage.
   ///
   /// In en, this message translates to:
@@ -11501,6 +11513,12 @@ abstract class AppLocalizations {
   /// **'Undo'**
   String get linkCreatedUndo;
 
+  /// Shown when creating a link fails for a relation that is not "blocks", where a blocking-cycle explanation would be wrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the link. Please try again.'**
+  String get linkCreateFailedMessage;
+
   /// No description provided for @linkDirectionLabel.
   ///
   /// In en, this message translates to:
@@ -11546,8 +11564,14 @@ abstract class AppLocalizations {
   /// No description provided for @linkExistingTask.
   ///
   /// In en, this message translates to:
-  /// **'Link existing task...'**
+  /// **'Link existing task…'**
   String get linkExistingTask;
+
+  /// Modal title. Same wording as the control that opens it, without the trailing ellipsis — the modal is the further UI the ellipsis promises, so it must not promise it again.
+  ///
+  /// In en, this message translates to:
+  /// **'Link existing task'**
+  String get linkExistingTaskTitle;
 
   /// No description provided for @linkPhraseBasic.
   ///
@@ -11614,6 +11638,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Supersedes'**
   String get linkPhraseSupersedesPrimary;
+
+  /// Short verb label for the Linked Tasks card header action that opens the link picker. Mirrors the Done button occupying the same slot in manage mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get linkTaskButton;
 
   /// No description provided for @logbookEmptyHint.
   ///
@@ -12054,7 +12084,7 @@ abstract class AppLocalizations {
   /// No description provided for @manageLinks.
   ///
   /// In en, this message translates to:
-  /// **'Manage links...'**
+  /// **'Manage links…'**
   String get manageLinks;
 
   /// No description provided for @matrixStatsCatchupBatches.
@@ -14418,7 +14448,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchTasksHint.
   ///
   /// In en, this message translates to:
-  /// **'Search tasks...'**
+  /// **'Search tasks…'**
   String get searchTasksHint;
 
   /// No description provided for @selectButton.
@@ -17493,13 +17523,13 @@ abstract class AppLocalizations {
   /// No description provided for @taskBlockedByChipLabel.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Waiting on 1 task} other{Waiting on {count} tasks}}'**
+  /// **'{count, plural, =1{Blocked by 1 task} other{Blocked by {count} tasks}}'**
   String taskBlockedByChipLabel(int count);
 
   /// No description provided for @taskBlockedByChipTooltip.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Waiting on {title}} other{Tap to see {count} blockers}}'**
+  /// **'{count, plural, =1{Blocked by {title}} other{Tap to see {count} blockers}}'**
   String taskBlockedByChipTooltip(int count, String title);
 
   /// No description provided for @taskBlockedByUnresolvedLabel.
@@ -18605,6 +18635,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to unlink this task?'**
   String get unlinkTaskConfirm;
+
+  /// Unlink confirmation naming the task being unlinked. The rows it is reached from carry two faint glyphs each, so an anonymous "this task" cannot tell the user which link they hit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink “{title}”? The task itself is not deleted.'**
+  String unlinkTaskConfirmNamed(String title);
 
   /// No description provided for @unlinkTaskFailedMessage.
   ///

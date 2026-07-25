@@ -73,7 +73,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   task under the wrong relationship is one tap to take back instead of a trip
   through Manage links.
 
+### Fixed
+- **The Linked Tasks card cut off its own name** in German and Spanish, and at
+  larger text sizes in every language. The Link action now drops to its icon
+  where the label won't fit beside the heading, rather than the heading giving
+  way.
+- **The unlink confirmation names the task** you're removing, instead of asking
+  about "this task" from a row of unlabelled icons.
+- **The Linked Tasks header broke at larger text sizes.** At accessibility text
+  scales the Link button was cut off and the ⋯ menu vanished entirely — which,
+  while editing links, was one of only two ways out.
+- **Undo after linking left the message on screen.** It removed the link but
+  kept showing the confirmation and a live Undo button for another ten
+  seconds, offering to undo something already undone.
+- The confirmation now shows the linked task's full name instead of cutting it
+  off, and modal titles shorten with an ellipsis rather than reflowing their
+  bar in longer languages.
+- **A task you had already linked could be linked again.** A plain link reads
+  the same from either end, but the picker only recognised it from the side it
+  was created on — so a task already listed on the card was offered again, and
+  taking it left two identical rows and needed two confirmations to remove one
+  link.
+- **Failures said the wrong thing and looked like successes.** Every rejected
+  link reported "this would create a blocking cycle", even for relationships
+  that can't create one, and failure messages arrived on the same background
+  as the "link created" confirmation.
+- Manage mode has a way to add a link again — its header slot is taken by the
+  Done button while you're editing.
+- **The link and blocker pickers listed no tasks at all.** Browsing (before
+  typing anything) came back empty in every case, because the query treated
+  "all categories" as "no categories". Searching still worked, which is why
+  it looked like a search quirk rather than an empty list.
+- **A task with links briefly claimed it had none.** Opening a task showed the
+  "Link a task…" empty prompt until its links finished loading, so every
+  populated Linked Tasks card flashed an empty one first.
+- **Finished tasks can be linked again.** "Follows up on", "Duplicates",
+  "Fixes" and "Supersedes" all commonly point at work that is already done,
+  but completed tasks were excluded from the picker and it reported "No tasks
+  found" for a task you could see everywhere else. Blockers still list only
+  open tasks — a finished task can't block anything.
+- **Undo after linking now tells you when it fails**, instead of silently
+  leaving the link in place, and it stays on screen long enough to reach.
+- Edit and unlink in manage mode meet the 48pt minimum touch target; they were
+  40pt, side by side, over a row that is itself tappable.
+- **Task search could deny a task that exists.** In the link and blocker
+  pickers, full-text search results were matched against only the first 200
+  open tasks loaded, so on a larger backlog a task you searched for by name
+  could come back as "No tasks found". Matches outside that window are now
+  fetched directly.
+
 ### Changed
+- **An empty Linked Tasks card offers both actions in words.** Creating a new
+  linked task used to live only behind the ⋯ menu, on the one screen where you
+  have nothing to go on yet.
+- **Linking a task is a labelled button again.** Once the Linked Tasks card
+  had any links, its only way to add another was an unlabelled icon; it now
+  reads "Link", matching the Done button that shares that slot.
+- **Save in the edit-relationship sheet stays off until you change something**,
+  instead of offering to save an edit nobody made.
+- French and Romanian task statuses are sentence case ("En cours", "În
+  progres") rather than all caps, matching every other language.
+- **One word for one relationship.** The header chip on a blocked task reads
+  "Blocked by 2 tasks" again, matching the section it jumps to and the option
+  that created the link — previously it said "Waiting on", so the same
+  relationship went by two names depending on where you met it.
+- **The edit-relationship sheet names the task you are editing the link to.**
+  It read "This task… / Is blocked by" with nothing after it, leaving you to
+  remember which row you had tapped.
+- Editing links no longer hides each linked task's status — knowing a blocker
+  is already done is most useful exactly when you are deciding what to unlink.
 - **Manage mode says it is on.** The Linked Tasks card now shows a Done button
   in its header while you are editing links, instead of leaving the only exit
   inside the same overflow menu you opened it from.

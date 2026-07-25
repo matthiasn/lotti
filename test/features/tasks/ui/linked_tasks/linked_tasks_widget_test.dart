@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,6 +9,8 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
@@ -24,6 +27,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -158,6 +162,8 @@ void main() {
     required List<Task> outgoing,
     bool manageMode = false,
     MediaQueryData? mediaQueryData,
+    double? width,
+    Locale? locale,
     List<Override> extraOverrides = const [],
     List<EntryLink> extraTypedLinks = const [],
     List<Task> extraTypedTasks = const [],
@@ -182,8 +188,20 @@ void main() {
           ...extraOverrides,
         ],
         child: WidgetTestBench(
+          locale: locale,
           mediaQueryData: mediaQueryData,
-          child: const LinkedTasksWidget(taskId: 'task-main'),
+          // Align, not a bare SizedBox: the bench hands its child tight
+          // constraints, so a width set any other way is silently ignored and
+          // the card is measured at the full 800pt surface instead of a phone.
+          child: width == null
+              ? const LinkedTasksWidget(taskId: 'task-main')
+              : Align(
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: width,
+                    child: const LinkedTasksWidget(taskId: 'task-main'),
+                  ),
+                ),
         ),
       ),
     );
@@ -199,7 +217,13 @@ void main() {
   late MockVectorClockService mockVectorClockService;
   late TestGetItMocks getItMocks;
 
-  setUpAll(registerAllFallbackValues);
+  setUpAll(() async {
+    registerAllFallbackValues();
+    // Real font metrics: the fallback test font is far wider than Inter, so
+    // width assertions measured against it describe a layout that does not
+    // ship.
+    await loadAppFonts();
+  });
 
   setUp(() async {
     mockNavService = MockNavService();
@@ -378,7 +402,7 @@ void main() {
       expect(find.text('to'), findsNothing);
       expect(find.text('from'), findsNothing);
       // Three rows → two dividers between them.
-      expect(find.byType(Divider), findsNWidgets(2));
+      expect(find.byType(DesignSystemDivider), findsNWidgets(2));
     });
 
     testWidgets('uses the shared task status glyph for each linked task', (
@@ -492,7 +516,7 @@ void main() {
         expect(find.text('Outgoing Task'), findsOneWidget);
         // One divider between the typed sections and the flat list — the
         // flat list itself has only one row, so no additional dividers.
-        expect(find.byType(Divider), findsOneWidget);
+        expect(find.byType(DesignSystemDivider), findsOneWidget);
       },
     );
   });
@@ -618,5 +642,167 @@ void main() {
       expect(find.text('Outgoing Task'), findsOneWidget);
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
+
+    // The other half of the header contract. The scale loop below proves the
+    // header does not overflow; it says nothing about whether the title is
+    // being eaten while space sits idle beside it — which is exactly how a
+    // default-scale truncation shipped under a green suite.
+    // The card sits inside the detail page's horizontal padding, so its real
+    // width on a 390pt phone is ~357 — measuring at the full viewport width
+    // hands the header 33pt it never has, which is enough to hide the
+    // truncation entirely.
+    const phoneCardWidth = 357.0;
+
+    // Every shipped locale, not just English. The R17 fix was verified in
+    // English and shipped truncated in German and Spanish, whose card title
+    // and action label are both markedly longer — a difference no
+    // English-only assertion and no screenshot round can see.
+    for (final locale in ['en', 'de', 'fr', 'es', 'ro', 'cs']) {
+      testWidgets(
+        'the header title survives default text size in "$locale"',
+        (tester) async {
+          await pumpWidget(
+            tester,
+            incoming: [],
+            outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+            width: phoneCardWidth,
+            locale: Locale(locale),
+            mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          );
+
+          final title = tester.renderObject<RenderParagraph>(
+            find.byKey(const ValueKey('linked-tasks-card-title')),
+          );
+          expect(
+            title.didExceedMaxLines,
+            isFalse,
+            reason:
+                'the card truncates its own name in "$locale" at default text '
+                'size: ${title.size.width}pt granted against '
+                '${title.getMaxIntrinsicWidth(double.infinity)}pt needed',
+          );
+
+          // The other direction, which is what an allowance being too large
+          // hides: only the two locales whose title and label genuinely
+          // collide should lose the word. Asserting the title survives says
+          // nothing about labels dropped that had room.
+          // Both branches render a DesignSystemButton — the fallback is
+          // icon-only, not a different component — so the label is what
+          // distinguishes them.
+          final worded = tester
+              .widgetList<DesignSystemButton>(find.byType(DesignSystemButton))
+              .any((button) => button.label.isNotEmpty);
+          final expectsWordedAction = !const {'de', 'es'}.contains(locale);
+          expect(
+            worded,
+            expectsWordedAction,
+            reason: expectsWordedAction
+                ? 'the link action should keep its word in "$locale" — an '
+                      "allowance larger than the button's real chrome takes "
+                      'the label from locales that had room for it'
+                : 'the link action cannot keep its word in "$locale" without '
+                      "truncating the card's own name",
+          );
+        },
+      );
+    }
+
+    for (final manageMode in [false, true]) {
+      testWidgets(
+        'the header title is not truncated at default text size '
+        '(manage: $manageMode) — it may give way only when the trailing '
+        'controls genuinely leave it no room',
+        (tester) async {
+          await pumpWidget(
+            tester,
+            incoming: [],
+            outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+            manageMode: manageMode,
+            width: phoneCardWidth,
+            mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          );
+
+          final titleFinder = find.text('Linked Tasks');
+          expect(titleFinder, findsOneWidget);
+
+          final painted = tester.renderObject<RenderParagraph>(titleFinder);
+          expect(
+            painted.didExceedMaxLines,
+            isFalse,
+            reason:
+                'the card is truncating its own name at default text size; '
+                'the granted width is ${painted.size.width}pt against an '
+                'intrinsic ${painted.getMaxIntrinsicWidth(double.infinity)}pt',
+          );
+        },
+      );
+    }
+
+    // Large accessibility text sizes are a supported configuration, not an
+    // edge case, and the card header is the densest row in the feature: a
+    // title, a count badge, a worded action and an overflow menu on one line.
+    for (final scale in [1.3, 1.6, 2.0]) {
+      for (final manageMode in [false, true]) {
+        testWidgets(
+          'the header survives text scale $scale (manage: $manageMode) — at '
+          'these sizes it used to overflow, clipping the action and dropping '
+          "the overflow menu that is manage mode's other way out",
+          (tester) async {
+            await pumpWidget(
+              tester,
+              incoming: [],
+              outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+              manageMode: manageMode,
+              // The card's real width, like every other assertion in this
+              // file. Measuring at the full viewport hands the header 33pt it
+              // never has — which is exactly the headroom that can keep the
+              // overflow menu visible at a large text scale while the shipped
+              // card drops it.
+              width: phoneCardWidth,
+              mediaQueryData: MediaQueryData(
+                size: const Size(390, 844),
+                textScaler: TextScaler.linear(scale),
+              ),
+            );
+
+            expect(tester.takeException(), isNull);
+            // The way out must still be there, not merely un-crashed.
+            expect(find.byIcon(Icons.more_vert), findsOneWidget);
+          },
+        );
+      }
+    }
+
+    testWidgets(
+      'the empty card words both creative actions — it is the screen where '
+      'the user knows least, and creating a linked task was reachable only '
+      'through an unlabelled glyph holding one item',
+      (tester) async {
+        await pumpWidget(tester, incoming: [], outgoing: []);
+
+        expect(find.text('Link a task…'), findsOneWidget);
+        expect(find.text('Create new linked task…'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the unlink confirmation names the task — the rows it is reached from '
+      'carry two faint glyphs each, so "this task" cannot say which link was '
+      'hit on the only irreversible action here',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          manageMode: true,
+        );
+
+        await tester.tap(find.byIcon(Icons.link_off));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.textContaining('Outgoing Task'), findsWidgets);
+      },
+    );
   });
 }

@@ -3431,7 +3431,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get createEntryTitle => 'Tilføj';
 
   @override
-  String get createNewLinkedTask => 'Opret ny sammenkædet opgave...';
+  String get createNewLinkedTask => 'Opret ny sammenkædet opgave…';
+
+  @override
+  String get createNewLinkedTaskTitle => 'New linked task';
 
   @override
   String get customColor => 'Specialfarve';
@@ -5227,6 +5230,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get doneButton => 'Færdig';
 
   @override
+  String get editLinkTypeCounterpartLabel => 'Linked task';
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Couldn\'t update the relationship. Please try again.';
 
@@ -6599,6 +6605,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkCreatedUndo => 'Undo';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Couldn\'t create the link. Please try again.';
+
+  @override
   String get linkDirectionLabel => 'This task…';
 
   @override
@@ -6621,7 +6631,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkedTasksTitle => 'Sammenkoblede opgaver';
 
   @override
-  String get linkExistingTask => 'Link eksisterende opgave...';
+  String get linkExistingTask => 'Link eksisterende opgave…';
+
+  @override
+  String get linkExistingTaskTitle => 'Link existing task';
 
   @override
   String get linkPhraseBasic => 'Relates to';
@@ -6655,6 +6668,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Supersedes';
+
+  @override
+  String get linkTaskButton => 'Link';
 
   @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
@@ -6910,7 +6926,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Synkroniser målbare ting, dashboards, vaner, kategorier og AI-indstillinger';
 
   @override
-  String get manageLinks => 'Administrer links...';
+  String get manageLinks => 'Administrer links…';
 
   @override
   String get matrixStatsCatchupBatches => 'Indhentningsgrupper';
@@ -8383,7 +8399,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get searchModeVector => 'Vektor';
 
   @override
-  String get searchTasksHint => 'Søgeopgaver...';
+  String get searchTasksHint => 'Søgeopgaver…';
 
   @override
   String get selectButton => 'Vælg';
@@ -10122,8 +10138,8 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Waiting on $count tasks',
-      one: 'Waiting on 1 task',
+      other: 'Blocked by $count tasks',
+      one: 'Blocked by 1 task',
     );
     return '$_temp0';
   }
@@ -10134,7 +10150,7 @@ class AppLocalizationsDa extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Tap to see $count blockers',
-      one: 'Waiting on $title',
+      one: 'Blocked by $title',
     );
     return '$_temp0';
   }
@@ -10777,6 +10793,11 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       'Er du sikker på, at du vil koble denne opgave fra?';
+
+  @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Unlink “$title”? The task itself is not deleted.';
+  }
 
   @override
   String get unlinkTaskFailedMessage =>

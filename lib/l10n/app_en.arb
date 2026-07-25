@@ -1908,7 +1908,11 @@
   "createCategoryTitle": "Create category",
   "createEntryLabel": "Create new entry",
   "createEntryTitle": "Add",
-  "createNewLinkedTask": "Create new linked task...",
+  "createNewLinkedTask": "Create new linked task…",
+  "createNewLinkedTaskTitle": "New linked task",
+  "@createNewLinkedTaskTitle": {
+    "description": "Modal title. Same wording as the control that opens it, without the trailing ellipsis — the modal is the further UI the ellipsis promises, so it must not promise it again."
+  },
   "customColor": "Custom Color",
   "dailyOsDayPlan": "Day Plan",
   "dailyOsNextActivityActionFailed": "That action didn't finish. Your recording is still safe—try again.",
@@ -2722,6 +2726,10 @@
     }
   },
   "doneButton": "Done",
+  "editLinkTypeCounterpartLabel": "Linked task",
+  "@editLinkTypeCounterpartLabel": {
+    "description": "Caption above the name of the task on the other end of the link being edited."
+  },
   "editLinkTypeFailedMessage": "Couldn't update the relationship. Please try again.",
   "editLinkTypeTitle": "Edit relationship",
   "editLinkTypeTooltip": "Edit relationship",
@@ -3372,6 +3380,10 @@
     }
   },
   "linkCreatedUndo": "Undo",
+  "linkCreateFailedMessage": "Couldn't create the link. Please try again.",
+  "@linkCreateFailedMessage": {
+    "description": "Shown when creating a link fails for a relation that is not \"blocks\", where a blocking-cycle explanation would be wrong."
+  },
   "linkDirectionLabel": "This task…",
   "linkedTaskImageBadge": "From linked task",
   "linkedTasksBlockedBySectionTitle": "Blocked by",
@@ -3379,7 +3391,11 @@
   "linkedTasksEmptyHint": "Connect this task to another — a blocker, a follow-up, a duplicate.",
   "linkedTasksMenuTooltip": "Linked tasks options",
   "linkedTasksTitle": "Linked Tasks",
-  "linkExistingTask": "Link existing task...",
+  "linkExistingTask": "Link existing task…",
+  "linkExistingTaskTitle": "Link existing task",
+  "@linkExistingTaskTitle": {
+    "description": "Modal title. Same wording as the control that opens it, without the trailing ellipsis — the modal is the further UI the ellipsis promises, so it must not promise it again."
+  },
   "linkPhraseBasic": "Relates to",
   "linkPhraseBlocksInverse": "Is blocked by",
   "linkPhraseBlocksPrimary": "Blocks",
@@ -3391,6 +3407,10 @@
   "linkPhraseFollowsUpPrimary": "Follows up on",
   "linkPhraseSupersedesInverse": "Is superseded by",
   "linkPhraseSupersedesPrimary": "Supersedes",
+  "linkTaskButton": "Link",
+  "@linkTaskButton": {
+    "description": "Short verb label for the Linked Tasks card header action that opens the link picker. Mirrors the Done button occupying the same slot in manage mode."
+  },
   "logbookEmptyHint": "Create your first entry to start journaling.",
   "logbookEmptyTitle": "Your logbook is empty",
   "logbookNewEntriesHint": "New entries will open here.",
@@ -3490,7 +3510,7 @@
   "maintenanceReSyncStart": "Start",
   "maintenanceSyncDefinitions": "Sync measurables, dashboards, habits, categories, AI settings",
   "maintenanceSyncDefinitionsDescription": "Sync measurables, dashboards, habits, categories, and AI settings",
-  "manageLinks": "Manage links...",
+  "manageLinks": "Manage links…",
   "matrixStatsCatchupBatches": "Catch-up Batches",
   "matrixStatsCircuitOpens": "Circuit Opens",
   "matrixStatsConflicts": "Conflicts",
@@ -4211,7 +4231,7 @@
   "searchHint": "Search...",
   "searchModeFullText": "Full Text",
   "searchModeVector": "Vector",
-  "searchTasksHint": "Search tasks...",
+  "searchTasksHint": "Search tasks…",
   "selectButton": "Select",
   "selectColor": "Select a color",
   "selectLanguage": "Select Language",
@@ -4910,7 +4930,7 @@
   "taskAgentUseCategoryDefaultDescription": "Copies the category’s current setup. Later category changes won’t affect this agent.",
   "taskAgentUseProfileDefault": "Use profile default",
   "taskAgentWakeAgent": "Wake agent",
-  "taskBlockedByChipLabel": "{count, plural, =1{Waiting on 1 task} other{Waiting on {count} tasks}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Blocked by 1 task} other{Blocked by {count} tasks}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4918,7 +4938,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Waiting on {title}} other{Tap to see {count} blockers}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Blocked by {title}} other{Tap to see {count} blockers}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -5275,6 +5295,15 @@
   },
   "unlinkButton": "Unlink",
   "unlinkTaskConfirm": "Are you sure you want to unlink this task?",
+  "unlinkTaskConfirmNamed": "Unlink “{title}”? The task itself is not deleted.",
+  "@unlinkTaskConfirmNamed": {
+    "description": "Unlink confirmation naming the task being unlinked. The rows it is reached from carry two faint glyphs each, so an anonymous \"this task\" cannot tell the user which link they hit.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "unlinkTaskFailedMessage": "Couldn't unlink the task. Please try again.",
   "unlinkTaskTitle": "Unlink Task",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}",

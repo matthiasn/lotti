@@ -34,17 +34,30 @@ class DirectedRelation {
   /// `fromId`/`toId` before persisting the canonical direction.
   final bool inverse;
 
+  /// Whether the relation reads the same from either end. A plain link says
+  /// only that two tasks are related, so it has no primary/inverse phrasing
+  /// and the picker offers exactly one option for it.
+  bool get isSymmetric => type == EntryLinkType.basic;
+
+  /// [inverse] normalised: meaningless on a symmetric relation, so it must not
+  /// take part in identity. It once did, which meant an existing *incoming*
+  /// plain link never matched the plain link the picker offers — so the picker
+  /// re-offered a task the card already listed, and taking it produced two
+  /// identical rows, an inflated count, and two confirmations to undo one
+  /// relationship.
+  bool get _directed => !isSymmetric && inverse;
+
   /// Stable identity for [DesignSystemDropdownItem.id].
-  String get id => '${type.name}.${inverse ? 'inverse' : 'primary'}';
+  String get id => '${type.name}.${_directed ? 'inverse' : 'primary'}';
 
   @override
   bool operator ==(Object other) =>
       other is DirectedRelation &&
       other.type == type &&
-      other.inverse == inverse;
+      other._directed == _directed;
 
   @override
-  int get hashCode => Object.hash(type, inverse);
+  int get hashCode => Object.hash(type, _directed);
 }
 
 /// One relationship that already exists between the anchor task and another

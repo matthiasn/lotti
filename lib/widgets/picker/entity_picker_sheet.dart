@@ -23,6 +23,7 @@ class PickerItem {
     required this.title,
     this.subtitle,
     this.badges = const [],
+    this.subtitleEmphasis,
     this.semanticLabel,
     this.enabled = true,
     this.rowKey,
@@ -33,6 +34,9 @@ class PickerItem {
   final String title;
   final String? subtitle;
   final List<Widget> badges;
+
+  /// Overrides the row's subtitle ink; see [DesignSystemListItem.subtitleEmphasis].
+  final Color? subtitleEmphasis;
 
   /// The full accessible name for the row (title plus any state conveyed only
   /// by [badges]/[subtitle], e.g. "Work, Favorite"). Defaults to [title]. The
@@ -264,9 +268,11 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
     return ListView(
       shrinkWrap: true,
       padding: EdgeInsets.only(
+        // Single-select lists still need a closing gap: without it the last
+        // row sits flush against the sheet edge and reads as clipped.
         bottom: (_multi && widget.reserveFooterInset)
             ? DesignSystemGlassActionFooter.reservedHeightFor(context)
-            : 0,
+            : tokens.spacing.step5,
       ),
       children: [
         for (final entry in entries) _row(entry, staged),
@@ -302,7 +308,10 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
 Widget buildPickerApplyFooter({
   required BuildContext context,
   required String label,
-  required VoidCallback onTap,
+
+  /// Null disables the button. Use it when there is nothing to apply, so the
+  /// loudest mark on the sheet stops promising a write it would not make.
+  required VoidCallback? onTap,
   Key? buttonKey,
 }) {
   return DesignSystemGlassActionFooter(
@@ -346,6 +355,7 @@ class _PickerItemRow extends StatelessWidget {
       titleMaxLines: titleMaxLines,
       size: rowSize,
       subtitle: item.subtitle,
+      subtitleEmphasis: item.subtitleEmphasis,
       leading: item.leading,
       trailing: badges,
       type: multi

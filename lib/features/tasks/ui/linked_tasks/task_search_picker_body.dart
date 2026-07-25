@@ -6,10 +6,13 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 
 /// Search-and-pick body shared by `LinkTaskModal` and `BlockingTaskPickerModal`:
@@ -23,6 +26,7 @@ class TaskSearchPickerBody extends StatefulWidget {
   const TaskSearchPickerBody({
     required this.excludeIds,
     required this.onTaskSelected,
+    this.taskStatuses = allTaskStatuses,
     this.topInset = true,
     super.key,
   });
@@ -35,6 +39,14 @@ class TaskSearchPickerBody extends StatefulWidget {
   /// persist anything — the caller decides what selecting a task means.
   final ValueChanged<Task> onTaskSelected;
 
+  /// Statuses a candidate may hold. Defaults to every status: "Follows up
+  /// on", "Duplicates", "Fixes" and "Supersedes" all routinely reference work
+  /// that is already finished, and excluding closed tasks made those links
+  /// impossible to express while the modal reported "No tasks found" for a
+  /// task the user could see elsewhere in the app. The blocker picker narrows
+  /// this to open statuses, since a finished task cannot block anything.
+  final List<String> taskStatuses;
+
   /// False when this body sits below other modal content that already
   /// supplies the gap under the header (the link modal's relation dropdown).
   final bool topInset;
@@ -46,6 +58,15 @@ class TaskSearchPickerBody extends StatefulWidget {
 class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   List<Task> _tasks = [];
   Set<String> _fts5Matches = {};
+
+  /// Full-text hits that fall outside the prefetched window, fetched by id.
+  /// Kept separate from [_tasks] so clearing the query drops them again.
+  List<Task> _resolvedMatches = const [];
+
+  /// Every task a row can be built from. Both the row builder and the pick
+  /// handler must read this same list: building rows from a wider set than
+  /// picks are resolved against is what let a rendered row throw on tap.
+  List<Task> get _candidatePool => [..._tasks, ..._resolvedMatches];
   bool _isLoading = true;
   String? _lastFetchedQuery;
 
@@ -67,10 +88,20 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
     setState(() => _isLoading = true);
 
     try {
+      // Every category plus '' for uncategorized. An empty list does NOT mean
+      // "no category filter" — the query builder short-circuits it to
+      // `WHERE 1 = 0` (database_task_query_builders.dart), so passing []
+      // returned nothing at all in production while every mocked test passed.
+      // JournalQueryRunner expands the same way for the same reason.
+      final categoryIds = [
+        ...getIt<EntitiesCacheService>().sortedCategories.map((c) => c.id),
+        '',
+      ];
+
       final tasks = await _db.getTasks(
         starredStatuses: [false, true],
-        taskStatuses: openTaskStatuses,
-        categoryIds: [],
+        taskStatuses: widget.taskStatuses,
+        categoryIds: categoryIds,
         limit: 200,
       );
 
@@ -91,13 +122,38 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
     final generation = ++_searchGeneration;
 
     try {
-      final matches = await _fts5Db.watchFullTextMatches(query).first;
+      final matches = (await _fts5Db.watchFullTextMatches(query).first).toSet();
+
+      // Resolve the hits the prefetch never loaded. Intersecting matches
+      // against the preloaded window instead meant that on a backlog larger
+      // than the window, a task that exists and matches was reported as "No
+      // tasks found" — the picker stating confidently that it isn't there.
+      final unloaded = matches.difference(
+        _tasks.map((task) => task.meta.id).toSet(),
+      );
+      final resolved = unloaded.isEmpty
+          ? const <Task>[]
+          : (await _db.getJournalEntitiesForIds(unloaded))
+                .whereType<Task>()
+                .where(
+                  (task) => widget.taskStatuses.contains(
+                    task.data.status.toDbString,
+                  ),
+                )
+                .toList();
+
       if (mounted && generation == _searchGeneration) {
-        setState(() => _fts5Matches = matches.toSet());
+        setState(() {
+          _fts5Matches = matches;
+          _resolvedMatches = resolved;
+        });
       }
     } catch (e) {
       if (mounted && generation == _searchGeneration) {
-        setState(() => _fts5Matches = {});
+        setState(() {
+          _fts5Matches = {};
+          _resolvedMatches = const [];
+        });
       }
     }
   }
@@ -111,12 +167,13 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       _lastFetchedQuery = query;
       if (query.isEmpty) {
         _fts5Matches = {};
+        _resolvedMatches = const [];
       } else {
         unawaited(_fetchFts5(query));
       }
     }
 
-    final candidates = _tasks.where(
+    final candidates = _candidatePool.where(
       (task) => !widget.excludeIds.contains(task.meta.id),
     );
     final queryLower = query.toLowerCase();
@@ -128,6 +185,7 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
                 task.data.title.toLowerCase().contains(queryLower),
           );
 
+    final tokens = context.designTokens;
     return [
       for (final task in filtered)
         PickerItem(
@@ -138,6 +196,24 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
             task.data.status.toDbString,
             context,
           ),
+          // The same status metadata the card renders one tap away, at the
+          // same ink — it was reading a rank louder here than there.
+          subtitleEmphasis: tokens.colors.text.lowEmphasis,
+          // These rows are one tap from the linked-tasks card's rows and read
+          // identically — same glyph, title and status — but tapping here
+          // *creates a link* where tapping there opens the task. The trailing
+          // mark is the only thing that says which, so it is not decoration:
+          // it is the difference between the two gestures.
+          badges: [
+            Icon(
+              Icons.add_link,
+              size: tokens.spacing.step5,
+              // Not below the status text beside it: this glyph is the only
+              // thing distinguishing a row that commits from one that
+              // navigates, so it cannot be the quietest mark on the row.
+              color: tokens.colors.interactive.enabled,
+            ),
+          ],
         ),
     ];
   }
@@ -145,7 +221,7 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: DesignSystemSpinner());
     }
 
     final hasCandidates = _tasks.any(
@@ -166,9 +242,16 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       emptyMessage: hasCandidates
           ? context.messages.noTasksFound
           : context.messages.noTasksToLink,
-      onPick: (id) => widget.onTaskSelected(
-        _tasks.firstWhere((task) => task.meta.id == id),
-      ),
+      // Resolved against the same pool the rows were built from. Reading
+      // _tasks alone threw on any row that came from a full-text match outside
+      // the prefetch window — the picker rendered the task, then died on the
+      // tap.
+      onPick: (id) {
+        final picked = _candidatePool
+            .where((task) => task.meta.id == id)
+            .firstOrNull;
+        if (picked != null) widget.onTaskSelected(picked);
+      },
     );
   }
 }

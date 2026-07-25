@@ -18,12 +18,14 @@ import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../categories/test_utils.dart';
 
 void main() {
   group('LinkTaskModal', () {
@@ -142,7 +144,27 @@ void main() {
         () => mockFts5Db.watchFullTextMatches(any()),
       ).thenAnswer((_) => Stream.value(<String>[]));
 
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => <JournalEntity>[]);
+
+      when(
+        () => mockPersistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          // ignore: avoid_redundant_argument_values
+          linkType: EntryLinkType.basic,
+        ),
+      ).thenAnswer((_) async => true);
+
+      final cache = MockEntitiesCacheService();
+      when(() => cache.sortedCategories).thenReturn([
+        CategoryTestUtils.createTestCategory(id: 'cat-a', name: 'A'),
+        CategoryTestUtils.createTestCategory(id: 'cat-b', name: 'B'),
+      ]);
+
       getIt
+        ..registerSingleton<EntitiesCacheService>(cache)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<Fts5Db>(mockFts5Db)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
@@ -155,7 +177,112 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('renders title "Link existing task..."', (tester) async {
+    testWidgets(
+      'a full-text hit outside the prefetched window is fetched by id, so a '
+      'backlog larger than the window cannot make the picker deny a task that '
+      'exists',
+      (tester) async {
+        // The prefetch window holds one task; the match is a different one.
+        stubTasks([buildTask(id: 'in-window', title: 'Prefetched task')]);
+        when(
+          () => mockFts5Db.watchFullTextMatches(any()),
+        ).thenAnswer((_) => Stream.value(<String>['beyond-window']));
+        when(() => mockJournalDb.getJournalEntitiesForIds(any())).thenAnswer(
+          (_) async => [
+            buildTask(id: 'beyond-window', title: 'Task past the 200th row'),
+          ],
+        );
+
+        await openModal(tester);
+        await tester.enterText(find.byType(TextField), 'past');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('Task past the 200th row'), findsOneWidget);
+        // Only the ids the window did not already hold are re-fetched.
+        verify(
+          () => mockJournalDb.getJournalEntitiesForIds({'beyond-window'}),
+        ).called(greaterThanOrEqualTo(1));
+
+        // ...and the row can actually be picked. Asserting only that it
+        // renders is what let a version ship that surfaced the task and then
+        // threw on the tap, because rows were built from a wider set than
+        // picks were resolved against.
+        await tester.tap(find.text('Task past the 200th row'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(tester.takeException(), isNull);
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'current-task',
+            toId: 'beyond-window',
+            // ignore: avoid_redundant_argument_values
+            linkType: EntryLinkType.basic,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'a finished task is offered — "Follows up on", "Duplicates", "Fixes" and '
+      '"Supersedes" all routinely reference work that is already done',
+      (tester) async {
+        stubTasks([]);
+        when(
+          () => mockFts5Db.watchFullTextMatches(any()),
+        ).thenAnswer((_) => Stream.value(<String>['done-task']));
+        when(() => mockJournalDb.getJournalEntitiesForIds(any())).thenAnswer(
+          (_) async => [
+            TestTaskFactory.create(
+              id: 'done-task',
+              title: 'Already finished',
+              status: TaskStatus.done(
+                id: 's',
+                createdAt: DateTime(2024),
+                utcOffset: 0,
+              ),
+            ),
+          ],
+        );
+
+        await openModal(tester);
+        await tester.enterText(find.byType(TextField), 'finish');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('Already finished'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the browse prefetch names every category plus uncategorized — an empty '
+      'category list is not "no filter", it short-circuits the query to match '
+      'nothing at all',
+      (tester) async {
+        stubTasks([buildTask(id: 't1', title: 'Some task')]);
+
+        await openModal(tester);
+
+        final captured =
+            verify(
+                  () => mockJournalDb.getTasks(
+                    starredStatuses: any(named: 'starredStatuses'),
+                    taskStatuses: any(named: 'taskStatuses'),
+                    categoryIds: captureAny(named: 'categoryIds'),
+                    limit: any(named: 'limit'),
+                  ),
+                ).captured.last
+                as List<String>;
+
+        expect(captured, containsAll(<String>['cat-a', 'cat-b']));
+        // The empty string is how the query builder spells "uncategorized";
+        // without it, tasks with no category are unreachable.
+        expect(captured, contains(''));
+      },
+    );
+
+    testWidgets('renders title "Link existing task"', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
@@ -180,7 +307,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      expect(find.text('Link existing task...'), findsOneWidget);
+      expect(find.text('Link existing task'), findsOneWidget);
     });
 
     testWidgets('renders search field with hint', (tester) async {
@@ -209,7 +336,7 @@ void main() {
 
       // DesignSystemSearch renders the hint both as a visible overlay and as
       // the (transparent) TextField hint, so allow more than one match.
-      expect(find.text('Search tasks...'), findsWidgets);
+      expect(find.text('Search tasks…'), findsWidgets);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     });
 
@@ -238,7 +365,7 @@ void main() {
           mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
         );
 
-        expect(find.text('Link existing task...'), findsOneWidget);
+        expect(find.text('Link existing task'), findsOneWidget);
         expect(find.byType(DraggableScrollableSheet), findsNothing);
       },
     );
@@ -375,6 +502,55 @@ void main() {
       expect(find.text('Already Linked'), findsNothing);
       expect(find.text('Available Task'), findsOneWidget);
     });
+
+    testWidgets(
+      'a plain link already held from the OTHER side is excluded too — a plain '
+      'link reads the same from either end, so re-offering it would write a '
+      'second identical row and cost two confirmations to undo one link',
+      (tester) async {
+        stubTasks([
+          buildTask(id: 'linked-task', title: 'Already Linked'),
+          buildTask(id: 'free-task', title: 'Available Task'),
+        ]);
+
+        await openModal(
+          tester,
+          existingRelations: {
+            const ExistingRelation(
+              taskId: 'linked-task',
+              // Recorded from the anchor's side as incoming.
+              relation: DirectedRelation(EntryLinkType.basic, inverse: true),
+            ),
+          },
+        );
+
+        expect(find.text('Already Linked'), findsNothing);
+        expect(find.text('Available Task'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a directed relation held in the opposite direction is still offered — '
+      '"blocks" and "is blocked by" are different links a pair may both hold',
+      (tester) async {
+        stubTasks([buildTask(id: 'other', title: 'Other Task')]);
+
+        await openModal(
+          tester,
+          existingRelations: {
+            const ExistingRelation(
+              taskId: 'other',
+              relation: DirectedRelation(EntryLinkType.blocks, inverse: true),
+            ),
+          },
+        );
+
+        await pickRelation(tester, 'Blocks');
+        await tester.pump();
+
+        expect(find.text('Other Task'), findsOneWidget);
+      },
+    );
 
     testWidgets('shows status icons for tasks', (tester) async {
       final testTasks = [
@@ -705,7 +881,7 @@ void main() {
         ),
       ).called(1);
       // The modal actually pops on success, not just createLink firing.
-      expect(find.text('Link existing task...'), findsNothing);
+      expect(find.text('Link existing task'), findsNothing);
     });
 
     testWidgets(
@@ -737,7 +913,10 @@ void main() {
 
         // Names the relation and the task, so the confirmation says what was
         // actually written rather than just "linked".
-        expect(find.text('Is blocked by: Blocker Task'), findsWidgets);
+        // Relation as the toast title, task as its description — the one-line
+        // title would ellipsize a real task name away.
+        expect(find.text('Is blocked by'), findsWidgets);
+        expect(find.text('Blocker Task'), findsWidgets);
 
         await tester.tap(find.text('Undo').last);
         await tester.pump();
@@ -778,6 +957,39 @@ void main() {
             'This would create a blocking cycle — choose a different task.',
           ),
           findsWidgets,
+        );
+      },
+    );
+
+    testWidgets(
+      'a rejected NON-blocking link does not blame a blocking cycle — only a '
+      'blocks edge can fail that guard, so naming it states a cause that '
+      'cannot apply and a remedy that would not help',
+      (tester) async {
+        stubTasks([buildTask(id: 'other-task', title: 'Other Task')]);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.duplicates,
+          ),
+        ).thenAnswer((_) async => false);
+
+        await openModal(tester);
+        await pickRelation(tester, 'Duplicates');
+        await tester.tap(find.text('Other Task'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(
+          find.text("Couldn't create the link. Please try again."),
+          findsWidgets,
+        );
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsNothing,
         );
       },
     );

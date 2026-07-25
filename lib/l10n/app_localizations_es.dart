@@ -3474,7 +3474,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createEntryTitle => 'Añadir';
 
   @override
-  String get createNewLinkedTask => 'Crear nueva tarea vinculada...';
+  String get createNewLinkedTask => 'Crear nueva tarea vinculada…';
+
+  @override
+  String get createNewLinkedTaskTitle => 'Nueva tarea';
 
   @override
   String get customColor => 'Color personalizado';
@@ -5298,6 +5301,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get doneButton => 'Listo';
 
   @override
+  String get editLinkTypeCounterpartLabel => 'Tarea vinculada';
+
+  @override
   String get editLinkTypeFailedMessage =>
       'No se pudo actualizar la relación. Inténtalo de nuevo.';
 
@@ -6684,6 +6690,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkCreatedUndo => 'Deshacer';
 
   @override
+  String get linkCreateFailedMessage =>
+      'No se pudo crear el vínculo. Inténtalo de nuevo.';
+
+  @override
   String get linkDirectionLabel => 'Esta tarea…';
 
   @override
@@ -6706,7 +6716,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkedTasksTitle => 'Tareas vinculadas';
 
   @override
-  String get linkExistingTask => 'Vincular tarea existente...';
+  String get linkExistingTask => 'Vincular tarea existente…';
+
+  @override
+  String get linkExistingTaskTitle => 'Vincular';
 
   @override
   String get linkPhraseBasic => 'Se relaciona con';
@@ -6740,6 +6753,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Reemplaza';
+
+  @override
+  String get linkTaskButton => 'Vincular';
 
   @override
   String get logbookEmptyHint =>
@@ -7013,7 +7029,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA';
 
   @override
-  String get manageLinks => 'Gestionar vínculos...';
+  String get manageLinks => 'Gestionar vínculos…';
 
   @override
   String get matrixStatsCatchupBatches => 'Lotes de recuperación';
@@ -8518,7 +8534,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get searchModeVector => 'Vector';
 
   @override
-  String get searchTasksHint => 'Buscar tareas...';
+  String get searchTasksHint => 'Buscar tareas…';
 
   @override
   String get selectButton => 'Seleccionar';
@@ -10279,8 +10295,8 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Esperando $count tareas',
-      one: 'Esperando 1 tarea',
+      other: 'Bloqueada por $count tareas',
+      one: 'Bloqueada por 1 tarea',
     );
     return '$_temp0';
   }
@@ -10291,7 +10307,7 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Toca para ver $count bloqueos',
-      one: 'Esperando $title',
+      one: 'Bloqueada por $title',
     );
     return '$_temp0';
   }
@@ -10306,7 +10322,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => '¿Qué la está bloqueando?';
+  String get taskBlockerPickerTitle => '¿Qué la bloquea?';
 
   @override
   String get taskCategoryAllLabel => 'todos';
@@ -10942,6 +10958,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       '¿Estás seguro de que quieres desvincular esta tarea?';
+
+  @override
+  String unlinkTaskConfirmNamed(String title) {
+    return '¿Desvincular «$title»? La tarea no se elimina.';
+  }
 
   @override
   String get unlinkTaskFailedMessage =>

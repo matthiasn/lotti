@@ -3443,7 +3443,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get createEntryTitle => 'Toevoegen';
 
   @override
-  String get createNewLinkedTask => 'Nieuwe verbonden taak aanmaken...';
+  String get createNewLinkedTask => 'Nieuwe verbonden taak aanmaken…';
+
+  @override
+  String get createNewLinkedTaskTitle => 'New linked task';
 
   @override
   String get customColor => 'Aangepaste kleur';
@@ -5244,6 +5247,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get doneButton => 'Klaar';
 
   @override
+  String get editLinkTypeCounterpartLabel => 'Linked task';
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Couldn\'t update the relationship. Please try again.';
 
@@ -6618,6 +6624,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get linkCreatedUndo => 'Undo';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Couldn\'t create the link. Please try again.';
+
+  @override
   String get linkDirectionLabel => 'This task…';
 
   @override
@@ -6640,7 +6650,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get linkedTasksTitle => 'Gekoppelde taken';
 
   @override
-  String get linkExistingTask => 'Bestaande taak koppelen...';
+  String get linkExistingTask => 'Bestaande taak koppelen…';
+
+  @override
+  String get linkExistingTaskTitle => 'Link existing task';
 
   @override
   String get linkPhraseBasic => 'Relates to';
@@ -6674,6 +6687,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Supersedes';
+
+  @override
+  String get linkTaskButton => 'Link';
 
   @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
@@ -6929,7 +6945,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Meetbare gegevens synchroniseren, dashboards, gewoonten, categorieën en AI-instellingen';
 
   @override
-  String get manageLinks => 'Links beheren...';
+  String get manageLinks => 'Links beheren…';
 
   @override
   String get matrixStatsCatchupBatches => 'Inhaalpartijen';
@@ -8402,7 +8418,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get searchModeVector => 'Vector';
 
   @override
-  String get searchTasksHint => 'Zoeken taken...';
+  String get searchTasksHint => 'Zoeken taken…';
 
   @override
   String get selectButton => 'Selecteren';
@@ -10157,8 +10173,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Waiting on $count tasks',
-      one: 'Waiting on 1 task',
+      other: 'Blocked by $count tasks',
+      one: 'Blocked by 1 task',
     );
     return '$_temp0';
   }
@@ -10169,7 +10185,7 @@ class AppLocalizationsNl extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Tap to see $count blockers',
-      one: 'Waiting on $title',
+      one: 'Blocked by $title',
     );
     return '$_temp0';
   }
@@ -10813,6 +10829,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get unlinkTaskConfirm => 'Weet u zeker dat u deze taak wilt losmaken?';
+
+  @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Unlink “$title”? The task itself is not deleted.';
+  }
 
   @override
   String get unlinkTaskFailedMessage =>

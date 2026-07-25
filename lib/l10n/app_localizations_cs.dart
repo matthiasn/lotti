@@ -3477,7 +3477,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get createEntryTitle => 'Přidat';
 
   @override
-  String get createNewLinkedTask => 'Vytvořit nový propojený úkol...';
+  String get createNewLinkedTask => 'Vytvořit nový propojený úkol…';
+
+  @override
+  String get createNewLinkedTaskTitle => 'Nový úkol';
 
   @override
   String get customColor => 'Vlastní barva';
@@ -5285,6 +5288,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get doneButton => 'Hotovo';
 
   @override
+  String get editLinkTypeCounterpartLabel => 'Propojený úkol';
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Vztah se nepodařilo upravit. Zkuste to prosím znovu.';
 
@@ -6677,6 +6683,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkCreatedUndo => 'Zpět';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Propojení se nepodařilo vytvořit. Zkus to prosím znovu.';
+
+  @override
   String get linkDirectionLabel => 'Tento úkol…';
 
   @override
@@ -6699,7 +6709,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedTasksTitle => 'Propojené úkoly';
 
   @override
-  String get linkExistingTask => 'Propojit existující úkol...';
+  String get linkExistingTask => 'Propojit existující úkol…';
+
+  @override
+  String get linkExistingTaskTitle => 'Propojit';
 
   @override
   String get linkPhraseBasic => 'Souvisí s';
@@ -6733,6 +6746,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Nahrazuje';
+
+  @override
+  String get linkTaskButton => 'Propojit';
 
   @override
   String get logbookEmptyHint =>
@@ -7012,7 +7028,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie a AI nastavení';
 
   @override
-  String get manageLinks => 'Spravovat propojení...';
+  String get manageLinks => 'Spravovat propojení…';
 
   @override
   String get matrixStatsCatchupBatches => 'Doháněcí dávky';
@@ -8510,7 +8526,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get searchModeVector => 'Vektor';
 
   @override
-  String get searchTasksHint => 'Hledat úkoly...';
+  String get searchTasksHint => 'Hledat úkoly…';
 
   @override
   String get selectButton => 'Vybrat';
@@ -10251,9 +10267,8 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Čeká na $count úkolů',
-      few: 'Čeká na $count úkoly',
-      one: 'Čeká na 1 úkol',
+      other: 'Blokováno $count úkoly',
+      one: 'Blokováno 1 úkolem',
     );
     return '$_temp0';
   }
@@ -10263,9 +10278,8 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Klepnutím zobrazíte $count blokujících úkolů',
-      few: 'Klepnutím zobrazíte $count blokující úkoly',
-      one: 'Čeká se na $title',
+      other: 'Klepni pro zobrazení $count blokujících úkolů',
+      one: 'Blokováno úkolem $title',
     );
     return '$_temp0';
   }
@@ -10913,6 +10927,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get unlinkTaskConfirm =>
       'Opravdu chcete zrušit propojení tohoto úkolu?';
+
+  @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Odpojit „$title“? Samotný úkol se nesmaže.';
+  }
 
   @override
   String get unlinkTaskFailedMessage =>

@@ -9,6 +9,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  _panelHeightGroup();
+
   group('DesignSystemDropdown', () {
     testWidgets('renders the closed dropdown trigger from tokens', (
       tester,
@@ -41,7 +43,9 @@ void main() {
       );
       expectTextStyle(
         inputText.text.style!,
-        dsTokensLight.typography.styles.body.bodyLarge,
+        // bodyMedium: the field's value must not outrank the content it
+        // describes on hosting surfaces.
+        dsTokensLight.typography.styles.body.bodyMedium,
         dsTokensLight.colors.text.highEmphasis,
       );
       expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
@@ -488,6 +492,130 @@ void main() {
             items: _items(['Title']),
           ),
           throwsAssertionError,
+        );
+      },
+    );
+  });
+}
+
+/// The open panel must end on a row boundary.
+///
+/// Its ceiling is computed from a size spec, while the row height comes from
+/// whatever text style the rows actually render. When those two drift apart the
+/// widget tree still looks right and the panel visibly slices its last option
+/// through the glyphs — so this measures both from the laid-out result.
+void _panelHeightGroup() {
+  group('DesignSystemDropdown open panel', () {
+    testWidgets(
+      'the ceiling scales with the text size the rows render at — an unscaled '
+      'ceiling stops mid-row exactly where enlarged text needs it not to',
+      (tester) async {
+        await _pumpDropdown(
+          tester,
+          const MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(1.6)),
+            child: SizedBox(
+              width: 320,
+              child: DesignSystemDropdown(
+                label: 'Label',
+                inputLabel: 'Input',
+                items: [
+                  DesignSystemDropdownItem(id: 'a', label: 'Alpha'),
+                  DesignSystemDropdownItem(id: 'b', label: 'Bravo'),
+                  DesignSystemDropdownItem(id: 'c', label: 'Charlie'),
+                  DesignSystemDropdownItem(id: 'd', label: 'Delta'),
+                  DesignSystemDropdownItem(id: 'e', label: 'Echo'),
+                  DesignSystemDropdownItem(id: 'f', label: 'Foxtrot'),
+                  DesignSystemDropdownItem(id: 'g', label: 'Golf'),
+                  DesignSystemDropdownItem(id: 'h', label: 'Hotel'),
+                  DesignSystemDropdownItem(id: 'i', label: 'India'),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Input'));
+        await tester.pumpAndSettle();
+
+        final rowHeight =
+            tester.getTopLeft(find.text('Bravo')).dy -
+            tester.getTopLeft(find.text('Alpha')).dy;
+        final viewportHeight = tester
+            .getSize(
+              find
+                  .ancestor(
+                    of: find.text('Alpha'),
+                    matching: find.byType(ListView),
+                  )
+                  .first,
+            )
+            .height;
+
+        // A tolerance, not equality: the scaled row height is a float, so an
+        // exact modulo leaves sub-picometre residue that means nothing.
+        expect(
+          viewportHeight % rowHeight,
+          closeTo(0, 0.01),
+          reason:
+              'at 1.6x the panel is $viewportHeight tall against $rowHeight '
+              'rows — the last option is cut through its glyphs',
+        );
+      },
+    );
+
+    testWidgets(
+      'shows whole options — the scroll viewport is an exact multiple of the '
+      'height its rows actually render at',
+      (tester) async {
+        await _pumpDropdown(
+          tester,
+          SizedBox(
+            width: 320,
+            child: DesignSystemDropdown(
+              label: 'Label',
+              inputLabel: 'Input',
+              // More options than the panel can show, so it is at its ceiling.
+              items: _items([
+                'Alpha',
+                'Bravo',
+                'Charlie',
+                'Delta',
+                'Echo',
+                'Foxtrot',
+                'Golf',
+                'Hotel',
+                'India',
+              ]),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Input'));
+        await tester.pumpAndSettle();
+
+        // The pitch between two adjacent options is the row height, whatever
+        // the size spec believes it to be.
+        final rowHeight =
+            tester.getTopLeft(find.text('Bravo')).dy -
+            tester.getTopLeft(find.text('Alpha')).dy;
+        final viewportHeight = tester
+            .getSize(
+              find
+                  .ancestor(
+                    of: find.text('Alpha'),
+                    matching: find.byType(ListView),
+                  )
+                  .first,
+            )
+            .height;
+
+        expect(
+          viewportHeight % rowHeight,
+          0,
+          reason:
+              'panel is $viewportHeight tall but rows are $rowHeight — the '
+              'last visible option is cut through its glyphs',
         );
       },
     );

@@ -470,9 +470,14 @@ class _TaskBlockedByChip extends ConsumerWidget {
       // entity (conservative default, ADR 0042 §4) — nothing to name or
       // navigate to, so render a bare label with no tap affordance.
       return DsPill(
-        variant: DsPillVariant.tinted,
+        variant: DsPillVariant.outline,
         color: accent,
-        leading: Icon(Icons.block, size: 12, color: accent),
+        labelColor: context.designTokens.colors.text.highEmphasis,
+        leading: Icon(
+          Icons.block,
+          size: context.designTokens.spacing.step4,
+          color: accent,
+        ),
         label: context.messages.taskBlockedByUnresolvedLabel,
       );
     }
@@ -486,9 +491,20 @@ class _TaskBlockedByChip extends ConsumerWidget {
         single ? blockers.first.data.title : '',
       ),
       child: DsPill(
-        variant: DsPillVariant.tinted,
+        // Outline, not tinted: the red status pill is the header's alarm, and
+        // this chip explains it. Two filled alert-coloured pills side by side
+        // stated one fact at two severities and competed for the same glance.
+        variant: DsPillVariant.outline,
         color: accent,
-        leading: Icon(Icons.block, size: 12, color: accent),
+        // Amber marks the border and the glyph; the label itself reads as
+        // ordinary text. An explanatory chip should not out-shout the status
+        // pill it explains.
+        labelColor: tokens.colors.text.highEmphasis,
+        leading: Icon(
+          Icons.block,
+          size: tokens.spacing.step4,
+          color: accent,
+        ),
         // Count only, no blocker title. Embedding the title made the chip
         // grow with it — on a long title it spanned the header and out-shouted
         // the status pill beside it. That the task is waiting is the header's
@@ -496,10 +512,12 @@ class _TaskBlockedByChip extends ConsumerWidget {
         // card, and the tooltip still names it.
         label: context.messages.taskBlockedByChipLabel(blockers.length),
         // Matches LinkedTaskRow's own browse-mode chevron so a chip that
-        // navigates reads as tappable, not just as a status readout.
+        // navigates reads as tappable, not just as a status readout. Neutral,
+        // not amber: "go here" is not part of the blocked semantic, and a third
+        // amber mark is what made the chip compete with the status pill.
         trailing: Icon(
           Icons.arrow_forward_ios,
-          size: linkedRowChevronSize,
+          size: tokens.spacing.step4,
           color: tokens.colors.text.lowEmphasis,
         ),
         onTap: () => single
@@ -513,13 +531,17 @@ class _TaskBlockedByChip extends ConsumerWidget {
     BuildContext context,
     List<Task> blockers,
   ) async {
+    // Picked here, navigated to after the sheet closes: opening a task from
+    // inside the sheet would route behind its own barrier, leaving the user
+    // looking at an unchanged sheet over a page that had already moved on.
+    String? picked;
     await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.linkedTasksBlockedBySectionTitle,
       // LinkedTaskRow brings its own step5 horizontal padding, same as every
       // sibling picker in this feature — without this the rows get inset twice.
       padding: EdgeInsets.zero,
-      builder: (context) => ListView(
+      builder: (modalContext) => ListView(
         shrinkWrap: true,
         children: [
           for (final blocker in blockers)
@@ -527,9 +549,17 @@ class _TaskBlockedByChip extends ConsumerWidget {
               taskId: taskId,
               data: LinkedTaskRowData(task: blocker),
               manageMode: false,
+              onOpen: () {
+                picked = blocker.id;
+                Navigator.of(modalContext).pop();
+              },
             ),
         ],
       ),
     );
+
+    if (picked != null && context.mounted) {
+      openLinkedTaskDetail(context: context, taskId: picked!);
+    }
   }
 }

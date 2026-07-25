@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -23,6 +25,7 @@ abstract final class EditLinkTypeModal {
     required String linkId,
     required EntryLinkType currentType,
     required TaskLinkDirection currentDirection,
+    required String linkedTaskTitle,
   }) async {
     final relation = ValueNotifier(
       DirectedRelation(
@@ -39,8 +42,12 @@ abstract final class EditLinkTypeModal {
           linkId: linkId,
           currentDirection: currentDirection,
           relation: relation,
+          originalRelation: relation.value,
         ),
-        builder: (_) => _EditLinkTypeBody(relation: relation),
+        builder: (_) => _EditLinkTypeBody(
+          relation: relation,
+          linkedTaskTitle: linkedTaskTitle,
+        ),
       );
     } finally {
       relation.dispose();
@@ -49,26 +56,72 @@ abstract final class EditLinkTypeModal {
 }
 
 class _EditLinkTypeBody extends StatelessWidget {
-  const _EditLinkTypeBody({required this.relation});
+  const _EditLinkTypeBody({
+    required this.relation,
+    required this.linkedTaskTitle,
+  });
 
   final ValueNotifier<DirectedRelation> relation;
+
+  /// The task on the other end. Without it the modal reads "This task… / Is
+  /// blocked by" with no object — a sentence with its subject missing.
+  final String linkedTaskTitle;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // The Save footer is a sticky overlay, not a sibling — without reserving
+    // its height the relation dropdown renders underneath it and the modal
+    // shows a title and a Save bar with nothing to edit.
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step5,
-        0,
         tokens.spacing.step5,
         tokens.spacing.step5,
+        DesignSystemGlassActionFooter.reservedHeightFor(context),
       ),
-      child: ValueListenableBuilder<DirectedRelation>(
-        valueListenable: relation,
-        builder: (context, value, _) => RelationshipTypeSelector(
-          selected: value,
-          onChanged: (next) => relation.value = next,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ValueListenableBuilder<DirectedRelation>(
+            valueListenable: relation,
+            builder: (context, value, _) => RelationshipTypeSelector(
+              selected: value,
+              onChanged: (next) => relation.value = next,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          Padding(
+            // On the dropdown's own value rail, so the task completing the
+            // sentence lines up under the phrase rather than hanging left of it.
+            padding: EdgeInsets.only(left: tokens.spacing.step5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.messages.editLinkTypeCounterpartLabel,
+                  // Same ink as the dropdown's own caption above it: two field
+                  // labels on one modal should not read as two ranks.
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step1),
+                Text(
+                  linkedTaskTitle,
+                  // Medium, not high: this value is read-only, and the only
+                  // high-emphasis value in the body should be the editable one.
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -79,11 +132,16 @@ class _EditLinkTypeApplyFooter extends ConsumerStatefulWidget {
     required this.linkId,
     required this.currentDirection,
     required this.relation,
+    required this.originalRelation,
   });
 
   final String linkId;
   final TaskLinkDirection currentDirection;
   final ValueNotifier<DirectedRelation> relation;
+
+  /// The relation the link held when the modal opened, so Save can tell an
+  /// actual edit from a round trip back to the starting value.
+  final DirectedRelation originalRelation;
 
   @override
   ConsumerState<_EditLinkTypeApplyFooter> createState() =>
@@ -99,42 +157,57 @@ class _EditLinkTypeApplyFooterState
 
   @override
   Widget build(BuildContext context) {
-    return buildPickerApplyFooter(
-      context: context,
-      label: context.messages.saveButton,
-      onTap: () async {
-        if (_saving) return;
-        setState(() => _saving = true);
-        final navigator = Navigator.of(context);
-        final messenger = ScaffoldMessenger.of(context);
-        final messages = context.messages;
+    // Rebuilt as the selection changes so Save reflects whether there is
+    // anything to save: an always-armed button that can write nothing tells
+    // the user their edit landed when no edit was made.
+    return ValueListenableBuilder<DirectedRelation>(
+      valueListenable: widget.relation,
+      builder: (context, selected, _) => buildPickerApplyFooter(
+        context: context,
+        label: context.messages.saveButton,
+        onTap: selected == widget.originalRelation
+            ? null
+            : () async {
+                if (_saving) return;
+                setState(() => _saving = true);
+                final navigator = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+                final messages = context.messages;
 
-        final selected = widget.relation.value;
-        final newIsOutgoing = !selected.inverse;
-        final oldIsOutgoing =
-            widget.currentDirection == TaskLinkDirection.outgoing;
-        final swapDirection = newIsOutgoing != oldIsOutgoing;
+                final newIsOutgoing = !selected.inverse;
+                final oldIsOutgoing =
+                    widget.currentDirection == TaskLinkDirection.outgoing;
+                final swapDirection = newIsOutgoing != oldIsOutgoing;
 
-        final saved = await ref
-            .read(journalRepositoryProvider)
-            .updateLinkType(
-              linkId: widget.linkId,
-              newType: selected.type,
-              swapDirection: swapDirection,
-            );
+                final saved = await ref
+                    .read(journalRepositoryProvider)
+                    .updateLinkType(
+                      linkId: widget.linkId,
+                      newType: selected.type,
+                      swapDirection: swapDirection,
+                    );
 
-        if (!mounted) return;
-        setState(() => _saving = false);
-        if (!saved) {
-          messenger.showSnackBar(
-            SnackBar(content: Text(messages.editLinkTypeFailedMessage)),
-          );
-          return;
-        }
+                if (!mounted) return;
+                setState(() => _saving = false);
+                if (!saved) {
+                  // The cycle guard is the only thing that rejects a retype
+                  // outright, and it can only reject a blocks edge. Anything
+                  // else that fails here is worth retrying; a cycle is not,
+                  // so saying "please try again" would send the user round a
+                  // loop that cannot end differently.
+                  showLinkFailureMessage(
+                    messenger: messenger,
+                    message: selected.type == EntryLinkType.blocks
+                        ? messages.linkBlocksCycleErrorMessage
+                        : messages.editLinkTypeFailedMessage,
+                  );
+                  return;
+                }
 
-        await HapticFeedback.mediumImpact();
-        navigator.pop();
-      },
+                await HapticFeedback.mediumImpact();
+                navigator.pop();
+              },
+      ),
     );
   }
 }

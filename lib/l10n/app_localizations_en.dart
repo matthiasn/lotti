@@ -3414,7 +3414,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createEntryTitle => 'Add';
 
   @override
-  String get createNewLinkedTask => 'Create new linked task...';
+  String get createNewLinkedTask => 'Create new linked task…';
+
+  @override
+  String get createNewLinkedTaskTitle => 'New linked task';
 
   @override
   String get customColor => 'Custom Color';
@@ -5200,6 +5203,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get doneButton => 'Done';
 
   @override
+  String get editLinkTypeCounterpartLabel => 'Linked task';
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Couldn\'t update the relationship. Please try again.';
 
@@ -6565,6 +6571,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkCreatedUndo => 'Undo';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Couldn\'t create the link. Please try again.';
+
+  @override
   String get linkDirectionLabel => 'This task…';
 
   @override
@@ -6587,7 +6597,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedTasksTitle => 'Linked Tasks';
 
   @override
-  String get linkExistingTask => 'Link existing task...';
+  String get linkExistingTask => 'Link existing task…';
+
+  @override
+  String get linkExistingTaskTitle => 'Link existing task';
 
   @override
   String get linkPhraseBasic => 'Relates to';
@@ -6621,6 +6634,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Supersedes';
+
+  @override
+  String get linkTaskButton => 'Link';
 
   @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
@@ -6872,7 +6888,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sync measurables, dashboards, habits, categories, and AI settings';
 
   @override
-  String get manageLinks => 'Manage links...';
+  String get manageLinks => 'Manage links…';
 
   @override
   String get matrixStatsCatchupBatches => 'Catch-up Batches';
@@ -8332,7 +8348,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchModeVector => 'Vector';
 
   @override
-  String get searchTasksHint => 'Search tasks...';
+  String get searchTasksHint => 'Search tasks…';
 
   @override
   String get selectButton => 'Select';
@@ -10049,8 +10065,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Waiting on $count tasks',
-      one: 'Waiting on 1 task',
+      other: 'Blocked by $count tasks',
+      one: 'Blocked by 1 task',
     );
     return '$_temp0';
   }
@@ -10061,7 +10077,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Tap to see $count blockers',
-      one: 'Waiting on $title',
+      one: 'Blocked by $title',
     );
     return '$_temp0';
   }
@@ -10701,6 +10717,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unlinkTaskConfirm => 'Are you sure you want to unlink this task?';
+
+  @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Unlink “$title”? The task itself is not deleted.';
+  }
 
   @override
   String get unlinkTaskFailedMessage =>

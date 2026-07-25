@@ -3479,7 +3479,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createEntryTitle => 'Ajouter';
 
   @override
-  String get createNewLinkedTask => 'Créer une nouvelle tâche liée...';
+  String get createNewLinkedTask => 'Créer une nouvelle tâche liée…';
+
+  @override
+  String get createNewLinkedTaskTitle => 'Nouvelle tâche';
 
   @override
   String get customColor => 'Couleur personnalisée';
@@ -5316,6 +5319,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get doneButton => 'Terminé';
 
   @override
+  String get editLinkTypeCounterpartLabel => 'Tâche liée';
+
+  @override
   String get editLinkTypeFailedMessage =>
       'Impossible de mettre à jour la relation. Réessaie.';
 
@@ -6711,6 +6717,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkCreatedUndo => 'Annuler';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Impossible de créer le lien. Réessaie.';
+
+  @override
   String get linkDirectionLabel => 'Cette tâche…';
 
   @override
@@ -6733,7 +6743,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkedTasksTitle => 'Tâches liées';
 
   @override
-  String get linkExistingTask => 'Lier une tâche existante...';
+  String get linkExistingTask => 'Lier une tâche existante…';
+
+  @override
+  String get linkExistingTaskTitle => 'Lier';
 
   @override
   String get linkPhraseBasic => 'Est liée à';
@@ -6767,6 +6780,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get linkPhraseSupersedesPrimary => 'Remplace';
+
+  @override
+  String get linkTaskButton => 'Lier';
 
   @override
   String get logbookEmptyHint =>
@@ -7042,7 +7058,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Synchroniser les mesurables, tableaux de bord, habitudes, catégories et paramètres IA';
 
   @override
-  String get manageLinks => 'Gérer les liens...';
+  String get manageLinks => 'Gérer les liens…';
 
   @override
   String get matrixStatsCatchupBatches => 'Lots de rattrapage';
@@ -8551,7 +8567,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchModeVector => 'Vecteur';
 
   @override
-  String get searchTasksHint => 'Rechercher des tâches...';
+  String get searchTasksHint => 'Rechercher des tâches…';
 
   @override
   String get selectButton => 'Sélectionner';
@@ -10320,8 +10336,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'En attente de $count tâches',
-      one: 'En attente de 1 tâche',
+      other: 'Bloquée par $count tâches',
+      one: 'Bloquée par 1 tâche',
     );
     return '$_temp0';
   }
@@ -10331,8 +10347,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Ouvre pour voir $count blocages',
-      one: 'En attente de $title',
+      other: 'Touche pour voir $count bloqueurs',
+      one: 'Bloquée par $title',
     );
     return '$_temp0';
   }
@@ -10347,7 +10363,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => 'Qu\'est-ce qui la bloque ?';
+  String get taskBlockerPickerTitle => 'Qu’est-ce qui bloque ?';
 
   @override
   String get taskCategoryAllLabel => 'tout';
@@ -10917,28 +10933,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskStatusAll => 'Tout';
 
   @override
-  String get taskStatusBlocked => 'BLOQUÉE';
+  String get taskStatusBlocked => 'Bloquée';
 
   @override
-  String get taskStatusDone => 'TERMINÉE';
+  String get taskStatusDone => 'Terminée';
 
   @override
-  String get taskStatusGroomed => 'AFFINÉE';
+  String get taskStatusGroomed => 'Affinée';
 
   @override
-  String get taskStatusInProgress => 'EN COURS';
+  String get taskStatusInProgress => 'En cours';
 
   @override
   String get taskStatusLabel => 'État de la tâche :';
 
   @override
-  String get taskStatusOnHold => 'EN ATTENTE';
+  String get taskStatusOnHold => 'En attente';
 
   @override
-  String get taskStatusOpen => 'OUVERTE';
+  String get taskStatusOpen => 'Ouverte';
 
   @override
-  String get taskStatusRejected => 'REJETÉE';
+  String get taskStatusRejected => 'Rejetée';
 
   @override
   String get taskTitleEmpty => 'Sans titre';
@@ -10988,6 +11004,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get unlinkTaskConfirm => 'Es-tu sûr de vouloir délier cette tâche ?';
+
+  @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Dissocier « $title » ? La tâche elle-même n’est pas supprimée.';
+  }
 
   @override
   String get unlinkTaskFailedMessage =>

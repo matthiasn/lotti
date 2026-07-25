@@ -231,9 +231,28 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Create new linked task...'), findsOneWidget);
-        expect(find.text('Manage links...'), findsOneWidget);
-        expect(find.text('Link existing task...'), findsNothing);
+        expect(find.text('Create new linked task…'), findsOneWidget);
+        expect(find.text('Manage links…'), findsOneWidget);
+        expect(find.text('Link existing task…'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'manage mode keeps an add path in the overflow — its header slot is '
+      'taken by Done, and curating links is when adding one is most likely',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          manageMode: true,
+        );
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Link existing task…'), findsOneWidget);
       },
     );
 
@@ -261,22 +280,22 @@ void main() {
 
       // Default chevron in browse mode.
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.byIcon(Icons.link_off), findsNothing);
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Manage links...'));
+      await tester.tap(find.text('Manage links…'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       // Chevron replaced by the unlink X.
       expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.link_off), findsOneWidget);
 
       // The mode now says so in the header and offers its own way out, rather
       // than hiding the exit back inside the menu it was entered from.
-      final inlineDone = find.widgetWithText(TextButton, 'Done');
+      final inlineDone = find.widgetWithText(DesignSystemButton, 'Done');
       expect(inlineDone, findsOneWidget);
 
       await tester.tap(inlineDone);
@@ -284,8 +303,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
-      expect(find.widgetWithText(TextButton, 'Done'), findsNothing);
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.widgetWithText(DesignSystemButton, 'Done'), findsNothing);
+      expect(find.byIcon(Icons.link_off), findsNothing);
     });
 
     testWidgets(
@@ -400,7 +419,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Create new linked task...'));
+      await tester.tap(find.text('Create new linked task…'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Create'));
@@ -558,8 +577,8 @@ void main() {
     );
 
     testWidgets(
-      'relationship picker dialog defaults to "Link" and cancel does not '
-      'create a task',
+      'relationship picker modal defaults to "Link", and dismissing it '
+      'without confirming does not create a task',
       (tester) async {
         await pumpWidget(
           tester,
@@ -571,7 +590,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Create new linked task...'));
+        await tester.tap(find.text('Create new linked task…'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -584,7 +603,9 @@ void main() {
           'Relates to',
         );
 
-        await tester.tap(find.text('Cancel'));
+        // The shared modal dismisses via its own close affordance; there is
+        // no bespoke Cancel button to press.
+        await tester.tap(find.byIcon(Icons.close_rounded));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -631,7 +652,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Create new linked task...'));
+        await tester.tap(find.text('Create new linked task…'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -689,7 +710,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Create new linked task...'));
+        await tester.tap(find.text('Create new linked task…'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -746,7 +767,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Create new linked task...'));
+        await tester.tap(find.text('Create new linked task…'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -778,13 +799,13 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Confirmation dialog.
-      expect(find.text('Unlink'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+      // Shared confirmation modal (it uppercases its confirm label).
+      expect(find.text('UNLINK'), findsOneWidget);
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -806,11 +827,11 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'UNLINK'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -853,10 +874,10 @@ void main() {
         manageMode: true,
       );
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.link_off));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -870,8 +891,8 @@ void main() {
     });
 
     testWidgets(
-      'editing a flat outgoing row opens the edit modal pre-selected to '
-      'Link, and Save round-trips it unchanged',
+      'editing a flat outgoing row opens the edit modal pre-selected to Link, '
+      "and retyping it persists against that row's own link id",
       (tester) async {
         final repo = await pumpWidget(
           tester,
@@ -886,6 +907,24 @@ void main() {
 
         expect(find.text('Edit relationship'), findsOneWidget);
 
+        // Pre-selected to the row's current relation, so Save starts inert.
+        final dropdown = tester.widget<DesignSystemDropdown>(
+          find.byType(DesignSystemDropdown),
+        );
+        expect(dropdown.inputLabel, 'Relates to');
+        expect(
+          tester
+              .widget<DesignSystemButton>(
+                find.widgetWithText(DesignSystemButton, 'Save'),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        dropdown.onItemPressed!(
+          dropdown.items.firstWhere((item) => item.label == 'Blocks'),
+        );
+        await tester.pump();
         await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -893,7 +932,7 @@ void main() {
         verify(
           () => repo.updateLinkType(
             linkId: 'link-out-1',
-            newType: EntryLinkType.basic,
+            newType: EntryLinkType.blocks,
             swapDirection: false,
           ),
         ).called(1);

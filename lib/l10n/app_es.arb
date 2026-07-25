@@ -1622,7 +1622,8 @@
   "createCategoryTitle": "Crear categoría",
   "createEntryLabel": "Crear nueva entrada",
   "createEntryTitle": "Añadir",
-  "createNewLinkedTask": "Crear nueva tarea vinculada...",
+  "createNewLinkedTask": "Crear nueva tarea vinculada…",
+  "createNewLinkedTaskTitle": "Nueva tarea",
   "customColor": "Color personalizado",
   "dailyOsDayPlan": "Plan del día",
   "dailyOsNextActivityActionFailed": "La acción no terminó. Tu grabación sigue a salvo; inténtalo de nuevo.",
@@ -2326,6 +2327,7 @@
     }
   },
   "doneButton": "Listo",
+  "editLinkTypeCounterpartLabel": "Tarea vinculada",
   "editLinkTypeFailedMessage": "No se pudo actualizar la relación. Inténtalo de nuevo.",
   "editLinkTypeTitle": "Editar relación",
   "editLinkTypeTooltip": "Editar relación",
@@ -2795,6 +2797,7 @@
     }
   },
   "linkCreatedUndo": "Deshacer",
+  "linkCreateFailedMessage": "No se pudo crear el vínculo. Inténtalo de nuevo.",
   "linkDirectionLabel": "Esta tarea…",
   "linkedTaskImageBadge": "De tarea vinculada",
   "linkedTasksBlockedBySectionTitle": "Bloqueada por",
@@ -2802,7 +2805,8 @@
   "linkedTasksEmptyHint": "Conecta esta tarea con otra: un bloqueo, un seguimiento o un duplicado.",
   "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
   "linkedTasksTitle": "Tareas vinculadas",
-  "linkExistingTask": "Vincular tarea existente...",
+  "linkExistingTask": "Vincular tarea existente…",
+  "linkExistingTaskTitle": "Vincular",
   "linkPhraseBasic": "Se relaciona con",
   "linkPhraseBlocksInverse": "Está bloqueada por",
   "linkPhraseBlocksPrimary": "Bloquea",
@@ -2814,6 +2818,7 @@
   "linkPhraseFollowsUpPrimary": "Da seguimiento a",
   "linkPhraseSupersedesInverse": "Está reemplazada por",
   "linkPhraseSupersedesPrimary": "Reemplaza",
+  "linkTaskButton": "Vincular",
   "logbookEmptyHint": "Crea tu primera entrada para empezar tu diario.",
   "logbookEmptyTitle": "Tu diario está vacío",
   "logbookNewEntriesHint": "Las nuevas entradas se abrirán aquí.",
@@ -2913,7 +2918,7 @@
   "maintenanceReSyncStart": "Iniciar",
   "maintenanceSyncDefinitions": "Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA",
   "maintenanceSyncDefinitionsDescription": "Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA",
-  "manageLinks": "Gestionar vínculos...",
+  "manageLinks": "Gestionar vínculos…",
   "matrixStatsCatchupBatches": "Lotes de recuperación",
   "matrixStatsCircuitOpens": "Aperturas del disyuntor",
   "matrixStatsConflicts": "Conflictos",
@@ -3504,7 +3509,7 @@
   "searchHint": "Buscar...",
   "searchModeFullText": "Texto completo",
   "searchModeVector": "Vector",
-  "searchTasksHint": "Buscar tareas...",
+  "searchTasksHint": "Buscar tareas…",
   "selectButton": "Seleccionar",
   "selectColor": "Elegir un color",
   "selectLanguage": "Seleccionar idioma",
@@ -4126,7 +4131,7 @@
   "taskAgentUseCategoryDefaultDescription": "Copia la configuración actual de la categoría. Los cambios posteriores de la categoría no afectarán a este agente.",
   "taskAgentUseProfileDefault": "Usar el valor predeterminado del perfil",
   "taskAgentWakeAgent": "Ejecutar agente",
-  "taskBlockedByChipLabel": "{count, plural, =1{Esperando 1 tarea} other{Esperando {count} tareas}}",
+  "taskBlockedByChipLabel": "{count, plural, =1{Bloqueada por 1 tarea} other{Bloqueada por {count} tareas}}",
   "@taskBlockedByChipLabel": {
     "placeholders": {
       "count": {
@@ -4134,7 +4139,7 @@
       }
     }
   },
-  "taskBlockedByChipTooltip": "{count, plural, =1{Esperando {title}} other{Toca para ver {count} bloqueos}}",
+  "taskBlockedByChipTooltip": "{count, plural, =1{Bloqueada por {title}} other{Toca para ver {count} bloqueos}}",
   "@taskBlockedByChipTooltip": {
     "placeholders": {
       "count": {
@@ -4147,7 +4152,7 @@
   },
   "taskBlockedByUnresolvedLabel": "El bloqueo aún no se ha sincronizado",
   "taskBlockedReason": "Bloqueada por: {title}",
-  "taskBlockerPickerTitle": "¿Qué la está bloqueando?",
+  "taskBlockerPickerTitle": "¿Qué la bloquea?",
   "taskCategoryAllLabel": "todos",
   "taskCategoryLabel": "Categoría:",
   "taskCategoryUnassignedLabel": "sin asignar",
@@ -4425,6 +4430,7 @@
   "transcriptModelLabel": "Modelo: {provider}, {model}",
   "unlinkButton": "Desvincular",
   "unlinkTaskConfirm": "¿Estás seguro de que quieres desvincular esta tarea?",
+  "unlinkTaskConfirmNamed": "¿Desvincular «{title}»? La tarea no se elimina.",
   "unlinkTaskFailedMessage": "No se pudo desvincular la tarea. Inténtalo de nuevo.",
   "unlinkTaskTitle": "Desvincular tarea",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} resultado} other{{elapsed}ms, {count} resultados}}",
