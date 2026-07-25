@@ -378,6 +378,33 @@ pressed state uses the high-emphasis content token because the dark pressed
 surface cannot retain 4.5:1 with the available error palette. The filled danger
 button continues to use the default error token as its surface.
 
+### One Field Surface
+
+`DesignSystemSearch` and `DesignSystemDropdown` are separate components that
+routinely appear stacked — the link modal puts a search field directly above a
+dropdown — so their field shells are held to one treatment:
+
+- **fill**: `colors.surface.enabled`, an elevation-aware translucent overlay
+  rather than an absolute background level. This is the load-bearing part: on
+  an elevated surface (every modal these appear in) an opaque `background.level01`
+  field is a dark sunken hole in dark theme, while the overlay sits a touch
+  lighter than whatever hosts it. Two fields side by side must not react to the
+  same sheet in opposite directions.
+- **border**: `colors.decorative.level01`, hairline (`spacing.step1 / 2`)
+- **radius**: `radii.l`
+
+The dropdown keeps one deliberate difference: expanded, its border switches to
+`colors.interactive.enabled`. The search field has no focus treatment to match,
+and dropping an open-state signal to win a cosmetic match would be a bad trade.
+Field *height* is also allowed to differ — the dropdown stacks a label above its
+value where a small search field holds one line.
+
+The two drifted apart precisely because nothing enforced the match. The pairing
+is now pinned in `design_system_dropdown_test.dart`, which renders both in one
+tree and asserts fill, border and radius agree — against each other *and*
+against the tokens, so a change moving both in the same wrong direction still
+fails.
+
 ### Shell-Aware Overlay Spacing
 
 The bottom navigation shell is an app-level overlay docked flush against

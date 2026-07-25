@@ -338,8 +338,14 @@ class _DropdownSizeSpec {
 
     return _DropdownSizeSpec(
       fieldHeight: fieldHeight,
-      fieldRadius: tokens.radii.xl,
-      fieldBorderWidth: tokens.spacing.step1,
+      // Matched to `DesignSystemSearch`'s shell — radius `l`, a hairline
+      // border — because the two are routinely stacked (the link modal puts a
+      // search directly above a dropdown) and at radius `xl` behind a 2px
+      // border this read as a control from a different product. The field is
+      // still taller than a small search field, which is honest: it stacks a
+      // label above its value where the search field holds one line.
+      fieldRadius: tokens.radii.l,
+      fieldBorderWidth: tokens.spacing.step1 / 2,
       fieldHorizontalPadding: tokens.spacing.step5,
       fieldRightPadding: tokens.spacing.step5,
       fieldTopPadding: tokens.spacing.step2,
@@ -425,10 +431,19 @@ class _DropdownStyleSpec {
     required bool expanded,
   }) {
     return _DropdownStyleSpec(
-      fieldBackgroundColor: tokens.colors.background.level01,
+      // The same elevation-aware translucent overlay `DesignSystemSearch`
+      // uses, rather than an absolute background level: on an elevated
+      // surface — every modal this control appears in — an opaque `level01`
+      // field is a dark sunken hole in dark theme, while the search field
+      // beside it sits a touch lighter than its host. Two fields, two
+      // opposite reactions to the same sheet.
+      fieldBackgroundColor: tokens.colors.surface.enabled,
+      // Expanded keeps the accent border: the search field has no focus
+      // treatment to match, and losing the open-state signal to win a
+      // cosmetic match would be a bad trade.
       fieldBorderColor: expanded
           ? tokens.colors.interactive.enabled
-          : tokens.colors.decorative.level02,
+          : tokens.colors.decorative.level01,
       fieldLabelColor: expanded
           ? tokens.colors.interactive.enabled
           : tokens.colors.text.mediumEmphasis,
