@@ -52,9 +52,10 @@ import '../services/day_processing_test_db.dart';
 ///
 ///  * `day_agent_durable_jobs_smoke_test.dart` — scripted tool calls, no
 ///    network, runs in the normal unit-test lane.
-///  * `../eval/day_agent_draft_live_eval_test.dart` — the real
-///    [ConversationRepository] + [CloudInferenceRepository] against a live
-///    provider, gated behind `LOTTI_DAY_AGENT_DRAFT_EVAL_LIVE=1`.
+///  * `../eval/framework/eval_runner.dart` — the day-planning eval matrix,
+///    driven either by a scripted repository in the normal lane or, behind
+///    `LOTTI_DAY_PLANNING_EVAL_LIVE=1`, by the real [ConversationRepository]
+///    + [CloudInferenceRepository] against a live provider.
 class DayAgentPipelineHarness {
   DayAgentPipelineHarness._({
     required this.root,
