@@ -150,6 +150,42 @@ controllableLinkedTaskCountProvider =
       LinkedTaskCountNotifier.new,
     );
 
+/// Drives the linked tasks' titles, so a test can change the band's height
+/// *without* changing how many links there are — the shape of a synced retitle.
+class LinkedTaskTitleNotifier extends Notifier<String> {
+  @override
+  String build() => 'Follow-up';
+
+  // ignore: use_setters_to_change_properties
+  void set(String value) => state = value;
+}
+
+final NotifierProvider<LinkedTaskTitleNotifier, String>
+controllableLinkedTaskTitleProvider =
+    NotifierProvider<LinkedTaskTitleNotifier, String>(
+      LinkedTaskTitleNotifier.new,
+    );
+
+/// Moves the linked tasks from the plain-link bucket into the typed one, which
+/// `TaskRelationshipSections` renders with its own section headers.
+///
+/// `TaskLinkGroups.totalCount` is `flat.length + typed.length`, so this changes
+/// the band's height while leaving the count identical — the shape of a synced
+/// link-type change, and the case a count-keyed listener would miss.
+class LinkedTaskTypedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  // ignore: use_setters_to_change_properties, avoid_positional_boolean_parameters
+  void set(bool value) => state = value;
+}
+
+final NotifierProvider<LinkedTaskTypedNotifier, bool>
+controllableLinkedTaskTypedProvider =
+    NotifierProvider<LinkedTaskTypedNotifier, bool>(
+      LinkedTaskTypedNotifier.new,
+    );
+
 /// Makes `LinkedTasksWidget`'s content follow
 /// [controllableLinkedTaskCountProvider].
 ///
@@ -158,30 +194,50 @@ controllableLinkedTaskCountProvider =
 /// window closed — which is the case these overrides exist to reproduce.
 List<Override> hControllableLinkedTasksOverrides() => [
   taskLinkGroupsControllerProvider(testTask.meta.id).overrideWith(
-    _ControllableTaskLinkGroupsController.new,
+    ControllableTaskLinkGroupsController.new,
   ),
 ];
 
-class _ControllableTaskLinkGroupsController extends TaskLinkGroupsController {
+TaskLinkGroups hLinkGroups({
+  required int count,
+  String title = 'Follow-up',
+  bool typed = false,
+}) {
+  final entries = [
+    for (var i = 0; i < count; i++)
+      TaskLinkEntry(
+        linkId: 'follow-up-link-$i',
+        task: testTask.copyWith(
+          meta: testTask.meta.copyWith(id: 'follow-up-task-$i'),
+          data: testTask.data.copyWith(title: '$title $i'),
+        ),
+        kind: typed ? TaskLinkKind.blocks : TaskLinkKind.basic,
+        direction: TaskLinkDirection.outgoing,
+      ),
+  ];
+  return TaskLinkGroups(
+    flat: typed ? const [] : entries,
+    typed: typed ? entries : const [],
+  );
+}
+
+class ControllableTaskLinkGroupsController extends TaskLinkGroupsController {
   @override
-  Future<TaskLinkGroups> build() async {
-    final count = ref.watch(controllableLinkedTaskCountProvider);
-    return TaskLinkGroups(
-      flat: [
-        for (var i = 0; i < count; i++)
-          TaskLinkEntry(
-            linkId: 'follow-up-link-$i',
-            task: testTask.copyWith(
-              meta: testTask.meta.copyWith(id: 'follow-up-task-$i'),
-              data: testTask.data.copyWith(title: 'Follow-up task $i'),
-            ),
-            kind: TaskLinkKind.basic,
-            direction: TaskLinkDirection.outgoing,
-          ),
-      ],
-      typed: const [],
-    );
-  }
+  Future<TaskLinkGroups> build() async => hLinkGroups(
+    count: ref.watch(controllableLinkedTaskCountProvider),
+    title: ref.watch(controllableLinkedTaskTitleProvider),
+    typed: ref.watch(controllableLinkedTaskTypedProvider),
+  );
+
+  /// Emits a single [AsyncData] without an intervening [AsyncLoading], the way
+  /// the real controller's update-stream listener does (`state = AsyncData(...)`
+  /// in `TaskLinkGroupsController._listen`).
+  ///
+  /// Driving the watched providers instead re-runs `build()`, and the
+  /// `AsyncLoading` that Riverpod emits first carries the previous value — which
+  /// would seed a listener's baseline for free and hide whether it copes with a
+  /// cold one.
+  void push(TaskLinkGroups groups) => state = AsyncData(groups);
 }
 
 /// Drives the number of open AI proposals for [testTask] so a test can shrink

@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
+import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
@@ -907,6 +908,145 @@ void main() {
         // assertion above would hold trivially.
         expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
         expect(tester.takeException(), isNull);
+        container.dispose();
+      },
+    );
+
+    testWidgets(
+      'a link changing relationship type re-arms the hold even though the '
+      'count is unchanged',
+      (tester) async {
+        // TaskLinkGroupsController re-emits whenever the resolved entries
+        // differ, not only when links are added or removed. totalCount is
+        // flat + typed, so a link moving between those buckets — a synced
+        // link-type change — resizes the band (typed links render with their
+        // own section headers) while the count stays identical. Keying the
+        // listener on the count alone would leave that unstabilized.
+        tester.view.physicalSize = const Size(800, 500);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableLinkedTasksOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+        container.read(controllableLinkedTaskCountProvider.notifier).set(1);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final proposals = find.byType(ProposalsSection);
+        expect(proposals, findsOneWidget);
+        final position = scrollPositionOf(tester);
+        await tester.ensureVisible(proposals);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+
+        final proposalsTop = tester.getTopLeft(proposals).dy;
+        final offsetBefore = position.pixels;
+
+        container.read(controllableLinkedTaskTypedProvider.notifier).set(true);
+        for (var frame = 0; frame < 6; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(
+            tester.getTopLeft(proposals).dy,
+            closeTo(proposalsTop, 1),
+            reason: 'proposals moved on frame $frame',
+          );
+        }
+
+        // The retitle really did resize the band — otherwise the assertion
+        // above would hold trivially.
+        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        expect(tester.takeException(), isNull);
+        container.dispose();
+      },
+    );
+
+    testWidgets(
+      'the first link change after mounting onto an already-resolved provider '
+      'still arms the hold',
+      (tester) async {
+        // taskLinkGroupsControllerProvider is cached for entryCacheDuration, so
+        // a page can mount onto an AsyncData provider and get no emission for
+        // the value already there. Without seeding the baseline from the
+        // listener's own previous value, the first real change would only
+        // establish the baseline and arm nothing.
+        tester.view.physicalSize = const Size(800, 500);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableLinkedTasksOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+        container.read(controllableLinkedTaskCountProvider.notifier).set(1);
+
+        // Warm the provider to AsyncData *before* the page mounts, and keep the
+        // subscription alive so it is not auto-disposed in between.
+        final warmup = container.listen(
+          taskLinkGroupsControllerProvider(testTask.meta.id),
+          (_, _) {},
+        );
+        await container.read(
+          taskLinkGroupsControllerProvider(testTask.meta.id).future,
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final proposals = find.byType(ProposalsSection);
+        expect(proposals, findsOneWidget);
+        final position = scrollPositionOf(tester);
+        await tester.ensureVisible(proposals);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+
+        final proposalsTop = tester.getTopLeft(proposals).dy;
+        final offsetBefore = position.pixels;
+
+        // The very first change this page ever sees for the provider, pushed as
+        // a single AsyncData the way the real controller's update-stream
+        // listener does — no AsyncLoading in between to seed the baseline.
+        (container.read(
+                  taskLinkGroupsControllerProvider(testTask.meta.id).notifier,
+                )
+                as ControllableTaskLinkGroupsController)
+            .push(hLinkGroups(count: 2));
+        for (var frame = 0; frame < 6; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(
+            tester.getTopLeft(proposals).dy,
+            closeTo(proposalsTop, 1),
+            reason: 'proposals moved on frame $frame',
+          );
+        }
+
+        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        expect(tester.takeException(), isNull);
+        warmup.close();
         container.dispose();
       },
     );

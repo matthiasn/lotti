@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -109,7 +110,12 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
 
   /// Baseline for [_onLinkedTasksChanged], reset alongside
   /// [_lastOpenSuggestionCount] when the page is reused for another task.
-  int? _lastLinkedTaskCount;
+  ///
+  /// The resolved groups rather than their count: `TaskLinkGroupsController`
+  /// re-emits whenever any watched linked task's data changes, and a synced
+  /// title growing from one rendered line to two resizes the band without
+  /// changing how many links there are.
+  TaskLinkGroups? _lastLinkGroups;
 
   /// The task the [_lastOpenSuggestionCount] belongs to. If this page's state is
   /// reused for a different task (e.g. a master-detail pane), the count is reset
@@ -210,14 +216,19 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     }
   }
 
-  /// Drops both count baselines when the page's state is reused for a different
-  /// task (e.g. a master-detail pane), so a previous task's count can't make the
+  /// Drops both baselines when the page's state is reused for a different task
+  /// (e.g. a master-detail pane), so a previous task's state can't make the
   /// next task's first emission look like a change and fire an anchor.
-  void _resetCountBaselinesIfTaskChanged() {
-    if (_lastTaskId == widget.taskId) return;
+  ///
+  /// Returns whether it reset, so a caller cannot then fall back to the
+  /// listener's `previous` value — which belongs to the task just navigated
+  /// away from.
+  bool _resetBaselinesIfTaskChanged() {
+    if (_lastTaskId == widget.taskId) return false;
     _lastTaskId = widget.taskId;
     _lastOpenSuggestionCount = null;
-    _lastLinkedTaskCount = null;
+    _lastLinkGroups = null;
+    return true;
   }
 
   /// When the open-proposal count drops (a proposal was confirmed/dismissed),
@@ -227,7 +238,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     AsyncValue<UnifiedSuggestionList>? previous,
     AsyncValue<UnifiedSuggestionList> next,
   ) {
-    _resetCountBaselinesIfTaskChanged();
+    _resetBaselinesIfTaskChanged();
     final nextOpen = next.value?.open.length;
     final previousOpen = _lastOpenSuggestionCount;
     if (nextOpen != null) _lastOpenSuggestionCount = nextOpen;
@@ -350,19 +361,37 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// header and checklist the user *is* reading upwards. So that case is left
   /// alone; a band that is visible or above stays worth compensating, because
   /// everything below it — including the card — would otherwise shift.
+  ///
+  /// The baseline falls back to the listener's own [previous] value, because
+  /// `taskLinkGroupsControllerProvider` is cached for `entryCacheDuration`: a
+  /// page mounting onto an already-resolved provider gets no emission for the
+  /// value already there, so without the fallback the first real change would
+  /// only establish the baseline and arm nothing.
   void _onLinkedTasksChanged(
     AsyncValue<TaskLinkGroups>? previous,
     AsyncValue<TaskLinkGroups> next,
   ) {
-    _resetCountBaselinesIfTaskChanged();
-    final nextCount = next.value?.totalCount;
-    if (nextCount == null) return;
-    final previousCount = _lastLinkedTaskCount;
-    _lastLinkedTaskCount = nextCount;
-    if (previousCount == null || previousCount == nextCount) return;
+    final didReset = _resetBaselinesIfTaskChanged();
+    final nextGroups = next.value;
+    if (nextGroups == null) return;
+    final previousGroups =
+        _lastLinkGroups ?? (didReset ? null : previous?.value);
+    _lastLinkGroups = nextGroups;
+    if (previousGroups == null) return;
+    // Compare the resolved entries, not their count. The controller re-emits
+    // only when they actually differ, and any such difference — a retitled
+    // task wrapping onto a second line, a status glyph appearing — can change
+    // the band's height even when the number of links is identical.
+    if (_linkGroupsEqual(previousGroups, nextGroups)) return;
     if (_isRegionBelowViewport(_linkedTasksRegionKey)) return;
     _holdSuggestionsStable();
   }
+
+  /// Deep equality over both link buckets. `TaskLinkGroups` itself carries only
+  /// identity equality, and giving it value equality would change when Riverpod
+  /// notifies its other consumers.
+  static bool _linkGroupsEqual(TaskLinkGroups a, TaskLinkGroups b) =>
+      listEquals(a.flat, b.flat) && listEquals(a.typed, b.typed);
 
   GlobalKey _getEntryKey(String entryId) {
     return _entryKeys.putIfAbsent(
