@@ -12,66 +12,93 @@ import '../../../../widget_test_utils.dart';
 void main() {
   _panelHeightGroup();
 
-  // The link modal stacks a search field directly above a dropdown. They were
-  // built independently and diverged — opaque `level01` at radius `xl` behind
-  // a 2px border against a translucent overlay at radius `l` behind a hairline
-  // — so the pair read as two different products. Nothing enforced the match,
-  // which is why it drifted; this is that enforcement. It lives here rather
-  // than in the search test because the dropdown is the side that moved.
+  // The app stacks these two components in both search sizes: the link modal
+  // puts a dropdown above a *small* search field, the AI settings header puts
+  // one under a *medium* one. They were built independently and diverged —
+  // opaque `level01` at radius `xl` behind a 2px border against a translucent
+  // overlay behind a hairline — so each pair read as two different products.
+  // Nothing enforced the match, which is why it drifted; this is that
+  // enforcement. It lives here rather than in the search test because the
+  // dropdown is the side that moved.
   group('DesignSystemDropdown field surface matches DesignSystemSearch', () {
+    // Both real pairings, so fixing one cannot leave the other mismatched.
+    final pairings = [
+      (
+        'small (link modal)',
+        DesignSystemSearchSize.small,
+        DesignSystemDropdownSize.small,
+        (DsTokens t) => t.radii.l,
+      ),
+      (
+        'medium (AI settings header)',
+        DesignSystemSearchSize.medium,
+        DesignSystemDropdownSize.medium,
+        (DsTokens t) => t.radii.m,
+      ),
+    ];
+
     for (final (name, theme, tokens) in [
       ('light', DesignSystemTheme.light(), dsTokensLight),
       ('dark', DesignSystemTheme.dark(), dsTokensDark),
     ]) {
-      testWidgets('in $name theme', (tester) async {
-        await _pumpDropdown(
-          tester,
-          const SizedBox(
-            width: 320,
-            child: Column(
-              children: [
-                DesignSystemSearch(
-                  hintText: 'Search',
-                  size: DesignSystemSearchSize.small,
-                ),
-                DesignSystemDropdown(
-                  label: 'Label',
-                  inputLabel: 'Input',
-                  items: [DesignSystemDropdownItem(id: 'a', label: 'Title')],
-                ),
-              ],
+      for (final (pairName, searchSize, dropdownSize, radius) in pairings) {
+        testWidgets('$pairName in $name theme', (tester) async {
+          await _pumpDropdown(
+            tester,
+            SizedBox(
+              width: 320,
+              child: Column(
+                children: [
+                  DesignSystemSearch(hintText: 'Search', size: searchSize),
+                  DesignSystemDropdown(
+                    label: 'Label',
+                    inputLabel: 'Input',
+                    size: dropdownSize,
+                    items: const [
+                      DesignSystemDropdownItem(id: 'a', label: 'Title'),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          theme: theme,
-        );
+            theme: theme,
+          );
 
-        final field = _triggerDecoration(tester);
-        final fieldShape = field.shape as RoundedRectangleBorder;
-        final shell =
-            tester
-                    .widget<DecoratedBox>(
-                      find.byKey(const Key('design-system-search-shell')),
-                    )
-                    .decoration
-                as BoxDecoration;
+          final field = _triggerDecoration(tester);
+          final fieldShape = field.shape as RoundedRectangleBorder;
+          final shell =
+              tester
+                      .widget<DecoratedBox>(
+                        find.byKey(const Key('design-system-search-shell')),
+                      )
+                      .decoration
+                  as BoxDecoration;
 
-        expect(
-          field.color,
-          shell.color,
-          reason: 'both fields must react to their host surface the same way',
-        );
-        expect(fieldShape.side.color, shell.border!.top.color);
-        expect(fieldShape.side.width, shell.border!.top.width);
-        expect(
-          fieldShape.borderRadius,
-          shell.borderRadius,
-          reason: 'radius l on both, so the stacked pair reads as one family',
-        );
-        // Pinned against the tokens too, so a change that moves *both* in the
-        // same wrong direction still fails rather than agreeing vacuously.
-        expect(field.color, tokens.colors.surface.enabled);
-        expect(fieldShape.side.color, tokens.colors.decorative.level01);
-      });
+          expect(
+            field.color,
+            shell.color,
+            reason: 'both fields must react to their host surface the same way',
+          );
+          expect(fieldShape.side.color, shell.border!.top.color);
+          expect(fieldShape.side.width, shell.border!.top.width);
+          expect(
+            fieldShape.borderRadius,
+            shell.borderRadius,
+            reason: 'the stacked pair must read as one family',
+          );
+          // Pinned against the tokens too, so a change that moves *both* in
+          // the same wrong direction still fails rather than agreeing
+          // vacuously. Radius included: comparing only the two components
+          // leaves them free to drift off the documented contract together.
+          expect(field.color, tokens.colors.surface.enabled);
+          expect(fieldShape.side.color, tokens.colors.decorative.level01);
+          expect(fieldShape.side.width, tokens.spacing.step1 / 2);
+          expect(
+            fieldShape.borderRadius,
+            BorderRadius.circular(radius(tokens)),
+          );
+        });
+      }
     }
   });
 
@@ -100,6 +127,12 @@ void main() {
       expect(decoration.color, dsTokensLight.colors.surface.enabled);
       expect(shape.side.color, dsTokensLight.colors.decorative.level01);
       expect(shape.side.width, dsTokensLight.spacing.step1 / 2);
+      // Default size is medium, matching the field's own height and the
+      // medium search field it pairs with in the AI settings header.
+      expect(
+        shape.borderRadius,
+        BorderRadius.circular(dsTokensLight.radii.m),
+      );
       expectTextStyle(
         labelText.text.style!,
         dsTokensLight.typography.styles.others.caption,

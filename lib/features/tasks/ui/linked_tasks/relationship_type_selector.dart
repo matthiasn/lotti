@@ -169,6 +169,9 @@ class RelationshipTypeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final options = relationshipDirectedOptions;
     return DesignSystemDropdown(
+      // Paired with the task picker's small search field directly below it in
+      // the link modal, so it takes that variant's corner radius.
+      size: DesignSystemDropdownSize.small,
       label: context.messages.linkDirectionLabel,
       inputLabel: directedRelationLabel(context, selected),
       items: [

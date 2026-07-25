@@ -7,12 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.1068]
 ### Changed
 - **Dropdowns and search boxes now look like the same control.** Where the two
-  sit stacked — picking a task to link, then picking how it relates — the
-  dropdown was drawn as a flat opaque box with much rounder corners and a
-  heavier outline than the search field above it, so the pair read as parts of
-  two different apps. The dropdown now matches the search field's shell, and
-  like it sits slightly lighter than whatever panel it's on instead of looking
-  like a hole punched in it.
+  sit stacked — choosing how a task relates, then searching for the task to
+  link — the dropdown was drawn as a flat opaque box with much rounder corners
+  and a heavier outline than the search field, so the pair read as parts of two
+  different apps. The dropdown now matches the search field's shell, including
+  in dark mode, where it lifts off the panel it sits on instead of looking like
+  a hole punched in it.
 - **Warnings, errors and status text are readable in light mode.** The amber,
   green and blue used for warnings, successes and information were mixed too
   light to stand out against a white or off-white background — amber measured

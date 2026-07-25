@@ -12,6 +12,23 @@ enum DesignSystemDropdownType {
   multiselect,
 }
 
+/// Which `DesignSystemSearchSize` this dropdown is stacked with.
+///
+/// Controls the field's corner radius only — the two search sizes carry
+/// different radii (`l` for small, `m` for medium), and a dropdown paired with
+/// one has to take the same one or the stacked pair reads as two unrelated
+/// controls. It deliberately does **not** change the field height: the
+/// dropdown stacks a label above its value, so its height is content-driven
+/// where a search field's is not.
+///
+/// [medium] is the default because the field is already the height of a
+/// medium search field. Pair with [small] where the neighbouring search field
+/// is small — the link modal's task picker.
+enum DesignSystemDropdownSize {
+  small,
+  medium,
+}
+
 /// One selectable entry in a [DesignSystemDropdown].
 ///
 /// Identified by [id] and shown with [label]; [selected] reflects its current
@@ -47,6 +64,7 @@ class DesignSystemDropdown extends StatefulWidget {
     required this.inputLabel,
     required this.items,
     this.type = DesignSystemDropdownType.dropdownList,
+    this.size = DesignSystemDropdownSize.medium,
     this.initiallyExpanded = false,
     this.enabled = true,
     this.semanticsLabel,
@@ -63,6 +81,7 @@ class DesignSystemDropdown extends StatefulWidget {
   final String inputLabel;
   final List<DesignSystemDropdownItem> items;
   final DesignSystemDropdownType type;
+  final DesignSystemDropdownSize size;
   final bool initiallyExpanded;
   final bool enabled;
   final String? semanticsLabel;
@@ -99,6 +118,7 @@ class _DesignSystemDropdownState extends State<DesignSystemDropdown> {
     final sizeSpec = _DropdownSizeSpec.fromTokens(
       tokens,
       MediaQuery.textScalerOf(context),
+      widget.size,
     );
     final styleSpec = _DropdownStyleSpec.fromTokens(
       tokens: tokens,
@@ -317,7 +337,11 @@ class _DropdownSizeSpec {
   /// not, so a ceiling computed from unscaled metrics stops mid-row at large
   /// text sizes — the exact defect this whole calculation exists to prevent,
   /// reappearing one accessibility setting out.
-  factory _DropdownSizeSpec.fromTokens(DsTokens tokens, TextScaler textScaler) {
+  factory _DropdownSizeSpec.fromTokens(
+    DsTokens tokens,
+    TextScaler textScaler,
+    DesignSystemDropdownSize size,
+  ) {
     final fieldHeight =
         textScaler.scale(tokens.typography.lineHeight.bodyLarge) +
         tokens.spacing.step5 * 2;
@@ -338,13 +362,18 @@ class _DropdownSizeSpec {
 
     return _DropdownSizeSpec(
       fieldHeight: fieldHeight,
-      // Matched to `DesignSystemSearch`'s shell — radius `l`, a hairline
-      // border — because the two are routinely stacked (the link modal puts a
-      // search directly above a dropdown) and at radius `xl` behind a 2px
-      // border this read as a control from a different product. The field is
-      // still taller than a small search field, which is honest: it stacks a
-      // label above its value where the search field holds one line.
-      fieldRadius: tokens.radii.l,
+      // Matched to `DesignSystemSearch`'s shell — its radius for the size this
+      // one is paired with, and a hairline border — because the two are
+      // routinely stacked (the link modal puts a dropdown directly above a
+      // small search field; the AI settings header puts one under a medium
+      // one). At radius `xl` behind a 2px border this read as a control from a
+      // different product. The field is still taller than a small search
+      // field, which is honest: it stacks a label above its value where the
+      // search field holds one line.
+      fieldRadius: switch (size) {
+        DesignSystemDropdownSize.small => tokens.radii.l,
+        DesignSystemDropdownSize.medium => tokens.radii.m,
+      },
       fieldBorderWidth: tokens.spacing.step1 / 2,
       fieldHorizontalPadding: tokens.spacing.step5,
       fieldRightPadding: tokens.spacing.step5,
@@ -432,11 +461,13 @@ class _DropdownStyleSpec {
   }) {
     return _DropdownStyleSpec(
       // The same elevation-aware translucent overlay `DesignSystemSearch`
-      // uses, rather than an absolute background level: on an elevated
-      // surface — every modal this control appears in — an opaque `level01`
-      // field is a dark sunken hole in dark theme, while the search field
-      // beside it sits a touch lighter than its host. Two fields, two
-      // opposite reactions to the same sheet.
+      // uses, rather than an absolute background level. The overlay is
+      // theme-relative — white at 6% in dark, black at 6% in light — so it
+      // lifts off a dark host and insets slightly into a light one. On an
+      // elevated surface (every modal this control appears in) an opaque
+      // `level01` field instead reads as a dark sunken hole in dark theme
+      // while the search field beside it lifts: two fields, two opposite
+      // reactions to the same sheet.
       fieldBackgroundColor: tokens.colors.surface.enabled,
       // Expanded keeps the accent border: the search field has no focus
       // treatment to match, and losing the open-state signal to win a
