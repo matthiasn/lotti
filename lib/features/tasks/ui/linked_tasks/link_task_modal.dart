@@ -66,6 +66,15 @@ class LinkTaskModal extends ConsumerStatefulWidget {
 class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
   DirectedRelation _relation = const DirectedRelation(EntryLinkType.basic);
 
+  /// A link has already been committed by this sheet.
+  ///
+  /// The sheet commits at most one: it pops on success, and the
+  /// post-dismissal create path must not add a second edge (and a second
+  /// confirmation) for a task the user has already moved on from. The picker
+  /// makes creation exclusive so this cannot normally be reached; it is the
+  /// backstop that keeps the invariant true regardless.
+  bool _linkCommitted = false;
+
   Future<void> _selectTask(Task task) =>
       _commitLink(task, _captureCommitDeps());
 
@@ -112,6 +121,7 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
       return;
     }
 
+    _linkCommitted = true;
     await HapticFeedback.mediumImpact();
 
     showLinkCreatedFeedback(
@@ -169,6 +179,11 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
     // unlinked and unannounced — visible only as a stray row in the task
     // list. Commit the link on the captured dependencies instead, so the
     // confirmation and its Undo still arrive.
+    //
+    // Unless this sheet already linked something: then the dismissal was the
+    // pop that followed that link, not an abandonment, and a second edge here
+    // would be one the user never asked for.
+    if (_linkCommitted) return null;
     await _commitLink(created, deps);
     return null;
   }

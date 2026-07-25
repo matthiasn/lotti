@@ -5,6 +5,7 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_create_ops.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -114,6 +115,41 @@ void main() {
           linkedId: 'parent-1',
         ),
       ).called(1);
+    },
+  );
+
+  test(
+    'createTaskEntryImpl returns null when the write is not applied',
+    () async {
+      when(
+        () => logic.createDbEntity(
+          any(),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      // A rejected write does not throw — createDbEntity reports it by
+      // returning false and burning the unbound vector clock. Discarding that
+      // handed back a Task that is not in the database, which callers then
+      // navigate to, link, and confirm as created.
+      final result = await ops.createTaskEntryImpl(
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-id',
+            createdAt: DateTime(2024, 3, 15),
+            utcOffset: 60,
+          ),
+          title: 'Write the guide',
+          statusHistory: const [],
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        entryText: const EntryText(plainText: ''),
+      );
+
+      expect(result, isNull);
     },
   );
 

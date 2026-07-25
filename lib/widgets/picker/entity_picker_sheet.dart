@@ -323,7 +323,12 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
       selected: selected,
       titleMaxLines: widget.titleMaxLines,
       rowSize: widget.rowSize,
-      onTap: !item.enabled
+      // Creation is exclusive: while a create is in flight every other row is
+      // inert. Left tappable, picking an existing result would commit and pop
+      // while the create was still pending, and the create's own completion
+      // would then commit a second link and a second confirmation for a task
+      // the user had already moved on from.
+      onTap: (!item.enabled || _creating)
           ? null
           : () => _multi ? _toggle(item.id) : widget.onPick?.call(item.id),
     );

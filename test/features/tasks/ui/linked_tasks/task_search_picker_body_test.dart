@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -55,7 +57,6 @@ void main() {
   }
 
   setUp(() async {
-    await getIt.reset();
     journalDb = MockJournalDb();
     fts5Db = MockFts5Db();
 
@@ -72,13 +73,20 @@ void main() {
       CategoryTestUtils.createTestCategory(id: 'cat-a', name: 'A'),
     ]);
 
-    getIt
-      ..registerSingleton<EntitiesCacheService>(cache)
-      ..registerSingleton<JournalDb>(journalDb)
-      ..registerSingleton<Fts5Db>(fts5Db);
+    // Centralized lifecycle first, then only the picker-specific doubles on
+    // top of it — the shared helper owns registration and cleanup.
+    await setUpTestGetIt(
+      additionalSetup: () {
+        if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
+        getIt
+          ..registerSingleton<EntitiesCacheService>(cache)
+          ..registerSingleton<JournalDb>(journalDb)
+          ..registerSingleton<Fts5Db>(fts5Db);
+      },
+    );
   });
 
-  tearDown(() async => getIt.reset());
+  tearDown(tearDownTestGetIt);
 
   Finder createRow() => find.byKey(const ValueKey('link-picker-create'));
 
@@ -196,6 +204,112 @@ void main() {
     // would make an unavailable index look like a permanently missing
     // feature.
     expect(createRow(), findsOneWidget);
+  });
+
+  testWidgets(
+    'an exact title match on an *excluded* task still offers the create',
+    (tester) async {
+      final anchor = buildTask(id: 'anchor', title: 'Write the guide');
+      stubTasks([anchor]);
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _Host(
+            child: TaskSearchPickerBody(
+              // The anchor task is always excluded from its own picker.
+              excludeIds: const {'anchor'},
+              onTaskSelected: (_) {},
+              onCreateTask: (_) async => null,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await search(tester, 'Write the guide');
+
+      // Checked against the raw pool this was a dead end: the row was hidden
+      // (excluded) and the create row suppressed (the excluded task counted
+      // as a duplicate), leaving neither.
+      expect(createRow(), findsOneWidget);
+    },
+  );
+
+  testWidgets('a second tap while a create is pending is ignored', (
+    tester,
+  ) async {
+    stubTasks([]);
+    final write = Completer<Task?>();
+    var createCalls = 0;
+
+    await tester.pumpWidget(
+      makeTestableWidget(
+        _Host(
+          child: TaskSearchPickerBody(
+            excludeIds: const {},
+            onTaskSelected: (_) {},
+            onCreateTask: (_) {
+              createCalls++;
+              return write.future;
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await search(tester, 'Write the guide');
+    await tester.tap(createRow());
+    await tester.pump();
+
+    // Second tap lands while the first write is still open.
+    await tester.tap(createRow(), warnIfMissed: false);
+    await tester.pump();
+
+    expect(createCalls, 1);
+
+    write.complete(null);
+    await tester.pump();
+  });
+
+  testWidgets('existing rows are inert while a create is pending', (
+    tester,
+  ) async {
+    stubTasks([buildTask(id: 'apple', title: 'Apple Task')]);
+    final write = Completer<Task?>();
+    Task? selected;
+
+    await tester.pumpWidget(
+      makeTestableWidget(
+        _Host(
+          child: TaskSearchPickerBody(
+            excludeIds: const {},
+            onTaskSelected: (task) => selected = task,
+            onCreateTask: (_) => write.future,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // A query that both matches an existing task and offers a create.
+    await search(tester, 'Apple');
+    expect(createRow(), findsOneWidget);
+    await tester.tap(createRow());
+    await tester.pump();
+
+    // Picking an existing result mid-create would commit and pop while the
+    // create was still pending, and the create's completion would then commit
+    // a second link for a task the user had moved on from.
+    await tester.tap(find.text('Apple Task'), warnIfMissed: false);
+    await tester.pump();
+    expect(selected, isNull);
+
+    write.complete(null);
+    await tester.pump();
   });
 
   testWidgets('a created task is resolvable and reaches onTaskSelected', (

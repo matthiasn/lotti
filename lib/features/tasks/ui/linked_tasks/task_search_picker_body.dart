@@ -277,9 +277,14 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
     if (trimmed.isEmpty) return false;
     if (trimmed != _resolvedQuery) return false;
     final lowered = trimmed.toLowerCase();
-    return !_candidatePool.any(
-      (task) => task.data.title.trim().toLowerCase() == lowered,
-    );
+    // Against the same filtered set the rows are built from. Checked against
+    // the raw pool, a query exactly matching an *excluded* task — the anchor
+    // itself, or one already holding this relation — hid every row (excluded)
+    // and suppressed the create row too (the excluded task counted as an
+    // existing duplicate), leaving a dead end with neither.
+    return !_candidatePool
+        .where((task) => !widget.excludeIds.contains(task.meta.id))
+        .any((task) => task.data.title.trim().toLowerCase() == lowered);
   }
 
   @override

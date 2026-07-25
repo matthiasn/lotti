@@ -228,7 +228,13 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
         ),
       );
 
-      await logic.createDbEntity(task, linkedId: linkedId);
+      // The write's own verdict, not just the absence of a throw.
+      // `createDbEntity` returns `res.applied` and burns the unbound vector
+      // clock when a write is *rejected* rather than failing — discarding that
+      // returned a Task that does not exist in the database, which every
+      // caller then navigates to, links, or confirms as created.
+      final saved = await logic.createDbEntity(task, linkedId: linkedId);
+      if (saved != true) return null;
 
       return task;
     } catch (exception, stackTrace) {

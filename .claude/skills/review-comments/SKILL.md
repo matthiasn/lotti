@@ -90,31 +90,58 @@ resolution.
    is not the end of the job. A PR is finished only when all three hold at the
    same time:
 
-   - **mergeable** — `gh pr view <n> --json mergeable` is `MERGEABLE`; rebase on
-     latest `main` and force-push (`--force-with-lease`) if it drifts behind
-   - **all green** — every check passed, not merely "not failing".
-     `gh pr checks <n>` must show zero `pending` and zero `fail`, including
-     `codecov/patch`
+   - **mergeable** — `gh pr view <n> --json mergeable` is `MERGEABLE`
+   - **all green** — every check passed, not merely "not failing": zero
+     `pending` and zero failures, including `codecov/patch`
    - **all replied** — every top-level review comment has a reply, with a real
      fix or a stated reason for declining
+
+   **Pushing requires authorization.** Commits, rebases and pushes need
+   explicit user or orchestrator approval (AGENTS.md, "Security &
+   Configuration"). Being asked to *address review comments* authorizes the
+   code changes, not the push — confirm before the first push of a session,
+   and never force-push a branch you did not create in this session.
+   `--force-with-lease` guards against clobbering a concurrent update; it is
+   not a substitute for approval.
 
    Reviews arrive *after* pushes, so pushing fixes restarts the loop: the
    reviewer re-reviews the new commit and may file new findings. Bots also
    rate-limit and arrive late (CodeRabbit will say "next review available in
    N minutes" and skip the run entirely). Keep watching until the three
-   conditions hold together:
+   conditions hold together.
+
+   Poll on the structured status rather than the display columns — the table
+   format is human-facing, and a failed API or auth call prints to stderr and
+   would otherwise read as "no pending checks":
 
    ```bash
-   # poll until no check is pending, then surface failures + new comments
-   until [ "$(gh pr checks <n> 2>&1 | awk -F'\t' '$2=="pending"' | wc -l)" = 0 ]; do sleep 30; done
-   gh pr checks <n> | awk -F'\t' '$2!="pass"'
-   gh api repos/{owner}/{repo}/pulls/<n>/comments \
-     --jq '.[] | select(.in_reply_to_id == null) | "\(.id) \(.path):\(.line)"'
+   # emits one "<bucket>\t<name>" line per check; `set -o pipefail` so an
+   # auth/API failure aborts instead of looking like an empty (= done) result
+   check_buckets() {
+     set -o pipefail
+     gh pr checks "$1" --json bucket,name --jq '.[] | "\(.bucket)\t\(.name)"'
+   }
+   until ! check_buckets <n> | grep -q '^pending'; do sleep 30; done
+   check_buckets <n> | grep -v '^pass' || echo "all green"
    ```
 
-   Run the wait in the background rather than blocking, and report the real
-   state — "27 pass, 1 pending" is the honest answer while a check is still
-   running, not "all green".
+   Run that in the background (`run_in_background: true`, or `… &` with the
+   PID kept) so replying to comments proceeds concurrently rather than
+   blocking on CI.
+
+   Then re-check for comments filed against the new commits — including
+   top-level ones with no reply yet:
+
+   ```bash
+   gh api repos/{owner}/{repo}/pulls/<n>/comments --jq \
+     '[.[] | select(.in_reply_to_id != null) | .in_reply_to_id] as $replied
+      | .[] | select(.in_reply_to_id == null)
+      | select(.id as $i | ($replied | index($i)) | not)
+      | "UNANSWERED \(.id) \(.path):\(.line)"'
+   ```
+
+   Report the real state — "27 pass, 1 pending" is the honest answer while a
+   check is still running, not "all green".
 
 ## Guidelines
 
