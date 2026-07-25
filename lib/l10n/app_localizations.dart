@@ -18642,6 +18642,12 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to unlink this task?'**
   String get unlinkTaskConfirm;
 
+  /// Unlink confirmation naming the task being unlinked. The rows it is reached from carry two faint glyphs each, so an anonymous "this task" cannot tell the user which link they hit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink “{title}”? The task itself is not deleted.'**
+  String unlinkTaskConfirmNamed(String title);
+
   /// No description provided for @unlinkTaskFailedMessage.
   ///
   /// In en, this message translates to:

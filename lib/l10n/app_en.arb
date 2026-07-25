@@ -5303,6 +5303,15 @@
   },
   "unlinkButton": "Unlink",
   "unlinkTaskConfirm": "Are you sure you want to unlink this task?",
+  "unlinkTaskConfirmNamed": "Unlink “{title}”? The task itself is not deleted.",
+  "@unlinkTaskConfirmNamed": {
+    "description": "Unlink confirmation naming the task being unlinked. The rows it is reached from carry two faint glyphs each, so an anonymous \"this task\" cannot tell the user which link they hit.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "unlinkTaskFailedMessage": "Couldn't unlink the task. Please try again.",
   "unlinkTaskTitle": "Unlink Task",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}",

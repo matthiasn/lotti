@@ -4438,6 +4438,7 @@
   "transcriptModelLabel": "Modelo: {provider}, {model}",
   "unlinkButton": "Desvincular",
   "unlinkTaskConfirm": "¿Estás seguro de que quieres desvincular esta tarea?",
+  "unlinkTaskConfirmNamed": "¿Desvincular «{title}»? La tarea no se elimina.",
   "unlinkTaskFailedMessage": "No se pudo desvincular la tarea. Inténtalo de nuevo.",
   "unlinkTaskTitle": "Desvincular tarea",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} resultado} other{{elapsed}ms, {count} resultados}}",

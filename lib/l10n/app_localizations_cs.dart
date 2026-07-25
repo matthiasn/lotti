@@ -10934,6 +10934,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Opravdu chcete zrušit propojení tohoto úkolu?';
 
   @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Odpojit „$title“? Samotný úkol se nesmaže.';
+  }
+
+  @override
   String get unlinkTaskFailedMessage =>
       'Propojení úkolu se nepodařilo zrušit. Zkuste to prosím znovu.';
 

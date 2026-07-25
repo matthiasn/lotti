@@ -11011,6 +11011,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get unlinkTaskConfirm => 'Es-tu sûr de vouloir délier cette tâche ?';
 
   @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Dissocier « $title » ? La tâche elle-même n’est pas supprimée.';
+  }
+
+  @override
   String get unlinkTaskFailedMessage =>
       'Impossible de délier la tâche. Réessaie.';
 

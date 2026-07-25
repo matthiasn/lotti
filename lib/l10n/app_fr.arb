@@ -4438,6 +4438,7 @@
   "transcriptModelLabel": "Modèle : {provider}, {model}",
   "unlinkButton": "Délier",
   "unlinkTaskConfirm": "Es-tu sûr de vouloir délier cette tâche ?",
+  "unlinkTaskConfirmNamed": "Dissocier « {title} » ? La tâche elle-même n’est pas supprimée.",
   "unlinkTaskFailedMessage": "Impossible de délier la tâche. Réessaie.",
   "unlinkTaskTitle": "Délier la tâche",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} résultat} other{{elapsed}ms, {count} résultats}}",

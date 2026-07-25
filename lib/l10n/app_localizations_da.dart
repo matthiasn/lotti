@@ -10800,6 +10800,11 @@ class AppLocalizationsDa extends AppLocalizations {
       'Er du sikker på, at du vil koble denne opgave fra?';
 
   @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Unlink “$title”? The task itself is not deleted.';
+  }
+
+  @override
   String get unlinkTaskFailedMessage =>
       'Couldn\'t unlink the task. Please try again.';
 

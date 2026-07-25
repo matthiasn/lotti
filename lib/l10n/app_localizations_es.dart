@@ -10965,6 +10965,11 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Estás seguro de que quieres desvincular esta tarea?';
 
   @override
+  String unlinkTaskConfirmNamed(String title) {
+    return '¿Desvincular «$title»? La tarea no se elimina.';
+  }
+
+  @override
   String get unlinkTaskFailedMessage =>
       'No se pudo desvincular la tarea. Inténtalo de nuevo.';
 

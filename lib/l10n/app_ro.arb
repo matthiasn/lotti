@@ -4438,6 +4438,7 @@
   "transcriptModelLabel": "Model: {provider}, {model}",
   "unlinkButton": "Dezleagă",
   "unlinkTaskConfirm": "Sigur doriți să deconectați această sarcină?",
+  "unlinkTaskConfirmNamed": "Deconectați „{title}”? Sarcina în sine nu este ștearsă.",
   "unlinkTaskFailedMessage": "Nu s-a putut deconecta sarcina. Vă rugăm să încercați din nou.",
   "unlinkTaskTitle": "Deconectați sarcina",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} rezultat} other{{elapsed}ms, {count} rezultate}}",

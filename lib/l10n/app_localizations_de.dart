@@ -10867,6 +10867,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bist du sicher, dass du die Verknüpfung zu dieser Aufgabe aufheben möchtest?';
 
   @override
+  String unlinkTaskConfirmNamed(String title) {
+    return '„$title“ trennen? Die Aufgabe selbst wird nicht gelöscht.';
+  }
+
+  @override
   String get unlinkTaskFailedMessage =>
       'Die Verknüpfung konnte nicht aufgehoben werden. Bitte versuch es erneut.';
 

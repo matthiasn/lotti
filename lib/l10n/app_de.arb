@@ -4438,6 +4438,7 @@
   "transcriptModelLabel": "Modell: {provider}, {model}",
   "unlinkButton": "Verknüpfung aufheben",
   "unlinkTaskConfirm": "Bist du sicher, dass du die Verknüpfung zu dieser Aufgabe aufheben möchtest?",
+  "unlinkTaskConfirmNamed": "„{title}“ trennen? Die Aufgabe selbst wird nicht gelöscht.",
   "unlinkTaskFailedMessage": "Die Verknüpfung konnte nicht aufgehoben werden. Bitte versuch es erneut.",
   "unlinkTaskTitle": "Verknüpfung aufheben",
   "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} Ergebnis} other{{elapsed}ms, {count} Ergebnisse}}",

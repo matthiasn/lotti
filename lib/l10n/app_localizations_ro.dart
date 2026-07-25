@@ -10994,6 +10994,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sigur doriți să deconectați această sarcină?';
 
   @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Deconectați „$title”? Sarcina în sine nu este ștearsă.';
+  }
+
+  @override
   String get unlinkTaskFailedMessage =>
       'Nu s-a putut deconecta sarcina. Vă rugăm să încercați din nou.';
 

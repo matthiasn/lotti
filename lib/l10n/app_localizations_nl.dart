@@ -10836,6 +10836,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get unlinkTaskConfirm => 'Weet u zeker dat u deze taak wilt losmaken?';
 
   @override
+  String unlinkTaskConfirmNamed(String title) {
+    return 'Unlink “$title”? The task itself is not deleted.';
+  }
+
+  @override
   String get unlinkTaskFailedMessage =>
       'Couldn\'t unlink the task. Please try again.';
 

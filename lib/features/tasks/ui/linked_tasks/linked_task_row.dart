@@ -193,7 +193,10 @@ class LinkedTaskRow extends StatelessWidget {
     final confirmed = await showConfirmationModal(
       context: context,
       title: context.messages.unlinkTaskTitle,
-      message: context.messages.unlinkTaskConfirm,
+      // Names the task. The rows this is reached from carry two faint glyphs
+      // each, so "this task" cannot tell the user which link they actually
+      // hit — on the feature's only irreversible action.
+      message: context.messages.unlinkTaskConfirmNamed(data.task.data.title),
       confirmLabel: context.messages.unlinkButton,
       cancelLabel: context.messages.cancelButton,
     );

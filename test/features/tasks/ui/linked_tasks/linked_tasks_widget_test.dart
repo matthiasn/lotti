@@ -162,6 +162,7 @@ void main() {
     bool manageMode = false,
     MediaQueryData? mediaQueryData,
     double? width,
+    Locale? locale,
     List<Override> extraOverrides = const [],
     List<EntryLink> extraTypedLinks = const [],
     List<Task> extraTypedTasks = const [],
@@ -186,6 +187,7 @@ void main() {
           ...extraOverrides,
         ],
         child: WidgetTestBench(
+          locale: locale,
           mediaQueryData: mediaQueryData,
           // Align, not a bare SizedBox: the bench hands its child tight
           // constraints, so a width set any other way is silently ignored and
@@ -650,6 +652,38 @@ void main() {
     // truncation entirely.
     const phoneCardWidth = 357.0;
 
+    // Every shipped locale, not just English. The R17 fix was verified in
+    // English and shipped truncated in German and Spanish, whose card title
+    // and action label are both markedly longer — a difference no
+    // English-only assertion and no screenshot round can see.
+    for (final locale in ['en', 'de', 'fr', 'es', 'ro', 'cs']) {
+      testWidgets(
+        'the header title survives default text size in "$locale"',
+        (tester) async {
+          await pumpWidget(
+            tester,
+            incoming: [],
+            outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+            width: phoneCardWidth,
+            locale: Locale(locale),
+            mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          );
+
+          final title = tester.renderObject<RenderParagraph>(
+            find.byKey(const ValueKey('linked-tasks-card-title')),
+          );
+          expect(
+            title.didExceedMaxLines,
+            isFalse,
+            reason:
+                'the card truncates its own name in "$locale" at default text '
+                'size: ${title.size.width}pt granted against '
+                '${title.getMaxIntrinsicWidth(double.infinity)}pt needed',
+          );
+        },
+      );
+    }
+
     for (final manageMode in [false, true]) {
       testWidgets(
         'the header title is not truncated at default text size '
@@ -710,5 +744,37 @@ void main() {
         );
       }
     }
+
+    testWidgets(
+      'the empty card words both creative actions — it is the screen where '
+      'the user knows least, and creating a linked task was reachable only '
+      'through an unlabelled glyph holding one item',
+      (tester) async {
+        await pumpWidget(tester, incoming: [], outgoing: []);
+
+        expect(find.text('Link a task…'), findsOneWidget);
+        expect(find.text('Create new linked task…'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the unlink confirmation names the task — the rows it is reached from '
+      'carry two faint glyphs each, so "this task" cannot say which link was '
+      'hit on the only irreversible action here',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          manageMode: true,
+        );
+
+        await tester.tap(find.byIcon(Icons.link_off));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.textContaining('Outgoing Task'), findsWidgets);
+      },
+    );
   });
 }
