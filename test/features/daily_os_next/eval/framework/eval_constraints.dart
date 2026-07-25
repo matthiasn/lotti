@@ -166,7 +166,7 @@ EvalConstraintResult scoreDecidedTasksPlaced(EvalRunOutcome outcome) {
       'no decided task is required to be placed',
     );
   }
-  final placed = {for (final block in outcome.blocks) ?block.taskId};
+  final placed = _placedTaskIds(outcome);
   final missing = [
     for (final taskId in required)
       if (!placed.contains(taskId)) taskId,
@@ -190,7 +190,7 @@ EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
   final noPlan = _requirePlan(outcome, id);
   if (noPlan != null) return noPlan;
   final blocked = <PlannedBlock, EvalCorpusTask>{};
-  for (final block in outcome.blocks) {
+  for (final block in _scheduled(outcome)) {
     final taskId = block.taskId;
     if (taskId == null) continue;
     final task = outcome.inputs.taskById(taskId);
@@ -206,7 +206,7 @@ EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
   for (final entry in blocked.entries) {
     final block = entry.key;
     final task = entry.value;
-    final blockerScheduledEarlier = outcome.blocks.any(
+    final blockerScheduledEarlier = _scheduled(outcome).any(
       (other) =>
           other.taskId != null &&
           task.blockedBy.contains(other.taskId) &&
@@ -344,7 +344,7 @@ EvalConstraintResult scoreExpectedOmissionsHonoured(EvalRunOutcome outcome) {
       'no omission is expected',
     );
   }
-  final placed = {for (final block in outcome.blocks) ?block.taskId};
+  final placed = _placedTaskIds(outcome);
   final wronglyPlaced = [
     for (final taskId in expected)
       if (placed.contains(taskId)) taskId,
@@ -499,7 +499,7 @@ EvalConstraintResult scoreRequiredWorkPlaced(EvalRunOutcome outcome) {
   }
   final noPlan = _requirePlan(outcome, id);
   if (noPlan != null) return noPlan;
-  final placed = {for (final block in outcome.blocks) ?block.taskId};
+  final placed = _placedTaskIds(outcome);
   final missing = [
     for (final taskId in required)
       if (!placed.contains(taskId)) taskId,
@@ -528,9 +528,18 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
       'the scenario is satisfiable as stated',
     );
   }
-  final escalated = outcome.toolCalls.any(
-    (call) => call.accepted && call.name.contains('raise_day_status'),
-  );
+  // The tool accepts onTrack and dayClosed too, and attentionNeeded with
+  // reasons like processingBlocked that say nothing about this conflict.
+  // Matching the call by name alone would let any of those pass.
+  final escalated = outcome.toolCalls.any((call) {
+    if (!call.accepted || !call.name.contains('raise_day_status')) return false;
+    if (call.arguments['status'] != 'attentionNeeded') return false;
+    final reasons = switch (call.arguments['reasons']) {
+      final List<Object?> list => list.map((r) => '$r').toSet(),
+      _ => const <String>{},
+    };
+    return reasons.any(outcome.inputs.conflictEscalationReasons.contains);
+  });
   if (escalated) {
     return const EvalConstraintResult(
       id: id,
@@ -599,6 +608,17 @@ EvalConstraintResult? _requirePlan(EvalRunOutcome outcome, String id) =>
     outcome.planPersisted
     ? null
     : EvalConstraintResult.notApplicable(id, 'no plan was persisted');
+
+/// Task ids the plan actually commits to.
+///
+/// Derived from scheduled blocks, not every block: a `dropped` block is the
+/// model explicitly declining the work, and production's `scheduledMinutesFor`
+/// excludes it from the day too. Counting it as placed was inconsistent in
+/// both directions at once — a dropped stale task failed the omission
+/// constraint while a dropped required task satisfied the placement one.
+Set<String> _placedTaskIds(EvalRunOutcome outcome) => {
+  for (final block in _scheduled(outcome)) ?block.taskId,
+};
 
 /// Blocks that consume capacity — `dropped` ones are recorded but not
 /// scheduled, matching `scheduledMinutesFor` in the parser.

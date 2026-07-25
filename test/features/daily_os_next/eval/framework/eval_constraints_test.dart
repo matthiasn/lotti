@@ -661,6 +661,70 @@ void main() {
     });
   });
 
+  group('dropped blocks are not placements', () {
+    test('a dropped required task does not count as placed', () {
+      // Production excludes dropped blocks from the day, so crediting one as
+      // a placement would let a model satisfy every placement constraint
+      // while committing to nothing.
+      final result = scoreRequiredWorkPlaced(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-overdue',
+              state: PlannedBlockState.dropped,
+            ),
+          ],
+          requiredTaskIds: const {'task-overdue'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('a dropped decided task does not count as placed', () {
+      final result = scoreDecidedTasksPlaced(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-1',
+              state: PlannedBlockState.dropped,
+            ),
+          ],
+          decidedTaskIds: const ['task-1'],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('dropping work the scenario wanted omitted honours the omission', () {
+      // The other direction of the same inconsistency: a dropped stale task
+      // used to fail the omission constraint even though it was not scheduled.
+      final result = scoreExpectedOmissionsHonoured(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-stale',
+              state: PlannedBlockState.dropped,
+            ),
+          ],
+          expectedOmissions: const {'task-stale'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+  });
+
   group('withinCapacityByEstimate', () {
     const tasks = [
       EvalCorpusTask(taskId: 'task-a', title: 'A', estimateMinutes: 240),
@@ -775,17 +839,87 @@ void main() {
       expect(result.passed, isTrue);
     });
 
-    test('passes when the model escalated instead', () {
+    test('passes when the escalation actually names the conflict', () {
       final result = scoreSurfacedConflict(
         outcome(
           requiresConflictSurfaced: true,
           toolCalls: const [
-            EvalToolCall(name: 'raise_day_status', accepted: true),
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['overCommitted'],
+              },
+            ),
           ],
         ),
       );
 
       expect(result.passed, isTrue);
+    });
+
+    test('an onTrack status is not an escalation', () {
+      // The tool accepts onTrack and dayClosed too; matching the call by name
+      // alone would let a model satisfy this by reporting the day is fine.
+      final result = scoreSurfacedConflict(
+        outcome(
+          requiresConflictSurfaced: true,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {'status': 'onTrack'},
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
+
+    test('an unrelated attentionNeeded reason is not an escalation', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          requiresConflictSurfaced: true,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['processingBlocked'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        result.passed,
+        isFalse,
+        reason: 'processingBlocked describes a different problem entirely',
+      );
+    });
+
+    test('a rejected escalation does not count', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          requiresConflictSurfaced: true,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: false,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['overCommitted'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
     });
 
     test('is not applicable when the day is satisfiable', () {

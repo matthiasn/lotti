@@ -58,6 +58,10 @@ class EvalFixtureInputs {
     this.visibleTaskIds,
     this.requiredTaskIds = const {},
     this.requiresConflictSurfaced = false,
+    this.conflictEscalationReasons = const {
+      'overCommitted',
+      'directiveUnsatisfiable',
+    },
     this.capacityMinutes = 480,
     this.workingHoursStartHour = 9,
     this.workingHoursEndHour = 17,
@@ -110,6 +114,13 @@ class EvalFixtureInputs {
   /// Whether the scenario is impossible as stated, so a competent plan has to
   /// say so rather than quietly absorb it.
   final bool requiresConflictSurfaced;
+
+  /// `raise_day_status` reasons that count as escalating *this* conflict.
+  ///
+  /// The tool's enum also carries `userDivergence` and `processingBlocked`,
+  /// which describe different problems entirely — an escalation naming one of
+  /// those has not surfaced an over-committed day.
+  final Set<String> conflictEscalationReasons;
 
   final int capacityMinutes;
 
