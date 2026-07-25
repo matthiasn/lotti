@@ -9,6 +9,10 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 * [AI](ai/) - the shared inference plumbing: configuration, provider routing, conversations, embeddings.
 * [Daily OS](daily_os_next/) - the day-planning runtime: coordinator and per-day agents, durable outbox, the capture ritual.
 
+# Work and entries
+
+* [Tasks](tasks/) - the task layer on the journal substrate: checklists, relationships, filters.
+
 # Infrastructure
 
 * [Sync](sync/) - single-user multi-device replication over end-to-end encrypted Matrix.
