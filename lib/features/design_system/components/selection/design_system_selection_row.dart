@@ -34,6 +34,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
     required this.onTap,
     this.subtitle,
     this.subtitleMaxLines = 2,
+    this.subtitleEmphasis,
     this.titleMaxLines = 1,
     this.size = DesignSystemListItemSize.medium,
     this.leading,
@@ -50,6 +51,9 @@ class DesignSystemSelectionRow extends StatelessWidget {
   final String title;
   final String? subtitle;
   final int? subtitleMaxLines;
+
+  /// Overrides the subtitle ink; see [DesignSystemListItem.subtitleEmphasis].
+  final Color? subtitleEmphasis;
 
   /// Title line cap at normal text scale. Rows whose title is long-form
   /// content rather than a short entity name (task titles, say) should raise
@@ -106,6 +110,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
               : titleMaxLines,
           subtitle: subtitle,
           subtitleMaxLines: subtitleMaxLines,
+          subtitleEmphasis: subtitleEmphasis,
           size: size,
           leading: leading == null
               ? null

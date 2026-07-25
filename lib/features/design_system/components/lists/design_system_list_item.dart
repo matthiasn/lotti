@@ -38,6 +38,7 @@ class DesignSystemListItem extends StatefulWidget {
     this.titleContent,
     this.titleMaxLines = 1,
     this.subtitleSpans,
+    this.subtitleEmphasis,
     this.subtitleMaxLines = 1,
     this.size = DesignSystemListItemSize.medium,
     this.leading,
@@ -77,6 +78,12 @@ class DesignSystemListItem extends StatefulWidget {
   /// freely. This does not affect custom [titleContent].
   final int? titleMaxLines;
   final List<InlineSpan>? subtitleSpans;
+
+  /// Overrides the subtitle's ink. Null keeps the size's default. Use it where
+  /// the subtitle carries metadata that must rank against something outside
+  /// this component — a section eyebrow above the row, say — rather than
+  /// against the row's own title.
+  final Color? subtitleEmphasis;
 
   /// Caps the rendered subtitle at this many lines. Defaults to `1` so
   /// every existing caller keeps the previous single-line ellipsis
@@ -252,6 +259,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                           titleContent: widget.titleContent,
                           titleMaxLines: widget.titleMaxLines,
                           subtitleSpans: widget.subtitleSpans,
+                          subtitleEmphasis: widget.subtitleEmphasis,
                           subtitleMaxLines: widget.subtitleMaxLines,
                           spec: spec,
                         ),
@@ -301,6 +309,7 @@ class _TitleContent extends StatelessWidget {
     this.subtitle,
     this.titleContent,
     this.subtitleSpans,
+    this.subtitleEmphasis,
   });
 
   final String? title;
@@ -308,6 +317,7 @@ class _TitleContent extends StatelessWidget {
   final Widget? titleContent;
   final int? titleMaxLines;
   final List<InlineSpan>? subtitleSpans;
+  final Color? subtitleEmphasis;
   final int? subtitleMaxLines;
   final _ListItemSpec spec;
 
@@ -331,7 +341,9 @@ class _TitleContent extends StatelessWidget {
           if (subtitleSpans != null)
             RichText(
               text: TextSpan(
-                style: spec.subtitleStyle,
+                style: subtitleEmphasis == null
+                    ? spec.subtitleStyle
+                    : spec.subtitleStyle.copyWith(color: subtitleEmphasis),
                 children: subtitleSpans,
               ),
               maxLines: subtitleMaxLines,
@@ -342,7 +354,9 @@ class _TitleContent extends StatelessWidget {
           else
             Text(
               subtitle!,
-              style: spec.subtitleStyle,
+              style: subtitleEmphasis == null
+                  ? spec.subtitleStyle
+                  : spec.subtitleStyle.copyWith(color: subtitleEmphasis),
               maxLines: subtitleMaxLines,
               overflow: subtitleMaxLines == null
                   ? TextOverflow.clip

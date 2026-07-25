@@ -100,18 +100,11 @@ class LinkedTaskRow extends StatelessWidget {
           // blocker is already Done matters most, and dropping it there cost
           // the row its second type level during the one task it serves.
           //
-          // Spans rather than a plain subtitle purely to override the ink: the
-          // list item's subtitle is medium emphasis, which on the narrow layout
-          // tied the status with the section eyebrow that groups it and flattened
-          // the same three roles the wide layout ranks.
-          subtitleSpans: wideEnoughForTrailingStatus
-              ? null
-              : [
-                  TextSpan(
-                    text: statusLabel,
-                    style: TextStyle(color: tokens.colors.text.lowEmphasis),
-                  ),
-                ],
+          subtitle: wideEnoughForTrailingStatus ? null : statusLabel,
+          // The list item's default subtitle ink is medium, which on the
+          // narrow layout tied the status with the section eyebrow grouping it
+          // and flattened the three roles the wide layout ranks.
+          subtitleEmphasis: tokens.colors.text.lowEmphasis,
           trailing: !wideEnoughForTrailingStatus
               ? null
               : Text(

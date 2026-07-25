@@ -52,6 +52,11 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   /// Full-text hits that fall outside the prefetched window, fetched by id.
   /// Kept separate from [_tasks] so clearing the query drops them again.
   List<Task> _resolvedMatches = const [];
+
+  /// Every task a row can be built from. Both the row builder and the pick
+  /// handler must read this same list: building rows from a wider set than
+  /// picks are resolved against is what let a rendered row throw on tap.
+  List<Task> get _candidatePool => [..._tasks, ..._resolvedMatches];
   bool _isLoading = true;
   String? _lastFetchedQuery;
 
@@ -147,12 +152,9 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       }
     }
 
-    final candidates = [
-      ..._tasks,
-      // Appended, not merged into _tasks: these are scoped to the current
-      // query and must not linger in the unfiltered list once it is cleared.
-      ..._resolvedMatches,
-    ].where((task) => !widget.excludeIds.contains(task.meta.id));
+    final candidates = _candidatePool.where(
+      (task) => !widget.excludeIds.contains(task.meta.id),
+    );
     final queryLower = query.toLowerCase();
     final filtered = query.isEmpty
         ? candidates
@@ -173,6 +175,9 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
             task.data.status.toDbString,
             context,
           ),
+          // The same status metadata the card renders one tap away, at the
+          // same ink — it was reading a rank louder here than there.
+          subtitleEmphasis: tokens.colors.text.lowEmphasis,
           // These rows are one tap from the linked-tasks card's rows and read
           // identically — same glyph, title and status — but tapping here
           // *creates a link* where tapping there opens the task. The trailing
@@ -216,9 +221,16 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       emptyMessage: hasCandidates
           ? context.messages.noTasksFound
           : context.messages.noTasksToLink,
-      onPick: (id) => widget.onTaskSelected(
-        _tasks.firstWhere((task) => task.meta.id == id),
-      ),
+      // Resolved against the same pool the rows were built from. Reading
+      // _tasks alone threw on any row that came from a full-text match outside
+      // the prefetch window — the picker rendered the task, then died on the
+      // tap.
+      onPick: (id) {
+        final picked = _candidatePool
+            .where((task) => task.meta.id == id)
+            .firstOrNull;
+        if (picked != null) widget.onTaskSelected(picked);
+      },
     );
   }
 }

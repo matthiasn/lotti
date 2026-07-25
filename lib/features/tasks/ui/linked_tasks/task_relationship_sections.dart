@@ -239,7 +239,7 @@ class LinkedTaskSectionHeader extends StatelessWidget {
         // gap below looks smaller than it is — the row adds its own top
         // padding and the title's line leading on top of that — so the gap
         // above has to clear both for proximity to group the label downward.
-        tightTop ? tokens.spacing.step2 : tokens.spacing.step7,
+        tightTop ? tokens.spacing.step4 : tokens.spacing.step7,
         tokens.spacing.step5,
         tokens.spacing.step1,
       ),

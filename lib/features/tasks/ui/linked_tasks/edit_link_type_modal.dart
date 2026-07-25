@@ -90,7 +90,7 @@ class _EditLinkTypeBody extends StatelessWidget {
               onChanged: (next) => relation.value = next,
             ),
           ),
-          SizedBox(height: tokens.spacing.step3),
+          SizedBox(height: tokens.spacing.step5),
           Padding(
             // On the dropdown's own value rail, so the task completing the
             // sentence lines up under the phrase rather than hanging left of it.

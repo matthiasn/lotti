@@ -146,6 +146,15 @@ void main() {
         () => mockJournalDb.getJournalEntitiesForIds(any()),
       ).thenAnswer((_) async => <JournalEntity>[]);
 
+      when(
+        () => mockPersistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          // ignore: avoid_redundant_argument_values
+          linkType: EntryLinkType.basic,
+        ),
+      ).thenAnswer((_) async => true);
+
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<Fts5Db>(mockFts5Db)
@@ -185,6 +194,24 @@ void main() {
         verify(
           () => mockJournalDb.getJournalEntitiesForIds({'beyond-window'}),
         ).called(greaterThanOrEqualTo(1));
+
+        // ...and the row can actually be picked. Asserting only that it
+        // renders is what let a version ship that surfaced the task and then
+        // threw on the tap, because rows were built from a wider set than
+        // picks were resolved against.
+        await tester.tap(find.text('Task past the 200th row'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(tester.takeException(), isNull);
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'current-task',
+            toId: 'beyond-window',
+            // ignore: avoid_redundant_argument_values
+            linkType: EntryLinkType.basic,
+          ),
+        ).called(1);
       },
     );
 

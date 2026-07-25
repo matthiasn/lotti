@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/task_relationship_sections.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/get_it.dart';
@@ -36,45 +36,9 @@ class BlockingTaskPickerModal extends ConsumerWidget {
     required BuildContext context,
     required String blockedTaskId,
   }) {
-    final title = context.messages.taskBlockerPickerTitle;
     return ModalUtils.showSinglePageModal<Task>(
       context: context,
-      // Carries the same amber ⊘ the card's "Is blocked by" section and the
-      // header chip use. Every other surface in this feature states its
-      // meaning with a mark as well as a sentence; this one — where the tap
-      // writes the highest-consequence relationship in the set — had only the
-      // sentence.
-      titleWidget: Builder(
-        builder: (context) => Semantics(
-          container: true,
-          explicitChildNodes: true,
-          header: true,
-          namesRoute: true,
-          scopesRoute: true,
-          label: title,
-          child: ExcludeSemantics(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.block,
-                  size: context.designTokens.spacing.step5,
-                  color: TaskShowcasePalette.warning(context),
-                ),
-                SizedBox(width: context.designTokens.spacing.step3),
-                Flexible(
-                  child: Text(
-                    title,
-                    style: ModalUtils.modalTitleStyle(context),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      title: context.messages.taskBlockerPickerTitle,
       padding: EdgeInsets.zero,
       builder: (_) => BlockingTaskPickerModal(blockedTaskId: blockedTaskId),
     );
@@ -141,9 +105,28 @@ class BlockingTaskPickerModal extends ConsumerWidget {
             .toSet() ??
         const <String>{};
 
-    return TaskSearchPickerBody(
-      excludeIds: {blockedTaskId, ...existingBlockerIds},
-      onTaskSelected: (task) => _selectBlocker(context, ref, task),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // The blocked semantic gets its mark in the body, not the title bar.
+        // In the bar it competed with the title for a width the close button
+        // dictates, and clipped "What's blocking this?" mid-word on phone —
+        // in English, before any longer locale. Here it also names the
+        // relation the pick will write, in the same words the card reads back.
+        LinkedTaskSectionHeader(
+          title: context.messages.linkPhraseBlocksInverse,
+          accent: TaskShowcasePalette.warning(context),
+          tightTop: true,
+        ),
+        Flexible(
+          child: TaskSearchPickerBody(
+            topInset: false,
+            excludeIds: {blockedTaskId, ...existingBlockerIds},
+            onTaskSelected: (task) => _selectBlocker(context, ref, task),
+          ),
+        ),
+      ],
     );
   }
 }

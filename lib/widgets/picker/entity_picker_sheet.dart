@@ -23,6 +23,7 @@ class PickerItem {
     required this.title,
     this.subtitle,
     this.badges = const [],
+    this.subtitleEmphasis,
     this.semanticLabel,
     this.enabled = true,
     this.rowKey,
@@ -33,6 +34,9 @@ class PickerItem {
   final String title;
   final String? subtitle;
   final List<Widget> badges;
+
+  /// Overrides the row's subtitle ink; see [DesignSystemListItem.subtitleEmphasis].
+  final Color? subtitleEmphasis;
 
   /// The full accessible name for the row (title plus any state conveyed only
   /// by [badges]/[subtitle], e.g. "Work, Favorite"). Defaults to [title]. The
@@ -351,6 +355,7 @@ class _PickerItemRow extends StatelessWidget {
       titleMaxLines: titleMaxLines,
       size: rowSize,
       subtitle: item.subtitle,
+      subtitleEmphasis: item.subtitleEmphasis,
       leading: item.leading,
       trailing: badges,
       type: multi

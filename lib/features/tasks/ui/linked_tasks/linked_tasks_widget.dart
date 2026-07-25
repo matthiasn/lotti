@@ -172,9 +172,10 @@ class _LinkedTasksEmptyAction extends StatelessWidget {
       leading: Icon(
         Icons.add_link,
         size: tokens.spacing.step5,
-        // Same ink as the header's own link action: one glyph meaning one
-        // thing should not change colour just because the card is empty.
-        color: tokens.colors.text.highEmphasis,
+        // The interactive accent the populated card's Link button carries.
+        // Emphasis should be highest where the user has nothing yet, and one
+        // glyph meaning one thing must not change colour with the card state.
+        color: tokens.colors.interactive.enabled,
       ),
       trailing: Icon(
         Icons.arrow_forward_ios,
@@ -223,6 +224,18 @@ class _LinkedTasksHeader extends ConsumerWidget {
         ),
         child: Row(
           children: [
+            // Leads the title it discloses. Trailing the Link button, it read
+            // as that button's dropdown caret, so a tap aimed at a relation
+            // menu collapsed the card instead — and it vanished in manage
+            // mode while the collapse gesture stayed live.
+            if (hasLinkedTasks) ...[
+              Icon(
+                expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
+                size: tokens.spacing.step5,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              SizedBox(width: tokens.spacing.step2),
+            ],
             Text(
               context.messages.linkedTasksTitle,
               style: tokens.typography.styles.subtitle.subtitle2.copyWith(
@@ -254,12 +267,6 @@ class _LinkedTasksHeader extends ConsumerWidget {
                 variant: DesignSystemButtonVariant.tertiary,
                 leadingIcon: Icons.add_link,
                 onPressed: () => _showLinkTaskModal(context, ref, taskId),
-              ),
-              Icon(
-                expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
-                // Least important control, so not the heaviest mark.
-                size: tokens.spacing.step5,
-                color: tokens.colors.text.mediumEmphasis,
               ),
             ],
             SizedBox(width: tokens.spacing.step3),
