@@ -336,9 +336,13 @@ void validateApplicablePlanDiffBatch(
         }
         assertInDay(effStart, idx, 'effective start');
         assertInDay(effEnd, idx, 'effective end');
-        // A move that lands earlier than now is planning the past by another
-        // route; only a block already sitting there may stay there.
-        if (newStart != null) assertNotBackwards(effStart, idx, 'toStart');
+        // A move that *relocates* a block earlier than now is planning the
+        // past by another route. Re-stating the block's own start is not a
+        // relocation — a pending change accepted after its block began would
+        // otherwise be refused for repeating where it already is.
+        if (newStart != null && newStart != live.startTime) {
+          assertNotBackwards(effStart, idx, 'toStart');
+        }
         assertNotCalendar(item.args['type'], idx);
         assertAllowedTask(item.args['taskId'], idx);
         final newCategoryId = item.args['categoryId'];
