@@ -2716,7 +2716,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Lăsați asistentul din această categorie să se actualizeze singur când o sarcină se modifică. Se aplică sarcinilor noi; cele existente își păstrează propria setare.';
 
   @override
-  String get categoryAutomaticAgentWakesLabel => 'Trezește asistentul automat';
+  String get categoryAutomaticAgentWakesLabel => 'Treziți asistentul automat';
 
   @override
   String get categoryAutomaticInferenceDescription =>
