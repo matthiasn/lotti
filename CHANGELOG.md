@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1069]
 ### Fixed
+- **Ticking off a checklist item no longer looks broken as the row leaves.**
+  With the Open filter on, a checked item's row shrank away but its checkbox
+  stayed full size and got sliced in half by the shrinking row, while the rest
+  of the row jumped sideways the instant the animation began. The row now
+  shrinks as a single piece — checkbox, text and buttons together — and fades
+  out smoothly.
 - **You can trigger an update at any time again.** While an automatic update was
   scheduled, the manual button disappeared entirely, so the only way to run the
   agent by hand was to cancel the countdown first. The button is now always

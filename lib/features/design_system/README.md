@@ -288,12 +288,30 @@ Representative composite or feature-shaped components:
   fires a burst imperatively into the app `Overlay`, anchored to a render box —
   it captures geometry synchronously so the burst survives its anchor being
   torn down in the same frame (e.g. completing the last checklist item)
-- motion primitives (`components/motion/`) — `StaggeredEntrance` (a one-time
-  fade-and-rise cascade over a list of sections that does *not* replay on
-  background rebuilds) and `StrikethroughWipe` (reveals a struck text layer
-  left→right over an un-struck base, for animating a checklist item's
-  strike-through on completion; its `animate` flag, like reduced motion,
-  applies the strike instantly with no wipe); both no-op under reduced motion
+- motion primitives (`components/motion/`), all of which no-op under reduced
+  motion:
+  - `StaggeredEntrance` — a one-time fade-and-rise cascade over a list of
+    sections that does *not* replay on background rebuilds
+  - `StrikethroughWipe` — reveals a struck text layer left→right over an
+    un-struck base, for animating a checklist item's strike-through on
+    completion; its `animate` flag, like reduced motion, applies the strike
+    instantly with no wipe
+  - `SizeFadeEntrance` — reveals newly inserted content with a one-shot
+    vertical expansion and fade; existing content passes `animate: false` so
+    initial page construction stays immediate
+  - `SizeFadeCollapse` — the exit counterpart. Drives reserved height, paint
+    scale and opacity from **one** tween sharing **one** anchor (top-start), so
+    painted size equals reserved size on every frame and the content leaves as
+    a single piece. Use it wherever a row containing fixed-size children (a
+    checkbox, an avatar, an icon) has to collapse away: `SizeTransition` and
+    `AnimatedCrossFade`-to-a-zero-sized-child both shrink the box while the
+    child keeps its full layout size, which slices fixed-size children as the
+    box closes around them. `duration` is required rather than defaulted
+    because callers routinely coordinate other timing with it (a scroll anchor
+    waiting out the reflow, a hold timer ahead of it). While collapsed or
+    collapsing the subtree is `IgnorePointer`ed / `ExcludeFocus`ed /
+    `ExcludeSemantics`ed, but keeps ticking until the collapse finishes so its
+    own in-flight animations are not frozen half-played
 
 #### Desktop navigation sidebar collapse state
 
