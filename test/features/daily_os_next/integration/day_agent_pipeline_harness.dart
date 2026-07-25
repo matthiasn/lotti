@@ -71,6 +71,7 @@ class DayAgentPipelineHarness {
     required this.realDayAgent,
     required this.dayAgentService,
     required this.planService,
+    required this.journalRepository,
   });
 
   /// Builds the full pipeline. [now] seeds template timestamps; [profile],
@@ -371,6 +372,7 @@ class DayAgentPipelineHarness {
       realDayAgent: realDayAgent,
       dayAgentService: dayAgentService,
       planService: planService,
+      journalRepository: journalRepository,
     );
   }
 
@@ -391,6 +393,10 @@ class DayAgentPipelineHarness {
   /// [DayPlanEntity] (and its `PlannedBlock`s) through the production read
   /// path rather than reaching into the repository.
   final DayAgentPlanService planService;
+
+  /// Journal writer, exposed so a caller that maintains its own task store can
+  /// make updates actually mutate it — the default stub only reports success.
+  final MockJournalRepository journalRepository;
 
   /// Stops the runtime/orchestrator, closes the outbox, and deletes the
   /// temp directory backing it.

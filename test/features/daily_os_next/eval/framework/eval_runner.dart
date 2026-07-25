@@ -396,6 +396,7 @@ Future<EvalRunResult> _runCell(
       journalDb: harness.journalDb,
       scenario: scenario,
       planDate: planDate,
+      journalRepository: harness.journalRepository,
     );
 
     // Seeded before the timer starts: agent lookup/creation and fixture

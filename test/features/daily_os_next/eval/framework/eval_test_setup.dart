@@ -31,7 +31,10 @@ import 'eval_journal_fixture.dart';
 /// must answer, even if the answer is "nothing". Returning null from a stubbed
 /// `createTaskEntry` tells the model the creation did not happen, which it can
 /// act on; throwing a Dart type error tells it nothing and corrupts the score.
+int _createdTaskCount = 0;
+
 Future<void> setUpEvalGetIt(AiInteractionCaptureTestBench attribution) async {
+  _createdTaskCount = 0;
   final persistenceLogic = MockPersistenceLogic();
   // `create_task_from_phrase` materialises through this. It returns a real
   // Task rather than null: null makes the tool answer "failed to create
@@ -54,7 +57,10 @@ Future<void> setUpEvalGetIt(AiInteractionCaptureTestBench attribution) async {
     final createdAt = data.dateFrom;
     final task = Task(
       meta: Metadata(
-        id: 'eval-created-${data.title.hashCode}',
+        // Sequential, not title-derived: two tasks with the same title would
+        // otherwise collapse onto one id and the second would overwrite the
+        // first. Stable across a run, so a report stays readable.
+        id: 'eval-created-${++_createdTaskCount}',
         createdAt: createdAt,
         updatedAt: createdAt,
         dateFrom: data.dateFrom,

@@ -673,6 +673,7 @@ void seedScenarioCorpus({
   required MockJournalDb journalDb,
   required EvalScenario scenario,
   required DateTime planDate,
+  MockJournalRepository? journalRepository,
 }) {
   when(
     () => journalDb.getOpenTasksForDayAgentCorpus(
@@ -714,4 +715,16 @@ void seedScenarioCorpus({
     final id = invocation.positionalArguments.first as String;
     return currentEvalJournal.byId(id);
   });
+  // An update that reports success without changing anything leaves the model
+  // reading stale state after its own `apply_triage` — the harness agreeing
+  // out loud and doing nothing.
+  if (journalRepository != null) {
+    when(
+      () => journalRepository.updateJournalEntity(any()),
+    ).thenAnswer((invocation) async {
+      final updated = invocation.positionalArguments.first as JournalEntity;
+      currentEvalJournal.add(updated);
+      return true;
+    });
+  }
 }

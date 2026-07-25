@@ -1127,6 +1127,35 @@ void main() {
       );
     });
 
+    test('an update mutates the store instead of only reporting success', () {
+      // apply_triage updates a task through this. A stub that answers true
+      // without changing anything leaves the model reading stale state after
+      // its own write — the harness agreeing out loud and doing nothing.
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      final journalDb = MockJournalDb();
+      final journalRepository = MockJournalRepository();
+      seedScenarioCorpus(
+        journalDb: journalDb,
+        scenario: scenario,
+        planDate: evalPlanDateFor(scenario, today),
+        journalRepository: journalRepository,
+      );
+
+      final original = currentEvalJournal.byId('task-overdue-invoice')! as Task;
+      final renamed = original.copyWith(
+        data: original.data.copyWith(title: 'Renamed by triage'),
+      );
+
+      expect(
+        journalRepository.updateJournalEntity(renamed),
+        completion(isTrue),
+      );
+      expect(
+        (currentEvalJournal.byId('task-overdue-invoice')! as Task).data.title,
+        'Renamed by triage',
+      );
+    });
+
     test('seeding a cell forgets the previous cell tasks', () {
       final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
       final other = evalScenarios.firstWhere((s) => s.id == 'lateStart');
