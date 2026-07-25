@@ -40,6 +40,7 @@ abstract final class EvalConstraintIds {
   static const noInventedWork = 'noInventedWork';
   static const taskWorkIsTyped = 'taskWorkIsTyped';
   static const noFabricatedCalendarBlocks = 'noFabricatedCalendarBlocks';
+  static const directiveHonoured = 'directiveHonoured';
 
   /// Guarded — scored on rejections rather than on the plan.
   static const compliedWithoutRejection = 'compliedWithoutRejection';
@@ -61,6 +62,7 @@ abstract final class EvalConstraintIds {
     noInventedWork,
     taskWorkIsTyped,
     noFabricatedCalendarBlocks,
+    directiveHonoured,
     compliedWithoutRejection,
   ];
 }
@@ -83,6 +85,7 @@ List<EvalConstraintResult> scoreAll(EvalRunOutcome outcome) => [
   scoreNoInventedWork(outcome),
   scoreTaskWorkIsTyped(outcome),
   scoreNoFabricatedCalendarBlocks(outcome),
+  scoreDirectiveHonoured(outcome),
   scoreCompliedWithoutRejection(outcome),
 ];
 
@@ -690,6 +693,92 @@ EvalConstraintResult scoreTaskWorkIsTyped(EvalRunOutcome outcome) {
     detail: mistyped.isEmpty
         ? 'task work is on work blocks'
         : mistyped.join('; '),
+  );
+}
+
+/// Every directive commitment is represented, traded away, or escalated —
+/// never silently dropped.
+///
+/// This is the strongest contract in the prompt. The directive is stated as
+/// "BINDING, not a hint", and the three legitimate responses are spelled out:
+/// represent the commitment in the plan, trade it away in a proposed diff
+/// whose reason names the colliding commitment, or escalate via
+/// `raise_day_status` with reason `directiveUnsatisfiable`. Nothing in the
+/// write path enforces any of it — the directive is prompt text and the plan
+/// writer never reads it back — so a model can drop a commitment the user
+/// asked for and the plan persists clean.
+///
+/// Escalation is directive-level: a model that says the directive cannot be
+/// satisfied has answered for every commitment it did not place, which is what
+/// the prompt asks of it. Trades are per-commitment and must name their
+/// casualty, because "traded something away" without saying what gives the
+/// user nothing to act on.
+EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.directiveHonoured;
+  final directive = outcome.inputs.directive;
+  if (directive == null || directive.commitments.isEmpty) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'the wake was given no directive',
+    );
+  }
+  final escalated = outcome.toolCalls.any(
+    (call) =>
+        call.accepted &&
+        call.name.contains('raise_day_status') &&
+        call.arguments['status'] == 'attentionNeeded' &&
+        switch (call.arguments['reasons']) {
+          final List<Object?> list =>
+            list.map((r) => '$r').contains('directiveUnsatisfiable'),
+          _ => false,
+        },
+  );
+
+  // Prose the model attached to the plan, where a representation names its
+  // commitment.
+  final planProse = [
+    for (final block in _scheduled(outcome))
+      '${block.title ?? ''} ${block.reason ?? ''} ${block.note ?? ''}',
+  ].join(' ').toLowerCase();
+  // Reasons on any proposed diff, which is where the prompt puts a trade.
+  final tradeProse = [
+    for (final call in outcome.toolCalls)
+      if (call.accepted && call.name.contains('propose_plan_diff'))
+        switch (call.arguments['changes']) {
+          final List<Object?> changes => [
+            for (final change in changes)
+              if (change is Map) '${change['reason'] ?? ''}',
+          ].join(' '),
+          _ => '',
+        },
+  ].join(' ').toLowerCase();
+
+  final dispositions = <String>[];
+  final dropped = <String>[];
+  for (final commitment in directive.commitments) {
+    final title = commitment.title.toLowerCase();
+    final identifier = commitment.id.toLowerCase();
+    bool named(String prose) =>
+        (title.isNotEmpty && prose.contains(title)) ||
+        (identifier.isNotEmpty && prose.contains(identifier));
+    if (named(planProse)) {
+      dispositions.add('${commitment.id}: represented');
+    } else if (named(tradeProse)) {
+      dispositions.add('${commitment.id}: traded, naming the collision');
+    } else if (escalated) {
+      dispositions.add('${commitment.id}: escalated');
+    } else {
+      dispositions.add('${commitment.id}: SILENTLY DROPPED');
+      dropped.add(commitment.id);
+    }
+  }
+  return EvalConstraintResult(
+    id: id,
+    passed: dropped.isEmpty,
+    detail: dropped.isEmpty
+        ? 'every commitment answered for — ${dispositions.join('; ')}'
+        : 'dropped without a word: ${dropped.join(', ')} '
+              '(${dispositions.join('; ')})',
   );
 }
 

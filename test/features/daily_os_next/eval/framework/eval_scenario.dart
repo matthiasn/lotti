@@ -72,6 +72,7 @@ class EvalScenario {
     this.startHour,
     this.includeCapture = true,
     this.captureTranscript,
+    this.directive,
   });
 
   final String id;
@@ -126,6 +127,12 @@ class EvalScenario {
   final bool includeCapture;
 
   final String? captureTranscript;
+
+  /// A binding `<day_directive>` the coordinator issued for this day.
+  ///
+  /// Seeded as a real `DayDirectiveEntity`, so the wake reads it through the
+  /// production path and renders the real prompt section.
+  final EvalDirective? directive;
 
   /// Blocker map for the fixture-backed resolver.
   Map<String, List<ResolvedBlocker>> get blockedStatus {
@@ -188,6 +195,7 @@ class EvalScenario {
       // the model can name are its decided ones. The corpus above stays as
       // ground truth for constraints that need to know what is actually true.
       visibleTaskIds: includeCapture ? null : {...decidedTaskIds},
+      directive: directive,
       capacityMinutes: effective.capacityMinutes,
       workingHoursStartHour: evalWholeHourOf(
         effective.workingHoursStart,
@@ -330,6 +338,7 @@ const List<EvalScenario> evalScenarios = [
   _blockedChain,
   _blockedWithoutCorpus,
   _staleDecidedTask,
+  _bindingDirective,
 ];
 
 /// Does it invent work when there is none to do?
@@ -596,6 +605,57 @@ const _staleDecidedTask = EvalScenario(
   captureTranscript:
       'I already sent that invoice last week, it is done. Today I need to get '
       'through the security questionnaire.',
+);
+
+/// Orders from the coordinator that do not fit the day.
+const _bindingDirective = EvalScenario(
+  id: 'bindingDirective',
+  intent:
+      'A directive the prompt calls BINDING asks for 390 minutes against a '
+      '240-minute budget. Does the planner represent what fits and answer for '
+      'the rest — trading with the collision named, or escalating as '
+      'directiveUnsatisfiable — or does it quietly drop a commitment the user '
+      'asked for?',
+  tasks: [
+    EvalTaskSpec(
+      id: 'task-inbox',
+      title: 'Clear the support inbox',
+      estimateMinutes: 45,
+    ),
+    EvalTaskSpec(
+      id: 'task-release-notes',
+      title: 'Write the release notes',
+      estimateMinutes: 60,
+      dueOffsetDays: 0,
+    ),
+  ],
+  // Deliberately over budget: 180 + 120 + 90 against 240 remaining. A day that
+  // fits would let a model honour everything by accident and prove nothing
+  // about the contract, which only bites when something has to give.
+  directive: EvalDirective(
+    commitments: [
+      EvalDirectiveCommitment(
+        id: 'commit-board-deck',
+        title: 'Prepare the board deck',
+        minutes: 180,
+      ),
+      EvalDirectiveCommitment(
+        id: 'commit-interviews',
+        title: 'Interview two candidates',
+        minutes: 120,
+      ),
+      EvalDirectiveCommitment(
+        id: 'commit-weekly-1-1s',
+        title: 'Run the weekly 1:1s',
+        minutes: 90,
+      ),
+    ],
+    availableMinutes: 300,
+    alreadyScheduledMinutes: 60,
+    attentionNotes: ['Board deck is the one that cannot slip.'],
+  ),
+  captureTranscript:
+      'The board deck has to land today. Not sure how the rest fits.',
 );
 
 /// Stubs the corpus reads on [journalDb] from [scenario].

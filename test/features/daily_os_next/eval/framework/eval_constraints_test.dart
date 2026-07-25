@@ -47,6 +47,7 @@ void main() {
     Set<String>? visibleTaskIds,
     List<EvalToolCall> toolCalls = const [],
     int capacityMinutes = 480,
+    EvalDirective? directive,
   }) => EvalRunOutcome(
     inputs: EvalFixtureInputs(
       dayId: 'dayplan-2026-07-18',
@@ -64,6 +65,7 @@ void main() {
       workingHoursStartHour: workingHoursStartHour,
       workingHoursEndHour: workingHoursEndHour,
       capacityMinutes: capacityMinutes,
+      directive: directive,
     ),
     blocks: blocks,
     toolCalls: toolCalls,
@@ -1455,6 +1457,231 @@ void main() {
         scoreNoFabricatedCalendarBlocks(subject).detail,
         isNot(contains('outside')),
       );
+    });
+  });
+
+  group('directiveHonoured', () {
+    const commitments = [
+      EvalDirectiveCommitment(
+        id: 'commit-deck',
+        title: 'Prepare the board deck',
+        minutes: 180,
+      ),
+      EvalDirectiveCommitment(
+        id: 'commit-1-1s',
+        title: 'Run the weekly 1:1s',
+        minutes: 90,
+      ),
+    ];
+    const directive = EvalDirective(
+      commitments: commitments,
+      availableMinutes: 240,
+    );
+
+    PlannedBlock titled(String title, {String? reason}) => PlannedBlock(
+      id: title,
+      categoryId: 'cat-1',
+      startTime: DateTime(2026, 7, 18, 9),
+      endTime: DateTime(2026, 7, 18, 12),
+      title: title,
+      reason: reason,
+    );
+
+    test('is not applicable when the wake was given no directive', () {
+      final result = scoreDirectiveHonoured(outcome());
+
+      expect(result.isApplicable, isFalse);
+      expect(result.detail, contains('no directive'));
+    });
+
+    test('fails when a commitment is dropped without a word', () {
+      // Nothing in the write path enforces the directive — it is prompt text
+      // and the plan writer never reads it back — so a dropped commitment
+      // persists a clean-looking plan.
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('commit-1-1s'));
+      expect(
+        result.detail,
+        contains('dropped without a word'),
+        reason: 'the report has to say which commitment vanished',
+      );
+    });
+
+    test('passes when every commitment is represented in the plan', () {
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [
+            titled('Prepare the board deck'),
+            titled('Run the weekly 1:1s'),
+          ],
+          directive: directive,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('represented'));
+    });
+
+    test('accepts a commitment named only in a block reason', () {
+      // A commitment can be honoured inside other work; the prompt asks for
+      // it to be represented, not to be its own titled block.
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [
+            titled('Prepare the board deck'),
+            titled('Leadership block', reason: 'Covers commit-1-1s.'),
+          ],
+          directive: directive,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('escalation answers for every commitment left unplaced', () {
+      // Escalation is directive-level: a model that says the orders cannot be
+      // satisfied has answered for all of them, which is what the prompt asks.
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['directiveUnsatisfiable'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('escalated'));
+    });
+
+    test('a rejected or unrelated escalation does not answer for anything', () {
+      for (final call in const [
+        EvalToolCall(
+          name: 'raise_day_status',
+          accepted: false,
+          arguments: {
+            'status': 'attentionNeeded',
+            'reasons': ['directiveUnsatisfiable'],
+          },
+        ),
+        EvalToolCall(
+          name: 'raise_day_status',
+          accepted: true,
+          arguments: {
+            'status': 'attentionNeeded',
+            'reasons': ['processingBlocked'],
+          },
+        ),
+        EvalToolCall(
+          name: 'raise_day_status',
+          accepted: true,
+          arguments: {
+            'status': 'onTrack',
+            'reasons': ['directiveUnsatisfiable'],
+          },
+        ),
+      ]) {
+        final result = scoreDirectiveHonoured(
+          outcome(
+            blocks: [titled('Prepare the board deck')],
+            directive: directive,
+            toolCalls: [call],
+          ),
+        );
+
+        expect(
+          result.passed,
+          isFalse,
+          reason:
+              'status=${call.arguments['status']} accepted=${call.accepted}',
+        );
+      }
+    });
+
+    test('a trade must name the commitment it collides with', () {
+      // The prompt says the diff's reason names the colliding commitment.
+      // "Traded something away" without saying what gives the user nothing.
+      final vague = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'propose_plan_diff',
+              accepted: true,
+              arguments: {
+                'changes': [
+                  {'action': 'dropped', 'reason': 'Something had to give.'},
+                ],
+              },
+            ),
+          ],
+        ),
+      );
+      final named = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'propose_plan_diff',
+              accepted: true,
+              arguments: {
+                'changes': [
+                  {
+                    'action': 'dropped',
+                    'reason':
+                        'Run the weekly 1:1s collides with the board deck.',
+                  },
+                ],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(vague.passed, isFalse);
+      expect(named.passed, isTrue);
+      expect(named.detail, contains('traded'));
+    });
+
+    test('a dropped block does not count as representing a commitment', () {
+      // Dropping is the model declining the work, which is the opposite of
+      // honouring the order.
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [
+            PlannedBlock(
+              id: 'b1',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 7, 18, 9),
+              endTime: DateTime(2026, 7, 18, 12),
+              title: 'Prepare the board deck',
+              state: PlannedBlockState.dropped,
+            ),
+            titled('Run the weekly 1:1s'),
+          ],
+          directive: directive,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('commit-deck'));
     });
   });
 
