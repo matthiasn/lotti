@@ -101,6 +101,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fetched directly.
 
 ### Changed
+- **An empty Linked Tasks card offers both actions in words.** Creating a new
+  linked task used to live only behind the ⋯ menu, on the one screen where you
+  have nothing to go on yet.
 - **Linking a task is a labelled button again.** Once the Linked Tasks card
   had any links, its only way to add another was an unlabelled icon; it now
   reads "Link", matching the Done button that shares that slot.
