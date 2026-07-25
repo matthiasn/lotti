@@ -51,6 +51,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of the row jumped sideways the instant the animation began. The row now
   shrinks as a single piece — checkbox, text and buttons together — and fades
   out smoothly.
+- **Your day plan can no longer contain tasks from categories the day agent
+  isn't allowed to see.** The list of tasks a plan was permitted to reference
+  was taken from the agent's own request without being checked, so a task from
+  any category — or one that had been deleted, or never existed — could be
+  attached to a block just by naming it. Task references are now resolved
+  against your journal and filtered by category, the same way every other task
+  reference already was.
+- **No more phantom calendar entries in your day.** Day plans could include
+  blocks marked as imported calendar events, which the app then refused to let
+  you edit — telling you to change them in the source calendar, where they did
+  not exist either. The day agent is never shown your calendar, so it can no
+  longer claim an event came from one.
+- **Nothing gets planned into the part of today that has already passed.** A
+  block could still be placed in the past by marking it as already committed;
+  only genuinely started, finished, or dropped work may sit earlier than the
+  current time.
 - **You can trigger an update at any time again.** While an automatic update was
   scheduled, the manual button disappeared entirely, so the only way to run the
   agent by hand was to cancel the countdown first. The button is now always

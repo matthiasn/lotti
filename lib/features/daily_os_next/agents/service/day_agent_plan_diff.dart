@@ -134,7 +134,19 @@ PlanBlockSnapshot? optionalBlockSnapshot(
       : parseEnumByName(PlannedBlockType.values, typeRaw);
   if (typeRaw != null && type == null) {
     throw DayAgentCaptureException(
-      '`$label.type` must be ai, cal, buffer, or manual (got "$typeRaw")',
+      '`$label.type` must be ai, buffer, or manual (got "$typeRaw")',
+    );
+  }
+  // Same rule as a fresh draft: this agent is shown no calendar, so it cannot
+  // mirror an event from one. Enforced here and not only by the advertised
+  // schema, because an accepted diff copies this snapshot straight onto the
+  // live plan — and the approval summary shows title and times, not type, so
+  // the user would be agreeing to a calendar-owned block they never saw
+  // described and cannot afterwards edit.
+  if (type == PlannedBlockType.cal) {
+    throw DayAgentCaptureException(
+      '`$label.type` cal mirrors an imported calendar event, and none are '
+      'available to this agent — use ai, buffer, or manual',
     );
   }
   return PlanBlockSnapshot(
@@ -208,11 +220,23 @@ String formatPlanChangeSummary(
 ///     override against [allowedCategoryIds].
 ///   * `drop_block` only needs the blockId still to exist in the
 ///     simulated set.
+/// Re-checks a pending batch at the moment it is applied.
+///
+/// Proposal-time validation is not enough: a `ChangeSet` is durable and
+/// synced, so it can be accepted long after it was proposed, or arrive from a
+/// peer running an older build that never had these checks. Anything that
+/// would be refused for a fresh proposal has to be refused here too, because
+/// this is where it reaches the plan.
+///
+/// [earliestStart] is the current time when the plan's day is today, and null
+/// otherwise.
 void validateApplicablePlanDiffBatch(
   Iterable<MapEntry<int, ChangeItem>> entries,
   DayPlanEntity plan,
-  Set<String> allowedCategoryIds,
-) {
+  Set<String> allowedCategoryIds, {
+  DateTime? earliestStart,
+  Set<String> allowedTaskIds = const {},
+}) {
   final simulatedIds = <String>{
     for (final block in plan.data.plannedBlocks) block.id,
   };
@@ -228,6 +252,36 @@ void validateApplicablePlanDiffBatch(
         'cannot apply change at index $idx: $label is outside the plan day',
       );
     }
+  }
+
+  void assertNotBackwards(DateTime start, int idx, String label) {
+    if (earliestStart == null || !start.isBefore(earliestStart)) return;
+    throw DayAgentCaptureException(
+      'cannot apply change at index $idx: $label would place the block '
+      'before the current time',
+    );
+  }
+
+  void assertNotCalendar(Object? typeRaw, int idx) {
+    if (typeRaw == null) return;
+    if (parseEnumByName(PlannedBlockType.values, '$typeRaw') !=
+        PlannedBlockType.cal) {
+      return;
+    }
+    throw DayAgentCaptureException(
+      'cannot apply change at index $idx: cal mirrors an imported calendar '
+      'event, and none are available to this agent',
+    );
+  }
+
+  void assertAllowedTask(Object? taskIdRaw, int idx) {
+    if (taskIdRaw == null) return;
+    final taskId = '$taskIdRaw';
+    if (allowedTaskIds.contains(taskId)) return;
+    throw DayAgentCaptureException(
+      'cannot apply change at index $idx: taskId $taskId is not an allowed '
+      'task for this plan',
+    );
   }
 
   void assertAllowedCategory(String categoryId, int idx) {
@@ -282,6 +336,15 @@ void validateApplicablePlanDiffBatch(
         }
         assertInDay(effStart, idx, 'effective start');
         assertInDay(effEnd, idx, 'effective end');
+        // A move that *relocates* a block earlier than now is planning the
+        // past by another route. Re-stating the block's own start is not a
+        // relocation — a pending change accepted after its block began would
+        // otherwise be refused for repeating where it already is.
+        if (newStart != null && newStart != live.startTime) {
+          assertNotBackwards(effStart, idx, 'toStart');
+        }
+        assertNotCalendar(item.args['type'], idx);
+        assertAllowedTask(item.args['taskId'], idx);
         final newCategoryId = item.args['categoryId'];
         if (newCategoryId is String && newCategoryId.isNotEmpty) {
           assertAllowedCategory(newCategoryId, idx);
@@ -324,6 +387,9 @@ void validateApplicablePlanDiffBatch(
         }
         assertInDay(start, idx, 'toStart');
         assertInDay(end, idx, 'toEnd');
+        assertNotBackwards(start, idx, 'toStart');
+        assertNotCalendar(item.args['type'], idx);
+        assertAllowedTask(item.args['taskId'], idx);
       default:
         throw DayAgentCaptureException(
           'cannot apply unknown change tool "${item.toolName}"',

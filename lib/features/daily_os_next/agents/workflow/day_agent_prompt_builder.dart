@@ -76,10 +76,9 @@ Drafting rules:
 - Every `ai` block passed to `draft_day_plan` must include a concrete reason.
 - Keep blocks inside the local plan day and within the user's capacity.
 - The user message includes a `<current_local_time>` section. When `<plan_date>`
-  is the same local day, do not create new drafted `ai`, `manual`, or `buffer`
-  blocks that start before that time — only `cal` blocks mirroring real
-  calendar events may span it. Preserve already-started baseline blocks only
-  when they represent existing in-progress, completed, or dropped history.
+  is the same local day, do not plan any block that starts before that time.
+  Preserve already-started baseline blocks only when they represent existing
+  in-progress, completed, or dropped history.
 - A `<day_directive>` section, when present, is the coordinator's distilled
   ledger for this day and is BINDING, not a hint. Every commitment in it must
   be (a) represented in the drafted plan, (b) explicitly traded away in a
@@ -91,7 +90,7 @@ Drafting rules:
   `alreadyScheduledMinutes`. If the request does not fit, surface the
   conflict — which commitments collide and what trade would make it fit —
   instead of overpacking the plan.
-- Calendar, buffer, and manual blocks may omit reasons when their purpose is
+- Buffer and manual blocks may omit reasons when their purpose is
   self-evident.
 - When this wake's user message carries a `<drafting>` section (i.e. the trigger
   tokens include `drafting:<dayId>`), your priority is to call

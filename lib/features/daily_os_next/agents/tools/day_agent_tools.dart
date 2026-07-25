@@ -311,7 +311,10 @@ const dayAgentTools = <AgentToolDefinition>[
               },
               'type': {
                 'type': 'string',
-                'enum': ['ai', 'cal', 'buffer', 'manual'],
+                // No `cal`: it means "imported calendar event" and this agent
+                // is shown none, so the parser rejects one. Offering an option
+                // whose every use fails only invites wasted turns.
+                'enum': ['ai', 'buffer', 'manual'],
               },
               'state': {
                 'type': 'string',
@@ -437,7 +440,9 @@ const dayAgentTools = <AgentToolDefinition>[
                   'taskId': {'type': 'string'},
                   'type': {
                     'type': 'string',
-                    'enum': ['ai', 'cal', 'buffer', 'manual'],
+                    // See the draft_day_plan schema above: `cal` is not on
+                    // offer while no calendar reaches this agent.
+                    'enum': ['ai', 'buffer', 'manual'],
                   },
                   'reason': {'type': 'string', 'minLength': 1},
                 },

@@ -284,6 +284,44 @@ class DayAgentPlanEditor {
       );
     }
 
+    // Every task a diff would attach, held to the same standard as a fresh
+    // draft. `acceptPlanDiff` copies `to.taskId` onto the live plan, and the
+    // approval summary the user sees carries the title and times but not the
+    // task reference — so without this an approved diff could quietly attach a
+    // deleted task, a non-existent one, or one from a category this agent may
+    // not touch, which is the draft-path hole reopened one door over.
+    final identity = await reads.requireIdentity(agentId);
+    // Refining today's plan cannot *move* work into a part of the day that has
+    // already gone. Repeating a block's own unchanged start is not a move:
+    // a full `to` snapshot carries it, so extending the end of a block that
+    // began at 09:00 would otherwise be refused at noon for saying 09:00.
+    if (localDay(plan.planDate) == localDay(clock.now())) {
+      final now = clock.now();
+      for (final change in parsed) {
+        final start = change.to?.start;
+        if (start == null || !start.isBefore(now)) continue;
+        final live = change.blockId == null ? null : blockById[change.blockId];
+        if (live != null && live.startTime == start) continue;
+        throw const DayAgentCaptureException(
+          'proposed blocks for today must not start before current time',
+        );
+      }
+    }
+    final proposedTaskIds = {for (final change in parsed) ?change.to?.taskId};
+    if (proposedTaskIds.isNotEmpty) {
+      final allowed = await resolveAllowedTaskIds(
+        journalDb: journalDb,
+        taskIds: proposedTaskIds,
+        allowedCategoryIds: identity.allowedCategoryIds,
+      );
+      final refused = proposedTaskIds.difference(allowed).toList()..sort();
+      if (refused.isNotEmpty) {
+        throw DayAgentCaptureException(
+          'taskId(s) ${refused.join(', ')} are not allowed tasks for this plan',
+        );
+      }
+    }
+
     final now = clock.now();
     final items = <ChangeItem>[];
     for (var i = 0; i < parsed.length; i++) {

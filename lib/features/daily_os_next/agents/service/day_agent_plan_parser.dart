@@ -1,4 +1,6 @@
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
@@ -12,12 +14,49 @@ const _uuid = Uuid();
 // top-level functions so the class and the other parts call them
 // unqualified.
 
+/// The subset of [taskIds] that resolve to a live task this agent may
+/// reference.
+///
+/// One implementation on purpose. Task references reach a plan through two
+/// doors — a fresh draft and an approved diff — and the isolation bug this
+/// replaces existed because each door had its own idea of what counted as
+/// allowed, with only one of them resolving the id at all.
+Future<Set<String>> resolveAllowedTaskIds({
+  required JournalDb journalDb,
+  required Iterable<String> taskIds,
+  required Set<String> allowedCategoryIds,
+}) async {
+  final ids = taskIds.toSet();
+  if (ids.isEmpty) return const <String>{};
+  final entities = await journalDb.journalEntityMapForIds(ids.toList());
+  return {
+    for (final entry in entities.entries)
+      if (entry.value case final Task task)
+        if (task.meta.deletedAt == null &&
+            categoryAllowed(task.meta.categoryId, allowedCategoryIds))
+          entry.key,
+  };
+}
+
+/// Block states that represent a *plan* rather than a record of something that
+/// already happened.
+///
+/// Used to decide whether a carried-forward block may change state: history
+/// (`inProgress`, `completed`, `dropped`) is a legitimate progression for work
+/// already on the plan, while adopting a plan state the baseline did not hold
+/// would let a known block id be reused to place new work in the past.
+const plannedBlockStatesGuardedFromThePast = <PlannedBlockState>{
+  PlannedBlockState.drafted,
+  PlannedBlockState.committed,
+};
+
 /// Validates and parses one model-emitted block into a [PlannedBlock],
-/// throwing [DayAgentCaptureException] on any contract violation: an
-/// out-of-allowlist category, `end` not after `start`, a block outside the
-/// plan day, a drafted today non-calendar block starting before
-/// [earliestDraftStart], an AI block missing its `reason`, or a `taskId` not
-/// in [decidedTaskIds]/[allowedExistingTaskIds]. Defaults `type` to `ai` and
+/// throwing [DayAgentCaptureException] on any contract violation: a `cal`
+/// type (no calendar reaches this agent), an out-of-allowlist category, `end`
+/// not after `start`, a block outside the plan day, a *planned* today block
+/// starting before [earliestDraftStart], an AI block missing its `reason`, or
+/// a `taskId` outside [decidedTaskIds]/[allowedExistingTaskIds] — both of
+/// which the caller resolves and category-filters. Defaults `type` to `ai` and
 /// `state` to `drafted`, and mints a block id when none is supplied.
 PlannedBlock parsePlannedBlock({
   required Object? raw,
@@ -26,6 +65,7 @@ PlannedBlock parsePlannedBlock({
   required Set<String> decidedTaskIds,
   required Set<String> allowedExistingTaskIds,
   DateTime? earliestDraftStart,
+  Map<String, PlannedBlock> baselineBlocks = const {},
 }) {
   if (raw is! Map) {
     throw const DayAgentCaptureException('block must be an object');
@@ -40,6 +80,23 @@ PlannedBlock parsePlannedBlock({
     optionalStringArg(data['state']),
   );
   final blockType = type ?? PlannedBlockType.ai;
+  // `cal` means "imported calendar event", and the day agent is shown none:
+  // `DayAgentInterface.draftDayPlan` documents its `calendarBlocks` parameter
+  // as deferred and `RealDayAgent` drops it, so no context section renders a
+  // single event. A model-emitted `cal` block therefore always asserts an
+  // import that never happened, and `DayAgentPlanEditor` then refuses to let
+  // the user edit it — "block is calendar-owned, edit it in the source
+  // calendar" — leaving a block they can neither change here nor find there.
+  //
+  // When calendar events are actually wired into the drafting context, this
+  // rejection, the `cal` option in the tool schema, and a past-start exemption
+  // for genuinely spanning events all come back together.
+  if (blockType == PlannedBlockType.cal) {
+    throw const DayAgentCaptureException(
+      'cal blocks mirror imported calendar events, and none are available to '
+      'this agent — use ai, manual, or buffer',
+    );
+  }
   final categoryId = requiredStringArg(data, 'categoryId');
   if (!categoryAllowed(categoryId, allowedCategoryIds)) {
     throw DayAgentCaptureException('categoryId $categoryId is not allowed');
@@ -57,17 +114,53 @@ PlannedBlock parsePlannedBlock({
       'blocks must stay within the planDate day',
     );
   }
-  // Only `cal` blocks are exempt: they mirror real calendar events, which
-  // legitimately span "now". Everything the agent invents (ai, manual,
-  // buffer) must not plan the past — observed live: models relabel a
-  // past-starting block `buffer` to slip through an ai/manual-only guard.
+  // Nothing the agent *plans* may start in the past. Only states recording
+  // something that already happened are exempt — `inProgress`, `completed`
+  // and `dropped` are history a re-draft legitimately carries forward.
+  //
+  // `committed` is not history: it is a plan the user agreed to, and writing a
+  // new block as `committed` was the remaining way to place work before the
+  // current time. Observed live, alongside the earlier trick of relabelling a
+  // past-starting block `buffer` to slip an ai/manual-only guard — the same
+  // probing, one field over. Guarding by what a state *means* closes both.
+  final blockId = optionalStringArg(data['id']);
+  // One rule for the past, keyed on evidence rather than on the state label:
+  // a block that starts before now is only acceptable if the baseline already
+  // had that block at that time. Anything else is either planning the past or
+  // fabricating history, and the state name cannot tell the two apart — a
+  // fresh block claiming `completed` at 09:00 is exactly as invented as a
+  // fresh `committed` one, which is why guarding a list of "planning" states
+  // left the other half of the bypass open.
+  //
+  // State may still progress on a carried block (in-progress work finishes),
+  // but it may not become a *plan* state that the baseline did not already
+  // hold — otherwise a known id could be reused to slip a new committed block
+  // into a past slot.
+  final baseline = blockId == null ? null : baselineBlocks[blockId];
+  // A *plan* state in the past is only acceptable as a faithful repeat of a
+  // block the plan already had: same id, same start, and the same state it
+  // already held. Matching on id and start alone would let a known 09:00 id
+  // be reused to drop a brand-new `committed` block into that slot,
+  // rewriting approved work without the refinement approval that normally
+  // gates it.
+  //
+  // History states (`inProgress`, `completed`, `dropped`) stay exempt. They
+  // can legitimately have no baseline: the first draft of the day may happen
+  // in the afternoon, and the capture is where the agent learns what the
+  // morning actually contained. Whether a model should be able to *invent*
+  // that history is a real question — the eval's `noHistoryFabrication`
+  // measures it — but it is a product decision about what a plan may record,
+  // not something to settle by tightening a guard mid-fix.
+  final carriedForward =
+      baseline != null &&
+      baseline.startTime == start &&
+      baseline.state == blockState;
   if (earliestDraftStart != null &&
-      blockState == PlannedBlockState.drafted &&
-      blockType != PlannedBlockType.cal &&
-      start.isBefore(earliestDraftStart)) {
+      plannedBlockStatesGuardedFromThePast.contains(blockState) &&
+      start.isBefore(earliestDraftStart) &&
+      !carriedForward) {
     throw const DayAgentCaptureException(
-      'drafted non-calendar blocks for today must not start before '
-      'current time',
+      'blocks planned for today must not start before current time',
     );
   }
   final reason = optionalStringArg(data['reason']);
@@ -77,19 +170,21 @@ PlannedBlock parsePlannedBlock({
     );
   }
   final taskId = optionalStringArg(data['taskId']);
-  // Always validate — an empty `decidedTaskIds` is not a license for the
-  // model to reference arbitrary task IDs; with no decided tasks the only
-  // permitted references are tasks the user has already authorised via
-  // `allowedExistingTaskIds`.
+  // Both sets are resolved and category-filtered by the caller, which is the
+  // point: `decidedTaskIds` arrives as a `draft_day_plan` argument the model
+  // writes itself, so treating it as a permission set let a model reference
+  // any task — deleted, non-existent, or in a category this agent may not
+  // touch — simply by echoing the id into its own call, defeating the check
+  // the sibling branch applies.
   if (taskId != null &&
       !decidedTaskIds.contains(taskId) &&
       !allowedExistingTaskIds.contains(taskId)) {
     throw DayAgentCaptureException(
-      'taskId $taskId was not included in decidedTaskIds',
+      'taskId $taskId is not an allowed task for this plan',
     );
   }
   return PlannedBlock(
-    id: optionalStringArg(data['id']) ?? 'block_${_uuid.v4()}',
+    id: blockId ?? 'block_${_uuid.v4()}',
     categoryId: categoryId,
     startTime: start,
     endTime: end,

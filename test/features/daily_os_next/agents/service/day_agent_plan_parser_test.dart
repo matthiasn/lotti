@@ -33,6 +33,7 @@ void main() {
     Set<String> decidedTaskIds = const {},
     Set<String> allowedExistingTaskIds = const {},
     DateTime? earliestDraftStart,
+    Map<String, PlannedBlock> baselineBlocks = const {},
   }) {
     return parsePlannedBlock(
       raw: raw,
@@ -41,6 +42,7 @@ void main() {
       decidedTaskIds: decidedTaskIds,
       allowedExistingTaskIds: allowedExistingTaskIds,
       earliestDraftStart: earliestDraftStart,
+      baselineBlocks: baselineBlocks,
     );
   }
 
@@ -116,19 +118,131 @@ void main() {
         }
       });
 
-      test('exempts cal blocks and non-drafted states from the guard', () {
-        final cal = parse(
-          rawBlock(type: 'cal'),
-          earliestDraftStart: earliest,
-        );
-        expect(cal.type, PlannedBlockType.cal);
-        expect(cal.startTime, DateTime(2026, 3, 16, 9));
+      test('exempts only states that record what already happened', () {
+        // History a re-draft legitimately carries forward. These are records,
+        // not plans, so they are allowed to sit in the past.
+        for (final state in ['inProgress', 'completed', 'dropped']) {
+          final block = parse(
+            rawBlock()..['state'] = state,
+            earliestDraftStart: earliest,
+          );
+          expect(block.startTime, DateTime(2026, 3, 16, 9), reason: state);
+        }
+      });
 
-        final inProgress = parse(
-          rawBlock()..['state'] = 'inProgress',
-          earliestDraftStart: earliest,
+      test('guards committed blocks, not just drafted ones', () {
+        // `committed` is a plan the user agreed to, not a record of something
+        // that happened — and writing a new block as committed was the
+        // remaining way to place work before the current time, the same
+        // probing as relabelling a block `buffer`, one field over.
+        expect(
+          () => parse(
+            rawBlock()..['state'] = 'committed',
+            earliestDraftStart: earliest,
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must not start before current time'),
+            ),
+          ),
         );
-        expect(inProgress.state, PlannedBlockState.inProgress);
+      });
+
+      test('carries forward a committed baseline block unchanged', () {
+        // A legacy `agreed` plan can hold committed blocks the user already
+        // approved. Once one has started, a redraft must still be able to
+        // include it — rejecting the whole draft for faithfully repeating
+        // what is already on the plan would punish the correct behaviour.
+        final block = parse(
+          rawBlock()
+            ..['state'] = 'committed'
+            ..['id'] = 'block-existing',
+          earliestDraftStart: earliest,
+          baselineBlocks: {
+            'block-existing': _baselineBlock(
+              id: 'block-existing',
+              start: DateTime(2026, 3, 16, 9),
+              state: PlannedBlockState.committed,
+            ),
+          },
+        );
+
+        expect(block.id, 'block-existing');
+        expect(block.startTime, DateTime(2026, 3, 16, 9));
+      });
+
+      test('will not let a baseline id move approved work into the past', () {
+        // The exemption keys on id *and* start, so reusing a known id with a
+        // new time is still newly planning the past.
+        expect(
+          () => parse(
+            rawBlock()
+              ..['state'] = 'committed'
+              ..['id'] = 'block-existing',
+            earliestDraftStart: earliest,
+            baselineBlocks: {
+              'block-existing': _baselineBlock(
+                id: 'block-existing',
+                start: DateTime(2026, 3, 16, 11),
+                state: PlannedBlockState.committed,
+              ),
+            },
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must not start before current time'),
+            ),
+          ),
+        );
+      });
+
+      test('will not let a baseline id adopt a new plan state in the past', () {
+        // The attack the id+start match alone allowed: reuse a known 09:00
+        // block id and drop a brand-new committed block into that slot,
+        // rewriting approved work without the refinement approval that
+        // normally gates it.
+        expect(
+          () => parse(
+            rawBlock()
+              ..['state'] = 'committed'
+              ..['id'] = 'block-existing',
+            earliestDraftStart: earliest,
+            baselineBlocks: {
+              'block-existing': _baselineBlock(
+                id: 'block-existing',
+                start: DateTime(2026, 3, 16, 9),
+                state: PlannedBlockState.drafted,
+              ),
+            },
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+      });
+
+      test('a cal block is refused outright, guard or no guard', () {
+        // `cal` means "imported calendar event" and this agent is shown none,
+        // so the type can only ever assert an import that never happened —
+        // and the plan editor then refuses to let the user edit the result.
+        for (final earliestStart in [earliest, null]) {
+          expect(
+            () => parse(
+              rawBlock(type: 'cal'),
+              earliestDraftStart: earliestStart,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('none are available to this agent'),
+              ),
+            ),
+            reason: 'earliestDraftStart=$earliestStart',
+          );
+        }
       });
 
       test('accepts drafted blocks starting at or after the boundary', () {
@@ -209,3 +323,16 @@ void main() {
     });
   });
 }
+
+PlannedBlock _baselineBlock({
+  required String id,
+  required DateTime start,
+  required PlannedBlockState state,
+}) => PlannedBlock(
+  id: id,
+  categoryId: 'cat-1',
+  startTime: start,
+  endTime: start.add(const Duration(hours: 1)),
+  title: id,
+  state: state,
+);
