@@ -311,6 +311,73 @@ void main() {
     });
   });
 
+  group('multi-subtype reads', () {
+    Future<void> seedPlan(String dayId) => core.upsertEntity(
+      makeTestDayPlan(
+        id: 'day_agent_plan:$dayId',
+        agentId: 'daily_os_planner',
+        dayId: dayId,
+        planDate: DateTime.parse(dayId.substring('dayplan-'.length)),
+      ),
+    );
+
+    test(
+      'returns every requested day and nothing outside the window',
+      () async {
+        for (final day in const [
+          'dayplan-2026-05-23',
+          'dayplan-2026-05-24',
+          'dayplan-2026-05-25',
+          'dayplan-2026-05-26',
+        ]) {
+          await seedPlan(day);
+        }
+
+        final rows = await core.getEntitiesByAgentIdAndSubtypes(
+          'daily_os_planner',
+          type: AgentEntityTypes.dayPlan,
+          subtypes: const ['dayplan-2026-05-24', 'dayplan-2026-05-25'],
+        );
+
+        expect(
+          rows.whereType<DayPlanEntity>().map((p) => p.dayId),
+          unorderedEquals(['dayplan-2026-05-24', 'dayplan-2026-05-25']),
+        );
+      },
+    );
+
+    test('an empty subtype set matches nothing', () async {
+      await seedPlan('dayplan-2026-05-25');
+
+      final rows = await core.getEntitiesByAgentIdAndSubtypes(
+        'daily_os_planner',
+        type: AgentEntityTypes.dayPlan,
+        subtypes: const <String>[],
+      );
+
+      expect(rows, isEmpty);
+    });
+
+    test('excludes soft-deleted rows', () async {
+      await seedPlan('dayplan-2026-05-25');
+      await core.upsertEntity(
+        makeTestDayPlan(
+          id: 'day_agent_plan:dayplan-2026-05-25',
+          agentId: 'daily_os_planner',
+          planDate: DateTime(2026, 5, 25),
+        ).copyWith(deletedAt: DateTime(2026, 5, 25, 12)),
+      );
+
+      final rows = await core.getEntitiesByAgentIdAndSubtypes(
+        'daily_os_planner',
+        type: AgentEntityTypes.dayPlan,
+        subtypes: const ['dayplan-2026-05-25'],
+      );
+
+      expect(rows, isEmpty);
+    });
+  });
+
   group('schema v17 day-subtype backfill', () {
     /// Writes a row straight to the table with a pre-v17 subtype, bypassing
     /// the conversion layer that would now derive the day.

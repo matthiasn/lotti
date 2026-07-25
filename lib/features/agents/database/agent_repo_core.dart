@@ -211,6 +211,46 @@ class AgentRepoCore {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
+  /// Entities of [type] for [agentId] whose subtype is any of [subtypes].
+  ///
+  /// The multi-value form of [getEntitiesByAgentIdAndSubtype], for callers
+  /// that want a bounded *range* of day-scoped rows — a plan lookback window,
+  /// say — in one round trip rather than one query per day.
+  Future<List<AgentDomainEntity>> getEntitiesByAgentIdAndSubtypes(
+    String agentId, {
+    required String type,
+    required Iterable<String> subtypes,
+  }) async {
+    final result = <AgentDomainEntity>[];
+    for (final chunk in sqliteInClauseChunks(subtypes)) {
+      final placeholders = List.filled(chunk.length, '?').join(', ');
+      final rows = await _db
+          .customSelect(
+            'SELECT * FROM agent_entities '
+            'INDEXED BY idx_agent_entities_agent_type_sub '
+            'WHERE agent_id = ? AND type = ? '
+            'AND subtype IN ($placeholders) '
+            'AND deleted_at IS NULL '
+            'ORDER BY created_at DESC, id DESC',
+            variables: [
+              Variable.withString(agentId),
+              Variable.withString(type),
+              for (final subtype in chunk) Variable.withString(subtype),
+            ],
+            readsFrom: {_db.agentEntities},
+          )
+          .get();
+      for (final row in rows) {
+        result.add(
+          AgentDbConversions.fromEntityRow(
+            await _db.agentEntities.mapFromRow(row),
+          ),
+        );
+      }
+    }
+    return result;
+  }
+
   Future<List<AgentDomainEntity>> getEntitiesByAgentId(
     String agentId, {
     String? type,

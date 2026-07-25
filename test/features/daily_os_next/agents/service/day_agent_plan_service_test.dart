@@ -7,6 +7,7 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -100,6 +101,58 @@ void main() {
           if (entity.agentId == agentId &&
               (type == null || AgentEntityTypes.dayPlan == type) &&
               entity is DayPlanEntity)
+            entity,
+      ];
+    });
+    // Subtype-scoped reads resolve the subtype through the production
+    // projection, so a fake can never disagree with what the writer stores.
+    Future<List<AgentDomainEntity>> bySubtype(Invocation invocation) async {
+      final agentId = invocation.positionalArguments.single as String;
+      final type = invocation.namedArguments[#type] as String;
+      final subtype = invocation.namedArguments[#subtype] as String;
+      return [
+        for (final entity in agentEntities.values)
+          if (entity.agentId == agentId &&
+              AgentDbConversions.entityType(entity) == type &&
+              AgentDbConversions.entitySubtype(entity) == subtype)
+            entity,
+      ];
+    }
+
+    // Both arities: mocktail matches on the named arguments actually present,
+    // so a stub that requires `limit` never matches a caller that omits it.
+    when(
+      () => agentRepository.getEntitiesByAgentIdAndSubtype(
+        any(),
+        type: any(named: 'type'),
+        subtype: any(named: 'subtype'),
+      ),
+    ).thenAnswer(bySubtype);
+    when(
+      () => agentRepository.getEntitiesByAgentIdAndSubtype(
+        any(),
+        type: any(named: 'type'),
+        subtype: any(named: 'subtype'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer(bySubtype);
+    when(
+      () => agentRepository.getEntitiesByAgentIdAndSubtypes(
+        any(),
+        type: any(named: 'type'),
+        subtypes: any(named: 'subtypes'),
+      ),
+    ).thenAnswer((invocation) async {
+      final agentId = invocation.positionalArguments.single as String;
+      final type = invocation.namedArguments[#type] as String;
+      final subtypes = (invocation.namedArguments[#subtypes] as Iterable)
+          .cast<String>()
+          .toSet();
+      return [
+        for (final entity in agentEntities.values)
+          if (entity.agentId == agentId &&
+              AgentDbConversions.entityType(entity) == type &&
+              subtypes.contains(AgentDbConversions.entitySubtype(entity)))
             entity,
       ];
     });
@@ -463,10 +516,10 @@ void main() {
                   )
                   as ChangeSetEntity;
           when(
-            () => agentRepository.getEntitiesByAgentId(
+            () => agentRepository.getEntitiesByAgentIdAndSubtype(
               any(),
               type: any(named: 'type'),
-              limit: any(named: 'limit'),
+              subtype: any(named: 'subtype'),
             ),
           ).thenAnswer((invocation) async {
             final owner = invocation.positionalArguments.single as String;
@@ -4642,14 +4695,23 @@ void main() {
         );
       }
 
+      /// Change sets are read by their indexed status subtype now, so the
+      /// stub filters the same way the table would rather than handing back
+      /// everything regardless of what was asked for.
       void stubEntitiesWithChangeSets(List<AgentDomainEntity> entities) {
         when(
-          () => agentRepository.getEntitiesByAgentId(
+          () => agentRepository.getEntitiesByAgentIdAndSubtype(
             any(),
             type: any(named: 'type'),
-            limit: any(named: 'limit'),
+            subtype: any(named: 'subtype'),
           ),
-        ).thenAnswer((_) async => entities);
+        ).thenAnswer((invocation) async {
+          final subtype = invocation.namedArguments[#subtype] as String;
+          return [
+            for (final entity in entities)
+              if (AgentDbConversions.entitySubtype(entity) == subtype) entity,
+          ];
+        });
       }
 
       test('returns empty list when no change sets exist', () async {

@@ -125,6 +125,17 @@ class AgentRepository {
     limit: limit,
   );
 
+  /// Entities of [type] for [agentId] whose subtype is any of [subtypes].
+  Future<List<AgentDomainEntity>> getEntitiesByAgentIdAndSubtypes(
+    String agentId, {
+    required String type,
+    required Iterable<String> subtypes,
+  }) => _core.getEntitiesByAgentIdAndSubtypes(
+    agentId,
+    type: type,
+    subtypes: subtypes,
+  );
+
   Future<
     List<
       ({

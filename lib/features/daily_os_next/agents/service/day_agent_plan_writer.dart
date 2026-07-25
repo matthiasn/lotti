@@ -391,9 +391,18 @@ class DayAgentPlanWriter {
     }
     final asOfDay = localDay(asOf);
     final start = asOfDay.subtract(Duration(days: lookbackDays - 1));
-    final entities = await agentRepository.getEntitiesByAgentId(
+    // Ask for exactly the window's days rather than every plan the agent
+    // ever wrote: dayPlan stores its day as the indexed subtype, so the
+    // lookback costs one indexed read of `lookbackDays` keys.
+    final entities = await agentRepository.getEntitiesByAgentIdAndSubtypes(
       agentId,
       type: AgentEntityTypes.dayPlan,
+      subtypes: [
+        for (var offset = 0; offset < lookbackDays; offset++)
+          dayAgentIdForDate(
+            DateTime(asOfDay.year, asOfDay.month, asOfDay.day - offset),
+          ),
+      ],
     );
     final plans = entities.whereType<DayPlanEntity>().where((plan) {
       final day = localDay(plan.planDate);

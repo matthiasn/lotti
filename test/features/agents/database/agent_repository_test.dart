@@ -674,6 +674,35 @@ void main() {
       });
     });
 
+    group('getEntitiesByAgentIdAndSubtypes', () {
+      test('spans a window of days in one read', () async {
+        for (final day in const [
+          'dayplan-2026-05-24',
+          'dayplan-2026-05-25',
+          'dayplan-2026-05-26',
+        ]) {
+          await repo.upsertEntity(
+            makeTestDayPlan(
+              id: 'day_agent_plan:$day',
+              dayId: day,
+              planDate: DateTime.parse(day.substring('dayplan-'.length)),
+            ),
+          );
+        }
+
+        final results = await repo.getEntitiesByAgentIdAndSubtypes(
+          testAgentId,
+          type: AgentEntityTypes.dayPlan,
+          subtypes: const ['dayplan-2026-05-24', 'dayplan-2026-05-26'],
+        );
+
+        expect(
+          results.whereType<DayPlanEntity>().map((p) => p.dayId),
+          unorderedEquals(['dayplan-2026-05-24', 'dayplan-2026-05-26']),
+        );
+      });
+    });
+
     group('getEntitiesByAgentId', () {
       test('returns all entities for an agent', () async {
         await repo.upsertEntity(makeAgent());

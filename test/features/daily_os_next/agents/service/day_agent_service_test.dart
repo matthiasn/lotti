@@ -150,7 +150,12 @@ void main() {
     // clean day would create a per-day agent unless a test stubs otherwise.
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
-      () => repository.getCaptureEventMetaByAgentId(any()),
+      () => repository.getEntitiesByAgentIdAndSubtype(
+        any(),
+        type: any(named: 'type'),
+        subtype: any(named: 'subtype'),
+        limit: any(named: 'limit'),
+      ),
     ).thenAnswer((_) async => []);
 
     service = DayAgentService(
@@ -1122,15 +1127,21 @@ void main() {
       when(
         () => agentService.getAgent(dailyOsPlannerAgentId),
       ).thenAnswer((_) async => planner);
+      // The ownership probe is an indexed day-scoped read now: one capture
+      // row under the planner for this day is what makes it the owner.
       when(
-        () => repository.getCaptureEventMetaByAgentId(dailyOsPlannerAgentId),
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          dailyOsPlannerAgentId,
+          type: AgentEntityTypes.capture,
+          subtype: testDayId,
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer(
         (_) async => [
-          (
+          makeTestCapture(
             id: 'cap-1',
+            agentId: dailyOsPlannerAgentId,
             dayId: testDayId,
-            createdAt: now,
-            capturedAt: now,
           ),
         ],
       );
@@ -1155,15 +1166,22 @@ void main() {
         when(
           () => agentService.getAgent(dailyOsPlannerAgentId),
         ).thenAnswer((_) async => identity(id: dailyOsPlannerAgentId));
+        // A capture on another day lives under that day's subtype, so the
+        // probe for *this* day finds nothing — which is the whole point of
+        // the day-scoped read replacing a scan-and-filter.
         when(
-          () => repository.getCaptureEventMetaByAgentId(dailyOsPlannerAgentId),
+          () => repository.getEntitiesByAgentIdAndSubtype(
+            dailyOsPlannerAgentId,
+            type: AgentEntityTypes.capture,
+            subtype: 'dayplan-2026-05-24',
+            limit: any(named: 'limit'),
+          ),
         ).thenAnswer(
           (_) async => [
-            (
+            makeTestCapture(
               id: 'cap-other',
+              agentId: dailyOsPlannerAgentId,
               dayId: 'dayplan-2026-05-24',
-              createdAt: now,
-              capturedAt: now,
             ),
           ],
         );
