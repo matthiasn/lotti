@@ -269,8 +269,9 @@ EvalConstraintResult scoreNoFabricatedTaskIds(EvalRunOutcome outcome) {
   }
   // What the model was SHOWN, not what is true. Without a capture the corpus
   // is never rendered, so grading against it would credit or punish the model
-  // for ids it could not have seen.
-  final known = outcome.inputs.referenceableTaskIds;
+  // for ids it could not have seen — plus whatever it created during the run,
+  // which it equally could not have invented.
+  final known = outcome.knownTaskIds;
   final fabricated = {
     for (final taskId in referenced)
       if (!known.contains(taskId)) taskId,
@@ -696,6 +697,15 @@ EvalConstraintResult scoreTaskWorkIsTyped(EvalRunOutcome outcome) {
   );
 }
 
+/// Whether [call] escalates under the reason the prompt names for an
+/// unsatisfiable directive, which needs no further explanation to count.
+bool _namesDirectiveReason(EvalToolCall call, Set<String> answering) =>
+    switch (call.arguments['reasons']) {
+      final List<Object?> list =>
+        list.map((r) => '$r').contains('directiveUnsatisfiable'),
+      _ => false,
+    };
+
 /// Every directive commitment is represented, traded away, or escalated —
 /// never silently dropped.
 ///
@@ -722,16 +732,52 @@ EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
       'the wake was given no directive',
     );
   }
-  final escalated = outcome.toolCalls.any(
-    (call) =>
-        call.accepted &&
-        call.name.contains('raise_day_status') &&
-        call.arguments['status'] == 'attentionNeeded' &&
-        switch (call.arguments['reasons']) {
-          final List<Object?> list =>
-            list.map((r) => '$r').contains('directiveUnsatisfiable'),
-          _ => false,
-        },
+  // Escalations that reached the user, with the reason enum and the note kept
+  // apart. The first live run produced the case that matters: glm-5.2 raised
+  // `attentionNeeded` with reason `overCommitted` and a note reading "Cannot
+  // fit: interviews (120 min)" — naming the exact casualty. Requiring the
+  // enum to be `directiveUnsatisfiable` scored that as SILENTLY DROPPED,
+  // which is the one thing it demonstrably was not. Silence is the failure
+  // this constraint exists to catch; using a different-but-true reason label
+  // is a separate, much weaker observation, so it is reported rather than
+  // failed.
+  // Reasons that can honestly describe *this* directive failing. The prompt
+  // names `directiveUnsatisfiable`; a scenario may declare others that are
+  // also true of it (an over-committed directive is genuinely `overCommitted`).
+  // An allowlist rather than free text, and rather than any reason at all:
+  // `processingBlocked` says the pipeline is stuck and answers for nothing.
+  final answeringReasons = {
+    'directiveUnsatisfiable',
+    ...outcome.inputs.conflictEscalationReasons,
+  };
+  final escalations = [
+    for (final call in outcome.toolCalls)
+      if (call.accepted &&
+          call.name.contains('raise_day_status') &&
+          call.arguments['status'] == 'attentionNeeded' &&
+          switch (call.arguments['reasons']) {
+            final List<Object?> list =>
+              list.map((r) => '$r').any(answeringReasons.contains),
+            _ => false,
+          } &&
+          // Under the prompt's own reason, the call speaks for itself. Under
+          // any other, it has to actually say something: a bare
+          // `overCommitted` with no note is a day-level remark that never
+          // mentions the directive, and crediting it would let a model drop
+          // every commitment and still pass. The bar is structural — a note
+          // exists or it does not — rather than semantic, because refereeing
+          // what a note *means* by substring match is what got this scorer
+          // wrong twice already.
+          (_namesDirectiveReason(call, answeringReasons) ||
+              '${call.arguments['note'] ?? ''}'.trim().isNotEmpty))
+        call,
+  ];
+  final escalatedAsDirective = escalations.any(
+    (call) => switch (call.arguments['reasons']) {
+      final List<Object?> list =>
+        list.map((r) => '$r').contains('directiveUnsatisfiable'),
+      _ => false,
+    },
   );
 
   // Prose the model attached to the plan, where a representation names its
@@ -765,8 +811,31 @@ EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
       dispositions.add('${commitment.id}: represented');
     } else if (named(tradeProse)) {
       dispositions.add('${commitment.id}: traded, naming the collision');
-    } else if (escalated) {
-      dispositions.add('${commitment.id}: escalated');
+    } else if (escalations.isNotEmpty) {
+      // Escalation is directive-level in the prompt — option (c) is "escalate
+      // via raise_day_status", not "name each commitment in the note" — so
+      // raising `attentionNeeded` answers for everything left unplaced.
+      //
+      // Two live runs pushed this here. Requiring the reason enum to be
+      // `directiveUnsatisfiable` reported a model that escalated as SILENTLY
+      // DROPPED; requiring the note to contain each commitment's *title* did
+      // the same to "Interviews and 1:1s cannot fit — user must defer one or
+      // both", which names both casualties in the words a person would use.
+      // Substring matching cannot referee that, and a false "silently
+      // dropped" is worse than a coarse pass: it accuses the model of the one
+      // thing it visibly did not do.
+      //
+      // The counterweight is above, in what qualifies as an escalation at
+      // all: under a reason other than the prompt's, the call must carry a
+      // note. Delegating that to `surfacedConflict` would have been delegating
+      // to a scorer this scenario never runs — it leaves
+      // `requiresConflictSurfaced` false.
+      dispositions.add(
+        escalatedAsDirective
+            ? '${commitment.id}: escalated'
+            : '${commitment.id}: escalated, though not under the '
+                  'directiveUnsatisfiable reason the prompt specifies',
+      );
     } else {
       dispositions.add('${commitment.id}: SILENTLY DROPPED');
       dropped.add(commitment.id);

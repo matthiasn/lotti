@@ -443,8 +443,34 @@ through its own projection even on a capture-less wake where its corpus row was
 never shown. Reporting the second as the first would print `blockedBy` next to
 "the model saw this".
 
-**Not yet judged against real models.** The live entry point that points the
-matrix at providers is tracked separately.
+### Running it against real models
+
+`eval/day_planning_eval_live_test.dart` is the opt-in entry point. It supplies
+only the inference layer and the output paths; everything below the model is
+the production pipeline.
+
+```sh
+set -a; source .env; set +a   # MELIOUS_API_KEY / MELIOUS_BASE_URL
+LOTTI_DAY_PLANNING_EVAL_LIVE=1 \
+DAY_PLANNING_EVAL_MODELS=glm-5.2 \
+DAY_PLANNING_EVAL_SAMPLES=3 \
+  fvm flutter test test/features/daily_os_next/eval/day_planning_eval_live_test.dart
+```
+
+`DAY_PLANNING_EVAL_SCENARIOS` narrows the run to named scenarios; the output
+overrides above choose where the report lands.
+
+**It always passes when it runs.** Violations are reported, never asserted: a
+live run is non-deterministic and costs money, and a red build people learn to
+ignore is worse than no signal. The report and its judge bundle are the
+deliverable. Missing credentials are the one hard failure, because that is a
+setup error rather than anything a model did.
+
+There is one live eval path. The earlier single-scenario
+`day_agent_draft_live_eval_test.dart` was folded in: its subject — a same-day
+draft where the model's proposed times meet production's past-start guard — is
+now the `lateStart` scenario, which additionally seeds real work so the run can
+say something about planning rather than only about the guard.
 
 ### Measuring that it does not degrade
 

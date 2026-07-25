@@ -20,6 +20,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../ai_consumption/test_utils.dart';
 import '../../integration/day_agent_pipeline_harness.dart';
 import 'eval_constraints.dart';
+import 'eval_journal_fixture.dart';
 import 'eval_models.dart';
 import 'eval_scenario.dart';
 import 'eval_variant.dart';
@@ -396,6 +397,7 @@ Future<EvalRunResult> _runCell(
       journalDb: harness.journalDb,
       scenario: scenario,
       planDate: planDate,
+      journalRepository: harness.journalRepository,
     );
 
     // Seeded before the timer starts: agent lookup/creation and fixture
@@ -440,6 +442,13 @@ Future<EvalRunResult> _runCell(
       blocks: plan?.data.plannedBlocks ?? const [],
       toolCalls: evalToolCallsFrom(harness.agentRepository.entities),
       planPersisted: plan != null,
+      createdTaskIds: {
+        // Both sources: the persistence stub records every created task, and
+        // the parsed-item scan additionally covers ids the model resolved
+        // through triage against work outside the seeded corpus.
+        ...currentEvalJournal.createdIds,
+        ...evalCreatedTaskIdsFrom(harness.agentRepository.entities),
+      },
     );
     return EvalRunResult(
       request: request,
@@ -581,6 +590,19 @@ Future<void> _seedDirective(
     ),
   );
 }
+
+/// Task ids that came into existence during the wake.
+///
+/// `create_task_from_phrase` materialises a task and writes its id onto the
+/// parsed item as `matchedTaskId` (plus a `parsed_item_to_task` link), so the
+/// ids are recoverable from persisted state rather than needing the tool
+/// result — which the agent log does not keep. `apply_triage` matching an
+/// existing task lands here too, and belongs just as much: an id the model
+/// resolved through a tool is one it could legitimately go on to schedule.
+Set<String> evalCreatedTaskIdsFrom(List<AgentDomainEntity> entities) => {
+  for (final item in entities.whereType<ParsedItemEntity>())
+    ?item.matchedTaskId,
+};
 
 /// Reconstructs the ordered tool-call log from the agent messages one wake
 /// wrote.

@@ -48,6 +48,7 @@ void main() {
     List<EvalToolCall> toolCalls = const [],
     int capacityMinutes = 480,
     EvalDirective? directive,
+    Set<String> createdTaskIds = const {},
   }) => EvalRunOutcome(
     inputs: EvalFixtureInputs(
       dayId: 'dayplan-2026-07-18',
@@ -70,6 +71,7 @@ void main() {
     blocks: blocks,
     toolCalls: toolCalls,
     planPersisted: planPersisted,
+    createdTaskIds: createdTaskIds,
   );
 
   group('noOverlappingBlocks', () {
@@ -433,6 +435,38 @@ void main() {
             block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-invented'),
           ],
           corpus: const [EvalCorpusTask(taskId: 'task-1', title: 'Real')],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-invented'));
+    });
+  });
+
+  group('noFabricatedTaskIds and created tasks', () {
+    test('a task the model created during the wake is not fabricated', () {
+      // `create_task_from_phrase` is offered on a drafting wake, and glm-5.2
+      // used it then scheduled what it made. The referenceable set is fixed
+      // before the run, so without the created ids that reads as invention.
+      final result = scoreNoFabricatedTaskIds(
+        outcome(
+          blocks: [
+            block(id: 'b1', startHour: 9, endHour: 10, taskId: 'task-made'),
+          ],
+          createdTaskIds: const {'task-made'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('an id that was neither shown nor created is still fabricated', () {
+      final result = scoreNoFabricatedTaskIds(
+        outcome(
+          blocks: [
+            block(id: 'b1', startHour: 9, endHour: 10, taskId: 'task-invented'),
+          ],
+          createdTaskIds: const {'task-made'},
         ),
       );
 
@@ -1569,6 +1603,97 @@ void main() {
       expect(result.detail, contains('escalated'));
     });
 
+    test('an escalation under a different reason is not silence', () {
+      // From the live runs: glm-5.2 raised attentionNeeded with reason
+      // `overCommitted` and a note naming the casualties in plain words
+      // ("Interviews and 1:1s cannot fit"). Scoring that as SILENTLY DROPPED
+      // accused it of the one thing it visibly did not do. The reason-label
+      // gap is real but far weaker, so it is reported, not failed.
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['overCommitted'],
+                'note': 'Interviews and 1:1s cannot fit — defer one.',
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('not under the directiveUnsatisfiable'));
+    });
+
+    test('a bare escalation with no note answers for nothing', () {
+      // The hole the previous version left: any accepted attentionNeeded with
+      // an allowlisted reason credited every commitment, so a model could drop
+      // all three and pass on a day-level remark that never mentions the
+      // directive. Under a reason other than the prompt's, the call has to
+      // carry a note.
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['overCommitted'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('commit-1-1s'));
+    });
+
+    test('the prompt reason needs no note to speak for itself', () {
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['directiveUnsatisfiable'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('silence with no escalation at all still fails', () {
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(name: 'record_observations', accepted: true),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('commit-1-1s'));
+    });
+
     test('a rejected or unrelated escalation does not answer for anything', () {
       for (final call in const [
         EvalToolCall(
@@ -1583,6 +1708,7 @@ void main() {
           name: 'raise_day_status',
           accepted: true,
           arguments: {
+            // Says the pipeline is stuck; answers for no commitment.
             'status': 'attentionNeeded',
             'reasons': ['processingBlocked'],
           },

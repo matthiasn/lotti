@@ -7,6 +7,7 @@ import 'package:meta/meta.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import 'eval_journal_fixture.dart';
 import 'eval_models.dart';
 
 /// Declarative day-planning scenarios.
@@ -632,6 +633,11 @@ const _bindingDirective = EvalScenario(
   // Deliberately over budget: 180 + 120 + 90 against 240 remaining. A day that
   // fits would let a model honour everything by accident and prove nothing
   // about the contract, which only bites when something has to give.
+  // An over-committed directive is honestly `overCommitted` as well as
+  // `directiveUnsatisfiable`, and both live runs reached for the former. The
+  // allowlist is fixture-declared so a model still cannot escalate under a
+  // reason that could not be true of this day.
+  conflictEscalationReasons: {'overCommitted'},
   directive: EvalDirective(
     commitments: [
       EvalDirectiveCommitment(
@@ -658,6 +664,16 @@ const _bindingDirective = EvalScenario(
       'The board deck has to land today. Not sure how the rest fits.',
 );
 
+/// Tasks due on or before [planDate], read live so a triage update shows.
+List<Task> _dueBy(DateTime planDate) => [
+  for (final task in currentEvalJournal.tasks)
+    if (task.data.due case final due?)
+      if (!due.isAfter(
+        DateTime(planDate.year, planDate.month, planDate.day, 23, 59),
+      ))
+        task,
+];
+
 /// Stubs the corpus reads on [journalDb] from [scenario].
 ///
 /// The pipeline harness installs empty defaults for all four task sources;
@@ -667,30 +683,76 @@ void seedScenarioCorpus({
   required MockJournalDb journalDb,
   required EvalScenario scenario,
   required DateTime planDate,
+  MockJournalRepository? journalRepository,
 }) {
+  // One journal for the cell, shared with the persistence stub so a task the
+  // model creates mid-wake is findable afterwards. Reset here, which is the
+  // once-per-cell seeding point.
+  currentEvalJournal.reset(scenario.tasksFor(planDate));
+  // Every corpus read derives from the mutable per-cell store, not from a
+  // fresh `scenario.tasksFor` each time. A model that runs `apply_triage` and
+  // then re-checks pending work must see what it just changed; recreating the
+  // original lists would show a task it marked done as still in progress, and
+  // every later decision — and the rejection and compliance scores that follow
+  // — would rest on state the tool said it had changed.
   when(
     () => journalDb.getOpenTasksForDayAgentCorpus(
       categoryIds: any(named: 'categoryIds'),
       limit: any(named: 'limit'),
     ),
-  ).thenAnswer((_) async => scenario.tasksFor(planDate));
+  ).thenAnswer((_) async => currentEvalJournal.tasks);
   when(
     () => journalDb.getTasksDueOnOrBefore(any()),
-  ).thenAnswer((_) async => scenario.overdueOrDueTodayFor(planDate));
+  ).thenAnswer((_) async => _dueBy(planDate));
   when(
     () => journalDb.getTasksDueOn(any()),
-  ).thenAnswer((_) async => scenario.overdueOrDueTodayFor(planDate));
+  ).thenAnswer((_) async => _dueBy(planDate));
   when(
     () => journalDb.getInProgressTasks(
       categoryIds: any(named: 'categoryIds'),
       limit: any(named: 'limit'),
     ),
-  ).thenAnswer((_) async => scenario.inProgressFor(planDate));
+  ).thenAnswer(
+    (_) async => [
+      for (final task in currentEvalJournal.tasks)
+        if (task.data.status is TaskInProgress) task,
+    ],
+  );
+  when(
+    () => journalDb.getJournalEntitiesForIdsUnordered(any()),
+  ).thenAnswer((invocation) async {
+    final ids = invocation.positionalArguments.first as List<String>;
+    return currentEvalJournal.mapForIds(ids).values.toList();
+  });
+
   when(
     () => journalDb.journalEntityMapForIds(any()),
-  ).thenAnswer(
-    (_) async => {
-      for (final task in scenario.tasksFor(planDate)) task.id: task,
-    },
-  );
+  ).thenAnswer((invocation) async {
+    final ids = invocation.positionalArguments.first as List<String>;
+    return currentEvalJournal.mapForIds(ids);
+  });
+  // Single-id lookup, reached by `apply_triage` and `create_task_from_phrase`
+  // — tools a model is free to call on a drafting wake, and glm-5.2 did.
+  // Without this the harness answers "task <id> not found" for a task the
+  // scenario put in the corpus and the model correctly named, and that lands
+  // on the model as a rejection, corrupting the one constraint that measures
+  // whether it needed correcting.
+  when(
+    () => journalDb.journalEntityById(any()),
+  ).thenAnswer((invocation) async {
+    final id = invocation.positionalArguments.first as String;
+    return currentEvalJournal.byId(id);
+  });
+  // An update that reports success without changing anything leaves the model
+  // reading stale state after its own `apply_triage` — the harness agreeing
+  // out loud and doing nothing.
+  if (journalRepository != null) {
+    when(
+      () => journalRepository.updateJournalEntity(any()),
+    ).thenAnswer((invocation) async {
+      final updated = invocation.positionalArguments.first as JournalEntity;
+      currentEvalJournal.add(updated);
+      return true;
+    });
+  }
 }

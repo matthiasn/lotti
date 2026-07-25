@@ -1,14 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/time_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -18,8 +18,10 @@ import '../../../agents/test_data/ai_config_factories.dart';
 import '../../../ai_consumption/test_utils.dart';
 import '../../integration/scripted_conversation_repository.dart';
 import 'eval_constraints.dart';
+import 'eval_journal_fixture.dart';
 import 'eval_runner.dart';
 import 'eval_scenario.dart';
+import 'eval_test_setup.dart';
 import 'eval_variant.dart';
 
 /// End-to-end coverage of the matrix runner against a **scripted** model, so
@@ -41,14 +43,7 @@ void main() {
 
   setUp(() async {
     attribution = AiInteractionCaptureTestBench.create();
-    await setUpTestGetIt(
-      additionalSetup: () {
-        getIt
-          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-          ..registerSingleton<TimeService>(TimeService());
-        attribution.register();
-      },
-    );
+    await setUpEvalGetIt(attribution);
   });
 
   tearDown(tearDownTestGetIt);
@@ -1083,6 +1078,239 @@ void main() {
       ]);
       expect(calls.first.accepted, isFalse);
       expect(calls.last.accepted, isTrue);
+    });
+  });
+
+  group('the eval journal', () {
+    test('a task created mid-run becomes findable, as it is in the app', () {
+      // DayAgentPlanWriter resolves allowed task references through
+      // journalEntityMapForIds, so a created task that is not stored makes the
+      // pipeline reject a placement the app would accept — handing the model
+      // an id and then denying it exists.
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      final journalDb = MockJournalDb();
+      seedScenarioCorpus(
+        journalDb: journalDb,
+        scenario: scenario,
+        planDate: evalPlanDateFor(scenario, today),
+      );
+
+      expect(currentEvalJournal.byId('task-overdue-invoice'), isNotNull);
+      expect(currentEvalJournal.byId('task-made-later'), isNull);
+
+      currentEvalJournal.add(
+        Task(
+          meta: Metadata(
+            id: 'task-made-later',
+            createdAt: today,
+            updatedAt: today,
+            dateFrom: today,
+            dateTo: today,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(id: 's', createdAt: today, utcOffset: 0),
+            dateFrom: today,
+            dateTo: today,
+            statusHistory: const [],
+            title: 'Made later',
+          ),
+          entryText: const EntryText(plainText: 'Made later'),
+        ),
+      );
+
+      final resolved = currentEvalJournal.mapForIds([
+        'task-overdue-invoice',
+        'task-made-later',
+        'task-never-existed',
+      ]);
+
+      expect(resolved.keys, ['task-overdue-invoice', 'task-made-later']);
+      expect(resolved['task-made-later']?.id, 'task-made-later');
+      expect(
+        (resolved['task-overdue-invoice']! as Task).data.title,
+        'Send the overdue client invoice',
+      );
+      expect(
+        resolved.containsKey('task-never-existed'),
+        isFalse,
+        reason:
+            'an id with nothing behind it must be absent — DayAgentPlanWriter '
+            'reads presence in this map as permission to schedule the task',
+      );
+    });
+
+    test('an update mutates the store instead of only reporting success', () {
+      // apply_triage updates a task through this. A stub that answers true
+      // without changing anything leaves the model reading stale state after
+      // its own write — the harness agreeing out loud and doing nothing.
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      final journalDb = MockJournalDb();
+      final journalRepository = MockJournalRepository();
+      seedScenarioCorpus(
+        journalDb: journalDb,
+        scenario: scenario,
+        planDate: evalPlanDateFor(scenario, today),
+        journalRepository: journalRepository,
+      );
+
+      final original = currentEvalJournal.byId('task-overdue-invoice')! as Task;
+      final renamed = original.copyWith(
+        data: original.data.copyWith(title: 'Renamed by triage'),
+      );
+
+      expect(
+        journalRepository.updateJournalEntity(renamed),
+        completion(isTrue),
+      );
+      expect(
+        (currentEvalJournal.byId('task-overdue-invoice')! as Task).data.title,
+        'Renamed by triage',
+      );
+    });
+
+    test('corpus reads reflect a task the run updated', () {
+      // A model that runs apply_triage and then rechecks pending work must see
+      // what it just changed. Rebuilding the lists from the scenario would
+      // show a task it marked in-progress as untouched, and every later
+      // decision would rest on state the tool said it had changed.
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      final journalDb = MockJournalDb();
+      seedScenarioCorpus(
+        journalDb: journalDb,
+        scenario: scenario,
+        planDate: evalPlanDateFor(scenario, today),
+      );
+
+      expect(
+        journalDb.getInProgressTasks(),
+        completion(hasLength(1)),
+        reason: 'the fixture seeds exactly one in-progress task',
+      );
+
+      final invoice = currentEvalJournal.byId('task-overdue-invoice')! as Task;
+      currentEvalJournal.add(
+        invoice.copyWith(
+          data: invoice.data.copyWith(
+            status: TaskStatus.inProgress(
+              id: 'moved',
+              createdAt: today,
+              utcOffset: 0,
+            ),
+          ),
+        ),
+      );
+
+      expect(journalDb.getInProgressTasks(), completion(hasLength(2)));
+    });
+
+    test('a created task counts even with no capture item behind it', () {
+      // create_task_from_phrase only writes a ParsedItemEntity when the model
+      // passes the optional captureItemId. Reconstructing created ids from
+      // parsed items alone would report legitimate work as fabricated.
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      seedScenarioCorpus(
+        journalDb: MockJournalDb(),
+        scenario: scenario,
+        planDate: evalPlanDateFor(scenario, today),
+      );
+
+      expect(currentEvalJournal.createdIds, isEmpty);
+      currentEvalJournal.addCreated(
+        Task(
+          meta: Metadata(
+            id: 'task-made-no-capture',
+            createdAt: today,
+            updatedAt: today,
+            dateFrom: today,
+            dateTo: today,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(id: 's', createdAt: today, utcOffset: 0),
+            dateFrom: today,
+            dateTo: today,
+            statusHistory: const [],
+            title: 'Made without a capture item',
+          ),
+          entryText: const EntryText(plainText: 'x'),
+        ),
+      );
+
+      expect(currentEvalJournal.createdIds, {'task-made-no-capture'});
+      expect(currentEvalJournal.byId('task-made-no-capture'), isNotNull);
+    });
+
+    test('seeding a cell forgets the previous cell tasks', () {
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      final other = evalScenarios.firstWhere((s) => s.id == 'lateStart');
+      final journalDb = MockJournalDb();
+      seedScenarioCorpus(
+        journalDb: journalDb,
+        scenario: scenario,
+        planDate: evalPlanDateFor(scenario, today),
+      );
+      seedScenarioCorpus(
+        journalDb: journalDb,
+        scenario: other,
+        planDate: evalPlanDateFor(other, today),
+      );
+
+      expect(
+        currentEvalJournal.byId('task-overdue-invoice'),
+        isNull,
+        reason: 'a cell must not see the previous cell task corpus',
+      );
+      expect(currentEvalJournal.byId('task-long-migration'), isNotNull);
+      expect(
+        currentEvalJournal.createdIds,
+        isEmpty,
+        reason: 'created ids must not leak into the next cell either',
+      );
+    });
+  });
+
+  group('evalCreatedTaskIdsFrom', () {
+    test('recovers ids from the parsed items a create tool wrote', () {
+      // The created id is only in the tool-result payload, which the agent log
+      // does not persist — but `create_task_from_phrase` stamps it onto the
+      // parsed item as matchedTaskId, so it is recoverable from real state.
+      AgentDomainEntity parsed({
+        required String id,
+        required ParsedItemKind kind,
+        required String title,
+        String? matchedTaskId,
+      }) => AgentDomainEntity.parsedItem(
+        id: id,
+        agentId: 'agent-1',
+        captureId: 'capture-1',
+        kind: kind,
+        title: title,
+        categoryId: evalDefaultCategoryId,
+        confidence: ParsedItemConfidence.high,
+        confidenceScore: 0.9,
+        createdAt: today,
+        vectorClock: null,
+        matchedTaskId: matchedTaskId,
+      );
+
+      final ids = evalCreatedTaskIdsFrom([
+        parsed(
+          id: 'parsed-1',
+          kind: ParsedItemKind.matched,
+          title: 'Book the venue',
+          matchedTaskId: 'task-created',
+        ),
+        parsed(
+          id: 'parsed-2',
+          kind: ParsedItemKind.newTask,
+          title: 'Something unmatched',
+        ),
+      ]);
+
+      expect(ids, {'task-created'});
+    });
+
+    test('is empty when nothing was parsed', () {
+      expect(evalCreatedTaskIdsFrom(const []), isEmpty);
     });
   });
 

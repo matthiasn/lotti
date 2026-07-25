@@ -52,9 +52,10 @@ import '../services/day_processing_test_db.dart';
 ///
 ///  * `day_agent_durable_jobs_smoke_test.dart` — scripted tool calls, no
 ///    network, runs in the normal unit-test lane.
-///  * `../eval/day_agent_draft_live_eval_test.dart` — the real
-///    [ConversationRepository] + [CloudInferenceRepository] against a live
-///    provider, gated behind `LOTTI_DAY_AGENT_DRAFT_EVAL_LIVE=1`.
+///  * `../eval/framework/eval_runner.dart` — the day-planning eval matrix,
+///    driven either by a scripted repository in the normal lane or, behind
+///    `LOTTI_DAY_PLANNING_EVAL_LIVE=1`, by the real [ConversationRepository]
+///    + [CloudInferenceRepository] against a live provider.
 class DayAgentPipelineHarness {
   DayAgentPipelineHarness._({
     required this.root,
@@ -70,6 +71,7 @@ class DayAgentPipelineHarness {
     required this.realDayAgent,
     required this.dayAgentService,
     required this.planService,
+    required this.journalRepository,
   });
 
   /// Builds the full pipeline. [now] seeds template timestamps; [profile],
@@ -223,6 +225,36 @@ class DayAgentPipelineHarness {
         categoryIds: any(named: 'categoryIds'),
       ),
     ).thenAnswer((_) async => const []);
+    // Reached by `parse_capture_to_items` and `apply_triage`, which a model is
+    // free to call on a drafting wake — the capture/reconcile tools are
+    // offered whenever a capture service is wired. Left unstubbed, mocktail
+    // returns a bare null for a `Future<JournalEntity?>` and the tool call
+    // comes back to the model as "type 'Null' is not a subtype of
+    // type 'Future<JournalEntity?>'". That is a harness defect arriving as a
+    // *rejection*, which is precisely the signal the eval scores prompt
+    // compliance on.
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
+    // `match_to_corpus` is offered to the model, and DayAgentCorpusService
+    // awaits `watchFullTextMatches(...).first` before anything else. An
+    // unstubbed stream getter yields null, and the tool call comes back to the
+    // model as a Dart type error rather than "nothing matched".
+    when(
+      () => fts5Db.watchFullTextMatches(any()),
+    ).thenAnswer((_) => Stream.value(const <String>[]));
+    when(
+      () => journalDb.getJournalEntitiesForIdsUnordered(any()),
+    ).thenAnswer((_) async => const []);
+    when(
+      () => journalDb.journalEntityMapForIds(any()),
+    ).thenAnswer((_) async => const {});
+    // True, not false: `apply_triage` updates a task through this, and a
+    // false answer becomes "failed to update task <id>" handed back to the
+    // model as a correction it did not earn. In the app the update succeeds.
+    when(
+      () => journalRepository.updateJournalEntity(any()),
+    ).thenAnswer((_) async => true);
 
     final planService = DayAgentPlanService(
       agentRepository: agentRepository,
@@ -350,6 +382,7 @@ class DayAgentPipelineHarness {
       realDayAgent: realDayAgent,
       dayAgentService: dayAgentService,
       planService: planService,
+      journalRepository: journalRepository,
     );
   }
 
@@ -370,6 +403,10 @@ class DayAgentPipelineHarness {
   /// [DayPlanEntity] (and its `PlannedBlock`s) through the production read
   /// path rather than reaching into the repository.
   final DayAgentPlanService planService;
+
+  /// Journal writer, exposed so a caller that maintains its own task store can
+  /// make updates actually mutate it — the default stub only reports success.
+  final MockJournalRepository journalRepository;
 
   /// Stops the runtime/orchestrator, closes the outbox, and deletes the
   /// temp directory backing it.

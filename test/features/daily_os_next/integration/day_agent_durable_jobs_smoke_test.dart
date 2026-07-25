@@ -28,7 +28,7 @@ import 'scripted_conversation_repository.dart';
 /// normal unit-test lane: it proves the new outbox → runtime → executor →
 /// orchestrator → workflow → plan-service → outbox-completion round trip
 /// genuinely works, not just that each link passes its own mocked unit
-/// test. (The `eval/day_agent_draft_live_eval_test.dart` variant runs the
+/// test. (The `eval/day_planning_eval_live_test.dart` matrix runs the
 /// same chain against a real model.)
 void main() {
   setUpAll(registerAllFallbackValues);
