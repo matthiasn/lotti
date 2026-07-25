@@ -1569,6 +1569,57 @@ void main() {
       expect(result.detail, contains('escalated'));
     });
 
+    test('an escalation naming the casualty is not silence', () {
+      // From the first live run: glm-5.2 raised attentionNeeded with reason
+      // `overCommitted` and a note reading "Cannot fit: interviews (120 min)".
+      // Scoring that as SILENTLY DROPPED called the one thing it demonstrably
+      // was not. The reason-label gap is real but far weaker, so it is
+      // reported in the detail rather than failed.
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['overCommitted'],
+                'note': 'Cannot fit: Run the weekly 1:1s (90 min).',
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('not under the directiveUnsatisfiable'));
+    });
+
+    test('an escalation that names nothing is still silence', () {
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['overCommitted'],
+                'note': 'The day is quite full.',
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('commit-1-1s'));
+    });
+
     test('a rejected or unrelated escalation does not answer for anything', () {
       for (final call in const [
         EvalToolCall(

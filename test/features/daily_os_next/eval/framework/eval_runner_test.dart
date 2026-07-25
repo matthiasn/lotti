@@ -6,9 +6,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/time_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -20,6 +17,7 @@ import '../../integration/scripted_conversation_repository.dart';
 import 'eval_constraints.dart';
 import 'eval_runner.dart';
 import 'eval_scenario.dart';
+import 'eval_test_setup.dart';
 import 'eval_variant.dart';
 
 /// End-to-end coverage of the matrix runner against a **scripted** model, so
@@ -41,14 +39,7 @@ void main() {
 
   setUp(() async {
     attribution = AiInteractionCaptureTestBench.create();
-    await setUpTestGetIt(
-      additionalSetup: () {
-        getIt
-          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-          ..registerSingleton<TimeService>(TimeService());
-        attribution.register();
-      },
-    );
+    await setUpEvalGetIt(attribution);
   });
 
   tearDown(tearDownTestGetIt);

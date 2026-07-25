@@ -224,6 +224,23 @@ class DayAgentPipelineHarness {
         categoryIds: any(named: 'categoryIds'),
       ),
     ).thenAnswer((_) async => const []);
+    // Reached by `parse_capture_to_items` and `apply_triage`, which a model is
+    // free to call on a drafting wake — the capture/reconcile tools are
+    // offered whenever a capture service is wired. Left unstubbed, mocktail
+    // returns a bare null for a `Future<JournalEntity?>` and the tool call
+    // comes back to the model as "type 'Null' is not a subtype of
+    // type 'Future<JournalEntity?>'". That is a harness defect arriving as a
+    // *rejection*, which is precisely the signal the eval scores prompt
+    // compliance on.
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => journalDb.journalEntityMapForIds(any()),
+    ).thenAnswer((_) async => const {});
+    when(
+      () => journalRepository.updateJournalEntity(any()),
+    ).thenAnswer((_) async => false);
 
     final planService = DayAgentPlanService(
       agentRepository: agentRepository,

@@ -722,17 +722,32 @@ EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
       'the wake was given no directive',
     );
   }
-  final escalated = outcome.toolCalls.any(
-    (call) =>
-        call.accepted &&
-        call.name.contains('raise_day_status') &&
-        call.arguments['status'] == 'attentionNeeded' &&
-        switch (call.arguments['reasons']) {
-          final List<Object?> list =>
-            list.map((r) => '$r').contains('directiveUnsatisfiable'),
-          _ => false,
-        },
+  // Escalations that reached the user, with the reason enum and the note kept
+  // apart. The first live run produced the case that matters: glm-5.2 raised
+  // `attentionNeeded` with reason `overCommitted` and a note reading "Cannot
+  // fit: interviews (120 min)" — naming the exact casualty. Requiring the
+  // enum to be `directiveUnsatisfiable` scored that as SILENTLY DROPPED,
+  // which is the one thing it demonstrably was not. Silence is the failure
+  // this constraint exists to catch; using a different-but-true reason label
+  // is a separate, much weaker observation, so it is reported rather than
+  // failed.
+  final escalations = [
+    for (final call in outcome.toolCalls)
+      if (call.accepted &&
+          call.name.contains('raise_day_status') &&
+          call.arguments['status'] == 'attentionNeeded')
+        call,
+  ];
+  final escalatedAsDirective = escalations.any(
+    (call) => switch (call.arguments['reasons']) {
+      final List<Object?> list =>
+        list.map((r) => '$r').contains('directiveUnsatisfiable'),
+      _ => false,
+    },
   );
+  final escalationProse = [
+    for (final call in escalations) '${call.arguments['note'] ?? ''}',
+  ].join(' ').toLowerCase();
 
   // Prose the model attached to the plan, where a representation names its
   // commitment.
@@ -765,8 +780,13 @@ EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
       dispositions.add('${commitment.id}: represented');
     } else if (named(tradeProse)) {
       dispositions.add('${commitment.id}: traded, naming the collision');
-    } else if (escalated) {
+    } else if (escalatedAsDirective) {
       dispositions.add('${commitment.id}: escalated');
+    } else if (named(escalationProse)) {
+      dispositions.add(
+        '${commitment.id}: escalated by name, though not under the '
+        'directiveUnsatisfiable reason the prompt specifies',
+      );
     } else {
       dispositions.add('${commitment.id}: SILENTLY DROPPED');
       dropped.add(commitment.id);

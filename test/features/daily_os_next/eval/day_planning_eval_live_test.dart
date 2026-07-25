@@ -11,17 +11,14 @@ import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/time_service.dart';
 
 import '../../../helpers/fallbacks.dart';
-import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 import 'framework/eval_report.dart';
 import 'framework/eval_runner.dart';
 import 'framework/eval_scenario.dart';
+import 'framework/eval_test_setup.dart';
 import 'framework/eval_variant.dart';
 
 /// Runs the day-planning matrix against real inference providers and writes a
@@ -89,14 +86,7 @@ void main() {
       }
 
       final attribution = AiInteractionCaptureTestBench.create();
-      await setUpTestGetIt(
-        additionalSetup: () {
-          getIt
-            ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-            ..registerSingleton<TimeService>(TimeService());
-          attribution.register();
-        },
-      );
+      await setUpEvalGetIt(attribution);
       addTearDown(tearDownTestGetIt);
       // The test binding installs a mock HttpOverrides whose client instantly
       // fails every request with HTTP 400 — clear it so the eval can reach a
