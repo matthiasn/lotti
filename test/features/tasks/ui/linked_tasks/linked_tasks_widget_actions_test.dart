@@ -69,6 +69,8 @@ void main() {
     bool manageMode = false,
     MediaQueryData? mediaQueryData,
     List<Override> extraOverrides = const [],
+    double? width,
+    Locale? locale,
   }) async {
     final journalRepo = MockJournalRepository();
     when(
@@ -139,8 +141,19 @@ void main() {
           ...extraOverrides,
         ],
         child: WidgetTestBench(
+          locale: locale,
           mediaQueryData: mediaQueryData,
-          child: const LinkedTasksWidget(taskId: 'task-main'),
+          // Align, not a bare SizedBox: the bench hands its child tight
+          // constraints, so a width set any other way is silently ignored.
+          child: width == null
+              ? const LinkedTasksWidget(taskId: 'task-main')
+              : Align(
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: width,
+                    child: const LinkedTasksWidget(taskId: 'task-main'),
+                  ),
+                ),
         ),
       ),
     );
@@ -577,6 +590,26 @@ void main() {
     );
 
     testWidgets(
+      "the empty card's create row opens the flow — it is the screen with "
+      'no links, so this action has no other worded entry point',
+      (tester) async {
+        stubCreateTaskEntry(null);
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [],
+          extraOverrides: createFlowOverrides(parentCategoryId: null),
+        );
+
+        await tester.tap(find.text('Create new linked task…'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(DesignSystemDropdown), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'relationship picker modal defaults to "Link", and dismissing it '
       'without confirming does not create a task',
       (tester) async {
@@ -621,6 +654,52 @@ void main() {
     );
 
     testWidgets(
+      'a rejected NON-blocking link on the create path says so plainly — the '
+      'cycle guard cannot reject a duplicates edge, so naming a cycle would '
+      'state a cause that cannot apply',
+      (tester) async {
+        stubCreateTaskEntry(buildTask(id: 'new-task', title: 'New'));
+
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          extraOverrides: createFlowOverrides(parentCategoryId: null),
+        );
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: EntryLinkType.duplicates,
+          ),
+        ).thenAnswer((_) async => false);
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Create new linked task…'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await pickRelation(tester, 'Duplicates');
+        await tester.tap(find.text('Create'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.text("Couldn't create the link. Please try again."),
+          findsWidgets,
+        );
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
       'a rejected typed link leaves the auto-created plain link in place, so '
       'the new task is never left unlinked',
       (tester) async {
@@ -660,6 +739,17 @@ void main() {
         await tester.tap(find.text('Create'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
+
+        // ...and the user is told why the relationship they asked for is not
+        // there. A blocks edge is the one thing the cycle guard can reject,
+        // so this case names the cycle rather than offering a retry that
+        // cannot end differently.
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsWidgets,
+        );
 
         // The BasicLink createTask made must survive, or the new task would
         // have no link back to its parent at all.
@@ -936,6 +1026,54 @@ void main() {
             swapDirection: false,
           ),
         ).called(1);
+      },
+    );
+
+    testWidgets(
+      'manage mode reaches the link picker through the overflow — its header '
+      'slot is taken by Done',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          manageMode: true,
+        );
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Link existing task…'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('Link existing task'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a locale whose label will not fit still reaches the link picker — the '
+      'action drops its word, not its function',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          width: 357,
+          locale: const Locale('de'),
+        );
+
+        // Icon-only in German: the worded button would truncate the card name.
+        expect(
+          find.widgetWithText(DesignSystemButton, 'Verknüpfen'),
+          findsNothing,
+        );
+
+        await tester.tap(find.byIcon(Icons.add_link));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DesignSystemDropdown), findsWidgets);
       },
     );
   });

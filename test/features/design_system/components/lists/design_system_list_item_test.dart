@@ -135,6 +135,28 @@ void main() {
       expect(richText.overflow, TextOverflow.ellipsis);
     });
 
+    testWidgets(
+      'subtitleEmphasis overrides the ink on the subtitleSpans path too — the '
+      'two subtitle paths must not disagree about which parameter wins',
+      (tester) async {
+        await _pumpListItem(
+          tester,
+          const DesignSystemListItem(
+            title: 'Title',
+            subtitleSpans: [TextSpan(text: 'inline')],
+            subtitleEmphasis: Color(0xFF00FF00),
+          ),
+        );
+
+        final richText = tester.widget<RichText>(
+          find.byWidgetPredicate(
+            (w) => w is RichText && w.text.toPlainText().contains('inline'),
+          ),
+        );
+        expect(richText.text.style?.color, const Color(0xFF00FF00));
+      },
+    );
+
     testWidgets('renders custom title content and metadata spans', (
       tester,
     ) async {
