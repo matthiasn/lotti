@@ -78,9 +78,10 @@ class _VersionHistorySection extends ConsumerWidget {
         ),
         const SizedBox(height: AppTheme.spacingSmall),
         historyAsync.when(
-          // Any agent change reloads this list (the provider watches the shared
-          // agent topic), so it has to survive the reload in place rather than
-          // collapsing to a spinner and back.
+          // Soul entities carry `agentId: soulId`, so every soul write lands a
+          // notification containing this soul's id and reloads the list under
+          // the reader. It has to survive that in place rather than collapsing
+          // to a spinner and back.
           skipLoadingOnReload: true,
           skipLoadingOnRefresh: true,
           skipError: true,
@@ -234,8 +235,9 @@ class _SoulEvolutionHistorySection extends ConsumerWidget {
         ),
         const SizedBox(height: AppTheme.spacingSmall),
         historyAsync.when(
-          // A finished ritual session reloads this list; keep the rendered
-          // history rather than flashing a spinner where it was.
+          // Same trigger: a finished ritual session writes soul entities, which
+          // reloads this list. Keep the rendered history rather than flashing a
+          // spinner where it was.
           skipLoadingOnReload: true,
           skipLoadingOnRefresh: true,
           skipError: true,

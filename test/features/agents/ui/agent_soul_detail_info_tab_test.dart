@@ -97,7 +97,7 @@ void main() {
             ) {
               // Mirrors the real provider's dependency, which is what makes a
               // stream emission a reload rather than a refresh.
-              ref.watch(agentUpdateStreamProvider(agentNotification));
+              ref.watch(agentUpdateStreamProvider(_soulId));
               builds++;
               if (builds == 1) {
                 return Future.value(const <RitualSessionHistoryEntry>[]);
@@ -115,10 +115,10 @@ void main() {
       await tester.pump();
       expect(find.text(_noSessions), findsOneWidget);
 
-      // The shape production actually emits. Nothing ever puts a soul id in a
-      // notification set, which is why the provider had to start watching the
-      // shared topic.
-      updates.add({'agent-7', agentNotification});
+      // Production shape. Soul entities carry `agentId: soulId`, so the sync
+      // handler's `{resolvedEntity.agentId, agentNotification}` is exactly
+      // this set.
+      updates.add({_soulId, agentNotification});
       // Two pumps: the first lets the reload propagate, the second lets the
       // widget rebuild with the resulting state. Asserting after only one
       // reads the previous frame and passes whatever the widget would do.
@@ -158,7 +158,7 @@ void main() {
               ref,
               soulId,
             ) {
-              ref.watch(agentUpdateStreamProvider(agentNotification));
+              ref.watch(agentUpdateStreamProvider(_soulId));
               builds++;
               if (builds == 1) return Future.value(const <AgentDomainEntity>[]);
               return reload.future;
@@ -172,10 +172,10 @@ void main() {
       await tester.pump();
       expect(find.text(_noVersions), findsOneWidget);
 
-      // The shape production actually emits. Nothing ever puts a soul id in a
-      // notification set, which is why the provider had to start watching the
-      // shared topic.
-      updates.add({'agent-7', agentNotification});
+      // Production shape. Soul entities carry `agentId: soulId`, so the sync
+      // handler's `{resolvedEntity.agentId, agentNotification}` is exactly
+      // this set.
+      updates.add({_soulId, agentNotification});
       await tester.pump();
       await tester.pump();
 

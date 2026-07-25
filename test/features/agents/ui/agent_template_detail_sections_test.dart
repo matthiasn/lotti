@@ -65,9 +65,9 @@ void main() {
             (ref, id) => updates.stream.where((ids) => ids.contains(id)),
           ),
           templateRecentReportsProvider.overrideWith((ref, templateId) {
-            // Mirrors the real provider's dependency, which is what makes a
-            // stream emission a reload rather than a refresh.
-            ref.watch(agentUpdateStreamProvider(agentNotification));
+            // The id the real provider watches — no injected dependency, or
+            // the test would prove a wiring production does not have.
+            ref.watch(agentUpdateStreamProvider(_templateId));
             builds++;
             if (builds == 1) return Future.value(const <AgentDomainEntity>[]);
             return reload.future;
@@ -80,10 +80,10 @@ void main() {
       await tester.pump();
       expect(find.text(_reportsEmpty), findsOneWidget);
 
-      // The shape production actually emits: the *agent* id plus the shared
-      // topic. A report landing never carries the template id, which is why
-      // the provider had to start watching the topic.
-      updates.add({'agent-7', agentNotification});
+      // Production shape: the id the entity carries plus the shared topic.
+      // Agent initialization, template evolution and synced token usage all
+      // put the template id in the set this way.
+      updates.add({_templateId, agentNotification});
       // Two pumps: the first lets the reload propagate, the second lets the
       // widget rebuild with the resulting state. Asserting after only one
       // reads the previous frame and passes whatever the widget would do.
@@ -120,7 +120,7 @@ void main() {
             (ref, id) => updates.stream.where((ids) => ids.contains(id)),
           ),
           templateRecentReportsProvider.overrideWith((ref, templateId) {
-            ref.watch(agentUpdateStreamProvider(agentNotification));
+            ref.watch(agentUpdateStreamProvider(_templateId));
             builds++;
             if (builds == 1) return Future.value(const <AgentDomainEntity>[]);
             return Future<List<AgentDomainEntity>>.error(
@@ -135,7 +135,7 @@ void main() {
       await tester.pump();
       expect(find.text(_reportsEmpty), findsOneWidget);
 
-      updates.add({'agent-7', agentNotification});
+      updates.add({_templateId, agentNotification});
       await tester.pump();
       await tester.pump();
 

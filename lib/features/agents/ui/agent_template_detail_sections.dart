@@ -44,8 +44,10 @@ class _VersionHistorySection extends ConsumerWidget {
         ),
         const SizedBox(height: AppTheme.spacingSmall),
         historyAsync.when(
-          // templateVersionHistory now watches the shared agent topic, so any
-          // agent change reloads it while the user is reading this list.
+          // Defensive here, unlike the sites below: templateVersionHistory
+          // watches only a service, so nothing reloads it today. Its soul-side
+          // twin does watch an update stream, which puts this section one line
+          // from the same behaviour — the guard goes in before that, not after.
           skipLoadingOnReload: true,
           skipLoadingOnRefresh: true,
           skipError: true,
@@ -258,8 +260,11 @@ class ReportsTabContent extends ConsumerWidget {
     final reportsAsync = ref.watch(templateRecentReportsProvider(templateId));
 
     return reportsAsync.when(
-      // Reports arrive in the background and reload this list; keep it on
-      // screen through the reload rather than flashing a spinner in its place.
+      // This list reloads while the user is reading it — agent initialization,
+      // template evolution and synced token usage all put the template id in a
+      // notification set. Keep it on screen through the reload rather than
+      // flashing a spinner in its place. (A report *landing* does not reload
+      // it at all; see the staleness note in the agents README.)
       skipLoadingOnReload: true,
       skipLoadingOnRefresh: true,
       skipError: true,

@@ -4,7 +4,6 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/services/db_notification.dart';
 
 /// List all non-deleted soul documents.
 ///
@@ -33,11 +32,7 @@ Future<AgentDomainEntity?> soulDocument(
   Ref ref,
   String soulId,
 ) async {
-  // Nothing ever emits a soul id in a notification set, so the shared topic
-  // is what actually reloads this; the soul id is kept for the day one does.
-  ref
-    ..watch(agentUpdateStreamProvider(soulId))
-    ..watch(agentUpdateStreamProvider(agentNotification));
+  ref.watch(agentUpdateStreamProvider(soulId));
   final service = ref.watch(soulDocumentServiceProvider);
   return service.getSoul(soulId);
 }
@@ -121,11 +116,7 @@ Future<List<AgentDomainEntity>> soulEvolutionSessions(
   Ref ref,
   String soulId,
 ) async {
-  // As above: soul ids never appear in notification sets, so without the
-  // shared topic a finished ritual session never reaches this list.
-  ref
-    ..watch(agentUpdateStreamProvider(soulId))
-    ..watch(agentUpdateStreamProvider(agentNotification));
+  ref.watch(agentUpdateStreamProvider(soulId));
   final templateService = ref.watch(agentTemplateServiceProvider);
   return templateService.getEvolutionSessions(soulId, limit: 100);
 }
