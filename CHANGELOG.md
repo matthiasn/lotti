@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1069]
 ### Fixed
+- **Accepting a task suggestion no longer jumps the page.** Checklist
+  suggestions already stayed put, but the others did not. Accepting a due-date,
+  language, priority, label or estimate suggestion while you had scrolled past
+  the assistant card yanked whatever you were reading upwards, because the
+  accepted row's card shrinks as it collapses and nothing was holding the
+  content below it in place. Accepting a follow-up task moved the page too, and
+  could move it again seconds later when the new task finally appeared in the
+  linked-tasks list. All of these now hold their position, and scrolling still
+  cancels the hold immediately so nothing ever fights you.
 - **Deleting a bundled AI profile or model now sticks on every device.**
   Deletions were remembered only on the device where you made them, so a second
   device could re-create the profile and sync it back. The deletion now travels

@@ -17,23 +17,57 @@ import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.da
 /// [Task], stacks (top to bottom): the [DesktopTaskHeaderConnector] header,
 /// an [EditorWidget] for legacy entries that already contain rich text, the
 /// [ChecklistsWidget], the [LinkedTasksWidget], and the [AiSummaryCard] (whose
-/// proposals can be scrolled into view via [suggestionsFocusKey]). Header and
-/// checklist geometry are reported to the task page's pre-paint scroll
-/// stabilizer: confirmed agent proposals can grow either region above the AI
-/// card (title/label/due-date/priority/status chips in the header, items in
-/// the checklist), and an unreported change there would displace the
-/// proposals under the user's pointer for a frame before the fallback anchor
-/// snaps them back. Renders nothing until the entry loads as a task.
+/// proposals can be scrolled into view via [suggestionsFocusKey]).
+///
+/// Every band a confirmed agent proposal can resize reports its geometry to
+/// the task page's pre-paint scroll stabilizer, because an unreported change
+/// displaces the proposals under the user's pointer for a frame before the
+/// fallback anchor snaps them back:
+///
+/// * **header** — title, label, due-date, priority, estimate and status chips
+/// * **checklist** — items added, checked off, archived or migrated
+/// * **linked tasks** — `create_follow_up_task` links a new task here, and the
+///   first link is a large step: two tall empty-state actions plus a divider
+///   give way to one compact row while the card header gains a chevron, count
+///   badge and Link button
+/// * **AI card**, off-screen only — every accepted proposal collapses its row
+///   and so shrinks the card. While the card is visible that collapse is the
+///   reflow the user is watching and must not move the page; once the card has
+///   scrolled above the viewport the same shrink drags the linked entries the
+///   user *is* reading upwards, so the page arms
+///   [ViewportStableScrollController.hold]'s `includeOffscreenRegions` and this
+///   band's delta is absorbed instead.
+///
+/// The legacy body band is deliberately not reported: no agent tool writes the
+/// task's own `entryText`, and [EditorWidget] changes height on focus and while
+/// typing, which an armed hold would consume as a scroll correction.
+///
+/// Each reporter carries a distinct, task-scoped key. [StaggeredEntrance] maps
+/// its children through `flutter_animate`, which does not forward their keys,
+/// so the children are matched positionally — without distinct keys, toggling
+/// the body band would let one band's render object (and its measured height
+/// baseline) be reused for another and emit a bogus delta.
+///
+/// Renders nothing until the entry loads as a task.
 class TaskForm extends ConsumerWidget {
   const TaskForm({
     required this.taskId,
     this.suggestionsFocusKey,
+    this.cardRegionKey,
     this.onSuggestionResolveStart,
     super.key,
   });
 
   final String taskId;
   final GlobalKey? suggestionsFocusKey;
+
+  /// Marks the AI card band so the page can measure where it sits relative to
+  /// the viewport. Deliberately the reporter's own child, so the page's
+  /// off-screen predicate and this band's reporting can never disagree: the
+  /// seam below the card sits a further `step5 + step5` lower, and in that gap
+  /// the card is already out of sight while the seam is not.
+  final GlobalKey? cardRegionKey;
+
   final VoidCallback? onSuggestionResolveStart;
 
   @override
@@ -87,22 +121,31 @@ class TaskForm extends ConsumerWidget {
           key: ValueKey('checklist-size-reporter-$taskId'),
           child: ChecklistsWidget(entryId: taskId, task: task),
         ),
-        LinkedTasksWidget(taskId: taskId),
-        Padding(
-          // The AI zone sits a notch below the work above it, but only a
-          // notch: LinkedTasks already adds its own step3 bottom padding, so a
-          // full sectionGap on top stacked into an oversized gap. A step4 top
-          // keeps the rhythm even with the other section gaps, and a sectionGap
-          // BOTTOM gives the card real breathing room above the action bar
-          // (the linked-entries sliver below contributes almost none).
-          padding: EdgeInsets.only(
-            top: tokens.spacing.step4,
-            bottom: tokens.spacing.step5,
-          ),
-          child: AiSummaryCard(
-            taskId: taskId,
-            proposalsFocusKey: suggestionsFocusKey,
-            onSuggestionResolveStart: onSuggestionResolveStart,
+        ViewportStableSizeReporter(
+          key: ValueKey('linked-tasks-size-reporter-$taskId'),
+          child: LinkedTasksWidget(taskId: taskId),
+        ),
+        ViewportStableSizeReporter(
+          key: ValueKey('ai-card-size-reporter-$taskId'),
+          offscreenOnly: true,
+          child: Padding(
+            key: cardRegionKey,
+            // The AI zone sits a notch below the work above it, but only a
+            // notch: LinkedTasks already adds its own step3 bottom padding, so
+            // a full sectionGap on top stacked into an oversized gap. A step4
+            // top keeps the rhythm even with the other section gaps, and a
+            // sectionGap BOTTOM gives the card real breathing room above the
+            // action bar (the linked-entries sliver below contributes almost
+            // none).
+            padding: EdgeInsets.only(
+              top: tokens.spacing.step4,
+              bottom: tokens.spacing.step5,
+            ),
+            child: AiSummaryCard(
+              taskId: taskId,
+              proposalsFocusKey: suggestionsFocusKey,
+              onSuggestionResolveStart: onSuggestionResolveStart,
+            ),
           ),
         ),
       ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -91,6 +92,7 @@ void main() {
     required Task task,
     AgentDomainEntity? agent,
     AgentDomainEntity? report,
+    GlobalKey? cardRegionKey,
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
@@ -114,8 +116,20 @@ void main() {
         ),
       ],
       child: SingleChildScrollView(
-        child: TaskForm(taskId: task.meta.id),
+        child: TaskForm(taskId: task.meta.id, cardRegionKey: cardRegionKey),
       ),
+    );
+  }
+
+  /// The reporter wrapping [of], or fails the lookup if the band is unreported.
+  ViewportStableSizeReporter reporterFor(
+    WidgetTester tester,
+    Finder of,
+  ) {
+    return tester.widget<ViewportStableSizeReporter>(
+      find
+          .ancestor(of: of, matching: find.byType(ViewportStableSizeReporter))
+          .first,
     );
   }
 
@@ -162,6 +176,112 @@ void main() {
           matching: find.byType(ViewportStableSizeReporter),
         ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'reports the linked-tasks band, which a confirmed follow-up task '
+      'resizes above the AI card',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(task: testTask));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.ancestor(
+            of: find.byType(LinkedTasksWidget),
+            matching: find.byType(ViewportStableSizeReporter),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'reports the AI card band only while it is off-screen, and the bands '
+      'above it always',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(task: testTask));
+        await tester.pumpAndSettle();
+
+        // The card's own collapse must move the page only when the user
+        // cannot see it; a visible collapse is the reflow they are watching.
+        expect(
+          reporterFor(tester, find.byType(AiSummaryCard)).offscreenOnly,
+          isTrue,
+        );
+        // Everything above the card is compensated unconditionally: it moves
+        // the card itself, which is what the hold exists to keep still.
+        for (final band in [
+          find.byType(DesktopTaskHeaderConnector),
+          find.byType(ChecklistsWidget),
+          find.byType(LinkedTasksWidget),
+        ]) {
+          expect(reporterFor(tester, band).offscreenOnly, isFalse);
+        }
+      },
+    );
+
+    testWidgets(
+      'gives every reported band a distinct task-scoped key, with and without '
+      'the legacy body band',
+      (tester) async {
+        // StaggeredEntrance maps children through flutter_animate, which drops
+        // their keys, so the Column matches children positionally. Toggling the
+        // body band shifts every band below it by one slot; without distinct
+        // keys a reporter's measured height baseline would be reused for a
+        // different band and emit a bogus delta on the next layout.
+        for (final task in [
+          testTask,
+          testTask.copyWith(
+            entryText: const EntryText(plainText: 'legacy body text'),
+          ),
+        ]) {
+          await tester.pumpWidget(buildSubject(task: task));
+          await tester.pumpAndSettle();
+
+          final keys = tester
+              .widgetList<ViewportStableSizeReporter>(
+                find.byType(ViewportStableSizeReporter),
+              )
+              .map((reporter) => reporter.key)
+              .toList();
+
+          // Header, checklist, linked tasks, AI card.
+          expect(keys, hasLength(4));
+          expect(keys.toSet(), hasLength(keys.length));
+          for (final key in keys) {
+            expect(key, isA<ValueKey<String>>());
+            expect((key! as ValueKey<String>).value, contains(task.meta.id));
+          }
+        }
+      },
+    );
+
+    testWidgets('exposes the AI card band through cardRegionKey', (
+      tester,
+    ) async {
+      // The page measures this box, not the seam below the card: the seam sits
+      // a further step5 + step5 lower, and in that gap the card is already out
+      // of sight while the seam is not — so a predicate measured there would
+      // disagree with the band that reports under it.
+      final cardRegionKey = GlobalKey(debugLabel: 'card-region');
+      await tester.pumpWidget(
+        buildSubject(task: testTask, cardRegionKey: cardRegionKey),
+      );
+      await tester.pumpAndSettle();
+
+      expect(cardRegionKey.currentContext, isNotNull);
+      final band =
+          cardRegionKey.currentContext!.findRenderObject()! as RenderBox;
+      final reporter = find
+          .ancestor(
+            of: find.byType(AiSummaryCard),
+            matching: find.byType(ViewportStableSizeReporter),
+          )
+          .first;
+      expect(
+        band.localToGlobal(Offset(0, band.size.height)).dy,
+        closeTo(tester.getRect(reporter).bottom, 0.1),
       );
     });
 

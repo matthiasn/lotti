@@ -9,10 +9,12 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
@@ -64,9 +66,14 @@ void main() {
   ///   needs none of these.
   /// * [watchConfigPrivate] — when true, `watchConfigFlags` emits the `private`
   ///   flag; the null group emits an empty set.
+  /// * [linkedEntities] — entities `getLinkedEntities` resolves to (defaults to
+  ///   one text entry). The off-screen-card tests pass several so the sliver
+  ///   below the AI card is tall enough to scroll the card past the viewport
+  ///   top.
   Future<void> registerTaskDetailsServices({
     List<MeasurableDataType>? measurables,
     List<CategoryDefinition>? categories,
+    List<JournalEntity>? linkedEntities,
     bool stubTaskEntity = true,
     bool stubLinkedAndMeasurements = true,
     bool watchConfigPrivate = true,
@@ -143,7 +150,7 @@ void main() {
       when(
         () => mockJournalDb.getLinkedEntities(testTask.meta.id),
       ).thenAnswer(
-        (_) async => [testTextEntry],
+        (_) async => linkedEntities ?? [testTextEntry],
       );
       when(
         () => mockJournalDb.getMeasurementsByType(
@@ -593,6 +600,311 @@ void main() {
         expect(find.byType(ProposalRow), findsNWidgets(2));
         expect(position.pixels, offsetBefore);
 
+        container.dispose();
+      },
+    );
+  });
+
+  group('TaskDetailsPage Off-screen Card Anchor - ', () {
+    // Every accepted proposal collapses its row and shrinks the AI card. While
+    // the card is visible that collapse is the reflow the user is watching;
+    // once the card has scrolled above the viewport it instead drags the
+    // linked entries the user *is* reading upwards. The proposals anchor is
+    // structurally blind to it — a row collapsing inside the proposals section
+    // does not move the section's top — so the card band reports its own
+    // shrink and the below-card anchor replaces the proposals anchor.
+    setUpAll(() {
+      registerTaskDetailsFallbacks();
+      registerAllFallbackValues();
+    });
+    setUp(
+      () => registerTaskDetailsServices(
+        // Enough below the card that it can scroll fully past the viewport top.
+        linkedEntities: [
+          for (var i = 0; i < 8; i++)
+            testTextEntry.copyWith(
+              meta: testTextEntry.meta.copyWith(id: 'linked-entry-$i'),
+            ),
+        ],
+      ),
+    );
+    tearDown(getIt.reset);
+
+    ScrollPosition scrollPositionOf(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find
+              .descendant(
+                of: find.byType(CustomScrollView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        )
+        .position;
+
+    /// Pumps the page, scrolls until the AI card sits fully above the viewport
+    /// top, and returns the scroll position. Fails loudly when the scenario
+    /// cannot be reached, so the test can never silently assert nothing.
+    Future<ScrollPosition> scrollCardOffScreen(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final position = scrollPositionOf(tester);
+      final viewportTop = tester.getRect(find.byType(CustomScrollView)).top;
+      // skipOffstage: false — a sliver scrolled past the viewport is offstage,
+      // and the default finder would report it as absent rather than measuring
+      // it. It is still laid out, which is exactly why its height changes still
+      // move the content below it.
+      final card = find.byType(AiSummaryCard, skipOffstage: false);
+      // Past the top by more than the band's trailing padding: the page
+      // measures the whole reported band (card plus its bottom padding), not
+      // just the card, so clearing the card alone leaves the predicate false.
+      position.jumpTo(
+        position.pixels + (tester.getRect(card).bottom - viewportTop) + 40,
+      );
+      await tester.pump();
+
+      expect(
+        tester.getRect(card).bottom,
+        lessThan(viewportTop),
+        reason: 'the card never scrolled above the viewport top',
+      );
+      return position;
+    }
+
+    for (final scenario in [
+      (
+        // The pure card-collapse case: nothing above the card changes, so the
+        // proposals anchor provably is not what keeps this stable.
+        tool: 'set_task_language',
+      ),
+      (
+        // A header delta and the card shrink compose into one correction.
+        tool: 'update_task_estimate',
+      ),
+      (
+        // Opposite-sign deltas: the checklist grows above while the card
+        // shrinks below.
+        tool: 'add_checklist_item',
+      ),
+    ]) {
+      testWidgets(
+        '${scenario.tool}: resolving with the card above the viewport keeps '
+        'the below-card entries fixed',
+        (tester) async {
+          tester.view.physicalSize = const Size(800, 500);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+
+          final confirmationService = MockChangeSetConfirmationService();
+          late final ProviderContainer container;
+          when(
+            () => confirmationService.confirmItem(any(), any()),
+          ).thenAnswer((_) async {
+            container
+                .read(controllableOpenSuggestionCountProvider.notifier)
+                .set(0);
+            return const ToolExecutionResult(success: true, output: 'ok');
+          });
+
+          container = ProviderContainer(
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              ...hLinkedEntriesOverrides(),
+              ...hControllableSuggestionOverrides(
+                items: hSingleSuggestion(scenario.tool),
+              ),
+              changeSetConfirmationServiceProvider.overrideWith(
+                (ref) => confirmationService,
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+            ),
+          );
+
+          // Confirm the row while the card is still visible, then scroll it
+          // away before the collapse lands — the same shape as tapping and
+          // scrolling on to read the entries below.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byType(ProposalRow), findsOneWidget);
+
+          final position = await scrollCardOffScreen(tester);
+          final entriesTop = tester
+              .getTopLeft(find.byType(LinkedEntriesWithTimer))
+              .dy;
+
+          container
+              .read(controllableOpenSuggestionCountProvider.notifier)
+              .set(
+                0,
+              );
+          for (var frame = 0; frame < 12; frame++) {
+            await tester.pump(const Duration(milliseconds: 50));
+            expect(
+              tester.getTopLeft(find.byType(LinkedEntriesWithTimer)).dy,
+              closeTo(entriesTop, 1),
+              reason: 'below-card entries moved on frame $frame',
+            );
+          }
+
+          expect(tester.takeException(), isNull);
+          expect(position.pixels, isNot(isNaN));
+          container.dispose();
+        },
+      );
+    }
+
+    testWidgets(
+      'a new proposal arriving while the card is above the viewport keeps the '
+      'below-card entries fixed',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 500);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+        container.read(controllableOpenSuggestionCountProvider.notifier).set(1);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+          ),
+        );
+
+        await scrollCardOffScreen(tester);
+        final entriesTop = tester
+            .getTopLeft(find.byType(LinkedEntriesWithTimer))
+            .dy;
+
+        // The growth-side dual: the card grows off-screen, so the visible
+        // content below it must not be pushed down.
+        container.read(controllableOpenSuggestionCountProvider.notifier).set(2);
+        for (var frame = 0; frame < 8; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(
+            tester.getTopLeft(find.byType(LinkedEntriesWithTimer)).dy,
+            closeTo(entriesTop, 1),
+            reason: 'below-card entries moved on frame $frame',
+          );
+        }
+
+        expect(tester.takeException(), isNull);
+        container.dispose();
+      },
+    );
+
+    testWidgets('a user scroll during the resolve window releases the hold', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 500);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final container = ProviderContainer(
+        overrides: [
+          ...hTaskDetailsPageOverrides(),
+          ...hLinkedEntriesOverrides(),
+          ...hControllableSuggestionOverrides(),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+        ),
+      );
+
+      final position = await scrollCardOffScreen(tester);
+
+      // Arm the hold, then scroll deliberately: stabilization must never fight
+      // input, however long its window still had to run.
+      container.read(controllableOpenSuggestionCountProvider.notifier).set(1);
+      await tester.pump();
+      final offsetBefore = position.pixels;
+
+      await tester.drag(
+        find.byType(CustomScrollView),
+        const Offset(0, -120),
+      );
+      await tester.pump();
+
+      expect(position.pixels, greaterThan(offsetBefore));
+      expect(tester.takeException(), isNull);
+      container.dispose();
+    });
+
+    testWidgets(
+      'a linked task appearing long after the resolve window re-arms the hold '
+      'and keeps the proposals in place',
+      (tester) async {
+        // `create_follow_up_task` links its new task only after awaiting agent
+        // content generation, so the linked-tasks band above the card can grow
+        // seconds after the tap — long past the window the resolve armed. The
+        // page watches the band's own count so it re-arms whenever that lands.
+        tester.view.physicalSize = const Size(800, 500);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hLinkedEntriesOverrides(),
+            ...hControllableLinkedTasksOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(TaskDetailsPage(taskId: testTask.id)),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final proposals = find.byType(ProposalsSection);
+        expect(proposals, findsOneWidget);
+        final position = scrollPositionOf(tester);
+        await tester.ensureVisible(proposals);
+        await tester.pump();
+
+        // Well past _suggestionResolveHold, so nothing armed earlier can be
+        // what keeps this stable.
+        await tester.pump(const Duration(seconds: 2));
+        final proposalsTop = tester.getTopLeft(proposals).dy;
+        final offsetBefore = position.pixels;
+
+        container.read(controllableLinkedTaskCountProvider.notifier).set(1);
+        for (var frame = 0; frame < 6; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(
+            tester.getTopLeft(proposals).dy,
+            closeTo(proposalsTop, 1),
+            reason: 'proposals moved on frame $frame',
+          );
+        }
+
+        // The band really did change height above the card — otherwise the
+        // assertion above would hold trivially.
+        expect(position.pixels, isNot(closeTo(offsetBefore, 1)));
+        expect(tester.takeException(), isNull);
         container.dispose();
       },
     );

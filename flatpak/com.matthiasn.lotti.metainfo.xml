@@ -37,6 +37,7 @@
   <releases>
     <release version="0.9.1069" date="2026-07-25">
       <description>
+        <p>Fixed: accepting a task suggestion no longer jumps the page. Checklist suggestions already stayed put, but the others did not. Accepting a due-date, language, priority, label or estimate suggestion while you had scrolled past the assistant card yanked whatever you were reading upwards, because the accepted row's card shrinks as it collapses and nothing was holding the content below it in place. Accepting a follow-up task moved the page too, and could move it again seconds later when the new task finally appeared in the linked-tasks list. All of these now hold their position, and scrolling still cancels the hold immediately so nothing ever fights you.</p>
         <p>Fixed: deleting a bundled AI profile or model now sticks on every device. Deletions were remembered only on the device where you made them, so a second device could re-create the profile and sync it back; the deletion now travels with your other AI settings. Removing a provider still takes its models with it and still restores them if you add that provider again, and re-running onboarding still brings back that provider's bundled profile.</p>
       </description>
     </release>

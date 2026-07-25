@@ -16,6 +16,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart'
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
+import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
@@ -66,6 +67,13 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// keeps the visible content from being shoved down. See
   /// [_holdBelowCardIfCardOffscreen].
   final GlobalKey _belowCardKey = GlobalKey(debugLabel: 'task_below_card');
+
+  /// Marks the AI card band inside [TaskForm] so [_isCardRegionAboveViewport]
+  /// can measure it. Deliberately the band's own box rather than the seam below
+  /// it: the same answer decides both which anchor is armed and whether the
+  /// card band reports its height deltas, and measuring two different edges
+  /// would let those decisions disagree in the gap between them.
+  final GlobalKey _cardRegionKey = GlobalKey(debugLabel: 'task_ai_card_region');
   Timer? _suggestionsRetryTimer;
 
   /// Fallback anchor for above-card changes that do not report their own size
@@ -92,6 +100,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       checklistCompletionFadeDuration +
       const Duration(milliseconds: 200);
   int? _lastOpenSuggestionCount;
+
+  /// Baseline for [_onLinkedTasksChanged], reset alongside
+  /// [_lastOpenSuggestionCount] when the page is reused for another task.
+  int? _lastLinkedTaskCount;
 
   /// The task the [_lastOpenSuggestionCount] belongs to. If this page's state is
   /// reused for a different task (e.g. a master-detail pane), the count is reset
@@ -151,17 +163,54 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     return renderObject.localToGlobal(Offset.zero).dy;
   }
 
-  /// Arms both stabilization layers before proposal persistence begins.
+  /// Arms exactly one stabilization geometry before proposal persistence
+  /// begins.
   ///
-  /// The task header and checklist report their height deltas to
-  /// [_scrollController], which corrects during viewport layout so no
-  /// displaced frame is painted. The post-frame [_suggestionsAnchor] remains a
-  /// fallback for mutations in other task regions above the proposals. The two
-  /// layers cooperate via [CooperativeScrollStabilizer] so neither mistakes
+  /// The bands above the card — header, checklist and linked tasks — always
+  /// report their height deltas to [_scrollController], which corrects during
+  /// viewport layout so no displaced frame is painted. What changes is *which
+  /// point* has to stay still, and that flips when the card leaves the screen:
+  ///
+  /// * **Card visible** — the proposals under the user's pointer must not move,
+  ///   so [_suggestionsAnchor] holds. The card's own collapse is the reflow the
+  ///   user is watching, so the card band stays silent.
+  /// * **Card fully above the viewport** — the user is reading the linked
+  ///   entries below it, and every accepted proposal collapses a row and shrinks
+  ///   the card, dragging that content up. [_suggestionsAnchor] is structurally
+  ///   blind to it, because a row collapsing *inside* the proposals section does
+  ///   not move the section's top. So the card band reports its own shrink for a
+  ///   pre-paint correction, and [_belowCardAnchor] pins the seam below it.
+  ///
+  /// The two anchors are never armed together. They sit either side of the
+  /// change, so the correction that holds one still moves the other by exactly
+  /// that height change — which the other then reads as drift and undoes on the
+  /// next post-frame. Both holding means both jumping, every frame.
+  ///
+  /// The layers cooperate via [CooperativeScrollStabilizer] so neither mistakes
   /// the other's correction for a user scroll and disarms mid-batch.
   void _holdSuggestionsStable() {
-    _scrollController.hold(_suggestionResolveHold);
-    _suggestionsAnchor.hold();
+    final cardOffscreen = _isCardRegionAboveViewport();
+    _scrollController.hold(
+      _suggestionResolveHold,
+      includeOffscreenRegions: cardOffscreen,
+    );
+    if (cardOffscreen) {
+      _suggestionsAnchor.release();
+      _belowCardAnchor.hold(duration: _suggestionResolveHold);
+    } else {
+      _belowCardAnchor.release();
+      _suggestionsAnchor.hold();
+    }
+  }
+
+  /// Drops both count baselines when the page's state is reused for a different
+  /// task (e.g. a master-detail pane), so a previous task's count can't make the
+  /// next task's first emission look like a change and fire an anchor.
+  void _resetCountBaselinesIfTaskChanged() {
+    if (_lastTaskId == widget.taskId) return;
+    _lastTaskId = widget.taskId;
+    _lastOpenSuggestionCount = null;
+    _lastLinkedTaskCount = null;
   }
 
   /// When the open-proposal count drops (a proposal was confirmed/dismissed),
@@ -171,13 +220,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     AsyncValue<UnifiedSuggestionList>? previous,
     AsyncValue<UnifiedSuggestionList> next,
   ) {
-    // Reset the baseline when the page is reused for a different task, so a
-    // previous task's count can't make the next task's first emission look
-    // like a drop and fire the anchor.
-    if (_lastTaskId != widget.taskId) {
-      _lastTaskId = widget.taskId;
-      _lastOpenSuggestionCount = null;
-    }
+    _resetCountBaselinesIfTaskChanged();
     final nextOpen = next.value?.open.length;
     final previousOpen = _lastOpenSuggestionCount;
     if (nextOpen != null) _lastOpenSuggestionCount = nextOpen;
@@ -209,18 +252,82 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     );
   }
 
-  /// Pin the content below the AI card *only* when the card (and the seam just
-  /// below it) has scrolled fully above the viewport top — i.e. the user can't
-  /// see the card grow. A visible / partly-visible card is deliberately left
-  /// alone so its `EnterTransition` reveals the growth in place rather than the
-  /// page scrolling under the user.
-  void _holdBelowCardIfCardOffscreen() {
-    final belowTop = _belowCardViewportTop();
-    final viewportTop = _viewportTopGlobal();
-    if (belowTop == null || viewportTop == null) return;
-    if (belowTop <= viewportTop) {
-      _belowCardAnchor.hold();
+  /// Global-Y of the bottom of the AI card band, or null when it isn't laid
+  /// out. `SliverToBoxAdapter` lays its child out at any scroll offset, so this
+  /// stays valid however far the card has scrolled away.
+  double? _cardRegionBottomGlobal() {
+    final renderObject = _cardRegionKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox ||
+        !renderObject.attached ||
+        !renderObject.hasSize) {
+      return null;
     }
+    return renderObject.localToGlobal(Offset(0, renderObject.size.height)).dy;
+  }
+
+  /// Whether the AI card has scrolled fully above the viewport — the user can't
+  /// see it change size, so its own growth or shrink must not move what they
+  /// *are* looking at.
+  ///
+  /// Measured on the card band rather than the seam below it wherever possible:
+  /// the seam sits a further `step5 + step5` lower, and in that gap the card is
+  /// already out of sight while the seam is not.
+  ///
+  /// Once the card's sliver has scrolled beyond the viewport's cache extent the
+  /// framework drops its subtree, so the band has no render object to measure.
+  /// The seam below it answers the same question then — it is the first content
+  /// that survives — and it disambiguates the other reason the band can be
+  /// missing: a card that has not been reached yet is *below* the viewport, and
+  /// so is its seam. Nothing needs correcting while the band is unmounted (an
+  /// unlaid-out card cannot change height), but the post-frame anchor still has
+  /// to be the below-card one.
+  bool _isCardRegionAboveViewport() {
+    final viewportTop = _viewportTopGlobal();
+    if (viewportTop == null) return false;
+    final cardBottom = _cardRegionBottomGlobal();
+    if (cardBottom != null) return cardBottom <= viewportTop;
+    final belowTop = _belowCardViewportTop();
+    return belowTop != null && belowTop <= viewportTop;
+  }
+
+  /// A new proposal grew the card. Pin the content below it *only* when the
+  /// card has scrolled fully above the viewport top — i.e. the user can't see
+  /// the card grow. A visible / partly-visible card is deliberately left alone
+  /// so its entrance reveals the growth in place rather than the page scrolling
+  /// under the user.
+  ///
+  /// The controller hold is armed alongside the anchor so the card band's own
+  /// growth is corrected pre-paint. Without it the post-frame anchor lags one
+  /// frame behind every frame of the reveal, which reads as jitter rather than
+  /// as a single displacement.
+  void _holdBelowCardIfCardOffscreen() {
+    if (!_isCardRegionAboveViewport()) return;
+    _scrollController.hold(
+      _belowCardGrowthHold,
+      includeOffscreenRegions: true,
+    );
+    _suggestionsAnchor.release();
+    _belowCardAnchor.hold();
+  }
+
+  /// Re-arms stabilization when the linked-tasks band changes height.
+  ///
+  /// `create_follow_up_task` links its new task only *after* awaiting agent
+  /// content generation, so the relayout can land seconds after the tap — long
+  /// past the window [_holdSuggestionsStable] armed at gesture time. Watching
+  /// the band's own count catches it whenever it actually lands, and covers
+  /// user-initiated linking too.
+  void _onLinkedTasksChanged(
+    AsyncValue<TaskLinkGroups>? previous,
+    AsyncValue<TaskLinkGroups> next,
+  ) {
+    _resetCountBaselinesIfTaskChanged();
+    final nextCount = next.value?.totalCount;
+    if (nextCount == null) return;
+    final previousCount = _lastLinkedTaskCount;
+    _lastLinkedTaskCount = nextCount;
+    if (previousCount == null || previousCount == nextCount) return;
+    _holdSuggestionsStable();
   }
 
   GlobalKey _getEntryKey(String entryId) {
@@ -269,6 +376,13 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       ..listen<AsyncValue<UnifiedSuggestionList>>(
         unifiedSuggestionListProvider(widget.taskId),
         _onSuggestionsChanged,
+      )
+      // A confirmed follow-up task links itself only after its agent content
+      // has been generated, so this band can resize long after the resolve
+      // window closed. Re-arm whenever it actually does.
+      ..listen<AsyncValue<TaskLinkGroups>>(
+        taskLinkGroupsControllerProvider(widget.taskId),
+        _onLinkedTasksChanged,
       );
 
     final provider = entryControllerProvider(widget.taskId);
@@ -347,6 +461,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                       child: TaskForm(
                         taskId: widget.taskId,
                         suggestionsFocusKey: _suggestionsKey,
+                        cardRegionKey: _cardRegionKey,
                         onSuggestionResolveStart: _holdSuggestionsStable,
                       ),
                     ),
