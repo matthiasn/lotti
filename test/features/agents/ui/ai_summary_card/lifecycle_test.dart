@@ -292,7 +292,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // The initial scheduled wake shows the countdown + Skip.
-          expect(find.text('Skip'), findsOneWidget);
+          expect(find.text('Skip once'), findsOneWidget);
           expect(find.textContaining('0:30'), findsOneWidget);
 
           // Skip it → _cancelledManually = true → countdown hidden. The
@@ -301,7 +301,7 @@ void main() {
             find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
           );
           await tester.pumpAndSettle();
-          expect(find.text('Skip'), findsNothing);
+          expect(find.text('Skip once'), findsNothing);
           expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
 
           // Reschedule: agentStateProvider re-emits a new nextWakeAt.
@@ -318,7 +318,7 @@ void main() {
           verify(
             () => taskAgentService.cancelScheduledWake(any()),
           ).called(1);
-          expect(find.text('Skip'), findsOneWidget);
+          expect(find.text('Skip once'), findsOneWidget);
           expect(find.textContaining('1:30'), findsOneWidget);
         });
       },

@@ -5,7 +5,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1070]
+### Changed
+- **The AI summary card's update controls read as two clear groups.** "Is this
+  current, and can I refresh it now" sits on the left — a freshness word next
+  to the button that acts on it — and "does it update itself, and when next"
+  sits on the right, where the countdown now belongs to the switch it comes
+  from instead of being stranded on the other side of the card. The manual
+  button is also deliberately quieter than "Confirm all" above it, so the
+  loudest thing on the card is the one that changes your task, not the one
+  that spends tokens.
+- **Cancelling one scheduled update is now "Skip once"**, so it is clear it
+  skips a single run rather than turning automatic updates off.
+- **Model names shorten by dropping whole parts instead of cutting words.**
+  A route that no longer fits now goes "Qwen 3.5 Plus · Alibaba · via
+  Melious.ai" → "Qwen 3.5 Plus · Melious.ai" → "Qwen 3.5 Plus", so the model
+  and the provider stay readable instead of trailing off mid-name.
+
 ### Fixed
+- **The bottom of the card lines up.** Every row in the update section now
+  starts on the same edge, including on a phone and in longer languages, and
+  the card keeps the same bottom margin whether or not the "This report …"
+  line is showing.
 - **Choosing your own model no longer switches off automatic transcription and
   image analysis.** Picking a model by hand for a task's assistant replaced the
   whole AI setup, not just the thinking model, so the category's automatic

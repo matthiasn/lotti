@@ -10027,6 +10027,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Annuleren in afwachting van automatische update';
 
   @override
+  String get taskAgentChangeSetupTooltip => 'AI-instelling wijzigen';
+
+  @override
   String get taskAgentChooseModel => 'Kies een denkmodel';
 
   @override
@@ -10173,7 +10176,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskAgentSetupTitle => 'Agent setup';
 
   @override
-  String get taskAgentSkipScheduledUpdate => 'Overslaan';
+  String get taskAgentSkipScheduledUpdate => 'Eén keer overslaan';
 
   @override
   String get taskAgentStatusOutOfDate => 'Verouderd';

@@ -10177,6 +10177,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Anulați actualizarea automată în așteptare';
 
   @override
+  String get taskAgentChangeSetupTooltip => 'Modificați configurația AI';
+
+  @override
   String get taskAgentChooseModel => 'Alegeți un model de raționament';
 
   @override
@@ -10324,7 +10327,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentSetupTitle => 'Configurarea agentului';
 
   @override
-  String get taskAgentSkipScheduledUpdate => 'Omiteți';
+  String get taskAgentSkipScheduledUpdate => 'Omiteți o dată';
 
   @override
   String get taskAgentStatusOutOfDate => 'Neactualizat';

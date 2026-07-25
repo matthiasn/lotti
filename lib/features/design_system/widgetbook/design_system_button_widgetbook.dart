@@ -250,6 +250,7 @@ String _labelForVariant(DesignSystemButtonVariant variant) {
 
 String _labelForSize(DesignSystemButtonSize size) {
   return switch (size) {
+    DesignSystemButtonSize.dense => 'Dense',
     DesignSystemButtonSize.small => 'Small',
     DesignSystemButtonSize.medium => 'Medium',
     DesignSystemButtonSize.large => 'Large',

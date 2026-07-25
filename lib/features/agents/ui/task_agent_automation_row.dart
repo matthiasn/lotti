@@ -7,17 +7,28 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// The task-agent card's automation controls: what state the summary is in,
-/// when it updates next, an always-available manual trigger, and the
-/// automatic-updates switch.
+/// The task-agent card's automation controls.
 ///
-/// Three invariants shape this widget.
+/// The row answers two questions, and keeps each one in one place:
+///
+///  * **"Is this current, and can I refresh it now?"** — the freshness glyph
+///    and word, with the manual trigger next to it. State and its remedy are
+///    adjacent, on the leading edge.
+///  * **"Does it refresh itself, and when next?"** — the automatic-updates
+///    switch with the countdown as its own readout, plus the action that
+///    cancels just the pending run. Kept whole on the trailing rail, so
+///    "Automatic updates" cannot read as a caption for the button.
+///
+/// Three invariants shape it.
 ///
 /// **The manual trigger is never absent.** It occupies the same slot in every
 /// state; a run already in flight swaps its label and glyph in place rather
 /// than vacating the row. An earlier revision replaced the trigger with the
 /// countdown while an automatic update was pending, which meant the only way
-/// to run the agent by hand was to cancel the schedule first.
+/// to run the agent by hand was to cancel the schedule first. It is also the
+/// quietest thing here that is still obviously a button — the loudest action
+/// on the card must be the one that changes the user's task, not the one that
+/// spends tokens.
 ///
 /// **Prose degrades before payloads do.** As width runs out the schedule line
 /// drops its sentence ("Next update in 1:30" → "in 1:30" → "1:30") and the row
@@ -141,6 +152,10 @@ class _TaskAgentAutomationRowState extends State<TaskAgentAutomationRow> {
         value,
       ];
     }
+    // Nothing to promise about the next update while one is happening: the
+    // trigger already reads "Thinking…", and "Updates when this task changes"
+    // beside it describes a settled state the card is not in.
+    if (widget.isRunning) return const [];
     // Automation is on but nothing is pending — say so, rather than leaving a
     // hole that appears and disappears as the user flips the switch.
     if (widget.automaticUpdatesEnabled && widget.inferenceAvailable) {
@@ -176,32 +191,70 @@ class _TaskAgentAutomationRowState extends State<TaskAgentAutomationRow> {
       builder: (context, constraints) {
         final layout = metrics.resolve(constraints.maxWidth);
         final tier = layout.tier;
-        final status = _StatusCluster(
-          freshnessLabel: freshnessLabel,
-          freshnessTooltip: widget.hasReportContent
+
+        final freshness = _FreshnessCluster(
+          label: freshnessLabel,
+          tooltip: widget.hasReportContent
               ? (widget.isStale
                     ? messages.taskAgentReportOutdatedTitle
                     : messages.taskAgentReportUpToDate)
               : null,
           isStale: widget.isStale,
-          schedule: tier == null
-              ? null
-              : _ScheduleSpec(
+        );
+        // `DesignSystemButton` pays its own step3 content inset, so a button
+        // whose box starts on the leading edge puts its *glyph* 8px inside it
+        // — visible as a broken column the moment the row stacks and the
+        // button gets a line of its own. Pull the box back out by exactly
+        // that inset so the ink bleeds into the band's padding and the glyph
+        // lands on the same column as every other row.
+        final trigger = Transform.translate(
+          offset: Offset(-tokens.spacing.step2, 0),
+          child: _UpdateNowButton(
+            isRunning: widget.isRunning,
+            onRunNow: widget.inferenceAvailable ? widget.onRunNow : null,
+          ),
+        );
+        // Normally the state and its remedy sit side by side. When even that
+        // pair cannot share a line — German at 1.3x on a 320px phone — the
+        // word goes above the button rather than the button truncating its
+        // own fixed vocabulary.
+        final state = layout.stateStacked
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  freshness,
+                  if (freshnessLabel != null)
+                    SizedBox(height: tokens.spacing.step3),
+                  trigger,
+                ],
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: freshness),
+                  if (freshnessLabel != null)
+                    SizedBox(width: tokens.spacing.cardItemSpacing),
+                  trigger,
+                ],
+              );
+
+        final schedule = tier == null
+            ? null
+            : _ScheduleCluster(
+                spec: _ScheduleSpec(
                   tier: tier,
                   reservedWidth: metrics.scheduleWidths[tier],
                   staticLabel: _countdownVisible ? null : anchorLabels[tier],
                   nextWakeAt: _countdownVisible ? widget.nextWakeAt : null,
                   onExpired: widget.onCountdownExpired,
                 ),
-          skipLabel: metrics.skipLabel,
-          skipTooltip: messages.taskAgentCancelTimerTooltip,
-          onSkip: _countdownVisible ? widget.onSkipScheduledUpdate : null,
-          stacked: layout.statusStacked,
-        );
-        final trigger = _UpdateNowButton(
-          isRunning: widget.isRunning,
-          onRunNow: widget.inferenceAvailable ? widget.onRunNow : null,
-        );
+                skipLabel: metrics.skipLabel,
+                skipTooltip: messages.taskAgentCancelTimerTooltip,
+                onSkip: _countdownVisible ? widget.onSkipScheduledUpdate : null,
+                stacked: layout.scheduleStacked,
+              );
+
         final setting = _AutomationSetting(
           enabled: widget.inferenceAvailable && !widget.automationBusy,
           value: widget.automaticUpdatesEnabled,
@@ -216,15 +269,17 @@ class _TaskAgentAutomationRowState extends State<TaskAgentAutomationRow> {
             key: const ValueKey('taskAgentAutomationRowWide'),
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(child: status),
-              // One shrink-wrapped trailing cluster: "update it now" and
-              // "update it automatically" are one decision, so they read as
-              // one group on one rail.
+              Flexible(child: state),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  trigger,
-                  SizedBox(width: tokens.spacing.cardItemSpacing),
+                  if (schedule != null) ...[
+                    schedule,
+                    // A real gap, not leftover slack: the readout and the
+                    // switch are one group, and `spaceBetween` alone would put
+                    // every spare pixel in the one place carrying no meaning.
+                    SizedBox(width: tokens.spacing.step6),
+                  ],
                   SizedBox(width: metrics.settingWidth, child: setting),
                 ],
               ),
@@ -236,10 +291,12 @@ class _TaskAgentAutomationRowState extends State<TaskAgentAutomationRow> {
           key: const ValueKey('taskAgentAutomationRowStacked'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            status,
-            SizedBox(height: tokens.spacing.step3),
-            trigger,
-            SizedBox(height: tokens.spacing.step3),
+            state,
+            SizedBox(height: tokens.spacing.step5),
+            if (schedule != null) ...[
+              schedule,
+              SizedBox(height: tokens.spacing.step2),
+            ],
             setting,
           ],
         );
@@ -263,9 +320,8 @@ class _ScheduleSpec {
   final int tier;
 
   /// Width reserved for the wording, taken from the value the deadline was
-  /// latched with. Rounded up: the label carries the payload, so a fraction
-  /// of a pixel too wide is invisible while a fraction too narrow clips a
-  /// digit.
+  /// latched with. Rounded up: the label carries the payload, so a fraction of
+  /// a pixel too wide is invisible while a fraction too narrow clips a digit.
   final double reservedWidth;
 
   /// Set when the line is not a countdown and therefore does not tick.
@@ -276,115 +332,114 @@ class _ScheduleSpec {
   final VoidCallback onExpired;
 }
 
-/// Freshness and schedule: the "what am I looking at" half of the row.
-class _StatusCluster extends StatelessWidget {
-  const _StatusCluster({
-    required this.freshnessLabel,
-    required this.freshnessTooltip,
+/// "Is this current?" — the freshness glyph and the word that goes with it.
+///
+/// The word is not decoration: colour alone cannot carry state, and a lone
+/// alert-orange triangle reads as a problem the user caused.
+class _FreshnessCluster extends StatelessWidget {
+  const _FreshnessCluster({
+    required this.label,
+    required this.tooltip,
     required this.isStale,
-    required this.schedule,
+  });
+
+  final String? label;
+  final String? tooltip;
+  final bool isStale;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = label;
+    if (text == null) return const SizedBox.shrink();
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    return Row(
+      key: const ValueKey('taskAgentStatusCluster'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Tooltip(
+          message: tooltip ?? '',
+          child: Icon(
+            key: ValueKey(
+              isStale ? 'taskAgentStaleGlyph' : 'taskAgentFreshGlyph',
+            ),
+            isStale
+                ? Icons.warning_amber_rounded
+                : Icons.check_circle_outline_rounded,
+            size: tokens.spacing.step5,
+            color: isStale
+                ? tokens.colors.alert.warning.defaultColor
+                : ai.metaText,
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        Flexible(
+          child: Text(
+            text,
+            key: const ValueKey('taskAgentFreshnessLabel'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            // The state register, one step above the schedule and the control
+            // labels: live status and static metadata must not read as the
+            // same class of information.
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: isStale ? tokens.colors.alert.warning.ink : ai.bodyText,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// "When does it update itself?" — the switch's own readout, plus the action
+/// that cancels just the pending run.
+class _ScheduleCluster extends StatelessWidget {
+  const _ScheduleCluster({
+    required this.spec,
     required this.skipLabel,
     required this.skipTooltip,
     required this.onSkip,
     required this.stacked,
   });
 
-  final String? freshnessLabel;
-  final String? freshnessTooltip;
-  final bool isStale;
-  final _ScheduleSpec? schedule;
+  final _ScheduleSpec spec;
   final String? skipLabel;
   final String skipTooltip;
   final VoidCallback? onSkip;
 
-  /// Whether freshness and schedule take a line each rather than sharing one.
+  /// Whether the readout and its action need a line each — "Einmal
+  /// überspringen" beside a countdown does not fit a 320px phone.
   final bool stacked;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final ai = tokens.colors.aiCard;
-    final caption = tokens.typography.styles.others.caption;
-    final freshness = freshnessLabel;
-    final spec = schedule;
-    if (freshness == null && spec == null) return const SizedBox.shrink();
-
-    final scheduleLine = spec == null
+    final label = _ScheduleLabel(spec: spec);
+    final skip = onSkip == null || skipLabel == null
         ? null
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _ScheduleLabel(spec: spec),
-              if (onSkip != null && skipLabel != null) ...[
-                SizedBox(width: tokens.spacing.step2),
-                _SkipAction(
-                  label: skipLabel!,
-                  tooltip: skipTooltip,
-                  onSkip: onSkip!,
-                ),
-              ],
-            ],
+        : _SkipAction(
+            label: skipLabel!,
+            tooltip: skipTooltip,
+            onSkip: onSkip!,
           );
-
-    final freshnessLine = freshness == null
-        ? null
-        : Text(
-            freshness,
-            key: const ValueKey('taskAgentFreshnessLabel'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: caption.copyWith(color: ai.metaText),
-          );
-
-    final glyph = freshness == null
-        ? null
-        : Tooltip(
-            message: freshnessTooltip ?? '',
-            child: Icon(
-              key: ValueKey(
-                isStale ? 'taskAgentStaleGlyph' : 'taskAgentFreshGlyph',
-              ),
-              isStale
-                  ? Icons.warning_amber_rounded
-                  : Icons.check_circle_outline_rounded,
-              size: tokens.spacing.step5,
-              color: isStale
-                  ? tokens.colors.alert.warning.defaultColor
-                  : ai.accent,
-            ),
-          );
-
-    // Stacked, the schedule sits under the freshness *text* rather than under
-    // its glyph, so the status reads as one indented block.
-    final body = stacked && freshnessLine != null && scheduleLine != null
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              freshnessLine,
-              SizedBox(height: tokens.spacing.step1),
-              scheduleLine,
-            ],
-          )
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (freshnessLine != null) Flexible(child: freshnessLine),
-              if (freshnessLine != null && scheduleLine != null)
-                _Separator(style: caption.copyWith(color: ai.faintMeta)),
-              ?scheduleLine,
-            ],
-          );
-
+    if (stacked && skip != null) {
+      return Column(
+        key: const ValueKey('taskAgentScheduleCluster'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [label, skip],
+      );
+    }
     return Row(
-      key: const ValueKey('taskAgentStatusCluster'),
+      key: const ValueKey('taskAgentScheduleCluster'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (glyph != null) ...[
-          glyph,
-          SizedBox(width: tokens.spacing.step2),
+        label,
+        if (skip != null) ...[
+          SizedBox(width: tokens.spacing.step3),
+          skip,
         ],
-        Flexible(child: body),
       ],
     );
   }
@@ -403,8 +458,8 @@ class _ScheduleLabel extends StatefulWidget {
 
 class _ScheduleLabelState extends State<_ScheduleLabel>
     with WakeCountdownState<_ScheduleLabel> {
-  /// Only reached while [_ScheduleSpec.nextWakeAt] is set; the mixin is not
-  /// driven at all for a static line.
+  /// Only driven while [_ScheduleSpec.nextWakeAt] is set; a static line never
+  /// ticks.
   @override
   DateTime get nextWakeAt => widget.spec.nextWakeAt ?? clock.now();
 
@@ -445,8 +500,8 @@ class _ScheduleLabelState extends State<_ScheduleLabel>
         key: const ValueKey('taskAgentScheduleLabel'),
         maxLines: 1,
         // Deliberately no ellipsis: this line carries the payload, and a
-        // truncated time is worse than a missing one. The wording ladder,
-        // not overflow handling, is what makes it fit.
+        // truncated time is worse than a missing one. The wording ladder, not
+        // overflow handling, is what makes it fit.
         softWrap: false,
         style: scheduleLabelStyle(context.designTokens),
       ),
@@ -455,33 +510,22 @@ class _ScheduleLabelState extends State<_ScheduleLabel>
 }
 
 /// Shared by the label and by the fit measurement — tabular figures change
-/// digit advance, so measuring without them under-reports the width.
+/// digit advance, so measuring without them under-reports the width and clips
+/// the payload.
 TextStyle scheduleLabelStyle(DsTokens tokens) =>
     tokens.typography.styles.others.caption.copyWith(
-      color: tokens.colors.aiCard.metaText,
+      // The state register, shared with the freshness word: what is true right
+      // now must not read as the same class of information as the static model
+      // route two lines below it.
+      color: tokens.colors.aiCard.bodyText,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
 
-class _Separator extends StatelessWidget {
-  const _Separator({required this.style});
-
-  final TextStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: context.designTokens.spacing.step2,
-      ),
-      child: Text('·', style: style),
-    );
-  }
-}
-
 /// Cancels the pending automatic update without turning automation off.
 ///
-/// Worded rather than a bare glyph: an unlabelled "×" sitting beside an
-/// automatic-updates switch reads as "turn the whole thing off".
+/// Worded rather than a bare glyph, and tinted so it reads as the one control
+/// inside a line of status text: an unlabelled "×" beside an automatic-updates
+/// switch reads as "turn the whole thing off".
 class _SkipAction extends StatelessWidget {
   const _SkipAction({
     required this.label,
@@ -496,6 +540,9 @@ class _SkipAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // Metadata ink, not accent: accent in this band means "this starts work",
+    // and Skip is its opposite. The underline carries the affordance.
+    final ink = tokens.colors.aiCard.metaText;
     return Semantics(
       button: true,
       label: tooltip,
@@ -521,9 +568,9 @@ class _SkipAction extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.aiCard.metaText,
+                      color: ink,
                       decoration: TextDecoration.underline,
-                      decorationColor: tokens.colors.aiCard.subtleBorder,
+                      decorationColor: ink,
                     ),
                   ),
                 ),
@@ -555,7 +602,14 @@ class _UpdateNowButton extends StatelessWidget {
           : messages.taskAgentUpdateNow,
       leadingIcon: Icons.refresh_rounded,
       isLoading: isRunning,
-      variant: DesignSystemButtonVariant.outlined,
+      // Caption tier: the footer must not field a string at the same size and
+      // weight as the card's hero action one hairline above it.
+      size: DesignSystemButtonSize.dense,
+      // Tertiary, not outlined: this is a settings-zone action and must read
+      // one tier below "Confirm all", the only thing on the card that changes
+      // the user's own task. It stays labelled — an icon-only glyph beside an
+      // automation switch is exactly the ambiguity the worded Skip refuses.
+      variant: DesignSystemButtonVariant.tertiary,
       onPressed: isRunning ? null : onRunNow,
     );
   }
@@ -603,18 +657,24 @@ class _AutomationSetting extends StatelessWidget {
             minWidth: tokens.spacing.step9,
             minHeight: tokens.spacing.step9,
           ),
-          child: DesignSystemToggle(
-            key: const Key('taskAgentAutomaticUpdatesCheckbox'),
-            value: value,
-            semanticsLabel: messages.taskAgentAutomaticUpdatesLabel,
-            // The disabled switch explains itself on demand instead of
-            // spending a permanent caption line on it.
-            tooltipIcon: needsSetupHint == null
-                ? null
-                : Icons.info_outline_rounded,
-            tooltipMessage: needsSetupHint,
-            enabled: enabled,
-            onChanged: onChanged,
+          // Centring a 40px switch in a 48px slot leaves it short of the
+          // rail the TTS button and the proposal cards terminate on. The slot
+          // keeps its size; the switch sits at its trailing edge.
+          child: Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: DesignSystemToggle(
+              key: const Key('taskAgentAutomaticUpdatesCheckbox'),
+              value: value,
+              semanticsLabel: messages.taskAgentAutomaticUpdatesLabel,
+              // The disabled switch explains itself on demand instead of
+              // spending a permanent caption line on it.
+              tooltipIcon: needsSetupHint == null
+                  ? null
+                  : Icons.info_outline_rounded,
+              tooltipMessage: needsSetupHint,
+              enabled: enabled,
+              onChanged: onChanged,
+            ),
           ),
         ),
       ],
@@ -628,18 +688,22 @@ class _AutomationLayout {
   const _AutomationLayout({
     required this.tier,
     required this.rowStacked,
-    required this.statusStacked,
+    required this.stateStacked,
+    required this.scheduleStacked,
   });
 
-  /// Index into the schedule wording ladder, or null when there is no
-  /// schedule to describe.
+  /// Index into the schedule wording ladder, or null when there is no schedule
+  /// to describe.
   final int? tier;
 
-  /// Whether status, trigger and switch each take their own line.
+  /// Whether the state cluster, the schedule and the switch each take a line.
   final bool rowStacked;
 
-  /// Whether freshness and schedule take a line each within the status.
-  final bool statusStacked;
+  /// Whether the freshness word and the trigger need a line each.
+  final bool stateStacked;
+
+  /// Whether the countdown and its Skip action need a line each.
+  final bool scheduleStacked;
 }
 
 /// Text measurements behind the fit decision.
@@ -652,12 +716,12 @@ class _AutomationMetrics {
   const _AutomationMetrics({
     required this.skipLabel,
     required this.freshnessWidth,
-    required this.separatorWidth,
     required this.skipWidth,
     required this.scheduleWidths,
     required this.triggerWidth,
     required this.settingWidth,
-    required this.minimumGap,
+    required this.clusterGap,
+    required this.groupGap,
   });
 
   factory _AutomationMetrics.measure(
@@ -684,92 +748,106 @@ class _AutomationMetrics {
     }
 
     final caption = styles.others.caption;
-    final scheduleStyle = scheduleLabelStyle(tokens);
     return _AutomationMetrics(
       skipLabel: skipLabel,
       freshnessWidth: freshnessLabel == null
           ? 0
           : tokens.spacing.step5 +
                 tokens.spacing.step2 +
-                widthOf(freshnessLabel, caption),
-      separatorWidth: (freshnessLabel != null && scheduleLabels.isNotEmpty)
-          ? widthOf('·', caption) + tokens.spacing.step2 * 2
-          : 0,
-      // The action's own symmetric step2 inset, plus the step2 that separates
-      // it from the schedule label.
+                widthOf(freshnessLabel, caption) +
+                tokens.spacing.cardItemSpacing,
+      // The action's own symmetric step2 inset, plus the step3 separating it
+      // from the schedule label.
       skipWidth: skipLabel == null
           ? 0
-          : widthOf(skipLabel, caption) + tokens.spacing.step2 * 3,
+          : widthOf(skipLabel, caption) +
+                tokens.spacing.step2 * 2 +
+                tokens.spacing.step3,
       scheduleWidths: [
         for (final label in scheduleLabels)
-          widthOf(label, scheduleStyle).ceilToDouble(),
+          widthOf(label, scheduleLabelStyle(tokens)).ceilToDouble(),
       ],
       // `DesignSystemButton` at its small size: symmetric step3 padding, a
       // leading glyph at the subtitle2 line height, and a step2 item gap.
+      // `DesignSystemButton` at its dense size: symmetric step2 padding, a
+      // leading glyph at the caption line height, and a step2 item gap.
       triggerWidth:
-          widthOf(triggerLabel, styles.subtitle.subtitle2) +
-          tokens.typography.lineHeight.subtitle2 +
-          tokens.spacing.step2 +
-          tokens.spacing.step3 * 2,
+          widthOf(triggerLabel, caption) +
+          tokens.typography.lineHeight.caption +
+          tokens.spacing.step2 * 3,
       settingWidth:
           widthOf(settingLabel, caption) +
           tokens.spacing.step3 +
           tokens.spacing.step9,
-      minimumGap: tokens.spacing.cardItemSpacing,
+      clusterGap: tokens.spacing.cardItemSpacing,
+      groupGap: tokens.spacing.step6,
     );
   }
 
   final String? skipLabel;
+
+  /// Freshness glyph, word and the gap to the trigger. Zero when there is no
+  /// report to describe.
   final double freshnessWidth;
-  final double separatorWidth;
   final double skipWidth;
 
   /// Rendered width of the schedule wording at each tier, longest first.
   final List<double> scheduleWidths;
   final double triggerWidth;
   final double settingWidth;
-  final double minimumGap;
 
-  double get _trailingWidth => triggerWidth + minimumGap + settingWidth;
+  /// Gap between the two questions.
+  final double clusterGap;
 
-  /// Status width with freshness and the tier's schedule sharing one line.
-  double _statusWidth(int? tier) =>
-      freshnessWidth +
-      (tier == null ? 0 : separatorWidth + scheduleWidths[tier] + skipWidth);
+  /// Gap inside the automation group, between its readout and its switch.
+  final double groupGap;
+
+  double get _stateWidth => freshnessWidth + triggerWidth;
+
+  double _trailingWidth(int? tier) => tier == null
+      ? settingWidth
+      : scheduleWidths[tier] + skipWidth + groupGap + settingWidth;
 
   /// Picks the longest wording that fits, and stacks only when none does.
   _AutomationLayout resolve(double maxWidth) {
+    final stateStacked = _stateWidth > maxWidth;
     if (scheduleWidths.isEmpty) {
       return _AutomationLayout(
         tier: null,
-        rowStacked: _statusWidth(null) + minimumGap + _trailingWidth > maxWidth,
-        statusStacked: false,
+        rowStacked: _stateWidth + clusterGap + _trailingWidth(null) > maxWidth,
+        stateStacked: stateStacked,
+        scheduleStacked: false,
       );
     }
     for (var tier = 0; tier < scheduleWidths.length; tier++) {
-      if (_statusWidth(tier) + minimumGap + _trailingWidth <= maxWidth) {
+      if (_stateWidth + clusterGap + _trailingWidth(tier) <= maxWidth) {
         return _AutomationLayout(
           tier: tier,
           rowStacked: false,
-          statusStacked: false,
+          stateStacked: false,
+          scheduleStacked: false,
         );
       }
     }
-    // Stacked: the status owns a full line, so re-run the ladder against the
-    // whole width before giving freshness and schedule a line each.
+    // Stacked: the schedule owns a full line, so re-run the ladder against the
+    // whole width before settling for the shortest wording.
     for (var tier = 0; tier < scheduleWidths.length; tier++) {
-      if (_statusWidth(tier) <= maxWidth) {
+      if (scheduleWidths[tier] + skipWidth <= maxWidth) {
         return _AutomationLayout(
           tier: tier,
           rowStacked: true,
-          statusStacked: false,
+          stateStacked: stateStacked,
+          scheduleStacked: false,
         );
       }
     }
+    // Even the bare value cannot share a line with the action: give each its
+    // own. The value still never truncates.
     return _AutomationLayout(
       tier: scheduleWidths.length - 1,
       rowStacked: true,
-      statusStacked: true,
+      stateStacked: stateStacked,
+      scheduleStacked: true,
     );
   }
 }

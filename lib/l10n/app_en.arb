@@ -4846,6 +4846,10 @@
   "taskAgentAutomaticUpdatesLabel": "Automatic updates",
   "taskAgentAutomaticUpdatesNeedsSetup": "Choose an AI setup before turning on automatic updates.",
   "taskAgentCancelTimerTooltip": "Cancel pending automatic update",
+  "taskAgentChangeSetupTooltip": "Change AI setup",
+  "@taskAgentChangeSetupTooltip": {
+    "description": "Tooltip on the model-identity row in the task-agent card footer. Names the action rather than repeating the visible route."
+  },
   "taskAgentChooseModel": "Choose a thinking model",
   "taskAgentChooseProfile": "Choose an inference profile",
   "taskAgentCountdownTooltip": "Next auto-run in {countdown}",
@@ -4946,7 +4950,7 @@
     }
   },
   "taskAgentSetupTitle": "Agent setup",
-  "taskAgentSkipScheduledUpdate": "Skip",
+  "taskAgentSkipScheduledUpdate": "Skip once",
   "@taskAgentSkipScheduledUpdate": {
     "description": "Quiet action beside the countdown that cancels the pending automatic update without turning automatic updates off."
   },

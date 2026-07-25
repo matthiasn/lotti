@@ -86,11 +86,30 @@ class TaskAgentModelIdentityViewData {
 String formatInferenceRouteIdentity(
   InferenceRouteSnapshot route, {
   required String viaLabel,
+}) => inferenceRouteIdentityTiers(route, viaLabel: viaLabel).first;
+
+/// The identity string at each width tier, longest first.
+///
+/// A route is structured, so it degrades by shedding whole segments rather
+/// than characters: an ellipsis eats the serving provider — the one fact the
+/// row exists to disclose — and leaves the connective word behind
+/// ("Qwen 3.5 Plus · Alibaba · via Meliou…"). The model name is the payload
+/// and survives every tier.
+List<String> inferenceRouteIdentityTiers(
+  InferenceRouteSnapshot route, {
+  required String viaLabel,
 }) {
-  final parts = <String>[
-    route.modelName,
-    if (route.publisherName?.trim().isNotEmpty ?? false)
-      route.publisherName!.trim(),
+  final model = route.modelName;
+  final publisher = route.publisherName?.trim();
+  final hasPublisher = publisher != null && publisher.isNotEmpty;
+  final provider = route.servingProviderName;
+  return [
+    if (hasPublisher)
+      '$model · $publisher · $viaLabel $provider'
+    else
+      '$model · $viaLabel $provider',
+    // Drops the publisher and the connective word, keeping both names.
+    '$model · $provider',
+    model,
   ];
-  return '${parts.join(' · ')} · $viaLabel ${route.servingProviderName}';
 }

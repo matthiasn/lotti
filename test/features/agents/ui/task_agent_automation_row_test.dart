@@ -276,7 +276,7 @@ void main() {
 
         // A worded action, not a bare glyph beside the switch it does not
         // control.
-        expect(find.text('Skip'), findsOneWidget);
+        expect(find.text('Skip once'), findsOneWidget);
         expect(find.byIcon(Icons.close_rounded), findsNothing);
         await tester.tap(
           find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
@@ -345,6 +345,25 @@ void main() {
       // The line is reserved rather than appearing and disappearing as the
       // user flips the switch.
       expect(find.text('Updates when this task changes'), findsOneWidget);
+    });
+
+    testWidgets('says nothing about the next update while one is running', (
+      tester,
+    ) async {
+      await pumpRow(
+        tester,
+        subject(
+          automaticUpdatesEnabled: true,
+          isRunning: true,
+          onRunNow: () {},
+        ),
+      );
+
+      // The trigger already reads "Thinking…"; promising a future update
+      // beside it describes a settled state the card is not in.
+      expect(find.text('Thinking…'), findsOneWidget);
+      expect(find.text('Updates when this task changes'), findsNothing);
+      expect(scheduleLabel(), findsNothing);
     });
 
     testWidgets('is absent while automatic updates are off', (tester) async {
@@ -423,19 +442,64 @@ void main() {
           find.byKey(const ValueKey('taskAgentAutomationRowStacked')),
           findsOneWidget,
         );
-        // Stacked, everything shares the leading edge instead of being flung
+        // Stacked, every group shares the leading edge instead of being flung
         // to opposite ends of a wrapped run.
-        final left = tester.getTopLeft(
-          find.byKey(const ValueKey('taskAgentStatusCluster')),
+        final left = tester
+            .getTopLeft(find.byKey(const ValueKey('taskAgentStatusCluster')))
+            .dx;
+        for (final group in [
+          const ValueKey('taskAgentScheduleCluster'),
+          const ValueKey('taskAgentAutomationSetting'),
+        ]) {
+          expect(
+            tester.getTopLeft(find.byKey(group)).dx,
+            moreOrLessEquals(left),
+            reason: '$group left the shared leading edge',
+          );
+        }
+      });
+    });
+
+    testWidgets('every stacked row starts on one leading column', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpRow(
+          tester,
+          subject(
+            hasReportContent: true,
+            isStale: true,
+            automaticUpdatesEnabled: true,
+            showCountdown: true,
+            nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
+            onRunNow: () {},
+          ),
+          width: 320,
+          locale: const Locale('de'),
+          textScaler: const TextScaler.linear(1.3),
         );
-        expect(tester.getTopLeft(trigger()).dx, moreOrLessEquals(left.dx));
+
+        // The trigger is a DS button that pays its own content inset, so a
+        // button box on the edge puts its glyph inside it. The row negates
+        // that inset; this is the assertion that keeps it honest, because the
+        // break is only visible once the row stacks.
+        final column = tester
+            .getTopLeft(find.byKey(const ValueKey('taskAgentStatusCluster')))
+            .dx;
         expect(
-          tester
-              .getTopLeft(
-                find.byKey(const ValueKey('taskAgentAutomationSetting')),
-              )
-              .dx,
-          moreOrLessEquals(left.dx),
+          tester.getTopLeft(find.byIcon(Icons.refresh_rounded)).dx,
+          moreOrLessEquals(column, epsilon: 0.5),
+          reason: 'the trigger glyph left the leading column',
+        );
+        expect(
+          tester.getTopLeft(scheduleLabel()).dx,
+          moreOrLessEquals(column, epsilon: 0.5),
+          reason: 'the schedule readout left the leading column',
+        );
+        expect(
+          tester.getTopLeft(find.text('Automatische Aktualisierungen')).dx,
+          moreOrLessEquals(column, epsilon: 0.5),
+          reason: 'the switch label left the leading column',
         );
       });
     });
@@ -545,7 +609,7 @@ void main() {
       final labelSize = tester.getSize(scheduleLabel());
       final triggerOffset = tester.getTopLeft(trigger());
       final toggleOffset = tester.getTopLeft(toggle());
-      final skipOffset = tester.getTopLeft(find.text('Skip'));
+      final skipOffset = tester.getTopLeft(find.text('Skip once'));
 
       // Crosses the h:mm:ss → m:ss boundary, where the label's own text gets
       // materially shorter.
@@ -556,7 +620,7 @@ void main() {
       expect(tester.getSize(scheduleLabel()), labelSize);
       expect(tester.getTopLeft(trigger()), triggerOffset);
       expect(tester.getTopLeft(toggle()), toggleOffset);
-      expect(tester.getTopLeft(find.text('Skip')), skipOffset);
+      expect(tester.getTopLeft(find.text('Skip once')), skipOffset);
     });
   });
 }

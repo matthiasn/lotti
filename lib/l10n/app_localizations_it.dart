@@ -10126,6 +10126,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Annulla aggiornamento automatico in attesa';
 
   @override
+  String get taskAgentChangeSetupTooltip => 'Cambia configurazione IA';
+
+  @override
   String get taskAgentChooseModel => 'Scegli un modello di pensiero';
 
   @override
@@ -10271,7 +10274,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskAgentSetupTitle => 'Impostazione dell\'agente';
 
   @override
-  String get taskAgentSkipScheduledUpdate => 'Salta';
+  String get taskAgentSkipScheduledUpdate => 'Salta una volta';
 
   @override
   String get taskAgentStatusOutOfDate => 'Non aggiornato';

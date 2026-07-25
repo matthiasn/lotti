@@ -15,6 +15,11 @@ enum DesignSystemButtonVariant {
 }
 
 enum DesignSystemButtonSize {
+  /// Caption-tier action for metadata rows and settings zones: the label sits
+  /// at `typography.styles.others.caption`, so the control reads as a button
+  /// through its glyph, ink and hover fill rather than by out-weighing the
+  /// text around it.
+  dense,
   small,
   medium,
   large,
@@ -284,6 +289,14 @@ class _ButtonSizeSpec {
     DesignSystemButtonSize size,
   ) {
     return switch (size) {
+      DesignSystemButtonSize.dense => _ButtonSizeSpec(
+        labelStyle: tokens.typography.styles.others.caption,
+        iconSize: tokens.typography.lineHeight.caption,
+        horizontalPadding: tokens.spacing.step2,
+        verticalPadding: tokens.spacing.step2,
+        itemGap: tokens.spacing.step2,
+        cornerRadius: tokens.radii.s,
+      ),
       DesignSystemButtonSize.small => _ButtonSizeSpec(
         labelStyle: tokens.typography.styles.subtitle.subtitle2,
         iconSize: tokens.typography.lineHeight.subtitle2,

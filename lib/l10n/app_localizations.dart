@@ -17274,6 +17274,12 @@ abstract class AppLocalizations {
   /// **'Cancel pending automatic update'**
   String get taskAgentCancelTimerTooltip;
 
+  /// Tooltip on the model-identity row in the task-agent card footer. Names the action rather than repeating the visible route.
+  ///
+  /// In en, this message translates to:
+  /// **'Change AI setup'**
+  String get taskAgentChangeSetupTooltip;
+
   /// No description provided for @taskAgentChooseModel.
   ///
   /// In en, this message translates to:
@@ -17517,7 +17523,7 @@ abstract class AppLocalizations {
   /// Quiet action beside the countdown that cancels the pending automatic update without turning automatic updates off.
   ///
   /// In en, this message translates to:
-  /// **'Skip'**
+  /// **'Skip once'**
   String get taskAgentSkipScheduledUpdate;
 
   /// Short freshness caption in the task-agent card footer, paired with a warning glyph.
