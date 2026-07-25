@@ -43,6 +43,12 @@ ProfileAutomationResolver profileAutomationResolver(Ref ref) {
           .getCategoryById(categoryId);
       return category?.defaultProfileId;
     },
+    taskCategoryLookup: (taskId) async {
+      final entity = await ref
+          .read(journalDbProvider)
+          .journalEntityById(taskId);
+      return entity?.meta.categoryId;
+    },
   );
 }
 

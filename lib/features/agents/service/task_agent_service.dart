@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
@@ -31,6 +32,7 @@ class TaskAgentService {
     required this.repository,
     required this.orchestrator,
     required this.syncService,
+    this.updateNotifications,
     this.domainLogger,
   });
 
@@ -41,6 +43,19 @@ class TaskAgentService {
   /// Sync-aware write service. All entity/link writes go through this so
   /// they are automatically enqueued for cross-device sync.
   final AgentSyncService syncService;
+
+  /// Notifies UI providers that an agent now exists for a task.
+  ///
+  /// `taskAgentProvider` keys its refresh on the **task** id, and no agent
+  /// write emits that token: the identity, state, and agent↔task link all go
+  /// through [AgentSyncService], which does not notify at all. Without this,
+  /// a freshly assigned agent stays invisible until something unrelated
+  /// happens to notify with the task id — in practice the creation wake's
+  /// completion, a whole inference round-trip later.
+  ///
+  /// Optional so tests and non-UI callers can construct the service without
+  /// the notification bus.
+  final UpdateNotifications? updateNotifications;
 
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
@@ -200,6 +215,12 @@ class TaskAgentService {
       return identity;
     });
 
+    // Announce the assignment before any wake work. The transaction has
+    // committed, so a provider that refetches now sees the agent — which is
+    // the whole point: the card must fill in as the task opens, not once the
+    // first wake returns.
+    _notifyTaskAgentAssigned(agentId: identity.agentId, taskId: taskId);
+
     final inferenceEnabled =
         identity.config.inferenceSetup?.mode !=
         AgentInferenceSetupMode.disabled;
@@ -235,6 +256,18 @@ class TaskAgentService {
     );
 
     return identity;
+  }
+
+  /// Tells UI providers keyed on [taskId] that [agentId] is now assigned.
+  ///
+  /// Deliberately `notifyUiOnly`: this is the agent system announcing its own
+  /// write, and the wake orchestrator must not treat it as task content
+  /// changing and schedule a wake on top of the creation wake.
+  void _notifyTaskAgentAssigned({
+    required String agentId,
+    required String taskId,
+  }) {
+    updateNotifications?.notifyUiOnly({agentId, taskId, agentNotification});
   }
 
   /// Find the Task Agent for [taskId], or `null` if none exists.

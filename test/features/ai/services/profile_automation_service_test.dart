@@ -286,6 +286,11 @@ void main() {
     when(
       () => mockAiConfig.getConfigsByType(AiConfigType.model),
     ).thenAnswer((_) async => const <AiConfig>[]);
+    // Default: the task inherits nothing beyond what `resolveForTask` returns.
+    // The `inherited profile fallback` group overrides this per test.
+    when(
+      () => mockResolver.resolveAutomationFallbacks(any()),
+    ).thenAnswer((_) async => const <ResolvedProfile>[]);
   });
 
   tearDown(() {
@@ -298,15 +303,20 @@ void main() {
     bool withTranscription = false,
     bool withImageRecognition = false,
     bool withImageGeneration = false,
+    String thinkingModelId = 'models/gemini-3-flash-preview',
+    String transcriptionModelId = 'whisper-1',
+    String imageRecognitionModelId = 'vision-model',
   }) {
     return ResolvedProfile(
-      thinkingModelId: 'models/gemini-3-flash-preview',
+      thinkingModelId: thinkingModelId,
       thinkingProvider: testInferenceProvider(),
-      transcriptionModelId: withTranscription ? 'whisper-1' : null,
+      transcriptionModelId: withTranscription ? transcriptionModelId : null,
       transcriptionProvider: withTranscription
           ? testInferenceProvider(id: 'p-audio')
           : null,
-      imageRecognitionModelId: withImageRecognition ? 'vision-model' : null,
+      imageRecognitionModelId: withImageRecognition
+          ? imageRecognitionModelId
+          : null,
       imageRecognitionProvider: withImageRecognition
           ? testInferenceProvider(id: 'p-vision')
           : null,
@@ -1145,6 +1155,302 @@ void main() {
       );
     });
 
+    // Picking a thinking model by hand resolves the task to a bare model
+    // route: no capability slots, no skill assignments. That must not switch
+    // the category's automatic transcription and image analysis off, and no
+    // later model change repairs it, because the agent keeps resolving to the
+    // same bare route.
+    group('inherited profile fallback', () {
+      /// What `resolveForTask` returns once a thinking model is picked by hand
+      /// and the agent has no base profile — thinking route only.
+      ResolvedProfile handPickedModelRoute() =>
+          makeProfile(thinkingModelId: 'glm-5.2');
+
+      /// The category's profile, inherited by the task, which owns the
+      /// capability slots and the automated assignments.
+      ResolvedProfile inheritedProfile({
+        required String skillId,
+        bool withTranscription = false,
+        bool withImageRecognition = false,
+      }) => makeProfile(
+        skillAssignments: [SkillAssignment(skillId: skillId, automate: true)],
+        withTranscription: withTranscription,
+        withImageRecognition: withImageRecognition,
+        transcriptionModelId: 'category-whisper',
+        imageRecognitionModelId: 'category-vision',
+      );
+
+      test(
+        'transcription runs on the inherited profile after a model was '
+        'picked by hand',
+        () async {
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => handPickedModelRoute());
+          when(
+            () => mockResolver.resolveAutomationFallbacks('task-1'),
+          ).thenAnswer(
+            (_) async => [
+              inheritedProfile(
+                skillId: 'skill-transcribe',
+                withTranscription: true,
+              ),
+            ],
+          );
+          when(
+            () => mockAiConfig.getConfigById('skill-transcribe'),
+          ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(result.skill!.id, 'skill-transcribe');
+          // The run uses the category's transcription model, not the
+          // hand-picked thinking model.
+          expect(
+            result.resolvedProfile!.transcriptionModelId,
+            'category-whisper',
+          );
+        },
+      );
+
+      test(
+        'image analysis runs on the inherited profile after a model was '
+        'picked by hand',
+        () async {
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => handPickedModelRoute());
+          when(
+            () => mockResolver.resolveAutomationFallbacks('task-1'),
+          ).thenAnswer(
+            (_) async => [
+              inheritedProfile(
+                skillId: 'skill-image',
+                withImageRecognition: true,
+              ),
+            ],
+          );
+          when(() => mockAiConfig.getConfigById('skill-image')).thenAnswer(
+            (_) async => makeSkill(
+              id: 'skill-image',
+              skillType: SkillType.imageAnalysis,
+            ),
+          );
+
+          final result = await service.tryAnalyzeImage(taskId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(result.skill!.id, 'skill-image');
+          expect(
+            result.resolvedProfile!.imageRecognitionModelId,
+            'category-vision',
+          );
+        },
+      );
+
+      test(
+        'the task-linked profile wins and the inherited ones are never read',
+        () async {
+          when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+            (_) async => makeProfile(
+              skillAssignments: const [
+                SkillAssignment(skillId: 'skill-transcribe', automate: true),
+              ],
+              withTranscription: true,
+            ),
+          );
+          when(
+            () => mockAiConfig.getConfigById('skill-transcribe'),
+          ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(result.resolvedProfile!.transcriptionModelId, 'whisper-1');
+          verifyNever(() => mockResolver.resolveAutomationFallbacks(any()));
+        },
+      );
+
+      // The walk is per capability: a profile chosen for this task keeps every
+      // capability it does own, and only the missing one falls through.
+      test(
+        'only the capability the task-linked profile lacks falls back',
+        () async {
+          when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+            (_) async => makeProfile(
+              skillAssignments: const [
+                SkillAssignment(skillId: 'skill-image', automate: true),
+                SkillAssignment(skillId: 'skill-transcribe', automate: true),
+              ],
+              // Automates transcription, but has no transcription model.
+              withImageRecognition: true,
+            ),
+          );
+          when(
+            () => mockResolver.resolveAutomationFallbacks('task-1'),
+          ).thenAnswer(
+            (_) async => [
+              inheritedProfile(
+                skillId: 'skill-inherited-transcribe',
+                withTranscription: true,
+              ),
+            ],
+          );
+          when(() => mockAiConfig.getConfigById('skill-image')).thenAnswer(
+            (_) async => makeSkill(
+              id: 'skill-image',
+              skillType: SkillType.imageAnalysis,
+            ),
+          );
+          when(
+            () => mockAiConfig.getConfigById('skill-transcribe'),
+          ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
+          when(
+            () => mockAiConfig.getConfigById('skill-inherited-transcribe'),
+          ).thenAnswer(
+            (_) async => makeSkill(id: 'skill-inherited-transcribe'),
+          );
+
+          final imageResult = await service.tryAnalyzeImage(taskId: 'task-1');
+          final transcribeResult = await service.tryTranscribe(
+            taskId: 'task-1',
+          );
+
+          expect(imageResult.skill!.id, 'skill-image');
+          expect(
+            imageResult.resolvedProfile!.imageRecognitionModelId,
+            'vision-model',
+          );
+          expect(transcribeResult.skill!.id, 'skill-inherited-transcribe');
+          expect(
+            transcribeResult.resolvedProfile!.transcriptionModelId,
+            'category-whisper',
+          );
+        },
+      );
+
+      test('walks the inherited profiles in order', () async {
+        when(
+          () => mockResolver.resolveForTask('task-1'),
+        ).thenAnswer((_) async => handPickedModelRoute());
+        when(
+          () => mockResolver.resolveAutomationFallbacks('task-1'),
+        ).thenAnswer(
+          (_) async => [
+            // The task's own inherited profile automates nothing.
+            makeProfile(withTranscription: true),
+            inheritedProfile(
+              skillId: 'skill-transcribe',
+              withTranscription: true,
+            ),
+          ],
+        );
+        when(
+          () => mockAiConfig.getConfigById('skill-transcribe'),
+        ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
+
+        final result = await service.tryTranscribe(taskId: 'task-1');
+
+        expect(result.handled, isTrue);
+        expect(
+          result.resolvedProfile!.transcriptionModelId,
+          'category-whisper',
+        );
+      });
+
+      // Two deliberate assignments of the same type could carry different
+      // context policies. Guessing which one the user meant is worse than
+      // doing nothing, so ambiguity ends the walk instead of demoting the
+      // task to a profile it never selected.
+      test('an ambiguous task-linked profile ends the walk', () async {
+        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          (_) async => makeProfile(
+            skillAssignments: const [
+              SkillAssignment(skillId: 'skill-t1', automate: true),
+              SkillAssignment(skillId: 'skill-t2', automate: true),
+            ],
+            withTranscription: true,
+          ),
+        );
+        when(
+          () => mockAiConfig.getConfigById('skill-t1'),
+        ).thenAnswer((_) async => makeSkill(id: 'skill-t1'));
+        when(
+          () => mockAiConfig.getConfigById('skill-t2'),
+        ).thenAnswer((_) async => makeSkill(id: 'skill-t2'));
+
+        final result = await service.tryTranscribe(taskId: 'task-1');
+
+        expect(result.handled, isFalse);
+        verifyNever(() => mockResolver.resolveAutomationFallbacks(any()));
+      });
+
+      // The category switch is still the only consent to spend tokens without
+      // a gesture — the wider walk must not sneak past it.
+      test('the category gate short-circuits before the walk', () async {
+        categoryAllowsAutomation = false;
+
+        final result = await service.tryAnalyzeImage(taskId: 'task-1');
+
+        expect(result.handled, isFalse);
+        verifyNever(() => mockResolver.resolveAutomationFallbacks(any()));
+      });
+
+      test(
+        'the checkbox affordance reflects the inherited transcription skill',
+        () async {
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => handPickedModelRoute());
+          when(
+            () => mockResolver.resolveAutomationFallbacks('task-1'),
+          ).thenAnswer(
+            (_) async => [
+              inheritedProfile(
+                skillId: 'skill-transcribe',
+                withTranscription: true,
+              ),
+            ],
+          );
+          when(
+            () => mockAiConfig.getConfigById('skill-transcribe'),
+          ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
+
+          final available = await service.hasAutomatedSkillType(
+            taskId: 'task-1',
+            skillType: SkillType.transcription,
+          );
+
+          expect(available, isTrue);
+        },
+      );
+
+      test(
+        'the direct transcription fallback still runs when nothing inherits '
+        'the capability',
+        () async {
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => handPickedModelRoute());
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [makeModel()]);
+          when(
+            () => mockAiConfig.getConfigById('provider-mlx'),
+          ).thenAnswer((_) async => makeProvider());
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(
+            result.resolvedProfile!.transcriptionModelId,
+            mlxAudioQwenAsr17B8BitModelId,
+          );
+        },
+      );
+    });
+
     glados.Glados(
       glados.any.automationServiceScenario,
       glados.ExploreConfig(numRuns: 180),
@@ -1189,6 +1495,9 @@ void main() {
           resolverCalls++;
           return scenario.profileMissing ? null : profile;
         });
+        when(
+          () => localResolver.resolveAutomationFallbacks(any()),
+        ).thenAnswer((_) async => const <ResolvedProfile>[]);
         when(
           () => localAiConfig.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => const <AiConfig>[]);
@@ -1291,6 +1600,9 @@ void main() {
         when(
           () => localResolver.resolveForTask('rank-task'),
         ).thenAnswer((_) async => null);
+        when(
+          () => localResolver.resolveAutomationFallbacks(any()),
+        ).thenAnswer((_) async => const <ResolvedProfile>[]);
         when(
           () => localAiConfig.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => models);

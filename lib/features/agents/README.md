@@ -1120,11 +1120,36 @@ the write."
 3. creates the agent identity and state
 4. sets `slots.activeTaskId`
 5. creates `agent_task` and `template_assignment` links
-6. registers a task subscription
-7. enqueues a creation wake — callers can merge extra entity IDs into its
+6. announces the assignment on `UpdateNotifications` once the transaction has
+   committed (see below)
+7. registers a task subscription
+8. enqueues a creation wake — callers can merge extra entity IDs into its
    trigger tokens via `additionalWakeTokens` (the onboarding first-task flow
    passes the already-transcribed audio entry, so the first turn attends to
    the spoken capture like a `transcriptionComplete` wake would)
+
+### Assignment announcement
+
+`taskAgentProvider` — what the AI summary card watches — keys its refresh on
+the **task** id via `agentUpdateStreamProvider(taskId)`, and nothing in the
+agent write path emits that token: identity, state, and links all go through
+`AgentSyncService`, which does not notify at all. Callers make this worse by
+design, `unawaited`-ing `autoAssignCategoryAgent` and navigating immediately,
+so the provider's first read usually lands before the agent exists.
+
+The only notification that ever carried the task id was
+`_notifyWakeCompletion` (`state/agent_wiring.dart`), which fires when a wake
+*finishes* — a full inference round-trip after creation. The card therefore
+sat empty for seconds on a freshly created task, reading as "no agent was
+assigned" and pushing users to assign one by hand.
+
+`createTaskAgent` now calls `UpdateNotifications.notifyUiOnly({agentId,
+taskId, agentNotification})` immediately after the transaction commits and
+before the creation wake is enqueued. `notifyUiOnly` keeps it off
+`localUpdateStream`, so the wake orchestrator does not read the agent system's
+own write as task content changing and stack a second wake on the creation
+wake. The dependency is optional (`UpdateNotifications?`) so tests and non-UI
+composition roots can build the service without the notification bus.
 
 ### Wake Flow
 
