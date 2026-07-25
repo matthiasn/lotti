@@ -742,6 +742,27 @@ The create row appears on an exact-title miss, matching the category and label
 pickers: typing "Migrate" still offers to create it when "Migrate the database"
 exists, because the shorter title is a legitimately different task.
 
+Three races the shape has to survive, each pinned by a test:
+
+- **The pool must be current before it can prove absence.** On a backlog larger
+  than the 200-row prefetch an exact-title match can live outside the window, so
+  the create row is withheld until that query's full-text lookup resolves —
+  otherwise the picker offers to create a duplicate of a task that already
+  exists. A *failed* lookup releases it: the pool is then as complete as it is
+  going to get, and withholding forever would make an unavailable index look
+  like a missing feature.
+- **One create per sheet.** `EntityPickerSheet` serializes `createFromQuery`;
+  the row stays mounted across the await, so a double tap would otherwise
+  persist two entities and link one, both, or neither depending on completion
+  order.
+- **A dismissal must not strand the task.** Persistence can outlive the sheet.
+  `LinkTaskModal` captures every tree-bound dependency — messenger, repository,
+  localizations, the resolved relation phrase — into `_LinkCommitDeps` *before*
+  the write, and if the sheet is gone when it lands, commits the link on those
+  captured deps instead of returning null. `mounted` gates only the pop.
+  `showLinkCreatedFeedback` takes `messages` and a resolved `phrase` rather
+  than a `BuildContext` for exactly this reason.
+
 The card's overflow "Create new linked task…" entry is deliberately kept. The
 two now express different intents: the overflow creates a *blank* task and
 navigates to it (for writing it out properly), the picker creates a *titled*

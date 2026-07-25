@@ -2829,6 +2829,7 @@
   "linkPhraseFollowsUpPrimary": "Navazuje na",
   "linkPhraseSupersedesInverse": "Je nahrazeno",
   "linkPhraseSupersedesPrimary": "Nahrazuje",
+  "linkPickerCreateTaskSemanticLabel": "Vytvořit úkol: {title}",
   "linkTaskButton": "Propojit",
   "logbookEmptyHint": "Vytvoř svůj první záznam a začni si psát deník.",
   "logbookEmptyTitle": "Tvůj deník je prázdný",

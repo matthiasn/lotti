@@ -74,16 +74,15 @@ class BlockingTaskPickerModal extends ConsumerWidget {
     await HapticFeedback.mediumImpact();
 
     if (context.mounted) {
+      // The picked task blocks the anchor, so from the anchor's side this is
+      // the inverse phrasing — the same words the card will show.
+      const relation = DirectedRelation(EntryLinkType.blocks, inverse: true);
       showLinkCreatedFeedback(
-        context: context,
+        messages: context.messages,
+        phrase: directedRelationLabel(context, relation),
         messenger: messenger,
         repository: repository,
-        // The picked task blocks the anchor, so from the anchor's side this
-        // is the inverse phrasing — the same words the card will show.
-        relation: const DirectedRelation(
-          EntryLinkType.blocks,
-          inverse: true,
-        ),
+        relation: relation,
         fromId: blocker.meta.id,
         toId: blockedTaskId,
         linkedTaskTitle: blocker.data.title,

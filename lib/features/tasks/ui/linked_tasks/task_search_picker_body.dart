@@ -80,6 +80,11 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   /// task is in neither the prefetch nor the full-text results.
   List<Task> _createdTasks = const [];
 
+  /// The query [_resolvedMatches] and [_fts5Matches] currently describe, or
+  /// null before the first lookup resolves. Anything reading the pool to
+  /// decide a task does *not* exist has to know the pool is current.
+  String? _resolvedQuery;
+
   /// Every task a row can be built from. Both the row builder and the pick
   /// handler must read this same list: building rows from a wider set than
   /// picks are resolved against is what let a rendered row throw on tap.
@@ -167,6 +172,7 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
         setState(() {
           _fts5Matches = matches;
           _resolvedMatches = resolved;
+          _resolvedQuery = query.trim();
         });
       }
     } catch (e) {
@@ -174,6 +180,10 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
         setState(() {
           _fts5Matches = {};
           _resolvedMatches = const [];
+          // A failed lookup still resolves the query: the pool is as complete
+          // as it is going to get, so the create row must not stay withheld
+          // forever on a database that is simply unavailable.
+          _resolvedQuery = query.trim();
         });
       }
     }
@@ -189,6 +199,7 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       if (query.isEmpty) {
         _fts5Matches = {};
         _resolvedMatches = const [];
+        _resolvedQuery = null;
       } else {
         unawaited(_fetchFts5(query));
       }
@@ -255,11 +266,19 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
   /// label pickers: typing "Migrate" still offers to create it even when
   /// "Migrate the database" already exists, because the shorter title is a
   /// legitimately different task.
+  ///
+  /// Withheld until the query's full-text lookup has resolved. On a backlog
+  /// larger than the 200-row prefetch an exact-title match can live outside
+  /// the window, so [_candidatePool] does not contain it yet — offering the
+  /// create row in that gap invites a duplicate of a task that already
+  /// exists, which is precisely what the exact-title check exists to prevent.
   bool _shouldShowCreate(String query) {
-    final trimmed = query.trim().toLowerCase();
+    final trimmed = query.trim();
     if (trimmed.isEmpty) return false;
+    if (trimmed != _resolvedQuery) return false;
+    final lowered = trimmed.toLowerCase();
     return !_candidatePool.any(
-      (task) => task.data.title.trim().toLowerCase() == trimmed,
+      (task) => task.data.title.trim().toLowerCase() == lowered,
     );
   }
 
@@ -300,6 +319,7 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       createFromQuery: widget.onCreateTask == null ? null : _createFromQuery,
       shouldShowCreate: _shouldShowCreate,
       createRowKey: const ValueKey('link-picker-create'),
+      createSemanticsLabel: context.messages.linkPickerCreateTaskSemanticLabel,
     );
   }
 }

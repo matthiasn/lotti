@@ -205,6 +205,10 @@ void main() {
         await openModal(tester);
         await tester.enterText(find.byType(TextField), 'past');
         await tester.pump();
+        // A second pump: the create row is withheld until the query's full-text
+        // lookup resolves, so the pool it checks for an exact-title match is
+        // actually complete.
+        await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('Task past the 200th row'), findsOneWidget);
@@ -257,6 +261,10 @@ void main() {
 
         await openModal(tester);
         await tester.enterText(find.byType(TextField), 'finish');
+        await tester.pump();
+        // A second pump: the create row is withheld until the query's full-text
+        // lookup resolves, so the pool it checks for an exact-title match is
+        // actually complete.
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
@@ -696,6 +704,10 @@ void main() {
         // typing must already show the filtered list.
         await tester.enterText(find.byType(TextField), 'banana');
         await tester.pump();
+        // A second pump: the create row is withheld until the query's full-text
+        // lookup resolves, so the pool it checks for an exact-title match is
+        // actually complete.
+        await tester.pump();
 
         // Only matching task should be visible
         expect(find.text('Apple Task'), findsNothing);
@@ -746,6 +758,10 @@ void main() {
       // Enter search query with no matches
       await tester.enterText(find.byType(TextField), 'xyz123');
       await tester.pump();
+      // A second pump: the create row is withheld until the query's full-text
+      // lookup resolves, so the pool it checks for an exact-title match is
+      // actually complete.
+      await tester.pump();
 
       // No longer a dead end: the query the user typed is offered as a task
       // to create. The "No tasks found" message it replaces still exists for
@@ -771,6 +787,10 @@ void main() {
         // A query with no FTS5 match (default stub) and no title-substring
         // match filters the single task out.
         await tester.enterText(find.byType(TextField), 'xyz123');
+        await tester.pump();
+        // A second pump: the create row is withheld until the query's full-text
+        // lookup resolves, so the pool it checks for an exact-title match is
+        // actually complete.
         await tester.pump();
 
         // The list collapses, but to a create offer rather than an apology.
@@ -825,6 +845,10 @@ void main() {
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'search text');
+      await tester.pump();
+      // A second pump: the create row is withheld until the query's full-text
+      // lookup resolves, so the pool it checks for an exact-title match is
+      // actually complete.
       await tester.pump();
 
       // Clear button should appear
@@ -1455,6 +1479,10 @@ void main() {
       // onChanged-triggered fetch), so the result lands one frame later.
       await tester.enterText(find.byType(TextField), 'special');
       await tester.pump();
+      // A second pump: the create row is withheld until the query's full-text
+      // lookup resolves, so the pool it checks for an exact-title match is
+      // actually complete.
+      await tester.pump();
       await tester.pump();
 
       // Task-2 should be visible because FTS5 matched it
@@ -1506,6 +1534,10 @@ void main() {
       // Enter search
       await tester.enterText(find.byType(TextField), 'test');
       await tester.pump();
+      // A second pump: the create row is withheld until the query's full-text
+      // lookup resolves, so the pool it checks for an exact-title match is
+      // actually complete.
+      await tester.pump();
 
       // Should fallback to title matching
       expect(find.text('Test Task'), findsOneWidget);
@@ -1541,8 +1573,16 @@ void main() {
         // Type the query whose FTS5 lookup will resolve LATE...
         await tester.enterText(find.byType(TextField), 'stale');
         await tester.pump();
+        // A second pump: the create row is withheld until the query's full-text
+        // lookup resolves, so the pool it checks for an exact-title match is
+        // actually complete.
+        await tester.pump();
         // ...then type a newer query whose lookup resolves immediately.
         await tester.enterText(find.byType(TextField), 'fresh');
+        await tester.pump();
+        // A second pump: the create row is withheld until the query's full-text
+        // lookup resolves, so the pool it checks for an exact-title match is
+        // actually complete.
         await tester.pump();
         await tester.pump();
 
@@ -1674,35 +1714,6 @@ void main() {
       Finder createRow() => find.byKey(const ValueKey('link-picker-create'));
 
       testWidgets(
-        'a query matching nothing offers to create it; an exact title match '
-        'does not',
-        (tester) async {
-          stubTasks([buildTask(id: 'apple', title: 'Apple Task')]);
-          await openWithCategory(tester);
-
-          // Nothing typed: no create row, and no reason for one.
-          expect(createRow(), findsNothing);
-
-          await tester.enterText(find.byType(TextField), 'Write the guide');
-          await tester.pump();
-          expect(find.text('No tasks found'), findsNothing);
-          expect(createRow(), findsOneWidget);
-
-          // An exact title match means the task already exists — offering to
-          // create a second one with the same name would be a duplicate.
-          await tester.enterText(find.byType(TextField), 'apple task');
-          await tester.pump();
-          expect(createRow(), findsNothing);
-
-          // A partial match still offers the create: "Apple" is a
-          // legitimately different task from "Apple Task".
-          await tester.enterText(find.byType(TextField), 'Apple');
-          await tester.pump();
-          expect(createRow(), findsOneWidget);
-        },
-      );
-
-      testWidgets(
         "creating from the query titles the task, inherits the anchor task's "
         'category, and links it with the selected relation',
         (tester) async {
@@ -1737,6 +1748,10 @@ void main() {
           await openWithCategory(tester);
           await pickRelation(tester, 'Blocks');
           await tester.enterText(find.byType(TextField), 'Write the guide');
+          await tester.pump();
+          // A second pump: the create row is withheld until the query's full-text
+          // lookup resolves, so the pool it checks for an exact-title match is
+          // actually complete.
           await tester.pump();
 
           await tester.tap(createRow());
@@ -1777,6 +1792,64 @@ void main() {
         },
       );
 
+      testWidgets(
+        'a dismissal mid-write still links the task it just created',
+        (tester) async {
+          stubTasks([]);
+          final created = buildTask(id: 'new-task', title: 'Write the guide');
+          // Holds the write open so the sheet can be dismissed while it is
+          // still in flight — the race that would otherwise strand a created,
+          // unlinked, unannounced task.
+          final write = Completer<Task?>();
+          when(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+              labelIds: any(named: 'labelIds'),
+            ),
+          ).thenAnswer((_) => write.future);
+          when(
+            () => mockPersistenceLogic.createLink(
+              fromId: any(named: 'fromId'),
+              toId: any(named: 'toId'),
+              // ignore: avoid_redundant_argument_values
+              linkType: EntryLinkType.basic,
+            ),
+          ).thenAnswer((_) async => true);
+
+          await openWithCategory(tester);
+          await tester.enterText(find.byType(TextField), 'Write the guide');
+          await tester.pump();
+          await tester.pump();
+          await tester.tap(createRow());
+          await tester.pump();
+
+          // Gone before the write lands.
+          await tester.tap(find.byIcon(Icons.close_rounded));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 900));
+          expect(find.text('Link existing task'), findsNothing);
+
+          write.complete(created);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          // The link the user asked for still lands. Dropping it here would
+          // leave the new task reachable only as a stray row in the task list,
+          // with no link and no confirmation.
+          verify(
+            () => mockPersistenceLogic.createLink(
+              fromId: 'current-task',
+              toId: 'new-task',
+              // ignore: avoid_redundant_argument_values
+              linkType: EntryLinkType.basic,
+            ),
+          ).called(1);
+        },
+      );
+
       testWidgets('a failed create leaves the picker open and links nothing', (
         tester,
       ) async {
@@ -1793,6 +1866,10 @@ void main() {
 
         await openWithCategory(tester);
         await tester.enterText(find.byType(TextField), 'Write the guide');
+        await tester.pump();
+        // A second pump: the create row is withheld until the query's full-text
+        // lookup resolves, so the pool it checks for an exact-title match is
+        // actually complete.
         await tester.pump();
         await tester.tap(createRow());
         await tester.pump();

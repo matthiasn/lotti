@@ -78,6 +78,7 @@ Future<Task?> createTask({
   String? status,
   DateTime? due,
   String title = '',
+  String? inheritProjectFrom,
 }) async {
   final now = DateTime.now();
   final projectRepository = projectId != null
@@ -143,11 +144,19 @@ Future<Task?> createTask({
       taskId: task.meta.id,
     );
     if (!assigned) return null;
-  } else if (task != null && linkedId != null) {
-    // Inherit project from the linked parent task when no explicit project was
+  } else if (task != null && (linkedId ?? inheritProjectFrom) != null) {
+    // Inherit project from the parent task when no explicit project was
     // requested by the creation context.
+    //
+    // [inheritProjectFrom] names that parent *without* writing a link to it.
+    // A caller that owns the linking itself — the link picker, which writes
+    // one typed edge with the relation the user already chose — must not pass
+    // `linkedId` just to get the project across, because that writes a plain
+    // link it would then have to unpick. Without either, the new task is
+    // linked to its parent but absent from that parent's project lists and
+    // rollups.
     await _inheritProjectFromLinkedTask(
-      linkedId: linkedId,
+      linkedId: (linkedId ?? inheritProjectFrom)!,
       newTaskId: task.meta.id,
     );
   }

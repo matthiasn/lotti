@@ -86,6 +86,36 @@ resolution.
 6. **Verify** — run analyzer and affected tests to confirm all changes compile
    and pass.
 
+7. **Babysit the PR until it is actually done.** Opening a PR and replying once
+   is not the end of the job. A PR is finished only when all three hold at the
+   same time:
+
+   - **mergeable** — `gh pr view <n> --json mergeable` is `MERGEABLE`; rebase on
+     latest `main` and force-push (`--force-with-lease`) if it drifts behind
+   - **all green** — every check passed, not merely "not failing".
+     `gh pr checks <n>` must show zero `pending` and zero `fail`, including
+     `codecov/patch`
+   - **all replied** — every top-level review comment has a reply, with a real
+     fix or a stated reason for declining
+
+   Reviews arrive *after* pushes, so pushing fixes restarts the loop: the
+   reviewer re-reviews the new commit and may file new findings. Bots also
+   rate-limit and arrive late (CodeRabbit will say "next review available in
+   N minutes" and skip the run entirely). Keep watching until the three
+   conditions hold together:
+
+   ```bash
+   # poll until no check is pending, then surface failures + new comments
+   until [ "$(gh pr checks <n> 2>&1 | awk -F'\t' '$2=="pending"' | wc -l)" = 0 ]; do sleep 30; done
+   gh pr checks <n> | awk -F'\t' '$2!="pass"'
+   gh api repos/{owner}/{repo}/pulls/<n>/comments \
+     --jq '.[] | select(.in_reply_to_id == null) | "\(.id) \(.path):\(.line)"'
+   ```
+
+   Run the wait in the background rather than blocking, and report the real
+   state — "27 pass, 1 pending" is the honest answer while a check is still
+   running, not "all green".
+
 ## Guidelines
 
 - Address ALL comments — do not skip any.

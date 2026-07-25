@@ -6805,6 +6805,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkPhraseSupersedesPrimary => 'Înlocuiește';
 
   @override
+  String linkPickerCreateTaskSemanticLabel(String title) {
+    return 'Creați sarcina: $title';
+  }
+
+  @override
   String get linkTaskButton => 'Asociați';
 
   @override

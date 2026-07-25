@@ -3411,6 +3411,15 @@
   "linkPhraseFollowsUpPrimary": "Follows up on",
   "linkPhraseSupersedesInverse": "Is superseded by",
   "linkPhraseSupersedesPrimary": "Supersedes",
+  "linkPickerCreateTaskSemanticLabel": "Create task: {title}",
+  "@linkPickerCreateTaskSemanticLabel": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    },
+    "description": "Spoken name for the link picker's create row. States that activating it creates a task rather than selecting an existing one."
+  },
   "linkTaskButton": "Link",
   "@linkTaskButton": {
     "description": "Short verb label for the Linked Tasks card header action that opens the link picker. Mirrors the Done button occupying the same slot in manage mode."
