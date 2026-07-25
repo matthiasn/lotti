@@ -68,9 +68,17 @@ class TaskAgentAssignmentResult {
 ///
 /// The category's defaults travel with the new agent: its inference profile,
 /// and its `automaticAgentWakesEnabled` preference as the agent's starting
-/// automatic-updates value. Being the single funnel for every UI creation path
-/// is what makes seeding here enough — nothing else constructs a
-/// category-default task agent.
+/// automatic-updates value.
+///
+/// This is the funnel for every *UI* creation path, but not the only place a
+/// category-default task agent is built: the agent tools create them too
+/// (`ProjectToolDispatcher._tryAutoAssignTaskAgent`,
+/// `FollowUpTaskHandler._tryAutoAssignAgent`). Those forward the same category
+/// defaults themselves rather than routing through here, because this helper
+/// also passes `setupOrigin: categorySnapshot`, which makes a category without
+/// a `defaultProfileId` produce a *disabled* agent instead of falling back to
+/// the template's profile. Any new category default added here has to be
+/// mirrored there.
 Future<TaskAgentAssignmentResult> assignCategoryDefaultTaskAgent({
   required TaskAgentService service,
   required Task task,

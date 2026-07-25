@@ -1217,21 +1217,32 @@ void main() {
           },
         );
 
-        // Seeding must not arm the runtime by itself — the creation wake is
-        // still the only inference this path triggers.
-        test(
-          'seeding on does not enable automatic updates at runtime',
-          () async {
-            await createWith(automaticUpdatesEnabled: true);
+        // Persisting the opt-in is not enough. The orchestrator keeps its own
+        // disabled set, and an agent parked there only leaves it via an
+        // explicit per-task toggle or the next app start's
+        // `restoreSubscriptions`. Without mirroring the seed into the runtime
+        // the category switch looks dead until a restart.
+        test('seeding on frees the agent from the disabled set', () async {
+          await createWith(automaticUpdatesEnabled: true);
 
-            verify(
-              () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
-            ).called(1);
-            verifyNever(
-              () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
-            );
-          },
-        );
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+          );
+        });
+
+        test('seeding off keeps the runtime disabled', () async {
+          await createWith();
+
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+          );
+        });
       });
     });
 

@@ -290,6 +290,7 @@ class FollowUpTaskHandler {
         profileId: category.defaultProfileId,
         allowedCategoryIds: {categoryId},
         awaitContent: true,
+        automaticUpdatesEnabled: category.automaticAgentWakesEnabledEffective,
       );
     } catch (e) {
       _domainLogger?.error(

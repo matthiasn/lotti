@@ -116,10 +116,16 @@ The fields with verified runtime consumers are:
   Used to auto-create a task agent in content-awaiting mode for new tasks.
 - `automaticAgentWakesEnabled`
   Seeds `AgentConfig.automaticUpdatesEnabled` on those task agents — whether
-  each one wakes on task changes or only when asked. `assignCategoryDefaultTaskAgent()`
-  forwards it to `TaskAgentService.createTaskAgent()`, which hardcoded `false`
-  before this existed. A *seed*, not a gate: the per-task switch on the AI
-  summary card owns the preference afterwards, so turning this on later does
+  each one wakes on task changes or only when asked. Forwarded to
+  `TaskAgentService.createTaskAgent()`, which hardcoded `false` before this
+  existed, by all three category-default creation paths:
+  `assignCategoryDefaultTaskAgent()` (every UI path),
+  `ProjectToolDispatcher._tryAutoAssignTaskAgent()`, and
+  `FollowUpTaskHandler._tryAutoAssignAgent()`. The service mirrors the value
+  into the wake orchestrator as well as persisting it, so a seeded-on agent
+  wakes in the session it was created in rather than after the next restart.
+  A *seed*, not a gate: the per-task switch on the AI summary card owns the
+  preference afterwards, so turning this on later does
   not reach back into tasks that already exist. The details-page row is hidden
   without a `defaultTemplateId`, since no agent is created there for it to
   govern. Independent of `automaticInferenceEnabled` — switching wakes off

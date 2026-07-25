@@ -1153,15 +1153,31 @@ the write."
    the spoken capture like a `transcriptionComplete` wake would)
 
 Step 3 seeds `AgentConfig.automaticUpdatesEnabled` from the caller's
-`automaticUpdatesEnabled` argument, which `assignCategoryDefaultTaskAgent()`
-fills from `CategoryDefinition.automaticAgentWakesEnabled`. It hardcoded
-`false` before the category could express a preference, so an absent category
-value still produces exactly that. Seeding sets the agent's *starting*
-preference only — the per-task switch on the AI summary card owns it from then
-on, and a later category edit does not reach back into existing agents.
-Seeding on does not arm the runtime by itself either: `createTaskAgent` still
-calls `disableAutomaticUpdatesRuntime`, so the creation wake remains the only
-inference this path triggers.
+`automaticUpdatesEnabled` argument, filled from
+`CategoryDefinition.automaticAgentWakesEnabled`. It hardcoded `false` before
+the category could express a preference, so an absent category value still
+produces exactly that. Seeding sets the agent's *starting* preference only —
+the per-task switch on the AI summary card owns it from then on, and a later
+category edit does not reach back into existing agents.
+
+The seed is mirrored into the orchestrator, not just persisted: step 6 calls
+`enableAutomaticUpdatesRuntime` when it is on and `disableAutomaticUpdatesRuntime`
+when it is off. The orchestrator keeps its own `_automaticUpdatesDisabledAgents`
+set, and an agent parked there only leaves it via an explicit per-task toggle
+or the next app start's `restoreSubscriptions` — so persisting alone would make
+the category switch look dead until a restart.
+
+Three call sites build a category-default task agent, and each has to forward
+the category's defaults itself:
+
+- `assignCategoryDefaultTaskAgent()` (`lib/logic/create/task_agent_assignment.dart`) — every UI creation path
+- `ProjectToolDispatcher._tryAutoAssignTaskAgent()` — tasks a project agent creates
+- `FollowUpTaskHandler._tryAutoAssignAgent()` — follow-up tasks a task agent creates
+
+The agent-tool paths deliberately do not route through the helper: it also
+passes `setupOrigin: categorySnapshot`, which makes a category without a
+`defaultProfileId` produce a *disabled* agent rather than falling back to the
+template's profile. Any new category default has to be added to all three.
 
 ### Assignment announcement
 

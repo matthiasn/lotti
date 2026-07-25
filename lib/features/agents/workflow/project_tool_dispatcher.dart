@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -303,6 +304,7 @@ class ProjectToolDispatcher {
         profileId: category.defaultProfileId,
         allowedCategoryIds: {categoryId},
         awaitContent: true,
+        automaticUpdatesEnabled: category.automaticAgentWakesEnabledEffective,
       );
     } catch (error, stackTrace) {
       domainLogger?.error(
