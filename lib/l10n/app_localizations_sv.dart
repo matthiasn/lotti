@@ -10045,6 +10045,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String taskAgentNextUpdateInShort(String countdown) {
+    return 'om $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'Ingen AI-installation';
 
   @override
@@ -10136,6 +10141,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskAgentSetupTitle => 'Agentuppsättning';
 
   @override
+  String get taskAgentSkipScheduledUpdate => 'Hoppa över';
+
+  @override
+  String get taskAgentStatusOutOfDate => 'Inaktuell';
+
+  @override
+  String get taskAgentStatusUpToDate => 'Uppdaterad';
+
+  @override
   String get taskAgentThinkingModelLabel => 'Tänkande modell';
 
   @override
@@ -10143,6 +10157,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get taskAgentTurnOffSetup => 'Stäng av AI för denna agent';
+
+  @override
+  String get taskAgentUpdateNow => 'Uppdatera nu';
+
+  @override
+  String get taskAgentUpdatesOnChange => 'Uppdateras när uppgiften ändras';
 
   @override
   String get taskAgentUseCategoryDefault => 'Kopiera kategori standard';
@@ -10153,9 +10173,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get taskAgentUseProfileDefault => 'Använd profilstandard';
-
-  @override
-  String get taskAgentWakeAgent => 'Wake-agent';
 
   @override
   String taskBlockedByChipLabel(int count) {

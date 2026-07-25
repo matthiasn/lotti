@@ -4664,6 +4664,7 @@
       }
     }
   },
+  "taskAgentNextUpdateInShort": "om {countdown}",
   "taskAgentNoAiSetup": "Ingen AI-installation",
   "taskAgentNoAiSetupDescription": "Pausar agentens inferens tills du väljer en profil eller modell.",
   "taskAgentNoModelsAvailable": "Inga kompatibla tänkande modeller tillgängliga",
@@ -4717,13 +4718,17 @@
     }
   },
   "taskAgentSetupTitle": "Agentuppsättning",
+  "taskAgentSkipScheduledUpdate": "Hoppa över",
+  "taskAgentStatusOutOfDate": "Inaktuell",
+  "taskAgentStatusUpToDate": "Uppdaterad",
   "taskAgentThinkingModelLabel": "Tänkande modell",
   "taskAgentThisReportHeader": "Denna rapport",
   "taskAgentTurnOffSetup": "Stäng av AI för denna agent",
+  "taskAgentUpdateNow": "Uppdatera nu",
+  "taskAgentUpdatesOnChange": "Uppdateras när uppgiften ändras",
   "taskAgentUseCategoryDefault": "Kopiera kategori standard",
   "taskAgentUseCategoryDefaultDescription": "Kopierar kategorins nuvarande uppställning. Senare kategoriändringar påverkar inte denna agent.",
   "taskAgentUseProfileDefault": "Använd profilstandard",
-  "taskAgentWakeAgent": "Wake-agent",
   "taskCategoryAllLabel": "alla",
   "taskCategoryLabel": "Kategori:",
   "taskCategoryUnassignedLabel": "ej tilldelad",

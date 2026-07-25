@@ -291,14 +291,17 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          // The initial scheduled wake shows the countdown + cancel.
-          expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-          expect(find.text('Next update in 0:30'), findsOneWidget);
+          // The initial scheduled wake shows the countdown + Skip.
+          expect(find.text('Skip'), findsOneWidget);
+          expect(find.textContaining('0:30'), findsOneWidget);
 
-          // Cancel it → _cancelledManually = true → countdown hidden.
-          await tester.tap(find.byIcon(Icons.close_rounded));
+          // Skip it → _cancelledManually = true → countdown hidden. The
+          // manual trigger was never gone, so it is still here.
+          await tester.tap(
+            find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+          );
           await tester.pumpAndSettle();
-          expect(find.byIcon(Icons.close_rounded), findsNothing);
+          expect(find.text('Skip'), findsNothing);
           expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
 
           // Reschedule: agentStateProvider re-emits a new nextWakeAt.
@@ -315,8 +318,8 @@ void main() {
           verify(
             () => taskAgentService.cancelScheduledWake(any()),
           ).called(1);
-          expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-          expect(find.text('Next update in 1:30'), findsOneWidget);
+          expect(find.text('Skip'), findsOneWidget);
+          expect(find.textContaining('1:30'), findsOneWidget);
         });
       },
     );

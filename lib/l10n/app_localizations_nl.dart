@@ -10076,6 +10076,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String taskAgentNextUpdateInShort(String countdown) {
+    return 'over $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'Geen AI-opstelling';
 
   @override
@@ -10168,6 +10173,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskAgentSetupTitle => 'Agent setup';
 
   @override
+  String get taskAgentSkipScheduledUpdate => 'Overslaan';
+
+  @override
+  String get taskAgentStatusOutOfDate => 'Verouderd';
+
+  @override
+  String get taskAgentStatusUpToDate => 'Actueel';
+
+  @override
   String get taskAgentThinkingModelLabel => 'Denkmodel';
 
   @override
@@ -10175,6 +10189,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get taskAgentTurnOffSetup => 'Zet AI uit voor deze agent.';
+
+  @override
+  String get taskAgentUpdateNow => 'Nu bijwerken';
+
+  @override
+  String get taskAgentUpdatesOnChange =>
+      'Werkt bij wanneer deze taak verandert';
 
   @override
   String get taskAgentUseCategoryDefault => 'Standaard categorie kopiëren';
@@ -10185,9 +10206,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get taskAgentUseProfileDefault => 'Standaardprofiel gebruiken';
-
-  @override
-  String get taskAgentWakeAgent => 'Wake agent';
 
   @override
   String taskBlockedByChipLabel(int count) {

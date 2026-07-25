@@ -10227,6 +10227,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String taskAgentNextUpdateInShort(String countdown) {
+    return 'în $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'Fără configurare AI';
 
   @override
@@ -10319,6 +10324,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentSetupTitle => 'Configurarea agentului';
 
   @override
+  String get taskAgentSkipScheduledUpdate => 'Omiteți';
+
+  @override
+  String get taskAgentStatusOutOfDate => 'Neactualizat';
+
+  @override
+  String get taskAgentStatusUpToDate => 'La zi';
+
+  @override
   String get taskAgentThinkingModelLabel => 'Model de raționament';
 
   @override
@@ -10326,6 +10340,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskAgentTurnOffSetup => 'Dezactivați AI pentru acest agent';
+
+  @override
+  String get taskAgentUpdateNow => 'Actualizați acum';
+
+  @override
+  String get taskAgentUpdatesOnChange =>
+      'Se actualizează când sarcina se modifică';
 
   @override
   String get taskAgentUseCategoryDefault =>
@@ -10338,9 +10359,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get taskAgentUseProfileDefault =>
       'Folosiți modelul implicit al profilului';
-
-  @override
-  String get taskAgentWakeAgent => 'Treziți agentul';
 
   @override
   String taskBlockedByChipLabel(int count) {

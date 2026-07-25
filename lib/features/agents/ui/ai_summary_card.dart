@@ -574,7 +574,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       onAutomaticUpdatesChanged: (enabled) =>
           unawaited(_updateAutomaticUpdates(enabled: enabled)),
       onRunNow: runNow,
-      onCancelTimer: cancelTimer,
+      onSkipScheduledUpdate: cancelTimer,
       onCountdownExpired: () {
         if (mounted) setState(() {});
       },

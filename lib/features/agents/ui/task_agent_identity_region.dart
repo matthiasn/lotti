@@ -11,6 +11,12 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// by a different route. Error presentations (no setup selected, broken setup)
 /// reuse the same row in the alert color. The "Current setup" wording lives in
 /// the semantics label — visually the placement and glyph carry that meaning.
+///
+/// Both rows shrink-wrap: they never claim more width than their content, so
+/// the tappable row's ink, tooltip and tap target stop at its chevron instead
+/// of running the width of the footer. Both also truncate rather than wrap —
+/// a route string that outgrows the row ellipsizes and stays reachable through
+/// the tooltip and the semantics label.
 class TaskAgentIdentityRegion extends StatelessWidget {
   const TaskAgentIdentityRegion({
     required this.data,
@@ -82,8 +88,11 @@ class TaskAgentIdentityRegion extends StatelessWidget {
         ),
     ];
 
+    // `start`, never `stretch`: a stretching Column hands its children a tight
+    // width, which silently defeats the `MainAxisSize.min` each row relies on
+    // and inflates their ink/tooltip targets to the full reading measure.
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: rows,
     );
   }
@@ -125,36 +134,45 @@ class _SetupIdentityRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(tokens.radii.s),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: tokens.spacing.step8),
-              // Shrink-wrapped so the chevron hugs the value instead of
-              // drifting to the far row end next to unrelated controls.
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isError
-                        ? Icons.error_outline_rounded
-                        : Icons.psychology_outlined,
-                    size: tokens.spacing.step5,
-                    color: iconColor,
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  Flexible(
-                    child: Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: color,
+              // The inset lives INSIDE the ink so the highlight has room
+              // around the glyph and the chevron; painted flush, the rounded
+              // ink corners cut into the glyph itself.
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step2,
+                ),
+                // Shrink-wrapped so the ink, the tooltip and the tap target
+                // all stop at the chevron instead of running the full width
+                // of the footer.
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isError
+                          ? Icons.error_outline_rounded
+                          : Icons.psychology_outlined,
+                      size: tokens.spacing.step5,
+                      color: iconColor,
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                    Flexible(
+                      child: Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: color,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: tokens.spacing.step5,
-                    color: iconColor,
-                  ),
-                ],
+                    SizedBox(width: tokens.spacing.step2),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: tokens.spacing.step5,
+                      color: iconColor,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -175,30 +193,48 @@ class _ReportIdentityRow extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final caption = tokens.typography.styles.others.caption;
+    // Matches the tappable row's inset so both glyphs share a leading edge.
     return Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.description_outlined,
-            size: tokens.spacing.step5,
-            color: ai.metaText,
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          Text(
-            label,
-            style: caption.copyWith(color: ai.metaText),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          Expanded(
-            child: Text(
-              value,
-              softWrap: true,
-              style: caption.copyWith(color: ai.metaText),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step2,
+      ),
+      // The full attribution lives in the tooltip; on screen it truncates
+      // rather than wrapping, so a long route cannot spill a stray fragment
+      // onto a second line under the row it belongs to.
+      child: Tooltip(
+        message: '$label $value',
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.description_outlined,
+              size: tokens.spacing.step5,
+              color: ai.metaText,
             ),
-          ),
-        ],
+            SizedBox(width: tokens.spacing.step2),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: caption.copyWith(color: ai.metaText),
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            // The route is the payload and the label a fixed-vocabulary
+            // prefix, so the route wins the contested space.
+            Flexible(
+              flex: 3,
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: caption.copyWith(color: ai.metaText),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

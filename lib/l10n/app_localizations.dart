@@ -17358,6 +17358,12 @@ abstract class AppLocalizations {
   /// **'Next update in {countdown}'**
   String taskAgentNextUpdateIn(String countdown);
 
+  /// Shorter form of taskAgentNextUpdateIn, used when the footer cannot fit the full sentence. The countdown value itself must never be truncated.
+  ///
+  /// In en, this message translates to:
+  /// **'in {countdown}'**
+  String taskAgentNextUpdateInShort(String countdown);
+
   /// No description provided for @taskAgentNoAiSetup.
   ///
   /// In en, this message translates to:
@@ -17508,6 +17514,24 @@ abstract class AppLocalizations {
   /// **'Agent setup'**
   String get taskAgentSetupTitle;
 
+  /// Quiet action beside the countdown that cancels the pending automatic update without turning automatic updates off.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get taskAgentSkipScheduledUpdate;
+
+  /// Short freshness caption in the task-agent card footer, paired with a warning glyph.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of date'**
+  String get taskAgentStatusOutOfDate;
+
+  /// Short freshness caption in the task-agent card footer, paired with a check glyph.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date'**
+  String get taskAgentStatusUpToDate;
+
   /// No description provided for @taskAgentThinkingModelLabel.
   ///
   /// In en, this message translates to:
@@ -17526,6 +17550,18 @@ abstract class AppLocalizations {
   /// **'Turn off AI for this agent'**
   String get taskAgentTurnOffSetup;
 
+  /// Manual trigger in the task-agent card footer. Always present: it runs the agent immediately whether or not an automatic update is scheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get taskAgentUpdateNow;
+
+  /// Schedule line in the task-agent card footer when automatic updates are on but no wake is currently pending. Keeps the line reserved so toggling automation does not resize the card.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates when this task changes'**
+  String get taskAgentUpdatesOnChange;
+
   /// No description provided for @taskAgentUseCategoryDefault.
   ///
   /// In en, this message translates to:
@@ -17543,12 +17579,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use profile default'**
   String get taskAgentUseProfileDefault;
-
-  /// No description provided for @taskAgentWakeAgent.
-  ///
-  /// In en, this message translates to:
-  /// **'Wake agent'**
-  String get taskAgentWakeAgent;
 
   /// No description provided for @taskBlockedByChipLabel.
   ///

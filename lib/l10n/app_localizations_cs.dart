@@ -10170,6 +10170,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String taskAgentNextUpdateInShort(String countdown) {
+    return 'za $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'Bez nastavení AI';
 
   @override
@@ -10261,6 +10266,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentSetupTitle => 'Nastavení agenta';
 
   @override
+  String get taskAgentSkipScheduledUpdate => 'Přeskočit';
+
+  @override
+  String get taskAgentStatusOutOfDate => 'Neaktuální';
+
+  @override
+  String get taskAgentStatusUpToDate => 'Aktuální';
+
+  @override
   String get taskAgentThinkingModelLabel => 'Model pro uvažování';
 
   @override
@@ -10268,6 +10282,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskAgentTurnOffSetup => 'Vypnout AI pro tohoto agenta';
+
+  @override
+  String get taskAgentUpdateNow => 'Aktualizovat nyní';
+
+  @override
+  String get taskAgentUpdatesOnChange => 'Aktualizuje se při změně úkolu';
 
   @override
   String get taskAgentUseCategoryDefault =>
@@ -10279,9 +10299,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskAgentUseProfileDefault => 'Použít výchozí model profilu';
-
-  @override
-  String get taskAgentWakeAgent => 'Probudit agenta';
 
   @override
   String taskBlockedByChipLabel(int count) {
