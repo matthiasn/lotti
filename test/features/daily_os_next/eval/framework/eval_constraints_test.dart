@@ -1631,6 +1631,54 @@ void main() {
       expect(result.detail, contains('not under the directiveUnsatisfiable'));
     });
 
+    test('a bare escalation with no note answers for nothing', () {
+      // The hole the previous version left: any accepted attentionNeeded with
+      // an allowlisted reason credited every commitment, so a model could drop
+      // all three and pass on a day-level remark that never mentions the
+      // directive. Under a reason other than the prompt's, the call has to
+      // carry a note.
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['overCommitted'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('commit-1-1s'));
+    });
+
+    test('the prompt reason needs no note to speak for itself', () {
+      final result = scoreDirectiveHonoured(
+        outcome(
+          blocks: [titled('Prepare the board deck')],
+          directive: directive,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'raise_day_status',
+              accepted: true,
+              arguments: {
+                'status': 'attentionNeeded',
+                'reasons': ['directiveUnsatisfiable'],
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
     test('silence with no escalation at all still fails', () {
       final result = scoreDirectiveHonoured(
         outcome(

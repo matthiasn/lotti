@@ -7,6 +7,7 @@ import 'package:meta/meta.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import 'eval_journal_fixture.dart';
 import 'eval_models.dart';
 
 /// Declarative day-planning scenarios.
@@ -691,24 +692,26 @@ void seedScenarioCorpus({
       limit: any(named: 'limit'),
     ),
   ).thenAnswer((_) async => scenario.inProgressFor(planDate));
+  // One journal for the cell, shared with the persistence stub so a task the
+  // model creates mid-wake is findable afterwards. Reset here, which is the
+  // once-per-cell seeding point.
+  currentEvalJournal.reset(scenario.tasksFor(planDate));
   when(
     () => journalDb.journalEntityMapForIds(any()),
-  ).thenAnswer(
-    (_) async => {
-      for (final task in scenario.tasksFor(planDate)) task.id: task,
-    },
-  );
+  ).thenAnswer((invocation) async {
+    final ids = invocation.positionalArguments.first as List<String>;
+    return currentEvalJournal.mapForIds(ids);
+  });
   // Single-id lookup, reached by `apply_triage` and `create_task_from_phrase`
   // — tools a model is free to call on a drafting wake, and glm-5.2 did.
   // Without this the harness answers "task <id> not found" for a task the
   // scenario put in the corpus and the model correctly named, and that lands
   // on the model as a rejection, corrupting the one constraint that measures
   // whether it needed correcting.
-  final byId = {for (final task in scenario.tasksFor(planDate)) task.id: task};
   when(
     () => journalDb.journalEntityById(any()),
   ).thenAnswer((invocation) async {
     final id = invocation.positionalArguments.first as String;
-    return byId[id];
+    return currentEvalJournal.byId(id);
   });
 }

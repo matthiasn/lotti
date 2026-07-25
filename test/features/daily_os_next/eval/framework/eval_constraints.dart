@@ -697,6 +697,15 @@ EvalConstraintResult scoreTaskWorkIsTyped(EvalRunOutcome outcome) {
   );
 }
 
+/// Whether [call] escalates under the reason the prompt names for an
+/// unsatisfiable directive, which needs no further explanation to count.
+bool _namesDirectiveReason(EvalToolCall call, Set<String> answering) =>
+    switch (call.arguments['reasons']) {
+      final List<Object?> list =>
+        list.map((r) => '$r').contains('directiveUnsatisfiable'),
+      _ => false,
+    };
+
 /// Every directive commitment is represented, traded away, or escalated —
 /// never silently dropped.
 ///
@@ -750,7 +759,17 @@ EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
             final List<Object?> list =>
               list.map((r) => '$r').any(answeringReasons.contains),
             _ => false,
-          })
+          } &&
+          // Under the prompt's own reason, the call speaks for itself. Under
+          // any other, it has to actually say something: a bare
+          // `overCommitted` with no note is a day-level remark that never
+          // mentions the directive, and crediting it would let a model drop
+          // every commitment and still pass. The bar is structural — a note
+          // exists or it does not — rather than semantic, because refereeing
+          // what a note *means* by substring match is what got this scorer
+          // wrong twice already.
+          (_namesDirectiveReason(call, answeringReasons) ||
+              '${call.arguments['note'] ?? ''}'.trim().isNotEmpty))
         call,
   ];
   final escalatedAsDirective = escalations.any(
@@ -804,8 +823,13 @@ EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
       // both", which names both casualties in the words a person would use.
       // Substring matching cannot referee that, and a false "silently
       // dropped" is worse than a coarse pass: it accuses the model of the one
-      // thing it visibly did not do. Whether the escalation named a casualty
-      // at all is `surfacedConflict`'s job.
+      // thing it visibly did not do.
+      //
+      // The counterweight is above, in what qualifies as an escalation at
+      // all: under a reason other than the prompt's, the call must carry a
+      // note. Delegating that to `surfacedConflict` would have been delegating
+      // to a scorer this scenario never runs — it leaves
+      // `requiresConflictSurfaced` false.
       dispositions.add(
         escalatedAsDirective
             ? '${commitment.id}: escalated'

@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -15,6 +18,7 @@ import '../../../agents/test_data/ai_config_factories.dart';
 import '../../../ai_consumption/test_utils.dart';
 import '../../integration/scripted_conversation_repository.dart';
 import 'eval_constraints.dart';
+import 'eval_journal_fixture.dart';
 import 'eval_runner.dart';
 import 'eval_scenario.dart';
 import 'eval_test_setup.dart';
@@ -1074,6 +1078,76 @@ void main() {
       ]);
       expect(calls.first.accepted, isFalse);
       expect(calls.last.accepted, isTrue);
+    });
+  });
+
+  group('the eval journal', () {
+    test('a task created mid-run becomes findable, as it is in the app', () {
+      // DayAgentPlanWriter resolves allowed task references through
+      // journalEntityMapForIds, so a created task that is not stored makes the
+      // pipeline reject a placement the app would accept — handing the model
+      // an id and then denying it exists.
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      final journalDb = MockJournalDb();
+      seedScenarioCorpus(
+        journalDb: journalDb,
+        scenario: scenario,
+        planDate: evalPlanDateFor(scenario, today),
+      );
+
+      expect(currentEvalJournal.byId('task-overdue-invoice'), isNotNull);
+      expect(currentEvalJournal.byId('task-made-later'), isNull);
+
+      currentEvalJournal.add(
+        Task(
+          meta: Metadata(
+            id: 'task-made-later',
+            createdAt: today,
+            updatedAt: today,
+            dateFrom: today,
+            dateTo: today,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(id: 's', createdAt: today, utcOffset: 0),
+            dateFrom: today,
+            dateTo: today,
+            statusHistory: const [],
+            title: 'Made later',
+          ),
+          entryText: const EntryText(plainText: 'Made later'),
+        ),
+      );
+
+      expect(
+        currentEvalJournal.mapForIds([
+          'task-overdue-invoice',
+          'task-made-later',
+        ]),
+        hasLength(2),
+      );
+    });
+
+    test('seeding a cell forgets the previous cell tasks', () {
+      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+      final other = evalScenarios.firstWhere((s) => s.id == 'lateStart');
+      final journalDb = MockJournalDb();
+      seedScenarioCorpus(
+        journalDb: journalDb,
+        scenario: scenario,
+        planDate: evalPlanDateFor(scenario, today),
+      );
+      seedScenarioCorpus(
+        journalDb: journalDb,
+        scenario: other,
+        planDate: evalPlanDateFor(other, today),
+      );
+
+      expect(
+        currentEvalJournal.byId('task-overdue-invoice'),
+        isNull,
+        reason: 'a cell must not see the previous cell task corpus',
+      );
+      expect(currentEvalJournal.byId('task-long-migration'), isNotNull);
     });
   });
 

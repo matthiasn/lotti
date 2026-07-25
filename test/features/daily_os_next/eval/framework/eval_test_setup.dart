@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../ai_consumption/test_utils.dart';
+import 'eval_journal_fixture.dart';
 
 /// Shared `getIt` setup for any eval run, live or scripted.
 ///
@@ -51,7 +52,7 @@ Future<void> setUpEvalGetIt(AiInteractionCaptureTestBench attribution) async {
     final entryText = invocation.namedArguments[#entryText] as EntryText;
     final categoryId = invocation.namedArguments[#categoryId] as String?;
     final createdAt = data.dateFrom;
-    return Task(
+    final task = Task(
       meta: Metadata(
         id: 'eval-created-${data.title.hashCode}',
         createdAt: createdAt,
@@ -63,6 +64,12 @@ Future<void> setUpEvalGetIt(AiInteractionCaptureTestBench attribution) async {
       data: data,
       entryText: entryText,
     );
+    // Into the cell's journal, or the model is handed an id and then told it
+    // does not exist: `DayAgentPlanWriter` resolves allowed task references
+    // through `journalEntityMapForIds`, so an unstored task makes
+    // `draft_day_plan` reject a placement the app would have accepted.
+    currentEvalJournal.add(task);
+    return task;
   });
 
   await setUpTestGetIt(
