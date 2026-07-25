@@ -229,7 +229,7 @@ class _ReportIdentityRow extends StatelessWidget {
             Text(
               label,
               maxLines: 1,
-              style: caption.copyWith(color: ai.metaText),
+              style: caption.copyWith(color: ai.faintMeta),
             ),
             SizedBox(width: tokens.spacing.step2),
             // The route sheds whole segments rather than characters; the
@@ -237,7 +237,7 @@ class _ReportIdentityRow extends StatelessWidget {
             Flexible(
               child: _TieredIdentityText(
                 tiers: tiers,
-                style: caption.copyWith(color: ai.faintMeta),
+                style: caption.copyWith(color: ai.metaText),
               ),
             ),
           ],

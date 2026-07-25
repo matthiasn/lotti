@@ -208,7 +208,7 @@ class _TaskAgentAutomationRowState extends State<TaskAgentAutomationRow> {
         // that inset so the ink bleeds into the band's padding and the glyph
         // lands on the same column as every other row.
         final trigger = Transform.translate(
-          offset: Offset(-tokens.spacing.step3, 0),
+          offset: Offset(-tokens.spacing.step2, 0),
           child: _UpdateNowButton(
             isRunning: widget.isRunning,
             onRunNow: widget.inferenceAvailable ? widget.onRunNow : null,
@@ -369,7 +369,7 @@ class _FreshnessCluster extends StatelessWidget {
             size: tokens.spacing.step5,
             color: isStale
                 ? tokens.colors.alert.warning.defaultColor
-                : ai.accent,
+                : ai.metaText,
           ),
         ),
         SizedBox(width: tokens.spacing.step2),
@@ -540,7 +540,9 @@ class _SkipAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final accent = tokens.colors.aiCard.accent;
+    // Metadata ink, not accent: accent in this band means "this starts work",
+    // and Skip is its opposite. The underline carries the affordance.
+    final ink = tokens.colors.aiCard.metaText;
     return Semantics(
       button: true,
       label: tooltip,
@@ -566,9 +568,9 @@ class _SkipAction extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: tokens.typography.styles.others.caption.copyWith(
-                      color: accent,
+                      color: ink,
                       decoration: TextDecoration.underline,
-                      decorationColor: accent,
+                      decorationColor: ink,
                     ),
                   ),
                 ),
@@ -600,6 +602,9 @@ class _UpdateNowButton extends StatelessWidget {
           : messages.taskAgentUpdateNow,
       leadingIcon: Icons.refresh_rounded,
       isLoading: isRunning,
+      // Caption tier: the footer must not field a string at the same size and
+      // weight as the card's hero action one hairline above it.
+      size: DesignSystemButtonSize.dense,
       // Tertiary, not outlined: this is a settings-zone action and must read
       // one tier below "Confirm all", the only thing on the card that changes
       // the user's own task. It stays labelled — an icon-only glyph beside an
@@ -764,11 +769,12 @@ class _AutomationMetrics {
       ],
       // `DesignSystemButton` at its small size: symmetric step3 padding, a
       // leading glyph at the subtitle2 line height, and a step2 item gap.
+      // `DesignSystemButton` at its dense size: symmetric step2 padding, a
+      // leading glyph at the caption line height, and a step2 item gap.
       triggerWidth:
-          widthOf(triggerLabel, styles.subtitle.subtitle2) +
-          tokens.typography.lineHeight.subtitle2 +
-          tokens.spacing.step2 +
-          tokens.spacing.step3 * 2,
+          widthOf(triggerLabel, caption) +
+          tokens.typography.lineHeight.caption +
+          tokens.spacing.step2 * 3,
       settingWidth:
           widthOf(settingLabel, caption) +
           tokens.spacing.step3 +

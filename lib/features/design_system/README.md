@@ -389,6 +389,13 @@ A few implementation patterns repeat across the DS and are worth treating as con
 
 Representative components such as `DesignSystemButton`, `DesignSystemCheckbox`, and `DesignSystemSplitButton` derive padding, radii, icon size, and text style from `context.designTokens`, not local magic numbers.
 
+`DesignSystemButton` sizes run `dense` → `small` → `medium` → `large` →
+`jumbo`. `dense` is the caption tier: its label is
+`typography.styles.others.caption`, so it reads as a button through its glyph,
+ink and hover fill rather than by out-weighing the text around it. Use it for
+actions that live inside metadata rows and settings zones, where a `small`
+button would share a type tier with the surface's primary action.
+
 Destructive secondary and tertiary button labels use the stronger existing
 error interaction tokens rather than the filled-action default red. This keeps
 small danger labels at AA contrast on light and dark host surfaces; their
