@@ -58,6 +58,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through Manage links.
 
 ### Fixed
+- **The link and blocker pickers listed no tasks at all.** Browsing (before
+  typing anything) came back empty in every case, because the query treated
+  "all categories" as "no categories". Searching still worked, which is why
+  it looked like a search quirk rather than an empty list.
+- **A task with links briefly claimed it had none.** Opening a task showed the
+  "Link a task…" empty prompt until its links finished loading, so every
+  populated Linked Tasks card flashed an empty one first.
+- **Finished tasks can be linked again.** "Follows up on", "Duplicates",
+  "Fixes" and "Supersedes" all commonly point at work that is already done,
+  but completed tasks were excluded from the picker and it reported "No tasks
+  found" for a task you could see everywhere else. Blockers still list only
+  open tasks — a finished task can't block anything.
+- **Undo after linking now tells you when it fails**, instead of silently
+  leaving the link in place, and it stays on screen long enough to reach.
+- Edit and unlink in manage mode meet the 48pt minimum touch target; they were
+  40pt, side by side, over a row that is itself tappable.
 - **Task search could deny a task that exists.** In the link and blocker
   pickers, full-text search results were matched against only the first 200
   open tasks loaded, so on a larger backlog a task you searched for by name
