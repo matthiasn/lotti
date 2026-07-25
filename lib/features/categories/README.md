@@ -118,10 +118,12 @@ The fields with verified runtime consumers are:
   Seeds `AgentConfig.automaticUpdatesEnabled` on those task agents — whether
   each one wakes on task changes or only when asked. Forwarded to
   `TaskAgentService.createTaskAgent()`, which hardcoded `false` before this
-  existed, by all three category-default creation paths:
+  existed, by all four category-default creation paths:
   `assignCategoryDefaultTaskAgent()` (every UI path),
-  `ProjectToolDispatcher._tryAutoAssignTaskAgent()`, and
-  `FollowUpTaskHandler._tryAutoAssignAgent()`. The service mirrors the value
+  `ProjectToolDispatcher._tryAutoAssignTaskAgent()`,
+  `FollowUpTaskHandler._tryAutoAssignAgent()`, and
+  `OnboardingCaptureToTaskService._assignCategoryAgent()`. The manual
+  "Assign agent" CTA is excluded — that is an explicit user setup gesture. The service mirrors the value
   into the wake orchestrator as well as persisting it, so a seeded-on agent
   wakes in the session it was created in rather than after the next restart.
   A *seed*, not a gate: the per-task switch on the AI summary card owns the

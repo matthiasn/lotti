@@ -126,6 +126,7 @@ void main() {
         profileId: any(named: 'profileId'),
         allowedCategoryIds: any(named: 'allowedCategoryIds'),
         additionalWakeTokens: any(named: 'additionalWakeTokens'),
+        automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
       ),
     ).thenAnswer((_) async => makeTestIdentity(agentId: agentId));
   }
@@ -426,10 +427,52 @@ void main() {
             allowedCategoryIds: {categoryId},
             // ignore: avoid_redundant_argument_values
             additionalWakeTokens: const <String>{},
+            // ignore: avoid_redundant_argument_values
+            automaticUpdatesEnabled: false,
           ),
         ).called(1);
       },
     );
+
+    // Onboarding builds a category-default agent without going through
+    // `assignCategoryDefaultTaskAgent`, so the category's wake preference has
+    // to be forwarded here too — otherwise the very first task of a reused
+    // area silently opts out of what that area asked for.
+    test('forwards the category wake preference', () async {
+      stubStructureSuccess(
+        const OnboardingStructuredTask(
+          title: 'Waking onboarding task',
+          checklistItems: [],
+        ),
+      );
+      stubCreateTask(TestTaskFactory.create(id: 'task-1'));
+      stubCategory(
+        CategoryTestUtils.createTestCategory(
+          id: categoryId,
+          defaultTemplateId: 'template-laura-001',
+          defaultProfileId: 'profile-melious-001',
+          automaticAgentWakesEnabled: true,
+        ),
+      );
+      stubCreateTaskAgent();
+
+      await service.createTaskFromTranscript(
+        transcript: 'Something to follow up on',
+        categoryId: categoryId,
+      );
+
+      verify(
+        () => taskAgentService.createTaskAgent(
+          taskId: 'task-1',
+          templateId: 'template-laura-001',
+          profileId: 'profile-melious-001',
+          allowedCategoryIds: {categoryId},
+          // ignore: avoid_redundant_argument_values
+          additionalWakeTokens: const <String>{},
+          automaticUpdatesEnabled: true,
+        ),
+      ).called(1);
+    });
 
     test(
       'seeds the structured checklist as pending proposals under the agent',

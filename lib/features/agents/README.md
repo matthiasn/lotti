@@ -1167,15 +1167,22 @@ set, and an agent parked there only leaves it via an explicit per-task toggle
 or the next app start's `restoreSubscriptions` — so persisting alone would make
 the category switch look dead until a restart.
 
-Three call sites build a category-default task agent, and each has to forward
-the category's defaults itself:
+Four call sites construct a task agent. The three that build one from the
+category's defaults each forward those defaults themselves:
 
 - `assignCategoryDefaultTaskAgent()` (`lib/logic/create/task_agent_assignment.dart`) — every UI creation path
 - `ProjectToolDispatcher._tryAutoAssignTaskAgent()` — tasks a project agent creates
 - `FollowUpTaskHandler._tryAutoAssignAgent()` — follow-up tasks a task agent creates
+- `OnboardingCaptureToTaskService._assignCategoryAgent()` — the first task of a reused area
 
-The agent-tool paths deliberately do not route through the helper: it also
-passes `setupOrigin: categorySnapshot`, which makes a category without a
+The fourth, `assign_agent_cta_part.dart`'s manual "Assign agent" flow, is
+excluded on purpose: the user picks template and profile in a modal and the
+result is marked `setupOrigin: user`, so it is an explicit setup gesture
+rather than the category acting on the user's behalf.
+
+The three non-helper paths deliberately do not route through
+`assignCategoryDefaultTaskAgent`: it also passes
+`setupOrigin: categorySnapshot`, which makes a category without a
 `defaultProfileId` produce a *disabled* agent rather than falling back to the
 template's profile. Any new category default has to be added to all three.
 
