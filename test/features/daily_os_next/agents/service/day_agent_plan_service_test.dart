@@ -1891,10 +1891,103 @@ void main() {
             isA<DayAgentCaptureException>().having(
               (e) => e.message,
               'message',
-              contains('must be ai, cal, buffer, or manual'),
+              contains('must be ai, buffer, or manual'),
             ),
           ),
         );
+      });
+
+      test('rejects a snapshot claiming to be a calendar event', () async {
+        // An accepted diff copies this snapshot onto the live plan, and the
+        // approval summary shows title and times but not type — so the user
+        // would approve a calendar-owned block they never saw described and
+        // cannot afterwards edit.
+        seedPlan();
+        await expectLater(
+          createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: [
+              {
+                ...movedChange(),
+                'to': {
+                  'start': DateTime(2026, 5, 25, 11).toIso8601String(),
+                  'end': DateTime(2026, 5, 25, 12).toIso8601String(),
+                  'type': 'cal',
+                },
+              },
+            ],
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('none are available to this agent'),
+            ),
+          ),
+        );
+      });
+
+      test('rejects a snapshot attaching a task outside this agent', () async {
+        // The draft path resolves task references against the journal and the
+        // agent's categories; a diff reaches the same live plan and must not
+        // be the door that skips it.
+        seedPlan();
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => const <String, JournalEntity>{},
+        );
+        await expectLater(
+          createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: [
+              {
+                ...movedChange(),
+                'to': {
+                  'start': DateTime(2026, 5, 25, 11).toIso8601String(),
+                  'end': DateTime(2026, 5, 25, 12).toIso8601String(),
+                  'taskId': 'task-from-another-category',
+                },
+              },
+            ],
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('task-from-another-category'),
+            ),
+          ),
+        );
+      });
+
+      test('accepts a snapshot whose task resolves for this agent', () async {
+        seedPlan();
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-9': _task(id: 'task-9', title: 'Allowed')},
+        );
+        final changeSet = await createService().proposePlanDiff(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          dayId: _dayId,
+          rawChanges: [
+            {
+              ...movedChange(),
+              'to': {
+                'start': DateTime(2026, 5, 25, 11).toIso8601String(),
+                'end': DateTime(2026, 5, 25, 12).toIso8601String(),
+                'taskId': 'task-9',
+              },
+            },
+          ],
+        );
+
+        expect(changeSet.items, hasLength(1));
       });
 
       test('rejects a non-object snapshot', () async {

@@ -33,6 +33,7 @@ void main() {
     Set<String> decidedTaskIds = const {},
     Set<String> allowedExistingTaskIds = const {},
     DateTime? earliestDraftStart,
+    Map<String, DateTime> carriedBlockStarts = const {},
   }) {
     return parsePlannedBlock(
       raw: raw,
@@ -41,6 +42,7 @@ void main() {
       decidedTaskIds: decidedTaskIds,
       allowedExistingTaskIds: allowedExistingTaskIds,
       earliestDraftStart: earliestDraftStart,
+      carriedBlockStarts: carriedBlockStarts,
     );
   }
 
@@ -137,6 +139,44 @@ void main() {
           () => parse(
             rawBlock()..['state'] = 'committed',
             earliestDraftStart: earliest,
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must not start before current time'),
+            ),
+          ),
+        );
+      });
+
+      test('carries forward a committed baseline block unchanged', () {
+        // A legacy `agreed` plan can hold committed blocks the user already
+        // approved. Once one has started, a redraft must still be able to
+        // include it — rejecting the whole draft for faithfully repeating
+        // what is already on the plan would punish the correct behaviour.
+        final block = parse(
+          rawBlock()
+            ..['state'] = 'committed'
+            ..['id'] = 'block-existing',
+          earliestDraftStart: earliest,
+          carriedBlockStarts: {'block-existing': DateTime(2026, 3, 16, 9)},
+        );
+
+        expect(block.id, 'block-existing');
+        expect(block.startTime, DateTime(2026, 3, 16, 9));
+      });
+
+      test('will not let a baseline id move approved work into the past', () {
+        // The exemption keys on id *and* start, so reusing a known id with a
+        // new time is still newly planning the past.
+        expect(
+          () => parse(
+            rawBlock()
+              ..['state'] = 'committed'
+              ..['id'] = 'block-existing',
+            earliestDraftStart: earliest,
+            carriedBlockStarts: {'block-existing': DateTime(2026, 3, 16, 11)},
           ),
           throwsA(
             isA<DayAgentCaptureException>().having(

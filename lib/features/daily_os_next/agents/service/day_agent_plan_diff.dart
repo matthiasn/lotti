@@ -134,7 +134,19 @@ PlanBlockSnapshot? optionalBlockSnapshot(
       : parseEnumByName(PlannedBlockType.values, typeRaw);
   if (typeRaw != null && type == null) {
     throw DayAgentCaptureException(
-      '`$label.type` must be ai, cal, buffer, or manual (got "$typeRaw")',
+      '`$label.type` must be ai, buffer, or manual (got "$typeRaw")',
+    );
+  }
+  // Same rule as a fresh draft: this agent is shown no calendar, so it cannot
+  // mirror an event from one. Enforced here and not only by the advertised
+  // schema, because an accepted diff copies this snapshot straight onto the
+  // live plan — and the approval summary shows title and times, not type, so
+  // the user would be agreeing to a calendar-owned block they never saw
+  // described and cannot afterwards edit.
+  if (type == PlannedBlockType.cal) {
+    throw DayAgentCaptureException(
+      '`$label.type` cal mirrors an imported calendar event, and none are '
+      'available to this agent — use ai, buffer, or manual',
     );
   }
   return PlanBlockSnapshot(

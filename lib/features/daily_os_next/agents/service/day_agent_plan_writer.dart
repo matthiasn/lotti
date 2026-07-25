@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -296,6 +295,26 @@ class DayAgentPlanWriter {
       rawBlocks,
       allowedCategoryIds,
     );
+    final existing = await reads.draftPlanForDay(
+      agentId: agentId,
+      dayId: dayId,
+    );
+    if (existing != null && existing.data.status is DayPlanStatusCommitted) {
+      // ADR 0006: a committed plan is user-approved state — including block
+      // progress — and may only change through an approved ChangeSet. A
+      // redraft here would wholesale replace it without any approval gate.
+      throw const DayAgentCaptureException(
+        'draft_day_plan cannot replace a committed plan. Propose changes '
+        'with propose_plan_diff instead so the user can approve them.',
+      );
+    }
+    // Start times of the blocks already on the plan, so a redraft that repeats
+    // one unchanged is not treated as newly planning the past.
+    final carriedBlockStarts = {
+      for (final block
+          in existing?.data.plannedBlocks ?? const <PlannedBlock>[])
+        block.id: block.startTime,
+    };
     final blocks = <PlannedBlock>[];
     for (final raw in rawBlocks) {
       blocks.add(
@@ -306,6 +325,7 @@ class DayAgentPlanWriter {
           allowedCategoryIds: allowedCategoryIds,
           decidedTaskIds: decidedTasks,
           allowedExistingTaskIds: allowedExistingTaskIds,
+          carriedBlockStarts: carriedBlockStarts,
         ),
       );
     }
@@ -326,19 +346,6 @@ class DayAgentPlanWriter {
     ];
     final scheduledMinutes = scheduledMinutesFor(blocks);
     final pinnedTasks = pinnedTasksFor(blocks);
-    final existing = await reads.draftPlanForDay(
-      agentId: agentId,
-      dayId: dayId,
-    );
-    if (existing != null && existing.data.status is DayPlanStatusCommitted) {
-      // ADR 0006: a committed plan is user-approved state — including block
-      // progress — and may only change through an approved ChangeSet. A
-      // redraft here would wholesale replace it without any approval gate.
-      throw const DayAgentCaptureException(
-        'draft_day_plan cannot replace a committed plan. Propose changes '
-        'with propose_plan_diff instead so the user can approve them.',
-      );
-    }
     final plan =
         AgentDomainEntity.dayPlan(
               id: dayAgentPlanEntityId(dayId),
@@ -499,24 +506,12 @@ class DayAgentPlanWriter {
     return _resolveTaskIds(referenced, allowedCategoryIds);
   }
 
-  /// The subset of [taskIds] that resolve to a live task this agent is allowed
-  /// to reference.
   Future<Set<String>> _resolveTaskIds(
     Iterable<String> taskIds,
     Set<String> allowedCategoryIds,
-  ) async {
-    final ids = taskIds.toSet();
-    if (ids.isEmpty) return const <String>{};
-    final entities = await journalDb.journalEntityMapForIds(ids.toList());
-    return {
-      for (final entry in entities.entries)
-        if (entry.value is Task &&
-            (entry.value as Task).meta.deletedAt == null &&
-            categoryAllowed(
-              (entry.value as Task).meta.categoryId,
-              allowedCategoryIds,
-            ))
-          entry.key,
-    };
-  }
+  ) => resolveAllowedTaskIds(
+    journalDb: journalDb,
+    taskIds: taskIds,
+    allowedCategoryIds: allowedCategoryIds,
+  );
 }

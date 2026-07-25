@@ -1,4 +1,6 @@
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
@@ -11,6 +13,30 @@ const _uuid = Uuid();
 // Pure parsing/option helpers shared by the plan service. Library-private
 // top-level functions so the class and the other parts call them
 // unqualified.
+
+/// The subset of [taskIds] that resolve to a live task this agent may
+/// reference.
+///
+/// One implementation on purpose. Task references reach a plan through two
+/// doors — a fresh draft and an approved diff — and the isolation bug this
+/// replaces existed because each door had its own idea of what counted as
+/// allowed, with only one of them resolving the id at all.
+Future<Set<String>> resolveAllowedTaskIds({
+  required JournalDb journalDb,
+  required Iterable<String> taskIds,
+  required Set<String> allowedCategoryIds,
+}) async {
+  final ids = taskIds.toSet();
+  if (ids.isEmpty) return const <String>{};
+  final entities = await journalDb.journalEntityMapForIds(ids.toList());
+  return {
+    for (final entry in entities.entries)
+      if (entry.value case final Task task)
+        if (task.meta.deletedAt == null &&
+            categoryAllowed(task.meta.categoryId, allowedCategoryIds))
+          entry.key,
+  };
+}
 
 /// Block states that represent a *plan* rather than a record of something that
 /// already happened, and so may never start before the current time on a
@@ -40,6 +66,7 @@ PlannedBlock parsePlannedBlock({
   required Set<String> decidedTaskIds,
   required Set<String> allowedExistingTaskIds,
   DateTime? earliestDraftStart,
+  Map<String, DateTime> carriedBlockStarts = const {},
 }) {
   if (raw is! Map) {
     throw const DayAgentCaptureException('block must be an object');
@@ -97,7 +124,18 @@ PlannedBlock parsePlannedBlock({
   // current time. Observed live, alongside the earlier trick of relabelling a
   // past-starting block `buffer` to slip an ai/manual-only guard — the same
   // probing, one field over. Guarding by what a state *means* closes both.
+  final blockId = optionalStringArg(data['id']);
+  // A block re-emitted unchanged from the persisted baseline is being carried
+  // forward, not newly planned. A legacy `agreed` plan can hold `committed`
+  // blocks the user already approved, and once one of those has started a
+  // redraft must still be able to include it — rejecting the whole draft for
+  // faithfully repeating what is already on the plan would be the guard
+  // punishing the correct behaviour. Both id and start must match, so the
+  // exemption cannot be used to move approved work into the past.
+  final carriedForward =
+      blockId != null && carriedBlockStarts[blockId] == start;
   if (earliestDraftStart != null &&
+      !carriedForward &&
       plannedBlockStatesGuardedFromThePast.contains(blockState) &&
       start.isBefore(earliestDraftStart)) {
     throw const DayAgentCaptureException(
@@ -125,7 +163,7 @@ PlannedBlock parsePlannedBlock({
     );
   }
   return PlannedBlock(
-    id: optionalStringArg(data['id']) ?? 'block_${_uuid.v4()}',
+    id: blockId ?? 'block_${_uuid.v4()}',
     categoryId: categoryId,
     startTime: start,
     endTime: end,

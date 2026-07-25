@@ -291,12 +291,16 @@ credit it did nothing to earn.
 `noFabricatedCalendarBlocks` is the only constraint that scores a block's
 claimed *provenance* — whether it asserts an origin outside the app at all.
 `PlannedBlockType.cal` means "imported calendar event" and the plan editor
-refuses in-app edits to one, but the day agent is shown no calendar events at
-all — `calendarBlocks` is a deferred parameter `RealDayAgent` drops, and no
-context section renders events — so every `cal` block the model emits asserts
-an import that never happened. It also matters for the past-start guard, which
-exempts `cal` alone: that exemption is how a model plans the past without being
-rejected.
+refuses in-app edits to one, while the day agent is shown no calendar events —
+`calendarBlocks` is a deferred parameter `RealDayAgent` drops, and no context
+section renders events.
+
+The write path now refuses a model-emitted `cal` block outright, on both the
+draft and the diff route, and `cal` is no longer offered in either tool schema,
+so this constraint can no longer fail through the agent. It stays because the
+eval is also how a regression would be caught: if calendar events are wired
+into the drafting context and the exemption returns, this is the scorer that
+has to be taught what a *legitimate* calendar block looks like.
 
 A constraint that reads the plan is **inapplicable when no plan was
 persisted** — an empty block list would otherwise read as "no overlaps,
@@ -1310,10 +1314,28 @@ sequenceDiagram
   the model**: they have no LLM tool definitions and the plan-tool dispatcher
   rejects their old wire names as unknown (ADR 0006; the user confirms, the
   model only proposes).
-- For today's plan, `draft_day_plan` rejects new drafted `ai` or `manual`
-  blocks whose start is before `current_local_time`. It still accepts earlier
-  blocks when their state is `inProgress`, `completed`, or `dropped`, because
-  those represent what actually happened rather than new future planning.
+- For today's plan, `draft_day_plan` rejects any block it would be *planning*
+  into the past — `drafted` or `committed` — whose start is before
+  `current_local_time`, whatever its type. It still accepts earlier blocks
+  whose state is `inProgress`, `completed`, or `dropped`, because those record
+  what actually happened, and it accepts a block that repeats an existing
+  baseline block at the same id and start, which is carrying history forward
+  rather than inventing it.
+- The agent cannot emit a `cal` block at all, through either `draft_day_plan`
+  or `propose_plan_diff`. `cal` means "imported calendar event" and no
+  calendar reaches this agent (`calendarBlocks` is deferred and dropped), so
+  such a block could only ever assert an import that never happened — and
+  `DayAgentPlanEditor` then refuses to edit it, leaving the user a block they
+  can neither change here nor find in a calendar. The type is also absent from
+  both tool schemas. All of this reverses together if calendar events are ever
+  rendered into the drafting context.
+- A block's `taskId` must resolve to a live task in a category this agent is
+  allowed to touch, on **both** routes. `decidedTaskIds` is an argument the
+  model writes itself, so it is resolved against the journal rather than
+  trusted, and a `propose_plan_diff` snapshot is held to the same standard —
+  an accepted diff copies its `taskId` onto the live plan while the approval
+  summary shows only title and times, so an unchecked reference would be
+  approved unseen.
 - `dailyOsActualTimeBlocksProvider` projects recorded journal entries for the
   selected local day into `TimeBlock`s without importing the legacy Daily OS UI
   controllers. It reads `JournalDb.sortedCalendarEntries` across the
