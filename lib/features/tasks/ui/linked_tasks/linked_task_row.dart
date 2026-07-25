@@ -9,6 +9,31 @@ import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
+/// The trailing rail every row on the linked-tasks card reserves.
+///
+/// Both axes, not just the width: manage mode occupies two step9 boxes, so
+/// reserving only the width still let rows grow taller on toggle and the card
+/// jump with them. [child] is boxed like an action rather than pinned to the
+/// edge, so a chevron lands on the same vertical line the unlink button
+/// occupies. Shared with the empty card so its rail cannot drift from the
+/// populated one.
+Widget linkedRowTrailingRail(BuildContext context, {required Widget child}) {
+  final tokens = context.designTokens;
+  return SizedBox(
+    width: tokens.spacing.step9 * 2,
+    height: tokens.spacing.step9,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        SizedBox(
+          width: tokens.spacing.step9,
+          child: Center(child: child),
+        ),
+      ],
+    ),
+  );
+}
+
 /// Row width from which a status label can share the title's line without
 /// crowding it. Deliberately well below the detail reading measure the card is
 /// capped at on wide windows: a window-level desktop check would read true
@@ -155,30 +180,12 @@ class LinkedTaskRow extends StatelessWidget {
                     ],
                   ),
                 )
-              : SizedBox(
-                  // Both axes of the action pair, not just the width: manage
-                  // mode occupies two step9 boxes, so
-                  // reserving only the width still let the row grow taller on
-                  // toggle and the card jump with it.
-                  width: tokens.spacing.step9 * 2,
-                  height: tokens.spacing.step9,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      // Boxed like an action rather than pinned to the edge, so
-                      // the chevron lands on the same vertical line the unlink
-                      // button occupies instead of sitting further out.
-                      SizedBox(
-                        width: tokens.spacing.step9,
-                        child: Center(
-                          child: Icon(
-                            Icons.arrow_forward_ios,
-                            size: tokens.spacing.step4,
-                            color: tokens.colors.text.lowEmphasis,
-                          ),
-                        ),
-                      ),
-                    ],
+              : linkedRowTrailingRail(
+                  context,
+                  child: Icon(
+                    Icons.arrow_forward_ios,
+                    size: tokens.spacing.step4,
+                    color: tokens.colors.text.lowEmphasis,
                   ),
                 ),
         );

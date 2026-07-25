@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -87,6 +88,18 @@ class TaskRelationshipSections extends ConsumerWidget {
 
     // "Blocked by" leads: it's the one relationship the task header also
     // surfaces, and the one that gates whether work can start at all.
+    final blockedBy = entriesOf(
+      TaskLinkKind.blocks,
+      direction: TaskLinkDirection.incoming,
+    );
+    // Accented only while something is actually blocking. A closed blocker
+    // releases the dependent (ADR 0042 §4, task_blockers_controller.dart), so
+    // painting the section amber once every blocker is Done makes a claim the
+    // header has already retracted — on the feature's only semantic colour.
+    final stillBlocked = blockedBy.any(
+      (entry) => !isClosedTask(entry.task),
+    );
+
     final sections = <_Section>[
       _Section(
         title: _directionTitle(
@@ -94,11 +107,8 @@ class TaskRelationshipSections extends ConsumerWidget {
           TaskLinkKind.blocks,
           TaskLinkDirection.incoming,
         ),
-        entries: entriesOf(
-          TaskLinkKind.blocks,
-          direction: TaskLinkDirection.incoming,
-        ),
-        accent: TaskShowcasePalette.warning(context),
+        entries: blockedBy,
+        accent: stillBlocked ? TaskShowcasePalette.warning(context) : null,
       ),
       for (final kind in const [
         TaskLinkKind.blocks,

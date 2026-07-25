@@ -194,6 +194,10 @@ class _LinkedTasksEmptyAction extends StatelessWidget {
     return DesignSystemListItem(
       onTap: onTap,
       title: label ?? context.messages.linkedTasksEmptyAction,
+      // Two lines, like the task titles beside it elsewhere on the card. A
+      // one-line cap ate the verb in verb-final German on the labels this
+      // screen exists to teach.
+      titleMaxLines: 2,
       subtitle: label == null ? context.messages.linkedTasksEmptyHint : null,
       // Three lines, and quieter than the action it explains: at two lines
       // the longer locales ellipsized away the examples that teach what
@@ -210,10 +214,16 @@ class _LinkedTasksEmptyAction extends StatelessWidget {
         // glyph meaning one thing must not change colour with the card state.
         color: tokens.colors.interactive.enabled,
       ),
-      trailing: Icon(
-        Icons.arrow_forward_ios,
-        size: tokens.spacing.step4,
-        color: tokens.colors.text.lowEmphasis,
+      // The same reserved rail every populated row uses. Bare, the chevron
+      // sat on a 40pt target this feature itself calls under-minimum, and the
+      // card's trailing rail jumped 18pt the moment it gained its first link.
+      trailingExtra: linkedRowTrailingRail(
+        context,
+        child: Icon(
+          Icons.arrow_forward_ios,
+          size: tokens.spacing.step4,
+          color: tokens.colors.text.lowEmphasis,
+        ),
       ),
     );
   }
@@ -355,108 +365,118 @@ class _LinkedTasksHeader extends ConsumerWidget {
                       onPressed: () => _showLinkTaskModal(context, ref, taskId),
                     )
                   else
-                    // Icon only where the word will not fit beside the card's own
-                    // name. Still named for assistive technology and on hover, so
-                    // what is lost is the sighted label, not the affordance.
-                    IconButton(
-                      tooltip: context.messages.linkExistingTask,
+                    // Icon only where the word will not fit beside the card's
+                    // own name. Still the design-system control, and still
+                    // named for assistive technology, so what a longer locale
+                    // loses is the sighted label — not the affordance, and not
+                    // the component.
+                    DesignSystemButton(
+                      label: '',
+                      semanticsLabel: context.messages.linkExistingTask,
+                      variant: DesignSystemButtonVariant.tertiary,
+                      leadingIcon: Icons.add_link,
                       onPressed: () => _showLinkTaskModal(context, ref, taskId),
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(
-                        Icons.add_link,
-                        size: tokens.spacing.step5,
-                        color: tokens.colors.interactive.enabled,
-                      ),
                     ),
                 ],
-                SizedBox(width: tokens.spacing.step3),
-                Theme(
-                  data: Theme.of(context).copyWith(
-                    // Tokens rather than Material scheme colours and raw radii,
-                    // so the menu belongs to the same surface family as the card
-                    // it opens from instead of being a themed island inside it.
-                    popupMenuTheme: PopupMenuThemeData(
-                      color: tokens.colors.background.level03,
-                      surfaceTintColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(tokens.radii.m),
-                        side: BorderSide(
-                          color: tokens.colors.decorative.level01,
+                // No overflow on the empty card: its only item is now a
+                // worded row in the body, and an unlabelled glyph was the
+                // loudest mark on the screen that has to teach the feature.
+                if (hasLinkedTasks) SizedBox(width: tokens.spacing.step3),
+                if (hasLinkedTasks)
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      // Tokens rather than Material scheme colours and raw radii,
+                      // so the menu belongs to the same surface family as the card
+                      // it opens from instead of being a themed island inside it.
+                      popupMenuTheme: PopupMenuThemeData(
+                        color: tokens.colors.background.level03,
+                        surfaceTintColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(tokens.radii.m),
+                          side: BorderSide(
+                            color: tokens.colors.decorative.level01,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  child: PopupMenuButton<String>(
-                    tooltip: context.messages.linkedTasksMenuTooltip,
-                    icon: Icon(
-                      Icons.more_vert,
-                      // The overflow is the least important control in the header;
-                      // it was also the heaviest mark in it.
-                      color: tokens.colors.text.mediumEmphasis,
-                      size: tokens.spacing.step5,
-                    ),
-                    position: PopupMenuPosition.under,
-                    onSelected: (value) async {
-                      switch (value) {
-                        case 'link_existing':
-                          await _showLinkTaskModal(context, ref, taskId);
-                        case 'create_new':
-                          await _createNewLinkedTask(context, ref, taskId);
-                        case 'manage':
-                          notifier.toggleManageMode();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      // Manage mode replaces the header's Link button with Done,
-                      // which left no way to add a link while curating them —
-                      // the one state where the user is most likely to want one.
-                      if (manageMode)
-                        PopupMenuItem(
-                          value: 'link_existing',
-                          child: Row(
-                            children: [
-                              Icon(Icons.add_link, size: tokens.spacing.step5),
-                              SizedBox(width: tokens.spacing.step3),
-                              Flexible(
-                                child: Text(context.messages.linkExistingTask),
-                              ),
-                            ],
-                          ),
-                        ),
-                      PopupMenuItem(
-                        value: 'create_new',
-                        child: Row(
-                          children: [
-                            Icon(Icons.add, size: tokens.spacing.step5),
-                            SizedBox(width: tokens.spacing.step3),
-                            Flexible(
-                              child: Text(context.messages.createNewLinkedTask),
+                    child: PopupMenuButton<String>(
+                      tooltip: context.messages.linkedTasksMenuTooltip,
+                      icon: Icon(
+                        Icons.more_vert,
+                        // The overflow is the least important control in the header;
+                        // it was also the heaviest mark in it.
+                        color: tokens.colors.text.mediumEmphasis,
+                        size: tokens.spacing.step5,
+                      ),
+                      position: PopupMenuPosition.under,
+                      onSelected: (value) async {
+                        switch (value) {
+                          case 'link_existing':
+                            await _showLinkTaskModal(context, ref, taskId);
+                          case 'create_new':
+                            await _createNewLinkedTask(context, ref, taskId);
+                          case 'manage':
+                            notifier.toggleManageMode();
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        // Manage mode replaces the header's Link button with Done,
+                        // which left no way to add a link while curating them —
+                        // the one state where the user is most likely to want one.
+                        if (manageMode)
+                          PopupMenuItem(
+                            value: 'link_existing',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.add_link,
+                                  size: tokens.spacing.step5,
+                                ),
+                                SizedBox(width: tokens.spacing.step3),
+                                Flexible(
+                                  child: Text(
+                                    context.messages.linkExistingTask,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                      // Only offered as a way *in*: manage mode now carries its
-                      // own inline exit in the header, so a second "Done" here
-                      // would be two controls for one state.
-                      if (hasLinkedTasks && !manageMode)
+                          ),
                         PopupMenuItem(
-                          value: 'manage',
+                          value: 'create_new',
                           child: Row(
                             children: [
-                              Icon(
-                                Icons.edit_rounded,
-                                size: tokens.spacing.step5,
-                              ),
+                              Icon(Icons.add, size: tokens.spacing.step5),
                               SizedBox(width: tokens.spacing.step3),
                               Flexible(
-                                child: Text(context.messages.manageLinks),
+                                child: Text(
+                                  context.messages.createNewLinkedTask,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                    ],
+                        // Only offered as a way *in*: manage mode now carries its
+                        // own inline exit in the header, so a second "Done" here
+                        // would be two controls for one state.
+                        if (hasLinkedTasks && !manageMode)
+                          PopupMenuItem(
+                            value: 'manage',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.edit_rounded,
+                                  size: tokens.spacing.step5,
+                                ),
+                                SizedBox(width: tokens.spacing.step3),
+                                Flexible(
+                                  child: Text(context.messages.manageLinks),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
               ],
             );
           },

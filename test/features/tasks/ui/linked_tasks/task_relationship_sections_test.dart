@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -45,9 +46,10 @@ void main() {
     required String title,
     required TaskLinkKind kind,
     required TaskLinkDirection direction,
+    TaskStatus? status,
   }) => TaskLinkEntry(
     linkId: 'link-$id',
-    task: TestTaskFactory.create(id: id, title: title),
+    task: TestTaskFactory.create(id: id, title: title, status: status),
     kind: kind,
     direction: direction,
   );
@@ -485,6 +487,36 @@ void main() {
             swapDirection: false,
           ),
         ).called(1);
+      },
+    );
+
+    testWidgets(
+      'the blocked-by accent drops once every blocker is closed — a closed '
+      'blocker releases the dependent, so amber there claims something the '
+      'header has already retracted',
+      (tester) async {
+        await pumpSections(
+          tester,
+          TaskLinkGroups(
+            flat: const [],
+            typed: [
+              entry(
+                id: 'blocker',
+                title: 'Finished Blocker',
+                kind: TaskLinkKind.blocks,
+                direction: TaskLinkDirection.incoming,
+                status: TaskStatus.done(
+                  id: 's',
+                  createdAt: DateTime(2024),
+                  utcOffset: 0,
+                ),
+              ),
+            ],
+          ),
+        );
+
+        expect(find.text('Is blocked by'), findsOneWidget);
+        expect(find.byIcon(Icons.block), findsNothing);
       },
     );
   });
