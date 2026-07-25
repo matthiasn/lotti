@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -200,6 +201,7 @@ void main() {
   late MockAgentRepository mockRepository;
   late MockWakeOrchestrator mockOrchestrator;
   late MockAgentSyncService mockSyncService;
+  late MockUpdateNotifications mockUpdateNotifications;
   late TaskAgentService service;
 
   AgentIdentityEntity makeIdentity({
@@ -269,11 +271,15 @@ void main() {
       () => mockRepository.getAgentStatesByAgentIds(any()),
     ).thenAnswer((_) async => const {});
 
+    mockUpdateNotifications = MockUpdateNotifications();
+    when(() => mockUpdateNotifications.notifyUiOnly(any())).thenReturn(null);
+
     service = TaskAgentService(
       agentService: mockAgentService,
       repository: mockRepository,
       orchestrator: mockOrchestrator,
       syncService: mockSyncService,
+      updateNotifications: mockUpdateNotifications,
       domainLogger: DomainLogger(loggingService: LoggingService())
         ..enabledDomains.add(LogDomain.agentRuntime),
     );
@@ -1012,6 +1018,143 @@ void main() {
           ).called(1);
         },
       );
+
+      // `taskAgentProvider` refreshes on the *task* id, and nothing in the
+      // agent write path emits it — the identity, state and agent↔task link
+      // all go through AgentSyncService, which does not notify. Without this
+      // announcement the card sits empty until the creation wake completes a
+      // full inference round-trip later, which reads as "no agent was
+      // assigned" and pushes users to assign one by hand.
+      group('assignment announcement', () {
+        Future<void> createAgentForTask(
+          String taskId, {
+          UpdateNotifications? notifications,
+        }) async {
+          final identity = makeIdentity();
+          when(
+            () => mockRepository.getLinksTo(taskId, type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+          when(
+            () => mockOrchestrator.setAwaitingContent(
+              any(),
+              awaiting: any(named: 'awaiting'),
+            ),
+          ).thenReturn(null);
+
+          final target = notifications == null
+              ? service
+              : TaskAgentService(
+                  agentService: mockAgentService,
+                  repository: mockRepository,
+                  orchestrator: mockOrchestrator,
+                  syncService: mockSyncService,
+                  updateNotifications: notifications,
+                );
+
+          await target.createTaskAgent(
+            taskId: taskId,
+            templateId: kTestTemplateId,
+            allowedCategoryIds: const {},
+          );
+        }
+
+        test('announces the new agent against its task id', () async {
+          await createAgentForTask('task-announce');
+
+          final captured =
+              verify(
+                    () => mockUpdateNotifications.notifyUiOnly(captureAny()),
+                  ).captured.single
+                  as Set<String>;
+          expect(captured, contains('task-announce'));
+          expect(captured, contains('agent-1'));
+          expect(captured, contains(agentNotification));
+        });
+
+        // `notifyUiOnly` keeps the announcement off `localUpdateStream`, so
+        // the wake orchestrator does not read the agent system's own write as
+        // task content changing and stack a second wake on the creation wake.
+        test('never announces on the wake-triggering stream', () async {
+          await createAgentForTask('task-quiet');
+
+          verifyNever(() => mockUpdateNotifications.notify(any()));
+        });
+
+        test('announces before the creation wake is enqueued', () async {
+          final order = <String>[];
+          final orderedNotifications = MockUpdateNotifications();
+          when(() => orderedNotifications.notifyUiOnly(any())).thenAnswer((_) {
+            order.add('notify');
+          });
+          when(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          ).thenAnswer((_) {
+            order.add('wake');
+            return 'run-key-stub';
+          });
+
+          await createAgentForTask(
+            'task-order',
+            notifications: orderedNotifications,
+          );
+
+          expect(order, ['notify', 'wake']);
+        });
+
+        test('creation still succeeds without a notification bus', () async {
+          final unwired = TaskAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: mockSyncService,
+          );
+          when(
+            () => mockRepository.getLinksTo('task-unwired', type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => makeIdentity());
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+          when(
+            () => mockOrchestrator.setAwaitingContent(
+              any(),
+              awaiting: any(named: 'awaiting'),
+            ),
+          ).thenReturn(null);
+
+          final identity = await unwired.createTaskAgent(
+            taskId: 'task-unwired',
+            templateId: kTestTemplateId,
+            allowedCategoryIds: const {},
+          );
+
+          expect(identity.agentId, 'agent-1');
+        });
+      });
     });
 
     group('getTaskAgentForTask', () {

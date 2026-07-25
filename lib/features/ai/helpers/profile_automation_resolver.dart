@@ -14,6 +14,9 @@ typedef TaskProfileLookup = Future<String?> Function(String taskId);
 /// `null` when the category has none configured.
 typedef CategoryProfileLookup = Future<String?> Function(String categoryId);
 
+/// Callback that returns the `categoryId` owning a task, or `null`.
+typedef TaskCategoryLookup = Future<String?> Function(String taskId);
+
 /// Resolves the inference profile for a task's agent — or, for entries that
 /// have no parent task, for the entry's category.
 ///
@@ -30,6 +33,10 @@ typedef CategoryProfileLookup = Future<String?> Function(String categoryId);
 /// `defaultProfileId`.
 ///
 /// Returns `null` if no profile can be resolved through any path.
+///
+/// [resolveForTask] answers "which profile drives this task's agent". That is
+/// the right question for the thinking route and the wrong one for automated
+/// capabilities, which is what [resolveAutomationFallbacks] exists for.
 class ProfileAutomationResolver {
   const ProfileAutomationResolver({
     required this._taskAgentService,
@@ -37,6 +44,7 @@ class ProfileAutomationResolver {
     required this._profileResolver,
     this._taskProfileLookup,
     this._categoryProfileLookup,
+    this._taskCategoryLookup,
   });
 
   final TaskAgentService _taskAgentService;
@@ -44,6 +52,7 @@ class ProfileAutomationResolver {
   final ProfileResolver _profileResolver;
   final TaskProfileLookup? _taskProfileLookup;
   final CategoryProfileLookup? _categoryProfileLookup;
+  final TaskCategoryLookup? _taskCategoryLookup;
 
   /// Resolves the profile for the given [taskId]'s agent.
   ///
@@ -58,6 +67,57 @@ class ProfileAutomationResolver {
 
     // 2. Fall back to the task's own profileId (inherited from category).
     return _resolveViaTaskProfile(taskId);
+  }
+
+  /// Profiles that can supply an automated capability [resolveForTask] does
+  /// not own, most specific first and without duplicates.
+  ///
+  /// The agent's profile drives the *thinking* route, and picking a thinking
+  /// model by hand resolves to a bare model route — no capability slots, no
+  /// skill assignments at all. Treating that as the last word switches the
+  /// category's automatic transcription and image analysis off as a side
+  /// effect of a model choice, and no later model change brings them back.
+  /// The same hole opens for a task created before its category had a default
+  /// profile, and for a profile that carries a thinking model but not every
+  /// capability the category configured.
+  ///
+  /// Order:
+  /// 1. `task.data.profileId` (inherited from the category at creation).
+  /// 2. The owning category's current `defaultProfileId`.
+  ///
+  /// Callers walk this list *per capability* and take the first profile that
+  /// actually owns the slot they need, so a profile deliberately chosen for
+  /// this task still wins every capability it does own.
+  ///
+  /// Profiles that cannot be loaded are skipped rather than ending the walk.
+  Future<List<ResolvedProfile>> resolveAutomationFallbacks(
+    String taskId,
+  ) async {
+    final candidateProfileIds = <String>{};
+
+    final taskProfileId = await _taskProfileLookup?.call(taskId);
+    if (taskProfileId != null) candidateProfileIds.add(taskProfileId);
+
+    final categoryId = await _taskCategoryLookup?.call(taskId);
+    if (categoryId != null) {
+      final categoryProfileId = await _categoryProfileLookup?.call(categoryId);
+      if (categoryProfileId != null) candidateProfileIds.add(categoryProfileId);
+    }
+
+    final resolved = <ResolvedProfile>[];
+    for (final profileId in candidateProfileIds) {
+      final profile = await _profileResolver.resolveByProfileId(profileId);
+      if (profile == null) {
+        developer.log(
+          'Automation fallback profile $profileId for task $taskId could not '
+          'be resolved — skipping',
+          name: _logTag,
+        );
+        continue;
+      }
+      resolved.add(profile);
+    }
+    return resolved;
   }
 
   /// Returns the raw profile id for [taskId] using the same resolution chain

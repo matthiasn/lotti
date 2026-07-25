@@ -227,9 +227,15 @@ inference switched on?"}
   Gate -->|yes| Auto["ProfileAutomationService"]
 
   Auto --> Resolve["ProfileAutomationResolver.resolveForTask()"]
-  Resolve --> Match["Find exactly one automate=true skill assignment"]
+  Resolve --> Match["Find exactly one automate=true skill assignment
+with the matching model slot populated"]
   Match --> Runner["SkillInferenceRunner"]
-  Match -->|no match, transcription only| Fallback["Direct model fallback
+  Match -->|no match| Inherited["resolveAutomationFallbacks():
+task.profileId, then category.defaultProfileId"]
+  Inherited --> Match2["Same per-capability match"]
+  Match2 --> Runner
+  Match -->|ambiguous| Stop
+  Match2 -->|no match, transcription only| Fallback["Direct model fallback
 (also behind the gate)"]
   Fallback --> Runner
 
@@ -270,9 +276,37 @@ with no visible control to restore it.
 Past the gate, the automatic branch is intentionally strict:
 
 - it only handles a skill type when exactly one automated assignment matches
-- if multiple automated skills of the same type exist, the profile is treated as ambiguous and automation is skipped
+- if multiple automated skills of the same type exist, the profile is treated as ambiguous and automation is skipped — and that ends the walk below rather than moving on, because guessing between two deliberate assignments is worse than doing nothing
 - the resolved profile must expose the required model slot for that skill type
 - the per-recording `enableSpeechRecognition: false` opt-out still wins independently of the category switch
+
+#### The per-capability profile walk
+
+`resolveForTask` answers *which profile drives this task's agent*. That is the
+right question for the thinking route and the wrong one for automated
+capabilities, so `ProfileAutomationService` asks it per capability and walks
+further when the answer does not own the one it needs:
+
+1. `resolveForTask(taskId)` — the agent's profile.
+2. `resolveAutomationFallbacks(taskId)` — the task's own inherited
+   `profileId`, then the owning category's `defaultProfileId`, de-duplicated
+   by profile id and resolved lazily (only reached when step 1 produced no
+   match).
+
+Each candidate must both automate the skill type *and* have the matching model
+slot populated, so a profile deliberately chosen for a task still wins every
+capability it does own and only the missing one falls through.
+
+The walk exists because picking a **thinking model by hand** resolves the task
+to a bare model route: `ProfileResolver._resolveTypedSetup` returns a
+`ResolvedProfile` carrying a thinking model and nothing else — no capability
+slots, no `skillAssignments` — whenever `AgentInferenceSetup` has a
+`thinkingModelOverrideId` and no `baseProfileId`. Treating that as the last
+word switched the category's automatic transcription and image analysis off as
+a side effect of a model choice, and no later model change brought them back:
+`updateAgentThinkingModelOverride` copies the same null `baseProfileId`
+forward every time. The same hole opened for a task created before its
+category had a default profile, whose `task.data.profileId` is null.
 
 `SkillInferenceRunner` then persists results according to skill type:
 
@@ -307,10 +341,11 @@ already-prefetched legacy entries are used only where no usable report exists.
 
 ## Profile Resolution
 
-`ProfileResolver` is the shared resolution engine for agent wakes. `ProfileAutomationResolver` wraps it for skill execution and offers two entry points:
+`ProfileResolver` is the shared resolution engine for agent wakes. `ProfileAutomationResolver` wraps it for skill execution and offers three entry points:
 
 - `resolveForTask(taskId)` — task-linked execution. Tries the agent path, then falls back to the task's own `profileId`.
 - `resolveForCategory(categoryId)` — standalone entries (no parent task). Reads `CategoryDefinition.defaultProfileId` and resolves it directly through `ProfileResolver.resolveByProfileId`.
+- `resolveAutomationFallbacks(taskId)` — the ordered, de-duplicated profiles a task *inherits* (`task.data.profileId`, then the owning category's `defaultProfileId`). Only `ProfileAutomationService` uses it, to keep an automated capability running when the agent's own route does not own it. See [The per-capability profile walk](#the-per-capability-profile-walk).
 
 `triggerSkillProvider` selects between the two: when `linkedTaskId` is non-null it calls `resolveForTask`; otherwise it looks up the entry, reads its `categoryId`, and calls `resolveForCategory`. Skills whose `contextPolicy` is `fullTask` are filtered out of the popup for standalone entries (see [Skill Filtering](#skill-filtering) below), so the standalone branch only runs `dictionaryOnly` / `taskSummary` / `none` skills.
 

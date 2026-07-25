@@ -22,6 +22,24 @@ typedef _TranscriptionFallbackCandidate = ({
   AiConfigInferenceProvider provider,
 });
 
+/// The automated skill a profile contributes for one requested skill type.
+typedef _AutomatedSkillMatch = ({
+  SkillAssignment assignment,
+  AiConfigSkill skill,
+});
+
+/// Outcome of inspecting a single profile for one skill type.
+///
+/// An ambiguous outcome is not "no match": it means the profile automates the
+/// same skill type more than once, and their context policies could differ
+/// silently. That ends the whole walk rather than moving to the next
+/// candidate — guessing which of two deliberate assignments the user meant is
+/// worse than doing nothing.
+typedef _SkillMatchOutcome = ({_AutomatedSkillMatch? match, bool ambiguous});
+
+const _SkillMatchOutcome _noSkillMatch = (match: null, ambiguous: false);
+const _SkillMatchOutcome _ambiguousSkillMatch = (match: null, ambiguous: true);
+
 /// Whether the category owning [taskId] has automatic inference switched on.
 ///
 /// Wired to `CategoryDefinition.automaticInferenceEnabledEffective`. An
@@ -169,22 +187,91 @@ class ProfileAutomationService {
     );
   }
 
-  /// Core resolution: find a matching skill assignment with `automate: true`
-  /// for the given [skillType] on the task's agent's profile.
+  /// Core resolution: find the profile that automates [skillType] for [taskId]
+  /// and the assignment that does it.
+  ///
+  /// Walks the task's profiles per capability, most specific first: the
+  /// profile driving the task's agent, then the profiles the task inherits
+  /// ([ProfileAutomationResolver.resolveAutomationFallbacks]). The first one
+  /// that both automates [skillType] and has the matching model slot
+  /// populated wins.
+  ///
+  /// The walk is what keeps a hand-picked thinking model from switching the
+  /// category's automation off: that choice resolves to a bare model route
+  /// carrying no capability slots and no skill assignments, so transcription
+  /// and image analysis fall through to the profile the task inherited from
+  /// its category instead of silently not running. Automation the agent's own
+  /// profile does own is unaffected — it matches on the first candidate and
+  /// the fallbacks are never consulted.
   Future<AutomationResult> _tryAutomateSkillType({
     required String taskId,
     required SkillType skillType,
   }) async {
-    // 1. Resolve the profile for the task's agent.
-    final resolvedProfile = await _resolver.resolveForTask(taskId);
-    if (resolvedProfile == null) {
-      return AutomationResult.notHandled;
+    final primaryProfile = await _resolver.resolveForTask(taskId);
+    if (primaryProfile != null) {
+      final outcome = await _matchAutomatedSkill(
+        profile: primaryProfile,
+        skillType: skillType,
+        taskId: taskId,
+      );
+      if (outcome.ambiguous) return AutomationResult.notHandled;
+      final match = outcome.match;
+      if (match != null) {
+        developer.log(
+          'Profile automation: using skill "${match.skill.name}" for '
+          '$skillType on task $taskId',
+          name: _logTag,
+        );
+        return AutomationResult(
+          handled: true,
+          resolvedProfile: primaryProfile,
+          skill: match.skill,
+          skillAssignment: match.assignment,
+        );
+      }
     }
 
-    // 2. Collect all automated skill assignments matching the requested type.
-    final matches = <({SkillAssignment assignment, AiConfigSkill skill})>[];
+    final fallbacks = await _resolver.resolveAutomationFallbacks(taskId);
+    for (final fallbackProfile in fallbacks) {
+      final outcome = await _matchAutomatedSkill(
+        profile: fallbackProfile,
+        skillType: skillType,
+        taskId: taskId,
+      );
+      if (outcome.ambiguous) return AutomationResult.notHandled;
+      final match = outcome.match;
+      if (match == null) continue;
 
-    for (final assignment in resolvedProfile.skillAssignments) {
+      developer.log(
+        'Profile automation: task $taskId does not own $skillType, falling '
+        'back to inherited profile skill "${match.skill.name}"',
+        name: _logTag,
+      );
+      return AutomationResult(
+        handled: true,
+        resolvedProfile: fallbackProfile,
+        skill: match.skill,
+        skillAssignment: match.assignment,
+      );
+    }
+
+    return AutomationResult.notHandled;
+  }
+
+  /// Inspects one [profile] for an automated skill of [skillType].
+  ///
+  /// A match requires all three: an assignment with `automate: true`, a skill
+  /// config of the requested type behind it, and the profile's matching model
+  /// slot populated — a profile that automates transcription without a
+  /// transcription model cannot run it.
+  Future<_SkillMatchOutcome> _matchAutomatedSkill({
+    required ResolvedProfile profile,
+    required SkillType skillType,
+    required String taskId,
+  }) async {
+    final matches = <_AutomatedSkillMatch>[];
+
+    for (final assignment in profile.skillAssignments) {
       if (!assignment.automate) continue;
 
       final skillConfig = await _aiConfigRepository.getConfigById(
@@ -200,8 +287,7 @@ class ProfileAutomationService {
 
       if (skillConfig.skillType != skillType) continue;
 
-      // Verify the profile has the required model slot populated.
-      if (!_hasModelSlotForSkillType(resolvedProfile, skillType)) {
+      if (!_hasModelSlotForSkillType(profile, skillType)) {
         developer.log(
           'Profile has no model slot for $skillType, skipping skill '
           '${skillConfig.name}',
@@ -213,32 +299,18 @@ class ProfileAutomationService {
       matches.add((assignment: assignment, skill: skillConfig));
     }
 
-    if (matches.isEmpty) return AutomationResult.notHandled;
+    if (matches.isEmpty) return _noSkillMatch;
 
-    // 3. Reject ambiguous profiles with multiple automated skills of the
-    //    same type — the context policy could differ silently.
     if (matches.length > 1) {
       developer.log(
         'Ambiguous profile: ${matches.length} automated $skillType '
         'skills found for task $taskId, treating as not handled',
         name: _logTag,
       );
-      return AutomationResult.notHandled;
+      return _ambiguousSkillMatch;
     }
 
-    final match = matches.first;
-    developer.log(
-      'Profile automation: using skill "${match.skill.name}" for '
-      '$skillType on task $taskId',
-      name: _logTag,
-    );
-
-    return AutomationResult(
-      handled: true,
-      resolvedProfile: resolvedProfile,
-      skill: match.skill,
-      skillAssignment: match.assignment,
-    );
+    return (match: matches.first, ambiguous: false);
   }
 
   /// Checks whether the given task has an automated skill of the given type.

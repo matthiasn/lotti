@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1070]
+### Fixed
+- **Choosing your own model no longer switches off automatic transcription and
+  image analysis.** Picking a model by hand for a task's assistant replaced the
+  whole AI setup, not just the thinking model, so the category's automatic
+  transcription and image analysis quietly stopped — and picking a different
+  model afterwards never brought them back. Each of them now falls back to the
+  profile the task inherits from its category, so they keep using the
+  category's transcription and image models while your chosen model handles the
+  thinking. A profile you picked for a task still wins every capability it
+  actually configures; only a missing one falls through. This also fixes tasks
+  created before their category had an AI profile, which never picked one up.
+- **A new task gets its assistant right away.** Creating a task in a category
+  with an agent template left the AI card empty for several seconds before the
+  assistant appeared, which looked like assignment had failed and led people to
+  add one by hand. The assistant was in fact created immediately — the card
+  just had no way of hearing about it until the first update finished running.
+  It now appears as the task opens.
+
 ## [0.9.1069]
 ### Fixed
 - **Ticking off a checklist item no longer looks broken as the row leaves.**

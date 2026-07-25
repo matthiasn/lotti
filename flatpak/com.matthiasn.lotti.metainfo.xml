@@ -35,6 +35,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1070" date="2026-07-25">
+      <description>
+        <p>Fixed: choosing your own model no longer switches off automatic transcription and image analysis. Picking a model by hand for a task's assistant replaced the whole AI setup, not just the thinking model, so the category's automatic transcription and image analysis quietly stopped — and picking a different model afterwards never brought them back. Each of them now falls back to the profile the task inherits from its category, so they keep using the category's transcription and image models while your chosen model handles the thinking. A profile you picked for a task still wins every capability it actually configures; only a missing one falls through. This also fixes tasks created before their category had an AI profile, which never picked one up.</p>
+        <p>Fixed: a new task gets its assistant right away. Creating a task in a category with an agent template left the AI card empty for several seconds before the assistant appeared, which looked like assignment had failed and led people to add one by hand. The assistant was in fact created immediately — the card just had no way of hearing about it until the first update finished running. It now appears as the task opens.</p>
+      </description>
+    </release>
     <release version="0.9.1069" date="2026-07-25">
       <description>
         <p>Changed: the AI summary card's bottom section is simpler and works on a phone. The update controls no longer sit in a box inside a box, so the strip reads as one quiet band and stops running out of room on narrow screens or in longer languages. As space gets tight the countdown shortens its wording rather than cutting off the time itself.</p>

@@ -360,6 +360,88 @@ void main() {
       expect(result, isNull);
     });
 
+    // The fallback walk needs the task's category, not just its profileId:
+    // a task created before its category had a default profile carries no
+    // profileId of its own.
+    group('taskCategoryLookup via resolveAutomationFallbacks', () {
+      JournalEntity taskWith({String? categoryId, String? profileId}) {
+        return JournalEntity.task(
+          meta: Metadata(
+            id: 'task-1',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: categoryId,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime(2024),
+              utcOffset: 0,
+            ),
+            title: 'Task',
+            statusHistory: const [],
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            estimate: Duration.zero,
+            profileId: profileId,
+          ),
+        );
+      }
+
+      test('walks the task profile and then the category default', () async {
+        when(() => mockDb.journalEntityById('task-1')).thenAnswer(
+          (_) async => taskWith(categoryId: 'cat-1', profileId: 'profile-task'),
+        );
+        when(
+          () => mockDb.getCategoryById('cat-1'),
+        ).thenAnswer(
+          (_) async => makeCategory(defaultProfileId: 'profile-cat'),
+        );
+
+        final container = createContainer();
+        final resolver = container.read(profileAutomationResolverProvider);
+        // Both profile lookups return null (mockAiConfigRepo default), so the
+        // walk yields nothing — what matters is which ids it reached for.
+        final result = await resolver.resolveAutomationFallbacks('task-1');
+
+        expect(result, isEmpty);
+        verify(() => mockAiConfigRepo.getConfigById('profile-task')).called(1);
+        verify(() => mockAiConfigRepo.getConfigById('profile-cat')).called(1);
+      });
+
+      test('reaches the category default with no task profile', () async {
+        when(
+          () => mockDb.journalEntityById('task-1'),
+        ).thenAnswer((_) async => taskWith(categoryId: 'cat-1'));
+        when(
+          () => mockDb.getCategoryById('cat-1'),
+        ).thenAnswer(
+          (_) async => makeCategory(defaultProfileId: 'profile-cat'),
+        );
+
+        final container = createContainer();
+        final resolver = container.read(profileAutomationResolverProvider);
+        await resolver.resolveAutomationFallbacks('task-1');
+
+        verify(() => mockAiConfigRepo.getConfigById('profile-cat')).called(1);
+      });
+
+      test('reads no category when the entry is missing', () async {
+        when(
+          () => mockDb.journalEntityById('task-gone'),
+        ).thenAnswer((_) async => null);
+
+        final container = createContainer();
+        final resolver = container.read(profileAutomationResolverProvider);
+        final result = await resolver.resolveAutomationFallbacks('task-gone');
+
+        expect(result, isEmpty);
+        verifyNever(() => mockDb.getCategoryById(any()));
+      });
+    });
+
     // The gate the service applies before any automation: the entry's
     // category must have automatic inference switched on.
     group('categoryAutomationLookup', () {

@@ -451,4 +451,149 @@ void main() {
       tags: 'glados',
     );
   });
+
+  // `resolveForTask` answers which profile drives the task's agent. Once a
+  // thinking model is picked by hand that answer is a bare model route with no
+  // capability slots and no skill assignments, so automation needs the
+  // profiles the task inherits as well.
+  group('resolveAutomationFallbacks', () {
+    ProfileAutomationResolver makeResolver({
+      TaskProfileLookup? taskProfileLookup,
+      CategoryProfileLookup? categoryProfileLookup,
+      TaskCategoryLookup? taskCategoryLookup,
+    }) {
+      return ProfileAutomationResolver(
+        taskAgentService: mockTaskAgentService,
+        templateService: mockTemplateService,
+        profileResolver: mockProfileResolver,
+        taskProfileLookup: taskProfileLookup,
+        categoryProfileLookup: categoryProfileLookup,
+        taskCategoryLookup: taskCategoryLookup,
+      );
+    }
+
+    test(
+      'returns the task profile before the category default',
+      () async {
+        final taskProfile = makeResolvedProfile();
+        final categoryProfile = ResolvedProfile(
+          thinkingModelId: 'category-thinking',
+          thinkingProvider: testInferenceProvider(id: 'p-category'),
+        );
+        final fallbackResolver = makeResolver(
+          taskProfileLookup: (_) async => 'task-profile',
+          taskCategoryLookup: (_) async => 'cat-1',
+          categoryProfileLookup: (categoryId) async =>
+              categoryId == 'cat-1' ? 'category-profile' : null,
+        );
+        when(
+          () => mockProfileResolver.resolveByProfileId('task-profile'),
+        ).thenAnswer((_) async => taskProfile);
+        when(
+          () => mockProfileResolver.resolveByProfileId('category-profile'),
+        ).thenAnswer((_) async => categoryProfile);
+
+        final result = await fallbackResolver.resolveAutomationFallbacks(
+          'task-1',
+        );
+
+        expect(result, [taskProfile, categoryProfile]);
+        // The agent path belongs to `resolveForTask`; the fallback walk must
+        // not re-run it.
+        verifyNever(() => mockTaskAgentService.getTaskAgentForTask(any()));
+      },
+    );
+
+    test('resolves a shared profile id only once', () async {
+      final profile = makeResolvedProfile();
+      final fallbackResolver = makeResolver(
+        taskProfileLookup: (_) async => 'shared-profile',
+        taskCategoryLookup: (_) async => 'cat-1',
+        categoryProfileLookup: (_) async => 'shared-profile',
+      );
+      when(
+        () => mockProfileResolver.resolveByProfileId('shared-profile'),
+      ).thenAnswer((_) async => profile);
+
+      final result = await fallbackResolver.resolveAutomationFallbacks(
+        'task-1',
+      );
+
+      expect(result, [profile]);
+      verify(
+        () => mockProfileResolver.resolveByProfileId('shared-profile'),
+      ).called(1);
+    });
+
+    // A task created before its category had a default profile carries no
+    // `profileId` of its own — the category is the only thing left that can
+    // supply the capability.
+    test(
+      'falls through to the category when the task has no profile',
+      () async {
+        final categoryProfile = makeResolvedProfile();
+        final fallbackResolver = makeResolver(
+          taskProfileLookup: (_) async => null,
+          taskCategoryLookup: (_) async => 'cat-1',
+          categoryProfileLookup: (_) async => 'category-profile',
+        );
+        when(
+          () => mockProfileResolver.resolveByProfileId('category-profile'),
+        ).thenAnswer((_) async => categoryProfile);
+
+        final result = await fallbackResolver.resolveAutomationFallbacks(
+          'task-1',
+        );
+
+        expect(result, [categoryProfile]);
+      },
+    );
+
+    // A deleted or broken profile must not hide the one behind it.
+    test(
+      'skips a candidate that cannot be resolved and keeps walking',
+      () async {
+        final categoryProfile = makeResolvedProfile();
+        final fallbackResolver = makeResolver(
+          taskProfileLookup: (_) async => 'deleted-profile',
+          taskCategoryLookup: (_) async => 'cat-1',
+          categoryProfileLookup: (_) async => 'category-profile',
+        );
+        when(
+          () => mockProfileResolver.resolveByProfileId('deleted-profile'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockProfileResolver.resolveByProfileId('category-profile'),
+        ).thenAnswer((_) async => categoryProfile);
+
+        final result = await fallbackResolver.resolveAutomationFallbacks(
+          'task-1',
+        );
+
+        expect(result, [categoryProfile]);
+      },
+    );
+
+    test('returns nothing when the entry has no category', () async {
+      final fallbackResolver = makeResolver(
+        taskProfileLookup: (_) async => null,
+        taskCategoryLookup: (_) async => null,
+        categoryProfileLookup: (_) async =>
+            fail('category profile must not be read without a category'),
+      );
+
+      final result = await fallbackResolver.resolveAutomationFallbacks(
+        'task-1',
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('returns nothing when no lookups are wired', () async {
+      final result = await resolver.resolveAutomationFallbacks('task-1');
+
+      expect(result, isEmpty);
+      verifyNever(() => mockProfileResolver.resolveByProfileId(any()));
+    });
+  });
 }
