@@ -3479,6 +3479,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get createNewLinkedTask => 'Creare un nuovo compito collegato…';
 
   @override
+  String get createNewLinkedTaskTitle => 'Create new linked task';
+
+  @override
   String get customColor => 'Colore personalizzato';
 
   @override
@@ -6694,6 +6697,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Collegare il compito esistente…';
+
+  @override
+  String get linkExistingTaskTitle => 'Link existing task';
 
   @override
   String get linkPhraseBasic => 'Relates to';

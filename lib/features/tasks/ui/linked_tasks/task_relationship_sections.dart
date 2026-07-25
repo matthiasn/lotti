@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
@@ -74,8 +75,6 @@ class TaskRelationshipSections extends ConsumerWidget {
         const [];
     if (typed.isEmpty) return const SizedBox.shrink();
 
-    final tokens = context.designTokens;
-
     List<TaskLinkEntry> entriesOf(
       TaskLinkKind kind, {
       TaskLinkDirection? direction,
@@ -121,11 +120,7 @@ class TaskRelationshipSections extends ConsumerWidget {
     for (var s = 0; s < sections.length; s++) {
       if (s > 0) {
         children.add(
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: tokens.colors.decorative.level01,
-          ),
+          const DesignSystemDivider(),
         );
       }
       children.add(
@@ -229,8 +224,12 @@ class LinkedTaskSectionHeader extends StatelessWidget {
       // off-ramp weight override. Medium, not high: the titles beneath own the
       // card's brightest ink, and three roles tied at #FFFFFF read as one flat
       // plane no matter how the sizes rank.
+      // Never the accent: the ⊘ glyph beside it already carries the blocked
+      // semantic in a shape no status glyph uses, and amber text here sits a
+      // hue apart from an On Hold row's own orange — close enough to read as
+      // the same thing while meaning something else.
       style: tokens.typography.styles.others.overline.copyWith(
-        color: accent ?? tokens.colors.text.mediumEmphasis,
+        color: tokens.colors.text.mediumEmphasis,
       ),
     );
     return Padding(

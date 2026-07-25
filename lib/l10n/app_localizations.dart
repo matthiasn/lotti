@@ -5867,6 +5867,12 @@ abstract class AppLocalizations {
   /// **'Create new linked task…'**
   String get createNewLinkedTask;
 
+  /// Modal title. Same wording as the control that opens it, without the trailing ellipsis — the modal is the further UI the ellipsis promises, so it must not promise it again.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new linked task'**
+  String get createNewLinkedTaskTitle;
+
   /// No description provided for @customColor.
   ///
   /// In en, this message translates to:
@@ -11524,6 +11530,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Link existing task…'**
   String get linkExistingTask;
+
+  /// Modal title. Same wording as the control that opens it, without the trailing ellipsis — the modal is the further UI the ellipsis promises, so it must not promise it again.
+  ///
+  /// In en, this message translates to:
+  /// **'Link existing task'**
+  String get linkExistingTaskTitle;
 
   /// No description provided for @linkPhraseBasic.
   ///

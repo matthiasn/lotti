@@ -3477,6 +3477,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createNewLinkedTask => 'Crear nueva tarea vinculada…';
 
   @override
+  String get createNewLinkedTaskTitle => 'Crear nueva tarea vinculada';
+
+  @override
   String get customColor => 'Color personalizado';
 
   @override
@@ -6696,6 +6699,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Vincular tarea existente…';
+
+  @override
+  String get linkExistingTaskTitle => 'Vincular tarea existente';
 
   @override
   String get linkPhraseBasic => 'Se relaciona con';

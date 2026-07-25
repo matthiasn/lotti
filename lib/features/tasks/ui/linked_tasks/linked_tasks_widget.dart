@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -107,11 +108,7 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                     manageMode: uiState.manageMode,
                   ),
                 if (linkGroups.typed.isNotEmpty && flatRows.isNotEmpty)
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: tokens.colors.decorative.level01,
-                  ),
+                  const DesignSystemDivider(),
                 // Headed only when there is something to be "other" than —
                 // and headed with the picker's own word for a plain link, so
                 // the card reads back the phrase the user picked.
@@ -120,12 +117,7 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                     title: context.messages.linkPhraseBasic,
                   ),
                 for (var i = 0; i < flatRows.length; i++) ...[
-                  if (i > 0)
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: tokens.colors.decorative.level01,
-                    ),
+                  if (i > 0) const DesignSystemDivider(),
                   LinkedTaskRow(
                     taskId: taskId,
                     data: flatRows[i],
@@ -180,7 +172,9 @@ class _LinkedTasksEmptyAction extends StatelessWidget {
       leading: Icon(
         Icons.add_link,
         size: tokens.spacing.step5,
-        color: tokens.colors.interactive.enabled,
+        // Same ink as the header's own link action: one glyph meaning one
+        // thing should not change colour just because the card is empty.
+        color: tokens.colors.text.highEmphasis,
       ),
       trailing: Icon(
         Icons.arrow_forward_ios,
@@ -436,7 +430,7 @@ Future<DirectedRelation?> _pickRelationshipType(BuildContext context) async {
   try {
     return await ModalUtils.showSinglePageModal<DirectedRelation>(
       context: context,
-      title: context.messages.createNewLinkedTask,
+      title: context.messages.createNewLinkedTaskTitle,
       padding: EdgeInsets.zero,
       stickyActionBarBuilder: (BuildContext modalContext) =>
           buildPickerApplyFooter(

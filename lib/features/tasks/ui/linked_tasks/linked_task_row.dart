@@ -264,9 +264,10 @@ class StatusGlyph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
+    final tokens = context.designTokens;
     return Icon(
       taskIconFromStatusString(status.toDbString),
-      size: 16,
+      size: tokens.spacing.step5,
       color: taskColorFromStatusString(
         status.toDbString,
         brightness: brightness,

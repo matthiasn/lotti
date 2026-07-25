@@ -3446,6 +3446,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get createNewLinkedTask => 'Nieuwe verbonden taak aanmaken…';
 
   @override
+  String get createNewLinkedTaskTitle => 'Create new linked task';
+
+  @override
   String get customColor => 'Aangepaste kleur';
 
   @override
@@ -6630,6 +6633,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Bestaande taak koppelen…';
+
+  @override
+  String get linkExistingTaskTitle => 'Link existing task';
 
   @override
   String get linkPhraseBasic => 'Relates to';

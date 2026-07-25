@@ -8,6 +8,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
@@ -378,7 +379,7 @@ void main() {
       expect(find.text('to'), findsNothing);
       expect(find.text('from'), findsNothing);
       // Three rows → two dividers between them.
-      expect(find.byType(Divider), findsNWidgets(2));
+      expect(find.byType(DesignSystemDivider), findsNWidgets(2));
     });
 
     testWidgets('uses the shared task status glyph for each linked task', (
@@ -492,7 +493,7 @@ void main() {
         expect(find.text('Outgoing Task'), findsOneWidget);
         // One divider between the typed sections and the flat list — the
         // flat list itself has only one row, so no additional dividers.
-        expect(find.byType(Divider), findsOneWidget);
+        expect(find.byType(DesignSystemDivider), findsOneWidget);
       },
     );
   });

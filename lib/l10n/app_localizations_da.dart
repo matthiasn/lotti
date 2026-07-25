@@ -3434,6 +3434,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get createNewLinkedTask => 'Opret ny sammenkædet opgave…';
 
   @override
+  String get createNewLinkedTaskTitle => 'Create new linked task';
+
+  @override
   String get customColor => 'Specialfarve';
 
   @override
@@ -6611,6 +6614,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Link eksisterende opgave…';
+
+  @override
+  String get linkExistingTaskTitle => 'Link existing task';
 
   @override
   String get linkPhraseBasic => 'Relates to';

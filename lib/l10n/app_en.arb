@@ -1909,6 +1909,10 @@
   "createEntryLabel": "Create new entry",
   "createEntryTitle": "Add",
   "createNewLinkedTask": "Create new linked task…",
+  "createNewLinkedTaskTitle": "Create new linked task",
+  "@createNewLinkedTaskTitle": {
+    "description": "Modal title. Same wording as the control that opens it, without the trailing ellipsis — the modal is the further UI the ellipsis promises, so it must not promise it again."
+  },
   "customColor": "Custom Color",
   "dailyOsDayPlan": "Day Plan",
   "dailyOsNextActivityActionFailed": "That action didn't finish. Your recording is still safe—try again.",
@@ -3386,6 +3390,10 @@
   "linkCreatedUndo": "Undo",
   "linkDirectionLabel": "This task…",
   "linkExistingTask": "Link existing task…",
+  "linkExistingTaskTitle": "Link existing task",
+  "@linkExistingTaskTitle": {
+    "description": "Modal title. Same wording as the control that opens it, without the trailing ellipsis — the modal is the further UI the ellipsis promises, so it must not promise it again."
+  },
   "linkPhraseBasic": "Relates to",
   "linkPhraseBlocksInverse": "Is blocked by",
   "linkPhraseBlocksPrimary": "Blocks",

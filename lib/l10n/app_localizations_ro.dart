@@ -3486,6 +3486,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get createNewLinkedTask => 'Creați o sarcină nouă asociată…';
 
   @override
+  String get createNewLinkedTaskTitle => 'Creați o sarcină nouă asociată';
+
+  @override
   String get customColor => 'Culoare personalizată';
 
   @override
@@ -6730,6 +6733,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Leagă o sarcină existentă…';
+
+  @override
+  String get linkExistingTaskTitle => 'Leagă o sarcină existentă';
 
   @override
   String get linkPhraseBasic => 'Are legătură cu';
