@@ -58,6 +58,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through Manage links.
 
 ### Fixed
+- **A task you had already linked could be linked again.** A plain link reads
+  the same from either end, but the picker only recognised it from the side it
+  was created on — so a task already listed on the card was offered again, and
+  taking it left two identical rows and needed two confirmations to remove one
+  link.
+- **Failures said the wrong thing and looked like successes.** Every rejected
+  link reported "this would create a blocking cycle", even for relationships
+  that can't create one, and failure messages arrived on the same background
+  as the "link created" confirmation.
+- Manage mode has a way to add a link again — its header slot is taken by the
+  Done button while you're editing.
 - **The link and blocker pickers listed no tasks at all.** Browsing (before
   typing anything) came back empty in every case, because the query treated
   "all categories" as "no categories". Searching still worked, which is why
