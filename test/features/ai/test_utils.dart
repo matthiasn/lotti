@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -433,15 +434,16 @@ class ChecklistTestDataFactory {
 /// A [SeedTombstoneStore] backed by a real in-memory settings database, so
 /// reads and writes behave exactly as they do in production.
 ///
-/// Pass [deleted] to start with tombstones already recorded. Callers own the
-/// returned store's lifetime only through the database, which the in-memory
-/// executor discards with the test isolate.
+/// Pass [deleted] to start with tombstones already recorded. The database is
+/// closed automatically when the test ends.
 Future<SeedTombstoneStore> createTombstoneStore({
   Set<String> deleted = const {},
 }) async {
-  final store = SeedTombstoneStore(
-    settingsDb: SettingsDb(inMemoryDatabase: true),
-  );
+  final settingsDb = SettingsDb(inMemoryDatabase: true);
+  // Without this the executor for every setUp's database stays alive for the
+  // whole test process.
+  addTearDown(settingsDb.close);
+  final store = SeedTombstoneStore(settingsDb: settingsDb);
   for (final identity in deleted) {
     await store.remember(identity);
   }

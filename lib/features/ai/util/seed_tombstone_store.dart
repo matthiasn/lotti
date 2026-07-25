@@ -57,19 +57,42 @@ class SeedTombstoneStore {
     }
   }
 
+  /// Serializes the read-modify-write mutations below across *every* store
+  /// instance in the isolate.
+  ///
+  /// The repository builds a fresh store per deletion and a synced delete can
+  /// land while a user delete is in flight, so two mutations would otherwise
+  /// read the same prior set and the second write would drop the first's
+  /// identity — silently reviving that seed. All writers share this chain, so
+  /// each mutation reads a set that already includes its predecessor.
+  static Future<void> _mutations = Future<void>.value();
+
+  /// Runs [mutation] after every previously queued mutation has settled.
+  static Future<void> _serialized(Future<void> Function() mutation) {
+    final next = _mutations.then((_) => mutation());
+    // The chain must survive a failed mutation, or one error would wedge every
+    // later write. Callers still see their own error through [next].
+    _mutations = next.then<void>((_) {}, onError: (_, _) {});
+    return next;
+  }
+
   /// Records [identity] so the seeding passes skip it from now on.
-  Future<void> remember(String identity) async {
-    final current = await deletedIdentities();
-    if (!current.add(identity)) return;
-    await _write(current);
+  Future<void> remember(String identity) {
+    return _serialized(() async {
+      final current = await deletedIdentities();
+      if (!current.add(identity)) return;
+      await _write(current);
+    });
   }
 
   /// Drops [identity], so the next seeding pass may recreate it. Used when the
   /// user deliberately re-creates something they had deleted.
-  Future<void> forget(String identity) async {
-    final current = await deletedIdentities();
-    if (!current.remove(identity)) return;
-    await _write(current);
+  Future<void> forget(String identity) {
+    return _serialized(() async {
+      final current = await deletedIdentities();
+      if (!current.remove(identity)) return;
+      await _write(current);
+    });
   }
 
   Future<void> _write(Set<String> identities) {

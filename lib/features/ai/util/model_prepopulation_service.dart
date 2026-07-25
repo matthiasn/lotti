@@ -70,7 +70,7 @@ class ModelPrepopulationService {
     // model the user removed comes back on the next launch without this.
     final deleted = await _tombstones.deletedIdentities();
 
-    var modelsCreated = 0;
+    final created = <AiConfigModel>[];
 
     // Create models that don't exist yet
     for (final knownModel in knownModels) {
@@ -107,10 +107,38 @@ class ModelPrepopulationService {
       );
 
       await _repository.saveConfig(newModel);
-      modelsCreated++;
+      created.add(newModel);
     }
 
-    return modelsCreated;
+    await _dropModelsTombstonedDuringPass(created, provider);
+
+    return created.length;
+  }
+
+  /// Removes anything this pass created that the user deleted while it ran.
+  ///
+  /// Model rows and the tombstone ledger live in different databases, so no
+  /// transaction spans the deletion and this pass's ledger read. Re-reading
+  /// afterwards restores the invariant rather than leaving a resurrected row
+  /// that nothing would clean up — backfill only ever creates.
+  Future<void> _dropModelsTombstonedDuringPass(
+    List<AiConfigModel> created,
+    AiConfigInferenceProvider provider,
+  ) async {
+    if (created.isEmpty) return;
+    final deletedNow = await _tombstones.deletedIdentities();
+    for (final model in created) {
+      final identity = SeedTombstoneStore.modelKey(
+        inferenceProviderId: provider.id,
+        providerModelId: model.providerModelId,
+      );
+      if (!deletedNow.contains(identity)) continue;
+      await _repository.deleteConfig(model.id, recordTombstone: false);
+      developer.log(
+        'Dropped ${model.providerModelId}, deleted while backfill ran',
+        name: 'ModelPrepopulationService',
+      );
+    }
   }
 
   static bool _hasConfiguredKnownModel(

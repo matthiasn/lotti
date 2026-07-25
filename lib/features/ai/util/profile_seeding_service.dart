@@ -109,7 +109,7 @@ class ProfileSeedingService {
   /// created, updated, or finishes FTUE setup, so completing a provider
   /// setup surfaces its profile immediately.
   Future<void> seedDefaults() async {
-    var seededCount = 0;
+    final seededIds = <String>[];
     // Seeding is idempotent by presence, so without this the user's deletion
     // would be undone on the next launch or provider save.
     final deleted = await _tombstones.deletedIdentities();
@@ -139,11 +139,41 @@ class ProfileSeedingService {
         ),
       );
       await _repo.saveConfig(profile);
-      seededCount++;
+      seededIds.add(template.id);
     }
 
-    if (seededCount > 0) {
-      developer.log('Profiles: seeded $seededCount', name: _logTag);
+    await _dropSeedsTombstonedDuringPass(seededIds);
+
+    if (seededIds.isNotEmpty) {
+      developer.log('Profiles: seeded ${seededIds.length}', name: _logTag);
+    }
+  }
+
+  /// Removes anything this pass created that the user deleted while it ran.
+  ///
+  /// The row and its tombstone live in different databases (`ai_config.sqlite`
+  /// and `settings.sqlite`), so no transaction can span the deletion and the
+  /// seeding check. A deletion landing after this pass read the ledger but
+  /// before it wrote the row would otherwise leave the row resurrected with a
+  /// tombstone recorded — and since seeding only ever *creates*, nothing would
+  /// clean it up. Re-reading here restores the invariant at the end of every
+  /// pass instead.
+  ///
+  /// The re-read is skipped entirely when the pass wrote nothing, which is the
+  /// overwhelmingly common case.
+  Future<void> _dropSeedsTombstonedDuringPass(List<String> seededIds) async {
+    if (seededIds.isEmpty) return;
+    final deletedNow = await _tombstones.deletedIdentities();
+    for (final id in seededIds) {
+      if (!deletedNow.contains(SeedTombstoneStore.profileKey(id))) continue;
+      // The tombstone already exists — recording it again would be a no-op,
+      // but passing false keeps the intent explicit: this is the app undoing
+      // its own write, not a new user deletion.
+      await _repo.deleteConfig(id, recordTombstone: false);
+      developer.log(
+        'Profiles: dropped $id, deleted while seeding ran',
+        name: _logTag,
+      );
     }
   }
 
