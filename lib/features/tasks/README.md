@@ -582,6 +582,44 @@ done") are also explicitly limited to one ellipsized line, so completion and
 collapse animations cannot stack individual letters even under narrow or
 scaled layouts.
 
+#### Checking an item off under a filter
+
+Under the Open filter (`hideIfChecked`) or the Done filter (`hideIfUnchecked`)
+a row that stops matching leaves the list. The row holds its completed state
+for `checklistCompletionAnimationDuration` (1150ms — long enough to read the
+checkmark and the strike-through) and then collapses over
+`checklistCompletionFadeDuration` (300ms) through `SizeFadeCollapse`.
+
+`SizeFadeCollapse` drives the reserved height, the paint scale **and** the
+opacity from a single tween, so the row leaves as one piece: the checkbox,
+title, drag grip and edit affordance all shrink by the same factor at the same
+instant. The scale and the height share one anchor (top-start), which is what
+keeps painted size equal to reserved size on every frame.
+
+That coupling is the entire point. A clip-based collapse
+(`SizeTransition`, or an `AnimatedCrossFade` to a zero-sized second child)
+shrinks the *box* while the child keeps its full layout size, so the fixed
+44×44 checkbox held its original dimensions and got sliced by the clip as the
+row closed around it. `AnimatedCrossFade` compounded it: because the outgoing
+row stops being the sizing child, it was re-laid-out against the zero-sized
+second child's constraints and its contents jumped — measured at ~180px to the
+right and ~18px down — on the very first frame of the transition, before any
+size animation had run. The row also narrowed from both sides under the card's
+loose width constraints. `SizeFadeCollapse` keeps the box at full width and
+scales instead of cropping.
+
+Reduced motion snaps the collapse instead of animating it, and a collapsing row
+is `IgnorePointer`ed, `ExcludeFocus`ed and `ExcludeSemantics`ed as soon as it
+starts leaving, so a row on its way out can neither be tapped nor announced.
+Its subtree keeps ticking until the collapse finishes, so an in-flight
+strike-through wipe or checkbox pop is not frozen half-played.
+
+The collapse is reversible: unchecking an item under the Open filter (or a
+filter flip that makes it match again) runs the same tween backwards.
+
+`SizeFadeCollapse` is the exit counterpart to `SizeFadeEntrance` and lives in
+the design system (`components/motion/`), not in the checklist code.
+
 ### Checklist runtime model
 
 `ChecklistController`:

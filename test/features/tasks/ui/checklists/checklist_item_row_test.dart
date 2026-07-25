@@ -12,10 +12,12 @@ import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
@@ -914,10 +916,10 @@ void main() {
           await tester.pump();
 
           // Verify initially visible (showFirst).
-          final crossFadeBefore = tester.widget<AnimatedCrossFade>(
-            find.byType(AnimatedCrossFade),
+          final crossFadeBefore = tester.widget<SizeFadeCollapse>(
+            find.byType(SizeFadeCollapse),
           );
-          expect(crossFadeBefore.crossFadeState, CrossFadeState.showFirst);
+          expect(crossFadeBefore.collapsed, isFalse);
 
           // Tap checkbox to check the item.
           await tester.tap(find.byType(Checkbox));
@@ -926,10 +928,10 @@ void main() {
           // After the hold timer (1150ms) fires, the row hides. Pump past it.
           await tester.pump(const Duration(milliseconds: 1250));
 
-          final crossFadeAfter = tester.widget<AnimatedCrossFade>(
-            find.byType(AnimatedCrossFade),
+          final crossFadeAfter = tester.widget<SizeFadeCollapse>(
+            find.byType(SizeFadeCollapse),
           );
-          expect(crossFadeAfter.crossFadeState, CrossFadeState.showSecond);
+          expect(crossFadeAfter.collapsed, isTrue);
         },
       );
 
@@ -983,19 +985,19 @@ void main() {
           // Pump to let the timer-based or immediate hide take effect.
           await tester.pump(const Duration(milliseconds: 1100));
 
-          final crossFadeHidden = tester.widget<AnimatedCrossFade>(
-            find.byType(AnimatedCrossFade),
+          final crossFadeHidden = tester.widget<SizeFadeCollapse>(
+            find.byType(SizeFadeCollapse),
           );
-          expect(crossFadeHidden.crossFadeState, CrossFadeState.showSecond);
+          expect(crossFadeHidden.collapsed, isTrue);
 
           // Toggle filter to show all.
           outerSetState(() => hideIfChecked = false);
           await tester.pump();
 
-          // hideIfChecked is now false, so no AnimatedCrossFade should be
-          // present (the widget only wraps in AnimatedCrossFade when
+          // hideIfChecked is now false, so no SizeFadeCollapse should be
+          // present (the widget only wraps in SizeFadeCollapse when
           // hideIfChecked is true).
-          expect(find.byType(AnimatedCrossFade), findsNothing);
+          expect(find.byType(SizeFadeCollapse), findsNothing);
 
           // The row content should be visible.
           expect(find.byType(Checkbox), findsOneWidget);
@@ -1015,21 +1017,21 @@ void main() {
           // The checked item starts and the ref.listen fires, triggering hide.
           await tester.pump(const Duration(milliseconds: 1100));
 
-          final crossFadeHidden = tester.widget<AnimatedCrossFade>(
-            find.byType(AnimatedCrossFade),
+          final crossFadeHidden = tester.widget<SizeFadeCollapse>(
+            find.byType(SizeFadeCollapse),
           );
-          expect(crossFadeHidden.crossFadeState, CrossFadeState.showSecond);
+          expect(crossFadeHidden.collapsed, isTrue);
 
           // Uncheck the item.
-          // The checkbox is inside the hidden branch of AnimatedCrossFade,
+          // The checkbox is inside the collapsed SizeFadeCollapse,
           // so we call the controller directly.
           ctrls.itemController.updateChecked(checked: false);
           await tester.pump();
 
-          final crossFadeVisible = tester.widget<AnimatedCrossFade>(
-            find.byType(AnimatedCrossFade),
+          final crossFadeVisible = tester.widget<SizeFadeCollapse>(
+            find.byType(SizeFadeCollapse),
           );
-          expect(crossFadeVisible.crossFadeState, CrossFadeState.showFirst);
+          expect(crossFadeVisible.collapsed, isFalse);
         },
       );
 
@@ -1087,10 +1089,10 @@ void main() {
           // Second pump — the callback fires and sets _showRow = false.
           await tester.pump();
 
-          final crossFade = tester.widget<AnimatedCrossFade>(
-            find.byType(AnimatedCrossFade),
+          final crossFade = tester.widget<SizeFadeCollapse>(
+            find.byType(SizeFadeCollapse),
           );
-          expect(crossFade.crossFadeState, CrossFadeState.showSecond);
+          expect(crossFade.collapsed, isTrue);
 
           container.dispose();
         },
@@ -1107,10 +1109,10 @@ void main() {
           await _pump(tester, hideIfUnchecked: true);
           await tester.pump();
 
-          final crossFade = tester.widget<AnimatedCrossFade>(
-            find.byType(AnimatedCrossFade),
+          final crossFade = tester.widget<SizeFadeCollapse>(
+            find.byType(SizeFadeCollapse),
           );
-          expect(crossFade.crossFadeState, CrossFadeState.showSecond);
+          expect(crossFade.collapsed, isTrue);
         },
       );
 
@@ -1124,10 +1126,10 @@ void main() {
           );
           await tester.pump();
 
-          final crossFade = tester.widget<AnimatedCrossFade>(
-            find.byType(AnimatedCrossFade),
+          final crossFade = tester.widget<SizeFadeCollapse>(
+            find.byType(SizeFadeCollapse),
           );
-          expect(crossFade.crossFadeState, CrossFadeState.showFirst);
+          expect(crossFade.collapsed, isFalse);
         },
       );
 
@@ -1141,38 +1143,38 @@ void main() {
           );
           await tester.pump();
 
-          final crossFade = tester.widget<AnimatedCrossFade>(
-            find.byType(AnimatedCrossFade),
+          final crossFade = tester.widget<SizeFadeCollapse>(
+            find.byType(SizeFadeCollapse),
           );
-          expect(crossFade.crossFadeState, CrossFadeState.showFirst);
+          expect(crossFade.collapsed, isFalse);
         },
       );
     });
 
-    // ── AnimatedCrossFade wrapping ──────────────────────────────────────
+    // ── SizeFadeCollapse wrapping ──────────────────────────────────────
 
-    group('AnimatedCrossFade wrapping', () {
+    group('SizeFadeCollapse wrapping', () {
       testWidgets(
-        'hideIfChecked=true wraps in AnimatedCrossFade',
+        'hideIfChecked=true wraps in SizeFadeCollapse',
         (tester) async {
           await _pump(tester, hideIfChecked: true);
-          expect(find.byType(AnimatedCrossFade), findsOneWidget);
+          expect(find.byType(SizeFadeCollapse), findsOneWidget);
         },
       );
 
       testWidgets(
-        'hideIfUnchecked=true wraps in AnimatedCrossFade',
+        'hideIfUnchecked=true wraps in SizeFadeCollapse',
         (tester) async {
           await _pump(tester, hideIfUnchecked: true);
-          expect(find.byType(AnimatedCrossFade), findsOneWidget);
+          expect(find.byType(SizeFadeCollapse), findsOneWidget);
         },
       );
 
       testWidgets(
-        'hideIfChecked=false does not use AnimatedCrossFade',
+        'hideIfChecked=false does not use SizeFadeCollapse',
         (tester) async {
           await _pump(tester);
-          expect(find.byType(AnimatedCrossFade), findsNothing);
+          expect(find.byType(SizeFadeCollapse), findsNothing);
         },
       );
     });
@@ -1571,10 +1573,10 @@ void main() {
         await tester.pump();
 
         // The unchecked item should be hidden (showSecond = SizedBox.shrink).
-        final crossFade = tester.widget<AnimatedCrossFade>(
-          find.byType(AnimatedCrossFade),
+        final crossFade = tester.widget<SizeFadeCollapse>(
+          find.byType(SizeFadeCollapse),
         );
-        expect(crossFade.crossFadeState, CrossFadeState.showSecond);
+        expect(crossFade.collapsed, isTrue);
 
         container.dispose();
       },
@@ -1680,6 +1682,152 @@ void main() {
           );
 
           expect(dragItemWidget.allowedOperations(), [DropOperation.move]);
+        },
+      );
+    });
+
+    // ── Collapse geometry ───────────────────────────────────────────────
+
+    group('collapse geometry', () {
+      /// Checks the item off and advances to the requested fraction of the
+      /// collapse, returning the on-screen rects of the whole row and of the
+      /// checkbox at that instant. `getRect` reports *transformed* geometry, so
+      /// a scaled-down checkbox measures smaller here even though its layout
+      /// size is unchanged.
+      Future<({Rect row, Rect checkbox})> collapseTo(
+        WidgetTester tester,
+        double fraction,
+      ) async {
+        await tester.tap(find.byType(Checkbox));
+        await tester.pump();
+        // Sit out the hold (and the 320ms check "pop", so the checkbox is back
+        // at rest scale) before the collapse starts.
+        await tester.pump(
+          checklistCompletionAnimationDuration +
+              const Duration(milliseconds: 1),
+        );
+        await tester.pump(checklistCompletionFadeDuration * fraction);
+        return (
+          row: tester.getRect(find.byType(ChecklistItemRow)),
+          checkbox: tester.getRect(find.byType(Checkbox)),
+        );
+      }
+
+      testWidgets(
+        'checkbox shrinks in step with the row instead of staying full size',
+        (tester) async {
+          await _pumpWithControllers(tester, hideIfChecked: true);
+          await tester.pump();
+
+          final restRow = tester.getRect(find.byType(ChecklistItemRow));
+          final restCheckbox = tester.getRect(find.byType(Checkbox));
+          expect(restRow.height, greaterThan(0));
+          expect(restCheckbox.height, greaterThan(0));
+
+          final mid = await collapseTo(tester, 0.5);
+
+          // The row is genuinely mid-collapse...
+          final rowProgress = mid.row.height / restRow.height;
+          expect(rowProgress, lessThan(0.9));
+          expect(rowProgress, greaterThan(0.1));
+
+          // ...and the checkbox has shrunk along with it rather than holding
+          // its full size while the row is cropped out from under it.
+          final checkboxProgress = mid.checkbox.height / restCheckbox.height;
+          expect(checkboxProgress, closeTo(rowProgress, 0.15));
+        },
+      );
+
+      testWidgets(
+        'checkbox is never cropped by the collapsing row bounds',
+        (tester) async {
+          await _pumpWithControllers(tester, hideIfChecked: true);
+          await tester.pump();
+          await collapseTo(tester, 0);
+
+          // Walk one continuous collapse frame by frame. At every step the
+          // checkbox must stay inside the row's shrinking box — the old
+          // implementation left it hanging below, sliced by the clip.
+          const step = Duration(milliseconds: 25);
+          for (
+            var elapsed = step;
+            elapsed < checklistCompletionFadeDuration;
+            elapsed += step
+          ) {
+            await tester.pump(step);
+            final row = tester.getRect(find.byType(ChecklistItemRow));
+            final checkbox = tester.getRect(find.byType(Checkbox));
+
+            expect(
+              checkbox.top,
+              greaterThanOrEqualTo(row.top - 0.5),
+              reason:
+                  'checkbox escapes the row top at ${elapsed.inMilliseconds}ms',
+            );
+            expect(
+              checkbox.bottom,
+              lessThanOrEqualTo(row.bottom + 0.5),
+              reason:
+                  'checkbox cropped by the row bottom at ${elapsed.inMilliseconds}ms',
+            );
+          }
+        },
+      );
+
+      testWidgets(
+        'the row scales as one piece — its box never narrows and the checkbox '
+        'keeps its relative place inside it',
+        (tester) async {
+          await _pumpWithControllers(tester, hideIfChecked: true);
+          await tester.pump();
+
+          final restRow = tester.getRect(find.byType(ChecklistItemRow));
+          final restCheckbox = tester.getRect(find.byType(Checkbox));
+          final mid = await collapseTo(tester, 0.3);
+
+          // The reserved box keeps its full width and leading edge. The old
+          // AnimatedCrossFade collapsed width too, pulling the row in from both
+          // sides and sliding its contents ~180px to the right on frame one.
+          expect(mid.row.width, closeTo(restRow.width, 0.5));
+          expect(mid.row.left, closeTo(restRow.left, 0.5));
+
+          // Everything inside is scaled by the one shared factor, so the
+          // checkbox's offset from the leading edge shrinks by exactly the
+          // proportion it itself shrank by — the mark of a unified transform
+          // rather than a box closing around a fixed-size child.
+          final scale = mid.checkbox.width / restCheckbox.width;
+          expect(scale, lessThan(0.9));
+          expect(
+            mid.checkbox.left - mid.row.left,
+            closeTo((restCheckbox.left - restRow.left) * scale, 1),
+          );
+        },
+      );
+
+      testWidgets(
+        'the whole row fades out as one — checkbox, title and edit affordance '
+        'share a single opacity',
+        (tester) async {
+          await _pumpWithControllers(tester, hideIfChecked: true);
+          await tester.pump();
+          await collapseTo(tester, 0.5);
+
+          // A single FadeTransition above the row content means every child
+          // dims together; per-child opacity would show up as more than one.
+          final fades = tester
+              .widgetList<FadeTransition>(
+                find.ancestor(
+                  of: find.byType(Checkbox),
+                  matching: find.byType(FadeTransition),
+                ),
+              )
+              .map((f) => f.opacity.value)
+              .where((v) => v < 1)
+              .toList();
+
+          expect(fades, hasLength(1));
+          expect(fades.single, greaterThan(0));
+          expect(fades.single, lessThan(1));
         },
       );
     });

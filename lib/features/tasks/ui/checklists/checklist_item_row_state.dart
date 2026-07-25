@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/strikethrough_wipe.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -698,15 +699,17 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
       );
 
       // Animated hide/show for filtered modes (open-only or done-only).
+      // [SizeFadeCollapse] scales the row and shrinks the space it reserves on
+      // one shared factor, so the checkbox, title and trailing affordances
+      // shrink together. An AnimatedCrossFade to a zero-sized second child used
+      // to sit here and could not do that: it re-laid the outgoing row out
+      // against zero-size constraints (jumping its contents on frame one) and
+      // then clipped a still-full-size checkbox as the box closed.
       if (widget.hideIfChecked || widget.hideIfUnchecked) {
-        child = AnimatedCrossFade(
+        child = SizeFadeCollapse(
           duration: checklistCompletionFadeDuration,
-          sizeCurve: Curves.easeInOut,
-          crossFadeState: _showRow
-              ? CrossFadeState.showFirst
-              : CrossFadeState.showSecond,
-          firstChild: child,
-          secondChild: const SizedBox.shrink(),
+          collapsed: !_showRow,
+          child: child,
         );
       }
 
