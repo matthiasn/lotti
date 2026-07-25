@@ -18,6 +18,10 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 
 * [Sync](sync/) - single-user multi-device replication over end-to-end encrypted Matrix.
 
+# Shell and configuration
+
+* [Settings](settings/) - the declarative settings tree and its shared editor kit.
+
 # UI foundation
 
 * [Design system](design_system/) - tokens, theming, and the component contracts.
