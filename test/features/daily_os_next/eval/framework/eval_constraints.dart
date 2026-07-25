@@ -762,6 +762,19 @@ EvalConstraintResult scoreNoFabricatedCalendarBlocks(EvalRunOutcome outcome) {
 /// rejections it collected on the way.
 EvalConstraintResult scoreCompliedWithoutRejection(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.compliedWithoutRejection;
+  if (outcome.toolCalls.isEmpty) {
+    // A run that called nothing cannot have complied with anything. Without
+    // this the empty rejection list reads as "accepted on the first attempt",
+    // so a model that was never reached — or that answered in prose and never
+    // called the tool — collects a compliance *pass* it did nothing to earn,
+    // and the leaderboard rewards failing loudest. Not calling the required
+    // tool is a real failure, but it is the wake's failure and shows up in the
+    // job status, not in this constraint.
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'the model made no tool calls',
+    );
+  }
   final rejections = outcome.rejections.toList();
   return EvalConstraintResult(
     id: id,

@@ -782,6 +782,38 @@ void main() {
   });
 
   group('compliedWithoutRejection', () {
+    test('a run that called nothing is not applicable, not compliant', () {
+      // An empty rejection list would otherwise read as "accepted on the first
+      // attempt", so a model that was never reached, or that answered in prose
+      // without calling the tool, would collect a compliance pass it did
+      // nothing to earn — and aggregate scores would reward failing loudest.
+      final result = scoreCompliedWithoutRejection(outcome());
+
+      expect(result.isApplicable, isFalse);
+      expect(result.detail, contains('no tool calls'));
+    });
+
+    test('a failed run with rejections is still scored as non-compliant', () {
+      // Inapplicability is about having made no attempt. A model that tried,
+      // was corrected, and still produced nothing has demonstrated exactly
+      // what this constraint measures.
+      final result = scoreCompliedWithoutRejection(
+        outcome(
+          planPersisted: false,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'draft_day_plan',
+              accepted: false,
+              rejectionMessage: 'blocks must stay within the planDate day',
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('1 rejection'));
+    });
+
     test('passes when the first tool call was accepted', () {
       final result = scoreCompliedWithoutRejection(
         outcome(
@@ -1382,8 +1414,11 @@ void main() {
       final results = scoreAll(outcome());
 
       expect(
-        results.where((result) => result.isApplicable).map((r) => r.id),
-        [EvalConstraintIds.compliedWithoutRejection],
+        results.where((result) => result.isApplicable),
+        isEmpty,
+        reason:
+            'an empty run demonstrates nothing at all — including about '
+            'compliance, which it never attempted',
       );
     });
   });

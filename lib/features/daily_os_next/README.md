@@ -282,6 +282,12 @@ therefore split:
 | the persisted plan | overlap, capacity (as written *and* as estimated), working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, conflict surfaced, blocker-before-blocked, fabricated task ids, fabricated history, duplicate ids |
 | the rejection count | whether the model complied without being corrected |
 
+A run that made **no tool calls at all** is inapplicable for the rejection
+constraint too, not a pass: an empty rejection list would otherwise read as
+"accepted on the first attempt", so an unreachable model — or one that answered
+in prose and never called the tool — would collect compliance credit it did
+nothing to earn.
+
 A constraint that reads the plan is **inapplicable when no plan was
 persisted** — an empty block list would otherwise read as "no overlaps,
 nothing fabricated, every omission honoured" and hand a failed run a clean
