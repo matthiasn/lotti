@@ -57,22 +57,28 @@ class SeedTombstoneStore {
     }
   }
 
-  /// Serializes the read-modify-write mutations below across *every* store
-  /// instance in the isolate.
+  /// Serializes the read-modify-write mutations below, per settings database.
   ///
   /// The repository builds a fresh store per deletion and a synced delete can
   /// land while a user delete is in flight, so two mutations would otherwise
   /// read the same prior set and the second write would drop the first's
-  /// identity — silently reviving that seed. All writers share this chain, so
-  /// each mutation reads a set that already includes its predecessor.
-  static Future<void> _mutations = Future<void>.value();
+  /// identity — silently reviving that seed. Every store sharing a database
+  /// shares its queue, so each mutation reads a set that already includes its
+  /// predecessor.
+  ///
+  /// Keyed by database rather than held in one static: stores over *different*
+  /// databases have nothing to serialize against, and a single global chain
+  /// would also leak across tests, where one stalled mutation against a
+  /// discarded database would wedge every later write in the isolate.
+  static final Expando<Future<void>> _mutationQueues = Expando<Future<void>>();
 
-  /// Runs [mutation] after every previously queued mutation has settled.
-  static Future<void> _serialized(Future<void> Function() mutation) {
-    final next = _mutations.then((_) => mutation());
-    // The chain must survive a failed mutation, or one error would wedge every
+  /// Runs [mutation] after every mutation already queued for this database.
+  Future<void> _serialized(Future<void> Function() mutation) {
+    final previous = _mutationQueues[_settingsDb] ?? Future<void>.value();
+    final next = previous.then((_) => mutation());
+    // The queue must survive a failed mutation, or one error would wedge every
     // later write. Callers still see their own error through [next].
-    _mutations = next.then<void>((_) {}, onError: (_, _) {});
+    _mutationQueues[_settingsDb] = next.then<void>((_) {}, onError: (_, _) {});
     return next;
   }
 

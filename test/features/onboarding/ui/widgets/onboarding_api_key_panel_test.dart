@@ -3,13 +3,14 @@ import 'dart:ui' show SemanticsAction;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/seed_tombstone_provider.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_store.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,6 +19,7 @@ import 'package:url_launcher_platform_interface/url_launcher_platform_interface.
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../ai/test_utils.dart';
 
 /// Canned [ConnectionProbe] so verification resolves deterministically without
 /// touching the network — the real probes hit the provider's `/models`
@@ -320,6 +322,43 @@ void main() {
 
     verify(() => repo.saveConfig(any())).called(1);
     expect(connected, isTrue);
+  });
+
+  // A user who deleted a bundled profile and later re-runs onboarding would
+  // otherwise get a category bound to a profile seeding now refuses to
+  // recreate — the flow binds `defaultProfileId` unconditionally, so the id
+  // would dangle and the first task would degrade to title-only. Setting the
+  // provider up again is the "bring it back" signal.
+  testWidgets('connecting revives the tombstoned profile for this provider', (
+    tester,
+  ) async {
+    final repo = MockAiConfigRepository();
+    when(() => repo.saveConfig(any())).thenAnswer((_) async {});
+    final tombstoneKey = SeedTombstoneStore.profileKey(profileGeminiFlashId);
+    final tombstones = await createTombstoneStore(deleted: {tombstoneKey});
+    expect(await tombstones.deletedIdentities(), contains(tombstoneKey));
+
+    await pumpPanel(
+      tester,
+      type: InferenceProviderType.gemini,
+      probeResult: verified,
+      extraOverrides: [
+        aiConfigRepositoryProvider.overrideWith((ref) => repo),
+        seedTombstoneStoreProvider.overrideWithValue(tombstones),
+      ],
+    );
+
+    await enterKeyAndSettle(tester, 'good-key');
+    await tester.tap(find.text('Connect'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Cleared before the FTUE setup that follows, so the seeding it triggers
+    // can recreate the profile the onboarding categories are bound to. The
+    // real setup service is left in place: whatever it does with a mocked
+    // config repository, the revive has already happened by then — which is
+    // the ordering this pins.
+    expect(await tombstones.deletedIdentities(), isEmpty);
   });
 
   testWidgets('a failed save surfaces the connect error and does not connect', (

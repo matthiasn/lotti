@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -69,10 +70,25 @@ void main() {
     if (!getIt.isRegistered<LoggingService>()) {
       getIt.registerSingleton<LoggingService>(LoggingService());
     }
+    // The key step clears the seed tombstone for the provider being set up,
+    // which reads the settings database — registered at startup in production.
+    // A mock keeps it free of real database I/O, which the widget pumps below
+    // cannot await.
+    if (!getIt.isRegistered<SettingsDb>()) {
+      final settingsDb = MockSettingsDb();
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      getIt.registerSingleton<SettingsDb>(settingsDb);
+    }
   });
 
   tearDown(() async {
     await db.close();
+    if (getIt.isRegistered<SettingsDb>()) {
+      getIt.unregister<SettingsDb>();
+    }
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }

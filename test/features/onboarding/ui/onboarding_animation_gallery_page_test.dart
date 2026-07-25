@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/seed_tombstone_provider.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -15,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../ai/test_utils.dart';
 import '../../categories/test_utils.dart';
 
 /// Canned probe so the API-key step verifies without a network call.
@@ -289,16 +289,21 @@ void main() {
         color: any(named: 'color'),
         defaultProfileId: any(named: 'defaultProfileId'),
         defaultTemplateId: any(named: 'defaultTemplateId'),
+        automaticInferenceEnabled: any(named: 'automaticInferenceEnabled'),
       ),
     ).thenAnswer(
       (_) async => CategoryTestUtils.createTestCategory(id: 'c1', name: 'AI'),
     );
+
+    // The key step clears the seed tombstone for the provider being set up.
+    final tombstones = await createTombstoneStore();
 
     await pumpGallery(
       tester,
       extraOverrides: [
         aiConfigRepositoryProvider.overrideWithValue(aiRepo),
         categoryRepositoryProvider.overrideWithValue(catRepo),
+        seedTombstoneStoreProvider.overrideWithValue(tombstones),
         connectionProbeRegistryProvider.overrideWith(
           (ref) => {
             InferenceProviderType.ollama: _FakeProbe(
