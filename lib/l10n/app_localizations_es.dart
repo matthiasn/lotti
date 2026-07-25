@@ -3477,7 +3477,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createNewLinkedTask => 'Crear nueva tarea vinculada…';
 
   @override
-  String get createNewLinkedTaskTitle => 'Crear nueva tarea vinculada';
+  String get createNewLinkedTaskTitle => 'Nueva tarea vinculada';
 
   @override
   String get customColor => 'Color personalizado';
@@ -6705,7 +6705,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkExistingTask => 'Vincular tarea existente…';
 
   @override
-  String get linkExistingTaskTitle => 'Vincular tarea existente';
+  String get linkExistingTaskTitle => 'Vincular tarea';
 
   @override
   String get linkPhraseBasic => 'Se relaciona con';
@@ -10327,7 +10327,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => '¿Qué la está bloqueando?';
+  String get taskBlockerPickerTitle => '¿Qué la bloquea?';
 
   @override
   String get taskCategoryAllLabel => 'todos';

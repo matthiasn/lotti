@@ -327,5 +327,33 @@ void main() {
       );
       expect(find.text('Edit relationship'), findsOneWidget);
     });
+
+    testWidgets(
+      'a rejected blocks retype names the cycle, not "try again" — the cycle '
+      'guard is the only thing that rejects a retype, and retrying cannot end '
+      'differently',
+      (tester) async {
+        stubUpdateLinkType(result: false);
+
+        await openModal(
+          tester,
+          currentType: EntryLinkType.followsUp,
+          currentDirection: TaskLinkDirection.outgoing,
+        );
+
+        await pickRelation(tester, 'Blocks');
+        await tester.pump();
+        await tester.tap(saveButton());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.text(
+            'This would create a blocking cycle — choose a different task.',
+          ),
+          findsWidgets,
+        );
+      },
+    );
   });
 }

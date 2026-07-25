@@ -173,7 +173,6 @@ class _EditLinkTypeApplyFooterState
                 final navigator = Navigator.of(context);
                 final messenger = ScaffoldMessenger.of(context);
                 final messages = context.messages;
-                final tokens = context.designTokens;
 
                 final newIsOutgoing = !selected.inverse;
                 final oldIsOutgoing =
@@ -191,10 +190,16 @@ class _EditLinkTypeApplyFooterState
                 if (!mounted) return;
                 setState(() => _saving = false);
                 if (!saved) {
+                  // The cycle guard is the only thing that rejects a retype
+                  // outright, and it can only reject a blocks edge. Anything
+                  // else that fails here is worth retrying; a cycle is not,
+                  // so saying "please try again" would send the user round a
+                  // loop that cannot end differently.
                   showLinkFailureMessage(
-                    tokens: tokens,
                     messenger: messenger,
-                    message: messages.editLinkTypeFailedMessage,
+                    message: selected.type == EntryLinkType.blocks
+                        ? messages.linkBlocksCycleErrorMessage
+                        : messages.editLinkTypeFailedMessage,
                   );
                   return;
                 }

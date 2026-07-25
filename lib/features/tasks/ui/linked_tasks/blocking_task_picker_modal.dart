@@ -64,7 +64,6 @@ class BlockingTaskPickerModal extends ConsumerWidget {
     if (!created) {
       if (context.mounted) {
         showLinkFailureMessage(
-          tokens: context.designTokens,
           messenger: messenger,
           message: context.messages.linkBlocksCycleErrorMessage,
         );

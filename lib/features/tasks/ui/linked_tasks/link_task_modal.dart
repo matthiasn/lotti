@@ -82,7 +82,6 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
         // a "Relates to" or "Duplicates" pick named a cause that cannot apply
         // and a remedy — choose a different task — that would not help.
         showLinkFailureMessage(
-          tokens: context.designTokens,
           messenger: messenger,
           message: _relation.type == EntryLinkType.blocks
               ? context.messages.linkBlocksCycleErrorMessage

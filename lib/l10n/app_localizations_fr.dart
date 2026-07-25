@@ -3482,7 +3482,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createNewLinkedTask => 'Créer une nouvelle tâche liée…';
 
   @override
-  String get createNewLinkedTaskTitle => 'Créer une nouvelle tâche liée';
+  String get createNewLinkedTaskTitle => 'Nouvelle tâche liée';
 
   @override
   String get customColor => 'Couleur personnalisée';
@@ -6732,7 +6732,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkExistingTask => 'Lier une tâche existante…';
 
   @override
-  String get linkExistingTaskTitle => 'Lier une tâche existante';
+  String get linkExistingTaskTitle => 'Lier une tâche';
 
   @override
   String get linkPhraseBasic => 'Est liée à';
@@ -10368,7 +10368,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get taskBlockerPickerTitle => 'Qu\'est-ce qui la bloque ?';
+  String get taskBlockerPickerTitle => 'Qu’est-ce qui bloque ?';
 
   @override
   String get taskCategoryAllLabel => 'tout';

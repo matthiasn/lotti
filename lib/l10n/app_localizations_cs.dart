@@ -3480,7 +3480,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get createNewLinkedTask => 'Vytvořit nový propojený úkol…';
 
   @override
-  String get createNewLinkedTaskTitle => 'Vytvořit nový propojený úkol';
+  String get createNewLinkedTaskTitle => 'Nový propojený úkol';
 
   @override
   String get customColor => 'Vlastní barva';
@@ -6698,7 +6698,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkExistingTask => 'Propojit existující úkol…';
 
   @override
-  String get linkExistingTaskTitle => 'Propojit existující úkol';
+  String get linkExistingTaskTitle => 'Propojit úkol';
 
   @override
   String get linkPhraseBasic => 'Souvisí s';

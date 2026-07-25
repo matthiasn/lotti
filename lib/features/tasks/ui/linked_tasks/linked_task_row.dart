@@ -199,7 +199,6 @@ class LinkedTaskRow extends StatelessWidget {
     } catch (_) {
       if (context.mounted) {
         showLinkFailureMessage(
-          tokens: context.designTokens,
           messenger: ScaffoldMessenger.of(context),
           message: context.messages.unlinkTaskFailedMessage,
         );

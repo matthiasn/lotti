@@ -443,7 +443,6 @@ Future<void> _createNewLinkedTask(
       // Only a blocking link can fail the cycle guard, so anything else has
       // to say so plainly rather than blame a cycle that cannot exist.
       showLinkFailureMessage(
-        tokens: context.designTokens,
         messenger: ScaffoldMessenger.of(context),
         message: selection.type == EntryLinkType.blocks
             ? context.messages.linkBlocksCycleErrorMessage

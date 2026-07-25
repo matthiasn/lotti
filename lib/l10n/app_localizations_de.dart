@@ -3459,7 +3459,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get createNewLinkedTask => 'Neue verknüpfte Aufgabe erstellen…';
 
   @override
-  String get createNewLinkedTaskTitle => 'Neue verknüpfte Aufgabe erstellen';
+  String get createNewLinkedTaskTitle => 'Neue Aufgabe';
 
   @override
   String get customColor => 'Benutzerdefinierte Farbe';
@@ -6655,7 +6655,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen…';
 
   @override
-  String get linkExistingTaskTitle => 'Vorhandene Aufgabe verknüpfen';
+  String get linkExistingTaskTitle => 'Aufgabe verknüpfen';
 
   @override
   String get linkPhraseBasic => 'Bezieht sich auf';
