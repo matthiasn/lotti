@@ -4,7 +4,7 @@
 **Status:** Design proposal — pending diagnostic validation before implementation
 **Related:**
 - [2026-04-20 freeze + log-bloat audit](./2026-04-20_sync_freeze_and_log_bloat_audit.md)
-- [current_architecture.md](../../lib/features/sync/current_architecture.md)
+- [sync_current_architecture.md](../architecture/sync_current_architecture.md)
 
 ## 1. Motivation
 

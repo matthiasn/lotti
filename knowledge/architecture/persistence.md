@@ -180,5 +180,5 @@ deleted entries and recreate derived state. Timestamps come from
 | Maintenance operations | [`lib/database/maintenance.dart`](../../lib/database/maintenance.dart) |
 
 Related: [bootstrap and dependency injection](bootstrap-and-di.md) for when each
-database is registered, [the sync feature](../features/sync.md) for what fills
+database is registered, [the sync feature](../features/sync/) for what fills
 `sync.sqlite`.

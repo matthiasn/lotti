@@ -97,7 +97,7 @@ and regenerated with `make build_runner`. It is never hand-edited.
 Three subsystems carry most of the app's difficulty, and each has its own
 concept tree:
 
-- **[Sync](../features/sync.md)** — single-user multi-device replication over
+- **[Sync](../features/sync/)** — single-user multi-device replication over
   end-to-end encrypted Matrix, with an outbox, an ordered inbound queue,
   `(hostId, counter)` coverage tracking and peer backfill for gaps.
 - **[Agents](../features/agents.md)** — a persisted agent runtime with wake

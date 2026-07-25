@@ -165,4 +165,4 @@ that release — exiting earlier risks a half-flushed WAL.
 | Provider overrides bridging GetIt into Riverpod | [`lib/providers/service_providers.dart`](../../lib/providers/service_providers.dart) |
 
 Related: [persistence](persistence.md) for the databases registered in phase 1,
-[the sync feature](../features/sync.md) for the chain built in phase 4.
+[the sync feature](../features/sync/) for the chain built in phase 4.
