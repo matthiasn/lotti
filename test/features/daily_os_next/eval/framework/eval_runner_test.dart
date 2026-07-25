@@ -1077,6 +1077,52 @@ void main() {
     });
   });
 
+  group('evalCreatedTaskIdsFrom', () {
+    test('recovers ids from the parsed items a create tool wrote', () {
+      // The created id is only in the tool-result payload, which the agent log
+      // does not persist — but `create_task_from_phrase` stamps it onto the
+      // parsed item as matchedTaskId, so it is recoverable from real state.
+      AgentDomainEntity parsed({
+        required String id,
+        required ParsedItemKind kind,
+        required String title,
+        String? matchedTaskId,
+      }) => AgentDomainEntity.parsedItem(
+        id: id,
+        agentId: 'agent-1',
+        captureId: 'capture-1',
+        kind: kind,
+        title: title,
+        categoryId: evalDefaultCategoryId,
+        confidence: ParsedItemConfidence.high,
+        confidenceScore: 0.9,
+        createdAt: today,
+        vectorClock: null,
+        matchedTaskId: matchedTaskId,
+      );
+
+      final ids = evalCreatedTaskIdsFrom([
+        parsed(
+          id: 'parsed-1',
+          kind: ParsedItemKind.matched,
+          title: 'Book the venue',
+          matchedTaskId: 'task-created',
+        ),
+        parsed(
+          id: 'parsed-2',
+          kind: ParsedItemKind.newTask,
+          title: 'Something unmatched',
+        ),
+      ]);
+
+      expect(ids, {'task-created'});
+    });
+
+    test('is empty when nothing was parsed', () {
+      expect(evalCreatedTaskIdsFrom(const []), isEmpty);
+    });
+  });
+
   group('evalConfigFor', () {
     test('applies the variant on top of the scenario contract', () {
       final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');

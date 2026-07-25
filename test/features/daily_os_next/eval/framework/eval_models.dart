@@ -250,6 +250,7 @@ class EvalRunOutcome {
     this.blocks = const [],
     this.toolCalls = const [],
     this.planPersisted = true,
+    this.createdTaskIds = const {},
   });
 
   final EvalFixtureInputs inputs;
@@ -262,6 +263,22 @@ class EvalRunOutcome {
   /// False when the run ended without a plan at all — every constraint that
   /// reads the plan is then inapplicable rather than failed.
   final bool planPersisted;
+
+  /// Task ids that came into existence *during* the run.
+  ///
+  /// A drafting wake can call `create_task_from_phrase`, and the model may
+  /// then schedule what it just created. Those ids cannot be in
+  /// [EvalFixtureInputs.referenceableTaskIds], which is fixed before the run,
+  /// so without them a legitimately created-and-placed task reads as a
+  /// fabricated id.
+  final Set<String> createdTaskIds;
+
+  /// Every task id the model could legitimately reference — what it was shown,
+  /// plus what it created along the way.
+  Set<String> get knownTaskIds => {
+    ...inputs.referenceableTaskIds,
+    ...createdTaskIds,
+  };
 
   Iterable<EvalToolCall> get rejections =>
       toolCalls.where((call) => !call.accepted);

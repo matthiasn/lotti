@@ -440,6 +440,7 @@ Future<EvalRunResult> _runCell(
       blocks: plan?.data.plannedBlocks ?? const [],
       toolCalls: evalToolCallsFrom(harness.agentRepository.entities),
       planPersisted: plan != null,
+      createdTaskIds: evalCreatedTaskIdsFrom(harness.agentRepository.entities),
     );
     return EvalRunResult(
       request: request,
@@ -581,6 +582,19 @@ Future<void> _seedDirective(
     ),
   );
 }
+
+/// Task ids that came into existence during the wake.
+///
+/// `create_task_from_phrase` materialises a task and writes its id onto the
+/// parsed item as `matchedTaskId` (plus a `parsed_item_to_task` link), so the
+/// ids are recoverable from persisted state rather than needing the tool
+/// result — which the agent log does not keep. `apply_triage` matching an
+/// existing task lands here too, and belongs just as much: an id the model
+/// resolved through a tool is one it could legitimately go on to schedule.
+Set<String> evalCreatedTaskIdsFrom(List<AgentDomainEntity> entities) => {
+  for (final item in entities.whereType<ParsedItemEntity>())
+    ?item.matchedTaskId,
+};
 
 /// Reconstructs the ordered tool-call log from the agent messages one wake
 /// wrote.

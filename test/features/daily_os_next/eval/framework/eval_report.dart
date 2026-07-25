@@ -550,6 +550,10 @@ class EvalReport {
       'plan': [
         for (final block in result.outcome.blocks) _blockJson(block),
       ],
+      // Ids the model made during the wake rather than was handed. A judge
+      // reading a block that references one of these should see that it was
+      // created here, not treat it as unexplained.
+      'createdTaskIds': result.outcome.createdTaskIds.toList()..sort(),
       'constraints': {
         for (final constraint in result.constraints)
           constraint.id: {

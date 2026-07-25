@@ -48,6 +48,7 @@ void main() {
     List<EvalToolCall> toolCalls = const [],
     int capacityMinutes = 480,
     EvalDirective? directive,
+    Set<String> createdTaskIds = const {},
   }) => EvalRunOutcome(
     inputs: EvalFixtureInputs(
       dayId: 'dayplan-2026-07-18',
@@ -70,6 +71,7 @@ void main() {
     blocks: blocks,
     toolCalls: toolCalls,
     planPersisted: planPersisted,
+    createdTaskIds: createdTaskIds,
   );
 
   group('noOverlappingBlocks', () {
@@ -433,6 +435,38 @@ void main() {
             block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-invented'),
           ],
           corpus: const [EvalCorpusTask(taskId: 'task-1', title: 'Real')],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-invented'));
+    });
+  });
+
+  group('noFabricatedTaskIds and created tasks', () {
+    test('a task the model created during the wake is not fabricated', () {
+      // `create_task_from_phrase` is offered on a drafting wake, and glm-5.2
+      // used it then scheduled what it made. The referenceable set is fixed
+      // before the run, so without the created ids that reads as invention.
+      final result = scoreNoFabricatedTaskIds(
+        outcome(
+          blocks: [
+            block(id: 'b1', startHour: 9, endHour: 10, taskId: 'task-made'),
+          ],
+          createdTaskIds: const {'task-made'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('an id that was neither shown nor created is still fabricated', () {
+      final result = scoreNoFabricatedTaskIds(
+        outcome(
+          blocks: [
+            block(id: 'b1', startHour: 9, endHour: 10, taskId: 'task-invented'),
+          ],
+          createdTaskIds: const {'task-made'},
         ),
       );
 

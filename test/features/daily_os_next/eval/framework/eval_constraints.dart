@@ -269,8 +269,9 @@ EvalConstraintResult scoreNoFabricatedTaskIds(EvalRunOutcome outcome) {
   }
   // What the model was SHOWN, not what is true. Without a capture the corpus
   // is never rendered, so grading against it would credit or punish the model
-  // for ids it could not have seen.
-  final known = outcome.inputs.referenceableTaskIds;
+  // for ids it could not have seen — plus whatever it created during the run,
+  // which it equally could not have invented.
+  final known = outcome.knownTaskIds;
   final fabricated = {
     for (final taskId in referenced)
       if (!known.contains(taskId)) taskId,
