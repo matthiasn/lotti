@@ -466,8 +466,7 @@ class _RelationshipPickerBody extends StatelessWidget {
         tokens.spacing.step5,
         tokens.spacing.step5,
         tokens.spacing.step5,
-        DesignSystemGlassActionFooter.reservedHeightFor(context) +
-            tokens.spacing.step5,
+        DesignSystemGlassActionFooter.reservedHeightFor(context),
       ),
       child: ValueListenableBuilder<DirectedRelation>(
         valueListenable: relation,

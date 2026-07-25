@@ -36,6 +36,7 @@ class LinkedTaskRow extends StatelessWidget {
     required this.data,
     required this.manageMode,
     this.onEdit,
+    this.onOpen,
     this.onUnlink,
     super.key,
   });
@@ -48,6 +49,12 @@ class LinkedTaskRow extends StatelessWidget {
   /// edit affordance even in manage mode (used for rows with no relationship
   /// to retype, e.g. none today, but kept optional for forward compat).
   final Future<void> Function()? onEdit;
+
+  /// Overrides what tapping the row does. Null keeps the default — open the
+  /// linked task's detail view. Supplied by surfaces that must dismiss
+  /// themselves first: navigating from inside a modal otherwise lands behind
+  /// the barrier, and the tap reads as doing nothing at all.
+  final VoidCallback? onOpen;
 
   /// Invoked after the user confirms the unlink dialog; awaited so a failure
   /// can be surfaced via a SnackBar instead of silently leaving the row
@@ -78,7 +85,9 @@ class LinkedTaskRow extends StatelessWidget {
         return DesignSystemListItem(
           // Navigable in manage mode too: the edit/unlink buttons are additive,
           // so nulling this only produced a row that looked tappable and wasn't.
-          onTap: () => openLinkedTaskDetail(context: context, taskId: task.id),
+          onTap:
+              onOpen ??
+              () => openLinkedTaskDetail(context: context, taskId: task.id),
           title: task.data.title,
           titleMaxLines: 2,
           size: DesignSystemListItemSize.small,
@@ -148,17 +157,29 @@ class LinkedTaskRow extends StatelessWidget {
                   ),
                 )
               : SizedBox(
-                  // Manage mode occupies two step8 action boxes, so browse
-                  // mode must reserve the same total or toggling the mode
-                  // changes the width left for the title and re-wraps it.
+                  // Both axes of the action pair, not just the width: manage
+                  // mode occupies two step8-wide boxes each step9 tall, so
+                  // reserving only the width still let the row grow taller on
+                  // toggle and the card jump with it.
                   width: tokens.spacing.step8 * 2,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Icon(
-                      Icons.arrow_forward_ios,
-                      size: tokens.spacing.step4,
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
+                  height: tokens.spacing.step8,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // Boxed like an action rather than pinned to the edge, so
+                      // the chevron lands on the same vertical line the unlink
+                      // button occupies instead of sitting further out.
+                      SizedBox(
+                        width: tokens.spacing.step8,
+                        child: Center(
+                          child: Icon(
+                            Icons.arrow_forward_ios,
+                            size: tokens.spacing.step4,
+                            color: tokens.colors.text.lowEmphasis,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
         );
@@ -213,11 +234,16 @@ class _RowAction extends StatelessWidget {
     return IconButton(
       tooltip: tooltip,
       onPressed: onPressed,
+      // Compact density trims Material's padded 48pt tap target to the step8
+      // box this rail reserves; without it two actions overflow the rail.
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: BoxConstraints(
-        minWidth: tokens.spacing.step8,
-        minHeight: tokens.spacing.step9,
+      // Tight, not minimums: two of these have to fit the exact rail the
+      // browse chevron reserves, and their height has to match it, or toggling
+      // the mode resizes every row on the card.
+      constraints: BoxConstraints.tightFor(
+        width: tokens.spacing.step8,
+        height: tokens.spacing.step8,
       ),
       icon: Icon(
         icon,

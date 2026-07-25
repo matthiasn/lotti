@@ -305,6 +305,44 @@ void main() {
       await titleBoxAt(tester, manageMode: true);
       expect(tester.takeException(), isNull);
     });
+
+    /// Row height at a width where the title fits one line and the status sits
+    /// trailing — the case where the trailing rail, not the text, sets the
+    /// height, and so the only case that can catch the rail growing.
+    Future<double> wideRowHeight(
+      WidgetTester tester, {
+      required bool manageMode,
+    }) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 900,
+              child: LinkedTaskRow(
+                taskId: 'anchor-task',
+                data: buildRowData(),
+                manageMode: manageMode,
+                onEdit: () async {},
+                onUnlink: () async {},
+              ),
+            ),
+          ),
+        ),
+      );
+      return tester.getSize(find.byType(LinkedTaskRow)).height;
+    }
+
+    testWidgets(
+      'the row keeps its height across modes too, so turning Manage on does '
+      'not grow every row and jump the card taller',
+      (tester) async {
+        final browsing = await wideRowHeight(tester, manageMode: false);
+        final managing = await wideRowHeight(tester, manageMode: true);
+
+        expect(managing, browsing);
+      },
+    );
   });
 
   group('LinkedTaskRow emphasis ladder', () {

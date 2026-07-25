@@ -531,13 +531,17 @@ class _TaskBlockedByChip extends ConsumerWidget {
     BuildContext context,
     List<Task> blockers,
   ) async {
+    // Picked here, navigated to after the sheet closes: opening a task from
+    // inside the sheet would route behind its own barrier, leaving the user
+    // looking at an unchanged sheet over a page that had already moved on.
+    String? picked;
     await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.linkedTasksBlockedBySectionTitle,
       // LinkedTaskRow brings its own step5 horizontal padding, same as every
       // sibling picker in this feature — without this the rows get inset twice.
       padding: EdgeInsets.zero,
-      builder: (context) => ListView(
+      builder: (modalContext) => ListView(
         shrinkWrap: true,
         children: [
           for (final blocker in blockers)
@@ -545,9 +549,17 @@ class _TaskBlockedByChip extends ConsumerWidget {
               taskId: taskId,
               data: LinkedTaskRowData(task: blocker),
               manageMode: false,
+              onOpen: () {
+                picked = blocker.id;
+                Navigator.of(modalContext).pop();
+              },
             ),
         ],
       ),
     );
+
+    if (picked != null && context.mounted) {
+      openLinkedTaskDetail(context: context, taskId: picked!);
+    }
   }
 }

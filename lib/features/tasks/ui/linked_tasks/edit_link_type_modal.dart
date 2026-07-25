@@ -76,8 +76,7 @@ class _EditLinkTypeBody extends StatelessWidget {
         tokens.spacing.step5,
         tokens.spacing.step5,
         tokens.spacing.step5,
-        DesignSystemGlassActionFooter.reservedHeightFor(context) +
-            tokens.spacing.step5,
+        DesignSystemGlassActionFooter.reservedHeightFor(context),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
