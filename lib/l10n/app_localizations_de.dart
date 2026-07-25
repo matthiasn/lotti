@@ -3456,7 +3456,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get createEntryTitle => 'Hinzufügen';
 
   @override
-  String get createNewLinkedTask => 'Neue verknüpfte Aufgabe erstellen...';
+  String get createNewLinkedTask => 'Neue verknüpfte Aufgabe erstellen…';
 
   @override
   String get customColor => 'Benutzerdefinierte Farbe';
@@ -6656,7 +6656,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkedTasksTitle => 'Verknüpfte Aufgaben';
 
   @override
-  String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
+  String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen…';
 
   @override
   String get linkPhraseBasic => 'Bezieht sich auf';
@@ -6948,7 +6948,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Messgrößen, Dashboards, Gewohnheiten, Kategorien und AI-Einstellungen synchronisieren';
 
   @override
-  String get manageLinks => 'Verknüpfungen verwalten...';
+  String get manageLinks => 'Verknüpfungen verwalten…';
 
   @override
   String get matrixStatsCatchupBatches => 'Nachhol-Batches';
@@ -8426,7 +8426,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchModeVector => 'Vektor';
 
   @override
-  String get searchTasksHint => 'Aufgaben suchen...';
+  String get searchTasksHint => 'Aufgaben suchen…';
 
   @override
   String get selectButton => 'Auswählen';

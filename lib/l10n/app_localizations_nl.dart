@@ -3443,7 +3443,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get createEntryTitle => 'Toevoegen';
 
   @override
-  String get createNewLinkedTask => 'Nieuwe verbonden taak aanmaken...';
+  String get createNewLinkedTask => 'Nieuwe verbonden taak aanmaken…';
 
   @override
   String get customColor => 'Aangepaste kleur';
@@ -6640,7 +6640,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get linkedTasksTitle => 'Gekoppelde taken';
 
   @override
-  String get linkExistingTask => 'Bestaande taak koppelen...';
+  String get linkExistingTask => 'Bestaande taak koppelen…';
 
   @override
   String get linkPhraseBasic => 'Relates to';
@@ -6929,7 +6929,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Meetbare gegevens synchroniseren, dashboards, gewoonten, categorieën en AI-instellingen';
 
   @override
-  String get manageLinks => 'Links beheren...';
+  String get manageLinks => 'Links beheren…';
 
   @override
   String get matrixStatsCatchupBatches => 'Inhaalpartijen';
@@ -8402,7 +8402,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get searchModeVector => 'Vector';
 
   @override
-  String get searchTasksHint => 'Zoeken taken...';
+  String get searchTasksHint => 'Zoeken taken…';
 
   @override
   String get selectButton => 'Selecteren';

@@ -3477,7 +3477,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get createEntryTitle => 'Přidat';
 
   @override
-  String get createNewLinkedTask => 'Vytvořit nový propojený úkol...';
+  String get createNewLinkedTask => 'Vytvořit nový propojený úkol…';
 
   @override
   String get customColor => 'Vlastní barva';
@@ -6699,7 +6699,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedTasksTitle => 'Propojené úkoly';
 
   @override
-  String get linkExistingTask => 'Propojit existující úkol...';
+  String get linkExistingTask => 'Propojit existující úkol…';
 
   @override
   String get linkPhraseBasic => 'Souvisí s';
@@ -7012,7 +7012,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie a AI nastavení';
 
   @override
-  String get manageLinks => 'Spravovat propojení...';
+  String get manageLinks => 'Spravovat propojení…';
 
   @override
   String get matrixStatsCatchupBatches => 'Doháněcí dávky';
@@ -8510,7 +8510,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get searchModeVector => 'Vektor';
 
   @override
-  String get searchTasksHint => 'Hledat úkoly...';
+  String get searchTasksHint => 'Hledat úkoly…';
 
   @override
   String get selectButton => 'Vybrat';

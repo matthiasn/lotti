@@ -132,7 +132,7 @@ class _DropdownMenuRow extends StatelessWidget {
                   Icon(
                     Icons.check_rounded,
                     size: sizeSpec.checkboxGlyphSize,
-                    color: styleSpec.checkboxGlyphColor,
+                    color: styleSpec.selectedMarkColor,
                   ),
                 ],
               ],

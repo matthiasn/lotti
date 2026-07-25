@@ -155,7 +155,7 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('renders title "Link existing task..."', (tester) async {
+    testWidgets('renders title "Link existing task…"', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
@@ -180,7 +180,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      expect(find.text('Link existing task...'), findsOneWidget);
+      expect(find.text('Link existing task…'), findsOneWidget);
     });
 
     testWidgets('renders search field with hint', (tester) async {
@@ -209,7 +209,7 @@ void main() {
 
       // DesignSystemSearch renders the hint both as a visible overlay and as
       // the (transparent) TextField hint, so allow more than one match.
-      expect(find.text('Search tasks...'), findsWidgets);
+      expect(find.text('Search tasks…'), findsWidgets);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     });
 
@@ -238,7 +238,7 @@ void main() {
           mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
         );
 
-        expect(find.text('Link existing task...'), findsOneWidget);
+        expect(find.text('Link existing task…'), findsOneWidget);
         expect(find.byType(DraggableScrollableSheet), findsNothing);
       },
     );
@@ -705,7 +705,7 @@ void main() {
         ),
       ).called(1);
       // The modal actually pops on success, not just createLink firing.
-      expect(find.text('Link existing task...'), findsNothing);
+      expect(find.text('Link existing task…'), findsNothing);
     });
 
     testWidgets(

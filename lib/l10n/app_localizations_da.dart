@@ -3431,7 +3431,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get createEntryTitle => 'Tilføj';
 
   @override
-  String get createNewLinkedTask => 'Opret ny sammenkædet opgave...';
+  String get createNewLinkedTask => 'Opret ny sammenkædet opgave…';
 
   @override
   String get customColor => 'Specialfarve';
@@ -6621,7 +6621,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkedTasksTitle => 'Sammenkoblede opgaver';
 
   @override
-  String get linkExistingTask => 'Link eksisterende opgave...';
+  String get linkExistingTask => 'Link eksisterende opgave…';
 
   @override
   String get linkPhraseBasic => 'Relates to';
@@ -6910,7 +6910,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Synkroniser målbare ting, dashboards, vaner, kategorier og AI-indstillinger';
 
   @override
-  String get manageLinks => 'Administrer links...';
+  String get manageLinks => 'Administrer links…';
 
   @override
   String get matrixStatsCatchupBatches => 'Indhentningsgrupper';
@@ -8383,7 +8383,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get searchModeVector => 'Vektor';
 
   @override
-  String get searchTasksHint => 'Søgeopgaver...';
+  String get searchTasksHint => 'Søgeopgaver…';
 
   @override
   String get selectButton => 'Vælg';

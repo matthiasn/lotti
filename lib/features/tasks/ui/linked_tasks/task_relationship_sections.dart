@@ -132,6 +132,7 @@ class TaskRelationshipSections extends ConsumerWidget {
         LinkedTaskSectionHeader(
           title: sections[s].title,
           accent: sections[s].accent,
+          tightTop: s == 0,
         ),
       );
       for (final entry in sections[s].entries) {
@@ -193,9 +194,18 @@ String _directionTitle(
 /// `LinkedTasksWidget`, so a plain link is never left to read as an unlabeled
 /// continuation of the typed section above it.
 class LinkedTaskSectionHeader extends StatelessWidget {
-  const LinkedTaskSectionHeader({required this.title, this.accent, super.key});
+  const LinkedTaskSectionHeader({
+    required this.title,
+    this.accent,
+    this.tightTop = false,
+    super.key,
+  });
 
   final String title;
+
+  /// Set on the first section, which follows the card header's own bottom
+  /// padding — without it the two stack into the largest gap on the card.
+  final bool tightTop;
 
   /// Tints the label and adds a leading glyph. Deliberately the only colour
   /// on the card: rows stay neutral so a single accented header reads as
@@ -222,7 +232,7 @@ class LinkedTaskSectionHeader extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step5,
         // Bound to the rows below it, not floated between two sections.
-        tokens.spacing.step6,
+        tightTop ? tokens.spacing.step2 : tokens.spacing.step6,
         tokens.spacing.step5,
         tokens.spacing.step1,
       ),
@@ -236,9 +246,11 @@ class LinkedTaskSectionHeader extends StatelessWidget {
             width: tokens.spacing.step5,
             child: accent == null
                 ? null
-                : Icon(Icons.block, size: tokens.spacing.step4, color: accent),
+                : Icon(Icons.block, size: tokens.spacing.step5, color: accent),
           ),
-          SizedBox(width: tokens.spacing.step2),
+          // Same gap DesignSystemListItem puts after its leading slot, so the
+          // header label lands on the row title's left edge instead of near it.
+          SizedBox(width: tokens.spacing.step3),
           Flexible(child: label),
         ],
       ),

@@ -396,6 +396,7 @@ class _DropdownStyleSpec {
     required this.checkboxBorderColor,
     required this.checkboxSelectedFillColor,
     required this.checkboxGlyphColor,
+    required this.selectedMarkColor,
   });
 
   factory _DropdownStyleSpec.fromTokens({
@@ -419,6 +420,10 @@ class _DropdownStyleSpec {
       checkboxBorderColor: tokens.colors.text.mediumEmphasis,
       checkboxSelectedFillColor: tokens.colors.interactive.enabled,
       checkboxGlyphColor: tokens.colors.text.onInteractiveAlert,
+      // The single-select mark stands on the panel itself, with no filled box
+      // behind it, so it cannot use the checkbox's on-fill ink — that colour
+      // is darker than the panel and the mark disappears.
+      selectedMarkColor: tokens.colors.interactive.enabled,
     );
   }
 
@@ -434,4 +439,5 @@ class _DropdownStyleSpec {
   final Color checkboxBorderColor;
   final Color checkboxSelectedFillColor;
   final Color checkboxGlyphColor;
+  final Color selectedMarkColor;
 }

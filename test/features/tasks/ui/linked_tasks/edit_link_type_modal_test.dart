@@ -124,6 +124,31 @@ void main() {
       },
     );
 
+    testWidgets(
+      'the relation control is visible, not hidden under the sticky Save '
+      'footer — the footer is an overlay, not a sibling',
+      (tester) async {
+        stubUpdateLinkType(result: true);
+
+        await openModal(tester);
+
+        // Driving the dropdown by callback (as the tests below do) cannot
+        // catch occlusion, so assert on geometry: the control must sit fully
+        // above the Save button rather than behind it.
+        final dropdownRect = tester.getRect(
+          find.byType(DesignSystemDropdown),
+        );
+        final saveRect = tester.getRect(saveButton());
+
+        expect(dropdownRect.height, greaterThan(0));
+        expect(
+          dropdownRect.bottom,
+          lessThanOrEqualTo(saveRect.top),
+          reason: 'relation control overlaps the Save footer',
+        );
+      },
+    );
+
     testWidgets('Save persists the unchanged type/direction as an identity '
         'round-trip', (tester) async {
       stubUpdateLinkType(result: true);

@@ -3414,7 +3414,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createEntryTitle => 'Add';
 
   @override
-  String get createNewLinkedTask => 'Create new linked task...';
+  String get createNewLinkedTask => 'Create new linked task…';
 
   @override
   String get customColor => 'Custom Color';
@@ -6587,7 +6587,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedTasksTitle => 'Linked Tasks';
 
   @override
-  String get linkExistingTask => 'Link existing task...';
+  String get linkExistingTask => 'Link existing task…';
 
   @override
   String get linkPhraseBasic => 'Relates to';
@@ -6872,7 +6872,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sync measurables, dashboards, habits, categories, and AI settings';
 
   @override
-  String get manageLinks => 'Manage links...';
+  String get manageLinks => 'Manage links…';
 
   @override
   String get matrixStatsCatchupBatches => 'Catch-up Batches';
@@ -8332,7 +8332,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchModeVector => 'Vector';
 
   @override
-  String get searchTasksHint => 'Search tasks...';
+  String get searchTasksHint => 'Search tasks…';
 
   @override
   String get selectButton => 'Select';

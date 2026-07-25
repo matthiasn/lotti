@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
@@ -56,12 +57,16 @@ class _EditLinkTypeBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // The Save footer is a sticky overlay, not a sibling — without reserving
+    // its height the relation dropdown renders underneath it and the modal
+    // shows a title and a Save bar with nothing to edit.
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step5,
-        0,
         tokens.spacing.step5,
         tokens.spacing.step5,
+        DesignSystemGlassActionFooter.reservedHeightFor(context) +
+            tokens.spacing.step5,
       ),
       child: ValueListenableBuilder<DirectedRelation>(
         valueListenable: relation,

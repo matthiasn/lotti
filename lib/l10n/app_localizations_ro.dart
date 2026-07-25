@@ -3483,7 +3483,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get createEntryTitle => 'Adăugați';
 
   @override
-  String get createNewLinkedTask => 'Creați o sarcină nouă asociată...';
+  String get createNewLinkedTask => 'Creați o sarcină nouă asociată…';
 
   @override
   String get customColor => 'Culoare personalizată';
@@ -6740,7 +6740,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkedTasksTitle => 'Sarcini legate';
 
   @override
-  String get linkExistingTask => 'Leagă o sarcină existentă...';
+  String get linkExistingTask => 'Leagă o sarcină existentă…';
 
   @override
   String get linkPhraseBasic => 'Are legătură cu';
@@ -7045,7 +7045,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sincronizați din nou măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI';
 
   @override
-  String get manageLinks => 'Gestionează legăturile...';
+  String get manageLinks => 'Gestionează legăturile…';
 
   @override
   String get matrixStatsCatchupBatches => 'Loturi de recuperare';
@@ -8547,7 +8547,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get searchModeVector => 'Vector';
 
   @override
-  String get searchTasksHint => 'Căutați sarcini...';
+  String get searchTasksHint => 'Căutați sarcini…';
 
   @override
   String get selectButton => 'Selectați';

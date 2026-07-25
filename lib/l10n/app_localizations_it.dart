@@ -3476,7 +3476,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get createEntryTitle => 'Aggiungi';
 
   @override
-  String get createNewLinkedTask => 'Creare un nuovo compito collegato...';
+  String get createNewLinkedTask => 'Creare un nuovo compito collegato…';
 
   @override
   String get customColor => 'Colore personalizzato';
@@ -6704,7 +6704,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get linkedTasksTitle => 'Compiti collegati';
 
   @override
-  String get linkExistingTask => 'Collegare il compito esistente...';
+  String get linkExistingTask => 'Collegare il compito esistente…';
 
   @override
   String get linkPhraseBasic => 'Relates to';
@@ -6994,7 +6994,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Sincronizzabili, cruscotti, abitudini, categorie e impostazioni AI';
 
   @override
-  String get manageLinks => 'Gestire i collegamenti...';
+  String get manageLinks => 'Gestire i collegamenti…';
 
   @override
   String get matrixStatsCatchupBatches => 'Batches di catch-up';
@@ -8486,7 +8486,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get searchModeVector => 'Vettore';
 
   @override
-  String get searchTasksHint => 'Compiti di ricerca...';
+  String get searchTasksHint => 'Compiti di ricerca…';
 
   @override
   String get selectButton => 'Seleziona';

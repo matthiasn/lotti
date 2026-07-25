@@ -3463,7 +3463,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get createEntryTitle => 'Adicionar';
 
   @override
-  String get createNewLinkedTask => 'Criar nova tarefa vinculada...';
+  String get createNewLinkedTask => 'Criar nova tarefa vinculada…';
 
   @override
   String get customColor => 'Cor personalizada';
@@ -6680,7 +6680,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get linkedTasksTitle => 'Tarefas Vinculadas';
 
   @override
-  String get linkExistingTask => 'Vincular tarefa existente...';
+  String get linkExistingTask => 'Vincular tarefa existente…';
 
   @override
   String get linkPhraseBasic => 'Relates to';
@@ -6972,7 +6972,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sincronize mensuráveis, painéis, hábitos, categorias e configurações de IA';
 
   @override
-  String get manageLinks => 'Gerenciar links...';
+  String get manageLinks => 'Gerenciar links…';
 
   @override
   String get matrixStatsCatchupBatches => 'Lotes de recuperação';
@@ -8462,7 +8462,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get searchModeVector => 'Vetor';
 
   @override
-  String get searchTasksHint => 'Pesquisar tarefas...';
+  String get searchTasksHint => 'Pesquisar tarefas…';
 
   @override
   String get selectButton => 'Selecione';

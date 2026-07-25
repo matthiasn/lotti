@@ -5864,7 +5864,7 @@ abstract class AppLocalizations {
   /// No description provided for @createNewLinkedTask.
   ///
   /// In en, this message translates to:
-  /// **'Create new linked task...'**
+  /// **'Create new linked task…'**
   String get createNewLinkedTask;
 
   /// No description provided for @customColor.
@@ -11546,7 +11546,7 @@ abstract class AppLocalizations {
   /// No description provided for @linkExistingTask.
   ///
   /// In en, this message translates to:
-  /// **'Link existing task...'**
+  /// **'Link existing task…'**
   String get linkExistingTask;
 
   /// No description provided for @linkPhraseBasic.
@@ -12054,7 +12054,7 @@ abstract class AppLocalizations {
   /// No description provided for @manageLinks.
   ///
   /// In en, this message translates to:
-  /// **'Manage links...'**
+  /// **'Manage links…'**
   String get manageLinks;
 
   /// No description provided for @matrixStatsCatchupBatches.
@@ -14418,7 +14418,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchTasksHint.
   ///
   /// In en, this message translates to:
-  /// **'Search tasks...'**
+  /// **'Search tasks…'**
   String get searchTasksHint;
 
   /// No description provided for @selectButton.

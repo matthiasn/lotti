@@ -231,9 +231,9 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Create new linked task...'), findsOneWidget);
-        expect(find.text('Manage links...'), findsOneWidget);
-        expect(find.text('Link existing task...'), findsNothing);
+        expect(find.text('Create new linked task…'), findsOneWidget);
+        expect(find.text('Manage links…'), findsOneWidget);
+        expect(find.text('Link existing task…'), findsNothing);
       },
     );
 
@@ -266,7 +266,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Manage links...'));
+      await tester.tap(find.text('Manage links…'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -276,7 +276,7 @@ void main() {
 
       // The mode now says so in the header and offers its own way out, rather
       // than hiding the exit back inside the menu it was entered from.
-      final inlineDone = find.widgetWithText(TextButton, 'Done');
+      final inlineDone = find.widgetWithText(DesignSystemButton, 'Done');
       expect(inlineDone, findsOneWidget);
 
       await tester.tap(inlineDone);
@@ -284,7 +284,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
-      expect(find.widgetWithText(TextButton, 'Done'), findsNothing);
+      expect(find.widgetWithText(DesignSystemButton, 'Done'), findsNothing);
       expect(find.byIcon(Icons.close_rounded), findsNothing);
     });
 
@@ -400,7 +400,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Create new linked task...'));
+      await tester.tap(find.text('Create new linked task…'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Create'));
@@ -571,7 +571,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Create new linked task...'));
+        await tester.tap(find.text('Create new linked task…'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -631,7 +631,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Create new linked task...'));
+        await tester.tap(find.text('Create new linked task…'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -689,7 +689,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Create new linked task...'));
+        await tester.tap(find.text('Create new linked task…'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -746,7 +746,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Create new linked task...'));
+        await tester.tap(find.text('Create new linked task…'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

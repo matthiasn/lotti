@@ -264,9 +264,11 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
     return ListView(
       shrinkWrap: true,
       padding: EdgeInsets.only(
+        // Single-select lists still need a closing gap: without it the last
+        // row sits flush against the sheet edge and reads as clipped.
         bottom: (_multi && widget.reserveFooterInset)
             ? DesignSystemGlassActionFooter.reservedHeightFor(context)
-            : 0,
+            : tokens.spacing.step5,
       ),
       children: [
         for (final entry in entries) _row(entry, staged),

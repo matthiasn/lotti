@@ -3436,7 +3436,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get createEntryTitle => 'Lägg till';
 
   @override
-  String get createNewLinkedTask => 'Skapa ny länkad uppgift...';
+  String get createNewLinkedTask => 'Skapa ny länkad uppgift…';
 
   @override
   String get customColor => 'Specialfärg';
@@ -6622,7 +6622,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get linkedTasksTitle => 'Länkade uppgifter';
 
   @override
-  String get linkExistingTask => 'Länka befintlig uppgift...';
+  String get linkExistingTask => 'Länka befintlig uppgift…';
 
   @override
   String get linkPhraseBasic => 'Relates to';
@@ -6908,7 +6908,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Synkronisera mätbara saker, instrumentpaneler, vanor, kategorier och AI-inställningar';
 
   @override
-  String get manageLinks => 'Hantera länkar...';
+  String get manageLinks => 'Hantera länkar…';
 
   @override
   String get matrixStatsCatchupBatches => 'Upphämtande omgångar';
@@ -8384,7 +8384,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get searchModeVector => 'Vektor';
 
   @override
-  String get searchTasksHint => 'Sökuppgifter...';
+  String get searchTasksHint => 'Sökuppgifter…';
 
   @override
   String get selectButton => 'Välj';

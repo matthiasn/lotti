@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -235,9 +236,10 @@ class _LinkedTasksHeader extends ConsumerWidget {
             // unlabelled overflow menu it was entered from. While it is on,
             // the header says so and offers the exit inline.
             if (manageMode)
-              TextButton(
+              DesignSystemButton(
+                label: context.messages.doneButton,
+                variant: DesignSystemButtonVariant.tertiary,
                 onPressed: notifier.toggleManageMode,
-                child: Text(context.messages.doneButton),
               ),
             // The link action is worded in the empty state's own row, so the
             // header only carries it once there is a list to add to.
