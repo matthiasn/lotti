@@ -1336,11 +1336,11 @@ void main() {
       expect(result.detail, contains('none claiming to be a calendar event'));
     });
 
-    test('a plan with nothing scheduled is not applicable', () {
+    test('a plan with no blocks at all is not applicable', () {
       final result = scoreNoFabricatedCalendarBlocks(outcome());
 
       expect(result.isApplicable, isFalse);
-      expect(result.detail, contains('no scheduled blocks'));
+      expect(result.detail, contains('no blocks'));
     });
 
     test('any calendar block fails, because there is no calendar to mirror', () {
@@ -1374,9 +1374,12 @@ void main() {
       expect(result.detail, contains('09:00'));
     });
 
-    test('reports a dropped calendar block as no claim at all', () {
-      // A dropped block is the model declining, and production excludes it
-      // from the day; scoring it would punish the right call.
+    test('a dropped calendar block is still a fabricated claim', () {
+      // Dropping declines the *work*; it does not retract the claim that an
+      // external event exists. The block is still persisted, still projected
+      // (only the capacity meter filters dropped), still drawn on the
+      // timeline, and still refused by the plan editor — so the user sees an
+      // uneditable phantom calendar event either way.
       final result = scoreNoFabricatedCalendarBlocks(
         outcome(
           blocks: [
@@ -1393,7 +1396,38 @@ void main() {
         ),
       );
 
-      expect(result.isApplicable, isFalse);
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('cal-dropped'));
+    });
+
+    test('blames the state, not the type, when the block is not drafted', () {
+      // The guard fires only for `state == drafted`, so a committed block
+      // would have slipped through as `ai` or `manual` too. Blaming `cal`
+      // here would point a reader at the wrong fix.
+      final result = scoreNoFabricatedCalendarBlocks(
+        outcome(
+          blocks: [
+            PlannedBlock(
+              id: 'cal-committed',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 7, 18, 9),
+              endTime: DateTime(2026, 7, 18, 11),
+              title: 'cal-committed',
+              type: PlannedBlockType.cal,
+              state: PlannedBlockState.committed,
+            ),
+          ],
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('the state bypassed it here'));
+      expect(
+        result.detail,
+        isNot(contains('exempts `cal`')),
+        reason: 'the calendar exemption is not what let this through',
+      );
     });
 
     test('is inapplicable when no plan was persisted', () {
