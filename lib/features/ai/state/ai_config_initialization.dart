@@ -1,9 +1,12 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_migration.dart';
+import 'package:lotti/get_it.dart';
 
 /// Seeds default inference profiles and backfills known models on startup.
 ///
@@ -18,6 +21,23 @@ Future<void> aiConfigInitialization(Ref ref) async {
   final profileService = ProfileSeedingService(
     aiConfigRepository: aiConfigRepo,
   );
+
+  // Convert the 0.9.1067/0.9.1068 settings-row tombstone ledger into
+  // soft-deleted rows *before* anything seeds. Those releases hard-deleted the
+  // config, so on upgrade a deleted seed is simply absent — and backfill or
+  // seeding would recreate it, undoing the user's deletion.
+  try {
+    await SeedTombstoneMigration(
+      aiConfigRepository: aiConfigRepo,
+      settingsDb: getIt<SettingsDb>(),
+    ).migrate();
+  } catch (error, stackTrace) {
+    developer.log(
+      'Failed to migrate legacy seed tombstones: $error',
+      name: 'aiConfigInitialization',
+      stackTrace: stackTrace,
+    );
+  }
 
   // Backfill known models before seeding so that new default profiles can
   // resolve their model slots to existing `AiConfigModel` rows right away.

@@ -45,14 +45,22 @@ class ModelPrepopulationService {
     // deterministic IDs, and synced duplicate providers can otherwise seed
     // multiple rows for the same providerModelId.
     // Includes soft-deleted rows on purpose: a model the user deleted must
-    // read as already configured here, or the backfill recreates it.
+    // read as already configured here, or the backfill recreates it. But only
+    // *this* provider's deletions count — a row the user deleted under
+    // provider A must not stop the same known model being created for a newly
+    // added provider B of the same type.
     final existingConfigs = await _repository.getConfigsByType(
       AiConfigType.model,
       includeDeleted: true,
     );
-    final existingModels = existingConfigs.whereType<AiConfigModel>().toList(
-      growable: false,
-    );
+    final existingModels = existingConfigs
+        .whereType<AiConfigModel>()
+        .where(
+          (model) =>
+              model.deletedAt == null ||
+              model.inferenceProviderId == provider.id,
+        )
+        .toList(growable: false);
     final providerConfigs = await _repository.getConfigsByType(
       AiConfigType.inferenceProvider,
     );

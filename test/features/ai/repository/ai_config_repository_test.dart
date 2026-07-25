@@ -926,6 +926,73 @@ void main() {
       await repository.close();
     });
 
+    // Enqueuing peer deletes from inside the transaction meant a later
+    // failure rolled the local rows back while the queued deletes stayed —
+    // hard-deleting on other devices rows that still exist here.
+    test(
+      'deleteInferenceProviderWithModels queues no peer deletes when the '
+      'transaction rolls back',
+      () async {
+        final provider = AiConfig.inferenceProvider(
+          id: 'provider-1',
+          baseUrl: 'https://example.com',
+          apiKey: 'key',
+          name: 'Provider 1',
+          createdAt: fixedDate,
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+        final model = AiConfig.model(
+          id: 'model-1',
+          name: 'Model 1',
+          providerModelId: 'provider/model-1',
+          inferenceProviderId: 'provider-1',
+          createdAt: fixedDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        );
+
+        when(
+          () => mockDb.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockDb.getConfigsByType('model'),
+        ).thenAnswer(
+          (_) async => [
+            AiConfigDbEntity(
+              id: model.id,
+              type: 'model',
+              name: model.name,
+              serialized: jsonEncode(model.toJson()),
+              createdAt: fixedDate,
+              updatedAt: fixedDate,
+            ),
+          ],
+        );
+        when(
+          () => mockDb.transaction<CascadeDeletionResult>(any()),
+        ).thenAnswer((invocation) async {
+          final callback =
+              invocation.positionalArguments.first
+                  as Future<CascadeDeletionResult> Function();
+          return callback();
+        });
+        // The model deletes, then the provider row fails, so the transaction
+        // rolls back with one row already removed inside it.
+        when(
+          () => mockDb.deleteConfig('provider-1'),
+        ).thenThrow(Exception('db down'));
+
+        await expectLater(
+          repository.deleteInferenceProviderWithModels('provider-1'),
+          throwsA(isA<Exception>()),
+        );
+
+        // Nothing propagated: peers must not delete rows this device still has.
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      },
+    );
+
     test(
       'deleteInferenceProviderWithModels logs error via DomainLogger and '
       'rethrows when transaction fails',

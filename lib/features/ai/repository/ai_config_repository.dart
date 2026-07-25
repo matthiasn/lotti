@@ -125,7 +125,8 @@ class AiConfigRepository {
 
   /// Delete an inference provider and all its associated models.
   ///
-  /// This method performs cascade deletion within a transaction to ensure atomicity:
+  /// This method performs cascade deletion within a transaction to ensure
+  /// atomicity:
   /// 1. Fetches all models associated with the provider
   /// 2. Deletes each model
   /// 3. Deletes the provider itself
@@ -133,12 +134,20 @@ class AiConfigRepository {
   /// If any deletion fails, the entire transaction is rolled back to maintain
   /// data integrity and prevent partial deletions.
   ///
+  /// The transaction performs database writes only. Cache invalidation and the
+  /// outbox messages that propagate the deletion to peers run *after* it
+  /// commits: enqueuing from inside means a later failure rolls the local rows
+  /// back while the peer deletes stay queued, hard-deleting rows on other
+  /// devices that still exist here.
+  ///
   /// Returns detailed information about the deletion operation.
   Future<CascadeDeletionResult> deleteInferenceProviderWithModels(
     String providerId, {
     bool fromSync = false,
   }) async {
-    return _db.transaction(() async {
+    final deletedIds = <String>[];
+
+    final result = await _db.transaction(() async {
       try {
         // Get the provider first to capture its name
         final provider =
@@ -152,22 +161,18 @@ class AiConfigRepository {
             .where((model) => model.inferenceProviderId == providerId)
             .toList();
 
-        // Delete all associated models with detailed error tracking
+        // Hard deletes: re-adding this provider must bring its models back, so
+        // the cascade must not leave tombstones behind.
         for (final model in associatedModels) {
-          try {
-            // Hard delete: re-adding this provider must bring its models
-            // back, so the cascade must not leave tombstones behind.
-            await hardDeleteConfig(model.id, fromSync: fromSync);
-          } catch (e) {
-            // Re-throw to trigger transaction rollback
-            rethrow;
-          }
+          await _db.deleteConfig(model.id);
+          deletedIds.add(model.id);
         }
 
         // Delete the provider itself. Nothing seeds providers, so there is
         // no tombstone to keep.
         try {
-          await hardDeleteConfig(providerId, fromSync: fromSync);
+          await _db.deleteConfig(providerId);
+          deletedIds.add(providerId);
         } catch (e) {
           throw Exception('Failed to delete provider $providerId: $e');
         }
@@ -188,6 +193,19 @@ class AiConfigRepository {
         rethrow; // Re-throw to let the caller handle the error
       }
     });
+
+    // Committed: only now are the rows really gone, so only now may the caches
+    // drop them and the peers hear about it.
+    deletedIds.forEach(_invalidateConfig);
+    if (!fromSync) {
+      for (final id in deletedIds) {
+        await getIt<OutboxService>().enqueueMessage(
+          SyncMessage.aiConfigDelete(id: id),
+        );
+      }
+    }
+
+    return result;
   }
 
   /// Get an AI configuration by its ID.

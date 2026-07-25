@@ -551,14 +551,26 @@ void main() {
     ).called(1);
   });
 
-  test('processes ai config delete messages', () async {
+  // The envelope only ever carries a *hard* delete now: a user deletion
+  // soft-deletes and travels as SyncAiConfig with `deletedAt` set. Applying it
+  // softly would leave the peer a tombstone that stops it re-seeding a bundled
+  // profile the sender merely pruned.
+  test('processes ai config delete messages as hard deletes', () async {
     const id = 'config-id';
     const message = SyncMessage.aiConfigDelete(id: id);
     when(() => event.text).thenReturn(encodeMessage(message));
 
     await processor.process(event: event, journalDb: journalDb);
 
-    verify(() => aiConfigRepository.deleteConfig(id, fromSync: true)).called(1);
+    verify(
+      () => aiConfigRepository.hardDeleteConfig(id, fromSync: true),
+    ).called(1);
+    verifyNever(
+      () => aiConfigRepository.deleteConfig(
+        any(),
+        fromSync: any(named: 'fromSync'),
+      ),
+    );
   });
 
   test('processes saved task filter messages', () async {
@@ -1842,7 +1854,7 @@ void main() {
         await processorWithVc.process(event: event, journalDb: journalDb);
 
         verify(
-          () => aiConfigRepository.deleteConfig(
+          () => aiConfigRepository.hardDeleteConfig(
             'cfg-err',
             fromSync: true,
           ),
@@ -1889,11 +1901,11 @@ void main() {
         await processorWithVc.process(event: event, journalDb: journalDb);
 
         // The bundle's child (an aiConfigDelete) would normally drive a
-        // deleteConfig call inside the unpacker apply phase. With the
+        // hardDeleteConfig call inside the unpacker apply phase. With the
         // self-echo short-circuit, prepare returns a PreparedSyncEvent
         // with no resolved bundle and apply no-ops.
         verifyNever(
-          () => aiConfigRepository.deleteConfig(
+          () => aiConfigRepository.hardDeleteConfig(
             any<String>(),
             fromSync: any<bool>(named: 'fromSync'),
           ),
@@ -1928,7 +1940,7 @@ void main() {
         await processorWithVc.process(event: event, journalDb: journalDb);
 
         verify(
-          () => aiConfigRepository.deleteConfig(
+          () => aiConfigRepository.hardDeleteConfig(
             'cfg-peer',
             fromSync: true,
           ),
@@ -2104,7 +2116,7 @@ void main() {
 
         expect(result, isNull);
         verifyNever(
-          () => aiConfigRepository.deleteConfig(
+          () => aiConfigRepository.hardDeleteConfig(
             any<String>(),
             fromSync: any<bool>(named: 'fromSync'),
           ),

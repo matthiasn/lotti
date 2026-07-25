@@ -64,7 +64,12 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         );
         return null;
       case SyncAiConfigDelete(:final id):
-        await _aiConfigRepository.deleteConfig(
+        // This envelope now only ever carries a *hard* delete: a user deletion
+        // soft-deletes and travels as `SyncAiConfig` with `deletedAt` set.
+        // Applying it as a soft delete would leave the peer a tombstone that
+        // stops it re-seeding a bundled profile the sender merely pruned, and
+        // would keep cascaded provider/model rows around as hidden records.
+        await _aiConfigRepository.hardDeleteConfig(
           id,
           fromSync: true,
         );

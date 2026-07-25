@@ -196,6 +196,48 @@ void main() {
         );
       });
 
+      // Deletion is provider-scoped: removing a model under provider A must
+      // not stop the same known model being created for a newly added
+      // provider B of the same type.
+      test(
+        "another provider's deleted row does not suppress this one",
+        () async {
+          const providerA = 'gemini-a';
+          const providerB = 'gemini-b';
+          AiConfigInferenceProvider provider(String id) =>
+              AiConfigInferenceProvider(
+                id: id,
+                baseUrl: 'https://api.gemini.com',
+                apiKey: 'test-key',
+                name: id,
+                createdAt: DateTime(2026, 3, 15),
+                inferenceProviderType: InferenceProviderType.gemini,
+              );
+          final known =
+              knownModelsByProvider[InferenceProviderType.gemini]!.first;
+          final deletedUnderA = known
+              .toAiConfigModel(
+                id: generateModelId(providerA, known.providerModelId),
+                inferenceProviderId: providerA,
+              )
+              .copyWith(deletedAt: DateTime(2026, 7, 25));
+
+          stubRepo(
+            providers: [provider(providerA), provider(providerB)],
+            models: [deletedUnderA],
+          );
+
+          await service.prepopulateModelsForProvider(provider(providerB));
+
+          final saved = verify(() => mockRepository.saveConfig(captureAny()))
+              .captured
+              .cast<AiConfigModel>()
+              .where((model) => model.providerModelId == known.providerModelId);
+          expect(saved, hasLength(1));
+          expect(saved.single.inferenceProviderId, providerB);
+        },
+      );
+
       // The existing-model scan must ask for deleted rows, or it reads
       // "removed" as "never configured".
       test('the existing-model scan includes deleted rows', () async {

@@ -519,12 +519,23 @@ class SyncMaintenanceRepository {
   Future<List<AiConfig>> _fetchAiConfigsSafely() async {
     return _runWithLogging<List<AiConfig>>(
       () async {
+        // Deleted rows are included deliberately. This pass exists to repair
+        // a peer that missed events, and a soft-deleted config *is* the
+        // deletion record — filtering it out would replay the config as alive
+        // and leave the missed-delete gap the tombstone is meant to close.
         final configGroups = await Future.wait([
           _aiConfigRepository.getConfigsByType(
             AiConfigType.inferenceProvider,
+            includeDeleted: true,
           ),
-          _aiConfigRepository.getConfigsByType(AiConfigType.model),
-          _aiConfigRepository.getConfigsByType(AiConfigType.prompt),
+          _aiConfigRepository.getConfigsByType(
+            AiConfigType.model,
+            includeDeleted: true,
+          ),
+          _aiConfigRepository.getConfigsByType(
+            AiConfigType.prompt,
+            includeDeleted: true,
+          ),
         ]);
 
         return configGroups.expand((group) => group).toList();
