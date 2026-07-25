@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/task_filters/design_syst
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -348,6 +349,69 @@ void main() {
       await tester.pump(const Duration(milliseconds: 900));
       expect(updateCalls, 1);
       expect(find.byType(DesignSystemTaskFilterSheet), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a failed update keeps the choice page open and reports the error in ink',
+    (tester) async {
+      var updateCalls = 0;
+      await openModal(
+        tester,
+        onApplied: (_) {},
+        onCreateSavedFilter: (_, _) {},
+        // The only path that sets the choice page's error state: the update
+        // throws, the page stays mounted, and the failure has to be visible
+        // rather than silently swallowed.
+        onUpdateSavedFilter: (_) {
+          updateCalls++;
+          throw StateError('update failed');
+        },
+        canCreateSavedFilter: (_) => true,
+        canUpdateSavedFilter: (_) => true,
+        existingSavedFilterName: 'Urgent work',
+      );
+
+      await tester.tap(
+        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+      );
+      await tester.pump(const Duration(milliseconds: 900));
+
+      final update = find.byKey(DesignSystemFilterSavePageKeys.update);
+      await tester.ensureVisible(update);
+      await tester.pump();
+      tester.widget<DesignSystemButton>(update).onPressed!();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 900));
+
+      expect(updateCalls, 1);
+      // The sheet must not dismiss on failure — dismissing would discard the
+      // draft the user was trying to save.
+      expect(
+        find.byKey(DesignSystemFilterSavePageKeys.choicePage),
+        findsOneWidget,
+      );
+
+      final error = tester.widget<Text>(
+        find.byKey(DesignSystemFilterSavePageKeys.error),
+      );
+      expect(error.data, "Couldn't save this filter. Try again.");
+      // Ink, not the error fill strength: this is body-size text and owes
+      // WCAG AA, which `defaultColor` misses on a dark sheet (4.25:1).
+      final context = tester.element(
+        find.byKey(DesignSystemFilterSavePageKeys.choicePage),
+      );
+      expect(
+        error.style?.color,
+        context.designTokens.colors.alert.error.ink,
+      );
+
+      // A failure must not wedge the button: `_updating` is released on the
+      // error path, so the same control can be pressed again.
+      tester.widget<DesignSystemButton>(update).onPressed!();
+      await tester.pump();
+      expect(updateCalls, 2);
+      expect(find.byKey(DesignSystemFilterSavePageKeys.error), findsOneWidget);
     },
   );
 
