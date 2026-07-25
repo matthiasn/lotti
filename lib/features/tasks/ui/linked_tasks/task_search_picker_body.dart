@@ -38,7 +38,11 @@ class TaskSearchPickerBody extends StatefulWidget {
 
   /// Called when the user taps a result. The body does not close itself or
   /// persist anything — the caller decides what selecting a task means.
-  final ValueChanged<Task> onTaskSelected;
+  ///
+  /// Returns a future when the caller writes something (the link modal does),
+  /// so the picker's create lock can be held until that write lands rather
+  /// than until the callback merely returns.
+  final FutureOr<void> Function(Task task) onTaskSelected;
 
   /// Statuses a candidate may hold. Defaults to every status: "Follows up
   /// on", "Duplicates", "Fixes" and "Supersedes" all routinely reference work
@@ -315,11 +319,11 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
       // _tasks alone threw on any row that came from a full-text match outside
       // the prefetch window — the picker rendered the task, then died on the
       // tap.
-      onPick: (id) {
+      onPick: (id) async {
         final picked = _candidatePool
             .where((task) => task.meta.id == id)
             .firstOrNull;
-        if (picked != null) widget.onTaskSelected(picked);
+        if (picked != null) await widget.onTaskSelected(picked);
       },
       createFromQuery: widget.onCreateTask == null ? null : _createFromQuery,
       shouldShowCreate: _shouldShowCreate,

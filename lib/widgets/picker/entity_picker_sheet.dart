@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -100,7 +101,13 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
   final String? selectedId;
 
   /// Single mode: invoked with the tapped item id (the caller pops/applies).
-  final void Function(String id)? onPick;
+  ///
+  /// May return a future. When it does, the create flow holds its exclusivity
+  /// lock until that future completes — a pick usually kicks off a write of
+  /// its own (linking, in the task picker), and releasing the lock the moment
+  /// the callback *returned* would re-enable every row while that write was
+  /// still in flight.
+  final FutureOr<void> Function(String id)? onPick;
 
   /// Optional create-from-search. Returns the new id (or null if cancelled);
   /// in multi mode it is staged, in single mode it is picked.
@@ -173,13 +180,13 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
       if (!mounted || newId == null) {
         return;
       }
-      _onCreated(newId);
+      await _onCreated(newId);
     } finally {
       if (mounted) setState(() => _creating = false);
     }
   }
 
-  void _onCreated(String newId) {
+  Future<void> _onCreated(String newId) async {
     if (_multi) {
       final notifier = widget.stagedNotifier!;
       notifier.value = {...notifier.value, newId};
@@ -190,7 +197,8 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
         _searchController.clear();
       });
     } else {
-      widget.onPick?.call(newId);
+      // Awaited, so the lock outlives whatever the pick starts.
+      await widget.onPick?.call(newId);
     }
   }
 

@@ -249,6 +249,12 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     String? linkedId,
     bool linkCollapsed = false,
   }) async {
+    // Hoisted so the catch below can tell a *rejected* write from a
+    // post-commit side effect that threw. Once the row is in the database the
+    // create succeeded, whatever the badge update or geolocation call does
+    // afterwards — reporting failure there leaves the caller believing
+    // nothing was stored and retrying into a duplicate.
+    bool? applied;
     try {
       JournalEntity? linked;
       Set<String>? affectedIds;
@@ -330,6 +336,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
         // accepted the row, the VC is baked into persisted state.
         commitWhen: (saved) => saved ?? false,
       );
+      applied = saved;
 
       // Keep link creation outside the entity VC scope. A link write claims a
       // separate counter and must be finalized by createLink's own scope even
@@ -367,6 +374,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
         message: 'Exception: $exception',
       );
     }
-    return null;
+    // null only when the write itself never reported a verdict.
+    return applied;
   }
 }

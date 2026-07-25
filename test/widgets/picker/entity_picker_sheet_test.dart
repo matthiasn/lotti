@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -38,7 +39,7 @@ void main() {
     required List<PickerItem> Function(String query) entriesBuilder,
     String? selectedId,
     ValueNotifier<Set<String>>? staged,
-    void Function(String id)? onPick,
+    FutureOr<void> Function(String id)? onPick,
     Future<String?> Function(String query)? createFromQuery,
     bool Function(String query)? shouldShowCreate,
     int titleMaxLines = 1,
@@ -66,6 +67,123 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  // Creating is an exclusive act: the rows stay mounted and hit-testable
+  // across the await, and whatever the pick starts (a link write, in the task
+  // picker) outlives the callback that returned. Both are races that produce
+  // duplicate entities or duplicate links.
+  group('create exclusivity', () {
+    testWidgets('a second tap while a create is pending is ignored', (
+      tester,
+    ) async {
+      final write = Completer<String?>();
+      var createCalls = 0;
+
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: (_) => [],
+        shouldShowCreate: (query) => query.isNotEmpty,
+        createFromQuery: (_) {
+          createCalls++;
+          return write.future;
+        },
+      );
+
+      await tester.enterText(find.byType(TextField), 'New thing');
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('create')));
+      await tester.pump();
+
+      await tester.tap(
+        find.byKey(const ValueKey('create')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      expect(createCalls, 1);
+      write.complete(null);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('existing rows are inert while a create is pending', (
+      tester,
+    ) async {
+      final write = Completer<String?>();
+      String? picked;
+
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        onPick: (id) => picked = id,
+        entriesBuilder: (_) => [item('alpha')],
+        shouldShowCreate: (query) => query.isNotEmpty,
+        createFromQuery: (_) => write.future,
+      );
+
+      await tester.enterText(find.byType(TextField), 'alpha extra');
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('create')));
+      await tester.pump();
+
+      // Picking an existing row mid-create would commit whatever the caller
+      // does on pick while the create was still pending — and the create's
+      // own completion would then commit a second one.
+      await tester.tap(
+        find.byKey(const ValueKey('row-alpha')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(picked, isNull);
+
+      write.complete(null);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets("the lock is held until the pick's own work completes", (
+      tester,
+    ) async {
+      final linkWrite = Completer<void>();
+      var picks = 0;
+
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        onPick: (_) {
+          picks++;
+          return linkWrite.future;
+        },
+        entriesBuilder: (_) => [item('alpha')],
+        shouldShowCreate: (query) => query.isNotEmpty,
+        createFromQuery: (_) async => 'created-id',
+      );
+
+      await tester.enterText(find.byType(TextField), 'New thing');
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('create')));
+      await tester.pump();
+
+      expect(picks, 1);
+
+      // The create resolved, but the pick it triggered has not. Releasing the
+      // lock on the callback's *return* rather than its completion would let
+      // a second tap start another link here.
+      await tester.tap(
+        find.byKey(const ValueKey('row-alpha')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(picks, 1);
+
+      linkWrite.complete();
+      await tester.pumpAndSettle();
+
+      // Released once the pick's work landed.
+      await tester.tap(find.byKey(const ValueKey('row-alpha')));
+      await tester.pump();
+      expect(picks, 2);
+    });
+  });
 
   group('single mode', () {
     testWidgets('renders items without dividers and applies the tapped id', (

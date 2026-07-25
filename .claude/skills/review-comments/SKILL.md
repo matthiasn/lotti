@@ -120,17 +120,27 @@ resolution.
    loop: a command that errors makes the loop exit immediately and every
    subsequent report a lie.
 
+   For a CheckRun, `status` is the lifecycle (`COMPLETED`) and `conclusion`
+   carries the verdict (`SUCCESS` / `FAILURE` / `CANCELLED`) — a failed check
+   is `COMPLETED`, so keying on `status` alone reports a red run as done and
+   green. Read the conclusion for completed checks and the state for
+   StatusContexts:
+
    ```bash
-   # one "<state>\t<name>" line per check; empty output means the query
+   # one "<verdict>\t<name>" line per check; empty output means the query
    # failed, not that everything passed — so treat it as not-done.
    rollup() {
-     gh pr view "$1" --json statusCheckRollup \
-       --jq '.statusCheckRollup[] | "\(.status // .state)\t\(.name // .context)"'
+     gh pr view "$1" --json statusCheckRollup --jq '
+       .statusCheckRollup[]
+       | if .status == "COMPLETED" then .conclusion
+         elif .status then .status
+         else .state end
+       + "\t" + (.name // .context)'
    }
-   until [ -n "$(rollup <n>)" ] && ! rollup <n> | grep -q 'IN_PROGRESS\|QUEUED\|PENDING'; do
+   until [ -n "$(rollup <n>)" ] && ! rollup <n> | grep -qE '^(IN_PROGRESS|QUEUED|PENDING)'; do
      sleep 30
    done
-   rollup <n> | grep -v 'SUCCESS\|COMPLETED' || echo "all green"
+   rollup <n> | grep -vE '^(SUCCESS|NEUTRAL|SKIPPED)' || echo "all green"
    ```
 
    Cross-check the total against `gh pr checks <n>` before declaring green:
@@ -144,13 +154,23 @@ resolution.
    Then re-check for comments filed against the new commits — including
    top-level ones with no reply yet:
 
+   `gh api` returns **one page (30 comments)** unless `--paginate` is passed,
+   and `--jq` then runs per page — so a comment and its reply landing on
+   different pages makes an answered comment look unanswered, and a comment on
+   a later page look absent. Fetch every page and aggregate once with `jq -s`:
+
    ```bash
-   gh api repos/{owner}/{repo}/pulls/<n>/comments --jq \
-     '[.[] | select(.in_reply_to_id != null) | .in_reply_to_id] as $replied
-      | .[] | select(.in_reply_to_id == null)
-      | select(.id as $i | ($replied | index($i)) | not)
-      | "UNANSWERED \(.id) \(.path):\(.line)"'
+   gh api --paginate repos/{owner}/{repo}/pulls/<n>/comments --jq '.[]' | jq -s '
+     [.[] | select(.in_reply_to_id != null) | .in_reply_to_id] as $replied
+     | .[] | select(.in_reply_to_id == null)
+     | select(.id as $i | ($replied | index($i)) | not)
+     | "UNANSWERED \(.id) \(.user.login) \(.path)"'
    ```
+
+   Post replies with `-F body=@file` rather than an inline shell string.
+   Review bodies contain backticks, quotes and code fences; nested shell
+   quoting silently mangles them, and a failed POST inside a loop can still
+   look like it succeeded.
 
    Report the real state — "27 pass, 1 pending" is the honest answer while a
    check is still running, not "all green".

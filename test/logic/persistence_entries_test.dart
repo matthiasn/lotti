@@ -98,6 +98,22 @@ void main() {
   );
 
   test(
+    'createDbEntity keeps the applied verdict when a post-commit side '
+    'effect throws',
+    () async {
+      // The row is already in the database by the time the badge update
+      // runs. Reporting failure here told the caller nothing was stored,
+      // so it left the persisted entity unlinked and invited a retry
+      // straight into a duplicate.
+      when(notificationService.updateBadge).thenThrow(StateError('badge'));
+
+      final saved = await entries.createDbEntity(testTextEntry);
+
+      expect(saved, isTrue);
+    },
+  );
+
+  test(
     'createDbEntity skips addGeolocation when shouldAddGeolocation is false',
     () async {
       await entries.createDbEntity(
