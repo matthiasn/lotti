@@ -229,9 +229,7 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
     final textHigh = tokens.colors.text.highEmphasis;
     final textMed = tokens.colors.text.mediumEmphasis;
     final panelBg = tokens.colors.background.level01;
-    final errorColor = Theme.of(context).brightness == Brightness.dark
-        ? tokens.colors.alert.error.hover
-        : tokens.colors.alert.error.defaultColor;
+    final errorColor = tokens.colors.alert.error.ink;
     final console = aiProviderKeyConsoleUrl(widget.type);
     // Listen (not watch) keeps the verifier alive and feeds the local display
     // state machine, which holds "checking" visible for [_minCheckingVisible].
@@ -619,13 +617,12 @@ class _VerifyStatus extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final textMed = tokens.colors.text.mediumEmphasis;
-    final success = tokens.colors.alert.success.defaultColor;
-    // The lighter error tint (the `hover` ramp step) clears WCAG AA on the dark
-    // panel where the base `defaultColor` sits ~3:1; the failure line is the
-    // most anxious moment, so it must be the most readable.
-    final danger = Theme.of(context).brightness == Brightness.dark
-        ? tokens.colors.alert.error.hover
-        : tokens.colors.alert.error.defaultColor;
+    // Both paint status lines in `bodySmall`, so both owe AA — `ink` is the
+    // step that carries it in either brightness. The failure line is the most
+    // anxious moment, so it must be the most readable; picking the ramp step
+    // by hand for that is now the token's job.
+    final success = tokens.colors.alert.success.ink;
+    final danger = tokens.colors.alert.error.ink;
 
     switch (state) {
       case ConnectionCheckIdle():

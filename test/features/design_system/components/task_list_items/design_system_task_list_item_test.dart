@@ -232,19 +232,19 @@ void main() {
         (
           DesignSystemTaskPriority.p0,
           'P0',
-          dsTokensLight.colors.alert.error.defaultColor,
+          dsTokensLight.colors.alert.error.ink,
           Icons.priority_high_rounded,
         ),
         (
           DesignSystemTaskPriority.p1,
           'P1',
-          dsTokensLight.colors.alert.error.defaultColor,
+          dsTokensLight.colors.alert.error.ink,
           Icons.local_fire_department_rounded,
         ),
         (
           DesignSystemTaskPriority.p2,
           'P2',
-          dsTokensLight.colors.alert.warning.defaultColor,
+          dsTokensLight.colors.alert.warning.ink,
           Icons.circle,
         ),
         (

@@ -317,7 +317,7 @@ class _RecommendedLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final accent = tokens.colors.alert.success.defaultColor;
+    final accent = tokens.colors.alert.success.ink;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [

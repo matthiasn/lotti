@@ -208,10 +208,10 @@ class _FileItemSpec {
         color: tokens.colors.text.mediumEmphasis,
       ),
       errorLabelStyle: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.alert.error.defaultColor,
+        color: tokens.colors.alert.error.ink,
       ),
       retryLabelStyle: tokens.typography.styles.body.bodySmall.copyWith(
-        color: tokens.colors.alert.error.defaultColor,
+        color: tokens.colors.alert.error.ink,
         fontWeight: FontWeight.w700,
       ),
     );

@@ -25,7 +25,7 @@ class SettingsDeleteRow extends StatelessWidget {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
     final foreground = enabled
-        ? tokens.colors.alert.error.defaultColor
+        ? tokens.colors.alert.error.ink
         : tokens.colors.text.lowEmphasis;
     // Radius matches the field family so the row reads as part of the
     // form, just charged.

@@ -242,9 +242,9 @@ class _Pill extends StatelessWidget {
   Color _toneAccent(AgentListPillTone tone, DsColors colors) {
     return switch (tone) {
       AgentListPillTone.interactive => colors.interactive.enabled,
-      AgentListPillTone.warning => colors.alert.warning.defaultColor,
-      AgentListPillTone.error => colors.alert.error.defaultColor,
-      AgentListPillTone.info => colors.alert.info.defaultColor,
+      AgentListPillTone.warning => colors.alert.warning.ink,
+      AgentListPillTone.error => colors.alert.error.ink,
+      AgentListPillTone.info => colors.alert.info.ink,
       AgentListPillTone.muted => colors.text.mediumEmphasis,
       AgentListPillTone.neutral => colors.text.highEmphasis,
     };

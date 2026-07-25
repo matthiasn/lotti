@@ -2040,7 +2040,7 @@ void main() {
         // it back from the tree instead of recomputing, so a minute rollover
         // mid-test cannot make the assertion flaky.
         final tokens = tester.element(find.byType(DayTimeline)).designTokens;
-        final errorColor = tokens.colors.alert.error.defaultColor;
+        final errorColor = tokens.colors.alert.error.ink;
         Finder nowBadge() => find.byWidgetPredicate(
           (w) =>
               w is Text &&

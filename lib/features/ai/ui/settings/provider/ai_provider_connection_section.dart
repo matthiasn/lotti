@@ -137,7 +137,7 @@ class _ConnectionRow extends StatelessWidget {
             // `fontFamily: 'Inconsolata'` override at the call site.
             style: isMissing
                 ? tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.alert.warning.defaultColor,
+                    color: tokens.colors.alert.warning.ink,
                   )
                 : monoMetaStyle(
                     tokens,

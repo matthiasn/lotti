@@ -431,7 +431,7 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
     // Amber only when the wake is imminent (<5 min) — otherwise the ETA is
     // quiet, low-emphasis data, not a standing alert.
     final etaColor = imminent
-        ? tokens.colors.alert.warning.defaultColor
+        ? tokens.colors.alert.warning.ink
         : tokens.colors.text.lowEmphasis;
 
     final titleStyle = tokens.typography.styles.body.bodySmall.copyWith(

@@ -683,7 +683,7 @@ class _EntryCardContent extends StatelessWidget {
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
       style: context.designTokens.typography.styles.subtitle.subtitle2.copyWith(
-        color: context.designTokens.colors.alert.error.defaultColor,
+        color: context.designTokens.colors.alert.error.ink,
         fontWeight: FontWeight.w600,
         fontStyle: FontStyle.italic,
       ),
@@ -986,7 +986,7 @@ class _HabitCompletionContentState extends State<_HabitCompletionContent> {
     final (label, color) = switch (type) {
       HabitCompletionType.success => (
         context.messages.habitCompletionStatusCompleted,
-        context.designTokens.colors.alert.success.defaultColor,
+        context.designTokens.colors.alert.success.ink,
       ),
       HabitCompletionType.skip => (
         context.messages.habitCompletionStatusSkipped,

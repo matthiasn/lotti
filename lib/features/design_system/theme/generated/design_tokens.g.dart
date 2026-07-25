@@ -24,21 +24,25 @@ const DsTokens dsTokensLight = DsTokens(
         defaultColor: Color(0xFFCC3633),
         hover: Color(0xFFA32B29),
         pressed: Color(0xFF7A1F1F),
+        ink: Color(0xFFA32B29),
       ),
       success: DsColorsAlertSuccess(
-        defaultColor: Color(0xFF59A66B),
+        defaultColor: Color(0xFF478556),
         hover: Color(0xFF478556),
         pressed: Color(0xFF366340),
+        ink: Color(0xFF366340),
       ),
       warning: DsColorsAlertWarning(
-        defaultColor: Color(0xFFFA8C05),
+        defaultColor: Color(0xFFC87005),
         hover: Color(0xFFC87005),
         pressed: Color(0xFF965402),
+        ink: Color(0xFF965402),
       ),
       info: DsColorsAlertInfo(
-        defaultColor: Color(0xFF1CA3E3),
+        defaultColor: Color(0xFF1783B5),
         hover: Color(0xFF1783B5),
         pressed: Color(0xFF116288),
+        ink: Color(0xFF116288),
       ),
     ),
     background: DsColorsBackground(
@@ -435,21 +439,25 @@ const DsTokens dsTokensDark = DsTokens(
         defaultColor: Color(0xFFD65E5C),
         hover: Color(0xFFE08684),
         pressed: Color(0xFFEBB0AE),
+        ink: Color(0xFFE08684),
       ),
       success: DsColorsAlertSuccess(
         defaultColor: Color(0xFF7AB889),
         hover: Color(0xFF9CC9A6),
         pressed: Color(0xFFBDDBC4),
+        ink: Color(0xFF7AB889),
       ),
       warning: DsColorsAlertWarning(
         defaultColor: Color(0xFFFBA336),
         hover: Color(0xFFFCBA69),
         pressed: Color(0xFFFDD19B),
+        ink: Color(0xFFFBA336),
       ),
       info: DsColorsAlertInfo(
         defaultColor: Color(0xFF4AB6E8),
         hover: Color(0xFF77C8EE),
         pressed: Color(0xFFA4DAF4),
+        ink: Color(0xFF4AB6E8),
       ),
     ),
     background: DsColorsBackground(
@@ -961,22 +969,26 @@ class DsColorsAlertError {
   final Color defaultColor;
   final Color hover;
   final Color pressed;
+  final Color ink;
 
   const DsColorsAlertError({
     required this.defaultColor,
     required this.hover,
     required this.pressed,
+    required this.ink,
   });
 
   DsColorsAlertError copyWith({
     Color? defaultColor,
     Color? hover,
     Color? pressed,
+    Color? ink,
   }) {
     return DsColorsAlertError(
       defaultColor: defaultColor ?? this.defaultColor,
       hover: hover ?? this.hover,
       pressed: pressed ?? this.pressed,
+      ink: ink ?? this.ink,
     );
   }
 
@@ -989,6 +1001,7 @@ class DsColorsAlertError {
           Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
+      ink: Color.lerp(ink, other.ink, t) ?? ink,
     );
   }
 
@@ -1000,11 +1013,12 @@ class DsColorsAlertError {
     return other is DsColorsAlertError &&
         defaultColor == other.defaultColor &&
         hover == other.hover &&
-        pressed == other.pressed;
+        pressed == other.pressed &&
+        ink == other.ink;
   }
 
   @override
-  int get hashCode => Object.hashAll([defaultColor, hover, pressed]);
+  int get hashCode => Object.hashAll([defaultColor, hover, pressed, ink]);
 }
 
 @immutable
@@ -1012,22 +1026,26 @@ class DsColorsAlertSuccess {
   final Color defaultColor;
   final Color hover;
   final Color pressed;
+  final Color ink;
 
   const DsColorsAlertSuccess({
     required this.defaultColor,
     required this.hover,
     required this.pressed,
+    required this.ink,
   });
 
   DsColorsAlertSuccess copyWith({
     Color? defaultColor,
     Color? hover,
     Color? pressed,
+    Color? ink,
   }) {
     return DsColorsAlertSuccess(
       defaultColor: defaultColor ?? this.defaultColor,
       hover: hover ?? this.hover,
       pressed: pressed ?? this.pressed,
+      ink: ink ?? this.ink,
     );
   }
 
@@ -1040,6 +1058,7 @@ class DsColorsAlertSuccess {
           Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
+      ink: Color.lerp(ink, other.ink, t) ?? ink,
     );
   }
 
@@ -1051,11 +1070,12 @@ class DsColorsAlertSuccess {
     return other is DsColorsAlertSuccess &&
         defaultColor == other.defaultColor &&
         hover == other.hover &&
-        pressed == other.pressed;
+        pressed == other.pressed &&
+        ink == other.ink;
   }
 
   @override
-  int get hashCode => Object.hashAll([defaultColor, hover, pressed]);
+  int get hashCode => Object.hashAll([defaultColor, hover, pressed, ink]);
 }
 
 @immutable
@@ -1063,22 +1083,26 @@ class DsColorsAlertWarning {
   final Color defaultColor;
   final Color hover;
   final Color pressed;
+  final Color ink;
 
   const DsColorsAlertWarning({
     required this.defaultColor,
     required this.hover,
     required this.pressed,
+    required this.ink,
   });
 
   DsColorsAlertWarning copyWith({
     Color? defaultColor,
     Color? hover,
     Color? pressed,
+    Color? ink,
   }) {
     return DsColorsAlertWarning(
       defaultColor: defaultColor ?? this.defaultColor,
       hover: hover ?? this.hover,
       pressed: pressed ?? this.pressed,
+      ink: ink ?? this.ink,
     );
   }
 
@@ -1091,6 +1115,7 @@ class DsColorsAlertWarning {
           Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
+      ink: Color.lerp(ink, other.ink, t) ?? ink,
     );
   }
 
@@ -1102,11 +1127,12 @@ class DsColorsAlertWarning {
     return other is DsColorsAlertWarning &&
         defaultColor == other.defaultColor &&
         hover == other.hover &&
-        pressed == other.pressed;
+        pressed == other.pressed &&
+        ink == other.ink;
   }
 
   @override
-  int get hashCode => Object.hashAll([defaultColor, hover, pressed]);
+  int get hashCode => Object.hashAll([defaultColor, hover, pressed, ink]);
 }
 
 @immutable
@@ -1114,22 +1140,26 @@ class DsColorsAlertInfo {
   final Color defaultColor;
   final Color hover;
   final Color pressed;
+  final Color ink;
 
   const DsColorsAlertInfo({
     required this.defaultColor,
     required this.hover,
     required this.pressed,
+    required this.ink,
   });
 
   DsColorsAlertInfo copyWith({
     Color? defaultColor,
     Color? hover,
     Color? pressed,
+    Color? ink,
   }) {
     return DsColorsAlertInfo(
       defaultColor: defaultColor ?? this.defaultColor,
       hover: hover ?? this.hover,
       pressed: pressed ?? this.pressed,
+      ink: ink ?? this.ink,
     );
   }
 
@@ -1142,6 +1172,7 @@ class DsColorsAlertInfo {
           Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
+      ink: Color.lerp(ink, other.ink, t) ?? ink,
     );
   }
 
@@ -1153,11 +1184,12 @@ class DsColorsAlertInfo {
     return other is DsColorsAlertInfo &&
         defaultColor == other.defaultColor &&
         hover == other.hover &&
-        pressed == other.pressed;
+        pressed == other.pressed &&
+        ink == other.ink;
   }
 
   @override
-  int get hashCode => Object.hashAll([defaultColor, hover, pressed]);
+  int get hashCode => Object.hashAll([defaultColor, hover, pressed, ink]);
 }
 
 @immutable

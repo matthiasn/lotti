@@ -371,8 +371,8 @@ class _GoalChip extends StatelessWidget {
     final messages = context.messages;
     final atGoal = stats.isAtGoal;
     final color = atGoal
-        ? tokens.colors.alert.success.defaultColor
-        : tokens.colors.alert.warning.defaultColor;
+        ? tokens.colors.alert.success.ink
+        : tokens.colors.alert.warning.ink;
     final text = atGoal
         ? messages.habitsAboveGoal
         : messages.habitsPointsToGoal(stats.pointsToGoal);

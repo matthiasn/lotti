@@ -71,10 +71,10 @@ class OutboxSummaryHeader extends StatelessWidget {
   };
 
   Color _toneColor(QueueState state, DsColors colors) => switch (state) {
-    QueueState.synced => colors.alert.success.defaultColor,
-    QueueState.sending => colors.alert.info.defaultColor,
-    QueueState.waiting => colors.alert.warning.defaultColor,
-    QueueState.failed => colors.alert.error.defaultColor,
+    QueueState.synced => colors.alert.success.ink,
+    QueueState.sending => colors.alert.info.ink,
+    QueueState.waiting => colors.alert.warning.ink,
+    QueueState.failed => colors.alert.error.ink,
     QueueState.offline => colors.text.mediumEmphasis,
   };
 

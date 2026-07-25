@@ -67,7 +67,7 @@ void main() {
         );
         expect(
           eyebrow.style?.color,
-          tokens.colors.alert.error.defaultColor,
+          tokens.colors.alert.error.ink,
         );
       },
     );

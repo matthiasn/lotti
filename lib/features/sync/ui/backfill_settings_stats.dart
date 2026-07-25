@@ -56,7 +56,7 @@ class StatusRow extends StatelessWidget {
                 label: messages.backfillStatusMissing,
                 value: missing,
                 valueColor: missingActive
-                    ? tokens.colors.alert.warning.defaultColor
+                    ? tokens.colors.alert.warning.ink
                     : tokens.colors.text.highEmphasis,
               ),
             ),
@@ -67,10 +67,10 @@ class StatusRow extends StatelessWidget {
                 label: messages.backfillStatusSkipped,
                 value: skipped,
                 labelColor: skippedActive
-                    ? tokens.colors.alert.error.defaultColor
+                    ? tokens.colors.alert.error.ink
                     : null,
                 valueColor: skippedActive
-                    ? tokens.colors.alert.error.defaultColor
+                    ? tokens.colors.alert.error.ink
                     : tokens.colors.text.highEmphasis,
               ),
             ),
@@ -235,10 +235,10 @@ class _Ledger extends StatelessWidget {
     final messages = context.messages;
     final highEmphasis = tokens.colors.text.highEmphasis;
     final lowEmphasis = tokens.colors.text.lowEmphasis;
-    final success = tokens.colors.alert.success.defaultColor;
-    final warning = tokens.colors.alert.warning.defaultColor;
+    final success = tokens.colors.alert.success.ink;
+    final warning = tokens.colors.alert.warning.ink;
     final interactive = tokens.colors.interactive.enabled;
-    final error = tokens.colors.alert.error.defaultColor;
+    final error = tokens.colors.alert.error.ink;
 
     final missingTone = missingCount > 0 ? warning : lowEmphasis;
     final requestedTone = stats.totalRequested > 0 ? interactive : lowEmphasis;

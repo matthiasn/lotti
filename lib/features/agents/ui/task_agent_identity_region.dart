@@ -106,9 +106,7 @@ class _SetupIdentityRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    final color = isError
-        ? tokens.colors.alert.error.defaultColor
-        : ai.metaText;
+    final color = isError ? tokens.colors.alert.error.ink : ai.metaText;
     final iconColor = isError
         ? tokens.colors.alert.error.defaultColor
         : ai.metaText;

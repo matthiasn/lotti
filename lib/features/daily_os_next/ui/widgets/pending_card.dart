@@ -95,17 +95,17 @@ class _StateBadge extends StatelessWidget {
     final messages = context.messages;
     final (color, icon, label) = switch (item.reason) {
       PendingItemReason.overdue => (
-        tokens.colors.alert.error.defaultColor,
+        tokens.colors.alert.error.ink,
         Icons.warning_amber_rounded,
         _overdueLabel(context, item),
       ),
       PendingItemReason.inProgress => (
-        tokens.colors.alert.warning.defaultColor,
+        tokens.colors.alert.warning.ink,
         Icons.adjust_rounded,
         messages.dailyOsNextStateInProgress(item.sessionCount ?? 0),
       ),
       PendingItemReason.missedRecurring => (
-        tokens.colors.alert.info.defaultColor,
+        tokens.colors.alert.info.ink,
         Icons.refresh_rounded,
         messages.dailyOsNextStateRecurringMissed,
       ),

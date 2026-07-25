@@ -87,10 +87,10 @@ class ImpactModelTable extends StatelessWidget {
         }
       }
     }
-    // Clay accent, matching the caution valence the KPI deltas use.
-    final clay = brightness == Brightness.dark
-        ? tokens.colors.alert.error.hover
-        : tokens.colors.alert.error.pressed;
+    // Clay accent, matching the caution valence the KPI deltas use. `ink`
+    // because it paints the badge's caption text, which owes AA; picking the
+    // ramp step per brightness by hand is what the token now does.
+    final clay = tokens.colors.alert.error.ink;
     Widget costHeavyBadge() => Container(
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step2,

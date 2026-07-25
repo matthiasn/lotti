@@ -132,7 +132,7 @@ void main() {
 
       expect(
         deleteText.style?.color,
-        dsTokensLight.colors.alert.error.defaultColor,
+        dsTokensLight.colors.alert.error.ink,
       );
     });
 

@@ -59,7 +59,7 @@ class ProjectSelectionModalBody extends StatelessWidget {
           child: Text(
             context.messages.projectErrorLoadProjects,
             style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.alert.error.defaultColor,
+              color: tokens.colors.alert.error.ink,
             ),
           ),
         ),
