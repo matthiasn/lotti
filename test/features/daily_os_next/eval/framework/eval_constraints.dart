@@ -1,4 +1,5 @@
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 
 import 'eval_models.dart';
 
@@ -38,6 +39,7 @@ abstract final class EvalConstraintIds {
   static const surfacedConflict = 'surfacedConflict';
   static const noInventedWork = 'noInventedWork';
   static const taskWorkIsTyped = 'taskWorkIsTyped';
+  static const noFabricatedCalendarBlocks = 'noFabricatedCalendarBlocks';
 
   /// Guarded — scored on rejections rather than on the plan.
   static const compliedWithoutRejection = 'compliedWithoutRejection';
@@ -58,6 +60,7 @@ abstract final class EvalConstraintIds {
     surfacedConflict,
     noInventedWork,
     taskWorkIsTyped,
+    noFabricatedCalendarBlocks,
     compliedWithoutRejection,
   ];
 }
@@ -79,6 +82,7 @@ List<EvalConstraintResult> scoreAll(EvalRunOutcome outcome) => [
   scoreSurfacedConflict(outcome),
   scoreNoInventedWork(outcome),
   scoreTaskWorkIsTyped(outcome),
+  scoreNoFabricatedCalendarBlocks(outcome),
   scoreCompliedWithoutRejection(outcome),
 ];
 
@@ -689,6 +693,78 @@ EvalConstraintResult scoreTaskWorkIsTyped(EvalRunOutcome outcome) {
   );
 }
 
+/// A `cal` block claims an imported calendar event, and the day agent has
+/// none to import.
+///
+/// `PlannedBlockType.cal` means "imported calendar event", and the plan editor
+/// treats such a block as owned elsewhere — it refuses in-app edits with
+/// "block is cal-owned — edit it in the source calendar". So a model-emitted
+/// `cal` block leaves the user with a block they cannot edit here and cannot
+/// find in their calendar either.
+///
+/// It can never be legitimate today: the day agent is shown **no calendar
+/// events at all**. `DayAgentInterface.draftDayPlan` documents its
+/// `calendarBlocks` parameter as deferred, `RealDayAgent` drops the argument
+/// on the floor, and no context section renders events into the prompt. The
+/// drafting rules nonetheless tell the model that "only `cal` blocks mirroring
+/// real calendar events may span" the current time — an exemption whose
+/// precondition cannot hold.
+///
+/// That matters most on a same-day draft, where the exemption is the one
+/// remaining hole in the past-start guard (`day_agent_plan_parser.dart`
+/// exempts `cal` alone, after a model was observed relabelling a past-starting
+/// block `buffer` to slip an earlier version). Such a block *is* already
+/// caught by [scoreWithinWorkingHours] — it starts before the draft's own
+/// clock — but reported there as a working-hours violation, which is a
+/// different failure with a different fix. Scoring it here names what actually
+/// happened.
+///
+/// When calendar integration lands, this needs the seeded events to compare
+/// against; until then "unbacked" is not an assumption but the only
+/// possibility.
+EvalConstraintResult scoreNoFabricatedCalendarBlocks(EvalRunOutcome outcome) {
+  const id = EvalConstraintIds.noFabricatedCalendarBlocks;
+  final noPlan = _requirePlan(outcome, id);
+  if (noPlan != null) return noPlan;
+  final calendarBlocks = [
+    for (final block in _scheduled(outcome))
+      if (block.type == PlannedBlockType.cal) block,
+  ];
+  if (calendarBlocks.isEmpty) {
+    // A plan with real blocks and no calendar claim is a *pass*, not an
+    // absence of evidence: the prompt explicitly offers `cal` as the way to
+    // place work before the current time, so declining it is the behaviour
+    // being measured. Only a plan with nothing scheduled says nothing.
+    final scheduled = _scheduled(outcome);
+    return scheduled.isEmpty
+        ? const EvalConstraintResult.notApplicable(id, 'no scheduled blocks')
+        : EvalConstraintResult(
+            id: id,
+            passed: true,
+            detail:
+                '${scheduled.length} scheduled block(s), none claiming to be '
+                'a calendar event',
+          );
+  }
+  final now = outcome.inputs.now;
+  final described = [
+    for (final block in calendarBlocks)
+      if (now != null && block.startTime.isBefore(now))
+        '"${block.title ?? block.id}" starts ${_hhmm(block.startTime)}, '
+            'before the ${_hhmm(now)} draft — the past-start guard exempts '
+            '`cal`, so this is how a model plans the past'
+      else
+        '"${block.title ?? block.id}" at ${_hhmm(block.startTime)}',
+  ];
+  return EvalConstraintResult(
+    id: id,
+    passed: false,
+    detail:
+        '${calendarBlocks.length} calendar block(s) with no calendar to '
+        'mirror: ${described.join('; ')}',
+  );
+}
+
 /// Whether the model produced a legal plan without being corrected.
 ///
 /// This is the guarded half. The persisted plan is always legal — the write
@@ -697,6 +773,22 @@ EvalConstraintResult scoreTaskWorkIsTyped(EvalRunOutcome outcome) {
 /// rejections it collected on the way.
 EvalConstraintResult scoreCompliedWithoutRejection(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.compliedWithoutRejection;
+  final attemptedDraft = outcome.toolCalls.any(
+    (call) => call.name == DayAgentToolNames.draftDayPlan,
+  );
+  if (!attemptedDraft) {
+    // A run that never reached for the required tool cannot have complied with
+    // anything. Without this the empty rejection list reads as "accepted on
+    // the first attempt", so a model that was never reached, answered in
+    // prose, or called only `raise_day_status` and stopped, collects a
+    // compliance *pass* it did nothing to earn — and aggregate scores reward
+    // failing loudest. Failing to call the tool is a real failure, but it is
+    // the wake's, and it shows up in the job status.
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'the model never attempted draft_day_plan',
+    );
+  }
   final rejections = outcome.rejections.toList();
   return EvalConstraintResult(
     id: id,

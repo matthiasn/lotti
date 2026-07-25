@@ -279,8 +279,23 @@ therefore split:
 
 | scored on | constraints |
 | --- | --- |
-| the persisted plan | overlap, capacity (as written *and* as estimated), working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, conflict surfaced, blocker-before-blocked, fabricated task ids, fabricated history, duplicate ids |
+| the persisted plan | overlap, capacity (as written *and* as estimated), working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, conflict surfaced, blocker-before-blocked, fabricated task ids, fabricated calendar blocks, fabricated history, duplicate ids |
 | the rejection count | whether the model complied without being corrected |
+
+A run that never attempted `draft_day_plan` is inapplicable for the rejection
+constraint too, not a pass: an empty rejection list would otherwise read as
+"accepted on the first attempt", so a model that was unreachable, answered in
+prose, or called only `raise_day_status` and stopped would collect compliance
+credit it did nothing to earn.
+
+`noFabricatedCalendarBlocks` is the one constraint that reads block *type*.
+`PlannedBlockType.cal` means "imported calendar event" and the plan editor
+refuses in-app edits to one, but the day agent is shown no calendar events at
+all — `calendarBlocks` is a deferred parameter `RealDayAgent` drops, and no
+context section renders events — so every `cal` block the model emits asserts
+an import that never happened. It also matters for the past-start guard, which
+exempts `cal` alone: that exemption is how a model plans the past without being
+rejected.
 
 A constraint that reads the plan is **inapplicable when no plan was
 persisted** — an empty block list would otherwise read as "no overlaps,

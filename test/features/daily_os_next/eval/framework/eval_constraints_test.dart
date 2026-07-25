@@ -782,6 +782,56 @@ void main() {
   });
 
   group('compliedWithoutRejection', () {
+    test('an accepted non-drafting call earns no compliance credit', () {
+      // The failure mode this guard exists for: a wake that called
+      // `raise_day_status` and stopped has a non-empty tool log and an empty
+      // rejection list, so a naive "no rejections" read would hand it a pass
+      // for a run that never attempted a plan.
+      final result = scoreCompliedWithoutRejection(
+        outcome(
+          planPersisted: false,
+          toolCalls: const [
+            EvalToolCall(name: 'raise_day_status', accepted: true),
+          ],
+        ),
+      );
+
+      expect(result.isApplicable, isFalse);
+      expect(result.detail, contains('draft_day_plan'));
+    });
+
+    test('a run that called nothing is not applicable, not compliant', () {
+      // An empty rejection list would otherwise read as "accepted on the first
+      // attempt", so a model that was never reached, or that answered in prose
+      // without calling the tool, would collect a compliance pass it did
+      // nothing to earn — and aggregate scores would reward failing loudest.
+      final result = scoreCompliedWithoutRejection(outcome());
+
+      expect(result.isApplicable, isFalse);
+      expect(result.detail, contains('draft_day_plan'));
+    });
+
+    test('a failed run with rejections is still scored as non-compliant', () {
+      // Inapplicability is about having made no attempt. A model that tried,
+      // was corrected, and still produced nothing has demonstrated exactly
+      // what this constraint measures.
+      final result = scoreCompliedWithoutRejection(
+        outcome(
+          planPersisted: false,
+          toolCalls: const [
+            EvalToolCall(
+              name: 'draft_day_plan',
+              accepted: false,
+              rejectionMessage: 'blocks must stay within the planDate day',
+            ),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('1 rejection'));
+    });
+
     test('passes when the first tool call was accepted', () {
       final result = scoreCompliedWithoutRejection(
         outcome(
@@ -1259,6 +1309,121 @@ void main() {
     });
   });
 
+  group('noFabricatedCalendarBlocks', () {
+    PlannedBlock calendarBlock({
+      String id = 'cal-1',
+      int startHour = 9,
+      int endHour = 11,
+    }) => PlannedBlock(
+      id: id,
+      categoryId: 'cat-1',
+      startTime: DateTime(2026, 7, 18, startHour),
+      endTime: DateTime(2026, 7, 18, endHour),
+      title: id,
+      type: PlannedBlockType.cal,
+    );
+
+    test('a real plan with no calendar claim passes', () {
+      // The prompt explicitly offers `cal` as the way to place work before the
+      // current time, so declining it is the behaviour being measured. If this
+      // were merely inapplicable the constraint could only ever be n/a or fail
+      // and would never show a success rate.
+      final result = scoreNoFabricatedCalendarBlocks(
+        outcome(blocks: [block(id: 'b1', startHour: 9, endHour: 10)]),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('none claiming to be a calendar event'));
+    });
+
+    test('a plan with nothing scheduled is not applicable', () {
+      final result = scoreNoFabricatedCalendarBlocks(outcome());
+
+      expect(result.isApplicable, isFalse);
+      expect(result.detail, contains('no scheduled blocks'));
+    });
+
+    test('any calendar block fails, because there is no calendar to mirror', () {
+      // The day agent is shown no calendar events at all — `calendarBlocks` is
+      // a deferred parameter RealDayAgent drops — so a `cal` block asserts an
+      // import that never happened, and the plan editor will then refuse to
+      // let the user edit it here.
+      final result = scoreNoFabricatedCalendarBlocks(
+        outcome(blocks: [calendarBlock(startHour: 14, endHour: 15)]),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('no calendar to mirror'));
+      expect(result.detail, contains('14:00'));
+    });
+
+    test('names the past-start guard when the block predates the draft', () {
+      // This is the case the constraint exists for: `cal` is the only type the
+      // parser exempts from the same-day past-start guard, so it is how a
+      // model plans the past without being rejected.
+      final result = scoreNoFabricatedCalendarBlocks(
+        outcome(
+          // ignore: avoid_redundant_argument_values — the hours are the point
+          blocks: [calendarBlock(startHour: 9, endHour: 11)],
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('past-start guard'));
+      expect(result.detail, contains('09:00'));
+    });
+
+    test('reports a dropped calendar block as no claim at all', () {
+      // A dropped block is the model declining, and production excludes it
+      // from the day; scoring it would punish the right call.
+      final result = scoreNoFabricatedCalendarBlocks(
+        outcome(
+          blocks: [
+            PlannedBlock(
+              id: 'cal-dropped',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 7, 18, 9),
+              endTime: DateTime(2026, 7, 18, 10),
+              title: 'cal-dropped',
+              type: PlannedBlockType.cal,
+              state: PlannedBlockState.dropped,
+            ),
+          ],
+        ),
+      );
+
+      expect(result.isApplicable, isFalse);
+    });
+
+    test('is inapplicable when no plan was persisted', () {
+      final result = scoreNoFabricatedCalendarBlocks(
+        outcome(planPersisted: false),
+      );
+
+      expect(result.isApplicable, isFalse);
+    });
+
+    test('catches what withinWorkingHours reports as a different failure', () {
+      // Both fire on the same block, and that is the point: the working-hours
+      // constraint already detected it, but attributed it to a time-window
+      // violation. A report that only said "outside working hours" would send
+      // someone to fix the wrong thing.
+      final subject = outcome(
+        // ignore: avoid_redundant_argument_values — the hours are the point
+        blocks: [calendarBlock(startHour: 9, endHour: 11)],
+        now: DateTime(2026, 7, 18, 15),
+      );
+
+      expect(scoreWithinWorkingHours(subject).passed, isFalse);
+      expect(scoreNoFabricatedCalendarBlocks(subject).passed, isFalse);
+      expect(
+        scoreNoFabricatedCalendarBlocks(subject).detail,
+        isNot(contains('outside')),
+      );
+    });
+  });
+
   group('scoreAll', () {
     test('returns every constraint in report order', () {
       final results = scoreAll(outcome());
@@ -1278,8 +1443,11 @@ void main() {
       final results = scoreAll(outcome());
 
       expect(
-        results.where((result) => result.isApplicable).map((r) => r.id),
-        [EvalConstraintIds.compliedWithoutRejection],
+        results.where((result) => result.isApplicable),
+        isEmpty,
+        reason:
+            'an empty run demonstrates nothing at all — including about '
+            'compliance, which it never attempted',
       );
     });
   });
