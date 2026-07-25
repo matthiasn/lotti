@@ -1,0 +1,614 @@
+import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
+import 'package:meta/meta.dart';
+import 'package:openai_dart/openai_dart.dart';
+
+import '../../../ai_consumption/test_utils.dart';
+import '../../integration/day_agent_pipeline_harness.dart';
+import 'eval_constraints.dart';
+import 'eval_models.dart';
+import 'eval_scenario.dart';
+import 'eval_variant.dart';
+
+/// Runs day-planning scenarios through the real ADR 0032 pipeline and scores
+/// what comes back.
+///
+/// The matrix is scenario x model x variant x sample. Everything below the
+/// model is real production code — outbox, runtime, executor, orchestrator,
+/// workflow, plan writer — assembled by [DayAgentPipelineHarness]; only the
+/// inference layer is supplied by the caller, which is what lets the same
+/// runner drive a scripted model in ordinary CI and a live provider behind an
+/// opt-in flag.
+///
+/// Each cell gets a fresh harness (fresh temp dir, in-memory agent store and
+/// outbox database), so no run can read another's plan, jobs or tool log.
+
+/// One cell of the matrix, handed to [EvalModelTarget.open] so a caller can
+/// vary the endpoint per scenario if it needs to.
+@immutable
+class EvalRunRequest {
+  const EvalRunRequest({
+    required this.scenario,
+    required this.variant,
+    required this.modelId,
+    required this.sample,
+    required this.planDate,
+  });
+
+  final EvalScenario scenario;
+  final EvalVariant variant;
+  final String modelId;
+
+  /// 1-based sample index within this cell.
+  final int sample;
+
+  final DateTime planDate;
+
+  /// Stable identifier for this cell, for logs and report keys.
+  String get label => '${scenario.id}/$modelId/${variant.id}#$sample';
+}
+
+/// The inference layer for one run, plus the configs the workflow resolves
+/// against it.
+@immutable
+class EvalLlmLayer {
+  const EvalLlmLayer({
+    required this.conversationRepository,
+    required this.cloudInferenceRepository,
+    required this.profile,
+    required this.model,
+    required this.provider,
+    this.close,
+  });
+
+  final ConversationRepository conversationRepository;
+  final CloudInferenceRepository cloudInferenceRepository;
+  final AiConfigInferenceProfile profile;
+  final AiConfigModel model;
+  final AiConfigInferenceProvider provider;
+
+  /// Released after the run, whether or not it succeeded.
+  final Future<void> Function()? close;
+}
+
+/// One model under test and how to reach it.
+@immutable
+class EvalModelTarget {
+  const EvalModelTarget({required this.id, required this.open});
+
+  /// Reported model id — the leaderboard key.
+  final String id;
+
+  /// Builds the inference layer for one run. Called once per cell.
+  final Future<EvalLlmLayer> Function(EvalRunRequest request) open;
+}
+
+/// Everything one cell produced.
+@immutable
+class EvalRunResult {
+  const EvalRunResult({
+    required this.request,
+    required this.outcome,
+    required this.constraints,
+    required this.latency,
+    required this.systemPrompt,
+    required this.userPrompts,
+    required this.jobStatus,
+    required this.jobAttempts,
+    required this.consumption,
+    this.error,
+  });
+
+  final EvalRunRequest request;
+  final EvalRunOutcome outcome;
+  final List<EvalConstraintResult> constraints;
+
+  /// Wall-clock time for the drafting round trip.
+  final Duration latency;
+
+  /// The exact system prompt the model received, as sent.
+  ///
+  /// Captured by wrapping the conversation repository rather than read back
+  /// from the agent log: the workflow hands the system prompt straight to
+  /// `createConversation` and never persists it.
+  final String? systemPrompt;
+
+  /// Every user message sent during the wake, in order.
+  final List<String> userPrompts;
+
+  /// Terminal status of the draft job, or null when no job was found.
+  final String? jobStatus;
+  final int? jobAttempts;
+
+  /// Consumption events recorded during this run. Empty for scripted models,
+  /// which never reach a provider.
+  final List<AiConsumptionEvent> consumption;
+
+  /// The exception the run ended with, if any. A failed run still carries an
+  /// outcome; its plan-reading constraints are inapplicable, not failed.
+  final String? error;
+
+  bool get failed => error != null;
+
+  /// Whether the workflow had to force the artifact.
+  ///
+  /// Derived from the send count: a drafting wake sends one message, and
+  /// `_forceDraftDayPlanIfMissing` sends a second one only when the model
+  /// finished its turn without calling `draft_day_plan`. Worth reporting on
+  /// its own — the retry hides a failure to follow the prompt that the
+  /// persisted plan cannot show.
+  bool get forcedDraftRetry => userPrompts.length > 1;
+}
+
+/// Runs the full matrix, sequentially.
+///
+/// Sequential on purpose: the runs share the ambient `getIt` registrations and
+/// a live provider's rate limit, and overlapping them would make the reported
+/// latency meaningless.
+///
+/// [today] anchors the plan dates and is injectable so tests are deterministic;
+/// it defaults to the current day. Same-day scenarios (those with a
+/// `startHour`) plan for [today] itself and run under a clock shifted to that
+/// hour, so production's same-day guard is live; the rest plan for the
+/// following day, where the guard is legitimately inert.
+///
+/// A cell that throws is recorded and the matrix continues — one model failing
+/// on one scenario must not cost the whole run.
+Future<List<EvalRunResult>> runEvalMatrix({
+  required List<EvalModelTarget> models,
+  List<EvalScenario> scenarios = evalScenarios,
+  List<EvalVariant> variants = evalVariants,
+  int samples = 1,
+  DateTime? today,
+  AiInteractionCaptureTestBench? attribution,
+  void Function(String message)? log,
+}) async {
+  if (models.isEmpty) {
+    throw ArgumentError.value(models, 'models', 'at least one model target');
+  }
+  if (scenarios.isEmpty) {
+    throw ArgumentError.value(scenarios, 'scenarios', 'at least one scenario');
+  }
+  if (samples < 1) {
+    throw RangeError.value(samples, 'samples', 'must be at least 1');
+  }
+  if (!variants.any((variant) => variant.id == evalBaselineVariantId)) {
+    throw ArgumentError.value(
+      variants,
+      'variants',
+      'must include "$evalBaselineVariantId" — a variant delta without a '
+          'control measures nothing',
+    );
+  }
+
+  final anchor = today ?? clock.now();
+  final results = <EvalRunResult>[];
+  for (final scenario in scenarios) {
+    for (final model in models) {
+      for (final variant in variants) {
+        for (var sample = 1; sample <= samples; sample++) {
+          final request = EvalRunRequest(
+            scenario: scenario,
+            variant: variant,
+            modelId: model.id,
+            sample: sample,
+            planDate: evalPlanDateFor(scenario, anchor),
+          );
+          log?.call('run ${request.label}');
+          EvalRunResult result;
+          try {
+            result = await runEvalCell(
+              request: request,
+              model: model,
+              attribution: attribution,
+              log: log,
+            );
+          }
+          // ignore: avoid_catching_errors — a malformed matrix must stay loud
+          on ArgumentError {
+            // A malformed scenario or variant is a bug in the matrix, not a
+            // result about a model. Swallowing it would file the bug as a
+            // finding.
+            rethrow;
+          } catch (e) {
+            log?.call('cell failed ${request.label}: $e');
+            result = _failedResult(
+              request,
+              request.scenario.inputsFor(
+                request.planDate,
+                config: request.variant.apply(request.scenario.baseConfig),
+              ),
+              e,
+            );
+          }
+          log?.call(
+            'done ${request.label}: '
+            '${result.error ?? '${result.outcome.blocks.length} block(s)'} '
+            'in ${result.latency.inMilliseconds}ms',
+          );
+          results.add(result);
+        }
+      }
+    }
+  }
+  return results;
+}
+
+/// The day a scenario plans for, given [anchor] as today.
+DateTime evalPlanDateFor(EvalScenario scenario, DateTime anchor) {
+  final today = DateTime(anchor.year, anchor.month, anchor.day);
+  return scenario.startHour == null
+      ? today.add(const Duration(days: 1))
+      : today;
+}
+
+/// Runs one cell and scores it.
+Future<EvalRunResult> runEvalCell({
+  required EvalRunRequest request,
+  required EvalModelTarget model,
+  AiInteractionCaptureTestBench? attribution,
+  void Function(String message)? log,
+}) {
+  final scenario = request.scenario;
+  if (scenario.includeCapture &&
+      (scenario.captureTranscript?.trim().isEmpty ?? true)) {
+    // Silently drafting without one would turn the scenario into its
+    // no-capture twin — the corpus would never be rendered while the scorers
+    // still believed it was visible.
+    throw ArgumentError.value(
+      scenario.id,
+      'scenario',
+      'includeCapture is set but captureTranscript is empty',
+    );
+  }
+
+  final startHour = scenario.startHour;
+  if (startHour == null) return _runCell(request, model, attribution, log);
+
+  // A same-day scenario is only a same-day scenario if production's clock
+  // agrees. The clock keeps running rather than being frozen: the pipeline's
+  // job-await soft cap is a `clock.now()` deadline, and a frozen clock would
+  // turn a hung run into an infinite wait instead of a diagnostic.
+  final elapsed = Stopwatch()..start();
+  final anchoredAt = DateTime(
+    request.planDate.year,
+    request.planDate.month,
+    request.planDate.day,
+    startHour,
+  );
+  return withClock(
+    Clock(() => anchoredAt.add(elapsed.elapsed)),
+    () => _runCell(request, model, attribution, log),
+  );
+}
+
+Future<EvalRunResult> _runCell(
+  EvalRunRequest request,
+  EvalModelTarget model,
+  AiInteractionCaptureTestBench? attribution,
+  void Function(String message)? log,
+) async {
+  final scenario = request.scenario;
+  final planDate = request.planDate;
+  final config = request.variant.apply(scenario.baseConfig);
+  final inputs = scenario.inputsFor(planDate, config: config);
+
+  attribution?.clearRecordedInteractions();
+  final EvalLlmLayer layer;
+  try {
+    layer = await model.open(request);
+  } catch (e) {
+    // A model that cannot even be reached (bad id, missing credentials) is
+    // one cell's problem, not the matrix's.
+    log?.call('open failed ${request.label}: $e');
+    return _failedResult(request, inputs, e);
+  }
+  final recorder = EvalPromptRecorder(layer.conversationRepository);
+  final harness = DayAgentPipelineHarness.create(
+    now: clock.now(),
+    conversationRepository: recorder,
+    cloudInferenceRepository: layer.cloudInferenceRepository,
+    profile: layer.profile,
+    model: layer.model,
+    provider: layer.provider,
+    // Always non-null, matching production: the resolver gates whether ADR
+    // 0043's blocked-work rule reaches the prompt at all, so a null one would
+    // quietly measure a prompt production never sends. Scenarios without
+    // blockers supply an empty map.
+    dependencyResolver: EvalFixtureDependencyResolver(scenario.blockedStatus),
+    config: config,
+  );
+  seedScenarioCorpus(
+    journalDb: harness.journalDb,
+    scenario: scenario,
+    planDate: planDate,
+  );
+
+  final stopwatch = Stopwatch()..start();
+  String? error;
+  try {
+    final captureId = scenario.includeCapture
+        ? await _seedCapture(harness, scenario, planDate)
+        : const CaptureId('');
+    await harness.realDayAgent.draftDayPlan(
+      captureId: captureId,
+      decidedTaskIds: scenario.decidedTaskIds,
+      dayDate: planDate,
+    );
+  } catch (e) {
+    // Recorded, not rethrown: a matrix that aborts on the first bad cell
+    // cannot report on the models that did work.
+    error = e.toString();
+    log?.call('error ${request.label}: $error');
+  }
+  stopwatch.stop();
+
+  try {
+    final dayId = dayAgentIdForDate(planDate);
+    final identity = await harness.dayAgentService.getDayAgentForDate(planDate);
+    final plan = identity is AgentIdentityEntity
+        ? await harness.planService.draftPlanForDay(
+            agentId: identity.agentId,
+            dayId: dayId,
+          )
+        : null;
+    final job = await harness.outbox.getById(
+      DayProcessingOutboxRepository.draftJobId(dayId),
+    );
+    final outcome = EvalRunOutcome(
+      inputs: inputs,
+      blocks: plan?.data.plannedBlocks ?? const [],
+      toolCalls: evalToolCallsFrom(harness.agentRepository.entities),
+      planPersisted: plan != null,
+    );
+    return EvalRunResult(
+      request: request,
+      outcome: outcome,
+      constraints: scoreAll(outcome),
+      latency: stopwatch.elapsed,
+      systemPrompt: recorder.systemPrompt,
+      userPrompts: List.unmodifiable(recorder.userMessages),
+      jobStatus: job?.status.name,
+      jobAttempts: job?.attempts,
+      consumption: List.unmodifiable(
+        attribution?.recordedInteractions ?? const <AiConsumptionEvent>[],
+      ),
+      error: error,
+    );
+  } finally {
+    await harness.dispose();
+    await layer.close?.call();
+  }
+}
+
+/// A cell that produced nothing, still occupying its slot in the report.
+///
+/// Every constraint is scored so the row keeps the same shape as a successful
+/// one; the plan-reading ones come back inapplicable rather than passed.
+EvalRunResult _failedResult(
+  EvalRunRequest request,
+  EvalFixtureInputs inputs,
+  Object error,
+) {
+  final outcome = EvalRunOutcome(inputs: inputs, planPersisted: false);
+  return EvalRunResult(
+    request: request,
+    outcome: outcome,
+    constraints: scoreAll(outcome),
+    latency: Duration.zero,
+    systemPrompt: null,
+    userPrompts: const [],
+    jobStatus: null,
+    jobAttempts: null,
+    consumption: const [],
+    error: error.toString(),
+  );
+}
+
+/// Writes the scenario's capture directly, without enqueueing its parse job.
+///
+/// Production's `submitCapture` also enqueues a `parseCapture` job, which the
+/// runtime drains as a **second wake** with its own conversation, prompt and
+/// tool calls. That is right for the app and wrong for this measurement: the
+/// unit here is one drafting wake, and letting the parse wake run would mix
+/// two prompts and two tool-call logs into one record, double the live cost of
+/// every cell, and add an uncontrolled second model call to a run whose whole
+/// point is to isolate planning behaviour.
+///
+/// What the drafting wake needs from a capture is the capture *entity* — that
+/// is what makes `captureContext` non-null and therefore what renders both the
+/// transcript and the task corpus into the prompt. Seeding it directly gives
+/// the wake exactly that. Parse quality is a separate question and would need
+/// its own scenario type.
+Future<CaptureId> _seedCapture(
+  DayAgentPipelineHarness harness,
+  EvalScenario scenario,
+  DateTime planDate,
+) async {
+  final identity = await harness.dayAgentService.getOrCreateDayAgentForDate(
+    planDate,
+  );
+  final now = clock.now();
+  final capture =
+      AgentDomainEntity.capture(
+            id: 'capture_${scenario.id}',
+            agentId: identity.agentId,
+            transcript: scenario.captureTranscript!,
+            capturedAt: now,
+            createdAt: now,
+            vectorClock: null,
+            dayId: dayAgentIdForDate(planDate),
+          )
+          as CaptureEntity;
+  await harness.syncService.upsertEntity(capture);
+  return CaptureId(capture.id);
+}
+
+/// Reconstructs the ordered tool-call log from the agent messages one wake
+/// wrote.
+///
+/// This is the whole reason the runner exists rather than a loop: the write
+/// path rejects an illegal `draft_day_plan` and hands the failure text back to
+/// the model, which retries — so the persisted plan is always legal and a plan
+/// that only became legal on the third attempt is indistinguishable from a
+/// first-time-right one. `DayAgentStrategy` records an `action` message (with
+/// the arguments as its payload) before each call and a `toolResult` message
+/// after it, carrying the rejection text in `metadata.errorMessage`, so the
+/// rejections are recoverable even though nothing else keeps them.
+///
+/// [entities] must be in write order, which the harness's in-memory store
+/// preserves (a Dart map iterates in insertion order, and every message id is
+/// a fresh UUID so no write ever re-enters an existing slot).
+List<EvalToolCall> evalToolCallsFrom(List<AgentDomainEntity> entities) {
+  final payloads = {
+    for (final entity in entities.whereType<AgentMessagePayloadEntity>())
+      entity.id: entity.content,
+  };
+  final calls = <EvalToolCall>[];
+  AgentMessageEntity? pendingAction;
+
+  void flushPendingAction() {
+    final action = pendingAction;
+    if (action == null) return;
+    // An action with no result means the loop died mid-call. Reporting it as
+    // accepted would credit a call that never landed.
+    calls.add(
+      EvalToolCall(
+        name: action.metadata.toolName ?? '',
+        accepted: false,
+        rejectionMessage: 'no tool result was recorded',
+        arguments: payloads[action.contentEntryId] ?? const {},
+      ),
+    );
+    pendingAction = null;
+  }
+
+  for (final message in entities.whereType<AgentMessageEntity>()) {
+    switch (message.kind) {
+      case AgentMessageKind.action:
+        // Two actions in a row can only mean the first lost its result.
+        flushPendingAction();
+        pendingAction = message;
+      case AgentMessageKind.toolResult:
+        final toolName = message.metadata.toolName ?? '';
+        final action = pendingAction;
+        // Arguments are only this call's if the pending action is for the same
+        // tool. A tool call whose arguments failed to parse records a result
+        // with no action at all, so pairing blindly would attach the previous
+        // call's arguments to it.
+        final arguments = action != null && action.metadata.toolName == toolName
+            ? payloads[action.contentEntryId] ?? const {}
+            : const <String, dynamic>{};
+        if (action != null && action.metadata.toolName != toolName) {
+          flushPendingAction();
+        }
+        pendingAction = null;
+        calls.add(
+          EvalToolCall(
+            name: toolName,
+            accepted: message.metadata.errorMessage == null,
+            rejectionMessage: message.metadata.errorMessage,
+            arguments: arguments,
+          ),
+        );
+      case AgentMessageKind.user:
+      case AgentMessageKind.thought:
+      case AgentMessageKind.observation:
+      case AgentMessageKind.summary:
+      case AgentMessageKind.system:
+        break;
+    }
+  }
+  flushPendingAction();
+  return calls;
+}
+
+/// Wraps a [ConversationRepository] to capture the prompts the model was sent.
+///
+/// The system prompt is never persisted — the workflow builds it and hands it
+/// straight to `createConversation` — so reading the agent log back recovers
+/// the user message and nothing else. Wrapping also makes the forced-retry
+/// path visible, since it shows up as a second `sendMessage`.
+class EvalPromptRecorder extends ConversationRepository {
+  EvalPromptRecorder(this._inner);
+
+  final ConversationRepository _inner;
+
+  /// Every user message sent, in order.
+  final List<String> userMessages = [];
+
+  /// The system prompt of the wake's conversation.
+  String? systemPrompt;
+
+  @override
+  String createConversation({String? systemMessage, int maxTurns = 20}) {
+    systemPrompt = systemMessage;
+    return _inner.createConversation(
+      systemMessage: systemMessage,
+      maxTurns: maxTurns,
+    );
+  }
+
+  @override
+  ConversationManager? getConversation(String conversationId) =>
+      _inner.getConversation(conversationId);
+
+  @override
+  Future<InferenceUsage?> sendMessage({
+    required String conversationId,
+    required String message,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceRepositoryInterface inferenceRepo,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    double temperature = 0.7,
+    ConversationStrategy? strategy,
+    String? consumptionAgentId,
+    String? consumptionTaskId,
+    String? consumptionCategoryId,
+    String? consumptionWakeRunKey,
+    String? consumptionThreadId,
+    bool rethrowInferenceErrors = false,
+  }) {
+    userMessages.add(message);
+    return _inner.sendMessage(
+      conversationId: conversationId,
+      message: message,
+      model: model,
+      provider: provider,
+      inferenceRepo: inferenceRepo,
+      tools: tools,
+      toolChoice: toolChoice,
+      temperature: temperature,
+      strategy: strategy,
+      consumptionAgentId: consumptionAgentId,
+      consumptionTaskId: consumptionTaskId,
+      consumptionCategoryId: consumptionCategoryId,
+      consumptionWakeRunKey: consumptionWakeRunKey,
+      consumptionThreadId: consumptionThreadId,
+      rethrowInferenceErrors: rethrowInferenceErrors,
+    );
+  }
+
+  @override
+  void deleteConversation(String conversationId) =>
+      _inner.deleteConversation(conversationId);
+}
+
+/// Convenience for a caller that wants the config a cell will use without
+/// running it (the live entry point logs it).
+DayAgentConfig evalConfigFor(EvalScenario scenario, EvalVariant variant) =>
+    variant.apply(scenario.baseConfig);

@@ -1,6 +1,7 @@
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:meta/meta.dart';
 import 'package:mocktail/mocktail.dart';
@@ -145,39 +146,62 @@ class EvalScenario {
     };
   }
 
+  /// The planning contract this scenario asks for, before any variant.
+  DayAgentConfig get baseConfig =>
+      DayAgentConfig(capacityMinutes: capacityMinutes);
+
   /// The scorers' view of what the model was given.
-  EvalFixtureInputs inputsFor(DateTime planDate) => EvalFixtureInputs(
-    dayId: 'dayplan-${planDate.toIso8601String().substring(0, 10)}',
-    planDate: planDate,
-    corpus: [
-      for (final task in tasks)
-        EvalCorpusTask(
-          taskId: task.id,
-          title: task.title,
-          status: _statusString(task.status),
-          blockedBy: task.blockedBy,
-          estimateMinutes: task.estimateMinutes,
-          categoryId: task.categoryId,
-        ),
-    ],
-    decidedTaskIds: decidedTaskIds,
-    // Expected omissions are permitted by construction — a task that must not
-    // be placed is obviously not required to be.
-    permittedOmissions: {...permittedOmissions, ...expectedOmissions},
-    expectedOmissions: expectedOmissions,
-    requiredTaskIds: requiredTaskIds,
-    requiresConflictSurfaced: requiresConflictSurfaced,
-    forbidsInventedWork: forbidsInventedWork,
-    conflictEscalationReasons: conflictEscalationReasons,
-    // Without a capture the task corpus is never rendered, so the only ids
-    // the model can name are its decided ones. The corpus above stays as
-    // ground truth for constraints that need to know what is actually true.
-    visibleTaskIds: includeCapture ? null : {...decidedTaskIds},
-    capacityMinutes: capacityMinutes,
-    now: startHour == null
-        ? null
-        : DateTime(planDate.year, planDate.month, planDate.day, startHour!),
-  );
+  ///
+  /// [config] is the contract actually rendered into the system prompt, so the
+  /// capacity and working hours the scorers grade against are the ones the
+  /// model was told — otherwise a variant that changes the contract would be
+  /// scored against the default one. Defaults to [baseConfig].
+  EvalFixtureInputs inputsFor(
+    DateTime planDate, {
+    DayAgentConfig? config,
+  }) {
+    final effective = config ?? baseConfig;
+    return EvalFixtureInputs(
+      dayId: 'dayplan-${planDate.toIso8601String().substring(0, 10)}',
+      planDate: planDate,
+      corpus: [
+        for (final task in tasks)
+          EvalCorpusTask(
+            taskId: task.id,
+            title: task.title,
+            status: _statusString(task.status),
+            blockedBy: task.blockedBy,
+            estimateMinutes: task.estimateMinutes,
+            categoryId: task.categoryId,
+          ),
+      ],
+      decidedTaskIds: decidedTaskIds,
+      // Expected omissions are permitted by construction — a task that must not
+      // be placed is obviously not required to be.
+      permittedOmissions: {...permittedOmissions, ...expectedOmissions},
+      expectedOmissions: expectedOmissions,
+      requiredTaskIds: requiredTaskIds,
+      requiresConflictSurfaced: requiresConflictSurfaced,
+      forbidsInventedWork: forbidsInventedWork,
+      conflictEscalationReasons: conflictEscalationReasons,
+      // Without a capture the task corpus is never rendered, so the only ids
+      // the model can name are its decided ones. The corpus above stays as
+      // ground truth for constraints that need to know what is actually true.
+      visibleTaskIds: includeCapture ? null : {...decidedTaskIds},
+      capacityMinutes: effective.capacityMinutes,
+      workingHoursStartHour: evalWholeHourOf(
+        effective.workingHoursStart,
+        field: 'workingHoursStart',
+      ),
+      workingHoursEndHour: evalWholeHourOf(
+        effective.workingHoursEnd,
+        field: 'workingHoursEnd',
+      ),
+      now: startHour == null
+          ? null
+          : DateTime(planDate.year, planDate.month, planDate.day, startHour!),
+    );
+  }
 
   /// Journal [Task] rows for the corpus reads.
   List<Task> tasksFor(DateTime planDate) => [
@@ -251,6 +275,29 @@ class EvalScenario {
       entryText: EntryText(plainText: spec.title),
     );
   }
+}
+
+/// Parses `HH:mm` down to a whole hour, rejecting anything else.
+///
+/// [EvalFixtureInputs] carries working hours as integers, so a config of
+/// `09:30` would silently be graded as `09:00` — a scorer half an hour more
+/// lenient than the contract the model was handed. Rather than ship that
+/// leniency invisibly, a non-whole hour is a configuration error.
+int evalWholeHourOf(String value, {required String field}) {
+  final parts = value.split(':');
+  final hour = parts.length == 2 ? int.tryParse(parts.first) : null;
+  final minute = parts.length == 2 ? int.tryParse(parts.last) : null;
+  if (hour == null || minute == null || hour < 0 || hour > 23) {
+    throw ArgumentError.value(value, field, 'expected HH:mm');
+  }
+  if (minute != 0) {
+    throw ArgumentError.value(
+      value,
+      field,
+      'the eval grades working hours as whole hours; use HH:00',
+    );
+  }
+  return hour;
 }
 
 /// A [TaskDependencyResolver] that answers from a fixture instead of the

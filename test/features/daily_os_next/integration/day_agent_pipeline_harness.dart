@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
@@ -30,6 +31,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_proc
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_job_wiring.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -67,12 +69,25 @@ class DayAgentPipelineHarness {
     required this.runtime,
     required this.realDayAgent,
     required this.dayAgentService,
+    required this.planService,
   });
 
   /// Builds the full pipeline. [now] seeds template timestamps; [profile],
   /// [model], and [provider] are the inference configs the workflow resolves
   /// (the template's profile points at [profile], whose thinking model must
   /// equal [model]'s `providerModelId`, which must resolve to [provider]).
+  ///
+  /// [dependencyResolver] is the ADR 0043 blocker resolver. Production wires
+  /// it unconditionally (`agent_workflow_providers.dart`), and the workflow
+  /// gates *both* the corpus's `blockedBy` annotation and the prompt's
+  /// blocked-work rule on it being non-null — so leaving it null does not
+  /// merely hide blocked tasks, it sends a materially different prompt than
+  /// production does. Callers that care what the model was told should pass
+  /// one (an empty fixture resolver is enough when no task is blocked).
+  ///
+  /// [config] renders into the system prompt's planning defaults, so it is
+  /// the lever for varying the capacity/working-hours contract the model is
+  /// given.
   ///
   /// With [logToStdout] the otherwise-swallowed domain logs are printed —
   /// useful for live eval runs where the model's behavior is the thing
@@ -84,6 +99,8 @@ class DayAgentPipelineHarness {
     required AiConfigInferenceProfile profile,
     required AiConfigModel model,
     required AiConfigInferenceProvider provider,
+    TaskDependencyResolver? dependencyResolver,
+    DayAgentConfig config = const DayAgentConfig(),
     bool logToStdout = false,
   }) {
     final root = Directory.systemTemp.createTempSync('day-agent-pipeline-');
@@ -245,6 +262,8 @@ class DayAgentPipelineHarness {
       captureService: captureService,
       planService: planService,
       directiveService: directiveService,
+      dependencyResolver: dependencyResolver,
+      config: config,
       domainLogger: domainLogger,
     );
 
@@ -330,6 +349,7 @@ class DayAgentPipelineHarness {
       runtime: runtime,
       realDayAgent: realDayAgent,
       dayAgentService: dayAgentService,
+      planService: planService,
     );
   }
 
@@ -345,6 +365,11 @@ class DayAgentPipelineHarness {
   final DayProcessingRuntime runtime;
   final RealDayAgent realDayAgent;
   final DayAgentService dayAgentService;
+
+  /// The plan read/write service, exposed so callers can read the persisted
+  /// [DayPlanEntity] (and its `PlannedBlock`s) through the production read
+  /// path rather than reaching into the repository.
+  final DayAgentPlanService planService;
 
   /// Stops the runtime/orchestrator, closes the outbox, and deletes the
   /// temp directory backing it.

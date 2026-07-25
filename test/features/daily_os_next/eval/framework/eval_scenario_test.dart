@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 
 import 'eval_scenario.dart';
 
@@ -394,5 +395,78 @@ void main() {
     final middle = tasks.firstWhere((t) => t.id == 'task-b-middle');
 
     expect(middle.data.status, isA<TaskBlocked>());
+  });
+
+  test('every scenario claiming a capture can actually supply one', () {
+    // A scenario with includeCapture but no transcript would silently become
+    // its no-capture twin: the corpus would never be rendered while the
+    // scorers still believed every task id was visible.
+    for (final scenario in evalScenarios) {
+      if (!scenario.includeCapture) continue;
+      expect(
+        scenario.captureTranscript?.trim(),
+        isNotEmpty,
+        reason: scenario.id,
+      );
+    }
+  });
+
+  group('inputsFor with a variant config', () {
+    test('scores against the contract the model was handed', () {
+      final inputs = byId('crowdedDay').inputsFor(
+        planDate,
+        config: const DayAgentConfig(
+          capacityMinutes: 240,
+          workingHoursStart: '10:00',
+          workingHoursEnd: '14:00',
+        ),
+      );
+
+      expect(inputs.capacityMinutes, 240);
+      expect(inputs.workingHoursStartHour, 10);
+      expect(inputs.workingHoursEndHour, 14);
+    });
+
+    test('defaults to the scenario contract', () {
+      final scenario = byId('crowdedDay');
+      final inputs = scenario.inputsFor(planDate);
+
+      expect(inputs.capacityMinutes, scenario.capacityMinutes);
+      expect(inputs.workingHoursStartHour, 9);
+      expect(inputs.workingHoursEndHour, 17);
+    });
+  });
+
+  group('evalWholeHourOf', () {
+    test('reads a whole hour', () {
+      expect(evalWholeHourOf('09:00', field: 'start'), 9);
+      expect(evalWholeHourOf('0:00', field: 'start'), 0);
+    });
+
+    test('refuses a part-hour rather than silently rounding it down', () {
+      // Working hours are graded as integers, so 09:30 would be scored as
+      // 09:00 — half an hour more lenient than the contract the model was
+      // given.
+      expect(
+        () => evalWholeHourOf('09:30', field: 'workingHoursStart'),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('whole hours'),
+          ),
+        ),
+      );
+    });
+
+    test('refuses malformed input', () {
+      for (final bad in ['9', '09:00:00', 'nine', '24:00', '', ':']) {
+        expect(
+          () => evalWholeHourOf(bad, field: 'workingHoursEnd'),
+          throwsA(isA<ArgumentError>()),
+          reason: bad,
+        );
+      }
+    });
   });
 }

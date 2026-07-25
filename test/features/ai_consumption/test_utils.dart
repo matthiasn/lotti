@@ -14,7 +14,8 @@ import '../../mocks/mocks.dart';
 
 class AiInteractionCaptureTestBench {
   AiInteractionCaptureTestBench._(
-    this._sessions, {
+    this._sessions,
+    this._recorded, {
     required this.service,
     required this.identity,
     required this.capture,
@@ -77,12 +78,15 @@ class AiInteractionCaptureTestBench {
         ),
       );
     });
+    final recorded = <AiConsumptionEvent>[];
     when(
       () => service.recordInteraction(
         attributionId: any(named: 'attributionId'),
         event: any(named: 'event'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((invocation) async {
+      recorded.add(invocation.namedArguments[#event] as AiConsumptionEvent);
+    });
     when(
       () => service.prepareCompletion(
         attributionId: any(named: 'attributionId'),
@@ -120,6 +124,7 @@ class AiInteractionCaptureTestBench {
 
     return AiInteractionCaptureTestBench._(
       sessions,
+      recorded,
       service: service,
       identity: identity,
       capture: AiInteractionCapture(service, identity),
@@ -130,6 +135,20 @@ class AiInteractionCaptureTestBench {
   final MockAiAttributionIdentityResolver identity;
   final AiInteractionCapture capture;
   final Map<String, AiAttributionSession> _sessions;
+  final List<AiConsumptionEvent> _recorded;
+
+  /// Consumption events recorded since the last [clearRecordedInteractions].
+  ///
+  /// A snapshot, so it survives the next [clearRecordedInteractions]. Kept
+  /// here rather than left to `verify(...).captured` so a caller that runs
+  /// several interactions in one test can attribute events to the right one
+  /// without depending on verification consuming invocations.
+  List<AiConsumptionEvent> get recordedInteractions =>
+      List.unmodifiable(_recorded);
+
+  /// Drops everything recorded so far, so the next stretch of work is
+  /// measured on its own.
+  void clearRecordedInteractions() => _recorded.clear();
 
   void seedAgentWake({
     required String wakeRunKey,
