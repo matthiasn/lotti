@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/ai_config_initialization.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/ai/util/seed_tombstone_migration.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -193,6 +195,38 @@ void main() {
         verify(() => repo.hardDeleteConfig(profileMeliousId)).called(1);
       },
     );
+
+    // The legacy-tombstone migration runs first; a failure there must not take
+    // down the rest of startup, or a bad settings row would block seeding for
+    // good.
+    test('completes normally when the tombstone migration throws', () async {
+      when(
+        () => repo.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => repo.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      // A legacy ledger entry the migration will try to convert…
+      await getIt<SettingsDb>().saveSettingsItem(
+        legacySeedTombstonesSettingsKey,
+        jsonEncode([SeedTombstoneIdentities.profile(profileGeminiFlashId)]),
+      );
+      // …whose write fails.
+      when(() => repo.saveConfig(any())).thenThrow(Exception('db unavailable'));
+
+      final container = createContainer();
+
+      await expectLater(
+        container.read(aiConfigInitializationProvider.future),
+        completes,
+      );
+    });
 
     test('completes normally and attempts every phase when provider reads '
         'throw', () async {

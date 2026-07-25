@@ -145,6 +145,61 @@ void main() {
       );
     });
 
+    // Same two states as the profile path, for models: the row can be back
+    // (re-seed or peer sync) and must be stamped rather than duplicated.
+    test('stamps a live model row instead of writing a second one', () async {
+      const providerId = 'provider-1';
+      final known = knownModelsByProvider[InferenceProviderType.gemini]!.first;
+      final liveRow = known.toAiConfigModel(
+        id: 'row-uuid',
+        inferenceProviderId: providerId,
+      );
+      when(
+        () => repo.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => [liveRow]);
+      await seedLedger([
+        SeedTombstoneIdentities.model(
+          inferenceProviderId: providerId,
+          providerModelId: known.providerModelId,
+        ),
+      ]);
+
+      await migration.migrate();
+
+      verify(() => repo.deleteConfig('row-uuid')).called(1);
+      verifyNever(() => repo.saveConfig(any()));
+    });
+
+    test('leaves an already-deleted model row alone', () async {
+      const providerId = 'provider-1';
+      final known = knownModelsByProvider[InferenceProviderType.gemini]!.first;
+      final deletedRow = known
+          .toAiConfigModel(id: 'row-uuid', inferenceProviderId: providerId)
+          .copyWith(deletedAt: DateTime(2026, 7, 25));
+      when(
+        () => repo.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => [deletedRow]);
+      await seedLedger([
+        SeedTombstoneIdentities.model(
+          inferenceProviderId: providerId,
+          providerModelId: known.providerModelId,
+        ),
+      ]);
+
+      await migration.migrate();
+
+      verifyNever(() => repo.saveConfig(any()));
+      verifyNever(
+        () => repo.deleteConfig(any(), fromSync: any(named: 'fromSync')),
+      );
+    });
+
     // Clearing the key is what stops this running on every launch.
     test('clears the legacy key when done', () async {
       await seedLedger([SeedTombstoneIdentities.profile(profileGeminiFlashId)]);
