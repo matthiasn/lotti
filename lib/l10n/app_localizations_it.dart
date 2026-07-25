@@ -3479,7 +3479,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get createNewLinkedTask => 'Creare un nuovo compito collegato…';
 
   @override
-  String get createNewLinkedTaskTitle => 'Create new linked task';
+  String get createNewLinkedTaskTitle => 'New linked task';
 
   @override
   String get customColor => 'Colore personalizzato';

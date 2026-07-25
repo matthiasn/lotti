@@ -41,12 +41,23 @@ void showLinkCreatedFeedback({
 
   messenger.showDesignSystemToast(
     tone: DesignSystemToastTone.success,
-    title: messages.linkCreatedMessage(phrase, linkedTaskTitle),
+    // Relation in the title, task in the description: the toast caps its
+    // title at one line, and the relation phrase plus a real task title ran
+    // past it — ellipsizing away the one fact the message exists to record,
+    // on a flow that commits without confirming. The description slot takes
+    // two lines and is what the component is for.
+    title: phrase,
+    description: linkedTaskTitle,
     duration: _undoWindow,
     countdown: true,
+    replaceCurrent: true,
     action: ToastAction(
       label: messages.linkCreatedUndo,
       onPressed: () async {
+        // Dismiss first: without it the confirmation, its live Undo control
+        // and the draining countdown all stayed on screen asserting a link
+        // that no longer exists — and the control could be pressed again.
+        messenger.hideCurrentSnackBar();
         // Same triple the link was written under, so undo can only ever
         // remove the edge this message is about — not some other
         // relationship the two tasks also hold.
@@ -86,5 +97,6 @@ void showLinkFailureMessage({
   messenger.showDesignSystemToast(
     tone: DesignSystemToastTone.error,
     title: message,
+    replaceCurrent: true,
   );
 }

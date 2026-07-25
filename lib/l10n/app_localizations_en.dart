@@ -3417,7 +3417,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createNewLinkedTask => 'Create new linked task…';
 
   @override
-  String get createNewLinkedTaskTitle => 'Create new linked task';
+  String get createNewLinkedTaskTitle => 'New linked task';
 
   @override
   String get customColor => 'Custom Color';

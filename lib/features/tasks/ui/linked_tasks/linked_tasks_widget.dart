@@ -249,10 +249,20 @@ class _LinkedTasksHeader extends ConsumerWidget {
               ),
               SizedBox(width: tokens.spacing.step2),
             ],
-            Text(
-              context.messages.linkedTasksTitle,
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                color: tokens.colors.text.highEmphasis,
+            // Flexible, and the first thing to give: at large accessibility
+            // text sizes the header's fixed parts — badge, action, overflow —
+            // no longer fit beside a full-width title, and the Row overflowed
+            // by up to 158pt, clipping the action and dropping the overflow
+            // menu that is manage mode's other way out. The card's own name is
+            // the one thing here the user can afford to read in part.
+            Flexible(
+              child: Text(
+                context.messages.linkedTasksTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
               ),
             ),
             if (hasLinkedTasks) ...[

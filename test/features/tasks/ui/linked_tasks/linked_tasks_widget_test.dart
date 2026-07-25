@@ -159,6 +159,7 @@ void main() {
     required List<Task> outgoing,
     bool manageMode = false,
     MediaQueryData? mediaQueryData,
+    double? width,
     List<Override> extraOverrides = const [],
     List<EntryLink> extraTypedLinks = const [],
     List<Task> extraTypedTasks = const [],
@@ -184,7 +185,18 @@ void main() {
         ],
         child: WidgetTestBench(
           mediaQueryData: mediaQueryData,
-          child: const LinkedTasksWidget(taskId: 'task-main'),
+          // Align, not a bare SizedBox: the bench hands its child tight
+          // constraints, so a width set any other way is silently ignored and
+          // the card is measured at the full 800pt surface instead of a phone.
+          child: width == null
+              ? const LinkedTasksWidget(taskId: 'task-main')
+              : Align(
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: width,
+                    child: const LinkedTasksWidget(taskId: 'task-main'),
+                  ),
+                ),
         ),
       ),
     );
@@ -619,5 +631,35 @@ void main() {
       expect(find.text('Outgoing Task'), findsOneWidget);
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
+
+    // Large accessibility text sizes are a supported configuration, not an
+    // edge case, and the card header is the densest row in the feature: a
+    // title, a count badge, a worded action and an overflow menu on one line.
+    for (final scale in [1.3, 1.6, 2.0]) {
+      for (final manageMode in [false, true]) {
+        testWidgets(
+          'the header survives text scale $scale (manage: $manageMode) — at '
+          'these sizes it used to overflow, clipping the action and dropping '
+          "the overflow menu that is manage mode's other way out",
+          (tester) async {
+            await pumpWidget(
+              tester,
+              incoming: [],
+              outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+              manageMode: manageMode,
+              width: 390,
+              mediaQueryData: MediaQueryData(
+                size: const Size(390, 844),
+                textScaler: TextScaler.linear(scale),
+              ),
+            );
+
+            expect(tester.takeException(), isNull);
+            // The way out must still be there, not merely un-crashed.
+            expect(find.byIcon(Icons.more_vert), findsOneWidget);
+          },
+        );
+      }
+    }
   });
 }

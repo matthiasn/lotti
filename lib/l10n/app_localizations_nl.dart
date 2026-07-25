@@ -3446,7 +3446,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get createNewLinkedTask => 'Nieuwe verbonden taak aanmaken…';
 
   @override
-  String get createNewLinkedTaskTitle => 'Create new linked task';
+  String get createNewLinkedTaskTitle => 'New linked task';
 
   @override
   String get customColor => 'Aangepaste kleur';

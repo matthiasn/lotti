@@ -1909,7 +1909,7 @@
   "createEntryLabel": "Create new entry",
   "createEntryTitle": "Add",
   "createNewLinkedTask": "Create new linked task…",
-  "createNewLinkedTaskTitle": "Create new linked task",
+  "createNewLinkedTaskTitle": "New linked task",
   "@createNewLinkedTaskTitle": {
     "description": "Modal title. Same wording as the control that opens it, without the trailing ellipsis — the modal is the further UI the ellipsis promises, so it must not promise it again."
   },

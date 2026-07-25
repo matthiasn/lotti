@@ -2807,7 +2807,7 @@
   "linkCreatedUndo": "Rückgängig",
   "linkDirectionLabel": "Diese Aufgabe…",
   "linkExistingTask": "Vorhandene Aufgabe verknüpfen…",
-  "linkExistingTaskTitle": "Aufgabe verknüpfen",
+  "linkExistingTaskTitle": "Verknüpfen",
   "linkPhraseBasic": "Bezieht sich auf",
   "linkPhraseBlocksInverse": "Wird blockiert von",
   "linkPhraseBlocksPrimary": "Blockiert",

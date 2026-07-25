@@ -3482,7 +3482,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createNewLinkedTask => 'Créer une nouvelle tâche liée…';
 
   @override
-  String get createNewLinkedTaskTitle => 'Nouvelle tâche liée';
+  String get createNewLinkedTaskTitle => 'Nouvelle tâche';
 
   @override
   String get customColor => 'Couleur personnalisée';
@@ -6732,7 +6732,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkExistingTask => 'Lier une tâche existante…';
 
   @override
-  String get linkExistingTaskTitle => 'Lier une tâche';
+  String get linkExistingTaskTitle => 'Lier';
 
   @override
   String get linkPhraseBasic => 'Est liée à';

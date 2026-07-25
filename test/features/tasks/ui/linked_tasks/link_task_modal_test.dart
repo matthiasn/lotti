@@ -913,7 +913,10 @@ void main() {
 
         // Names the relation and the task, so the confirmation says what was
         // actually written rather than just "linked".
-        expect(find.text('Is blocked by: Blocker Task'), findsWidgets);
+        // Relation as the toast title, task as its description — the one-line
+        // title would ellipsize a real task name away.
+        expect(find.text('Is blocked by'), findsWidgets);
+        expect(find.text('Blocker Task'), findsWidgets);
 
         await tester.tap(find.text('Undo').last);
         await tester.pump();

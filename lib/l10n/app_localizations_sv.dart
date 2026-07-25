@@ -3439,7 +3439,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get createNewLinkedTask => 'Skapa ny länkad uppgift…';
 
   @override
-  String get createNewLinkedTaskTitle => 'Create new linked task';
+  String get createNewLinkedTaskTitle => 'New linked task';
 
   @override
   String get customColor => 'Specialfärg';

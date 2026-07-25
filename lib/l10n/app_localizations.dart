@@ -5870,7 +5870,7 @@ abstract class AppLocalizations {
   /// Modal title. Same wording as the control that opens it, without the trailing ellipsis — the modal is the further UI the ellipsis promises, so it must not promise it again.
   ///
   /// In en, this message translates to:
-  /// **'Create new linked task'**
+  /// **'New linked task'**
   String get createNewLinkedTaskTitle;
 
   /// No description provided for @customColor.
