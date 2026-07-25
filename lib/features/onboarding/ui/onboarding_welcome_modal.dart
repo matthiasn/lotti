@@ -585,11 +585,12 @@ class _OnboardingCategoryStepState
           defaultTemplateId: profileId != null ? lauraTemplateId : null,
           // Automatic transcription and image analysis are opt-in per
           // category, and default to off everywhere else. Onboarding is the
-          // one place the user has just connected a provider and recorded a
-          // capture on purpose, so the areas it creates start with automation
-          // on — otherwise the flow teaches "speak and it transcribes" and the
-          // app stops doing it the next day. Null (⇒ off) without a profile:
-          // nothing could run anyway.
+          // one place where the user has just connected a provider and picked
+          // these areas on purpose, so the areas it creates start with
+          // automation on — otherwise the flow goes on to teach "speak and it
+          // transcribes" and the app stops doing it the next day. Consent is
+          // the connect-and-choose gesture, not the capture that follows.
+          // Null (⇒ off) without a profile: nothing could run anyway.
           automaticInferenceEnabled: profileId != null ? true : null,
         );
         created.add(

@@ -56,6 +56,10 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
+  /// Whether this suite's setUp registered the SettingsDb, so tearDown only
+  /// removes a registration it owns.
+  var registeredSettingsDb = false;
+
   setUp(() {
     idSeq = 0;
     db = OnboardingMetricsDb(inMemoryDatabase: true);
@@ -74,7 +78,8 @@ void main() {
     // which reads the settings database — registered at startup in production.
     // A mock keeps it free of real database I/O, which the widget pumps below
     // cannot await.
-    if (!getIt.isRegistered<SettingsDb>()) {
+    registeredSettingsDb = !getIt.isRegistered<SettingsDb>();
+    if (registeredSettingsDb) {
       final settingsDb = MockSettingsDb();
       when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
       when(
@@ -86,7 +91,9 @@ void main() {
 
   tearDown(() async {
     await db.close();
-    if (getIt.isRegistered<SettingsDb>()) {
+    // Only tear down what this setUp put there; a suite-provided registration
+    // must outlive this test.
+    if (registeredSettingsDb && getIt.isRegistered<SettingsDb>()) {
       getIt.unregister<SettingsDb>();
     }
     if (getIt.isRegistered<LoggingService>()) {
