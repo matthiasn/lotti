@@ -63,6 +63,8 @@ class EvalScenario {
     this.decidedTaskIds = const [],
     this.permittedOmissions = const {},
     this.expectedOmissions = const {},
+    this.requiredTaskIds = const {},
+    this.requiresConflictSurfaced = false,
     this.capacityMinutes = 480,
     this.startHour,
     this.includeCapture = true,
@@ -87,6 +89,15 @@ class EvalScenario {
   /// Decided tasks the planner is expected to leave out, where placing them is
   /// the failure being measured.
   final Set<String> expectedOmissions;
+
+  /// Work any competent plan for this day must include, independent of what
+  /// the user decided. Without it a prioritisation scenario cannot tell a
+  /// good plan from one that scheduled the least urgent thing available.
+  final Set<String> requiredTaskIds;
+
+  /// Whether this day is impossible as stated, so the planner must say so
+  /// rather than quietly absorbing it.
+  final bool requiresConflictSurfaced;
 
   final int capacityMinutes;
 
@@ -143,6 +154,8 @@ class EvalScenario {
     // be placed is obviously not required to be.
     permittedOmissions: {...permittedOmissions, ...expectedOmissions},
     expectedOmissions: expectedOmissions,
+    requiredTaskIds: requiredTaskIds,
+    requiresConflictSurfaced: requiresConflictSurfaced,
     // Without a capture the task corpus is never rendered, so the only ids
     // the model can name are its decided ones. The corpus above stays as
     // ground truth for constraints that need to know what is actually true.
@@ -279,6 +292,14 @@ const _crowdedDay = EvalScenario(
   intent:
       'Given more work than fits, does it prioritise overdue and '
       'in-progress work, batch the small items, and stay inside capacity?',
+  // Named explicitly, because generic constraints are all satisfied by a plan
+  // containing one well-formed block — a model could schedule only the
+  // onboarding guide due in two weeks and score clean.
+  requiredTaskIds: {
+    'task-overdue-invoice',
+    'task-due-today-review',
+    'task-inprogress-migration',
+  },
   tasks: [
     EvalTaskSpec(
       id: 'task-overdue-invoice',
@@ -389,10 +410,12 @@ const _overCommitted = EvalScenario(
   ],
   decidedTaskIds: ['task-a', 'task-b', 'task-c', 'task-d'],
   // Dropping work is how a planner surfaces an impossible day, so it must not
-  // be scored as a miss. What it must not do is fake the fit by compressing
-  // four multi-hour tasks into short blocks — `respectsEstimates` catches
-  // that, which is what makes this scenario measurable at all.
+  // be scored as a miss — but silence is not surfacing. requiresConflictSurfaced
+  // makes the planner say what it left out, and the estimate-based capacity
+  // check stops it faking the fit by writing four multi-hour tasks as short
+  // blocks. Together those are what make this scenario measurable.
   permittedOmissions: {'task-a', 'task-b', 'task-c', 'task-d'},
+  requiresConflictSurfaced: true,
   captureTranscript: 'I want all four of these done today.',
 );
 

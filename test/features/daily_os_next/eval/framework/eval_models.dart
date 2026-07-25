@@ -56,7 +56,10 @@ class EvalFixtureInputs {
     this.permittedOmissions = const {},
     this.expectedOmissions = const {},
     this.visibleTaskIds,
+    this.requiredTaskIds = const {},
+    this.requiresConflictSurfaced = false,
     this.capacityMinutes = 480,
+    this.workingHoursStartHour = 9,
     this.workingHoursEndHour = 17,
     this.now,
   });
@@ -95,7 +98,27 @@ class EvalFixtureInputs {
   /// shown. Null means everything in [corpus] was visible.
   final Set<String>? visibleTaskIds;
 
+  /// Tasks the scenario expects to appear in any competent plan.
+  ///
+  /// Distinct from [decidedTaskIds], which is an *input* the user approved.
+  /// These are the scenario's own expectations — the overdue invoice a
+  /// crowded day must not ignore — and without them a scenario about
+  /// prioritisation cannot tell a good plan from one that scheduled the least
+  /// urgent thing on the list.
+  final Set<String> requiredTaskIds;
+
+  /// Whether the scenario is impossible as stated, so a competent plan has to
+  /// say so rather than quietly absorb it.
+  final bool requiresConflictSurfaced;
+
   final int capacityMinutes;
+
+  /// Local hour the working day starts, mirroring `DayAgentConfig`'s 09:00.
+  ///
+  /// Enforced as well as the end: on a future-day draft the same-day guard is
+  /// deliberately inert, so without a lower bound a plan could run overnight
+  /// and still score clean.
+  final int workingHoursStartHour;
 
   /// Local hour the working day ends, mirroring the planner's own default
   /// (`DayAgentConfig.workingHoursEnd`, 17:00).

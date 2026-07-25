@@ -131,13 +131,45 @@ void main() {
     },
   );
 
-  test('overCommitted may drop work, since that is how it surfaces', () {
+  test('overCommitted may drop work, but must not do so in silence', () {
     final scenario = byId('overCommitted');
 
     expect(
       scenario.permittedOmissions,
       containsAll(scenario.decidedTaskIds),
       reason: 'requiring all four would punish surfacing the conflict',
+    );
+    expect(
+      scenario.requiresConflictSurfaced,
+      isTrue,
+      reason:
+          'permitting every omission without this lets a model ignore '
+          'twelve hours of work and score clean',
+    );
+  });
+
+  test('crowdedDay names the work a competent plan must include', () {
+    // Generic constraints are all satisfied by a single well-formed block, so
+    // without this the scenario cannot tell a good plan from one that
+    // scheduled the least urgent thing available.
+    final scenario = byId('crowdedDay');
+
+    expect(scenario.requiredTaskIds, {
+      'task-overdue-invoice',
+      'task-due-today-review',
+      'task-inprogress-migration',
+    });
+    for (final required in scenario.requiredTaskIds) {
+      expect(
+        scenario.tasks.map((task) => task.id),
+        contains(required),
+        reason: '$required is required but never seeded',
+      );
+    }
+    expect(
+      scenario.requiredTaskIds,
+      isNot(contains('task-later-onboarding')),
+      reason: 'work due in two weeks is exactly what a good plan may skip',
     );
   });
 

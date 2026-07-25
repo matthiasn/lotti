@@ -270,8 +270,13 @@ therefore split:
 
 | scored on | constraints |
 | --- | --- |
-| the persisted plan | overlap, capacity, working hours, estimate fidelity, decided tasks placed, expected omissions honoured, blocker-before-blocked, fabricated task ids, fabricated history, duplicate ids |
+| the persisted plan | overlap, capacity (as written *and* as estimated), working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, conflict surfaced, blocker-before-blocked, fabricated task ids, fabricated history, duplicate ids |
 | the rejection count | whether the model complied without being corrected |
+
+A constraint that reads the plan is **inapplicable when no plan was
+persisted** — an empty block list would otherwise read as "no overlaps,
+nothing fabricated, every omission honoured" and hand a failed run a clean
+sweep.
 
 Three semantics are load-bearing and easy to get wrong:
 
@@ -281,6 +286,12 @@ Three semantics are load-bearing and easy to get wrong:
 - **Some decided tasks must *not* be placed.** A stale task the capture says is
   done is an `expectedOmission` — placing it fails. A blocked task is a
   `permittedOmission` — omitting or correctly sequencing it both pass.
+- **Permitting an omission is not enough on its own.** A scenario that lets
+  the planner drop work must also require it to *say so* — otherwise a single
+  buffer block that ignores twelve hours of requested work scores clean.
+  Capacity is likewise checked against task *estimates*, not the block lengths
+  the model wrote, since the cheapest way to make an impossible day fit is to
+  claim each task is shorter than it is.
 - **Fabrication is judged against what the model was shown.** The task corpus
   renders only inside the capture context, so a wake without a capture sees
   only its decided tasks. `EvalFixtureInputs.corpus` stays ground truth (the

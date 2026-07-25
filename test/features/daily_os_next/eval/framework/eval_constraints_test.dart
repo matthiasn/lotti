@@ -36,6 +36,10 @@ void main() {
     List<String> decidedTaskIds = const [],
     Set<String> permittedOmissions = const {},
     Set<String> expectedOmissions = const {},
+    Set<String> requiredTaskIds = const {},
+    bool requiresConflictSurfaced = false,
+    bool planPersisted = true,
+    int workingHoursStartHour = 9,
     int workingHoursEndHour = 17,
     Set<String>? visibleTaskIds,
     List<EvalToolCall> toolCalls = const [],
@@ -48,12 +52,16 @@ void main() {
       decidedTaskIds: decidedTaskIds,
       permittedOmissions: permittedOmissions,
       expectedOmissions: expectedOmissions,
+      requiredTaskIds: requiredTaskIds,
+      requiresConflictSurfaced: requiresConflictSurfaced,
       visibleTaskIds: visibleTaskIds,
+      workingHoursStartHour: workingHoursStartHour,
       workingHoursEndHour: workingHoursEndHour,
       capacityMinutes: capacityMinutes,
     ),
     blocks: blocks,
     toolCalls: toolCalls,
+    planPersisted: planPersisted,
   );
 
   group('noOverlappingBlocks', () {
@@ -528,6 +536,22 @@ void main() {
       expect(result.passed, isTrue);
     });
 
+    test('catches work scheduled before the working day starts', () {
+      // On a future-day draft the same-day guard is inert, so without a lower
+      // bound an overnight plan would score clean.
+      final result = scoreWithinWorkingHours(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 6, endHour: 8, title: 'Early grind'),
+          ],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('Early grind'));
+      expect(result.detail, contains('06:00'));
+    });
+
     test('catches work pushed past the end of the working day', () {
       // The failure capacity cannot see: 180 minutes from 15:00 uses only
       // 180 of 480 and stays inside the calendar day, yet runs to 18:00.
@@ -634,6 +658,163 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('must not start before current time'));
+    });
+  });
+
+  group('withinCapacityByEstimate', () {
+    const tasks = [
+      EvalCorpusTask(taskId: 'task-a', title: 'A', estimateMinutes: 240),
+      EvalCorpusTask(taskId: 'task-b', title: 'B', estimateMinutes: 180),
+      EvalCorpusTask(taskId: 'task-c', title: 'C', estimateMinutes: 120),
+      EvalCorpusTask(taskId: 'task-d', title: 'D', estimateMinutes: 180),
+    ];
+
+    test('catches a coordinated shrink that clears every per-task ratio', () {
+      // 160/120/80/120 sums to exactly 480 and each allocation exceeds half
+      // its estimate, so the per-task check passes — but 720 minutes of work
+      // does not fit in 480 however the blocks are labelled.
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(id: '1', startHour: 9, endHour: 11, taskId: 'task-a'),
+            block(id: '2', startHour: 11, endHour: 13, taskId: 'task-b'),
+            block(id: '3', startHour: 13, endHour: 14, taskId: 'task-c'),
+            block(id: '4', startHour: 14, endHour: 16, taskId: 'task-d'),
+          ],
+          corpus: tasks,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('720min'));
+      expect(result.detail, contains('over by 240'));
+    });
+
+    test('passes when the placed work genuinely fits', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(id: '1', startHour: 9, endHour: 13, taskId: 'task-a'),
+            block(id: '2', startHour: 13, endHour: 16, taskId: 'task-b'),
+          ],
+          corpus: tasks,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+  });
+
+  group('requiredWorkPlaced', () {
+    test('fails when the day ignores the work it turns on', () {
+      final result = scoreRequiredWorkPlaced(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 11, taskId: 'task-later'),
+          ],
+          requiredTaskIds: const {'task-overdue', 'task-today'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-overdue'));
+    });
+
+    test('passes when every named task is placed', () {
+      final result = scoreRequiredWorkPlaced(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-overdue'),
+            block(id: 'b', startHour: 10, endHour: 11, taskId: 'task-today'),
+          ],
+          requiredTaskIds: const {'task-overdue', 'task-today'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+  });
+
+  group('surfacedConflict', () {
+    test('fails when an impossible day is absorbed in silence', () {
+      // The gap permitting omissions opened: one ordinary buffer block,
+      // twelve hours of requested work ignored, nothing said.
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              reason: 'Open buffer for the morning.',
+            ),
+          ],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('silently'));
+    });
+
+    test('passes when a block reason names the trade', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 13,
+              reason: 'Board deck deferred to tomorrow — all four do not fit.',
+            ),
+          ],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('passes when the model escalated instead', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          requiresConflictSurfaced: true,
+          toolCalls: const [
+            EvalToolCall(name: 'raise_day_status', accepted: true),
+          ],
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
+    test('is not applicable when the day is satisfiable', () {
+      expect(scoreSurfacedConflict(outcome()).isApplicable, isFalse);
+    });
+  });
+
+  group('a run that produced no plan', () {
+    test('scores every plan-reading constraint as inapplicable', () {
+      // An empty block list would otherwise read as "no overlaps, nothing
+      // fabricated, every omission honoured" — a clean sweep for a failed run.
+      final results = scoreAll(
+        outcome(
+          planPersisted: false,
+          decidedTaskIds: const ['task-1'],
+          expectedOmissions: const {'task-stale'},
+          requiredTaskIds: const {'task-1'},
+          corpus: const [EvalCorpusTask(taskId: 'task-1', title: 'A')],
+        ),
+      );
+
+      for (final result in results) {
+        if (result.id == EvalConstraintIds.compliedWithoutRejection) continue;
+        expect(
+          result.isApplicable,
+          isFalse,
+          reason: '${result.id} credited a run that produced no plan',
+        );
+      }
     });
   });
 
