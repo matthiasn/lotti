@@ -378,6 +378,38 @@ pressed state uses the high-emphasis content token because the dark pressed
 surface cannot retain 4.5:1 with the available error palette. The filled danger
 button continues to use the default error token as its surface.
 
+### One Field Surface
+
+`DesignSystemSearch` and `DesignSystemDropdown` are separate components that
+routinely appear stacked — the link modal puts the relationship dropdown above
+the task picker's search field, the AI settings header puts a dropdown under its
+search bar — so their field shells are held to one treatment:
+
+- **fill**: `colors.surface.enabled`, an elevation-aware translucent overlay
+  rather than an absolute background level. This is the load-bearing part: the
+  overlay is theme-relative — white at 6% in dark, black at 6% in light — so
+  the field lifts off a dark host and insets slightly into a light one. An
+  opaque `background.level01` field on an elevated surface (every modal these
+  appear in) is instead a dark sunken hole in dark theme. Two fields side by
+  side must not react to the same sheet in opposite directions.
+- **border**: `colors.decorative.level01`, hairline (`spacing.step1 / 2`)
+- **radius**: whichever the paired search size uses — `radii.l` for
+  `DesignSystemSearchSize.small`, `radii.m` for `medium`. That is what
+  `DesignSystemDropdownSize` selects; it controls radius only.
+
+The dropdown keeps two deliberate differences. Expanded, its border switches to
+`colors.interactive.enabled` — the search field has no focus treatment to match,
+and dropping an open-state signal to win a cosmetic match would be a bad trade.
+And its *height* is content-driven, because it stacks a label above its value
+where a search field holds one line; that is why `DesignSystemDropdownSize`
+does not touch height.
+
+The two drifted apart precisely because nothing enforced the match. The pairing
+is now pinned in `design_system_dropdown_test.dart`, which renders both in one
+tree and asserts fill, border and radius agree — against each other *and*
+against the tokens, so a change moving both in the same wrong direction still
+fails.
+
 ### Shell-Aware Overlay Spacing
 
 The bottom navigation shell is an app-level overlay docked flush against
