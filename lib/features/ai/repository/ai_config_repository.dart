@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/ai/util/provider_type_utils.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -53,6 +54,12 @@ class AiConfigRepository {
     AiConfig config, {
     bool fromSync = false,
   }) async {
+    // Only inbound writes are screened: a local edit of a deleted row is the
+    // user acting on this device, and `restoreConfig` is the deliberate way
+    // back. A peer replaying its still-active copy is not.
+    if (fromSync && await _isStaleReplayOfTombstone(config)) {
+      return;
+    }
     await _db.saveConfig(config);
     _storeConfig(config);
     if (!fromSync) {
@@ -86,9 +93,52 @@ class AiConfigRepository {
     bool fromSync = false,
   }) async {
     final config = await getConfigById(id, includeDeleted: true);
-    if (config == null || config.deletedAt != null) return;
+    if (config == null) {
+      // A legacy delete can arrive before this device has the row. Bundled
+      // profiles are reconstructible from their template, so write the
+      // tombstone anyway — otherwise seeding recreates exactly what the peer's
+      // user deleted. Nothing else is seeded by id, so nothing else can be
+      // resurrected this way.
+      await _tombstoneUnseenSeed(id, fromSync: fromSync);
+      return;
+    }
+    if (config.deletedAt != null) return;
+
+    // Only profiles and models are ever re-created by the seeding passes, so
+    // only they need the row kept as a tombstone. Retaining anything else
+    // would keep content the user asked to remove — a deleted prompt's system
+    // and user messages, say — and replicate it to peers, which the delete
+    // dialog explicitly promises not to do.
+    if (!_isSeededType(config)) {
+      await hardDeleteConfig(id, fromSync: fromSync);
+      return;
+    }
+
+    final now = DateTime.now();
     await saveConfig(
-      config.copyWith(deletedAt: DateTime.now()),
+      config.copyWith(deletedAt: now, updatedAt: now),
+      fromSync: fromSync,
+    );
+  }
+
+  /// Whether a seeding pass could recreate [config] if its row went missing.
+  static bool _isSeededType(AiConfig config) => config.map(
+    inferenceProvider: (_) => false,
+    model: (_) => true,
+    prompt: (_) => false,
+    inferenceProfile: (_) => true,
+    skill: (_) => false,
+  );
+
+  /// Writes a tombstone for a bundled profile this device has not seeded yet.
+  Future<void> _tombstoneUnseenSeed(String id, {required bool fromSync}) async {
+    final template = ProfileSeedingService.defaultProfiles
+        .where((profile) => profile.id == id)
+        .firstOrNull;
+    if (template == null) return;
+    final now = DateTime.now();
+    await saveConfig(
+      template.copyWith(deletedAt: now, updatedAt: now),
       fromSync: fromSync,
     );
   }
@@ -120,7 +170,30 @@ class AiConfigRepository {
   Future<void> restoreConfig(String id) async {
     final config = await getConfigById(id, includeDeleted: true);
     if (config == null || config.deletedAt == null) return;
-    await saveConfig(config.copyWith(deletedAt: null));
+    // Stamped so this restore is newer than the tombstone it clears, and
+    // therefore wins on any peer applying both.
+    await saveConfig(
+      config.copyWith(deletedAt: null, updatedAt: DateTime.now()),
+    );
+  }
+
+  /// Whether an incoming synced [incoming] row would resurrect a local
+  /// tombstone without being a deliberate, newer restore.
+  ///
+  /// A peer that missed a deletion keeps its row active and can replay it —
+  /// through the maintenance pass or a queued edit — which would otherwise
+  /// upsert `deletedAt: null` over the tombstone. Deletions and restores both
+  /// stamp `updatedAt`, so an active row that is not strictly newer than the
+  /// local tombstone is a stale replay and is dropped.
+  Future<bool> _isStaleReplayOfTombstone(AiConfig incoming) async {
+    if (incoming.deletedAt != null) return false;
+    final local = await getConfigById(incoming.id, includeDeleted: true);
+    final tombstonedAt = local?.deletedAt;
+    if (tombstonedAt == null) return false;
+    final incomingUpdatedAt = incoming.updatedAt;
+    if (incomingUpdatedAt == null) return true;
+    final localUpdatedAt = local!.updatedAt ?? tombstonedAt;
+    return !incomingUpdatedAt.isAfter(localUpdatedAt);
   }
 
   /// Delete an inference provider and all its associated models.

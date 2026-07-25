@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -183,6 +184,134 @@ void main() {
           await repository.getConfigById('profile-1', includeDeleted: true),
           isNotNull,
         );
+      });
+
+      // Only profiles and models are ever recreated by seeding, so only they
+      // need the row kept. Retaining a deleted prompt would keep its system and
+      // user messages — content the delete dialog promises is gone — and
+      // replicate them to peers.
+      test('a prompt is removed outright, not tombstoned', () async {
+        when(() => mockDb.getConfigById('prompt-1')).thenAnswer(
+          (_) async => AiConfig.prompt(
+            id: 'prompt-1',
+            name: 'Secret prompt',
+            systemMessage: 'sensitive system text',
+            userMessage: 'sensitive user text',
+            defaultModelId: 'model-1',
+            modelIds: const [],
+            createdAt: fixedDate,
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.imageAnalysis,
+          ),
+        );
+
+        await repository.deleteConfig('prompt-1');
+
+        verify(() => mockDb.deleteConfig('prompt-1')).called(1);
+        verifyNever(() => mockDb.saveConfig(any()));
+      });
+
+      // A legacy delete can arrive before this device has ever seeded the row.
+      // Returning without a trace would let seeding recreate exactly what the
+      // peer's user deleted.
+      test('a legacy delete for an unseeded bundled profile still '
+          'tombstones', () async {
+        when(
+          () => mockDb.getConfigById(profileGeminiFlashId),
+        ).thenAnswer((_) async => null);
+
+        await repository.deleteConfig(profileGeminiFlashId, fromSync: true);
+
+        final saved =
+            verify(() => mockDb.saveConfig(captureAny())).captured.single
+                as AiConfigInferenceProfile;
+        expect(saved.id, profileGeminiFlashId);
+        expect(saved.deletedAt, isNotNull);
+      });
+
+      test('an unknown missing id writes nothing', () async {
+        when(
+          () => mockDb.getConfigById('not-a-seed'),
+        ).thenAnswer((_) async => null);
+
+        await repository.deleteConfig('not-a-seed', fromSync: true);
+
+        verifyNever(() => mockDb.saveConfig(any()));
+        verifyNever(() => mockDb.deleteConfig(any()));
+      });
+
+      // A peer that missed the deletion keeps its row active and can replay it
+      // through the maintenance pass; upserting that would clear the tombstone.
+      test('a stale active row from sync does not clear a tombstone', () async {
+        final tombstoned = AiConfig.inferenceProfile(
+          id: 'profile-1',
+          name: 'Gemini Flash',
+          thinkingModelId: 'model-1',
+          createdAt: fixedDate,
+          deletedAt: DateTime(2026, 7, 25, 12),
+          updatedAt: DateTime(2026, 7, 25, 12),
+        );
+        when(
+          () => mockDb.getConfigById('profile-1'),
+        ).thenAnswer((_) async => tombstoned);
+
+        await repository.saveConfig(
+          tombstoned.copyWith(
+            deletedAt: null,
+            updatedAt: DateTime(2026, 7, 25, 11),
+          ),
+          fromSync: true,
+        );
+
+        verifyNever(() => mockDb.saveConfig(any()));
+      });
+
+      test('a newer restore from sync does clear a tombstone', () async {
+        final tombstoned = AiConfig.inferenceProfile(
+          id: 'profile-1',
+          name: 'Gemini Flash',
+          thinkingModelId: 'model-1',
+          createdAt: fixedDate,
+          deletedAt: DateTime(2026, 7, 25, 12),
+          updatedAt: DateTime(2026, 7, 25, 12),
+        );
+        when(
+          () => mockDb.getConfigById('profile-1'),
+        ).thenAnswer((_) async => tombstoned);
+
+        await repository.saveConfig(
+          tombstoned.copyWith(
+            deletedAt: null,
+            updatedAt: DateTime(2026, 7, 25, 13),
+          ),
+          fromSync: true,
+        );
+
+        final saved =
+            verify(() => mockDb.saveConfig(captureAny())).captured.single
+                as AiConfigInferenceProfile;
+        expect(saved.deletedAt, isNull);
+      });
+
+      // A local edit is the user acting on this device; only inbound writes
+      // are screened.
+      test('a local write is never screened', () async {
+        final tombstoned = AiConfig.inferenceProfile(
+          id: 'profile-1',
+          name: 'Gemini Flash',
+          thinkingModelId: 'model-1',
+          createdAt: fixedDate,
+          deletedAt: DateTime(2026, 7, 25, 12),
+          updatedAt: DateTime(2026, 7, 25, 12),
+        );
+        when(
+          () => mockDb.getConfigById('profile-1'),
+        ).thenAnswer((_) async => tombstoned);
+
+        await repository.saveConfig(tombstoned.copyWith(deletedAt: null));
+
+        verify(() => mockDb.saveConfig(any())).called(1);
       });
 
       // The orphan-seed cleanup removes rows it wants back when the provider
@@ -925,6 +1054,71 @@ void main() {
     tearDown(() async {
       await repository.close();
     });
+
+    // The rows are already gone locally when these run, so a failed enqueue
+    // must not surface as "deletion failed" and withdraw undo — and must not
+    // stop the remaining ids being queued, since a hard delete leaves nothing
+    // for the maintenance pass to replay.
+    test(
+      'deleteInferenceProviderWithModels survives a failing outbox enqueue',
+      () async {
+        final provider = AiConfig.inferenceProvider(
+          id: 'provider-1',
+          baseUrl: 'https://example.com',
+          apiKey: 'key',
+          name: 'Provider 1',
+          createdAt: fixedDate,
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+        final model = AiConfig.model(
+          id: 'model-1',
+          name: 'Model 1',
+          providerModelId: 'provider/model-1',
+          inferenceProviderId: 'provider-1',
+          createdAt: fixedDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        );
+
+        when(
+          () => mockDb.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(() => mockDb.getConfigsByType('model')).thenAnswer(
+          (_) async => [
+            AiConfigDbEntity(
+              id: model.id,
+              type: 'model',
+              name: model.name,
+              serialized: jsonEncode(model.toJson()),
+              createdAt: fixedDate,
+              updatedAt: fixedDate,
+            ),
+          ],
+        );
+        when(
+          () => mockDb.transaction<CascadeDeletionResult>(any()),
+        ).thenAnswer((invocation) async {
+          final callback =
+              invocation.positionalArguments.first
+                  as Future<CascadeDeletionResult> Function();
+          return callback();
+        });
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenThrow(Exception('outbox down'));
+
+        final result = await repository.deleteInferenceProviderWithModels(
+          'provider-1',
+        );
+
+        // Reported as the success it locally is…
+        expect(result.providerName, 'Provider 1');
+        expect(result.deletedModels, hasLength(1));
+        // …and every id was still attempted, not abandoned at the first throw.
+        verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+      },
+    );
 
     // Enqueuing peer deletes from inside the transaction meant a later
     // failure rolled the local rows back while the queued deletes stayed —

@@ -127,14 +127,26 @@ class SeedTombstoneMigration {
       AiConfigType.model,
       includeDeleted: true,
     );
-    final row = existing.whereType<AiConfigModel>().where((model) {
-      return model.inferenceProviderId == inferenceProviderId &&
-          model.providerModelId == providerModelId;
-    }).firstOrNull;
-    if (row != null) {
-      if (row.deletedAt != null) return false;
-      await _repo.deleteConfig(row.id);
-      return true;
+    // Every match, not just the first: FTUE writes UUID row ids while backfill
+    // writes deterministic ones, so sync can leave two live rows for the same
+    // provider and provider-native model. Tombstoning one and clearing the
+    // ledger entry would leave the duplicate visible and syncing, losing the
+    // user's deletion.
+    final rows = existing
+        .whereType<AiConfigModel>()
+        .where(
+          (model) =>
+              model.inferenceProviderId == inferenceProviderId &&
+              model.providerModelId == providerModelId,
+        )
+        .toList(growable: false);
+    if (rows.isNotEmpty) {
+      var stamped = false;
+      for (final row in rows.where((row) => row.deletedAt == null)) {
+        await _repo.deleteConfig(row.id);
+        stamped = true;
+      }
+      return stamped;
     }
 
     final provider = await _repo.getConfigById(inferenceProviderId);

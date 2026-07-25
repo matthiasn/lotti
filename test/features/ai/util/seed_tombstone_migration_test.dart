@@ -208,6 +208,38 @@ void main() {
       ).called(1);
     });
 
+    // FTUE writes UUID row ids while backfill writes deterministic ones, so
+    // sync can leave two live rows for the same provider and provider-native
+    // model. Tombstoning one and clearing the ledger would leave the duplicate
+    // visible and syncing.
+    test('tombstones every duplicate row for one legacy identity', () async {
+      const providerId = 'provider-1';
+      final known = knownModelsByProvider[InferenceProviderType.gemini]!.first;
+      AiConfigModel row(String id) => known.toAiConfigModel(
+        id: id,
+        inferenceProviderId: providerId,
+      );
+      when(
+        () => repo.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => [row('uuid-row'), row('deterministic-row')]);
+      await seedLedger([
+        SeedTombstoneIdentities.model(
+          inferenceProviderId: providerId,
+          providerModelId: known.providerModelId,
+        ),
+      ]);
+
+      await migration.migrate();
+
+      final deleted = verify(
+        () => repo.deleteConfig(captureAny()),
+      ).captured.cast<String>();
+      expect(deleted, containsAll(['uuid-row', 'deterministic-row']));
+    });
+
     // Clearing the key is what stops this running on every launch.
     test('clears the legacy key when done', () async {
       await seedLedger([SeedTombstoneIdentities.profile(profileGeminiFlashId)]);
