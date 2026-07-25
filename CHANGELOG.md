@@ -58,6 +58,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through Manage links.
 
 ### Changed
+- **One word for one relationship.** The header chip on a blocked task reads
+  "Blocked by 2 tasks" again, matching the section it jumps to and the option
+  that created the link — previously it said "Waiting on", so the same
+  relationship went by two names depending on where you met it.
+- **The edit-relationship sheet names the task you are editing the link to.**
+  It read "This task… / Is blocked by" with nothing after it, leaving you to
+  remember which row you had tapped.
+- Editing links no longer hides each linked task's status — knowing a blocker
+  is already done is most useful exactly when you are deciding what to unlink.
 - **Manage mode says it is on.** The Linked Tasks card now shows a Done button
   in its header while you are editing links, instead of leaving the only exit
   inside the same overflow menu you opened it from.

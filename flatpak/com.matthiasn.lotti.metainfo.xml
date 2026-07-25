@@ -56,6 +56,8 @@
     <release version="0.9.1064" date="2026-07-25">
       <description>
         <p>Undo a link you just made. Picking a task in the link or blocker picker still commits on that single tap, but it now says what it wrote ("Blocks: Draft crew rotation schedule") and offers Undo, so a mis-tap or the right task under the wrong relationship is one tap to take back instead of a trip through Manage links.</p>
+        <p>One word for one relationship: the header chip on a blocked task reads "Blocked by 2 tasks" again, matching the section it jumps to and the option that created the link. Previously it said "Waiting on", so the same relationship went by two names depending on where you met it.</p>
+        <p>The edit-relationship sheet now names the task you are editing the link to; it read "This task… / Is blocked by" with nothing after it, leaving you to remember which row you had tapped. Editing links also no longer hides each linked task's status, since knowing a blocker is already done is most useful exactly when you are deciding what to unlink.</p>
         <p>Manage mode says it is on: the Linked Tasks card shows a Done button in its header while you are editing links, instead of leaving the only exit inside the same overflow menu you opened it from.</p>
         <p>On a desktop-sized window the task search field is focused when the link and blocker pickers open, so you can type straight away; it is left unfocused on phones, where it would raise the keyboard over the results. The Linked Tasks overflow menu now uses the app's own surface and radius rather than Material defaults, so it matches the card it opens from.</p>
       </description>
