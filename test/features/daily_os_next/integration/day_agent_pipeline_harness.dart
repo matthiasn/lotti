@@ -238,9 +238,12 @@ class DayAgentPipelineHarness {
     when(
       () => journalDb.journalEntityMapForIds(any()),
     ).thenAnswer((_) async => const {});
+    // True, not false: `apply_triage` updates a task through this, and a
+    // false answer becomes "failed to update task <id>" handed back to the
+    // model as a correction it did not earn. In the app the update succeeds.
     when(
       () => journalRepository.updateJournalEntity(any()),
-    ).thenAnswer((_) async => false);
+    ).thenAnswer((_) async => true);
 
     final planService = DayAgentPlanService(
       agentRepository: agentRepository,
