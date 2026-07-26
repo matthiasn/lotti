@@ -84,32 +84,11 @@ class DraftingContext {
     this.decidedTasks = const [],
     this.decidedCaptureItems = const [],
     this.baselineTaskStates = const {},
-    this.earliestStart,
-    this.planningWindowClosed = false,
   });
 
   final DayPlanEntity? baselinePlan;
   final List<DecidedTaskRef> decidedTasks;
   final List<ParsedItemEntity> decidedCaptureItems;
-
-  /// The earliest instant a new block may start, or null when the plan's day
-  /// has not begun.
-  ///
-  /// Stated rather than left to the model to derive. It previously had to
-  /// notice `<plan_date>` was today, find `<current_local_time>` (the last
-  /// section in the message), and compare — and got it wrong on every sampled
-  /// same-day draft, burning a rejected `draft_day_plan` call each time. Comes
-  /// from `earliestPlannableStart`, the same function the write path guards
-  /// with, so this can never promise something the guard does not enforce.
-  final DateTime? earliestStart;
-
-  /// True when the plan is for today but no usable slot remains before
-  /// midnight.
-  ///
-  /// Kept distinct from a null [earliestStart], which also covers a day that
-  /// has not begun. Collapsing the two would let a wake at 23:58 plan freely
-  /// from this morning, and the guard would reject every block of it.
-  final bool planningWindowClosed;
 
   /// Blocked-work state (ADR 0043) for tasks the baseline plan schedules,
   /// keyed by task id, present only for tasks that are actually blocked.
@@ -154,9 +133,6 @@ class DraftingContext {
                 for (final band in plan.energyBands) band.toJson(),
               ],
             },
-      if (earliestStart case final earliest?)
-        'earliestStart': earliest.toIso8601String(),
-      if (planningWindowClosed) 'planningWindowClosed': true,
       'decidedTasks': [for (final task in decidedTasks) task.toJson()],
       'decidedCaptureItems': [
         for (final item in decidedCaptureItems)
@@ -183,24 +159,14 @@ class DraftingContext {
 /// reshapes. [toJson] serializes that plan (blocks + energy bands) as the
 /// reference the model proposes a diff against.
 class RefineContext {
-  const RefineContext({this.baselinePlan, this.earliestStart});
+  const RefineContext({this.baselinePlan});
 
   final DayPlanEntity? baselinePlan;
-
-  /// The earliest instant a moved or added block may start, or null when the
-  /// plan's day has not begun.
-  ///
-  /// Refine wakes enforce the same past-start guard as drafting — through
-  /// `proposePlanDiff` — so leaving them to derive it from
-  /// `<current_local_time>` reproduces exactly the failure drafting had.
-  final DateTime? earliestStart;
 
   Map<String, Object?> toJson() {
     final plan = baselinePlan;
     return <String, Object?>{
       'requested': true,
-      if (earliestStart case final earliest?)
-        'earliestStart': earliest.toIso8601String(),
       'baselinePlan': plan == null
           ? null
           : <String, Object?>{

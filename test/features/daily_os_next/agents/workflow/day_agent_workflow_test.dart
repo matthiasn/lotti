@@ -3208,95 +3208,16 @@ void main() {
       );
     });
 
-    test(
-      'states an earliestStart the model can build on for a same-day draft',
-      () async {
-        final planService = MockDayAgentPlanService();
-        stubDraftingPlanContext(planService);
-        stubSuccessfulDraftToolCall(planService);
-
-        final result = await withClock(
-          // Mid-afternoon on the plan day itself, deliberately a few
-          // milliseconds past the minute — the shape that had every sampled
-          // model start the day at 15:00 and get rejected for it.
-          Clock.fixed(DateTime(2026, 5, 25, 15, 0, 0, 5, 877)),
-          () => workflow(planService: planService).execute(
-            agentIdentity: identity(),
-            runKey: runKey,
-            triggerTokens: {
-              dayAgentDraftingToken(dayId),
-              dayAgentPlanningDayToken(dayId),
-            },
-            threadId: threadId,
-          ),
-        );
-
-        expect(result.success, isTrue, reason: result.error);
-        final drafting = sentPrompt().json('drafting')! as Map<String, dynamic>;
-        // Rounded past the instant it was computed, so a plan built on it is
-        // still legal when the guard runs.
-        expect(drafting['earliestStart'], '2026-05-25T15:05:00.000');
-        expect(
-          conversationRepository.lastSystemMessage,
-          contains('drafting.earliestStart'),
-        );
-      },
-    );
-
-    test('refine wakes get the same stated floor as drafting', () async {
-      // Refine enforces the same past-start guard through proposePlanDiff, so
-      // a rule keyed only on drafting.earliestStart would leave these wakes
-      // deriving the threshold — the exact failure drafting had.
-      final planService = MockDayAgentPlanService();
-      when(
-        () => planService.draftPlanForDay(agentId: agentId, dayId: dayId),
-      ).thenAnswer((_) async => null);
-
-      final result = await withClock(
-        Clock.fixed(DateTime(2026, 5, 25, 15, 0, 0, 5, 877)),
-        () => workflow(planService: planService).execute(
-          agentIdentity: identity(),
-          runKey: runKey,
-          triggerTokens: {
-            dayAgentRefineToken(dayId),
-            dayAgentPlanningDayToken(dayId),
-          },
-          threadId: threadId,
-        ),
-      );
-
-      expect(result.success, isTrue, reason: result.error);
-      final refine = sentPrompt().json('refine')! as Map<String, dynamic>;
-      expect(refine['earliestStart'], '2026-05-25T15:05:00.000');
-      expect(
-        conversationRepository.lastSystemMessage,
-        contains('refine.earliestStart'),
-      );
-    });
-
-    test(
-      'keeps a past-start rule for wakes carrying neither section',
-      () async {
-        // The always-exposed draft_day_plan means a wake with no drafting or
-        // refine section can still place blocks, and the writer still guards
-        // them. Removing the fallback left those models unwarned.
-        await execute(workflow());
-
-        expect(
-          conversationRepository.lastSystemMessage,
-          contains('do not start any block'),
-        );
-      },
-    );
-    test('omits earliestStart when the plan day has not begun', () async {
+    test('states a planning floor the model can build on for today', () async {
       final planService = MockDayAgentPlanService();
       stubDraftingPlanContext(planService);
       stubSuccessfulDraftToolCall(planService);
 
-      // Drafting tomorrow, the evening before: nothing about this day has
-      // passed, so there is no floor to advertise.
       final result = await withClock(
-        Clock.fixed(DateTime(2026, 5, 24, 20)),
+        // Mid-afternoon on the plan day, a few milliseconds past the minute —
+        // the shape that had every sampled model start at 15:00 and be
+        // rejected for it.
+        Clock.fixed(DateTime(2026, 5, 25, 15, 0, 0, 5, 877)),
         () => workflow(planService: planService).execute(
           agentIdentity: identity(),
           runKey: runKey,
@@ -3309,11 +3230,70 @@ void main() {
       );
 
       expect(result.success, isTrue, reason: result.error);
-      final drafting = sentPrompt().json('drafting')! as Map<String, dynamic>;
-      // Absent, not null: the past has no meaning for a day that has not
-      // started, and an empty key would invite the model to invent one.
-      expect(drafting.containsKey('earliestStart'), isFalse);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      expect(window['earliestStart'], '2026-05-25T15:05:00.000');
+      expect(window.containsKey('closed'), isFalse);
     });
+
+    test('states the floor on a wake that builds no mode context', () async {
+      // A scheduled planning_day wake builds neither drafting nor refine
+      // context, yet draft_day_plan stays exposed and the writer still guards
+      // it. Keying this on the mode sections left those wakes deriving the
+      // threshold from the raw instant — the original bug.
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 15, 0, 0, 5, 877)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      expect(window['earliestStart'], '2026-05-25T15:05:00.000');
+    });
+
+    test('reports a closed window late in the day', () async {
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 23, 58)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      // Closed, never a next-day earliestStart, and never silently empty —
+      // empty would read as "the day has not begun, plan anywhere".
+      expect(window['closed'], isTrue);
+      expect(window.containsKey('earliestStart'), isFalse);
+    });
+
+    test('leaves the window empty for a day that has not begun', () async {
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 24, 20)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      expect(window, isEmpty);
+    });
+
     test(
       'includes a null-baseline drafting context for drafting-token wakes',
       () async {

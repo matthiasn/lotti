@@ -371,6 +371,34 @@ void main() {
       );
     });
 
+    test('uses calendar arithmetic for the day boundary, not +24h', () {
+      // On a DST day, local midnight + 24h is 01:00 or 23:00, not the next
+      // midnight — which would either advertise into tomorrow or close the
+      // window an hour early. Asserted through the observable behaviour: the
+      // last usable slot of the day is the same on a transition day as on an
+      // ordinary one.
+      for (final day in [
+        DateTime(2026, 3, 29), // European spring forward
+        DateTime(2026, 10, 25), // European fall back
+        DateTime(2026, 7, 26), // ordinary day, as a control
+      ]) {
+        final lastSlot = DateTime(day.year, day.month, day.day, 23, 50);
+        expect(
+          advertisedPlanningStart(planDate: day, now: lastSlot),
+          DateTime(day.year, day.month, day.day, 23, 55),
+          reason: 'last usable slot must not move on $day',
+        );
+        expect(
+          advertisedPlanningStart(
+            planDate: day,
+            now: DateTime(day.year, day.month, day.day, 23, 58),
+          ),
+          isNull,
+          reason: 'window must still close before midnight on $day',
+        );
+      }
+    });
+
     test('never advertises a start outside the plan day, at any minute', () {
       for (var hour = 0; hour < 24; hour++) {
         for (var minute = 0; minute < 60; minute++) {

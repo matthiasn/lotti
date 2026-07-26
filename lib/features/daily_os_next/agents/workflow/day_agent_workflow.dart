@@ -327,13 +327,11 @@ class DayAgentWorkflow {
     );
     final draftingContext = await _draftingContext(
       agentIdentity: agentIdentity,
-      planDate: dayDate,
       wakeContext: wakeContext,
       captureContext: captureContext,
     );
     final refineContext = await _refineContext(
       agentIdentity: agentIdentity,
-      planDate: dayDate,
       wakeContext: wakeContext,
     );
     final attentionPlanning = await _attentionPlanningContext(dayDate);

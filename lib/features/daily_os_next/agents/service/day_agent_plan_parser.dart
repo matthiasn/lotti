@@ -118,7 +118,11 @@ DateTime? advertisedPlanningStart({
   // function exists to prevent, at the other end of the day. Null means the
   // window is closed, which [planningWindowClosed] distinguishes from the
   // never-constrained future-day case.
-  final dayEnd = localDay(planDate).add(const Duration(days: 1));
+  // Calendar arithmetic, not +24h: on a DST day adding a fixed duration to
+  // local midnight lands on 01:00 or 23:00, which would either advertise into
+  // tomorrow or close the window an hour early.
+  final day = localDay(planDate);
+  final dayEnd = DateTime(day.year, day.month, day.day + 1);
   if (candidate.add(advertisedStartGranularity).isAfter(dayEnd)) return null;
   return candidate;
 }

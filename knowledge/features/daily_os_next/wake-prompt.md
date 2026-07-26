@@ -102,10 +102,10 @@ prefix behind it.
 Week context trails the knowledge statements because the today-so-far line churns
 with tracked time. `current_local_time` sits last and lets same-day drafting
 distinguish future plan slots from time that has already passed — but it is
-**not** what a drafting wake plans against. The guard evaluates at tool-execution
-time, later than this value by however long the model thought, so `drafting`
-carries `earliestStart` (already rounded past that gap) and the drafting rules
-point the model at that instead. See
+**not** what a planning wake builds on. The guard evaluates at tool-execution
+time, later than this value by however long the model thought, so the
+`planning_window` section immediately before it carries the already-padded floor
+(or says the day is closed) and the rules point the model there instead. See
 [capture and planning](capture-and-planning.md).
 
 **`day_entries` is a bounded index, not a log.** It carries recording receipts so

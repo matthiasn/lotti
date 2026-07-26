@@ -82,6 +82,14 @@ abstract final class DayAgentPromptTags {
   /// The wake's trigger tokens (JSON).
   static const triggerTokens = 'trigger_tokens';
 
+  /// The day's planning floor, or that it has none left (JSON).
+  ///
+  /// Top-level rather than nested in `drafting`/`refine`, because the
+  /// constraint belongs to the *day*, not to a wake mode: `draft_day_plan` is
+  /// always exposed, and a scheduled `planning_day` wake builds neither
+  /// context while still being able to place blocks.
+  static const planningWindow = 'planning_window';
+
   /// The volatile wall-clock, kept last.
   static const currentLocalTime = 'current_local_time';
 
@@ -104,6 +112,7 @@ abstract final class DayAgentPromptTags {
     digest,
     recentObservations,
     triggerTokens,
+    planningWindow,
     currentLocalTime,
   ];
 }
