@@ -485,8 +485,10 @@ sources:
         ),
       );
 
+      // Not `.single`: a source set that is entirely bundle-internal also trips
+      // the provenance rule, which is correct for this fixture.
       expect(
-        result.warnings.single.message,
+        _joined(result.warnings),
         allOf(
           contains('`sources[].resource`'),
           contains('does not exist in the bundle'),
@@ -974,6 +976,90 @@ sources:
       expect(
         _joined(result.issues),
         contains('`sources[].resource` `missing.dart` does not exist'),
+      );
+    });
+
+    test('a source set that never leaves the bundle is not provenance', () {
+      // A pointer at a sibling concept can never fail the drift check, so a
+      // concept sourced only from one is grounded in nothing verifiable — the
+      // exact shape `sources` exists to prevent.
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: sibling
+    resource: ./sync.md
+''',
+          ),
+          extra: {'features/sync.md': _validFrontmatter},
+        ),
+      );
+
+      expect(
+        _joined(result.issues),
+        contains('grounded in nothing the drift check can verify'),
+      );
+    });
+
+    test('one source leaving the bundle is enough', () {
+      // Repo path, external URL and scope descriptor all count; the rule only
+      // rejects a set that is *entirely* bundle-internal.
+      for (final resource in [
+        '../../lib/features/speech',
+        'https://example.com/spec',
+        'All queries in the analytics project',
+      ]) {
+        final result = validateBundle(
+          _bundle(
+            _concept(
+              house:
+                  '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: sibling
+    resource: ./sync.md
+  - id: real
+    resource: $resource
+''',
+            ),
+            extra: {'features/sync.md': _validFrontmatter},
+          ),
+        );
+
+        expect(
+          _joined(result.issues),
+          isNot(contains('grounded in nothing')),
+          reason: '$resource should count as provenance',
+        );
+      }
+    });
+
+    test('a bundle-absolute source alone is not provenance either', () {
+      // `/index.md` resolves inside the bundle just like `./sync.md`.
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: root
+    resource: /index.md
+''',
+          ),
+        ),
+      );
+
+      expect(
+        _joined(result.issues),
+        contains('grounded in nothing the drift check can verify'),
       );
     });
 

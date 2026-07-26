@@ -9,7 +9,7 @@ Cross-cutting runtime structure — the parts no single feature owns.
 * [Security and privacy posture](security-and-privacy.md) - what is encrypted, what is not, where secrets live, and what leaves the device.
 * [Logging and diagnostics](logging-and-diagnostics.md) - twenty-four opt-in logging domains, where their lines land, and why errors bypass the gate.
 * [Shared widgets](shared-widgets.md) - the widgets that belong to no single feature.
-* [Platform targets, CI and release](platform-and-release.md) - five platform targets from one codebase, the checks every branch runs, and the tag that triggers six release pipelines.
+* [Platform targets, CI and release](platform-and-release.md) - five platform targets from one codebase, the checks every branch runs, and the tag that triggers seven release pipelines.
 
 # Related
 

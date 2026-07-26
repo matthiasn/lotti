@@ -47,9 +47,21 @@ document it as one.
 
 # Secrets
 
-**Sync credentials** go to the OS keystore through `flutter_secure_storage`,
-wrapped by `SecureStorage` — the Matrix config JSON and access tokens never touch
-SQLite.
+**Sync provisioning credentials** go to the OS keystore through
+`flutter_secure_storage`, wrapped by `SecureStorage`. That is the Matrix config
+JSON — homeserver, user, password.
+
+**The Matrix session is not in the keystore.** `createMatrixClient()` hands the
+SDK a plain sqflite database at `<documents>/matrix/lotti_sync.db`, and
+`MatrixSdkDatabase.insertClient`/`updateClient` persist `token`, `refreshToken`
+and `olmAccount` into it. So the live **access token, refresh token and Olm
+identity are at rest in unencrypted SQLite**, protected only by OS-level
+full-disk encryption — the same posture as journal content and AI provider keys,
+not the keystore posture the config gets.
+
+Worth stating precisely because the two are easy to conflate: the keystore holds
+what is needed to *log in*, the SDK database holds what is needed to *stay
+logged in*. An attacker with file access does not need the password.
 
 **AI-provider API keys do not.** `AiConfigDb.saveConfig()` persists a provider as
 `jsonEncode(config.toJson())`, and that serialized map includes its `apiKey`. So
@@ -122,9 +134,14 @@ See [the AI feature](../features/ai/) for how requests are routed and
 # Error handling as a privacy surface
 
 Because there is no crash reporter, diagnostics stay local: logs are written to
-files in the documents directory, gated per domain, and readable only in-app
-(see [logging and diagnostics](logging-and-diagnostics.md)). Nothing is uploaded.
-Sharing a log is a deliberate export by the user.
+files in the documents directory and gated per domain (see
+[logging and diagnostics](logging-and-diagnostics.md)). Nothing is uploaded.
+
+**There is no in-app log viewer**, which cuts both ways for privacy work. Nothing
+in the app surfaces log content, so no screen can leak it — but a user who wants to
+help debug has to get the files off the device, and support has no read-only
+in-app surface to point them at. Sharing a log is therefore a deliberate file
+export, not a tap.
 
 # Where to look
 

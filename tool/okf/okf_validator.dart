@@ -466,9 +466,78 @@ List<OkfIssue> _validateConcept(
     ..addAll(_validateBundleLinks(path, document.body, knownPaths))
     ..addAll(
       _validateBundleResources(path, document.frontmatterYaml, knownPaths),
-    );
+    )
+    ..addAll(_validateProvenanceLeavesBundle(path, document.frontmatterYaml));
 
   return issues;
+}
+
+/// Warns when nothing in `sources` points outside the bundle.
+///
+/// The house rule is that `sources` names *what the concept was derived from*,
+/// and the anti-drift check only bites on references that leave the bundle: a
+/// pointer at `../../lib/...` fails when the code moves, a pointer at a sibling
+/// concept never does. So a concept whose only source is another concept is
+/// grounded in nothing checkable — the exact shape whose drift is undetectable,
+/// which is why `sources` is a required key in the first place.
+///
+/// Deliberately permissive about *what* counts as outside: a repo path, an
+/// external URL and a §5.1 scope descriptor all qualify. The narrow thing this
+/// rejects is a source set that is *entirely* bundle-internal.
+List<OkfIssue> _validateProvenanceLeavesBundle(
+  String path,
+  String? frontmatterYaml,
+) {
+  if (frontmatterYaml == null) return const [];
+  final Object? parsed;
+  try {
+    parsed = loadYaml(frontmatterYaml);
+  } on YamlException {
+    return const []; // reported separately
+  }
+  if (parsed is! YamlMap) return const [];
+  final sources = parsed['sources'];
+  if (sources == null) return const []; // absence reported separately
+
+  final resources = <String>[
+    if (sources is YamlList)
+      for (final entry in sources)
+        if (entry is YamlMap && entry['resource'] is String)
+          entry['resource'] as String
+        else if (entry is String)
+          entry,
+    if (sources is YamlMap && sources['resource'] is String)
+      sources['resource'] as String,
+    if (sources is String) sources,
+  ];
+  if (resources.isEmpty) return const [];
+
+  final dir = path.contains('/')
+      ? path.substring(0, path.lastIndexOf('/'))
+      : '';
+  final leavesBundle = resources.any((resource) {
+    if (!_looksLikePath(resource)) return true; // scope descriptor (§5.1)
+    final trimmed = resource.trim();
+    if (trimmed.startsWith('http://') ||
+        trimmed.startsWith('https://') ||
+        trimmed.startsWith('mailto:')) {
+      return true;
+    }
+    if (trimmed.startsWith('/')) return false; // bundle-absolute (§6.2)
+    return _normalizeRelative(dir, trimmed.split('#').first).startsWith('..');
+  });
+  if (leavesBundle) return const [];
+
+  return [
+    OkfIssue(
+      severity: Severity.warning,
+      path: path,
+      message:
+          'every `sources[].resource` stays inside the bundle, so the concept '
+          'is grounded in nothing the drift check can verify; cite the code, a '
+          'URL or a scope descriptor it was derived from',
+    ),
+  ];
 }
 
 List<OkfIssue> _validateStatus(String path, YamlMap frontmatter) {

@@ -43,7 +43,20 @@ The idle threshold is a single tuning constant
 
 # Why a gate rather than a check
 
-A boolean "is idle" read would race: work would sample it, find idle, and start
-just as the user resumed. **The gate is awaited**, so a caller parks until the
-condition holds and resumes as one continuation — which is why heavy sync work
-does not stutter the UI even under a large catch-up.
+A boolean "is idle" read gives a caller no way to wait: it either proceeds into
+live interaction or gives up. **The gate is awaited**, so a caller parks until an
+idle edge arrives and resumes as one continuation — which is why heavy sync work
+starts in the quiet gaps rather than under the user's fingers.
+
+**It does not make the start race-free, and should not be read that way.**
+`waitUntilIdle()` returns immediately when `canProcess` is already true, otherwise
+awaits `canProcessStream.firstWhere((v) => v)` — and that is all. It takes no
+lease, registers no cancellation hook, and excludes nothing after the wake. A user
+who resumes in the microtask after the edge fires gets their input during a large
+apply exactly as before; the gate moved *when* the work starts, not what happens
+once it has.
+
+Making that guarantee real would need a reservation the gate does not have — a
+lease held across the work, or a cancellation signal the caller polls. Both are
+behaviour changes, so treat this section as the boundary of what the gate
+promises: **it delays work to an idle edge, and nothing more.**

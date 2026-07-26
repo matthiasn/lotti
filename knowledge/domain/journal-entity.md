@@ -1,7 +1,7 @@
 ---
 type: Domain Model
 title: JournalEntity
-description: The sixteen-variant union every piece of user data is, and the shared Metadata envelope that carries identity, time, ownership and sync state.
+description: The sixteen-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
 resource: ../../lib/classes/journal_entities.dart
 tags: [domain, journal-entity, metadata, freezed]
 status: stable
@@ -20,8 +20,8 @@ sources:
 
 # One union, sixteen variants
 
-Everything the user records is a `JournalEntity` — a Freezed union whose variants
-are:
+Every entry the user *records* is a `JournalEntity` — a Freezed union whose
+variants are:
 
 `journalEntry`, `journalImage`, `journalAudio`, `task`, `event`, `checklistItem`,
 `checklist`, `quantitative`, `measurement`, `aiResponse`, `workout`,
@@ -31,6 +31,15 @@ That breadth is why the [journal feature](../features/journal/) is the app's
 substrate rather than a note-taking screen: create, browse, search, link, focus
 and delete are implemented **once** over the union, and each variant contributes
 its own detail widget.
+
+**It is not every piece of user data**, and the boundary matters for anything that
+walks the whole dataset. What the user *configures* — categories, labels, habits,
+dashboards, measurable types — is
+[`EntityDefinition`](entity-definitions.md), a separate union that syncs as its own
+message family. Settings and agent state live outside both. So backup, migration
+and sync coverage that follows only `JournalEntity` is incomplete by construction;
+see the [sync message model](../features/sync/message-model.md) for the full set of
+families.
 
 # The `Metadata` envelope
 
