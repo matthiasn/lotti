@@ -332,9 +332,11 @@ The seeded catalog includes Voxtral Realtime, Qwen3-ASR 0.6B, Qwen3-ASR 1.7B
 first, with **Qwen3-ASR 1.7B 8-bit preselected** because it is much faster than
 Voxtral Realtime in post-recording use.
 
-**Inference never implicitly downloads a model.** `installModel` is the only path
-that downloads from Hugging Face; transcription runs first verify the cache
-contains a complete model and otherwise return a not-installed failure. This
+**Inference never implicitly downloads a model.** `installModel` is the only MLX
+Audio path that downloads from Hugging Face; transcription runs first verify the
+cache contains a complete model and otherwise return a not-installed failure.
+(Scoped to MLX Audio deliberately — [text-to-speech](../tts/) fetches its own
+Supertonic model over a separate path.) This
 keeps a recording-triggered STT run from starting a multi-GB background download
 or loading a partial cache. The Swift bridge logs resource snapshots at
 `transcribe.request`, model load, audio preparation and generation, so native
