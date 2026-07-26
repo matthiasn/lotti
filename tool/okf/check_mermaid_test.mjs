@@ -95,6 +95,44 @@ test('a three-space-indented fence is still a diagram', () => {
   assert.match(r.output, /FAIL/);
 });
 
+test('a mixed closing run does not close the block', () => {
+  // CommonMark requires the closing run to be uniform. `` `~~ `` after a ```
+  // opener passed a "first character matches, long enough" test and closed the
+  // block, so the rest of the file rendered as code while the check passed.
+  const r = run('```mermaid\nflowchart TD\n  A --> B\n`~~\n\nprose\n');
+  assert.ok(!r.ok, r.output);
+  assert.match(r.output, /unclosed mermaid fence/);
+});
+
+test('a literal > inside a top-level fence does not close it', () => {
+  const r = run('```mermaid\nflowchart TD\n> ```\n');
+  assert.ok(!r.ok, r.output);
+  assert.match(r.output, /unclosed mermaid fence/);
+});
+
+test('a blockquoted fence is a real diagram', () => {
+  // CommonMark strips the container prefix before recognising the fence, so
+  // `> ```mermaid` opens a block. Requiring column 0 skipped it in silence.
+  const r = run('> ```mermaid\n> flowchart TD\n>   A -->\n> ```\n');
+  assert.ok(!r.ok, r.output);
+  assert.match(r.output, /FAIL/);
+});
+
+test('a quoted fence works when marker spacing varies', () => {
+  // `>flowchart TD` under a `> ```mermaid` opener: the marker's trailing space is
+  // optional, so matching exact prefix text stripped nothing and the block read
+  // as unclosed.
+  const r = run('> ```mermaid\n>flowchart TD\n>  A --> B\n>```\n');
+  assert.ok(r.ok, r.output);
+  assert.match(r.output, /parsed 1 block/);
+});
+
+test('a nested blockquote fence is still recognised', () => {
+  const r = run('> > ```mermaid\n> > flowchart TD\n> >   A --> B\n> > ```\n');
+  assert.ok(r.ok, r.output);
+  assert.match(r.output, /parsed 1 block/);
+});
+
 test('an unclosed mermaid fence is reported', () => {
   const r = run('```mermaid\nflowchart TD\n  A --> B\n');
   assert.ok(!r.ok);

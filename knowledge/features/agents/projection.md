@@ -5,9 +5,13 @@ description: "A pure, deterministic fold over an event *set* — proving that pr
 resource: ../../../lib/features/agents/projection
 tags: [agents, projection, determinism, convergence]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T20:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T23:00:00Z }
 stale_after: 2026-10-12
 sources:
+  - id: sync-service
+    resource: ../../../lib/features/agents/sync/agent_sync_service.dart
+    title: reconciledAgentState — the wake-path read cutover
+    last_modified: 2026-06-13
   - id: src
     resource: ../../../lib/features/agents/projection
     title: Projection kernel source
@@ -72,11 +76,39 @@ the fold cannot depend on which head arrived first.
 # Above the kernel: `DerivedAgentState`
 
 The kernel is deliberately small. `DerivedAgentState` (`derived_agent_state.dart`)
-is the **storage-coupled composite** built on top of it — and, in its own words,
-it *"drives no production read"* yet. Reads still come from the mutable cache; the
-planned step that flips them onto this fold has not happened, and there are no
-external call sites. Read it as the target shape and the comparison mechanism, not
-as the current read path:
+is the **storage-coupled composite** built on top of it, and the fold **is** on the
+wake critical path today:
+
+`AgentSyncService.reconciledAgentState` — called at the start of every task,
+project, event, improver and day-agent wake — loads the `system` milestone markers
+and the agent's outbound links, runs `reconcileAgentState` (which calls
+`deriveAgentState`) over the cached row, and returns the reconciled value. So a
+watermark or active slot the cache lost to last-writer-wins under a partition
+**self-heals before the agent decides anything**, and the healed row is persisted
+only when something actually diverged.
+
+Two boundaries make that precise:
+
+- **The reconcile is not a blind "log wins".** Watermarks take `max(derived,
+  cache)` because they are monotonic; active slots take `derived ?? cache`. Fields
+  the log does not own — `recentHeadMessageId`, the G-counters, device-local
+  scheduling — stay on the cache by construction.
+- **Only the wake path reads this way.** UI and service reads stay on the raw cache
+  via `AgentRepository.getAgentState`, which is eventual and self-healing.
+- **It loads markers, not the whole log — but it is not free.**
+  `getMessagesByKind(agentId, system)` passes no limit, and a milestone marker is
+  appended on every completed wake (plus retractions and fork joins), so the read
+  and the fold **grow with the number of wakes**. Far smaller than the full message
+  log, and still linear in history — worth knowing before adding work to this path.
+
+A malformed synced log (a duplicate id or a cycle from a peer) makes the fold
+throw; the wake falls back to the cached row and logs, rather than aborting.
+
+One piece of history worth knowing, because it misled this concept twice: the
+composite's header used to read *"drives no production read; B6 flips reads onto
+this fold"* — a sentence that outlived the cutover it predicted. It now describes
+the shipped state, and `agent_sync_service.dart` remains the authority for the read
+path:
 
 - It calls `project(canonicalOrder(...))` for the structural part — heads and the
   latest report — and aggregates the rest **directly off the messages and links**:
@@ -87,12 +119,13 @@ as the current read path:
   messages and links derive an equal state regardless of arrival order. That is
   the guarantee **the mutable cache cannot make** under last-write-wins.
 
-`compareShadowProjection` (`shadow_projection.dart`) is what that comparison is
-for: it checks the projection against the live mutable state and returns a
+`compareShadowProjection` (`shadow_projection.dart`) is the other half: it checks
+the projection against the live mutable state and returns a
 `ShadowProjectionReport` — match or divergence — used as a test assertion and an
 optional debug-mode runtime check. There is no `ShadowProjection` type; the pieces
-are the function, that report and `ShadowProjectionStatus`. So today the fold's job
-is to make a drifted cache **detectable** rather than to serve reads.
+are the function, that report and `ShadowProjectionStatus`. It never drives a read;
+it makes a drifted cache **detectable** where the reconcile above makes it
+**self-healing**.
 
 The projection is plain Dart with no I/O, so it can be exercised with property
 tests over shuffled event sets — the only honest way to test a claim about

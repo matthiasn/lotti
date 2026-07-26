@@ -1,102 +1,55 @@
 # Knowledge Bundle Update Log
 
 ## 2026-07-26
-* **Fix**: Corrected an inverted rule and a doubly-overshot narrowing. The
-  `PROPAGATED::` prefix is **additive** — every emitter sends the bare token in the
-  same set, so matching it alone is complete, and the deferral it enables is opt-in
-  per subscription. The privacy gate has **three** mechanisms, nine of ten
-  query-bearing mixins use one, and what skips filtering is single-entity journal
-  reads, not by-id reads as a class. The stale source comment that seeded the
-  original error was corrected too.
-* **Fix**: Corrected three claims the previous day's fixes introduced — a
-  notification payload is **not** token-only (it leads with the entity's own id,
-  carries linked ids, and includes dynamic `PROJECT_ENTITY_UPDATE:<id>` keys),
-  `DerivedAgentState` **drives no production read** yet, and an error reaches two
-  to four files including the PII-safe `error-safe-<date>.log` the sink diagram
-  had omitted.
-* **Creation**: Added [screenshots](conventions/screenshots.md) — the first written
-  account of where captured images live (the sibling `lotti-docs` repo, never
-  here), the three destinations there and their different lifecycles, and the
-  before/after pair a UI pull request carries. The practice had ~1,100 files across
-  37 topics and was documented nowhere, including in `lotti-docs`'s own README.
-* **Creation**: Documented the last three subsystems with no home: the
-  `UpdateNotifications` token vocabulary and its `PROPAGATED::` prefix (which
-  changes wake throttling, not just reactivity), `DerivedAgentState` and
-  `ShadowProjection` above the projection kernel, and the error-log mirror the
-  logging sink diagram had omitted.
-* **Update**: Closed three documented-but-unenforced gaps in the validator —
-  `resource: ""` and `tags: []` now fail, and a `stale_after` warns for the
-  fortnight before it becomes an error, so a batch coming due is never first heard
-  about as a red push.
-* **Fix**: Narrowed the privacy claim that mattered most: the `private` gate is
-  **opt-in and most reads skip it** — thirteen call sites in five files, and
-  by-id reads including `journalEntityById` never filter. "Every read passes a
-  private-visibility gate" was wrong by an order of magnitude.
-* **Fix**: The mermaid gate now catches the quiet failure it only documented. Two
-  live state diagrams had a `;` in an unquoted label, parsing clean while
-  rendering five phantom nodes each; the checker inspects the built diagram for
-  ids containing `;`, and it now has thirteen tests of its own.
-* **Fix**: Corrected three claims this bundle got wrong *while* fixing others:
-  `TaskStatus` has seven variants, not five (`done` and `rejected` were missed by
-  reading a truncated line range); a leak *can* cross test files on CI, because
-  very_good's optimizer bundles every test into one isolate per shard; and `:=` is
-  not a Mermaid trap — only `;` is, and its quiet failure mode is a stray node
-  rather than an error.
-* **Update**: `make knowledge_check` is now the single target for a change under
-  `knowledge/`, running the validator and the Mermaid parse together, and the
-  Mermaid checker accepts every CommonMark fence form instead of skipping
-  `~~~mermaid` in silence.
+* **Enforcement**: The metadata that makes drift detectable now fails the build
+  instead of being reported and ignored — a missing or empty `title`,
+  `description`, `resource`, `tags`, `status`, `generated`, `stale_after` or
+  `sources`, a source set that never leaves the bundle, an unclosed fenced block,
+  and a `stale_after` that has passed (with a warning for the fortnight before).
+  What stays advisory is the narrow set OKF is deliberately permissive about, plus
+  the `Attested Computation` fields nothing here uses. An unrecognised CLI flag is
+  rejected rather than ignored.
+* **Enforcement**: Mermaid is parsed in CI by mermaid itself
+  ([`tool/okf/check_mermaid.mjs`](../tool/okf/check_mermaid.mjs), 15 tests), since
+  there is no Dart parser. It accepts every CommonMark fence form, treats a
+  four-space-indented fence as the literal it is, and inspects the built diagram —
+  a `;` in an unquoted label parses clean while rendering phantom nodes. Three
+  diagrams that never rendered and one closing fence with prose welded to it were
+  repaired. `make knowledge_check` runs the validator and this together.
+* **Reorganisation**: Collapsed 23 feature directories holding a single
+  sub-200-line concept into one file each, and moved the projection kernel under
+  the agents tree. 24 index files gone, concept count unchanged.
+* **Update**: Staggered `stale_after` by subsystem — 15 review dates instead of
+  one shared cliff, at most eleven concepts each.
+* **Fix**: Corrected roughly thirty claims against the code. The load-bearing ones,
+  in their final form: the `private` gate is reached **three** ways and nine of the
+  ten query-bearing mixins use one, while **single-entity journal reads** skip
+  filtering; `PROPAGATED::` is **additive**, so matching the bare token alone is
+  complete, and the wake deferral it enables is opt-in per subscription;
+  `DerivedAgentState` **is** on the wake critical path via
+  `AgentSyncService.reconciledAgentState`, while UI and service reads stay on the
+  raw cache; CI runs `very_good test`
+  with its optimizer on, so a leak reaches other files **in the same shard**;
+  `TaskStatus` has **seven** variants; an error reaches **two to four** files
+  including the PII-safe `error-safe-<date>.log`; and the build-runner
+  `--build-filter` trap **does** show in `git status`, which is the only signal
+  there is.
 * **Fix**: Recomputed every `sources[].last_modified` from `git log` — 162 of 229
-  had been written as "about today" rather than asked of history, some off by six
-  weeks. The field now records what each concept was actually written against.
-* **Fix**: Corrected fourteen claims that contradicted the code, across habits,
-  the knowledge-graph PoC, settings, sync, persistence, the journal entity, task
-  relationships, the CI story and the build-runner trap. Four `lib/` READMEs were
-  wrong too, and `memory-and-compaction`'s subject pointed at a directory holding
-  one unrelated file.
-* **Creation**: Documented the slow-query capture's **second tier** — the 200 ms
-  threshold that also captures `EXPLAIN QUERY PLAN` and writes a separate
-  `super_slow_queries` file, which is the one worth reading first.
-* **Creation**: Documented three things the bundle had no home for — the
-  `private` visibility gate every `JournalDb` read routes through (a filter, not
-  a protection), `TaskStatus`'s five states and the fact that *nothing* constrains
-  their transitions, and which nine of `lib/widgets/`'s sixteen groups the
-  shared-widgets concept does not cover.
-* **Update**: Added diagrams to the seven concepts whose subject has a shape
-  prose cannot carry — the `JournalEntity` union, the `linked_entries` row, the
-  projection kernel's permutation invariance, the idle gate's state machine, the
-  wake prompt's stability bands, dashboard item dispatch, and theming's
-  arrival-based sync. 69 of 88 concepts now carry at least one.
-* **Fix**: Repaired three Mermaid diagrams that did not parse and one closing
-  fence with prose welded to it, which had been rendering the tail of a concept
-  as code. The validator now fails on an unclosed fence; Mermaid syntax itself
-  still needs the out-of-band parse check documented in the convention.
-* **Update**: Raised the house-rule metadata checks from warnings to errors, so
-  a concept missing a description, a freshness date or code provenance now fails
-  CI rather than being reported and ignored. What stays a warning is what OKF is
-  deliberately permissive about — a link to knowledge not written yet — plus a
-  concept whose `stale_after` has passed, which is now reported.
+  were written as "about today" rather than asked of history, some off by six
+  weeks. All 238 match now.
+* **Creation**: Documented what had no home: the `private` visibility gate, the
+  `UpdateNotifications` routing-key vocabulary and its `PROPAGATED::` semantics,
+  `DerivedAgentState` with the shadow comparison, the error-log mirrors including
+  the PII-safe sink, the slow-query second tier, `TaskStatus` and the fact that
+  nothing constrains its transitions, and which nine of `lib/widgets/`'s sixteen
+  groups the shared-widgets concept omits.
+* **Creation**: Added [screenshots](conventions/screenshots.md) — where captured
+  images live (the sibling `lotti-docs` repo, never here), its three destinations
+  and their lifecycles, and the before/after pair a UI pull request carries. The
+  practice held ~1,100 files across 37 topics and was documented nowhere.
 * **Update**: Gave [the root index](index.md) a reading order, an authority
-  hierarchy and a code-to-concept map for the shared trees under `lib/` that have
-  no README of their own.
-* **Reorganisation**: Collapsed 23 feature directories that held a single
-  sub-200-line concept into one file each — `features/categories/overview.md`
-  became `features/categories.md`. An index listing one document is a hop, not
-  progressive disclosure. The count of concepts is unchanged; 24 index files are
-  gone.
-* **Reorganisation**: Moved the projection kernel from `features/agents_projection/`
-  to [`features/agents/projection.md`](features/agents/projection.md). It
-  documents `lib/features/agents/projection`, so it was a sibling of the feature
-  that owns it rather than a part of it.
-* **Update**: Differentiated `stale_after` by how fast each subject moves —
-  three months for `agents`, `ai`, `daily_os_next` and `sync`, twelve for domain
-  models and settled exploratory work, six for everything else. One shared date
-  expired the whole bundle on a single day and said nothing about which concepts
-  actually change.
-* **Update**: Split the overlapping settings prose — `settings_v2` owns the tree
-  and the argument for having one, `settings` owns the shell that renders it —
-  and dropped the drift-prone inventory counts from the reserved `index.md`
-  files, which carry no freshness metadata of their own.
+  hierarchy, and a code-to-concept map for the shared trees under `lib/`; added
+  diagrams to seven concepts, so 69 of 89 carry at least one.
 
 ## 2026-07-25
 * **Initialization**: Established the OKF v0.2 bundle at `knowledge/`, with the

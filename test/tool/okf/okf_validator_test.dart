@@ -1134,6 +1134,53 @@ Body.
       expect(result.issues, isEmpty);
     });
 
+    test('a mixed closing run does not close the block', () {
+      // CommonMark requires a uniform run; `~~ after ``` passed a "first
+      // character matches, long enough" test and closed the block.
+      final result = validateBundle(
+        _bundle(_concept(body: '```mermaid\nflowchart TD\n`~~\n')),
+      );
+
+      expect(result.errors.single.message, contains('is never closed'));
+    });
+
+    test('a literal > inside a top-level fence does not close it', () {
+      // Stripping `>` unconditionally made this marker read as the close, so an
+      // unclosed fence validated clean.
+      final result = validateBundle(
+        _bundle(_concept(body: '```mermaid\nflowchart TD\n> ```\n')),
+      );
+
+      expect(result.errors.single.message, contains('is never closed'));
+    });
+
+    test('a blockquoted fence is recognised, and its close too', () {
+      final result = validateBundle(
+        _bundle(_concept(body: '> ```dart\n> var x = 1;\n> ```\n')),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a quoted fence closes even when marker spacing varies', () {
+      // The marker's trailing space is optional in CommonMark, so an exact-text
+      // prefix match stripped neither the body nor the close and reported a valid
+      // block as unclosed.
+      final result = validateBundle(
+        _bundle(_concept(body: '> ```dart\n>var x = 1;\n>```\n')),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('an unclosed blockquoted fence is still caught', () {
+      final result = validateBundle(
+        _bundle(_concept(body: '> ```dart\n> var x = 1;\n')),
+      );
+
+      expect(result.errors.single.message, contains('is never closed'));
+    });
+
     test('a tilde block is not closed by backticks', () {
       final result = validateBundle(
         _bundle(_concept(body: '~~~text\nplain\n```\n')),
