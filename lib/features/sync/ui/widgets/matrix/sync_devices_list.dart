@@ -131,8 +131,23 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
       );
     }
 
-    final blockerCount = devices.where((device) => device.blocksSync).length;
-    final blocked = blockerCount > 0;
+    final blockers = devices
+        .where((device) => device.blocksSync)
+        .toList(growable: false);
+    final blocked = blockers.isNotEmpty;
+    // Point at the remedy the cards actually offer: a legacy foreign device
+    // can only be verified, an own-account session the server dropped can
+    // only be deleted.
+    final String bannerText;
+    if (blockers.every((device) => !device.ownAccount)) {
+      bannerText = messages.syncDevicesPausedBannerVerifyOnly(blockers.length);
+    } else if (blockers.every(
+      (device) => device.ownAccount && !device.onServer,
+    )) {
+      bannerText = messages.syncDevicesPausedBannerDeleteOnly(blockers.length);
+    } else {
+      bannerText = messages.syncDevicesPausedBanner(blockers.length);
+    }
     final referenceTime = widget.now?.call() ?? DateTime.now();
 
     return Column(
@@ -166,7 +181,7 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
                   SizedBox(width: tokens.spacing.step3),
                   Expanded(
                     child: Text(
-                      messages.syncDevicesPausedBanner(blockerCount),
+                      bannerText,
                       style: tokens.typography.styles.body.bodyMedium.copyWith(
                         color: tokens.colors.text.highEmphasis,
                       ),
@@ -184,7 +199,10 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
             devices[i],
             refreshListCallback: () => unawaited(_refresh()),
             now: referenceTime,
-            key: Key('sync_device_${devices[i].deviceId}'),
+            key: Key(
+              'sync_device_${devices[i].userId ?? 'self'}_'
+              '${devices[i].deviceId}',
+            ),
           ),
         ],
         if (devices.length <= 1) ...[

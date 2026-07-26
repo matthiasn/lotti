@@ -149,7 +149,9 @@ void main() {
       slowManualFetch.complete(const [deviceA, deviceB]);
       final succeeded = await refreshDone;
 
-      expect(succeeded, isFalse);
+      // Superseded is not a failure: the roster IS fresh via the rebuild,
+      // so the UI must not show a load-failed toast.
+      expect(succeeded, isTrue);
       expect(
         container.read(syncDevicesControllerProvider).value,
         const [deviceA],

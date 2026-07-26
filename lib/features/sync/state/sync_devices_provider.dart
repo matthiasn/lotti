@@ -49,8 +49,10 @@ class SyncDevicesController extends AsyncNotifier<List<SyncDeviceInfo>> {
     if (!ref.mounted) return false;
     // An invalidation (e.g. a completed verification) rebuilt the provider
     // while this fetch was in flight: the rebuild's snapshot is newer, so
-    // this one must be discarded rather than published over it.
-    if (generation != _generation) return false;
+    // this one is discarded rather than published over it. That is a
+    // success from the caller's perspective — the roster IS fresh — so it
+    // must not surface as a load failure.
+    if (generation != _generation) return true;
     // Keep showing the previous list rather than replacing it with an error.
     if (result.hasError && state.hasValue) return false;
     state = result;

@@ -17016,6 +17016,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{1 unverified device is pausing sync — delete or verify it below.} other{{count} unverified devices are pausing sync — delete or verify them below.}}'**
   String syncDevicesPausedBanner(int count);
 
+  /// Paused-sync banner variant; count is the number of blocking devices.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 unverified device is pausing sync — delete it below.} other{{count} unverified devices are pausing sync — delete them below.}}'**
+  String syncDevicesPausedBannerDeleteOnly(int count);
+
+  /// Paused-sync banner variant; count is the number of blocking devices.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 unverified device is pausing sync — verify it below.} other{{count} unverified devices are pausing sync — verify them below.}}'**
+  String syncDevicesPausedBannerVerifyOnly(int count);
+
   /// No description provided for @syncDevicesSectionTitle.
   ///
   /// In en, this message translates to:

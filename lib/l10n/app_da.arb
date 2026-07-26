@@ -4604,6 +4604,24 @@
       }
     }
   },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — slet den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — slet dem nedenfor.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — bekræft den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — bekræft dem nedenfor.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Enheder",
   "syncDevicesStaleHint": "Sandsynligvis ikke længere i brug",
   "syncDevicesSyncResumed": "Synkroniseringen kører igen.",

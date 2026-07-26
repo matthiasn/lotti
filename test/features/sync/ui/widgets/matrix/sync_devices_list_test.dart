@@ -298,12 +298,12 @@ void main() {
     }
 
     // First deletion starts a refresh that stays in flight.
-    await deleteVia('sync_device_OTHER_A');
+    await deleteVia('sync_device_self_OTHER_A');
     expect(fetchCount, 1);
     expect(find.byType(DesignSystemSpinner), findsOneWidget);
 
     // Second deletion lands while the refresh is in flight: coalesced.
-    await deleteVia('sync_device_OTHER_B');
+    await deleteVia('sync_device_self_OTHER_B');
     expect(fetchCount, 1);
 
     firstFetch.complete(const [currentDevice, otherB]);
@@ -367,7 +367,7 @@ void main() {
 
     await tester.tap(
       find.descendant(
-        of: find.byKey(const Key('sync_device_OTHER')),
+        of: find.byKey(const Key('sync_device_self_OTHER')),
         matching: find.byKey(const Key('matrix_delete_device')),
       ),
     );
@@ -383,6 +383,101 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('two users sharing a device id render as distinct cards', (
+    tester,
+  ) async {
+    final foreignKeys = MockDeviceKeys();
+    when(() => foreignKeys.deviceDisplayName).thenReturn('Peer phone');
+    when(() => foreignKeys.deviceId).thenReturn('SHARED_ID');
+    when(() => foreignKeys.userId).thenReturn('@peer:server');
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([
+        const SyncDeviceInfo(
+          deviceId: 'SHARED_ID',
+          displayName: 'My laptop',
+          isCurrentDevice: false,
+          verified: true,
+          userId: '@me:server',
+        ),
+        SyncDeviceInfo(
+          deviceId: 'SHARED_ID',
+          displayName: 'Peer phone',
+          isCurrentDevice: false,
+          verified: false,
+          keys: foreignKeys,
+          onServer: false,
+          ownAccount: false,
+          userId: '@peer:server',
+        ),
+      ]),
+    );
+
+    // Device ids are only unique per user; composite keys keep both cards.
+    expect(tester.takeException(), isNull);
+    expect(find.byType(DeviceCard), findsNWidgets(2));
+  });
+
+  testWidgets('the banner names verification when every blocker is a '
+      'legacy foreign device', (tester) async {
+    final foreignKeys = MockDeviceKeys();
+    when(() => foreignKeys.deviceDisplayName).thenReturn('Peer phone');
+    when(() => foreignKeys.deviceId).thenReturn('PEER');
+    when(() => foreignKeys.userId).thenReturn('@peer:server');
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([
+        currentDevice,
+        SyncDeviceInfo(
+          deviceId: 'PEER',
+          displayName: 'Peer phone',
+          isCurrentDevice: false,
+          verified: false,
+          keys: foreignKeys,
+          onServer: false,
+          ownAccount: false,
+          userId: '@peer:server',
+        ),
+      ]),
+    );
+
+    expect(
+      find.text('1 unverified device is pausing sync — verify it below.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the banner names deletion when every blocker is an '
+      'own-account session the server dropped', (tester) async {
+    final ghostKeys = MockDeviceKeys();
+    when(() => ghostKeys.deviceDisplayName).thenReturn('Cache ghost');
+    when(() => ghostKeys.deviceId).thenReturn('CACHE_ONLY');
+    when(() => ghostKeys.userId).thenReturn('@user:server');
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([
+        currentDevice,
+        SyncDeviceInfo(
+          deviceId: 'CACHE_ONLY',
+          displayName: 'Cache ghost',
+          isCurrentDevice: false,
+          verified: false,
+          keys: ghostKeys,
+          onServer: false,
+          userId: '@user:server',
+        ),
+      ]),
+    );
+
+    expect(
+      find.text('1 unverified device is pausing sync — delete it below.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the refresh button re-fetches the device list', (tester) async {

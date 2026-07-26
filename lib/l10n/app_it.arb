@@ -4604,6 +4604,24 @@
       }
     }
   },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: eliminalo qui sotto.} other{{count} dispositivi non verificati stanno mettendo in pausa la sincronizzazione: eliminali qui sotto.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: verificalo qui sotto.} other{{count} dispositivi non verificati stanno mettendo in pausa la sincronizzazione: verificali qui sotto.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Dispositivi",
   "syncDevicesStaleHint": "Probabilmente non più in uso",
   "syncDevicesSyncResumed": "La sincronizzazione è di nuovo attiva.",

@@ -10021,6 +10021,32 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String syncDevicesPausedBannerDeleteOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count dispositivos sin verificar están pausando la sincronización: elimínalos abajo.',
+      one:
+          '1 dispositivo sin verificar está pausando la sincronización: elimínalo abajo.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerVerifyOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count dispositivos sin verificar están pausando la sincronización: verifícalos abajo.',
+      one:
+          '1 dispositivo sin verificar está pausando la sincronización: verifícalo abajo.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get syncDevicesSectionTitle => 'Dispositivos';
 
   @override

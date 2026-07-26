@@ -4055,6 +4055,24 @@
       }
     }
   },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 neověřené zařízení pozastavuje synchronizaci — odstraň ho níže.} few{{count} neověřená zařízení pozastavují synchronizaci — odstraň je níže.} other{{count} neověřených zařízení pozastavuje synchronizaci — odstraň je níže.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 neověřené zařízení pozastavuje synchronizaci — ověř ho níže.} few{{count} neověřená zařízení pozastavují synchronizaci — ověř je níže.} other{{count} neověřených zařízení pozastavuje synchronizaci — ověř je níže.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Zařízení",
   "syncDevicesStaleHint": "Pravděpodobně se už nepoužívá",
   "syncDevicesSyncResumed": "Synchronizace opět běží.",

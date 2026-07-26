@@ -10001,6 +10001,34 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String syncDevicesPausedBannerDeleteOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count neověřených zařízení pozastavuje synchronizaci — odstraň je níže.',
+      few:
+          '$count neověřená zařízení pozastavují synchronizaci — odstraň je níže.',
+      one: '1 neověřené zařízení pozastavuje synchronizaci — odstraň ho níže.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerVerifyOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count neověřených zařízení pozastavuje synchronizaci — ověř je níže.',
+      few:
+          '$count neověřená zařízení pozastavují synchronizaci — ověř je níže.',
+      one: '1 neověřené zařízení pozastavuje synchronizaci — ověř ho níže.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get syncDevicesSectionTitle => 'Zařízení';
 
   @override

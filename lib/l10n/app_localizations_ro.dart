@@ -10053,6 +10053,36 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String syncDevicesPausedBannerDeleteOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de dispozitive neverificate întrerup sincronizarea — ștergeți-le mai jos.',
+      few:
+          '$count dispozitive neverificate întrerup sincronizarea — ștergeți-le mai jos.',
+      one:
+          'Un dispozitiv neverificat întrerupe sincronizarea — ștergeți-l mai jos.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerVerifyOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de dispozitive neverificate întrerup sincronizarea — verificați-le mai jos.',
+      few:
+          '$count dispozitive neverificate întrerup sincronizarea — verificați-le mai jos.',
+      one:
+          'Un dispozitiv neverificat întrerupe sincronizarea — verificați-l mai jos.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get syncDevicesSectionTitle => 'Dispozitive';
 
   @override

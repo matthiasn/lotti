@@ -336,6 +336,7 @@ class MatrixServiceOps {
         isCurrentDevice: isCurrent,
         verified: isCurrent || (keys?.verified ?? false),
         keys: keys,
+        userId: userId,
       );
     }).toList();
 
@@ -359,6 +360,7 @@ class MatrixServiceOps {
           verified: false,
           keys: entry.value,
           onServer: false,
+          userId: userId,
         ),
       );
     }
@@ -380,6 +382,7 @@ class MatrixServiceOps {
             keys: keyEntry.value,
             onServer: false,
             ownAccount: false,
+            userId: userEntry.key,
           ),
         );
       }

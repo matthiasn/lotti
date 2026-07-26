@@ -4048,6 +4048,24 @@
       }
     }
   },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 appareil non vérifié met la synchronisation en pause — supprime-le ci-dessous.} other{{count} appareils non vérifiés mettent la synchronisation en pause — supprime-les ci-dessous.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 appareil non vérifié met la synchronisation en pause — vérifie-le ci-dessous.} other{{count} appareils non vérifiés mettent la synchronisation en pause — vérifie-les ci-dessous.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Appareils",
   "syncDevicesStaleHint": "Probablement plus utilisé",
   "syncDevicesSyncResumed": "La synchronisation fonctionne à nouveau.",

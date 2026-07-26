@@ -4048,6 +4048,24 @@
       }
     }
   },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — ștergeți-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — ștergeți-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — ștergeți-le mai jos.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — verificați-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — verificați-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — verificați-le mai jos.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Dispozitive",
   "syncDevicesStaleHint": "Probabil nu mai este folosit",
   "syncDevicesSyncResumed": "Sincronizarea funcționează din nou.",

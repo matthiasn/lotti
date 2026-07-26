@@ -97,21 +97,34 @@ path refuses to send while any cached device key is unverified
 uninstalled app that never logged out — able to block all outbound sync, which
 is why device management exists as a first-class flow:
 
+- **Two account models.** The current pairing flow shares **one Matrix
+  account** across all devices. Rooms paired under the **legacy model run one
+  Matrix user per device**, and the send gate
+  (`MatrixSdkGateway.unverifiedDevices()`) deliberately spans every cached
+  user to keep gating those rooms. The roster derives its paused state from
+  that same full set: a foreign user's unverified device appears as a
+  **verify-only** entry (`SyncDeviceInfo.ownAccount == false`) — it can be
+  SAS-verified cross-user but never deleted from this account.
 - **Inventory.** `MatrixServiceOps.getSyncDevices()` merges the homeserver's
   session inventory (`MatrixSyncGateway.getDevices()`, i.e. `GET /devices`:
   display name, last-seen) with the E2EE key cache (verification state) into
-  `models/sync_device_info.dart`. Sessions that never published keys appear
-  with `keys == null`: they cannot be verified and never block sync — only
-  removed. An **unverified cached-keys entry missing from the server list**
-  is retained as a roster entry anyway: the send gate reads the key cache,
-  not `GET /devices`, so dropping it would clear the paused banner while
-  sends still fail. Display order: blockers first, then the current device,
-  then recency.
+  `models/sync_device_info.dart`, after waiting (bounded) for an in-flight
+  key load. Sessions that never published keys appear with `keys == null`:
+  they cannot be verified and never block sync — only removed. An
+  **own-account unverified cached-keys entry missing from the server list**
+  is retained as a **deletion-only** entry (`onServer == false` — a session
+  the server no longer knows can never answer a verification): the send gate
+  reads the key cache, not `GET /devices`, so dropping it would clear the
+  paused banner while sends still fail. Display order: blockers first, then
+  the current device, then recency.
 
   ```mermaid
   stateDiagram-v2
     [*] --> Blocking: unverified cached keys gate every send
-    Blocking --> Deleting: user confirms removal
+    Blocking --> Verifying: user starts SAS verification (own on-server or legacy foreign device)
+    Verifying --> Blocking: cancelled or times out
+    Verifying --> Recovering: emoji ceremony completes
+    Blocking --> Deleting: user confirms removal (own-account sessions only)
     Deleting --> Blocking: UIA rejected (e.g. stale password)
     Deleting --> Recovering: homeserver accepts the delete
     Recovering --> Resumed: keys refreshed, lifecycle reconciled, rescan

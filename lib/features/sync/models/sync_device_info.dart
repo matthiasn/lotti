@@ -23,6 +23,7 @@ class SyncDeviceInfo {
     this.keys,
     this.onServer = true,
     this.ownAccount = true,
+    this.userId,
   });
 
   final String deviceId;
@@ -51,6 +52,10 @@ class SyncDeviceInfo {
   /// run one Matrix user per device: their unverified devices gate sends and
   /// can be SAS-verified, but only own-account sessions can be deleted.
   final bool ownAccount;
+
+  /// The Matrix user the session belongs to, when known. Device ids are only
+  /// unique per user, so roster identity is the (user, device) pair.
+  final String? userId;
 
   /// The name shown to the user, falling back to the raw device id.
   String get label {
