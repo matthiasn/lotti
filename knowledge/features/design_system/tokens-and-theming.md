@@ -5,7 +5,7 @@ description: The four-group token pipeline from Figma export to a ThemeExtension
 resource: ../../../lib/features/design_system/theme
 tags: [design-system, tokens, theming, accessibility, contrast]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T02:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T11:00:00Z }
 stale_after: 2027-01-26
 sources:
   - id: generator
@@ -54,6 +54,29 @@ typed surface of colors, typography, spacing and radii.
 update is the generator, not every component downstream. (Motion tokens exist,
 but hand-authored outside this pipeline, because `Duration` and `Curve` are not
 lerp-able — see [agent UI surfaces](../agents/ui-surfaces.md).)
+
+## One token, three names
+
+The generator renames as it goes, so the same token reads differently in each
+tool. They are one token with normalised naming, not three concepts:
+
+| Where | Form |
+|-------|------|
+| Figma (node inspect panel, under Colors) | `background/02` |
+| `assets/design_system/tokens.json` | `color.background.02` |
+| Dart | `tokens.colors.background.level02` |
+
+**Tracing a token backwards through that table is how to resolve a visual value**
+— not hard-coding a substitute at the call site because the name looks absent.
+
+Two rules produce the Dart form, and they are easy to conflate:
+
+- A **purely numeric key** becomes `levelNN`, zero-padded to two digits, **only
+  when its parent group is `background` or `decorative`**.
+- Any other name that would start with a digit gets a `value` prefix instead, so
+  a numeric leaf elsewhere in the tree is `value02`, not `level02`.
+
+Everything else is lower-camel-cased with `/` and `-` treated as word breaks.
 
 # Two runtime theme paths
 

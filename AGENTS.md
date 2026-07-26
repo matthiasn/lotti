@@ -161,6 +161,11 @@ Rules for `knowledge/`:
 
 ## Implementation discipline
 
+Every UI change is bound by the design system. Read
+[knowledge/features/design_system/](knowledge/features/design_system/) before
+touching visual code — the token pipeline and its naming, the component contracts,
+and what is enforced at construction rather than by review.
+
 - **Design-system tokens are mandatory.** For colors, spacing, radii, typography, elevation, and other visual styling values, always use the exported design-system tokens or existing design-system abstractions first.
 - **Spacings and font styles MUST come from the Design System.** Never hardcode spacing values (raw numbers in `EdgeInsets`/`SizedBox`/local `const double` constants) or font styles (raw `fontSize`/`fontWeight`/`TextStyle` constructors). Use `tokens.spacing.stepN` (or `cardPadding`/`cardItemSpacing`/`sectionGap`) and `tokens.typography.styles.{display,heading,subtitle,body,others}.<name>`. If no suitable token exists, stop and ask before introducing one.
 - **Do not invent ad hoc visual values by default.** Before adding a hard-coded color, spacing value, radius, opacity, or a one-off semantic alias for a visual token, first check the design-system token export and existing design-system components/palettes.
@@ -168,8 +173,8 @@ Rules for `knowledge/`:
 - **Never flash established UI during background refresh.** When an async provider reloads because of sync, database notifications, or another background dependency change, preserve the last rendered data (`skipLoadingOnReload`, stale-while-revalidate state, or equivalent) instead of swapping the page to a full-screen loading, empty, or error shell. Full loading shells are for initial loads and deliberate route/date changes only; background refresh should use local/subtle progress affordances.
 - **Prefer fixing the token source over patching the widget.** If a Figma export flattened or obscured a semantic token name, prefer tracing it back to the exported token set or improving the import/export path instead of hard-coding a widget-level substitute.
 - **Check the token name in the actual Figma node inspect panel first.** Even when the Variables API is incomplete or unavailable, the selected node often shows the bound token name directly under Colors, e.g. `background/02`.
-- **Know the naming path across tools.** A Figma token such as `background/02` appears in `assets/design_system/tokens.json` as `color.background.02`, and in Dart as `tokens.colors.background.level02`. Treat these as the same token with normalized naming, not as different concepts.
-- **Hints for future agents:** When verifying a visual token, inspect the selected node in Figma Desktop Bridge first, then confirm the matching entry in `assets/design_system/tokens.json`, then map it to the generated token in `lib/features/design_system/theme/generated/design_tokens.g.dart`. If the Figma inspect panel already shows the token name, do not assume the name is unavailable just because the Variables API call returned empty data.
+- **Know the naming path across tools.** The same token is named differently in Figma, `tokens.json` and Dart — the table is in [design tokens and theming](knowledge/features/design_system/tokens-and-theming.md#one-token-three-names). Treat them as one token with normalised naming, not as different concepts.
+- **Verifying a visual token, in order:** inspect the selected node in Figma Desktop Bridge, confirm the entry in `assets/design_system/tokens.json`, then map it to the generated token. If the inspect panel already shows the name, do not conclude it is unavailable just because the Variables API returned empty data.
 - Always ensure the analyzer has no complaints and everything compiles. Also run the formatter
   frequently.
 - Prefer running commands via the dart-mcp server.
