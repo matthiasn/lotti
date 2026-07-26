@@ -99,7 +99,7 @@ deliberately distinct, because collapsing any two misleads:
 |---|---|
 | `{"earliestStart": …, "availableMinutes": …}` | today, still plannable — start here, and this is how much is left |
 | `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add nothing |
-| `{"capacityMinutes": …, "scheduledMinutes": …}` | a refine wake — judge your *net* change against these |
+| `+ {"capacityMinutes": …, "scheduledMinutes": …}` | added on a refine wake — judge your *net* change against these, alongside whichever row above applies |
 | `{"availableMinutes": …}` | the day has not begun — no part of it is past |
 
 `availableMinutes` is absent from the `closed` row deliberately, and absent
@@ -148,8 +148,10 @@ signals. Zero is a real answer, meaning the working day is over. Malformed
 working hours leave it unstated rather than guessed, since they are free-text
 config nothing else parses.
 
-A **refine** wake gets a different shape: `capacityMinutes` and
-`scheduledMinutes` rather than a single `availableMinutes`. A diff edits an
+A **refine** wake gets `capacityMinutes` and `scheduledMinutes` *in addition to*
+the temporal fields, not instead of them — `proposePlanDiff` enforces the same
+past-start guard, so a diff still needs the floor and the clock-bounded
+remainder. A diff edits an
 existing plan, so what matters is the *net* change — dropping a 180-minute block
 to add another is net zero, and judging the addition against the unused
 remainder alone would report a conflict that does not exist. Occupancy is

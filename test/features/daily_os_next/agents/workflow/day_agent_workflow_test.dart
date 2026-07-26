@@ -3336,8 +3336,72 @@ void main() {
       // not exist.
       expect(window['capacityMinutes'], 360);
       expect(window['scheduledMinutes'], 120);
-      expect(window.containsKey('availableMinutes'), isFalse);
+      // Drafted the evening before, so no clock floor applies and the full
+      // working day is still ahead. The refine fields sit *beside* the
+      // temporal ones rather than replacing them.
+      expect(window.containsKey('earliestStart'), isFalse);
+      expect(window['availableMinutes'], 480);
     });
+
+    test(
+      'a same-day refine keeps the clock bounds beside its capacity',
+      () async {
+        // proposePlanDiff enforces the same past-start guard as drafting, so
+        // dropping the temporal fields let a 480-minute baseline advertise room
+        // for a 240-minute addition at 15:00 with 115 working minutes left.
+        final planService = MockDayAgentPlanService();
+        when(
+          () => planService.draftPlanForDay(agentId: agentId, dayId: dayId),
+        ).thenAnswer(
+          (_) async => makeTestDayPlan(
+            agentId: agentId,
+            planDate: DateTime(2026, 5, 25),
+            data: DayPlanData(
+              planDate: DateTime(2026, 5, 25),
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: [
+                PlannedBlock(
+                  id: 'block-1',
+                  categoryId: 'work',
+                  startTime: DateTime(2026, 5, 25, 9),
+                  endTime: DateTime(2026, 5, 25, 11),
+                  title: 'Deep work',
+                  reason: 'morning',
+                ),
+              ],
+            ),
+            // Matches the config default, and stated so the test reads as a
+            // whole-day baseline rather than an accident.
+            // ignore: avoid_redundant_argument_values
+            capacityMinutes: 480,
+            scheduledMinutes: 120,
+            createdAt: DateTime(2026, 5, 25, 8),
+            updatedAt: DateTime(2026, 5, 25, 8),
+          ),
+        );
+
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 15)),
+          () => workflow(planService: planService).execute(
+            agentIdentity: identity(),
+            runKey: runKey,
+            triggerTokens: {
+              dayAgentRefineToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+            threadId: threadId,
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        final window =
+            sentPrompt().json('planning_window')! as Map<String, dynamic>;
+        expect(window['capacityMinutes'], 480);
+        expect(window['scheduledMinutes'], 120);
+        expect(window['earliestStart'], '2026-05-25T15:05:00.000');
+        expect(window['availableMinutes'], 115);
+      },
+    );
 
     test(
       'refine occupancy is recomputed from blocks, not the stored total',

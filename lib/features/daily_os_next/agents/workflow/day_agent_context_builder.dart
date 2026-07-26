@@ -689,13 +689,14 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     // Occupancy is recomputed from the blocks rather than read from the
     // denormalized `scheduledMinutes`, which can drift; the projection and the
     // agenda view both recompute for the same reason.
-    if (refineBaseline != null) {
-      final spent = scheduledMinutesFor(refineBaseline.data.plannedBlocks);
-      return {
-        'capacityMinutes': refineBaseline.capacityMinutes,
-        'scheduledMinutes': spent,
-      };
-    }
+    final refineBudget = refineBaseline == null
+        ? const <String, Object?>{}
+        : {
+            'capacityMinutes': refineBaseline.capacityMinutes,
+            'scheduledMinutes': scheduledMinutesFor(
+              refineBaseline.data.plannedBlocks,
+            ),
+          };
     final available = remainingWorkingMinutes(
       planDate: planDate,
       now: now,
@@ -708,14 +709,23 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     // `earliestStart: 18:05` beside `availableMinutes: 0` gave a fresh draft no
     // coherent move: the rules forbid running past working hours, and there is
     // no time left inside them.
-    if (available == 0) return const {'closed': true};
-    final budget = <String, Object?>{'availableMinutes': ?available};
+    if (available == 0) return {'closed': true, ...refineBudget};
+    // The clock bounds hold for refine too — `proposePlanDiff` enforces the
+    // same past-start guard — so the temporal fields are *added to* the refine
+    // budget rather than replacing it. Returning capacity and occupancy alone
+    // dropped the floor a diff still has to respect, and let a 480-minute
+    // baseline advertise room for a 240-minute addition at 15:00 with 115
+    // working minutes left.
+    final budget = <String, Object?>{
+      'availableMinutes': ?available,
+      ...refineBudget,
+    };
     final earliest = advertisedPlanningStart(planDate: planDate, now: now);
     if (earliest != null) {
       return {'earliestStart': earliest.toIso8601String(), ...budget};
     }
     if (planningWindowClosed(planDate: planDate, now: now)) {
-      return {'closed': true};
+      return {'closed': true, ...refineBudget};
     }
     return budget;
   }
