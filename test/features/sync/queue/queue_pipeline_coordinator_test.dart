@@ -1757,6 +1757,62 @@ void main() {
     );
 
     test(
+      'a lookup-throttled sweep does not count toward the stall limit',
+      () async {
+        // The pen throttles its own `room.getEventById` calls, and this loop
+        // polls faster than that interval. Counting throttled sweeps burned
+        // the whole allowance inside a single interval, so shutdown could
+        // tear the pen down without ever having looked once — discarding a
+        // key that landed in the gap.
+        when(() => queue.stats()).thenAnswer(
+          (_) async => const QueueStats(
+            total: 0,
+            byProducer: {},
+            readyNow: 0,
+            oldestEnqueuedAt: null,
+          ),
+        );
+        when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
+        final room = MockRoom();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => pen.size).thenReturn(1);
+        // Every sweep is throttled: nothing enqueued, and no lookup made.
+        when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
+          (_) async => const PenFlushOutcome(
+            enqueued: 0,
+            stillEncrypted: 1,
+            dropped: 0,
+            lookups: 0,
+          ),
+        );
+
+        final coordinator = build();
+        fakeAsync((async) {
+          var completed = false;
+          withClock(Clock(() => DateTime.utc(2026).add(async.elapsed)), () {
+            unawaited(
+              coordinator
+                  .drainUntilEmpty(timeout: const Duration(seconds: 30))
+                  .then<void>((_) => completed = true),
+            );
+          });
+
+          // Past where five 200ms polls would have exhausted the allowance.
+          async.elapse(const Duration(seconds: 3));
+          expect(
+            completed,
+            isFalse,
+            reason: 'throttled sweeps must not spend the stall allowance',
+          );
+
+          // It still ends, at the timeout, rather than hanging forever.
+          async.elapse(const Duration(seconds: 30));
+          expect(completed, isTrue);
+        });
+      },
+    );
+
+    test(
       'drainUntilEmpty stops waiting on a pen that cannot produce',
       () async {
         // Ciphertext whose key has not arrived is not a stranded row: it has
@@ -1777,8 +1833,12 @@ void main() {
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => pen.size).thenReturn(3);
         when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
-          (_) async =>
-              const PenFlushOutcome(enqueued: 0, stillEncrypted: 3, dropped: 0),
+          (_) async => const PenFlushOutcome(
+            enqueued: 0,
+            stillEncrypted: 3,
+            dropped: 0,
+            lookups: 3,
+          ),
         );
 
         final coordinator = build();
@@ -1858,8 +1918,12 @@ void main() {
         final room = MockRoom();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
-          (_) async =>
-              const PenFlushOutcome(enqueued: 0, stillEncrypted: 0, dropped: 0),
+          (_) async => const PenFlushOutcome(
+            enqueued: 0,
+            stillEncrypted: 0,
+            dropped: 0,
+            lookups: 0,
+          ),
         );
 
         final coordinator = build();
@@ -1909,6 +1973,7 @@ void main() {
             enqueued: 0,
             stillEncrypted: 0,
             dropped: 0,
+            lookups: 0,
           );
         });
         when(bench.queue.stats).thenAnswer((_) async {

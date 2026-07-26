@@ -234,11 +234,13 @@ class PendingDecryptionPen {
         enqueued: 0,
         stillEncrypted: 0,
         dropped: 0,
+        lookups: 0,
       );
     }
 
     var stillEncrypted = 0;
     var dropped = 0;
+    var lookups = 0;
     final decrypted = <({String id, Event event})>[];
 
     final ids = _held.keys.toList(growable: false);
@@ -255,6 +257,7 @@ class PendingDecryptionPen {
         continue;
       }
       held.lastLookupAtMs = nowMs;
+      lookups++;
 
       final latest = await _fetchLatest(room, id);
       final candidate = latest ?? held.event;
@@ -305,6 +308,7 @@ class PendingDecryptionPen {
       enqueued: decrypted.length,
       stillEncrypted: stillEncrypted,
       dropped: dropped,
+      lookups: lookups,
     );
   }
 
@@ -343,9 +347,19 @@ class PenFlushOutcome {
     required this.enqueued,
     required this.stillEncrypted,
     required this.dropped,
+    required this.lookups,
   });
 
   final int enqueued;
   final int stillEncrypted;
   final int dropped;
+
+  /// How many entries were actually re-queried this sweep.
+  ///
+  /// Zero means every held entry was inside its [PendingDecryptionPen
+  /// .lookupInterval] and the sweep could not have discovered a decryption
+  /// even if one had happened. Callers that give up after N unproductive
+  /// sweeps must not count those, or a caller whose own cadence is faster
+  /// than the lookup interval gives up without ever having looked.
+  final int lookups;
 }

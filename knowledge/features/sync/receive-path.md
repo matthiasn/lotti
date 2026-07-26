@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T17:15:56Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T18:27:07Z }
 stale_after: 2026-11-02
 sources:
   - id: queue
@@ -74,8 +74,8 @@ mid-drain simply re-leases the same rows on restart.
 `QueuePipelineCoordinator` subscribes to `MatrixSessionManager.timelineEvents`.
 Live events are routed through `PendingDecryptionPen` first, so
 **pre-decryption ciphertext never lands in `inbound_event_queue.raw_json`**. The
-worker re-resolves penned events via `room.getEventById` on every drain
-iteration; only fully-decrypted events reach `raw_json`.
+worker sweeps the pen at the top of every drain iteration and only
+fully-decrypted events reach `raw_json`.
 
 **The pen's give-up budget is measured in time, not in sweeps.** An entry that
 never decrypts is eventually dropped, and a dropped entry is gone — its
@@ -191,6 +191,22 @@ tiebreak only when both sides are durable. The candidate is clamped against the
 oldest still-active row for the room, so the marker never crosses an unapplied
 gap.
 
+**The room lookup has its own, shorter cadence.** A sweep does not re-query
+every held entry: `room.getEventById` is the expensive half, the worker sweeps
+before every batch, and `SyncTuning.inboundWorkerBatchSize` is 1 — draining 10k
+rows against a full 256-entry pen would otherwise issue ~2.5M sequential
+lookups. That load used to be self-limiting only because entries were dropped
+after 20 sweeps; holding them for ten real minutes makes it persist. So an
+entry is re-queried at most once per `lookupInterval` (1s), which bounds the
+cost while keeping detection within about a second of the key landing. It is a
+real, if small, latency: a key that arrives inside an entry's interval is
+noticed by the next eligible sweep, not the next sweep.
+
+Callers that give up after N unproductive sweeps must count only sweeps that
+actually looked. `drainUntilEmptyImpl` polls every 200ms, faster than the
+lookup interval, so counting throttled sweeps would spend its whole allowance
+inside one interval and tear the pen down without ever having queried the room.
+
 **Held ciphertext clamps it too.** A `PendingDecryptionPen` entry is
 received-but-not-applied — exactly what the clamp exists for — but it has no
 queue row by design, so the table-based probe cannot see it. Left invisible, a
@@ -207,7 +223,16 @@ nothing to an all-encrypted run, while a forward walk emits up to 50 pages of
 200 and manual history collection is unbounded against a fixed 256-entry LRU.
 The sink admits only what fits — checked *before* holding, because `hold`
 enforces capacity by evicting — and returns false once a page needs more room
-than remains. Stopping is safe only because of the clamp above: the marker
+than remains.
+
+That budget is **per room**, and the difference matters: capacity and LRU are
+global, `onRoomChanged` prunes queue rows but not the pen, and the worker only
+ever sweeps the current room. Measured globally, ciphertext left behind by a
+room the user switched away from would occupy every slot and stop the active
+room's bootstrap without admitting anything. Measured per room, the active
+room is admitted and the global LRU reclaims the stale entries — so backfill
+does not evict *within* a room, but it will evict *across* one. That is the
+intended trade: the displaced entries belong to a room nothing is sweeping. Stopping is safe only because of the clamp above: the marker
 cannot pass what the pen holds, so the next run resumes from the right anchor
 instead of skipping the gap.
 
