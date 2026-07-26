@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
@@ -24,6 +25,7 @@ class QueueBootstrapSink implements BootstrapSink {
     this.highWater = 1000,
     this.backPressureTimeout = const Duration(seconds: 30),
     this._cancelSignal,
+    this.pen,
   }) {
     // Register the cancel handler eagerly so cancellation that lands
     // between pages (while `_waitForDrain` is not currently awaiting)
@@ -35,6 +37,23 @@ class QueueBootstrapSink implements BootstrapSink {
 
   final InboundQueue _queue;
   final DomainLogger _logging;
+
+  /// Where ciphertext goes while it waits for its Megolm key.
+  ///
+  /// `InboundQueue.enqueueBatch` refuses still-encrypted events — writing
+  /// pre-decryption ciphertext into `raw_json` would lose the payload on the
+  /// next `Event.fromJson` round-trip — and reports them as
+  /// `deferredPendingDecryption`, whose documented contract is that *the
+  /// caller retains the event and re-submits once decryption completes*. The
+  /// live producer honours that by penning before it enqueues. Backfill did
+  /// not: it handed pages straight to the queue and ignored the count, so
+  /// every event the startup bridge replayed while still encrypted was
+  /// discarded outright — no row, no pen entry, no ledger, nothing to retry
+  /// and nothing to notice.
+  ///
+  /// Public because Dart forbids named parameters whose name begins with an
+  /// underscore, and this reads better at the call sites than a positional.
+  final PendingDecryptionPen? pen;
   final int highWater;
   final Duration backPressureTimeout;
   final Future<void>? _cancelSignal;
@@ -52,7 +71,19 @@ class QueueBootstrapSink implements BootstrapSink {
       return false;
     }
 
-    final enqueue = await _queue.appendBootstrapPage(events);
+    // Pen first, enqueue second — the same order the live producer uses.
+    // `hold` returns false for anything already decrypted, so this only
+    // diverts the events the queue would otherwise refuse.
+    final heldIn = pen;
+    final forQueue = heldIn == null
+        ? events
+        : [
+            for (final event in events)
+              if (!heldIn.hold(event)) event,
+          ];
+    final penned = events.length - forQueue.length;
+
+    final enqueue = await _queue.appendBootstrapPage(forQueue);
     _lastAcceptedCount = enqueue.accepted;
 
     _logging.log(
@@ -63,6 +94,7 @@ class QueueBootstrapSink implements BootstrapSink {
       'accepted=${enqueue.accepted} '
       'dupes=${enqueue.duplicatesDropped} '
       'filteredOutByType=${enqueue.filteredOutByType} '
+      'penned=$penned '
       'deferredPendingDecryption=${enqueue.deferredPendingDecryption} '
       'totalEventsSoFar=${info.totalEventsSoFar} '
       'oldestTs=${info.oldestTimestampSoFar} '

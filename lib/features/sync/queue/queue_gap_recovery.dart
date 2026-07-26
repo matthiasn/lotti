@@ -27,6 +27,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
         queue: _queue,
         logging: _logging,
         cancelSignal: cancelSignal,
+        pen: _pen,
       ),
       onProgress: onProgress,
     );
@@ -99,9 +100,13 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     required String anchorEventId,
   }) async {
     final innerSink = _attachmentIngestor == null
-        ? QueueBootstrapSink(queue: _queue, logging: _logging)
+        ? QueueBootstrapSink(queue: _queue, logging: _logging, pen: _pen)
         : AttachmentAwareBootstrapSink(
-                inner: QueueBootstrapSink(queue: _queue, logging: _logging),
+                inner: QueueBootstrapSink(
+                  queue: _queue,
+                  logging: _logging,
+                  pen: _pen,
+                ),
                 processAttachment: _processAttachment,
               )
               as BootstrapSink;
@@ -145,9 +150,13 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     // JSONs never land on disk, producing the pendingAttachment
     // skip cascade we just fixed.
     final innerSink = _attachmentIngestor == null
-        ? QueueBootstrapSink(queue: _queue, logging: _logging)
+        ? QueueBootstrapSink(queue: _queue, logging: _logging, pen: _pen)
         : AttachmentAwareBootstrapSink(
-                inner: QueueBootstrapSink(queue: _queue, logging: _logging),
+                inner: QueueBootstrapSink(
+                  queue: _queue,
+                  logging: _logging,
+                  pen: _pen,
+                ),
                 processAttachment: _processAttachment,
               )
               as BootstrapSink;

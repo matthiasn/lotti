@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/queue/bootstrap_sink.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,12 +18,13 @@ Event _buildEvent({
   required String eventId,
   required int originTsMs,
   String roomId = '!roomA:example.org',
+  String type = EventTypes.Message,
 }) {
   final event = MockEvent();
   final content = <String, dynamic>{'msgtype': syncMessageType};
   when(() => event.eventId).thenReturn(eventId);
   when(() => event.roomId).thenReturn(roomId);
-  when(() => event.type).thenReturn(EventTypes.Message);
+  when(() => event.type).thenReturn(type);
   when(() => event.content).thenReturn(content);
   when(() => event.text).thenReturn('stub');
   when(
@@ -228,6 +230,47 @@ void main() {
       final stats = await queue.stats();
       expect(stats.total, 2);
       expect(stats.byProducer[InboundEventProducer.bootstrap], 2);
+    },
+  );
+
+  test(
+    'still-encrypted backfill goes to the pen instead of the floor',
+    () async {
+      // `enqueueBatch` refuses ciphertext — writing it into `raw_json` would
+      // lose the payload on the next `Event.fromJson` round-trip — and
+      // reports it as `deferredPendingDecryption`, whose contract is that the
+      // *caller* retains the event and re-submits after decryption. The live
+      // producer honours that. Backfill did not: it handed pages straight to
+      // the queue and ignored the count, so every event the startup bridge
+      // replayed while still encrypted was discarded outright — no row, no
+      // pen entry, no ledger row, nothing to retry and nothing to notice.
+      final pen = PendingDecryptionPen(logging: logging);
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        pen: pen,
+      );
+
+      final events = [
+        _buildEvent(eventId: r'$plain', originTsMs: 1),
+        _buildEvent(
+          eventId: r'$sealed',
+          originTsMs: 2,
+          type: EventTypes.Encrypted,
+        ),
+      ];
+      final cont = await sink.onPage(events, info(0, events.length));
+
+      expect(cont, isTrue);
+      final stats = await queue.stats();
+      expect(stats.total, 1, reason: 'only the decrypted event is a row');
+      expect(
+        pen.size,
+        1,
+        reason:
+            'the ciphertext is held, not dropped, so it can be '
+            're-submitted once its key arrives',
+      );
     },
   );
 
