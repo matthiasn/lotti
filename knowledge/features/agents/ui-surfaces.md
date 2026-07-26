@@ -5,7 +5,7 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T14:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T14:08:25Z }
 stale_after: 2026-10-12
 sources:
   - id: ui
@@ -112,6 +112,22 @@ every glyph lands on `spacing.cardPadding`, sharing one leading edge with the
 summary prose and proposal rows, while interactive rows still get ink that
 breathes around their content.
 
+**Vertically the band declares no gaps at all, and that is the contract.** Every
+row here is a touch-target box taller than the ink inside it — all of them on
+one `spacing.step8` minimum — so each already contributes ~10 logical px of air
+above and below the text a reader can see. Declared gaps stack on top of that
+and the band pays twice: `step5` between two stacked rows rendered as ~34px of
+visible space, and the settings zone grew to a third of the card on a phone.
+Space the row boxes, not the text inside them.
+
+The switch row earns its height rather than reserving it. An earlier revision
+wrapped the 40×24 switch in a `step9` box "for a full-size interaction target",
+but `DesignSystemToggle` owns its own `InkWell`, so that outer box was inert: it
+cost 48px of column while the only thing a finger could hit stayed the 24px
+track. The whole row is the gesture now — tapping the label toggles the setting
+— and it publishes `excludeFromSemantics`, because the switch inside is already
+the accessible control and a second unlabelled button node beside it is noise.
+
 ## The manual trigger is never absent
 
 *Update now* occupies the same slot in every state, and a run in flight swaps its
@@ -166,7 +182,7 @@ flowchart TD
   T1 -->|yes| W1["one line, short sentence"]
   T1 -->|no| T2{"...with '1:30'?"}
   T2 -->|yes| W2["one line, value only"]
-  T2 -->|no| S["stack: state / schedule / switch<br/>(schedule tight to the switch,<br/>larger gap above it)"]
+  T2 -->|no| S["stack: state / schedule / switch<br/>(no declared gaps; each row is<br/>a step8 box that spaces itself)"]
   S --> S1{"freshness + trigger<br/>fit one line?"}
   S1 -->|no| S2["freshness above the trigger"]
   S --> S3{"countdown + 'Skip once'<br/>fit one line?"}
@@ -189,9 +205,11 @@ measuring without them clips the payload.
 Freshness is a glyph **and** a word, never colour alone; the full sentence lives
 in the tooltip. With automation on and nothing pending the line reads "Updates
 when this task changes", so flipping the switch never leaves a hole that resizes
-the card. The toggle keeps a full `spacing.step9` interaction slot around its
-40×24 track. When setup is missing, the disabled toggle explains itself via an
-info tooltip and the trigger is disabled rather than hidden.
+the card. The whole switch row is the interaction target — tapping the label
+toggles the setting — on the band's shared `spacing.step8` minimum; the switch's
+own 40×24 track is too short in one dimension to be the target by itself. When
+setup is missing, the disabled toggle explains itself via an info tooltip and
+the trigger is disabled rather than hidden.
 
 ## The setup region
 

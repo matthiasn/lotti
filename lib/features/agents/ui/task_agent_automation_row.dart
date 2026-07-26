@@ -279,16 +279,19 @@ class _TaskAgentAutomationRowState extends State<TaskAgentAutomationRow> {
           );
         }
 
+        // No gaps between these rows, and that is deliberate. Each one is a
+        // touch-target box taller than its ink — the trigger's button, the
+        // switch's `step9` row — so it already contributes ~12 logical px of
+        // air above and below the text you can actually see. Declared gaps sat
+        // on top of that and the band paid twice: `step5` between these two
+        // rows rendered as ~34px of visible space. Space the boxes, not the
+        // text inside them.
         return Column(
           key: const ValueKey('taskAgentAutomationRowStacked'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             state,
-            SizedBox(height: tokens.spacing.step5),
-            if (schedule != null) ...[
-              schedule,
-              SizedBox(height: tokens.spacing.step2),
-            ],
+            ?schedule,
             setting,
           ],
         );
@@ -607,8 +610,7 @@ class _AutomationSetting extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    return Row(
-      key: const ValueKey('taskAgentAutomationSetting'),
+    final row = Row(
       children: [
         Expanded(
           child: Text(
@@ -623,35 +625,64 @@ class _AutomationSetting extends StatelessWidget {
           ),
         ),
         SizedBox(width: tokens.spacing.step3),
-        // The switch itself is 40×24; the slot around it keeps a full-size
-        // interaction target for anyone who cannot land on 24px.
-        ConstrainedBox(
-          key: const ValueKey('taskAgentAutomaticUpdatesTarget'),
-          constraints: BoxConstraints(
-            minWidth: tokens.spacing.step9,
-            minHeight: tokens.spacing.step9,
-          ),
-          // Centring a 40px switch in a 48px slot leaves it short of the
-          // rail the TTS button and the proposal cards terminate on. The slot
-          // keeps its size; the switch sits at its trailing edge.
-          child: Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: DesignSystemToggle(
-              key: const Key('taskAgentAutomaticUpdatesCheckbox'),
-              value: value,
-              semanticsLabel: messages.taskAgentAutomaticUpdatesLabel,
-              // The disabled switch explains itself on demand instead of
-              // spending a permanent caption line on it.
-              tooltipIcon: needsSetupHint == null
-                  ? null
-                  : Icons.info_outline_rounded,
-              tooltipMessage: needsSetupHint,
-              enabled: enabled,
-              onChanged: onChanged,
-            ),
-          ),
+        // The switch is 40×24 and terminates on the trailing rail. It gets no
+        // slot of its own: an outer box sized for a touch target used to sit
+        // here, reserving 48 logical px of column while the only thing a
+        // finger could actually hit was the 24px track inside it. The row
+        // below is the target now, so the height is paid once and is real.
+        DesignSystemToggle(
+          key: const Key('taskAgentAutomaticUpdatesCheckbox'),
+          value: value,
+          semanticsLabel: messages.taskAgentAutomaticUpdatesLabel,
+          // The disabled switch explains itself on demand instead of
+          // spending a permanent caption line on it.
+          tooltipIcon: needsSetupHint == null
+              ? null
+              : Icons.info_outline_rounded,
+          tooltipMessage: needsSetupHint,
+          enabled: enabled,
+          onChanged: onChanged,
         ),
       ],
+    );
+
+    // The label is part of the control, not a caption beside it. Making the
+    // whole row the gesture gives this setting a target the full width of the
+    // band instead of the switch's own 40x24 track, which is well under the
+    // 48 minimum in its short dimension. The switch keeps its own ink for
+    // direct hits; nested taps resolve to the innermost, so this cannot fire
+    // twice.
+    return Material(
+      key: const ValueKey('taskAgentAutomationSetting'),
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? () => onChanged(!value) : null,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        // The enlarged target is for pointers and thumbs. The switch inside
+        // already publishes the accessible control — button, toggled state and
+        // label — so this row must not add a second, unlabelled button node
+        // beside it.
+        excludeFromSemantics: true,
+        // ...and it must not add a second *focus* stop either. Excluding
+        // semantics does nothing to focus traversal, so without this Tab lands
+        // twice on one setting — once on this wrapper, once on the switch —
+        // and both stops toggle it. The switch keeps the keyboard; the row is
+        // pointer-only.
+        canRequestFocus: false,
+        // ...and it must not add a second *focus* stop either. Excluding
+        // semantics does nothing to focus traversal, so without this Tab lands
+        // twice on one setting — once on this wrapper, once on the switch —
+        // and both stops toggle it. The switch keeps the keyboard; the row is
+        // pointer-only.
+        // One row box, on the same `step8` minimum as every other row in this
+        // band. It is 8px shorter than the slot it replaces and, unlike that
+        // slot, all of it is tappable.
+        child: ConstrainedBox(
+          key: const ValueKey('taskAgentAutomaticUpdatesTarget'),
+          constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+          child: row,
+        ),
+      ),
     );
   }
 }
@@ -749,10 +780,13 @@ class _AutomationMetrics {
           widthOf(triggerLabel, caption) +
           tokens.typography.lineHeight.caption +
           tokens.spacing.step2 * 3,
+      // The switch's own track width, not the box that used to surround it:
+      // `DesignSystemToggle` renders a `step8`-wide track and now sits in the
+      // row directly.
       settingWidth:
           widthOf(settingLabel, caption) +
           tokens.spacing.step3 +
-          tokens.spacing.step9,
+          tokens.spacing.step8,
       clusterGap: tokens.spacing.cardItemSpacing,
       groupGap: tokens.spacing.step6,
     );
