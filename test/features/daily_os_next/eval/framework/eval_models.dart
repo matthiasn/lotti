@@ -205,9 +205,26 @@ class EvalFixtureInputs {
   final DateTime? now;
 
   /// Ids the model could legitimately have used.
-  Set<String> get referenceableTaskIds =>
-      visibleTaskIds ??
-      {for (final task in corpus) task.taskId, ...decidedTaskIds};
+  ///
+  /// On a capture-less wake the decided tasks are not the whole story: each
+  /// carries its one-hop `blockedBy`, which names the blocker's `taskId`, and
+  /// the blocked-work rule explicitly tells the model to schedule that blocker
+  /// first. Omitting those ids would make `noFabricatedTaskIds` fail a model
+  /// for doing exactly what the prompt asked — and the judge bundle would mark
+  /// an id the model was shown as unreferenceable.
+  Set<String> get referenceableTaskIds => visibleTaskIds == null
+      ? {for (final task in corpus) task.taskId, ...decidedTaskIds}
+      : {...visibleTaskIds!, ..._blockersOfVisibleTasks};
+
+  /// Blocker ids reachable through a visible task's `blockedBy` projection.
+  ///
+  /// One hop only, matching ADR 0043: a blocker's own blockers are never
+  /// rendered, so naming one of those really would be fabrication.
+  Set<String> get _blockersOfVisibleTasks => {
+    for (final id in visibleTaskIds ?? const <String>{})
+      for (final blocker in taskById(id)?.blockedBy ?? const <String>[])
+        blocker,
+  };
 
   EvalCorpusTask? taskById(String id) {
     for (final task in corpus) {

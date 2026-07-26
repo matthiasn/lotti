@@ -5446,6 +5446,141 @@ void main() {
           );
         },
       );
+
+      test(
+        'annotates baseline blocks whose task became blocked since the draft',
+        () async {
+          // A re-draft replaces the whole block list, so the model re-affirms
+          // every baseline block. A task that picked up a blocker after that
+          // draft was written is in neither decidedTasks nor (with no capture)
+          // the corpus, so without this the rule again arrives with nothing
+          // behind it — just for a different set of tasks.
+          final resolver = MockTaskDependencyResolver();
+          final planService = MockDayAgentPlanService();
+          final baselinePlan = makeTestDayPlan(
+            agentId: agentId,
+            planDate: DateTime(2026, 5, 25),
+            data: DayPlanData(
+              planDate: DateTime(2026, 5, 25),
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: [
+                PlannedBlock(
+                  id: 'block-1',
+                  categoryId: 'work',
+                  taskId: 'task-since-blocked',
+                  startTime: DateTime(2026, 5, 25, 9),
+                  endTime: DateTime(2026, 5, 25, 10),
+                  title: 'Ship the integration',
+                  reason: 'High-energy window.',
+                ),
+              ],
+            ),
+            capacityMinutes: 360,
+            scheduledMinutes: 60,
+            createdAt: DateTime(2026, 5, 25, 8),
+            updatedAt: DateTime(2026, 5, 25, 8),
+          );
+          stubDraftingPlanContext(planService, baselinePlan: baselinePlan);
+          stubSuccessfulDraftToolCall(planService);
+          when(() => resolver.resolveBlockedStatus(any())).thenAnswer(
+            (_) async => {
+              'task-since-blocked': const [
+                ResolvedBlocker(
+                  taskId: 'task-b-middle',
+                  title: 'Get vendor credentials',
+                  status: 'OPEN',
+                  categoryId: 'ops',
+                ),
+              ],
+            },
+          );
+
+          final result = await execute(
+            workflow(planService: planService, dependencyResolver: resolver),
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          final blocks =
+              ((sentPrompt().json('drafting')!
+                          as Map<String, dynamic>)['baselinePlan']
+                      as Map<String, dynamic>)['blocks']
+                  as List<dynamic>;
+          final blocked = blocks.first as Map<String, dynamic>;
+          expect(
+            (blocked['blockedBy'] as List<dynamic>).single,
+            containsPair('taskId', 'task-b-middle'),
+          );
+          // Only the ids the baseline actually schedules, and only those not
+          // already resolved as decided tasks.
+          final asked =
+              verify(
+                    () => resolver.resolveBlockedStatus(captureAny()),
+                  ).captured.last
+                  as Set<String>;
+          expect(asked, {'task-since-blocked'});
+        },
+      );
+
+      test(
+        'leaves an unblocked baseline plan serialised exactly as before',
+        () async {
+          final resolver = MockTaskDependencyResolver();
+          final planService = MockDayAgentPlanService();
+          final baselinePlan = makeTestDayPlan(
+            agentId: agentId,
+            planDate: DateTime(2026, 5, 25),
+            data: DayPlanData(
+              planDate: DateTime(2026, 5, 25),
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: [
+                PlannedBlock(
+                  id: 'block-1',
+                  categoryId: 'work',
+                  taskId: 'task-fine',
+                  startTime: DateTime(2026, 5, 25, 9),
+                  endTime: DateTime(2026, 5, 25, 10),
+                  title: 'Prep demo',
+                  reason: 'High-energy window.',
+                ),
+              ],
+            ),
+            capacityMinutes: 360,
+            scheduledMinutes: 60,
+            createdAt: DateTime(2026, 5, 25, 8),
+            updatedAt: DateTime(2026, 5, 25, 8),
+          );
+          stubDraftingPlanContext(planService, baselinePlan: baselinePlan);
+          stubSuccessfulDraftToolCall(planService);
+          when(
+            () => resolver.resolveBlockedStatus(any()),
+          ).thenAnswer((_) async => const {});
+
+          final result = await execute(
+            workflow(planService: planService, dependencyResolver: resolver),
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          final blocks =
+              ((sentPrompt().json('drafting')!
+                          as Map<String, dynamic>)['baselinePlan']
+                      as Map<String, dynamic>)['blocks']
+                  as List<dynamic>;
+          // Absent, not an empty list: an unblocked plan must not grow a key
+          // and cost prompt bytes to say nothing.
+          expect(
+            (blocks.single as Map<String, dynamic>).containsKey('blockedBy'),
+            isFalse,
+          );
+        },
+      );
     });
   });
 }

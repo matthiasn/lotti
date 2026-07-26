@@ -65,8 +65,16 @@ The resolver is stateless, plain Dart, and batch-shaped for a corpus of up to
 
 | Case | Corpus (model-facing) | Task detail header (human-facing) |
 |------|----------------------|-----------------------------------|
-| Blocker resolves to a real, open task | Serializes with title and status | Tappable chip |
-| Blocker link whose target cannot be loaded (a sync gap) | `{"taskId": "<id>"}` with no `title`/`status` — **still a non-empty `blockedBy` entry** | A bare untappable "Blocked" pill |
+| Blocker resolves to a real, open task | Serializes with title, status and **its own `categoryId`** | Tappable chip |
+| Blocker link whose target cannot be loaded (a sync gap) | `{"taskId": "<id>"}` with no `title`/`status`/`categoryId` — **still a non-empty `blockedBy` entry** | A bare untappable "Blocked" pill |
+
+The blocker's own `categoryId` is carried because the rule tells the model to
+schedule that blocker, and `draft_day_plan` requires a `categoryId` on every
+block. On a capture-less wake the nested blocker object is the model's *only*
+description of it — there is no corpus row to read a category from — so without
+it a blocker in a different category than the task it blocks gets guessed wrong.
+The write path validates the block's `taskId` and its `categoryId`
+independently, so a wrong guess persists rather than being rejected.
 
 The corpus keeps the entry so "still blocked" is never silently downgraded to
 "ready" just because the blocker has not synced yet. A bare id is a usable token
@@ -78,10 +86,11 @@ for a model; for a human it is not.
 into **two** carriers of the blocked-work data, so that every wake carrying the
 rules below also carries data they can apply to:
 
-| Carrier | Assembled in | Renders on |
-|---------|--------------|------------|
-| `DayAgentCorpusService.buildTaskCorpusSnapshot` | capture-context | wakes with a capture (the corpus lives inside `<capture>`) |
-| `DayAgentPlanService.hydrateDecidedTasks` → `DecidedTaskRef` | drafting-context | **every** drafting wake |
+| Carrier | Assembled in | Covers |
+|---------|--------------|--------|
+| `DayAgentCorpusService.buildTaskCorpusSnapshot` | capture-context | corpus rows — wakes with a capture only (the corpus lives inside `<capture>`) |
+| `DayAgentPlanService.hydrateDecidedTasks` → `DecidedTaskRef` | drafting-context | tasks the user approved for placement, on **every** drafting wake |
+| `_baselineBlockedBy` → `drafting.baselinePlan.blocks[].blockedBy` | drafting-context | tasks an **earlier draft** already scheduled |
 
 That one field drives the annotation on both paths and the prompt gates below, so
 they **can never drift out of sync** — there is no separate "is this feature on"
@@ -99,10 +108,25 @@ placing the blocked leaf. See [evaluation](evaluation.md).
 
 `DecidedTaskRef` serializes `status` (`toDbString`, e.g. `OPEN`, `BLOCKED`) and
 `blockedBy` in exactly the spelling `DayAgentCorpusService.n` uses, so the rule
-reads the same against either carrier. `blockedBy` is omitted when empty rather
-than sent as `[]` — every decided task would otherwise carry one. Resolution is
-one batched `resolveBlockedStatus` call per wake, keyed by the ids that survive
-category filtering, and skipped entirely when none do.
+reads the same against either carrier. Resolution is one batched
+`resolveBlockedStatus` call per wake, keyed by the ids that survive category
+filtering, and skipped entirely when none do.
+
+The third carrier exists because a re-draft **replaces the whole block list**,
+so the model re-affirms every baseline block — including one whose task became
+blocked *after* that draft was written. Such a task is in neither `decidedTasks`
+(the user did not approve it this wake) nor, on a capture-less wake, the corpus.
+Folding it into `decidedTasks` would be wrong: the prompt defines that list as
+tasks the *user* approved for placement, and a block the agent drafted earlier is
+not that. So the annotation lands on the block. Baseline ids already resolved as
+decided tasks are skipped, so the common re-draft costs no extra query.
+
+**Everything is omitted rather than emitted empty**, on all three carriers: no
+`status` and no `blockedBy` when the resolver is null, no `blockedBy` key on an
+unblocked task or block. The same field gates the rules below, so a wake without
+a resolver gets no rule *and* no annotation, and its prompt stays byte-identical
+to pre-ADR-0043. An empty array would spend prompt bytes to say nothing and break
+the prefix cache for it.
 
 `day_agent_prompt_builder.dart` gates two prompt-contract additions on the same
 field, both rendering the empty string when it is null — so a wake with no

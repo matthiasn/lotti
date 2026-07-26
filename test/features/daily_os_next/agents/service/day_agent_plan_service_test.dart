@@ -1479,7 +1479,7 @@ void main() {
         expect(captured, ['task-1']);
       });
 
-      test('carries status even without a dependency resolver', () async {
+      test('omits status entirely without a dependency resolver', () async {
         when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
           (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},
         );
@@ -1489,8 +1489,13 @@ void main() {
           explicitTaskIds: const ['task-1'],
         );
 
-        expect(result.single.status, 'OPEN');
+        // Not merely empty — absent. The resolver also gates the blocked-work
+        // rule, so a wake without one must serialize byte-identically to
+        // pre-ADR-0043 or the prompt prefix cache is invalidated for nothing.
+        expect(result.single.status, isNull);
         expect(result.single.blockedBy, isEmpty);
+        expect(result.single.toJson().containsKey('status'), isFalse);
+        expect(result.single.toJson().containsKey('blockedBy'), isFalse);
       });
 
       test(

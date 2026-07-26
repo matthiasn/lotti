@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:uuid/uuid.dart';
 
 /// Raised when a day-agent tool call fails (bad arguments, unknown tool, or a
@@ -83,11 +84,17 @@ class DraftingContext {
     this.baselinePlan,
     this.decidedTasks = const [],
     this.decidedCaptureItems = const [],
+    this.baselineBlockedBy = const {},
   });
 
   final DayPlanEntity? baselinePlan;
   final List<DecidedTaskRef> decidedTasks;
   final List<ParsedItemEntity> decidedCaptureItems;
+
+  /// One-hop blockers (ADR 0043) for tasks the baseline plan schedules,
+  /// keyed by task id. Annotates the blocks below rather than `decidedTasks`,
+  /// which the prompt defines as tasks the *user* approved for placement.
+  final Map<String, List<ResolvedBlocker>> baselineBlockedBy;
 
   Map<String, Object?> toJson() {
     final plan = baselinePlan;
@@ -114,6 +121,13 @@ class DraftingContext {
                     'state': block.state.name,
                     'reason': block.reason,
                     'note': block.note,
+                    // Only when the task picked up a blocker since this block
+                    // was drafted. Absent otherwise, so an unblocked plan
+                    // serializes exactly as before.
+                    if (baselineBlockedBy[block.taskId] case final blockers?)
+                      'blockedBy': [
+                        for (final blocker in blockers) blocker.toJson(),
+                      ],
                   },
               ],
               'energyBands': [

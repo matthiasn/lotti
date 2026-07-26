@@ -71,7 +71,11 @@ void main() {
     test(
       'one open, resolvable blocker resolves to a named ResolvedBlocker',
       () async {
-        final blocker = TestTaskFactory.create(id: 'blocker', title: 'Blocker');
+        final blocker = TestTaskFactory.create(
+          id: 'blocker',
+          title: 'Blocker',
+          categoryId: 'ops',
+        );
         stubLinks(
           {'blocked'},
           [
@@ -88,8 +92,14 @@ void main() {
             taskId: 'blocker',
             title: 'Blocker',
             status: 'OPEN',
+            categoryId: 'ops',
           ),
         ]);
+        // The blocker's own category, not the blocked task's. The blocked-work
+        // rule tells the model to schedule this blocker, and `draft_day_plan`
+        // requires a categoryId per block — without this the model has to
+        // guess, and guesses the category of the task it is blocking.
+        expect(result['blocked']!.single.toJson()['categoryId'], 'ops');
       },
     );
 
@@ -249,6 +259,26 @@ void main() {
         base,
         isNot(const ResolvedBlocker(taskId: 'x', title: 'X', status: 'DONE')),
       );
+      expect(
+        base,
+        isNot(
+          const ResolvedBlocker(
+            taskId: 'x',
+            title: 'X',
+            status: 'OPEN',
+            categoryId: 'ops',
+          ),
+        ),
+      );
+    });
+
+    test('an unresolvable blocker carries no category to guess from', () {
+      // The sync-gap case: the link exists but the task could not be loaded,
+      // so there is no category to report. The entry still blocks.
+      const unresolved = ResolvedBlocker(taskId: 'x');
+
+      expect(unresolved.isUnresolved, isTrue);
+      expect(unresolved.toJson(), {'taskId': 'x'});
     });
   });
 

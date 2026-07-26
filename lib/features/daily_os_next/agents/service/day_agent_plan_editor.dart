@@ -176,6 +176,15 @@ class DayAgentPlanEditor {
   /// Returns results in insertion order — explicit ids first, then
   /// parsed-item matches — with duplicates collapsed to the first occurrence.
   /// Returns an empty list when both inputs are empty.
+  ///
+  /// When [dependencyResolver] is supplied, each returned ref also carries the
+  /// task's `status` and its one-hop `blockedBy` (ADR 0043), resolved in a
+  /// single batched `resolveBlockedStatus` call over the surviving ids. When
+  /// it is null both are omitted — not merely empty — because the resolver is
+  /// also what gates the blocked-work rule into the prompt, and a wake without
+  /// one must serialize byte-identically to pre-ADR-0043 to keep the prefix
+  /// cache intact. Emitting a `status` no rule refers to would spend prompt
+  /// bytes to say nothing.
   Future<List<DecidedTaskRef>> hydrateDecidedTasks({
     required Set<String> allowedCategoryIds,
     List<String> explicitTaskIds = const [],
@@ -219,11 +228,24 @@ class DayAgentPlanEditor {
     // without a capture was therefore told to respect blockers while being
     // shown nothing that could be blocked, which is not a rule a model can
     // follow. One batched resolver call, keyed by the ids already in hand.
-    final blockedBy =
-        await dependencyResolver?.resolveBlockedStatus({
-          for (final task in tasks) task.id,
-        }) ??
-        const <String, List<ResolvedBlocker>>{};
+    //
+    // Gated on the resolver rather than always emitted: the same field gates
+    // the rule itself, so a wake without one gets no rule *and* no annotation,
+    // and its prompt stays byte-identical to pre-ADR-0043.
+    final resolver = dependencyResolver;
+    if (resolver == null) {
+      return [
+        for (final task in tasks)
+          DecidedTaskRef(
+            id: task.id,
+            title: task.data.title,
+            categoryId: task.meta.categoryId,
+          ),
+      ];
+    }
+    final blockedBy = await resolver.resolveBlockedStatus({
+      for (final task in tasks) task.id,
+    });
     return [
       for (final task in tasks)
         DecidedTaskRef(

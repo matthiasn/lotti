@@ -685,7 +685,42 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       baselinePlan: baselinePlan,
       decidedTasks: decidedTasks,
       decidedCaptureItems: decidedCaptureItems,
+      baselineBlockedBy: await _baselineBlockedBy(
+        baselinePlan: baselinePlan,
+        decidedTasks: decidedTasks,
+      ),
     );
+  }
+
+  /// One-hop blockers for tasks the baseline plan already schedules.
+  ///
+  /// A re-draft replaces the whole block list, so the model re-affirms every
+  /// baseline block — including one whose task became blocked *since* that
+  /// draft was written. Those tasks are not necessarily decided ones: with no
+  /// capture there is no corpus row for them either, so without this the
+  /// blocked-work rule would again arrive with nothing behind it, just for a
+  /// different set of tasks.
+  ///
+  /// Folding them into `decidedTasks` instead would be wrong — the prompt
+  /// defines that list as tasks *the user approved for placement*, and a block
+  /// the agent drafted earlier is not that.
+  ///
+  /// Skips ids already resolved as decided tasks, so the common re-draft costs
+  /// nothing extra, and returns empty when there is nothing left to ask about.
+  Future<Map<String, List<ResolvedBlocker>>> _baselineBlockedBy({
+    required DayPlanEntity? baselinePlan,
+    required List<DecidedTaskRef> decidedTasks,
+  }) async {
+    final resolver = dependencyResolver;
+    if (resolver == null || baselinePlan == null) return const {};
+    final alreadyResolved = {for (final task in decidedTasks) task.id};
+    final pending = <String>{
+      for (final block in baselinePlan.data.plannedBlocks)
+        if (block.taskId case final taskId?)
+          if (!alreadyResolved.contains(taskId)) taskId,
+    };
+    if (pending.isEmpty) return const {};
+    return resolver.resolveBlockedStatus(pending);
   }
 
   Future<List<ParsedItemEntity>> _parsedItemsForCapture(

@@ -27,6 +27,7 @@ import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dar
 import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake_context.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
