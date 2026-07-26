@@ -6,7 +6,7 @@ resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: sync-src
     resource: ../../../lib/features/sync

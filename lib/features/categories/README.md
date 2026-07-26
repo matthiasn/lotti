@@ -43,4 +43,4 @@ The two read paths, the picker surfaces, the stored defaults every downstream
 feature consumes, and the automatic-inference consent flag are documented in the
 knowledge bundle:
 
-**→ [knowledge/features/categories/](../../../knowledge/features/categories/)**
+**→ [knowledge/features/categories.md](../../../knowledge/features/categories.md)**

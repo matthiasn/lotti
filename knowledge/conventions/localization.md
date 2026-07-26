@@ -5,8 +5,8 @@ description: "Every user-visible string comes from an ARB catalog, in an informa
 resource: ../../lib/l10n
 tags: [convention, l10n, arb, translation]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T04:30:00Z }
-stale_after: 2027-01-31
+generated: { by: claude-code/opus-5, at: 2026-07-26T10:00:00Z }
+stale_after: 2027-01-26
 sources:
   - id: l10n
     resource: ../../lib/l10n
@@ -48,7 +48,7 @@ keep the catalogs consistently sorted. **Never edit the generated
 The rule includes debug and QA-only actions. It matters most in
 *Settings → Advanced → Maintenance*, whose onboarding preview and animation
 gallery rows are **real app UI** and would otherwise be an English island inside
-another locale. See [settings](../features/settings/).
+another locale. See [settings](../features/settings.md).
 
 # Register: informal
 
@@ -73,4 +73,4 @@ an enum. Localization happens at the presentation boundary — for example
 labels resolved when an event renders.
 
 That split is what lets a language change update every surface immediately
-without migrating a single record. See [events](../features/events/).
+without migrating a single record. See [events](../features/events.md).

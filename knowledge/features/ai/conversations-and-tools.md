@@ -6,7 +6,7 @@ resource: ../../../lib/features/ai/conversation
 tags: [ai, conversation, tool-calling, streaming]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: conversation
     resource: ../../../lib/features/ai/conversation

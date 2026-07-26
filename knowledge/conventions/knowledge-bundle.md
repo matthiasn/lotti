@@ -58,7 +58,7 @@ resource: ../../lib/features/speech    # the code this concept describes
 tags: [speech, audio, transcription]
 status: stable                # draft | stable | deprecated
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2026-10-25       # from the volatility table below
+stale_after: 2027-01-25       # from the volatility table below
 sources:
   - id: speech-repo
     resource: ../../lib/features/speech/repository/audio_recorder_repository.dart

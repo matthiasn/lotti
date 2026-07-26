@@ -35,4 +35,4 @@ lib/features/keyboard/
 The one-catalog-four-consumers model and the mounted-scope resolution are
 documented in the knowledge bundle:
 
-**→ [knowledge/features/keyboard/](../../../knowledge/features/keyboard/)**
+**→ [knowledge/features/keyboard.md](../../../knowledge/features/keyboard.md)**

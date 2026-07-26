@@ -6,7 +6,7 @@ resource: ../../../lib/features/tasks
 tags: [tasks, journal, detail, browse]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-26
 sources:
   - id: src
     resource: ../../../lib/features/tasks
@@ -146,7 +146,7 @@ on the first frame.
 | Feature | Contributes |
 |---------|-------------|
 | [journal](../journal/) | The shared entry substrate and paging/filter controller |
-| [projects](../projects/) | Project grouping and project-agent summaries |
-| [labels](../labels/) | Label entities and category scoping |
+| [projects](../projects.md) | Project grouping and project-agent summaries |
+| [labels](../labels.md) | Label entities and category scoping |
 | [speech](../speech/) | Task-linked audio entries |
 | [ai](../ai/) and [agents](../agents/) | Reports, change sets, prompts, automation |

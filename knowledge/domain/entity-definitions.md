@@ -6,7 +6,7 @@ resource: ../../lib/classes/entity_definitions.dart
 tags: [domain, categories, labels, habits, dashboards]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T02:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-07-26
 sources:
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
@@ -67,7 +67,7 @@ and switching it off leaves automatic transcription and image analysis running.
 
 It is a **seed, not a gate** — the per-task switch owns the preference afterwards,
 so a later category edit does not reach back into existing agents. See
-[categories](../features/categories/) and
+[categories](../features/categories.md) and
 [task agents](../features/agents/task-agents.md).
 
 The category model deliberately does **not** contain prompt allowlists, and the
@@ -75,5 +75,5 @@ old `automaticPrompts` concept is not part of it.
 
 # Related
 
-* [Categories feature](../features/categories/) - the repository and settings surfaces.
+* [Categories feature](../features/categories.md) - the repository and settings surfaces.
 * [AI execution paths](../features/ai/execution-paths.md) - where the consent gate sits in the chain.

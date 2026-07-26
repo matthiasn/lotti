@@ -6,7 +6,7 @@ resource: ../../../lib/features/ai
 tags: [ai, inference, configuration, profiles, skills]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: ai-src
     resource: ../../../lib/features/ai

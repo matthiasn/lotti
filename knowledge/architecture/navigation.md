@@ -6,7 +6,7 @@ resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-26
 sources:
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
@@ -152,5 +152,5 @@ allows, until everything fits and the More slot disappears.
 | Per-tab locations and path patterns | [`lib/beamer/locations/`](../../lib/beamer/locations) |
 | Index, delegate registry, flag gating | [`lib/services/nav_service.dart`](../../lib/services/nav_service.dart) |
 
-Related: [the settings feature](../features/settings/) for the tree that
+Related: [the settings feature](../features/settings.md) for the tree that
 `SettingsLocation` routes into.

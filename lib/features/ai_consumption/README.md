@@ -39,4 +39,4 @@ The deliberately small model — one attribution per output, one event per call,
 linked by one id — and why the carrier is authoritative, are documented in the
 knowledge bundle:
 
-**→ [knowledge/features/ai_consumption/](../../../knowledge/features/ai_consumption/)**
+**→ [knowledge/features/ai_consumption.md](../../../knowledge/features/ai_consumption.md)**

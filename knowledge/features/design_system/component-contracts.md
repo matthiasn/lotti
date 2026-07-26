@@ -6,7 +6,7 @@ resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T14:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-02-08
 sources:
   - id: components
     resource: ../../../lib/features/design_system/components

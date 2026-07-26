@@ -55,4 +55,4 @@ lib/features/settings/
 The declarative settings tree, route assembly on each platform, the ownership
 boundaries, and the shared list/detail kit are documented in the knowledge bundle:
 
-**→ [knowledge/features/settings/](../../../knowledge/features/settings/)**
+**→ [knowledge/features/settings.md](../../../knowledge/features/settings.md)**

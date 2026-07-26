@@ -6,7 +6,7 @@ resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
 tags: [agents, project-agent, event-agent, digest, notifications]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: project-workflow
     resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart

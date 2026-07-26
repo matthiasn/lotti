@@ -6,7 +6,7 @@ resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T14:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-12
 sources:
   - id: ui
     resource: ../../../lib/features/agents/ui

@@ -6,7 +6,7 @@ resource: ../../analysis_options.yaml
 tags: [convention, style, analyzer, codegen, tokens]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-26
 sources:
   - id: analysis
     resource: ../../analysis_options.yaml

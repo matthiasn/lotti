@@ -28,4 +28,4 @@ Design context: [ADR 0029](../../../docs/adr/0029-knowledge-graph-explorer.md).
 Why the view is ego-centric rather than a whole-graph layout is documented in the
 knowledge bundle:
 
-**→ [knowledge/features/knowledge_graph_poc/](../../../knowledge/features/knowledge_graph_poc/)**
+**→ [knowledge/features/knowledge_graph_poc.md](../../../knowledge/features/knowledge_graph_poc.md)**

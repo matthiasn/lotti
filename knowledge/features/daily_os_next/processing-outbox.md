@@ -6,7 +6,7 @@ resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
 tags: [daily-os, outbox, jobs, durability, adr-0044]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: schema
     resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift

@@ -38,4 +38,4 @@ Why the store is separate, and why lifecycle state converges through monotonic
 timestamps rather than whole-row last-write-wins, are documented in the knowledge
 bundle:
 
-**→ [knowledge/features/notifications/](../../../knowledge/features/notifications/)**
+**→ [knowledge/features/notifications.md](../../../knowledge/features/notifications.md)**

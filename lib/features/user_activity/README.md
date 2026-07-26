@@ -30,4 +30,4 @@ lib/features/user_activity/
 Who waits on the gate, and why it is an awaited gate rather than a boolean check,
 are documented in the knowledge bundle:
 
-**→ [knowledge/features/user_activity/](../../../knowledge/features/user_activity/)**
+**→ [knowledge/features/user_activity.md](../../../knowledge/features/user_activity.md)**

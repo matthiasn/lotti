@@ -6,7 +6,7 @@ resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
 tags: [ai, providers, routing, audio, gemini, mlx]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: router
     resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
@@ -335,7 +335,7 @@ Voxtral Realtime in post-recording use.
 **Inference never implicitly downloads a model.** `installModel` is the only MLX
 Audio path that downloads from Hugging Face; transcription runs first verify the
 cache contains a complete model and otherwise return a not-installed failure.
-(Scoped to MLX Audio deliberately — [text-to-speech](../tts/) fetches its own
+(Scoped to MLX Audio deliberately — [text-to-speech](../tts.md) fetches its own
 Supertonic model over a separate path.) This
 keeps a recording-triggered STT run from starting a multi-GB background download
 or loading a partial cache. The Swift bridge logs resource snapshots at

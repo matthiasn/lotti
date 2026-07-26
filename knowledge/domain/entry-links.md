@@ -6,7 +6,7 @@ resource: ../../lib/classes/entry_link.dart
 tags: [domain, links, relationships]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T02:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-07-26
 sources:
   - id: entry-link
     resource: ../../lib/classes/entry_link.dart

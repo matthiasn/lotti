@@ -6,7 +6,7 @@ resource: ../../../lib/features/journal/state/entry_controller.dart
 tags: [journal, entry-controller, editor, drafts, datetime]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-26
 sources:
   - id: controller
     resource: ../../../lib/features/journal/state/entry_controller.dart

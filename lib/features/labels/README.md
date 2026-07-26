@@ -42,4 +42,4 @@ The separation of definitions from assignment, the three persistence concerns,
 the suppression coupling that feeds AI suggestions, and the AI assignment flow
 are documented in the knowledge bundle:
 
-**→ [knowledge/features/labels/](../../../knowledge/features/labels/)**
+**→ [knowledge/features/labels.md](../../../knowledge/features/labels.md)**

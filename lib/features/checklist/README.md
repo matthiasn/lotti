@@ -32,4 +32,4 @@ lib/features/checklist/
 Why the filtering and the delay matter, and where the resulting examples are
 consumed, are documented in the knowledge bundle:
 
-**→ [knowledge/features/checklist/](../../../knowledge/features/checklist/)**
+**→ [knowledge/features/checklist.md](../../../knowledge/features/checklist.md)**

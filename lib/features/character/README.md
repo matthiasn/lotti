@@ -29,4 +29,4 @@ low-end runtime — lives in
 The determinism property and why it is load-bearing are documented in the
 knowledge bundle:
 
-**→ [knowledge/features/character/](../../../knowledge/features/character/)**
+**→ [knowledge/features/character.md](../../../knowledge/features/character.md)**

@@ -6,7 +6,7 @@ resource: ../../../lib/features/daily_os_next/agents/service/day_agent_directive
 tags: [daily-os, coordination, directives, digest, rollups]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents

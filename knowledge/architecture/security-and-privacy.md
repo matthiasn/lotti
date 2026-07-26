@@ -5,7 +5,7 @@ description: What is encrypted, what is not, where secrets live, and what leaves
 tags: [architecture, security, privacy, encryption, secure-storage]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-26
 sources:
   - id: secure-storage
     resource: ../../lib/features/sync/secure_storage.dart
@@ -129,7 +129,7 @@ governed by explicit configuration rather than a default:
   profile is deliberately **not** sufficient to start spending tokens.
 
 See [the AI feature](../features/ai/) for how requests are routed and
-[categories](../features/categories/) for where that consent flag is set.
+[categories](../features/categories.md) for where that consent flag is set.
 
 # Error handling as a privacy surface
 

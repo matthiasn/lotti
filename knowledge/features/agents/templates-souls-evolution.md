@@ -6,7 +6,7 @@ resource: ../../../lib/features/agents/workflow/template_evolution_workflow.dart
 tags: [agents, templates, souls, evolution, improver]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: seeding
     resource: ../../../lib/features/agents/service/agent_template_seeding.dart

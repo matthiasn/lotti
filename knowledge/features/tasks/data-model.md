@@ -6,7 +6,7 @@ resource: ../../../lib/classes/task.dart
 tags: [tasks, domain, progress, estimates]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-26
 sources:
   - id: task
     resource: ../../../lib/classes/task.dart
@@ -28,7 +28,7 @@ preference, inference profile id, and AI-suppressed label ids.
 
 - **Label assignments live on entry metadata** (`meta.labelIds`), not in
   `TaskData`.
-- **Project membership is resolved through the [projects](../projects/)
+- **Project membership is resolved through the [projects](../projects.md)
   feature**, not embedded as a task field.
 
 Checklist content is modelled separately through checklist entities and linked

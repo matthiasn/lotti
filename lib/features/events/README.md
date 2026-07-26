@@ -43,4 +43,4 @@ Why events are their own entity, the pure view layer with locale resolved at the
 presentation boundary, and the hero interaction surface are documented in the
 knowledge bundle:
 
-**→ [knowledge/features/events/](../../../knowledge/features/events/)**
+**→ [knowledge/features/events.md](../../../knowledge/features/events.md)**

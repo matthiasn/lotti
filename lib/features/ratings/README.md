@@ -35,4 +35,4 @@ lib/features/ratings/
 The model, why each stored dimension snapshots its own schema, and the catalog
 registry are documented in the knowledge bundle:
 
-**→ [knowledge/features/ratings/](../../../knowledge/features/ratings/)**
+**→ [knowledge/features/ratings.md](../../../knowledge/features/ratings.md)**

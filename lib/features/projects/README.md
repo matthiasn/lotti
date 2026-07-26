@@ -48,4 +48,4 @@ The data model and its denormalized membership column, the coalesced read paths,
 how health is composed from agent reports, and the three ways a project agent
 wakes are documented in the knowledge bundle:
 
-**→ [knowledge/features/projects/](../../../knowledge/features/projects/)**
+**→ [knowledge/features/projects.md](../../../knowledge/features/projects.md)**

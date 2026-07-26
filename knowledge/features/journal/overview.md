@@ -6,7 +6,7 @@ resource: ../../../lib/features/journal
 tags: [journal, entries, routing, split-pane]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-26
 sources:
   - id: src
     resource: ../../../lib/features/journal

@@ -6,7 +6,7 @@ resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: db
     resource: ../../../lib/features/agents/database/agent_database.dart

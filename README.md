@@ -328,6 +328,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the formal version.
 - [Manual](https://matthiasn.github.io/lotti/manual/development/) — how to use Lotti
 - [Task management and voice capture](https://matthiasn.github.io/lotti/manual/development/getting-started/first-task/) — the everyday voice-to-checklist workflow
 - [Architecture](docs/ARCHITECTURE.md) — technical design
+- [Knowledge bundle](knowledge/index.md) — how the app actually works at runtime, subsystem by subsystem, written to be read by contributors and coding agents alike
 - [Background](docs/BACKGROUND.md) — the story behind the project
 - [Privacy Policy](PRIVACY.md)
 - [Contributing](CONTRIBUTING.md)

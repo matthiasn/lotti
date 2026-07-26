@@ -6,7 +6,7 @@ resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: queue
     resource: ../../../lib/features/sync/queue

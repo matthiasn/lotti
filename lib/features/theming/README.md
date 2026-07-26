@@ -33,4 +33,4 @@ lib/features/theming/
 The sync boundary and how the design-system tokens reach the app theme are
 documented in the knowledge bundle:
 
-**→ [knowledge/features/theming/](../../../knowledge/features/theming/)**
+**→ [knowledge/features/theming.md](../../../knowledge/features/theming.md)**

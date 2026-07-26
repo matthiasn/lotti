@@ -6,7 +6,7 @@ resource: ../../../lib/features/daily_os_next/agents/prompt/day_agent_prompt_sec
 tags: [daily-os, prompt, context, prefix-cache, memory]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: sections
     resource: ../../../lib/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart

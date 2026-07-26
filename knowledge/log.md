@@ -9,6 +9,24 @@
 * **Update**: Gave [the root index](index.md) a reading order, an authority
   hierarchy and a code-to-concept map for the shared trees under `lib/` that have
   no README of their own.
+* **Reorganisation**: Collapsed 23 feature directories that held a single
+  sub-200-line concept into one file each — `features/categories/overview.md`
+  became `features/categories.md`. An index listing one document is a hop, not
+  progressive disclosure. The count of concepts is unchanged; 24 index files are
+  gone.
+* **Reorganisation**: Moved the projection kernel from `features/agents_projection/`
+  to [`features/agents/projection.md`](features/agents/projection.md). It
+  documents `lib/features/agents/projection`, so it was a sibling of the feature
+  that owns it rather than a part of it.
+* **Update**: Differentiated `stale_after` by how fast each subject moves —
+  three months for `agents`, `ai`, `daily_os_next` and `sync`, twelve for domain
+  models and settled exploratory work, six for everything else. One shared date
+  expired the whole bundle on a single day and said nothing about which concepts
+  actually change.
+* **Update**: Split the overlapping settings prose — `settings_v2` owns the tree
+  and the argument for having one, `settings` owns the shell that renders it —
+  and dropped the drift-prone inventory counts from the reserved `index.md`
+  files, which carry no freshness metadata of their own.
 
 ## 2026-07-25
 * **Initialization**: Established the OKF v0.2 bundle at `knowledge/`, with the
