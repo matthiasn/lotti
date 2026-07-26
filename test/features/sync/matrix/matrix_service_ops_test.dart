@@ -258,19 +258,6 @@ void main() {
       ).thenAnswer((_) async => 1);
     });
 
-    test('marks the one-time rotation done on first run', () async {
-      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-
-      await buildOps().rotateOutboundSessionsForExclusionPolicy();
-
-      verify(
-        () => settingsDb.saveSettingsItem(
-          MatrixServiceOps.megolmRotatedForExclusionKey,
-          'true',
-        ),
-      ).called(1);
-    });
-
     test(
       "wipes the room's outbound megolm session so keys shared under the "
       'old permissive policy stop covering new entries',
@@ -299,8 +286,68 @@ void main() {
         ).called(1);
         verify(
           () => settingsDb.saveSettingsItem(
-            MatrixServiceOps.megolmRotatedForExclusionKey,
+            MatrixServiceOps.megolmRotatedForExclusionKey('!room:server'),
             'true',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'leaves the marker unset when encryption is not ready, so a later '
+      'launch retries instead of skipping the rotation forever',
+      () async {
+        when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+        when(() => client.encryption).thenReturn(null);
+
+        await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+        verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any(),
+            subDomain: 'exclusionPolicy.rotate.deferred',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'rotates a newly switched-to room even though another room was already '
+      'migrated',
+      () async {
+        final encryption = MockEncryption();
+        final keyManager = MockKeyManager();
+        when(() => client.encryption).thenReturn(encryption);
+        when(() => encryption.keyManager).thenReturn(keyManager);
+        when(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            any(),
+            wipe: any(named: 'wipe'),
+            use: any(named: 'use'),
+          ),
+        ).thenAnswer((_) async => true);
+        // Room A already migrated; the client now points at room B.
+        when(
+          () => settingsDb.itemByKey(
+            MatrixServiceOps.megolmRotatedForExclusionKey('!room-a:server'),
+          ),
+        ).thenAnswer((_) async => 'true');
+        when(
+          () => settingsDb.itemByKey(
+            MatrixServiceOps.megolmRotatedForExclusionKey('!room-b:server'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(() => roomManager.currentRoomId).thenReturn('!room-b:server');
+
+        await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+        verify(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            '!room-b:server',
+            wipe: true,
+            use: false,
           ),
         ).called(1);
       },

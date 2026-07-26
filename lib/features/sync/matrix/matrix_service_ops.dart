@@ -79,6 +79,9 @@ class MatrixServiceOps {
 
     unawaited(() async {
       try {
+        // A room switched into may still hold a pre-upgrade outbound megolm
+        // session (ADR 0045); rotate before anything is sent to it.
+        await rotateOutboundSessionsForExclusionPolicy();
         if (pipeline != null) {
           await pipeline.start();
         }
@@ -170,41 +173,51 @@ class MatrixServiceOps {
     await refreshDeviceKeysAndResumeSync(subDomain: 'verification');
   }
 
-  /// Marker recording that outbound megolm sessions were rotated once when
-  /// this install adopted `ShareKeysWith.directlyVerifiedOnly` (ADR 0045).
-  static const megolmRotatedForExclusionKey =
-      'matrix_megolm_rotated_for_exclusion_v1';
+  /// Marker prefix recording that a room's outbound megolm session was
+  /// rotated when this install adopted `ShareKeysWith.directlyVerifiedOnly`
+  /// (ADR 0045). Keyed per room: switching to a room whose pre-upgrade
+  /// session was never wiped must still rotate it.
+  static String megolmRotatedForExclusionKey(String roomId) =>
+      'matrix_megolm_rotated_for_exclusion_v1_$roomId';
 
-  /// One-time upgrade step for ADR 0045.
+  /// One-time upgrade step for ADR 0045, per sync room.
   ///
   /// Before the exclusion policy, an unverified device could already hold the
   /// room's current outbound megolm session key. Withholding *future* keys
-  /// does not revoke a key already handed out, so on the first run after the
-  /// upgrade the outbound session is discarded: the next send starts a fresh
-  /// session that only directly verified devices receive. Idempotent via a
-  /// persisted marker, and best-effort — a failure leaves the marker unset so
-  /// the next launch retries.
+  /// does not revoke a key already handed out, so the outbound session is
+  /// discarded once per room: the next send starts a fresh session that only
+  /// directly verified devices receive.
+  ///
+  /// The completion marker is written **only** when the session was actually
+  /// cleared. If encryption is not ready yet — `Client.encryption` populates
+  /// asynchronously — the migration stays pending and a later launch or room
+  /// change retries it.
   Future<void> rotateOutboundSessionsForExclusionPolicy() async {
     try {
-      final done = await settingsDb.itemByKey(megolmRotatedForExclusionKey);
-      if (done == 'true') return;
-
       final roomId = roomManager.currentRoomId;
       if (roomId == null) return;
 
+      final markerKey = megolmRotatedForExclusionKey(roomId);
+      if (await settingsDb.itemByKey(markerKey) == 'true') return;
+
       final keyManager = _client.encryption?.keyManager;
-      if (keyManager != null) {
-        await keyManager.clearOrUseOutboundGroupSession(
-          roomId,
-          wipe: true,
-          use: false,
+      if (keyManager == null) {
+        loggingService.log(
+          LogDomain.sync,
+          'encryption not ready for room $roomId - megolm rotation stays '
+          'pending and retries on a later launch',
+          subDomain: 'exclusionPolicy.rotate.deferred',
         );
+        return;
       }
 
-      await settingsDb.saveSettingsItem(
-        megolmRotatedForExclusionKey,
-        'true',
+      await keyManager.clearOrUseOutboundGroupSession(
+        roomId,
+        wipe: true,
+        use: false,
       );
+
+      await settingsDb.saveSettingsItem(markerKey, 'true');
       loggingService.log(
         LogDomain.sync,
         'rotated outbound megolm session for room $roomId so keys shared '
