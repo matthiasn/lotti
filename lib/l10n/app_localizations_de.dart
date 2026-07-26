@@ -9958,7 +9958,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'Alle Geräte können deine Einträge wieder lesen.';
+      'Kein Gerät ist mehr von der Synchronisierung ausgeschlossen.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Dieses Gerät';

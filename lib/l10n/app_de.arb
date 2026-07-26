@@ -4041,7 +4041,7 @@
   },
   "syncDevicesPausedBanner": "{count, plural, one{1 nicht verifiziertes Gerät kann neue Einträge nicht lesen — lösche oder verifiziere es unten.} other{{count} nicht verifizierte Geräte können neue Einträge nicht lesen — lösche oder verifiziere sie unten.}}",
   "@syncDevicesPausedBanner": {
-    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4050,7 +4050,7 @@
   },
   "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 nicht verifiziertes Gerät kann neue Einträge nicht lesen — lösche es unten.} other{{count} nicht verifizierte Geräte können neue Einträge nicht lesen — lösche sie unten.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4059,7 +4059,7 @@
   },
   "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 nicht verifiziertes Gerät kann neue Einträge nicht lesen — verifiziere es unten.} other{{count} nicht verifizierte Geräte können neue Einträge nicht lesen — verifiziere sie unten.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4068,7 +4068,7 @@
   },
   "syncDevicesSectionTitle": "Geräte",
   "syncDevicesStaleHint": "Wahrscheinlich nicht mehr in Gebrauch",
-  "syncDevicesSyncResumed": "Alle Geräte können deine Einträge wieder lesen.",
+  "syncDevicesSyncResumed": "Kein Gerät ist mehr von der Synchronisierung ausgeschlossen.",
   "syncDevicesThisDeviceChip": "Dieses Gerät",
   "syncDevicesUnverifiedChip": "Nicht verifiziert",
   "syncDevicesVerifiedChip": "Verifiziert",

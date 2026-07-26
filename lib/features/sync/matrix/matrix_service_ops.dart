@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -38,6 +39,7 @@ class MatrixServiceOps {
     required this.keyVerificationRequestSubscription,
     required this.setKeyVerificationRequestSubscription,
     required this.service,
+    required this.settingsDb,
   }) : _pipelineAccessor = pipeline;
 
   final MatrixSyncGateway gateway;
@@ -54,6 +56,7 @@ class MatrixServiceOps {
   final void Function(StreamSubscription<KeyVerification>?)
   setKeyVerificationRequestSubscription;
   final MatrixService Function() service;
+  final SettingsDb settingsDb;
 
   MatrixStreamConsumer? get _pipeline => _pipelineAccessor();
   Client get _client => sessionManager.client;
@@ -165,6 +168,57 @@ class MatrixServiceOps {
     if (!isLoggedIn()) return;
 
     await refreshDeviceKeysAndResumeSync(subDomain: 'verification');
+  }
+
+  /// Marker recording that outbound megolm sessions were rotated once when
+  /// this install adopted `ShareKeysWith.directlyVerifiedOnly` (ADR 0045).
+  static const megolmRotatedForExclusionKey =
+      'matrix_megolm_rotated_for_exclusion_v1';
+
+  /// One-time upgrade step for ADR 0045.
+  ///
+  /// Before the exclusion policy, an unverified device could already hold the
+  /// room's current outbound megolm session key. Withholding *future* keys
+  /// does not revoke a key already handed out, so on the first run after the
+  /// upgrade the outbound session is discarded: the next send starts a fresh
+  /// session that only directly verified devices receive. Idempotent via a
+  /// persisted marker, and best-effort — a failure leaves the marker unset so
+  /// the next launch retries.
+  Future<void> rotateOutboundSessionsForExclusionPolicy() async {
+    try {
+      final done = await settingsDb.itemByKey(megolmRotatedForExclusionKey);
+      if (done == 'true') return;
+
+      final roomId = roomManager.currentRoomId;
+      if (roomId == null) return;
+
+      final keyManager = _client.encryption?.keyManager;
+      if (keyManager != null) {
+        await keyManager.clearOrUseOutboundGroupSession(
+          roomId,
+          wipe: true,
+          use: false,
+        );
+      }
+
+      await settingsDb.saveSettingsItem(
+        megolmRotatedForExclusionKey,
+        'true',
+      );
+      loggingService.log(
+        LogDomain.sync,
+        'rotated outbound megolm session for room $roomId so keys shared '
+        'under the previous permissive policy stop covering new entries',
+        subDomain: 'exclusionPolicy.rotate',
+      );
+    } catch (error, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'exclusionPolicy.rotate',
+      );
+    }
   }
 
   /// Refreshes cached device keys and nudges the pipeline so sync reflects a

@@ -10036,7 +10036,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'Všechna zařízení mohou znovu číst tvé záznamy.';
+      'Ze synchronizace už není vyloučené žádné zařízení.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Toto zařízení';

@@ -21,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Sessions signed in with this account can be removed — except the one
   you're on — including previously verified ones and sessions that never
   finished pairing. Devices paired the old way, each with its own separate
-  account, can be verified but not removed. While any device still blocks
-  sync, the list says so in plain words instead of sync failing silently.
+  account, can be verified but not removed. While any device is excluded
+  from sync, the list says so in plain words.
 - **Tell the task assistant how tasks relate — in either direction.** Saying
   "this task is blocked by X", "this supersedes the old migration task", or
   "this duplicates Y" now becomes a reviewable suggestion that records the

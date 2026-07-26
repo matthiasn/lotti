@@ -194,6 +194,7 @@ class MatrixService {
       setKeyVerificationRequestSubscription: (value) =>
           _keyVerificationRequestSubscription = value,
       service: () => this,
+      settingsDb: _settingsDb,
     );
   }
 
@@ -357,6 +358,7 @@ class MatrixService {
       'joinedRooms: $joinedRooms',
       subDomain: 'listen',
     );
+    await _ops.rotateOutboundSessionsForExclusionPolicy();
   }
 
   Future<void> _onLifecycleLogout() async {

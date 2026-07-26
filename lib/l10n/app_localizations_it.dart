@@ -10033,7 +10033,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'Tutti i dispositivi possono leggere di nuovo le tue voci.';
+      'Nessun dispositivo è più escluso dalla sincronizzazione.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Questo dispositivo';

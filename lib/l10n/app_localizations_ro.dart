@@ -10090,7 +10090,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'Toate dispozitivele pot citi din nou intrările dvs.';
+      'Niciun dispozitiv nu mai este exclus din sincronizare.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Acest dispozitiv';

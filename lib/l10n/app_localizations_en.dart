@@ -9832,7 +9832,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'All devices can read your entries again.';
+      'No devices are excluded from sync anymore.';
 
   @override
   String get syncDevicesThisDeviceChip => 'This device';

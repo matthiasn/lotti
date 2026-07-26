@@ -17010,19 +17010,19 @@ abstract class AppLocalizations {
   /// **'Paired {date}'**
   String syncDevicesPaired(String date);
 
-  /// Warning banner while unverified devices block outbound sync; count is the number of blocking devices.
+  /// Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 unverified device can\'t read new entries — delete or verify it below.} other{{count} unverified devices can\'t read new entries — delete or verify them below.}}'**
   String syncDevicesPausedBanner(int count);
 
-  /// Paused-sync banner variant; count is the number of blocking devices.
+  /// Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 unverified device can\'t read new entries — delete it below.} other{{count} unverified devices can\'t read new entries — delete them below.}}'**
   String syncDevicesPausedBannerDeleteOnly(int count);
 
-  /// Paused-sync banner variant; count is the number of blocking devices.
+  /// Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 unverified device can\'t read new entries — verify it below.} other{{count} unverified devices can\'t read new entries — verify them below.}}'**
@@ -17043,7 +17043,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncDevicesSyncResumed.
   ///
   /// In en, this message translates to:
-  /// **'All devices can read your entries again.'**
+  /// **'No devices are excluded from sync anymore.'**
   String get syncDevicesSyncResumed;
 
   /// No description provided for @syncDevicesThisDeviceChip.

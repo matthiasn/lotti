@@ -4818,7 +4818,7 @@
   },
   "syncDevicesPausedBanner": "{count, plural, one{1 unverified device can't read new entries — delete or verify it below.} other{{count} unverified devices can't read new entries — delete or verify them below.}}",
   "@syncDevicesPausedBanner": {
-    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4827,7 +4827,7 @@
   },
   "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 unverified device can't read new entries — delete it below.} other{{count} unverified devices can't read new entries — delete them below.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4836,7 +4836,7 @@
   },
   "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 unverified device can't read new entries — verify it below.} other{{count} unverified devices can't read new entries — verify them below.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4845,7 +4845,7 @@
   },
   "syncDevicesSectionTitle": "Devices",
   "syncDevicesStaleHint": "Probably no longer in use",
-  "syncDevicesSyncResumed": "All devices can read your entries again.",
+  "syncDevicesSyncResumed": "No devices are excluded from sync anymore.",
   "syncDevicesThisDeviceChip": "This device",
   "syncDevicesUnverifiedChip": "Unverified",
   "syncDevicesVerifiedChip": "Verified",

@@ -4041,7 +4041,7 @@
   },
   "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo sin verificar no puede leer las entradas nuevas: elimínalo o verifícalo abajo.} other{{count} dispositivos sin verificar no pueden leer las entradas nuevas: elimínalos o verifícalos abajo.}}",
   "@syncDevicesPausedBanner": {
-    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4050,7 +4050,7 @@
   },
   "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 dispositivo sin verificar no puede leer las entradas nuevas: elimínalo abajo.} other{{count} dispositivos sin verificar no pueden leer las entradas nuevas: elimínalos abajo.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4059,7 +4059,7 @@
   },
   "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 dispositivo sin verificar no puede leer las entradas nuevas: verifícalo abajo.} other{{count} dispositivos sin verificar no pueden leer las entradas nuevas: verifícalos abajo.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4068,7 +4068,7 @@
   },
   "syncDevicesSectionTitle": "Dispositivos",
   "syncDevicesStaleHint": "Probablemente ya no se usa",
-  "syncDevicesSyncResumed": "Todos los dispositivos pueden volver a leer tus entradas.",
+  "syncDevicesSyncResumed": "Ya no hay dispositivos excluidos de la sincronización.",
   "syncDevicesThisDeviceChip": "Este dispositivo",
   "syncDevicesUnverifiedChip": "Sin verificar",
   "syncDevicesVerifiedChip": "Verificado",

@@ -9904,7 +9904,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'Alla enheter kan läsa dina poster igen.';
+      'Inga enheter är längre uteslutna från synkroniseringen.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Den här enheten';

@@ -4048,7 +4048,7 @@
   },
   "syncDevicesPausedBanner": "{count, plural, one{1 neověřené zařízení nemůže číst nové záznamy — odstraň ho nebo ověř níže.} few{{count} neověřená zařízení nemohou číst nové záznamy — odstraň je nebo ověř níže.} other{{count} neověřených zařízení nemůže číst nové záznamy — odstraň je nebo ověř níže.}}",
   "@syncDevicesPausedBanner": {
-    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4057,7 +4057,7 @@
   },
   "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 neověřené zařízení nemůže číst nové záznamy — odstraň ho níže.} few{{count} neověřená zařízení nemohou číst nové záznamy — odstraň je níže.} other{{count} neověřených zařízení nemůže číst nové záznamy — odstraň je níže.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4066,7 +4066,7 @@
   },
   "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 neověřené zařízení nemůže číst nové záznamy — ověř ho níže.} few{{count} neověřená zařízení nemohou číst nové záznamy — ověř je níže.} other{{count} neověřených zařízení nemůže číst nové záznamy — ověř je níže.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4075,7 +4075,7 @@
   },
   "syncDevicesSectionTitle": "Zařízení",
   "syncDevicesStaleHint": "Pravděpodobně se už nepoužívá",
-  "syncDevicesSyncResumed": "Všechna zařízení mohou znovu číst tvé záznamy.",
+  "syncDevicesSyncResumed": "Ze synchronizace už není vyloučené žádné zařízení.",
   "syncDevicesThisDeviceChip": "Toto zařízení",
   "syncDevicesUnverifiedChip": "Neověřeno",
   "syncDevicesVerifiedChip": "Ověřeno",

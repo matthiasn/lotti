@@ -45,6 +45,7 @@ void main() {
   });
 
   late MockMatrixSyncGateway gateway;
+  late MockSettingsDb settingsDb;
   late MockDomainLogger logging;
   late MockQueuePipelineCoordinator coordinator;
   late MockInboundQueue queue;
@@ -75,10 +76,12 @@ void main() {
         service:
             service ??
             () => throw UnimplementedError('service() not used in this test'),
+        settingsDb: settingsDb,
       );
 
   setUp(() {
     gateway = MockMatrixSyncGateway();
+    settingsDb = MockSettingsDb();
     logging = MockDomainLogger();
     coordinator = MockQueuePipelineCoordinator();
     queue = MockInboundQueue();
@@ -239,6 +242,67 @@ void main() {
       final keys = <DeviceKeys>[];
       when(gateway.unverifiedDevices).thenReturn(keys);
       expect(buildOps().getUnverifiedDevices(), same(keys));
+    });
+  });
+
+  group('rotateOutboundSessionsForExclusionPolicy', () {
+    late MockMatrixClient client;
+
+    setUp(() {
+      client = MockMatrixClient();
+      when(() => sessionManager.client).thenReturn(client);
+      when(() => client.encryption).thenReturn(null);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+    });
+
+    test('marks the one-time rotation done on first run', () async {
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+
+      await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+      verify(
+        () => settingsDb.saveSettingsItem(
+          MatrixServiceOps.megolmRotatedForExclusionKey,
+          'true',
+        ),
+      ).called(1);
+    });
+
+    test('is a no-op once the marker is set', () async {
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => 'true');
+
+      await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+      verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
+    });
+
+    test('leaves the marker unset when no room is joined yet, so a later '
+        'launch retries', () async {
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+      when(() => roomManager.currentRoomId).thenReturn(null);
+
+      await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+      verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
+    });
+
+    test('swallows and logs failures without setting the marker', () async {
+      when(() => settingsDb.itemByKey(any())).thenThrow(Exception('db'));
+
+      await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+      verify(
+        () => logging.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'exclusionPolicy.rotate',
+        ),
+      ).called(1);
+      verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
     });
   });
 
@@ -829,6 +893,7 @@ void main() {
         keyVerificationRequestSubscription: () => keyVerSub,
         setKeyVerificationRequestSubscription: (value) => keyVerSub = value,
         service: () => throw UnimplementedError(),
+        settingsDb: settingsDb,
       );
 
       expect(await ops.getSyncMetrics(), isNull);

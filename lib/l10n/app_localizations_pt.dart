@@ -9960,9 +9960,9 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivos não verificados não conseguem ler as novas entradas — exclui-os ou verifica-os abaixo.',
+          '$count dispositivos não verificados não conseguem ler as novas entradas — exclua-os ou verifique-os abaixo.',
       one:
-          '1 dispositivo não verificado não consegue ler as novas entradas — exclui-o ou verifica-o abaixo.',
+          '1 dispositivo não verificado não consegue ler as novas entradas — exclua-o ou verifique-o abaixo.',
     );
     return '$_temp0';
   }
@@ -9973,9 +9973,9 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivos não verificados não conseguem ler as novas entradas — exclui-os abaixo.',
+          '$count dispositivos não verificados não conseguem ler as novas entradas — exclua-os abaixo.',
       one:
-          '1 dispositivo não verificado não consegue ler as novas entradas — exclui-o abaixo.',
+          '1 dispositivo não verificado não consegue ler as novas entradas — exclua-o abaixo.',
     );
     return '$_temp0';
   }
@@ -9986,9 +9986,9 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivos não verificados não conseguem ler as novas entradas — verifica-os abaixo.',
+          '$count dispositivos não verificados não conseguem ler as novas entradas — verifique-os abaixo.',
       one:
-          '1 dispositivo não verificado não consegue ler as novas entradas — verifica-o abaixo.',
+          '1 dispositivo não verificado não consegue ler as novas entradas — verifique-o abaixo.',
     );
     return '$_temp0';
   }
@@ -10001,7 +10001,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'Todos os dispositivos conseguem ler suas entradas novamente.';
+      'Nenhum dispositivo está mais excluído da sincronização.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Este dispositivo';

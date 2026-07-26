@@ -155,8 +155,11 @@ clean it up:
   the provisioned-status page with a warning banner while any unverified
   device is excluded from key sharing; `ui/widgets/matrix/device_card.dart` flips its action
   hierarchy for stale unverified devices — removal becomes the labeled
-  primary action, verification is demoted — because for a device silent past
-  `syncDeviceStaleThreshold` removal is what resumes sync.
+  primary action, verification is demoted — because a device silent past
+  `syncDeviceStaleThreshold` will never complete a ceremony, so removal is
+  the realistic way to clear it. Removal never "resumes sync": verified
+  peers keep syncing throughout (ADR 0045). Verifying instead restores that
+  device's own access to new entries.
 
 # Concepts
 

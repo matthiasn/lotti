@@ -9933,7 +9933,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'Alle apparaten kunnen je items weer lezen.';
+      'Er zijn geen apparaten meer uitgesloten van synchronisatie.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Dit apparaat';

@@ -4597,7 +4597,7 @@
   },
   "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo non verificato non può leggere le nuove voci: eliminalo o verificalo qui sotto.} other{{count} dispositivi non verificati non possono leggere le nuove voci: eliminali o verificali qui sotto.}}",
   "@syncDevicesPausedBanner": {
-    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4606,7 +4606,7 @@
   },
   "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 dispositivo non verificato non può leggere le nuove voci: eliminalo qui sotto.} other{{count} dispositivi non verificati non possono leggere le nuove voci: eliminali qui sotto.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4615,7 +4615,7 @@
   },
   "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 dispositivo non verificato non può leggere le nuove voci: verificalo qui sotto.} other{{count} dispositivi non verificati non possono leggere le nuove voci: verificali qui sotto.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4624,7 +4624,7 @@
   },
   "syncDevicesSectionTitle": "Dispositivi",
   "syncDevicesStaleHint": "Probabilmente non più in uso",
-  "syncDevicesSyncResumed": "Tutti i dispositivi possono leggere di nuovo le tue voci.",
+  "syncDevicesSyncResumed": "Nessun dispositivo è più escluso dalla sincronizzazione.",
   "syncDevicesThisDeviceChip": "Questo dispositivo",
   "syncDevicesUnverifiedChip": "Non verificato",
   "syncDevicesVerifiedChip": "Verificato",
