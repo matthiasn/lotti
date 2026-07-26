@@ -315,6 +315,76 @@ void main() {
     expect(fetchCount, 2);
   });
 
+  testWidgets('the refresh button is disabled while the provider is still '
+      'loading', (tester) async {
+    final neverLoads = Completer<List<SyncDeviceInfo>>();
+    when(
+      () => mockMatrixService.getSyncDevices(),
+    ).thenAnswer((_) => neverLoads.future);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        SyncDevicesList(now: () => now),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final button = tester.widget<IconButton>(
+      find.byKey(const Key('sync_devices_refresh')),
+    );
+    expect(
+      button.onPressed,
+      isNull,
+      reason:
+          'a refresh racing the initial load could let the older '
+          'snapshot overwrite the newer one',
+    );
+    neverLoads.complete(const []);
+  });
+
+  testWidgets('a post-deletion refresh arriving after the list is disposed '
+      'is a no-op', (tester) async {
+    final pendingDelete = Completer<void>();
+    when(
+      () => mockMatrixService.deleteDeviceById('OTHER'),
+    ).thenAnswer((_) => pendingDelete.future);
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([
+        currentDevice,
+        const SyncDeviceInfo(
+          deviceId: 'OTHER',
+          displayName: 'Old laptop',
+          isCurrentDevice: false,
+          verified: true,
+        ),
+      ]),
+    );
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('sync_device_OTHER')),
+        matching: find.byKey(const Key('matrix_delete_device')),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('DELETE DEVICE'));
+    await tester.pump();
+
+    // The sheet closes while the deletion is still in flight.
+    await tester.pumpWidget(const SizedBox.shrink());
+    pendingDelete.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the refresh button re-fetches the device list', (tester) async {
     when(() => mockMatrixService.getSyncDevices()).thenAnswer(
       (_) async => [

@@ -341,6 +341,7 @@ class MatrixServiceOps {
           isCurrentDevice: false,
           verified: false,
           keys: entry.value,
+          onServer: false,
         ),
       );
     }

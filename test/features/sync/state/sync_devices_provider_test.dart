@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
@@ -64,6 +66,45 @@ void main() {
 
       final state = container.read(syncDevicesControllerProvider);
       expect(state.value, const [deviceA, deviceB]);
+    },
+  );
+
+  test(
+    'refresh lets an in-flight initial load settle first so the older '
+    'snapshot can never overwrite the fresh fetch',
+    () async {
+      final initialFetch = Completer<List<SyncDeviceInfo>>();
+      var calls = 0;
+      when(() => matrixService.getSyncDevices()).thenAnswer((_) {
+        calls++;
+        // First call: the (stale) initial build. Later calls: fresh state.
+        if (calls == 1) return initialFetch.future;
+        return Future.value(const [deviceA]);
+      });
+
+      final sub = container.listen(
+        syncDevicesControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+
+      // Kick off the initial build, then request a refresh while it is
+      // still pending — as a deletion's callback would.
+      final refreshDone = container
+          .read(syncDevicesControllerProvider.notifier)
+          .refresh();
+
+      // The stale snapshot (still containing the ghost) arrives late.
+      initialFetch.complete(const [deviceA, deviceB]);
+      final succeeded = await refreshDone;
+
+      expect(succeeded, isTrue);
+      final state = container.read(syncDevicesControllerProvider);
+      expect(
+        state.value,
+        const [deviceA],
+        reason: 'the fresh fetch must win over the older initial snapshot',
+      );
     },
   );
 

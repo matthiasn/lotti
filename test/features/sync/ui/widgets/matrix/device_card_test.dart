@@ -35,6 +35,7 @@ void main() {
     bool isCurrentDevice = false,
     bool verified = false,
     bool withKeys = true,
+    bool onServer = true,
   }) => SyncDeviceInfo(
     deviceId: deviceId,
     displayName: displayName,
@@ -42,6 +43,7 @@ void main() {
     isCurrentDevice: isCurrentDevice,
     verified: verified,
     keys: withKeys ? mockDeviceKeys : null,
+    onServer: onServer,
   );
 
   setUp(() {
@@ -247,6 +249,21 @@ void main() {
 
       expect(find.text('Unverified'), findsOneWidget);
       expect(find.text('Verify'), findsOneWidget);
+    });
+
+    testWidgets('a cache-only session offers removal as the only action', (
+      tester,
+    ) async {
+      // Unverified keys the homeserver no longer lists: verification can
+      // never be answered, so removal escalates and Verify disappears.
+      await pumpCard(tester, buildDevice(onServer: false));
+
+      expect(find.text('Verify'), findsNothing);
+      expect(
+        find.byKey(const Key('matrix_remove_device_primary')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('matrix_delete_device')), findsNothing);
     });
 
     testWidgets('a keyless session cannot be verified, only removed', (

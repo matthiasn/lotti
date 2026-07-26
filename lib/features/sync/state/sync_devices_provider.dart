@@ -26,6 +26,17 @@ class SyncDevicesController extends AsyncNotifier<List<SyncDeviceInfo>> {
   /// shell. Returns whether the fetch succeeded so the UI can surface a
   /// failed refresh instead of silently eating the tap.
   Future<bool> refresh() async {
+    // Let an in-flight (initial or invalidated) build settle first: its
+    // older snapshot must never complete after — and overwrite — the fresh
+    // fetch below.
+    if (state.isLoading) {
+      try {
+        await future;
+      } catch (_) {
+        // Failures surface through state; the re-fetch below still runs.
+      }
+      if (!ref.mounted) return false;
+    }
     final result = await AsyncValue.guard(
       () => ref.read(matrixServiceProvider).getSyncDevices(),
     );

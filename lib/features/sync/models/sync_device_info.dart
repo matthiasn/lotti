@@ -21,6 +21,7 @@ class SyncDeviceInfo {
     this.displayName,
     this.lastSeen,
     this.keys,
+    this.onServer = true,
   });
 
   final String deviceId;
@@ -39,6 +40,11 @@ class SyncDeviceInfo {
   /// The published encryption keys, when the device has any. Required for
   /// starting a verification; null for keyless sessions.
   final DeviceKeys? keys;
+
+  /// Whether the homeserver still lists this session. A cache-only entry
+  /// (unverified keys the server no longer knows) blocks sends but can never
+  /// answer a verification — removal is its only remedy.
+  final bool onServer;
 
   /// The name shown to the user, falling back to the raw device id.
   String get label {

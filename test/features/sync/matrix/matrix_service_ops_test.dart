@@ -626,6 +626,7 @@ void main() {
         expect(ghost.blocksSync, isTrue);
         expect(ghost.lastSeen, isNull);
         expect(ghost.keys, isNotNull);
+        expect(ghost.onServer, isFalse);
       },
     );
   });

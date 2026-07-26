@@ -30,6 +30,8 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
   bool _refreshQueued = false;
 
   Future<void> _refresh() async {
+    // A card's post-deletion callback can arrive after the sheet closed.
+    if (!mounted) return;
     // Coalesce instead of dropping: a refresh requested while one is in
     // flight (e.g. right after a deletion) must still observe its effect.
     if (_refreshing) {
@@ -89,7 +91,9 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
           key: const Key('sync_devices_refresh'),
           tooltip: messages.matrixStatsRefresh,
           padding: EdgeInsets.zero,
-          onPressed: _refreshing ? null : () => unawaited(_refresh()),
+          onPressed: _refreshing || devicesAsync.isLoading
+              ? null
+              : () => unawaited(_refresh()),
           icon: _refreshing
               ? DesignSystemSpinner(
                   size: tokens.spacing.step5,
