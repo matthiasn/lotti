@@ -74,18 +74,39 @@ class QueueBootstrapSink implements BootstrapSink {
     // Pen first, enqueue second — the same order the live producer uses.
     // `hold` returns false for anything already decrypted, so this only
     // diverts the events the queue would otherwise refuse.
+    //
+    // Admission is checked per event and *before* holding, never after.
+    // `hold` enforces capacity itself by evicting the oldest entry, so a
+    // page that overshoots has already destroyed something by the time any
+    // after-the-fact size check runs: a 255-entry pen taking two new events
+    // evicts one, then reports 256 to a guard that thinks it stopped in time.
     final heldIn = pen;
-    final penSizeBefore = heldIn?.size ?? 0;
-    final forQueue = heldIn == null
-        ? events
-        : [
-            for (final event in events)
-              if (!heldIn.hold(event)) event,
-          ];
-    final penned = events.length - forQueue.length;
-    // `hold` returns true for a re-hold as well as a first hold, so count by
-    // the pen's own growth: only entries it did not already have are new.
-    final newlyPenned = (heldIn?.size ?? 0) - penSizeBefore;
+    final forQueue = <Event>[];
+    var penned = 0;
+    var newlyPenned = 0;
+    var penExhausted = false;
+
+    if (heldIn == null) {
+      forQueue.addAll(events);
+    } else {
+      final available = heldIn.capacity - heldIn.size;
+      for (final event in events) {
+        if (event.type != EventTypes.Encrypted) {
+          forQueue.add(event);
+          continue;
+        }
+        // A re-hold of something already held costs no slot, so only growth
+        // counts against the budget.
+        if (!heldIn.holds(event.eventId) && newlyPenned >= available) {
+          penExhausted = true;
+          break;
+        }
+        final sizeBefore = heldIn.size;
+        heldIn.hold(event);
+        penned++;
+        if (heldIn.size > sizeBefore) newlyPenned++;
+      }
+    }
 
     final enqueue = await _queue.appendBootstrapPage(forQueue);
 
@@ -131,14 +152,13 @@ class QueueBootstrapSink implements BootstrapSink {
     // cannot advance past what the pen is holding, so the next run resumes
     // from the right anchor instead of skipping the gap. Evicting is not
     // safe, so prefer the bounded stop.
-    final holding = heldIn?.size ?? 0;
-    if (heldIn != null && holding >= heldIn.capacity) {
+    if (penExhausted) {
       _logging.log(
         LogDomain.sync,
         'queue.bootstrap.penFull '
         'page=${info.pageIndex} '
-        'penSize=$holding '
-        'capacity=${heldIn.capacity}',
+        'penSize=${heldIn?.size} '
+        'capacity=${heldIn?.capacity}',
         subDomain: _logSub,
       );
       return false;

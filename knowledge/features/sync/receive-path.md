@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T16:45:44Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T17:15:56Z }
 stale_after: 2026-11-02
 sources:
   - id: queue
@@ -190,6 +190,34 @@ timestamp **strictly** beats the stored one, with the durable `event_id` as a
 tiebreak only when both sides are durable. The candidate is clamped against the
 oldest still-active row for the room, so the marker never crosses an unapplied
 gap.
+
+**Held ciphertext clamps it too.** A `PendingDecryptionPen` entry is
+received-but-not-applied — exactly what the clamp exists for — but it has no
+queue row by design, so the table-based probe cannot see it. Left invisible, a
+newer event applying moves the marker past it, the pen is discarded at
+teardown, and the next start's strictly-forward walk
+(`collectForwardForBootstrap`: "only events that sort strictly after the
+anchor") never re-fetches it: gone, with no row, no ledger entry and no
+counter. `QueueMarkerAdvancer.unqueuedFloorTs` therefore takes the older of the
+oldest active row and the pen's oldest held event for that room.
+
+**Backfill stops at pen capacity rather than evicting.** Ciphertext produces no
+queue rows, so the depth-based back-pressure in `QueueBootstrapSink` applies
+nothing to an all-encrypted run, while a forward walk emits up to 50 pages of
+200 and manual history collection is unbounded against a fixed 256-entry LRU.
+The sink admits only what fits — checked *before* holding, because `hold`
+enforces capacity by evicting — and returns false once a page needs more room
+than remains. Stopping is safe only because of the clamp above: the marker
+cannot pass what the pen holds, so the next run resumes from the right anchor
+instead of skipping the gap.
+
+One limit of that resume story is worth knowing: the clamp prevents the marker
+*advancing* past held work, but it cannot pull the marker *back*. Ciphertext
+penned by a backward or manual history walk is already behind the anchor, and
+the monotonic guard rejects a candidate below the stored timestamp — so if the
+pen is discarded before those entries decrypt, the forward walk will not
+revisit them. Closing that needs a persisted resume floor rather than an
+in-memory one.
 
 It deliberately does **not** use `TimelineEventOrdering.isNewer`, because
 `isNewer` treats a null stored event id as "no marker" even when the marker

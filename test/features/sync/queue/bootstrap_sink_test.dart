@@ -304,8 +304,10 @@ void main() {
       expect(pen.size, 2);
       expect(
         cont,
-        isFalse,
-        reason: 'pagination halts at capacity rather than overflowing it',
+        isTrue,
+        reason:
+            'a page that fits exactly is admitted whole; the stop comes '
+            'when the next page has nowhere to go',
       );
       expect(
         sink.lastAcceptedCount,
@@ -313,6 +315,54 @@ void main() {
         reason:
             'retained ciphertext counts as accepted, so the caller does '
             'not read this page as a stale-cache miss',
+      );
+    },
+  );
+
+  test(
+    'admission is checked before holding, so nothing is evicted',
+    () async {
+      // `hold` enforces capacity itself by evicting the oldest entry, so a
+      // guard that runs after the page has been held has already destroyed
+      // something: a nearly-full pen taking two new events evicts one, then
+      // reports a size that looks like it stopped in time.
+      final pen = PendingDecryptionPen(logging: logging, capacity: 2);
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        pen: pen,
+      );
+
+      // Fill one slot, leaving exactly one free.
+      await sink.onPage([
+        _buildEvent(
+          eventId: r'$first',
+          originTsMs: 1,
+          type: EventTypes.Encrypted,
+        ),
+      ], info(0, 1));
+      expect(pen.size, 1);
+
+      // Two more new events against one free slot.
+      final cont = await sink.onPage([
+        _buildEvent(
+          eventId: r'$second',
+          originTsMs: 2,
+          type: EventTypes.Encrypted,
+        ),
+        _buildEvent(
+          eventId: r'$third',
+          originTsMs: 3,
+          type: EventTypes.Encrypted,
+        ),
+      ], info(1, 2));
+
+      expect(cont, isFalse, reason: 'pagination stops at the boundary');
+      expect(pen.size, 2, reason: 'filled exactly, never overflowed');
+      expect(
+        pen.holds(r'$first'),
+        isTrue,
+        reason: 'the oldest entry must not have been evicted to make room',
       );
     },
   );

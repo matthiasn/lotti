@@ -110,6 +110,10 @@ class PendingDecryptionPen {
 
   int get size => _held.length;
 
+  /// Whether [eventId] is already held. A re-hold costs no capacity, so
+  /// admission checks must not count one against the remaining slots.
+  bool holds(String eventId) => _held.containsKey(eventId);
+
   /// Oldest `origin_server_ts` still held for [roomId], or null when the pen
   /// holds nothing for that room.
   ///
