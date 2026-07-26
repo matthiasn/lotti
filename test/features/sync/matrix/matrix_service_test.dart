@@ -1137,6 +1137,58 @@ void main() {
       },
     );
 
+    test(
+      'logging out clears the gate so the next login re-runs the rotation',
+      () async {
+        when(() => sessionManager.client).thenReturn(client);
+        when(() => client.encryption).thenReturn(null);
+        when(() => client.deviceID).thenReturn('DEVICE1');
+        when(() => client.deviceName).thenReturn('Lotti');
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+        when(
+          () => syncEngine.initialize(
+            onLogin: any(named: 'onLogin'),
+            onLogout: any(named: 'onLogout'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => syncEngine.connect(
+            shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => secureStorage.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
+        when(
+          () => messageSender.sendMatrixMessage(
+            message: any(named: 'message'),
+            context: any(named: 'context'),
+            onSent: any(named: 'onSent'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final service = createService();
+        await service.init();
+        await service.sendMatrixMsg(const SyncMessage.aiConfigDelete(id: 'a'));
+        verify(() => settingsDb.itemByKey(any())).called(1);
+
+        final captured = verify(
+          () => syncEngine.initialize(
+            onLogin: any(named: 'onLogin'),
+            onLogout: captureAny(named: 'onLogout'),
+          ),
+        ).captured;
+        await (captured.last as Future<void> Function())();
+
+        // A new session must re-evaluate the migration for whatever room and
+        // device it comes back as.
+        await service.sendMatrixMsg(const SyncMessage.aiConfigDelete(id: 'b'));
+        verify(() => settingsDb.itemByKey(any())).called(1);
+      },
+    );
+
     test('the rotation runs at most once per login', () async {
       when(() => sessionManager.client).thenReturn(client);
       when(() => client.encryption).thenReturn(null);

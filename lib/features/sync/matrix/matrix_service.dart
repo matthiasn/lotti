@@ -395,9 +395,6 @@ class MatrixService {
   Future<void> ensureExclusionPolicyRotation() =>
       _megolmRotationGate ??= _ops.rotateOutboundSessionsForExclusionPolicy();
 
-  @visibleForTesting
-  void debugResetExclusionRotationGate() => _megolmRotationGate = null;
-
   Future<bool> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
