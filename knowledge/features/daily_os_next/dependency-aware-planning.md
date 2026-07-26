@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Dependency-aware planning
-description: How typed `blocks` links reach the planner as corpus annotations and prompt rules, without changing a dependency-free prompt by a single byte.
+description: How typed `blocks` links reach the planner through three carriers and the prompt rules gated on the same field, without changing a dependency-free prompt by a single byte.
 resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
 tags: [daily-os, dependencies, planning, adr-0043]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T12:00:41Z }
 stale_after: 2026-10-26
 sources:
   - id: resolver
@@ -15,6 +15,14 @@ sources:
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Prompt gates
+    last_modified: 2026-07-26
+  - id: decided-task-ref
+    resource: ../../../lib/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart
+    title: DecidedTaskRef — status + blockedBy projection
+    last_modified: 2026-07-26
+  - id: plan-editor
+    resource: ../../../lib/features/daily_os_next/agents/service/day_agent_plan_editor.dart
+    title: hydrateDecidedTasks — batched blocker resolution
     last_modified: 2026-07-26
   - id: adr-0042
     resource: ../../../docs/adr/0042-typed-task-relationship-links.md
@@ -32,9 +40,11 @@ planning surfaces consume that substrate, per ADR 0043.
 ```mermaid
 flowchart LR
   BL["blocks edges (linked_entries)"] --> DR["TaskDependencyResolver<br/>links + blocker statuses"]
-  DR --> Corpus["DayAgentCorpusService<br/>blockedBy annotation"]
+  DR --> Corpus["DayAgentCorpusService<br/>blockedBy annotation<br/>renders inside capture only"]
+  DR --> Decided["DecidedTaskRef<br/>status + blockedBy<br/>every drafting wake"]
   DR --> Rules["day_agent_prompt_builder<br/>blocked-work + digest rules"]
   Corpus --> Prompt["wake prompt"]
+  Decided --> Prompt
   Rules --> Prompt
 ```
 
@@ -65,12 +75,34 @@ for a model; for a human it is not.
 # One field drives everything
 
 `dependencyResolver` is a **single nullable field** on `DayAgentWorkflow`, threaded
-through the capture-context assembly into
-`DayAgentCorpusService.buildTaskCorpusSnapshot`.
+into **two** carriers of the blocked-work data, so that every wake carrying the
+rules below also carries data they can apply to:
 
-That one field drives both the corpus annotation and the prompt gates below, so
+| Carrier | Assembled in | Renders on |
+|---------|--------------|------------|
+| `DayAgentCorpusService.buildTaskCorpusSnapshot` | capture-context | wakes with a capture (the corpus lives inside `<capture>`) |
+| `DayAgentPlanService.hydrateDecidedTasks` → `DecidedTaskRef` | drafting-context | **every** drafting wake |
+
+That one field drives the annotation on both paths and the prompt gates below, so
 they **can never drift out of sync** — there is no separate "is this feature on"
 flag.
+
+## Why two carriers
+
+The corpus alone was not enough, and the eval proved it. `<capture>` is absent on
+a drafting wake with no capture — a scheduled pre-warm, or a plan-my-day trigger
+on its own — so the rules arrived describing a `status` and `blockedBy` the model
+was never shown. The `blockedWithoutCorpus` scenario failed `blockerBeforeBlocked`
+on **every sample of every model** while its capture-carrying twin `blockedChain`
+passed every one; after `DecidedTaskRef` gained the fields, both models stopped
+placing the blocked leaf. See [evaluation](evaluation.md).
+
+`DecidedTaskRef` serializes `status` (`toDbString`, e.g. `OPEN`, `BLOCKED`) and
+`blockedBy` in exactly the spelling `DayAgentCorpusService.n` uses, so the rule
+reads the same against either carrier. `blockedBy` is omitted when empty rather
+than sent as `[]` — every decided task would otherwise carry one. Resolution is
+one batched `resolveBlockedStatus` call per wake, keyed by the ids that survive
+category filtering, and skipped entirely when none do.
 
 `day_agent_prompt_builder.dart` gates two prompt-contract additions on the same
 field, both rendering the empty string when it is null — so a wake with no
