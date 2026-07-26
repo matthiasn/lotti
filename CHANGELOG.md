@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **See and manage every device in your sync account.** The sync status page
   now lists all sessions — not just unverified ones — with a "This device"
   marker, Verified/Unverified chips, when the server last saw each device, and
-  a hint when a device has been silent long enough to be presumed dead. Any
-  of this account's sessions except the one you're on can be removed,
-  including previously verified ones and sessions that never finished
-  pairing; devices from the legacy one-user-per-device pairing model can be
-  verified, not removed. While any device still blocks sync, the list says
-  so in plain words instead of sync failing silently.
+  a hint when a device has been silent long enough to be presumed dead.
+  Sessions signed in with this account can be removed — except the one
+  you're on — including previously verified ones and sessions that never
+  finished pairing. Devices paired the old way, each with its own separate
+  account, can be verified but not removed. While any device still blocks
+  sync, the list says so in plain words instead of sync failing silently.
 - **Tell the task assistant how tasks relate — in either direction.** Saying
   "this task is blocked by X", "this supersedes the old migration task", or
   "this duplicates Y" now becomes a reviewable suggestion that records the
