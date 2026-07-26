@@ -33,9 +33,9 @@ void main() {
   group('titleLabel / metaLabel', () {
     test('splits a machine-generated name into host and pairing metadata', () {
       final d = device(
-        displayName: 'dammy-pixel 2026-05-14T18:22 3f9c01aa',
+        displayName: 'ghost-pixel 2026-05-14T18:22 3f9c01aa',
       );
-      expect(d.titleLabel, 'dammy-pixel');
+      expect(d.titleLabel, 'ghost-pixel');
       expect(d.metaLabel, '2026-05-14T18:22 3f9c01aa');
     });
 
@@ -93,7 +93,7 @@ void main() {
   group('pairedAt / pairingHash', () {
     test('parses the pairing timestamp and hash from a generated name', () {
       final d = device(
-        displayName: 'dammy-pixel 2026-05-14T18:22 3f9c01aa',
+        displayName: 'ghost-pixel 2026-05-14T18:22 3f9c01aa',
       );
       expect(d.pairedAt, DateTime(2026, 5, 14, 18, 22));
       expect(d.pairingHash, '3f9c01aa');

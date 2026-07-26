@@ -357,16 +357,16 @@ void main() {
         'localized pairing line', (tester) async {
       await pumpCard(
         tester,
-        buildDevice(displayName: 'dammy-pixel 2026-05-14T18:22 3f9c01aa'),
+        buildDevice(displayName: 'ghost-pixel 2026-05-14T18:22 3f9c01aa'),
       );
 
-      expect(find.text('dammy-pixel'), findsOneWidget);
+      expect(find.text('ghost-pixel'), findsOneWidget);
       expect(
         find.text('Paired May\u00a014,\u00a02026 · 3f9c01aa'),
         findsOneWidget,
       );
       expect(
-        find.text('dammy-pixel 2026-05-14T18:22 3f9c01aa'),
+        find.text('ghost-pixel 2026-05-14T18:22 3f9c01aa'),
         findsNothing,
       );
     });
