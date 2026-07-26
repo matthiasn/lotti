@@ -114,6 +114,24 @@ class PendingDecryptionPen {
   /// admission checks must not count one against the remaining slots.
   bool holds(String eventId) => _held.containsKey(eventId);
 
+  /// How many entries are held for [roomId].
+  ///
+  /// Admission budgets are per room. The pen's capacity is global and its
+  /// eviction is global LRU, so entries left over from a room the user has
+  /// switched away from would otherwise consume the whole budget and stop the
+  /// active room's bootstrap without admitting anything — `onRoomChanged`
+  /// prunes queue rows but not the pen, and the worker only ever sweeps the
+  /// current room, so those entries linger until their attempt budget runs
+  /// out. Measuring the active room's own occupancy lets its events in, and
+  /// the LRU then reclaims the stale ones, which is the right trade.
+  int sizeForRoom(String roomId) {
+    var count = 0;
+    for (final held in _held.values) {
+      if (held.event.roomId == roomId) count++;
+    }
+    return count;
+  }
+
   /// Oldest `origin_server_ts` still held for [roomId], or null when the pen
   /// holds nothing for that room.
   ///

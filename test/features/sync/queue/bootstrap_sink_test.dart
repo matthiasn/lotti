@@ -367,6 +367,87 @@ void main() {
     },
   );
 
+  test(
+    'a full pen does not discard the rest of an already-fetched page',
+    () async {
+      // Breaking out of the scan throws away work that has already crossed
+      // the network — later plaintext and already-held events included — and
+      // the manual "Fetch all history" path has no automatic retry to pick
+      // them up afterwards.
+      final pen = PendingDecryptionPen(logging: logging, capacity: 1);
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        pen: pen,
+      );
+
+      final cont = await sink.onPage([
+        _buildEvent(
+          eventId: r'$sealedA',
+          originTsMs: 1,
+          type: EventTypes.Encrypted,
+        ),
+        // No slot left for this one...
+        _buildEvent(
+          eventId: r'$sealedB',
+          originTsMs: 2,
+          type: EventTypes.Encrypted,
+        ),
+        // ...but this one needs no slot and must still be queued.
+        _buildEvent(eventId: r'$plain', originTsMs: 3),
+      ], info(0, 3));
+
+      expect(cont, isFalse, reason: 'pagination still stops');
+      expect(pen.size, 1, reason: 'capacity respected, nothing evicted');
+      expect(pen.holds(r'$sealedA'), isTrue);
+      final stats = await queue.stats();
+      expect(
+        stats.total,
+        1,
+        reason: 'the plaintext after the boundary still reaches the queue',
+      );
+    },
+  );
+
+  test(
+    'capacity is budgeted per room, not across the whole pen',
+    () async {
+      // The pen's capacity and LRU are global. Ciphertext left over from a
+      // room the user switched away from would otherwise consume the entire
+      // budget and stop the active room's bootstrap dead — `onRoomChanged`
+      // prunes queue rows but not the pen.
+      final pen = PendingDecryptionPen(logging: logging, capacity: 1)
+        ..hold(
+          _buildEvent(
+            eventId: r'$stale',
+            originTsMs: 1,
+            roomId: '!oldRoom:example.org',
+            type: EventTypes.Encrypted,
+          ),
+        );
+
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        pen: pen,
+      );
+      final cont = await sink.onPage([
+        _buildEvent(
+          eventId: r'$fresh',
+          originTsMs: 2,
+          type: EventTypes.Encrypted,
+        ),
+      ], info(0, 1));
+
+      expect(
+        cont,
+        isTrue,
+        reason: 'the active room has its own budget and is not blocked',
+      );
+      expect(pen.holds(r'$fresh'), isTrue);
+    },
+  );
+
   test('cancelSignal stops pagination between pages', () async {
     // Make the pre-cancel queue contain >highWater entries so the sink
     // awaits drain when the next onPage fires.

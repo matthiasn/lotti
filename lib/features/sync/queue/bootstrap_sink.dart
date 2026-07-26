@@ -89,17 +89,25 @@ class QueueBootstrapSink implements BootstrapSink {
     if (heldIn == null) {
       forQueue.addAll(events);
     } else {
-      final available = heldIn.capacity - heldIn.size;
       for (final event in events) {
         if (event.type != EventTypes.Encrypted) {
           forQueue.add(event);
           continue;
         }
-        // A re-hold of something already held costs no slot, so only growth
-        // counts against the budget.
-        if (!heldIn.holds(event.eventId) && newlyPenned >= available) {
+        // Budget per room, not globally. The pen's capacity and LRU are
+        // global, so ciphertext left over from a room the user switched away
+        // from would otherwise eat the whole budget and stop the active
+        // room's bootstrap without admitting a single event.
+        final roomId = event.roomId ?? '';
+        // A re-hold of something already held costs no slot.
+        if (!heldIn.holds(event.eventId) &&
+            heldIn.sizeForRoom(roomId) >= heldIn.capacity) {
+          // Note it and keep scanning. Breaking here would discard the rest
+          // of a page that has already been fetched — later plaintext and
+          // already-held events included — and the manual "Fetch all history"
+          // path has no automatic retry to pick them up afterwards.
           penExhausted = true;
-          break;
+          continue;
         }
         final sizeBefore = heldIn.size;
         heldIn.hold(event);
@@ -117,9 +125,15 @@ class QueueBootstrapSink implements BootstrapSink {
     // capacity and evicts the boundary events we were trying to keep.
     _lastAcceptedCount = enqueue.accepted + newlyPenned;
 
-    if (newlyPenned > 0) {
+    if (newlyPenned > 0 || penExhausted) {
       // No rows means no depth signal, so an idle worker would not look at
       // the pen until its 60s empty-queue tick.
+      //
+      // Exhaustion signals too, and that case matters more: a page that adds
+      // nothing new is exactly the one where the pen is stuck, and
+      // `BridgeCoordinator` gives up after ~10s of retries — well inside that
+      // idle tick. Without a nudge every retry meets the same full pen and
+      // the bridge abandons the walk even if a key landed seconds earlier.
       _queue.signalPendingWork();
     }
 
