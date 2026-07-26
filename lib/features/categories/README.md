@@ -1,335 +1,46 @@
-# Categories Feature
+# Categories
 
-Categories are persisted `CategoryDefinition` entities. In the current codebase they do three concrete jobs:
+Categories are how the user divides their life in Lotti — work, health, a
+side project, family. Almost everything else is scoped by one.
 
-1. power the settings UI for creating, editing, and browsing categories
-2. provide reusable category-picking UI used by other features
-3. store category-scoped defaults and vocabulary that downstream task, AI, and speech code consumes
+A category is more than a label: it carries the defaults that decide how the app
+behaves inside it, including whether AI runs automatically.
 
-## What This Feature Owns
+## What it does for the user
 
-- `CategoryRepository` for create, update, soft delete, stream reads, and task counts
-- Settings surfaces: `CategoriesListPage`, `CategoryDetailsPage`, and create mode
-- Reusable picker surfaces: `CategoryField`, `CategoryPickerSheet`, and `CategoryCreateModal`
-- Category presentation metadata: `name`, `color`, `icon`
-- Category flags: `private`, `active`, `favorite`, `isAvailableForDayPlan`, `automaticInferenceEnabled`, `automaticAgentWakesEnabled`
-- Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`, `defaultEventTemplateId`
-- Category-scoped AI and speech context: `speechDictionary`, `correctionExamples`
+- **Organizes everything.** Tasks, entries, recordings and plans all belong to a
+  category, and most filters and views are scoped by one.
+- **Gives each area its own look.** A name, a color and an icon, so the area is
+  recognizable at a glance across lists, charts and the day plan.
+- **Sets per-area defaults.** Which AI profile new tasks use, which agent template
+  is attached, which language recordings are in, and whether the area shows up in
+  day planning.
+- **Controls whether AI runs on its own.** Automatic transcription and image
+  analysis are opt-in **per area** — choosing an AI profile is not the same as
+  agreeing to spend tokens on every recording.
+- **Teaches the app its vocabulary.** A per-area speech dictionary and a set of
+  correction examples improve how recordings and suggestions come out.
+- **Can be private or archived.** Private areas stay out of shared views; inactive
+  ones stop appearing in pickers without deleting the history.
 
-## Current Model Boundaries
+## What it owns
 
-- `CategoryDefinition` does not currently contain prompt allowlists such as `allowedPromptIds`.
-- The old `automaticPrompts` concept is not part of the current category model.
-- `automaticInferenceEnabled` is the category's explicit opt-in to running
-  inference without a user gesture (auto-transcription of new audio,
-  auto-analysis of new images). It is nullable and an absent value means
-  **off**, including for categories that already carry a `defaultProfileId`:
-  seeded inference profiles ship `automate: true` skill assignments, so
-  selecting a profile alone would otherwise start spending tokens silently.
-  `ProfileAutomationService` consults it before every automatic path — the
-  profile-driven one and the direct transcription fallback alike — so this
-  flag, not the profile, is the switch that decides whether automation runs.
-  The one caller that sets it to `true` is onboarding
-  (`OnboardingWelcomeModal`), at the moment it creates the areas — having just
-  connected a provider and picked those areas is the consent. The flag is
-  written before the first capture is recorded, not because of it; without it
-  the flow would go on to teach "speak and it transcribes" while the app
-  stopped doing so the next day.
-  Reused categories are the exception — an existing `false` is the user having
-  switched automation off, so onboarding only fills in a `null`.
-- In this code sweep, `defaultLanguageCode` is referenced by the categories model, controller, and UI, but I did not find a downstream consumer outside this feature.
+The category repository (create, update, soft delete, streamed reads, task
+counts); the settings list, detail and create surfaces; and the reusable
+category-picking widgets other features embed.
 
-## Runtime Architecture
-
-```mermaid
-flowchart TD
-  UI["Settings pages and picker widgets"] --> Repo["CategoryRepository"]
-  Repo --> Persist["PersistenceLogic"]
-  Repo --> DB["JournalDb"]
-  Repo --> CacheRead["EntitiesCacheService.getCategoryById()"]
-
-  Notify["UpdateNotifications"] --> RepoStreams["notificationDrivenStream()"]
-  Notify --> Cache["EntitiesCacheService"]
-  DB --> Notify
-
-  RepoStreams --> List["CategoriesListPage / CategoryDetailsController"]
-  Cache --> Pickers["CategoryPickerSheet / CategoryField"]
-  Cache --> Create["createTask() / autoAssignCategoryAgent()"]
-  Cache --> ProjectTools["ProjectToolDispatcher / FollowUpTaskHandler"]
-  Cache --> Prompts["PromptBuilderHelper"]
-```
-
-Two read paths matter here:
-
-- repository streams are notification-driven and back the settings pages
-- cache lookups are used for synchronous reads in task creation, picker widgets, and prompt-building helpers
-
-## Directory Shape
+## Where the code lives
 
 ```text
 lib/features/categories/
-├── domain/
-│   └── category_icon.dart            # re-exports category_icon_data.dart, category_icon_names.dart
-├── repository/
-│   └── categories_repository.dart
-├── state/
-│   ├── categories_list_controller.dart   # only the categoriesStreamProvider
-│   ├── category_details_controller.dart
-│   └── category_task_count_provider.dart
-└── ui/
-    ├── pages/
-    │   ├── categories_list_page.dart
-    │   ├── category_details_form_sections.dart
-    │   └── category_details_page.dart
-    └── widgets/
-        ├── category_color_icon.dart
-        ├── category_color_picker.dart
-        ├── category_correction_examples.dart
-        ├── category_create_modal.dart
-        ├── category_field.dart
-        ├── category_icon_chip.dart
-        ├── category_icon_compact.dart
-        ├── category_icon_display.dart
-        ├── category_icon_picker.dart
-        ├── category_language_dropdown.dart
-        ├── category_name_field.dart
-        ├── category_picker_sheet.dart
-        ├── category_selection_icon_button.dart
-        ├── category_speech_dictionary.dart
-        ├── category_switch_tiles.dart
-        └── category_type_card.dart
+├── repository/ · state/
+└── ui/{pages,widgets}
 ```
 
-## Data Model
+## How it works
 
-`CategoryDefinition` lives in `lib/classes/entity_definitions.dart`.
+The two read paths, the picker surfaces, the stored defaults every downstream
+feature consumes, and the automatic-inference consent flag are documented in the
+knowledge bundle:
 
-The fields with verified runtime consumers are:
-
-- `name`, `color`, `icon`
-  Used throughout list, detail, and picker widgets. `category_icon.dart` centralizes the icon catalog and display constants.
-- `private`, `active`, `favorite`, `isAvailableForDayPlan`
-  Used by settings tiles and picker behavior. `EntitiesCacheService.sortedCategories` returns only active categories, while favorite categories are surfaced first in the selection modal. `isAvailableForDayPlan` is a strict opt-in switch (nullable for JSON backward compatibility; `null` means not available): only categories with the switch turned on are offered for selection in the day plan (`lib/features/daily_os_next/logic/day_plan_availability.dart`). Note that category definitions sync last-writer-wins (no vector-clock merge), so an edit from an app version that predates a flag can drop it.
-- `defaultProfileId`
-  Copied into `TaskData.profileId` when tasks are created from category-aware entry points.
-- `defaultTemplateId`
-  Used to auto-create a task agent in content-awaiting mode for new tasks.
-- `automaticAgentWakesEnabled`
-  Seeds `AgentConfig.automaticUpdatesEnabled` on those task agents — whether
-  each one wakes on task changes or only when asked. Forwarded to
-  `TaskAgentService.createTaskAgent()`, which hardcoded `false` before this
-  existed, by all four category-default creation paths:
-  `assignCategoryDefaultTaskAgent()` (every UI path),
-  `ProjectToolDispatcher._tryAutoAssignTaskAgent()`,
-  `FollowUpTaskHandler._tryAutoAssignAgent()`, and
-  `OnboardingCaptureToTaskService._assignCategoryAgent()`. The manual
-  "Assign agent" CTA is excluded — that is an explicit user setup gesture. The service mirrors the value
-  into the wake orchestrator as well as persisting it, so a seeded-on agent
-  wakes in the session it was created in rather than after the next restart.
-  A *seed*, not a gate: the per-task switch on the AI summary card owns the
-  preference afterwards, so turning this on later does
-  not reach back into tasks that already exist. The details-page row is hidden
-  without a `defaultTemplateId`, since no agent is created there for it to
-  govern. Independent of `automaticInferenceEnabled` — switching wakes off
-  leaves automatic transcription and image analysis running.
-- `defaultEventTemplateId`
-  Used to auto-create an event agent in content-awaiting mode for new events
-  (`autoAssignCategoryEventAgentWith()`). Independent of `defaultTemplateId` so
-  enabling task agents does not implicitly spawn event agents.
-- `speechDictionary`
-  Editable in the details page, appendable via `SpeechDictionaryService`, and injected into AI/speech flows by `PromptBuilderHelper`.
-- `correctionExamples`
-  Written by `CorrectionCaptureService`, displayed and deletable in the details page, and formatted back into prompt context later.
-- `defaultLanguageCode`
-  Persisted and editable in the details page. Current references are inside the categories feature itself.
-
-## Repository and Cache Semantics
-
-`CategoryRepository` is intentionally small:
-
-- `watchCategories()` and `watchCategory()` rebuild on `categoriesNotification` and `privateToggleNotification`
-- `getCategoryById()` reads from `EntitiesCacheService`, not directly from the database
-- `createCategory()` creates a `CategoryDefinition` with `private: false` and `active: true`, optionally taking `icon`, `defaultProfileId`, and `defaultTemplateId`. Everything else (including `favorite` and `isAvailableForDayPlan`) is left unset and so defaults to `null` — a new category is not favorited and is not available for day planning until opted in.
-- `deleteCategory()` is a soft delete that sets `deletedAt` and `updatedAt`
-- `getTaskCountsByCategory()` is a batch query used by the list UI
-
-The cache matters because several category consumers need synchronous access:
-
-- `EntitiesCacheService.getCategoryById()` is used by task creation and prompt-building helpers
-- `EntitiesCacheService.sortedCategories` is used by picker widgets and returns active categories sorted by lowercase name
-
-## Settings UI
-
-### Categories list
-
-`CategoriesListPage` watches `categoriesStreamProvider` (defined in `categories_list_controller.dart`) directly. There is no separate list controller class; that file only declares the `StreamProvider`.
-
-The list page behavior is:
-
-- sorts categories alphabetically in the UI layer
-- renders a task count per row through `categoryTaskCountProvider`
-- batches those counts through `categoryTaskCountsProvider` so tiles share one database query
-- shows `private`, `favorite`, and inactive status indicators
-- keeps inactive categories visible in settings, even though pickers exclude them
-
-### Category details and create mode
-
-Both modes of `CategoryDetailsPage` render inside the shared settings-detail kit (`lib/widgets/settings/`): `SettingsDetailScaffold` provides the header with a back affordance that beams to `/settings/categories`, registers catalog-driven Primary+S save in an `AppCommandScope` with availability tied to the same create/dirty predicate as the primary action, and mounts a sticky glass `SettingsFormActionBar` (primary save/create pill and cancel pill); in edit mode a full-width `SettingsDeleteRow` closes the form. Form sections are `SettingsFormSection` cards; the switch rows are `SettingsSwitchRow`s, the name input is the design-system `DesignSystemTextInput` (via `CategoryNameField`), the tap-to-pick fields (color, language, AI defaults) render as `SettingsPickerField`s, and the speech dictionary is a `DesignSystemTextarea`.
-
-`CategoryDetailsPage` has two distinct modes:
-
-- create mode
-  Writes directly through `CategoryRepository.createCategory()` and only captures `name`, `color`, and `icon` — no placeholder controls for the rest. The Create pill stays disabled until a name is entered, and a successful create beams straight into the new category's editor where privacy, language, and AI defaults are configured.
-- edit mode
-  Uses `CategoryDetailsController` and exposes sections for:
-  - basic settings (name, color, icon)
-  - options (the `CategorySwitchTiles` switch rows in the shared definitions-editor order: favorite, private, active, day planning)
-  - default language
-  - AI defaults via `SettingsProfilePickerField` and `TemplateSelector`; the
-    profile field opens the shared `InferenceProfilePickerModal` used by agent
-    configuration surfaces and preserves its rendered value during background
-    provider reloads
-  - the automatic-inference switch (`SettingsSwitchRow`) directly beneath the
-    profile field, rendered only when `categoryAutomationAvailableProvider`
-    reports that automation is possible for the category — the selected
-    profile carries automated skills, or the direct transcription fallback
-    could run. When nothing can be automated the row is omitted rather than
-    shown disabled
-  - speech dictionary
-  - checklist correction examples
-
-`CategoryDetailsController` keeps `_originalCategory` and `_pendingCategory` so stream updates do not clobber local form edits.
-
-```mermaid
-stateDiagram-v2
-  [*] --> Loading
-  Loading --> Ready : watchCategory emits category
-  Loading --> Error : stream error
-  Ready --> Dirty : updateFormField / setDefault* / updateSpeechDictionary / deleteCorrectionExampleAt
-  Dirty --> Saving : saveChanges()
-  Saving --> Ready : updateCategory succeeds
-  Saving --> Dirty : updateCategory fails
-```
-
-The non-trivial save behavior is the correction example merge:
-
-- the controller re-fetches the latest category from cache before saving
-- remote additions are preserved
-- examples explicitly deleted in the UI stay deleted
-
-That protects delayed background writes from `CorrectionCaptureService`.
-
-## Picker and Inline Creation Flow
-
-The categories feature owns the single, app-wide category picker —
-`CategoryPickerSheet` — and every category selection routes through it. It is a
-Wolt sheet (`ModalUtils.showSinglePageModal`, responsive bottom sheet ↔ dialog
-at 560px) with two modes, opened by two helpers:
-
-- `showCategoryPicker(...)` — **single** select. Tapping a category applies it
-  and closes immediately; the currently assigned category is pinned at the top
-  and a "clear" row removes it. Returns a 3-state `CategorySingleResult`
-  (`CategoryPicked` / `CategoryCleared` / dismissed-`null`); `categoryOrNull`
-  collapses the latter two for callers that don't distinguish them.
-- `showCategoryMultiPicker(...)` — **multi** select. Selection is staged in a
-  `ValueNotifier` and only committed when the user taps the glass-footer Apply;
-  dismissing discards it. The returned `CategoryMultiResult` carries `ids`, an
-  `includesUnassigned` flag (from an optional namespaced sentinel row), and a
-  `changed` flag so expensive callers skip no-op re-queries. Dead ids are
-  intersected out against the live option list.
-
-```mermaid
-flowchart LR
-  Single["showCategoryPicker (single)"] --> Sheet["CategoryPickerSheet"]
-  Multi["showCategoryMultiPicker (multi)"] --> Sheet
-  Sheet --> Cache["EntitiesCacheService.sortedCategories"]
-  Sheet --> Create["CategoryCreateModal"]
-  Create --> Repo["CategoryRepository.createCategory()"]
-```
-
-Important implementation details:
-
-- reads categories from the cache; callers may pass an explicit `options` list
-  (e.g. day-plan-only for Daily OS processing, or inactive-inclusive for the
-  dashboard-settings picker) rather than the default `sortedCategories`
-- groups favorites before non-favorites without inserting a rule between them;
-  the star remains the group cue. Option rows use `DesignSystemSelectionRow`,
-  so single and multi selection share the same full-width
-  selected/hover/focus surface and fixed leading rail. There are no dividers
-  that can remain visible next to an active row, and private/favorite state
-  remains exposed to screen readers
-- when search has no match it offers a "create" row that opens
-  `CategoryCreateModal` with the search text prefilled (single returns the new
-  category and closes; multi adds it to the staged set and stays open)
-- all spacing/typography/color come from design-system tokens
-- embedded callers (the AI embeddings backfill) construct `CategoryPickerSheet`
-  directly with an externally-owned staged notifier and
-  `reserveFooterInset: false`, supplying their own confirm action
-
-`CategoryPickerSheet` is reused everywhere a category is assigned (journal
-entries, tasks, projects, habits, the dashboard-settings picker, Daily OS time
-blocks) and everywhere categories are filtered (the habits and dashboards
-category filters, Daily OS processing, label applicable-categories, AI
-backfill). The one deliberate exception is the tasks/projects multi-field
-filter sheet, whose category section is a generic field-selection modal shared
-with status / label / project — it is not a standalone category picker.
-
-## Downstream Consumers
-
-### Task defaults and agent assignment
-
-Category defaults are consumed by more than one task creation path.
-
-```mermaid
-flowchart LR
-  Category["CategoryDefinition"] --> Profile["defaultProfileId"]
-  Category --> Template["defaultTemplateId"]
-  Profile --> Task["TaskData.profileId"]
-  Template --> Agent["TaskAgentService.createTaskAgent(awaitContent: true)"]
-```
-
-Verified call sites:
-
-- `lib/logic/create/create_entry.dart`
-  - `createTask()` copies `defaultProfileId`
-  - `autoAssignCategoryAgentWith()` uses `defaultTemplateId`
-  - `autoAssignCategoryEventAgentWith()` uses `defaultEventTemplateId`
-- `lib/features/agents/workflow/project_tool_dispatcher.dart`
-  - project-created tasks inherit `defaultProfileId`
-  - auto-assignment uses `defaultTemplateId`
-- `lib/features/agents/tools/follow_up_task_handler.dart`
-  - follow-up tasks use the same default-template agent assignment logic
-
-### Speech dictionary
-
-`speechDictionary` is an actively used field.
-
-- `SpeechDictionaryService.addTermForEntry()` resolves a category from a task, audio entry, or image entry, rejects empty and duplicate terms, and appends new terms to the category
-- `PromptBuilderHelper.getSpeechDictionaryTerms()` reads category dictionary terms from cache
-- `UnifiedAiInferenceRepository` forwards those terms to inference repositories as speech context
-- `CloudInferenceRepository` maps them to `contextBias`
-
-### Checklist correction examples
-
-`correctionExamples` is also a live integration point.
-
-- `CorrectionCaptureService` normalizes edits, rejects trivial or duplicate corrections, delays persistence behind a pending-correction workflow, and appends `ChecklistCorrectionExample` values to the category
-- `PromptBuilderHelper` sorts examples by `capturedAt`, caps the number injected, and formats them for prompt text
-- `features/agents/tools/correction_examples_builder.dart` also formats category examples for agent-facing workflows
-- `CategoryDetailsController.deleteCorrectionExampleAt()` uses index-based deletion so duplicate examples can be removed one at a time
-
-## Tests That Define the Contract
-
-The strongest contracts in this feature are covered under `test/features/categories/`:
-
-- repository notification behavior and soft-delete semantics
-- `CategoryDetailsController` change tracking and correction-example merge behavior
-- task-count batching via `category_task_count_provider.dart`
-- list/detail page rendering
-- picker, icon, color, language, switch, and speech-dictionary widget behavior
-
-If the implementation changes, this README should be updated together with:
-
-- the controller state machine
-- the set of downstream consumers listed above
-- the distinction between repository-stream reads and cache-backed reads
+**→ [knowledge/features/categories/](../../../knowledge/features/categories/)**

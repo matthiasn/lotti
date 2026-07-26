@@ -43,6 +43,12 @@ test_glados:
 analyze:
 	FLUTTER="$(FLUTTER_CMD)" DART="$(DART_CMD)" ./tool/analyze.sh
 
+# Checks the OKF knowledge bundle in knowledge/: frontmatter conformance and,
+# more importantly, that every code path a concept points at still exists.
+.PHONY: okf_check
+okf_check:
+	$(DART_CMD) run tool/okf/validate.dart knowledge
+
 .PHONY: junit_test
 junit_test:
 	$(FLUTTER_CMD) test --coverage --reporter json > TEST-report.jsonl

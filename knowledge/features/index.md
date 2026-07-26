@@ -1,0 +1,63 @@
+# Features
+
+One concept tree per module under `lib/features`. A feature gets a directory
+rather than a single file once its knowledge outgrows a couple of hundred lines.
+
+# Agent runtime and AI
+
+* [Agents](agents/) - the persisted agent runtime: wake scheduling, memory, proposals, review gates.
+* [AI](ai/) - the shared inference plumbing: configuration, provider routing, conversations, embeddings.
+* [Daily OS](daily_os_next/) - the day-planning runtime: coordinator and per-day agents, durable outbox, the capture ritual.
+
+# Work and entries
+
+* [Journal](journal/) - the shared entry substrate: detail, browse, search, linking.
+* [Speech](speech/) - audio capture, playback, waveforms, transcripts.
+* [Categories](categories/) - the app's primary scoping unit and its stored defaults.
+* [Projects](projects/) - grouping between categories and tasks, with agent-authored health.
+* [Labels](labels/) - the lightweight taxonomy and its AI-suggestion coupling.
+* [Habits](habits/) - recurring definitions reconciled with completion entries.
+* [Insights](insights/) - time analysis over the journal.
+* [AI chat](ai_chat/) - a session-scoped Q&A surface over task history.
+* [Dashboards](dashboards/) - user-built chart views over journal data.
+* [Events](events/) - a first-class destination for meaningful moments.
+* [Ratings](ratings/) - catalog-driven structured judgments.
+* [Onboarding](onboarding/) - the first-run path and its measurement substrate.
+* [Tasks](tasks/) - the task layer on the journal substrate: checklists, relationships, filters.
+
+# Infrastructure
+
+* [Sync](sync/) - single-user multi-device replication over end-to-end encrypted Matrix.
+
+# Shell and configuration
+
+* [Settings](settings/) - the declarative settings tree and its shared editor kit.
+
+# Supporting
+
+* [Settings v2](settings_v2/) - the declarative settings tree behind both surfaces.
+* [What's New](whats_new/) - remote release notes with local gating.
+* [Notifications](notifications/) - durable alerts that converge across devices.
+* [User activity gate](user_activity/) - the idle gate background work waits on.
+* [Keyboard](keyboard/) - the desktop command layer.
+* [Checklist corrections](checklist/) - learning from title edits.
+* [Text-to-speech](tts/) - on-device spoken summaries.
+* [Theming](theming/) - theme selection and construction.
+
+* [Surveys](surveys/) - predefined questionnaires scored at submission.
+* [AI consumption](ai_consumption/) - the receipt for every piece of AI work.
+* [Projection kernel](agents_projection/) - the permutation-invariance proof under the agent log.
+
+# Exploratory
+
+* [Character animation](character/) - a deterministic 2D skeletal engine.
+* [Knowledge-graph explorer](knowledge_graph_poc/) - a walkable ego-centric graph view.
+
+# UI foundation
+
+* [Design system](design_system/) - tokens, theming, and the component contracts.
+
+# Related
+
+* [Architecture](../architecture/) - the cross-cutting layers these modules sit on.
+* [Conventions](../conventions/) - the rules the repository holds itself to.

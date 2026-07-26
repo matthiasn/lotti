@@ -99,8 +99,39 @@
 - Run `fvm dart format .` to normalize formatting prior to final checks. Do not use
   `dart-mcp.dart_format`.
 
+## Documentation
+
+Documentation is split by audience. **No fact is written twice.**
+
+- **`lib/features/<x>/README.md` — product description.** What the feature does,
+  what it owns versus what it delegates, and where the code sits. Roughly 40–100
+  lines, ending with a link to its knowledge concept. If a README starts
+  explaining provider routing or wake scheduling, that content belongs in
+  `knowledge/`.
+- **`knowledge/` — the architecture, in OKF v0.2 form.** Runtime flows, state
+  machines, invariants, key classes, gotchas. This is the durable, agent-readable
+  map of how the app actually works. Read the relevant concept *before* changing
+  a subsystem, and update it in the same change.
+- **`docs/adr/` — decisions.** An ADR records a choice at a point in time and is
+  not rewritten; concepts cite ADRs rather than restating them.
+
+Rules for `knowledge/`:
+
+- Every concept carries OKF frontmatter: `type`, `title`, `description`,
+  `status`, `generated`, `stale_after`, and `sources` pointing at the code it
+  was derived from. See
+  [knowledge/conventions/knowledge-bundle.md](knowledge/conventions/knowledge-bundle.md).
+- Do **not** set `verified` on a concept you wrote. That field records
+  independent confirmation by someone other than the author.
+- Use Mermaid diagrams generously for flows, architecture, data movement and
+  lifecycles. If the code contains a real lifecycle or state machine, the
+  concept must include a diagram for it — prefer `stateDiagram-v2`, and never
+  invent states that are not implemented.
+- Every path a concept references must exist. `make okf_check` fails the build
+  on a dangling code pointer, which is the mechanism that keeps the map honest.
+- Run `make okf_check` after touching anything under `knowledge/`.
+
 ## Misc
-- Maintain feature READMEs and update them alongside code changes.
 - Whenever touching any function, consider its docstring and if it needs updating
 - Only report completion after code compiles and all tests pass; verify via analyze and test via the dart-mcp server.
 - Invest in making tests work; avoid deleting or abandoning failing tests prematurely.
@@ -150,12 +181,9 @@
   invisible work: dependency bumps with no behavior change, internal refactors, test-only
   changes, build/CI tweaks, doc updates. If in doubt, ask — but default to "no entry" when the
   user wouldn't see a difference at runtime.
-- Update the feature README files we touch such that they match reality in the codebase, not only
-  for what we touch but in their entirety.
-- Feature READMEs must use an architecture-first documentation style: explain the actual runtime behavior, keep the docs concrete and implementation-backed, prefer code-backed terminology over product fluff, and use Mermaid diagrams generously for flows, architecture, data movement, and lifecycles.
-- If the code contains a real lifecycle or state machine, the feature README must include a Mermaid diagram for it. Prefer `stateDiagram-v2` for real state transitions and do not guess states that are not implemented.
+- Update the documentation we touch such that it matches reality in the codebase, not only
+  for what we touch but in its entirety. See "Documentation" below for which file gets what.
 - In most cases we prefer one test file for one implementation file.
-- Maintain READMEs for product features and keep them up-to-date and relevant as you change code.
 - Don't report that you've successfully implemented anything unless you've actually verified that the code compiles and tests succeed. Do not be overly confident without checking.
 - When writing tests, do not give up too easily and delete what doesn't work right away, instead put some more thought into getting the tests to work.
 - When rewriting a feature and instructed to leave both in place, do not create ANY dependencies on the old code, as the goal will usually be to remove the old code once the new code has feature parity, or surpasses it.

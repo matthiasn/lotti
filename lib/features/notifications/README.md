@@ -1,120 +1,41 @@
-# Synced Notifications
+# Notifications
 
-Synced notifications are durable app-level alerts stored outside the journal
-database. They carry AI/task suggestions across devices, then use monotonic
-state timestamps to converge when a user dismisses, acts on, or retracts an
-alert on any device.
+Notifications are Lotti's durable alerts: an agent has suggestions on a task, a
+habit is due, something needs attention.
 
-```mermaid
-flowchart LR
-  Repo["NotificationRepository"] --> DB["NotificationsDb\nnotifications.sqlite"]
-  Repo --> Outbox["OutboxService"]
-  Outbox --> Matrix["Matrix sync"]
-  Matrix --> Processor["SyncEventProcessor"]
-  Processor --> DB
-  DB --> Scheduler["NotificationScheduler"]
-  Scheduler --> OS["NotificationService\nmacOS/iOS"]
-  DB --> Updates["UpdateNotifications\ninboxNotification"]
+They are not fire-and-forget system toasts — they are records that survive
+restarts and stay consistent across the user's devices.
+
+## What it does for the user
+
+- **Tells the user when something is waiting.** Task suggestions and reminders
+  surface as real notifications.
+- **Clears everywhere at once.** Dismissing or acting on an alert on one device
+  removes it on the others, and it does not come back.
+- **Retracts itself when it stops being true.** If the agent withdraws its
+  suggestions, the alert goes away rather than leading to an empty page.
+- **Survives a restart.** An alert is stored, not just shown.
+
+## What it owns
+
+The notification store and repository; the scheduling of alerts; the sync of
+notifications and their lifecycle state; and convergence when devices act in
+different orders.
+
+## Where the code lives
+
+```text
+lib/features/notifications/
+├── repository/
+└── scheduler/
 ```
 
-## Runtime Shape
+Storage is its own database, `notifications.sqlite`.
 
-- Synced notifications are always active. Creation and lifecycle mutations are
-  persisted locally, sent to the outbox, and reflected in OS scheduling without
-  a config-flag branch. When Matrix sync is active, the existing outbox path
-  transports those notification payloads and state updates to the user's other
-  devices; local alerts continue to work when sync is not configured.
-- Two deterministic-ID kinds exist today: `taskSuggestion` (agent proposals) and
-  `taskOverdue`. Both derive their row id from the linked task
-  (`uuid v5` of `["<kind>", linkedTaskId]`), so re-creating a row for the same
-  task lands on the existing row and keeps the vector clock advancing instead of
-  resetting to an empty clock.
-- `NotificationEntity` is a Freezed union in
-  `lib/classes/notification_entity.dart`.
-- `NotificationMeta` stores the synced row identity, scheduled delivery time,
-  vector clock, origin host, optional category, and monotonic state fields.
-- `NotificationsDb` is a separate Drift database. Notification writes do not
-  take the `JournalDb` writer lock.
-- Full notification payloads sync as `SyncNotification` with a JSON attachment
-  under `/notifications/<id>.json`.
-- State changes sync as `SyncNotificationStateUpdate` inline messages so a
-  dismiss/action/retract does not resend the full payload.
+## How it works
 
-## Lifecycle
+Why the store is separate, and why lifecycle state converges through monotonic
+timestamps rather than whole-row last-write-wins, are documented in the knowledge
+bundle:
 
-```mermaid
-stateDiagram-v2
-  [*] --> Live: create()
-  Live --> Seen: markSeen() / sync apply
-  Live --> Acted: markActedOn() / sync apply
-  Live --> Retracted: retract() / sync apply
-  Seen --> Acted: markActedOn() / sync apply
-  Seen --> Retracted: retract() / sync apply
-  Acted --> Retracted: retract() / sync apply
-
-  Live: seenAt == null\nactedOnAt == null\ndeletedAt == null
-  Seen: seenAt != null
-  Acted: actedOnAt != null
-  Retracted: deletedAt != null
-```
-
-`seenAt`, `actedOnAt`, and `deletedAt` are one-way fields. When two devices set
-the same field offline, merge keeps the earliest non-null timestamp. Mutable
-content fields use last-writer-wins on `meta.updatedAt`; notifications are
-ephemeral and do not route through the journal conflict UI.
-
-## Agent Proposal Bridge
-
-Task-agent proposal notifications may be seeded with the `ChangeSetEntity.id`
-so a fresh wave can create a new durable row after an older row was acted-on or
-retracted. The active inbox invariant is still task-scoped:
-`NotificationRepository.createTaskSuggestion` serializes the task's notification
-mutation, writes (upserts) the new row, then retracts every other open
-`taskSuggestion` row for the same linked task (excluding the row it just wrote),
-so the bell can never show multiple suggestion rows for the same task. The bell
-projection also deduplicates by
-`(type: taskSuggestion, linkedTaskId)` so stale rows left by older app versions
-cannot render as duplicate inbox entries or inflate the badge count.
-
-After the user confirms or rejects a proposal,
-`ChangeSetConfirmationService` calls `ChangeSetNotificationService`; after the
-agent retracts stale proposals, `SuggestionRetractionService` calls the same
-bridge. The bridge refreshes the row when pending items remain and clears every
-open suggestion row for the task when the change set has no pending items:
-
-Tapping a `taskSuggestion` inbox row publishes a `TaskFocusTarget.suggestions`
-intent before opening the linked task. If the task detail is already mounted,
-it consumes that intent and scrolls directly to the proposals section; if the
-task detail is created by the navigation, it consumes the same intent after the
-proposal widget appears. The tap marks only the inbox row as seen; it does not
-mark suggestions acted-on and notification lifecycle writes are emitted through
-the UI-only notification stream, so opening the task cannot wake its task agent.
-
-```mermaid
-flowchart LR
-  ChangeSet["ChangeSetEntity\npending items"] --> Bridge["ChangeSetNotificationService"]
-  Bridge -->|pendingCount > 0| Refresh["createTaskSuggestion(..., idSeed: changeSet.id)"]
-  Refresh --> Retire["serialize task mutation\nretract older open rows"]
-  Bridge -->|user resolved all| Acted["markTaskSuggestionsActedOn(linkedTaskId)"]
-  Bridge -->|agent retracted all| Retracted["retractTaskSuggestionsForTask(linkedTaskId)"]
-  Acted --> Updates["UpdateNotifications\ninboxNotification"]
-  Retracted --> Updates
-  Refresh --> Updates
-```
-
-## Scheduling
-
-`NotificationScheduler` reads pending rows and bridges them to
-`NotificationService`. Rows scheduled in the future use
-`scheduleNotificationAt`, which preserves the full date. Due rows use
-`showNotificationNow`; they do not reuse the legacy `scheduleNotification`
-method because that method intentionally schedules for "today at HH:mm:ss".
-
-A row is only schedulable while it is `Live`: once `seenAt`, `actedOnAt`, or
-`deletedAt` is set, `schedule` cancels the OS-level alert instead of (re)posting
-it. `reconcile` re-derives the OS alert set from the database — rescheduling due
-and upcoming rows while cancelling rows that are no longer live — and is the
-path that keeps OS alerts consistent with synced state across app restarts.
-
-OS notification IDs are derived from the notification UUID with stable
-FNV-1a-32 masked to 31 bits, so cancellation survives app restarts.
+**→ [knowledge/features/notifications/](../../../knowledge/features/notifications/)**

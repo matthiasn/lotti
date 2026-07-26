@@ -7,7 +7,7 @@
 - `logs/sync-2026-04-20.log` (13.3 MB, 84,251 lines, 17.5 h capture)
 - `logs/slow_queries-2026-04-20.log` (3.0 MB, 12,863 entries)
 - `lib/features/sync/**` on `main` as of this date
-- `lib/features/sync/current_architecture.md` (prior investigation, 2026-03-12)
+- `docs/architecture/sync_current_architecture.md` (prior investigation, 2026-03-12)
 
 The user reports three symptoms: (1) the desktop UI freezing for seconds at a time, (2) 12.8 MB of sync log generated in less than a day on moderate usage, and (3) suspected redundant reprocessing of Matrix events.
 
@@ -128,7 +128,7 @@ day on two separate databases.
   - `3bc251b9-41bc-4626-93da-30e8d92eb212` × 195
   - `f027a97f-327c-4c40-b6ea-70f023cec1a0` × 189
   Top download-repeat paths are all `/agent_entities/…`. This matches
-  Failure Surface 2 in `current_architecture.md` and is a live concern.
+  Failure Surface 2 in `sync_current_architecture.md` and is a live concern.
 
 ---
 
@@ -366,7 +366,7 @@ while the user is typing.
 
 Still live today, per the `3bc251b9…` and `f027a97f…` repeat counts and
 the `/agent_entities/…` download-repeat distribution. This is Failure
-Surface 2 from `current_architecture.md`.
+Surface 2 from `sync_current_architecture.md`.
 
 **P5a. Short-term:** validate the resolved descriptor's VC against the
 envelope's declared coverage before accepting. If the descriptor is

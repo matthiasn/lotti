@@ -82,7 +82,7 @@ All of the following must hold:
 6. **100% patch coverage** on every changed/added production line (verify with
    `make coverage` + inspect lcov for the touched files; add tests for any uncovered
    changed line).
-7. Docs updated: `lib/features/sync/README.md` + `current_architecture.md` (with a Mermaid
+7. Docs updated: `lib/features/sync/README.md` + `sync_current_architecture.md` (with a Mermaid
    `stateDiagram-v2`), `CHANGELOG.md`, and `flatpak/com.matthiasn.lotti.metainfo.xml`.
 
 ---
@@ -344,7 +344,7 @@ the `if (unresolvable)` branch (~1213-1265):
 changed/added line is hit. Add targeted tests for any gap. Target = 100% of the patch.
 
 ### Phase 9 — docs, CHANGELOG, flatpak
-- `lib/features/sync/README.md` and `lib/features/sync/current_architecture.md`: document
+- `lib/features/sync/README.md` and `docs/architecture/sync_current_architecture.md`: document
   `burned` vs `unresolvable`; update the status table (it currently lists
   reserved/burn-pending/missing/requested/backfilled/deleted/unresolvable — add burned).
   Add/refresh a Mermaid `stateDiagram-v2` for the sequence-row lifecycle, e.g. reserved →

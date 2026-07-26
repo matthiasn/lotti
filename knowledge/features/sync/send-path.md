@@ -1,0 +1,238 @@
+---
+type: Feature Module
+title: Sync send path
+description: Outbox staging, the CAS claim that makes merges safe, dequeue-time bundling into one gzipped Matrix envelope, and the retry lifecycle.
+resource: ../../../lib/features/sync/outbox
+tags: [sync, outbox, bundling, retries]
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: outbox
+    resource: ../../../lib/features/sync/outbox
+    title: Outbox service, processor, repository
+    last_modified: 2026-07-14
+  - id: payload-sender
+    resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
+    title: MatrixPayloadSender — wire encoding
+    last_modified: 2026-07-25
+  - id: tuning
+    resource: ../../../lib/features/sync/tuning.dart
+    title: SyncTuning
+    last_modified: 2026-05-30
+---
+
+# Staging
+
+`OutboxService` stages local work in `sync_db`, merges superseded work when it
+can, enriches sequence-aware payloads with covered clocks, and nudges a
+`ClientRunner`-driven `OutboxProcessor`.
+
+```mermaid
+sequenceDiagram
+  participant Local as "Local change"
+  participant Outbox as "OutboxService"
+  participant Repo as "OutboxRepository"
+  participant Proc as "OutboxProcessor"
+  participant Matrix as "MatrixService"
+
+  Local->>Outbox: enqueueMessage(syncMessage)
+  Outbox->>Outbox: merge/enrich covered clocks
+  Outbox->>Repo: persist pending row
+  Outbox->>Proc: nudge runner
+  Proc->>Repo: claimNextBatch() [CAS pending→sending]
+  Proc->>Matrix: sendMatrixMsg(syncMessage)
+  alt send succeeds
+    Proc->>Repo: markSent()
+    Proc->>Repo: hasMorePending()
+  else send fails
+    Proc->>Repo: markRetry() or markError()
+  end
+```
+
+Sends are nudged by connectivity regain, Matrix login completion, outbox
+row-count changes, and a watchdog for pending-but-idle queues. The whole pass is
+gated by `UserActivityGate`, so the queue waits for idle time before running.
+
+# The CAS claim is load-bearing
+
+`claimNextBatch` is a per-row compare-and-set from `pending` to `sending`. That
+is not an optimisation — it is what makes merging safe.
+
+A merge that fires while a send is in flight runs
+`updateOutboxMessage(... WHERE status = pending)` and gets `affectedRows = 0`.
+The merged content then spills into a **fresh pending row** through the
+existing fresh-insert fallback, instead of overwriting the row whose old content
+is currently being serialised onto the wire.
+
+Without this, the pre-merge Matrix event would still go out while the new
+`coveredVectorClocks` list sat in a row that would never be sent — producing
+scattered single-counter holes on receivers that only backfill could repair.
+
+# Item lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: enqueued
+    pending --> sending: claimed by OutboxProcessor
+    sending --> sent: delivered
+    sending --> pending: recoverable failure (markRetry, retries++)
+    pending --> error: retries reach maxRetries (10)
+    error --> pending: manual Retry / Retry all (re-queue)
+    sent --> [*]: pruned after 7 days
+    error --> [*]: Remove (won't sync)
+```
+
+`DatabaseOutboxRepository.maxRetries` defaults to **10**. Retry delay is 5 s,
+error delay 15 s, send timeout 20 s, claim lease 1 minute
+(`SyncTuning`).
+
+# Dequeue-time bundling
+
+When `claimNextBatch(maxSize: SyncTuning.outboxBundleMaxSize)` — 50 — returns
+more than one row, the processor wraps them in a `SyncOutboxBundle` and ships
+the batch as **one** Matrix envelope. A single-row batch routes through the
+per-row send instead.
+
+**Media-attachment rows (`filePath != null`) always travel alone.** The boundary
+rule lives in `claimNextBatch`, so a bundle can never carry audio or image
+bytes.
+
+Claim order is priority, then `createdAt`, then `id` — so user-visible journal
+entities and entry links drain ahead of older normal-priority agent or backfill
+rows, while order within a priority stays stable.
+
+```mermaid
+sequenceDiagram
+  participant Proc as "OutboxProcessor"
+  participant Repo as "OutboxRepository"
+  participant Sender as "MatrixPayloadSender"
+  participant DB as "JournalDb"
+  participant Room as "Matrix room"
+
+  Proc->>Repo: claimNextBatch(maxSize: 50)
+  Repo-->>Proc: List<OutboxItem>
+  Proc->>Sender: send(SyncOutboxBundle)
+  Sender->>DB: journalEntityMapForIds(ids)
+  DB-->>Sender: {id: JournalEntity, …}
+  Sender->>Sender: build manifest + gzip
+  Sender->>Room: m.file (manifest, encoding=gzip)
+  Sender->>Room: m.text (stripped envelope)
+  Room-->>Sender: ack
+  Sender-->>Proc: success
+  Proc->>Repo: markSentBatch(items)
+```
+
+`MatrixPayloadSender.sendOutboxBundlePayload` builds the wire form:
+
+1. **Bulk-load** every `SyncJournalEntity` child's `JournalEntity` via
+   `JournalDb.journalEntityMapForIds` in one `WHERE id IN (…)` query. The
+   database is the system of record — the sender never reads per-child JSON
+   files from disk.
+2. **Reconcile** each child envelope's `vectorClock` against the DB version.
+3. **Emit one manifest**:
+   `{version: 1, entries: [{envelope: <SyncMessage>, payload: <JournalEntity?>}]}`.
+   Inline-payload families (`SyncEntryLink`, `SyncAiConfig`,
+   `SyncAiConfigDelete`, `SyncSavedTaskFilter`, `SyncSavedTaskFilterDelete`,
+   `SyncEntityDefinition`, `SyncThemingSelection`, `SyncBackfillRequest`,
+   `SyncBackfillResponse`) and agent envelopes carry their data inside the
+   freezed envelope and need no separate `payload`.
+4. **Gzip on a worker isolate** and upload as a single `m.file` event with
+   `relativePath: /outbox_bundles/<uuid>.json`, upload name `<uuid>.json.gz` and
+   `extraContent.encoding = "gzip"`. No temp file ever touches disk.
+5. **Send the thin envelope** — `children: []`, `jsonPath` pointing at the
+   uploaded cache path.
+
+## Size cap and failure
+
+The post-gzip cap `SyncTuning.outboxBundleMaxBytes` is **8 MiB**, and it is a
+send-side guard only. When the gzipped manifest exceeds it,
+`sendOutboxBundlePayload` returns `null`, which triggers
+`OutboxRepository.markRetryBatch` to re-queue every row for the next pass.
+
+Rows stay pending until acknowledged, so a failed manifest send simply
+re-bundles from outbox state next drain — no on-disk artifact survives across
+attempts.
+
+## Receiver side
+
+`SyncEventProcessor._resolveOutboxBundleManifest` reverses it:
+
+1. Reuse the descriptor pipeline; `decodeAttachmentBytes` gunzips transparently.
+2. Bulk-load the local `JournalEntity` map for every `SyncJournalEntity` id in
+   the manifest — one query, no N+1.
+3. Per entry, run a clock dominance check against the database. When the local
+   copy already covers the incoming clock, **leave the on-disk JSON cache
+   alone** so `SmartJournalEntityLoader` returns the canonical local entity.
+   Otherwise write the inlined payload to its declared `jsonPath` so the apply
+   pipeline reads it as a cache hit and skips the descriptor index.
+4. Hand the reconstructed children to `OutboxBundleUnpacker.prepare`.
+
+The manifest is dropped (`null`) when `version` is absent or unequal to
+`SyncTuning.outboxBundleManifestVersion`, or when `entries` is missing. The
+receiver has no outbox rows to re-queue, so a dropped manifest surfaces its
+missing children through per-`(host, counter)` backfill.
+
+# Agent wake writes
+
+Agent wake execution installs **no** wake-scoped sync interceptor. Each
+`AgentRepository` write inside a wake commits immediately, receives a vector
+clock at write time, and enqueues its own `SyncAgentEntity` or `SyncAgentLink`
+row. The generic bundler coalesces them at dequeue time like anything else.
+
+```mermaid
+sequenceDiagram
+  participant Wake as "Wake executor"
+  participant Sync as "AgentSyncService"
+  participant Repo as "AgentRepository"
+  participant Outbox as "OutboxService"
+
+  Wake->>Sync: upsertEntity / upsertLink
+  Sync->>Repo: persist stamped entity/link
+  Sync->>Outbox: enqueueMessage(SyncAgentEntity / SyncAgentLink)
+  Outbox->>Outbox: row stored, drains via OutboxProcessor
+```
+
+An earlier design coalesced wake writes into a `SyncAgentBundle` envelope
+flushed at the terminal edge of the wake scope. The wire variant remains
+parseable so older peers interoperate, but the producer no longer builds it. If
+a peer is missing a child that an in-flight legacy bundle dropped, gap detection
+reopens it and backfill pulls each child individually.
+
+# Outbox monitor
+
+*Settings → Sync → Outbox* is the user-facing view. It reads a **one-shot
+snapshot** (`getOutboxItems`) with pull-to-refresh, deliberately not a live
+`watch()` — the queue churns hundreds of rows per minute during sync.
+
+The page opens with a plain-language summary driven by the pure
+`summarizeOutbox()`: "Everything's synced", "Sending N…", "N waiting to send",
+"N couldn't send" (with a one-tap **Retry all**), or — when sync is off — "N
+will send when you reconnect", so an offline user is reassured rather than
+alarmed.
+
+Each row is an `OutboxMessageCard` with a status pill (waiting / sending /
+failed / sent → warning / info / error / success). Failed items add a
+reassurance ("still saved on this device") plus **Retry** (safe, no
+confirmation) and **Remove** (guarded by a confirmation spelling out that the
+change won't reach other devices). Per-row diagnostics and the daily-volume
+chart hide behind a "show technical details" toggle.
+
+Manual actions write straight to `SyncDatabase`.
+
+# Activity signalling
+
+`SyncActivitySignaler` is a payload-free broadcast pulse wired into the two
+committal chokepoints:
+
+- **TX** — `DatabaseOutboxRepository.markSent` pulses once per single-row send;
+  `markSentBatch` pulses once for the whole batch, both unconditionally rather
+  than gated on transitioned-row count.
+- **RX** — `InboundQueue.commitApplied` pulses once per applied row.
+
+The sidebar `SyncActivityIndicator` (behind the
+`show_sync_activity_indicator` config flag) listens to both. Healthy sync shows
+a quiet icon; a pulse promotes it to the active accent; real backlog adds
+directional counts capped at `999+` so a large queue does not dominate the rail,
+with exact numbers kept in the semantics label. Producers accept a nullable
+signaler so tests can omit it.
