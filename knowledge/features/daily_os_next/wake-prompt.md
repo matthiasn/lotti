@@ -5,7 +5,7 @@ description: Tagged plaintext sections ordered stable-to-volatile for prefix cac
 resource: ../../../lib/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart
 tags: [daily-os, prompt, context, prefix-cache, memory]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
 stale_after: 2026-10-26
 sources:
   - id: sections
@@ -104,10 +104,11 @@ with tracked time. `current_local_time` sits last and lets same-day drafting
 distinguish future plan slots from time that has already passed.
 
 **`day_entries` is a bounded index, not a log.** It carries recording receipts so
-a later wake can recover a completed offline check-in immediately, capped at the
-newest 32 with the omitted count rendered explicitly rather than silently. It
-closes the byte-stable prefix — five sections precede it, twelve follow — so a
-heavy capture day must not be allowed to inflate it. Anything that grows this section pushes the whole
+a later wake can recover a completed offline check-in immediately — capped at the
+newest 32 of however many the day holds, with the omitted count rendered explicitly
+rather than silently (see [day entries](#day-entries)). It closes the byte-stable
+prefix — five sections precede it, twelve follow — so a heavy capture day must not
+be allowed to inflate it. Anything that grows this section pushes the whole
 per-wake band out of cache.
 
 ## Prompt-record splice
@@ -243,7 +244,12 @@ following links via `search_memory(ids:)`.
 
 # Day entries
 
-Later planner wakes load metadata for every persisted day recording plus bounded
-reviewed/correlated text into `<day_entries>`, **even before a `CaptureEntity`
-exists**. Pending recordings therefore remain discoverable without fabricated
-transcript content.
+Later planner wakes load metadata for every persisted day recording of that day,
+plus bounded reviewed/correlated text, **even before a `CaptureEntity` exists** —
+so a pending recording stays discoverable without fabricated transcript content.
+
+**The load is unbounded; the section is not.** `loadForDay` returns every recording
+for the day, and the context builder then renders only the **newest 32** into
+`<day_entries>`, with the omitted count marked explicitly. Both statements are
+about the same data at different stages: read "every persisted recording" as what
+is *available* to the section, and 32 as what reaches the model.

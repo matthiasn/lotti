@@ -5,7 +5,7 @@ description: Twenty-four opt-in logging domains, where their lines land, and why
 resource: ../../lib/services/logging_domains.dart
 tags: [architecture, logging, diagnostics, observability]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T19:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: log-domains
@@ -70,10 +70,18 @@ flowchart TD
 the full `error-<date>.log` mirror, the PII-safe `error-safe-<date>.log`, and then
 either the shared `sync-<date>.log` or its own `<domain>-<date>.log`.
 
-**The PII-safe log is the one to know about.** `error-safe-<date>.log` records only
-the error's **runtime type**, never the raw exception string, precisely so it can be
-shared or inspected without leaking user-authored content. The full mirror is for
-diagnosis on the device; the safe log is what may leave it.
+**The PII-safe log is the one to know about — and its guarantee is conditional.**
+`error-safe-<date>.log` omits two things that reliably carry content: the raw
+exception string and the stack trace (whose frames embed absolute paths, and with
+them the user's system username). What it does **not** omit is the caller's
+`message`: `safeErrorDescription` renders `'<message> (errorType=<Type>)'`
+verbatim.
+
+So the file is shareable **because callers are required to treat a log message as
+telemetry, never as content** — the contract `DomainLogger` states — not because
+the sink sanitises it. Putting a task title or a transcript in `message` puts it in
+the shareable log. The full mirror is for diagnosis on the device; this one is what
+may leave it, and that only holds if the contract does.
 
 There are therefore more files on disk than routing suggests — and two more that
 `LoggingService` does not own at all: `slow_queries` and `super_slow_queries`, both

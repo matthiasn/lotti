@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T16:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
 stale_after: 2026-11-02
 sources:
   - id: queue
@@ -88,8 +88,8 @@ The preferred path is an **anchored forward walk**
 `/context/{eventId}` request with `room.getTimeline(eventContextId: marker,
 limit: 0)`, then walk `/messages?dir=f`.
 
-**The zero cache limit is required by the Matrix SDK.** This was established
-against **7.0.0 and has not been re-verified since**; `pubspec.yaml` now pins
+**The zero cache limit was required by Matrix SDK 7.0.0**, and has not been
+re-verified since; `pubspec.yaml` now pins
 `matrix: ^8.1.0`, and four in-code comments still name 7.0.0
 (`bootstrap_forward_strategy.dart`, `bootstrap_backward_strategy.dart`, and twice
 in `queue_pipeline_coordinator.dart`). Treat the workaround as load-bearing until

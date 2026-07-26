@@ -5,7 +5,7 @@ description: The README/knowledge/ADR split, the frontmatter every concept carri
 resource: ../../knowledge
 tags: [convention, documentation, okf, process]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T19:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
 stale_after: 2027-01-18
 sources:
   - id: okf-spec
@@ -167,7 +167,10 @@ not-yet-written knowledge is legitimate.
 3. Bump `generated.at` on any concept you rewrote, and push `stale_after` out by
    the window its subject earns.
 4. Add a line to [`knowledge/log.md`](../log.md) for a structural change — a new
-   concept, a removed one, a reorganisation. Not for routine edits.
+   concept, a removed one, a reorganisation. Not for routine edits. **A date's entry
+   records the net outcome**: if a later change the same day reverses an earlier
+   claim, rewrite the entry rather than appending a contradiction, or the log ends up
+   asserting both.
 5. Run `make knowledge_check`.
 
 **If a concept contradicts the code, the concept is the defect.** Fix it in the
@@ -212,8 +215,11 @@ House rules — OKF grades these `SHOULD`, this repo does not:
 - A `verified` entry that is not `{ by, at }`, is missing `by`, or carries an `at`
   that is missing or malformed.
 - An actor outside the `<producer>/<version>` / `human:<id>` / `process:<id>`
-  convention — in `generated.by`, in `verified[].by`, or in the optional
-  `sources[].author`.
+  convention — in `generated.by`, in a `verified` entry's `by`, or in the optional
+  `sources[].author`. **`verified` takes either shape**: a single `{ by, at }`
+  mapping, as in the template above, or a list of them for more than one
+  confirmation. The validator treats a bare mapping as a one-element list, which is
+  why its messages say `verified[]`.
 - A root `index.md` whose frontmatter will not parse, or is not a mapping.
 - A `stale_after` that is not an absolute `YYYY-MM-DD` day.
 - A `sources` that is null, not a list, or empty; an entry that is not a mapping;
@@ -287,6 +293,17 @@ which is the one failure a checker must never have.
 **Four spaces of indent is not a fence.** CommonMark reads it as an indented code
 block, so that is how to show a mermaid fence as an *example* without either
 checker treating it as a diagram.
+
+Two more rules both checkers follow, because getting them wrong hides a broken
+diagram rather than reporting one:
+
+- **A closing fence must be a uniform run** of the opener's character, at least as
+  long. A mixed `` `~~ `` does not close a ``` block — it used to, which left the
+  remainder of a file rendering as code while the check passed.
+- **Blockquote containers are stripped** before matching, so `> ```mermaid` is a
+  real diagram and its body is unwrapped before parsing. **List-item containers are
+  not modelled**: a fence indented past three spaces inside a list item reads as an
+  indented code block, so keep diagrams at the top level of a document.
 
 **The gate covers `knowledge/` only.** `check_mermaid.mjs` takes a directory, and
 pointing it at `docs/` currently reports 14 broken diagrams across the ADRs, the

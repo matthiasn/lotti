@@ -30,7 +30,10 @@ import 'package:lotti/features/agents/projection/shadow_projection.dart';
 ///   `consecutiveFailureCount`, `pendingProjectActivityAt`, scheduling) — stay
 ///   on the cache by design.
 ///
-/// Drives no production read; B6 flips reads onto this fold.
+/// **The B6 read cutover has shipped**: `AgentSyncService.reconciledAgentState`
+/// folds this over the cached row at the start of every wake, so the wake path
+/// reads through here. UI and service reads stay on the raw cache
+/// (`AgentRepository.getAgentState`), which is eventual and self-healing.
 class DerivedAgentState extends Equatable {
   const DerivedAgentState({
     required this.projection,

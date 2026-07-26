@@ -270,11 +270,11 @@ List<OkfIssue> validateFencedBlocks(String path, String content) {
   String? opener;
   var openedAt = 0;
   for (var i = 0; i < lines.length; i++) {
-    // Trailing whitespace is noise; the *leading* indent is not. CommonMark
-    // allows a fence to be indented by at most three spaces — at four it is an
-    // indented code block, so a documented example of a fence is not a fence.
-    // Trimming the indent away made those literals open and close real blocks.
-    final line = lines[i].trimRight();
+    // Trailing whitespace and blockquote markers are noise; the *leading indent*
+    // is not. CommonMark allows a fence to be indented by at most three spaces —
+    // at four it is an indented code block, so a documented example of a fence is
+    // not a fence. Trimming the indent away made those literals open real blocks.
+    final line = _stripContainers(lines[i].trimRight());
     if (opener == null) {
       final match = _fenceOpenPattern.firstMatch(line);
       if (match != null) {
@@ -302,14 +302,26 @@ List<OkfIssue> validateFencedBlocks(String path, String content) {
 final _fenceOpenPattern = RegExp('^( {0,3})(`{3,}|~{3,})');
 
 /// Whether [line] is a valid closing fence for a block opened by [opener]:
-/// indented at most three spaces, the same delimiter character, at least as long
-/// as the opener, and nothing else on the line.
+/// indented at most three spaces, a **uniform** run of the opener's delimiter, at
+/// least as long as the opener, and nothing else on the line.
+///
+/// Uniform, not merely starting with the right character: a mixed `` `~~ `` after
+/// a ``` opener passed the old "first char matches, long enough" test and closed
+/// the block, leaving the rest of the file rendering as code while the check
+/// reported clean.
 bool _closesFence(String line, String opener) {
-  final match = RegExp(r'^( {0,3})([`~]+)$').firstMatch(line);
+  final match = RegExp(r'^ {0,3}(`+|~+)$').firstMatch(line);
   if (match == null) return false;
-  final run = match.group(2)!;
+  final run = match.group(1)!;
   return run[0] == opener[0] && run.length >= opener.length;
 }
+
+/// Strips blockquote markers, which CommonMark removes before a fence is
+/// recognised, so `> ```dart` opens a real block. List-item containers are not
+/// modelled: a fence indented past three spaces inside a list item reads as an
+/// indented code block here.
+String _stripContainers(String line) =>
+    line.replaceFirst(RegExp('^(?: {0,3}>(?: |\t)?)+'), '');
 
 /// Blanks out fenced blocks and inline code so link scanning never treats a
 /// documented link *form* — `` `[Title](/tasks/<taskId>)` `` — as a real link

@@ -61,12 +61,27 @@ function markdownFiles(dir) {
 const FENCE = /^( {0,3})(`{3,}|~{3,})\s*(\S*)/;
 
 /// Whether `line` closes a block opened by `opener`: indented at most three
-/// spaces, same delimiter character, at least as long, and nothing else on it.
+/// spaces, a **uniform** run of the opener's delimiter, at least as long, and
+/// nothing else on the line.
+///
+/// The run must be uniform, not merely start with the right character: a mixed
+/// `` `~~ `` after a ``` opener satisfied "first character matches, length is
+/// enough" and closed the block, so the rest of the concept still rendered as
+/// code while the checker reported success.
 function closesFence(line, opener) {
-  const match = /^( {0,3})([`~]+)\s*$/.exec(line);
+  const match = /^ {0,3}(`+|~+)\s*$/.exec(line);
   if (match === null) return false;
-  const run = match[2];
+  const run = match[1];
   return run[0] === opener[0] && run.length >= opener.length;
+}
+
+/// Strips blockquote markers, which CommonMark removes before a fence is
+/// recognised — `> ```mermaid` opens a real block. Nested quotes are handled by
+/// repetition. **List-item containers are not modelled**: a fence indented past
+/// three spaces inside a list item is read here as an indented code block, so
+/// keep diagrams at the top level of a document.
+function stripContainers(line) {
+  return line.replace(/^(?: {0,3}>(?: |\t)?)+/, '');
 }
 
 const blocks = [];
@@ -77,8 +92,8 @@ for (const file of markdownFiles(root)) {
   let openedAt = 0;
   let isMermaid = false;
   lines.forEach((line, index) => {
-    // Keep the leading indent: only the trailing whitespace is noise.
-    const kept = line.replace(/\s+$/, '');
+    // Keep the leading indent: only trailing whitespace and containers are noise.
+    const kept = stripContainers(line.replace(/\s+$/, ''));
     if (opener === null) {
       const match = FENCE.exec(kept);
       if (match) {
@@ -95,7 +110,12 @@ for (const file of markdownFiles(root)) {
       blocks.push({
         file,
         line: openedAt + 1,
-        code: lines.slice(openedAt + 1, index).join('\n'),
+        // Unwrap the container on the body too, or mermaid is handed `> > A --> B`
+        // and reports "no diagram type detected" for a diagram that renders fine.
+        code: lines
+          .slice(openedAt + 1, index)
+          .map(stripContainers)
+          .join('\n'),
       });
     }
     opener = null;

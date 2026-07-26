@@ -5,7 +5,7 @@ description: What TaskData carries, the two boundaries it deliberately excludes,
 resource: ../../../lib/classes/task.dart
 tags: [tasks, domain, progress, estimates]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
 stale_after: 2027-01-25
 sources:
   - id: task
@@ -39,8 +39,9 @@ Every variant carries `id`, `createdAt`, `utcOffset`, `timezone` and
 the only two that do. Nothing else distinguishes `done` from `rejected`
 structurally, so for the terminal pair the status *is* the discriminator.
 
-**The live/terminal split is not in the union at all, and it is duplicated.** Six
-places re-state "DONE and REJECTED are the closed ones" independently:
+**The live/terminal split is not in the union at all, and it is duplicated.** Seven
+files re-state "DONE and REJECTED are the closed ones" independently — four of them
+as the same raw SQL predicate:
 
 | Site | Form |
 |------|------|
@@ -49,8 +50,8 @@ places re-state "DONE and REJECTED are the closed ones" independently:
 | `agents/tools/task_status_handler.dart` `terminalStatuses` | `{'DONE', 'REJECTED'}` |
 | `database.dart`, `database_task_due_queries.dart`, `database_migration.dart`, `database.drift` | `AND task_status NOT IN ('DONE', 'REJECTED')` in raw SQL |
 
-Adding an eighth status means finding every one of them. There is no shared
-constant to change.
+Adding an eighth status means finding all seven. There is no shared constant to
+change.
 
 **Nothing in the code restricts which status may follow which.** There is no
 transition table, no guard, and no validation — a task can go from `onHold`
