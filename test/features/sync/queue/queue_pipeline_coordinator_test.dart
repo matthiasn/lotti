@@ -30,6 +30,7 @@ import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import 'test_utils.dart';
 
 class _MockSessionManager extends Mock implements MatrixSessionManager {}
 
@@ -598,6 +599,7 @@ class _GladosBench {
     // `capacity` is a non-nullable int the bootstrap sink reads to decide
     // whether it may keep paginating; an unstubbed mock getter yields null.
     when(() => pen.capacity).thenReturn(256);
+    stubPenDecryption(room);
     return QueuePipelineCoordinator(
       syncDb: syncDb,
       settingsDb: settingsDb,
@@ -1230,6 +1232,7 @@ void main() {
 
   test('handles onSync signal: postLoad called on partial room', () async {
     final room = MockRoom();
+    stubPenDecryption(room);
     when(() => room.partial).thenReturn(true);
     when(room.postLoad).thenAnswer((_) async {});
     when(() => roomManager.currentRoom).thenReturn(room);
@@ -1249,6 +1252,7 @@ void main() {
     'onSync does not call postLoad when room is already non-partial',
     () async {
       final room = MockRoom();
+      stubPenDecryption(room);
       when(() => room.partial).thenReturn(false);
       when(room.postLoad).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
@@ -1299,6 +1303,7 @@ void main() {
       'exits immediately when the server has no history',
       () async {
         final room = MockRoom();
+        stubPenDecryption(room);
         final timeline = MockTimeline();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(
@@ -1345,6 +1350,7 @@ void main() {
         );
 
         final room = MockRoom();
+        stubPenDecryption(room);
         final timeline = MockTimeline();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(
@@ -1407,6 +1413,7 @@ void main() {
         );
 
         final room = MockRoom();
+        stubPenDecryption(room);
         final timeline = MockTimeline();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(
@@ -1450,6 +1457,7 @@ void main() {
 
   test('postLoad error drops the marker so a later sync retries', () async {
     final room = MockRoom();
+    stubPenDecryption(room);
     when(() => room.partial).thenReturn(true);
     when(room.postLoad).thenThrow(StateError('sdk down'));
     when(() => roomManager.currentRoom).thenReturn(room);
@@ -1775,6 +1783,7 @@ void main() {
         );
         when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => pen.size).thenReturn(1);
         // Every sweep is throttled: nothing enqueued, and no lookup made.
@@ -1873,6 +1882,7 @@ void main() {
         );
         when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => pen.size).thenReturn(3);
         when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
@@ -1959,6 +1969,7 @@ void main() {
       'drainUntilEmpty flushes the pen before sampling stats',
       () async {
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
           (_) async => const PenFlushOutcome(
@@ -2180,6 +2191,7 @@ void main() {
         addTearDown(realQueue.dispose);
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
@@ -2230,6 +2242,7 @@ void main() {
         addTearDown(realQueue.dispose);
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
@@ -2289,6 +2302,7 @@ void main() {
         addTearDown(realQueue.dispose);
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
@@ -2364,6 +2378,7 @@ void main() {
         addTearDown(realQueue.dispose);
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final forwardTimeline = MockTimeline();
         final anchor = MockEvent();
@@ -2437,6 +2452,7 @@ void main() {
         addTearDown(realQueue.dispose);
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
@@ -3360,6 +3376,7 @@ void main() {
         // producing boundary-crossing, 0-accepted pages. That is the
         // "barren" shape we want to detect.
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         // `maybeStartGapRecovery` resolves the room via
         // `_resolveRoom`, which consults the room manager first and
@@ -3442,6 +3459,7 @@ void main() {
         // the SDK has no more history. That is a different stopReason
         // and must also clear the barren flag.
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final events = <Event>[buildSyncPayload(id: r'$e-prod', tsMs: 50)];
         final timeline = stubTimeline(
@@ -3483,6 +3501,7 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = stubTimeline(
           events: <Event>[],
@@ -3514,6 +3533,7 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         // Forward walk: the anchor context fetch throws, producing
         // totalPages == 0 + error == _BootstrapOutcome.errorNoProgress.
@@ -3580,6 +3600,7 @@ void main() {
         final baseTime = DateTime(2026, 4, 21, 10);
         await withClock(Clock.fixed(baseTime), () async {
           final room = MockRoom();
+          stubPenDecryption(room);
           when(() => room.id).thenReturn(roomId);
           var historyCalls = 0;
           final events = <Event>[buildSyncPayload(id: r'$e-0', tsMs: 50)];
@@ -3632,6 +3653,7 @@ void main() {
 
         // First: record the barren bridge.
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         when(() => roomManager.currentRoom).thenReturn(room);
         var historyCalls = 0;
@@ -3706,6 +3728,7 @@ void main() {
 
         // Record the barren bridge against a resolvable room.
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         when(() => roomManager.currentRoom).thenReturn(room);
         var historyCalls = 0;
@@ -3769,6 +3792,7 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         when(() => roomManager.currentRoom).thenReturn(room);
         var historyCalls = 0;
@@ -3830,6 +3854,7 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         // First page has one event (so the walk does not immediately
         // serverExhaust), the SDK still claims more history, and the
@@ -3880,6 +3905,7 @@ void main() {
 
         // Record the barren bridge so a gap signal can launch recovery.
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         when(() => roomManager.currentRoom).thenReturn(room);
         var historyCalls = 0;
@@ -3975,6 +4001,7 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         final anchor = MockEvent();
@@ -4040,6 +4067,7 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         // Forward-walk timeline: empty events (anchor unresolvable).
         final forwardTl = MockTimeline();
@@ -4207,6 +4235,7 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         final anchor = MockEvent();
@@ -4294,6 +4323,7 @@ void main() {
         // Phase 1 — prime the barren-bridge flag with a backward walk
         // that ends boundaryReached + 0 accepted.
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final barrenEvent = MockEvent();
         when(() => barrenEvent.eventId).thenReturn(r'$e-0');
@@ -4417,6 +4447,7 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final anchor = MockEvent();
         when(() => anchor.eventId).thenReturn(r'$anchor');
@@ -4497,6 +4528,7 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
+        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final e = MockEvent();
         when(() => e.eventId).thenReturn(r'$e1');
@@ -4602,6 +4634,7 @@ void main() {
           await coordinator.start();
 
           final room = MockRoom();
+          stubPenDecryption(room);
           when(() => room.id).thenReturn(roomId);
 
           // Forward-walk timeline stub shaped by the scenario outcome.
@@ -4735,6 +4768,7 @@ void main() {
         loggingService: MockDomainLogger(),
       );
       room = MockRoom();
+      stubPenDecryption(room);
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => room.id).thenReturn(roomId);
       // Non-partial so the coordinator's _maybePostLoadCurrentRoom

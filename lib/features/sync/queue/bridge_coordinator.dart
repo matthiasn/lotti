@@ -11,6 +11,7 @@ class BridgeMarker {
   const BridgeMarker({
     required this.lastAppliedTs,
     required this.lastAppliedEventId,
+    this.resumeFloorTs,
   });
 
   /// Highest `originServerTs` the worker has applied. Null on a
@@ -28,6 +29,30 @@ class BridgeMarker {
   /// depend on whether the SDK's cached backward timeline happens
   /// to span the gap window.
   final String? lastAppliedEventId;
+
+  /// `queue_markers.resume_floor_ts`: the oldest event this device received
+  /// but never resolved — ciphertext the pen was holding when the process
+  /// ended. Null when nothing is outstanding.
+  ///
+  /// A forward walk anchored on [lastAppliedEventId] emits "only events that
+  /// sort strictly after the anchor", so when this sits behind the anchor the
+  /// forward walk would step over the gap and the event would be lost for
+  /// good. [anchorIsSafe] is the guard.
+  final int? resumeFloorTs;
+
+  /// Whether a forward walk from [lastAppliedEventId] can be trusted to cover
+  /// everything outstanding.
+  ///
+  /// False when a resume floor sits at or below the applied timestamp: the
+  /// anchor is ahead of known-missing work, so the walk has to start from the
+  /// floor instead.
+  bool get anchorIsSafe {
+    final floor = resumeFloorTs;
+    if (floor == null) return true;
+    final applied = lastAppliedTs;
+    if (applied == null) return true;
+    return floor > applied;
+  }
 }
 
 /// Callback owned by `QueuePipelineCoordinator` that streams the room's
@@ -72,12 +97,22 @@ class BridgeCoordinator {
     required this._logging,
     this._incompleteRetryDelay = const Duration(seconds: 10),
     this._maxIncompleteRetries = 3,
+    this._onWalkCovered,
   });
 
   final Client _client;
   final String? Function() _currentRoomId;
   final Future<Room?> Function() _resolveRoom;
   final Future<BridgeMarker> Function() _readMarker;
+
+  /// Invoked with the room id after a walk completes successfully, so the
+  /// durable resume floor can be cleared.
+  ///
+  /// Only a completed walk may clear it. A walk that ran out of retries, hit
+  /// a wedged worker, or stopped at pen capacity has *not* re-covered the
+  /// missing ground, and clearing the floor there would hand the next start
+  /// an anchor that skips it — the exact failure the floor exists to stop.
+  final Future<void> Function(String roomId)? _onWalkCovered;
   final BootstrapRunner _bootstrapRunner;
   final DomainLogger _logging;
   final Duration _incompleteRetryDelay;
@@ -257,9 +292,14 @@ class BridgeCoordinator {
     // rationale — a backward walk against the SDK's cached timeline
     // cannot close gaps in the recent `[lastAppliedTs, now]` window
     // once the cache's oldest event predates the window.
-    final mode = marker.lastAppliedEventId != null
+    // A forward walk emits only events strictly after its anchor, so it may
+    // not be used while the durable floor says something older is still
+    // unresolved — that is precisely how held ciphertext used to be skipped
+    // for good. Fall back to the timestamp-bounded backward walk, which
+    // starts from the floor rather than the anchor.
+    final mode = marker.lastAppliedEventId != null && marker.anchorIsSafe
         ? 'reconnect.forward'
-        : marker.lastAppliedTs != null
+        : marker.lastAppliedTs != null || marker.resumeFloorTs != null
         ? 'reconnect.backward'
         : 'fresh';
 
@@ -268,7 +308,8 @@ class BridgeCoordinator {
       'queue.bridge.start '
       'mode=$mode '
       'lastAppliedTs=${marker.lastAppliedTs} '
-      'lastAppliedEventId=${marker.lastAppliedEventId}',
+      'lastAppliedEventId=${marker.lastAppliedEventId} '
+      'resumeFloorTs=${marker.resumeFloorTs}',
       subDomain: _logSub,
     );
 
@@ -293,6 +334,22 @@ class BridgeCoordinator {
       'queue.bridge.done completed=$completed',
       subDomain: _logSub,
     );
+
+    if (completed) {
+      final coveredRoom = _currentRoomId();
+      if (coveredRoom != null) {
+        try {
+          await _onWalkCovered?.call(coveredRoom);
+        } catch (error, stackTrace) {
+          _logging.error(
+            LogDomain.sync,
+            error,
+            stackTrace: stackTrace,
+            subDomain: '$_logSub.clearResumeFloor',
+          );
+        }
+      }
+    }
 
     _handleIncompleteFollowUp(
       incomplete: !completed,

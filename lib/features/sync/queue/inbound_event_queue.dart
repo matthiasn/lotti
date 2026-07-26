@@ -74,6 +74,23 @@ class InboundQueue {
   /// after a penned page would sit unused for up to a minute.
   void signalPendingWork() => _depthEmitter.schedule();
 
+  /// Records that ciphertext for [roomId] at [originTs] is outstanding, so a
+  /// later bootstrap cannot anchor past it. See
+  /// `queue_markers.resume_floor_ts`.
+  Future<void> lowerResumeFloor({
+    required String roomId,
+    required int originTs,
+  }) => _markerAdvancer.lowerResumeFloor(roomId: roomId, originTs: originTs);
+
+  /// Clears the durable floor for [roomId] — only for a bootstrap that has
+  /// actually re-walked that ground.
+  Future<void> clearResumeFloor(String roomId) =>
+      _markerAdvancer.clearResumeFloor(roomId);
+
+  /// The durable floor for [roomId], or null when nothing is outstanding.
+  Future<int?> resumeFloorTs(String roomId) =>
+      _markerAdvancer.resumeFloorTs(roomId);
+
   Stream<QueueDepthSignal> get depthChanges => _depthEmitter.changes;
 
   Future<void> dispose() => _depthEmitter.dispose();

@@ -114,6 +114,50 @@ class QueueMarkerAdvancer {
   /// `queue_id = excludeQueueId` so the in-flight commit/abandon
   /// does not pin the marker against itself. Null when no other
   /// active row exists.
+  /// Lowers `resume_floor_ts` for [roomId] to [originTs] if it is not already
+  /// at or below it. Never raises it: the floor records how far back a resume
+  /// must reach, and the pen forgetting an entry does not make that ground
+  /// safe to skip.
+  Future<void> lowerResumeFloor({
+    required String roomId,
+    required int originTs,
+  }) async {
+    final marker = await (_db.select(
+      _db.queueMarkers,
+    )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+    final current = marker?.resumeFloorTs;
+    if (current != null && current <= originTs) return;
+    await _db
+        .into(_db.queueMarkers)
+        .insertOnConflictUpdate(
+          QueueMarkersCompanion.insert(
+            roomId: roomId,
+            resumeFloorTs: Value(originTs),
+            lastAppliedEventId: Value(marker?.lastAppliedEventId),
+            lastAppliedTs: Value(marker?.lastAppliedTs ?? 0),
+            lastAppliedCommitSeq: Value(marker?.lastAppliedCommitSeq ?? 0),
+          ),
+        );
+  }
+
+  /// Clears the floor for [roomId]. Only a bootstrap that has actually walked
+  /// that ground may call this — see [lowerResumeFloor].
+  Future<void> clearResumeFloor(String roomId) async {
+    await (_db.update(
+      _db.queueMarkers,
+    )..where((t) => t.roomId.equals(roomId))).write(
+      const QueueMarkersCompanion(resumeFloorTs: Value(null)),
+    );
+  }
+
+  /// The room's durable floor, or null when nothing is outstanding.
+  Future<int?> resumeFloorTs(String roomId) async {
+    final marker = await (_db.select(
+      _db.queueMarkers,
+    )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+    return marker?.resumeFloorTs;
+  }
+
   Future<int?> _oldestActiveOriginTs({
     required String roomId,
     required int excludeQueueId,

@@ -150,6 +150,7 @@ void main() {
       loggingService: logging,
     );
     room = MockRoom();
+    stubPenDecryption(room);
     when(() => room.id).thenReturn(roomId);
   });
 
@@ -459,6 +460,7 @@ void main() {
         loggingService: localLogging,
       );
       final localRoom = MockRoom();
+      stubPenDecryption(localRoom);
       when(() => localRoom.id).thenReturn(roomId);
 
       var virtualNow = DateTime(2024);

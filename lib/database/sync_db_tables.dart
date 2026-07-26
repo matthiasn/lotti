@@ -498,6 +498,26 @@ class QueueMarkers extends Table {
       .named('last_applied_commit_seq')
       .withDefault(const Constant(0))();
 
+  /// `originServerTs` of the oldest event this device has *received* but not
+  /// resolved — today, ciphertext parked in `PendingDecryptionPen` waiting
+  /// for its Megolm key. Null when nothing is outstanding.
+  ///
+  /// **No bootstrap may anchor after this.** The applied marker records what
+  /// has been written; this records what is known to be missing, and the two
+  /// are not the same. Held ciphertext has no queue row by design — writing
+  /// pre-decryption ciphertext into `raw_json` would lose the payload on the
+  /// next `Event.fromJson` round-trip — so before this column existed the
+  /// only trace of it was an in-memory map. A teardown erased that trace, and
+  /// the next forward walk, anchored strictly after `last_applied_event_id`,
+  /// skipped straight over the gap: the event was gone with no row, no ledger
+  /// entry and no counter.
+  ///
+  /// Kept deliberately as a timestamp rather than an event id. It is a
+  /// *floor*, not a cursor — it answers "how far back must a resume reach",
+  /// which survives the event itself being evicted from the pen.
+  IntColumn get resumeFloorTs =>
+      integer().named('resume_floor_ts').nullable()();
+
   @override
   Set<Column> get primaryKey => {roomId};
 }

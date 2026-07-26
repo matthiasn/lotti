@@ -16,10 +16,20 @@ void main() {
   late MockDomainLogger logging;
   late InboundQueue queue;
   late MockRoom room;
+  late MockMatrixClient client;
+  late MockEncryption encryption;
   const roomId = '!roomA:example.org';
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(
+      buildEvent(
+        eventId: r'$fallback',
+        roomId: '!roomA:example.org',
+        originTsMs: 0,
+        type: EventTypes.Encrypted,
+      ),
+    );
   });
 
   setUp(() {
@@ -27,7 +37,19 @@ void main() {
     logging = MockDomainLogger();
     queue = InboundQueue(db: db, logging: logging);
     room = MockRoom();
+    client = MockMatrixClient();
+    encryption = MockEncryption();
     when(() => room.id).thenReturn(roomId);
+    when(() => room.client).thenReturn(client);
+    when(() => client.encryption).thenReturn(encryption);
+    // The pen asks the SDK to decrypt; the SDK answers with whatever the room
+    // currently resolves to. Default: unchanged, i.e. still encrypted.
+    when(() => encryption.decryptRoomEvent(any())).thenAnswer((
+      invocation,
+    ) async {
+      final event = invocation.positionalArguments.single as Event;
+      return await room.getEventById(event.eventId) ?? event;
+    });
   });
 
   tearDown(() async {
@@ -538,7 +560,19 @@ void main() {
       final localLogging = MockDomainLogger();
       final localQueue = InboundQueue(db: localDb, logging: localLogging);
       final localRoom = MockRoom();
+      final localClient = MockMatrixClient();
+      final localEncryption = MockEncryption();
       when(() => localRoom.id).thenReturn(roomId);
+      when(() => localRoom.client).thenReturn(localClient);
+      when(() => localClient.encryption).thenReturn(localEncryption);
+      // The pen asks the SDK to decrypt; the SDK resolves against whatever
+      // this scenario says the room currently holds.
+      when(() => localEncryption.decryptRoomEvent(any())).thenAnswer((
+        invocation,
+      ) async {
+        final event = invocation.positionalArguments.single as Event;
+        return await localRoom.getEventById(event.eventId) ?? event;
+      });
 
       try {
         final pen = PendingDecryptionPen(

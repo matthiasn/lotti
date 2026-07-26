@@ -361,6 +361,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
         : await getLastReadMatrixEventTs(_settingsDb);
     return BridgeMarker(
       lastAppliedTs: ts,
+      resumeFloorTs: marker.resumeFloorTs,
       // Only use the event id when it's a server-assigned `$`-
       // prefixed id — placeholder ids that the outbox minted before
       // the server echoed back would make `getEventContext` fail.

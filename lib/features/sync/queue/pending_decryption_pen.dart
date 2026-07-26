@@ -102,6 +102,22 @@ class PendingDecryptionPen {
 
   final Duration? sweepInterval;
 
+  /// Announces every piece of ciphertext this pen takes custody of, so the
+  /// fact can be recorded durably even though the entry itself cannot be.
+  ///
+  /// The entries are in memory deliberately — ciphertext must never reach
+  /// `raw_json`, where an `Event.fromJson` round-trip would re-materialise it
+  /// undecrypted and the payload would be lost. But *that something is
+  /// outstanding* has to outlive the process, or the next forward walk
+  /// anchors past the gap. The coordinator wires this to
+  /// `queue_markers.resume_floor_ts`.
+  ///
+  /// Note what is deliberately absent: there is no "released" counterpart.
+  /// The floor must not rise when the pen forgets an entry — an evicted or
+  /// dropped event is *more* lost, not less. Only a bootstrap that has
+  /// actually re-walked that ground may clear it.
+  void Function(String roomId, int originTs)? onCiphertextHeld;
+
   final LinkedHashMap<String, _HeldEvent> _held =
       LinkedHashMap<String, _HeldEvent>();
 
@@ -217,6 +233,10 @@ class PendingDecryptionPen {
       );
     }
     _enforceCapacity();
+    onCiphertextHeld?.call(
+      event.roomId ?? '',
+      event.originServerTs.millisecondsSinceEpoch,
+    );
     return true;
   }
 
@@ -260,7 +280,7 @@ class PendingDecryptionPen {
       held.lastLookupAtMs = nowMs;
       lookups++;
 
-      final latest = await _fetchLatest(room, id);
+      final latest = await _fetchLatest(room, held.event);
       final candidate = latest ?? held.event;
 
       if (candidate.type != EventTypes.Encrypted) {
@@ -313,9 +333,25 @@ class PendingDecryptionPen {
     );
   }
 
-  Future<Event?> _fetchLatest(Room room, String eventId) async {
+  /// Asks the SDK to decrypt [held] again.
+  ///
+  /// Deliberately **not** `room.getEventById`. That returns the stored copy
+  /// whenever the event is already in the SDK's database — which it always is
+  /// once sync has seen it — and only calls `decryptRoomEvent` on a cache
+  /// miss. Polling it therefore re-read the same ciphertext forever: no
+  /// decryption attempt, and, just as importantly, no key request.
+  ///
+  /// `Encryption.decryptRoomEvent` does both. On failure it calls
+  /// `keyManager.maybeAutoRequest(...)`, so every sweep that still cannot
+  /// decrypt is also the thing that asks the sender and the key backup for
+  /// the missing Megolm session. Key management stays entirely the SDK's job;
+  /// the pen's role is only to keep the ciphertext out of `raw_json` until
+  /// the SDK succeeds.
+  Future<Event?> _fetchLatest(Room room, Event held) async {
     try {
-      return await room.getEventById(eventId);
+      final encryption = room.client.encryption;
+      if (encryption == null) return await room.getEventById(held.eventId);
+      return await encryption.decryptRoomEvent(held);
     } catch (error, stackTrace) {
       _logging.error(
         LogDomain.sync,
