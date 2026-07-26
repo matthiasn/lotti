@@ -205,9 +205,56 @@ class EvalFixtureInputs {
   final DateTime? now;
 
   /// Ids the model could legitimately have used.
-  Set<String> get referenceableTaskIds =>
-      visibleTaskIds ??
-      {for (final task in corpus) task.taskId, ...decidedTaskIds};
+  ///
+  /// On a capture-less wake the decided tasks are not the whole story: each
+  /// carries its one-hop `blockedBy`, which names the blocker's `taskId`, and
+  /// the blocked-work rule explicitly tells the model to schedule that blocker
+  /// first. Omitting those ids would make `noFabricatedTaskIds` fail a model
+  /// for doing exactly what the prompt asked — and the judge bundle would mark
+  /// an id the model was shown as unreferenceable.
+  Set<String> get referenceableTaskIds => visibleTaskIds == null
+      ? {for (final task in corpus) task.taskId, ...decidedTaskIds}
+      : {...visibleTaskIds!, ..._blockersOfVisibleTasks};
+
+  /// Blocker ids reachable through a visible task's `blockedBy` projection.
+  ///
+  /// One hop only, matching ADR 0043: a blocker's own blockers are never
+  /// rendered, so naming one of those really would be fabrication.
+  Set<String> get _blockersOfVisibleTasks => {
+    for (final id in visibleTaskIds ?? const <String>{})
+      for (final blocker in taskById(id)?.blockedBy ?? const <String>[])
+        blocker,
+  };
+
+  /// Whether [taskId] was rendered as some visible task's blocker.
+  ///
+  /// Such a task shows its *status* — `ResolvedBlocker` carries it — but never
+  /// its own `blockedBy`, because ADR 0043 resolves one hop. That asymmetry is
+  /// why the judge bundle reports status and dependency visibility apart.
+  bool isBlockerOfVisibleTask(String taskId) =>
+      visibleTaskIds != null && _blockersOfVisibleTasks.contains(taskId);
+
+  /// Whether the model was shown what [taskId] is waiting on.
+  ///
+  /// True through a rendered corpus row or a `DecidedTaskRef`. **Not** true for
+  /// a task reached only as somebody else's blocker: one-hop resolution never
+  /// renders that task's own `blockedBy`.
+  ///
+  /// Explains a `blockerBeforeBlocked` failure; it does not excuse one. Hiding
+  /// a blocker removes both *exceptions* the rule grants — schedule it earlier,
+  /// or name it in the reason — but not compliance itself, since omitting the
+  /// task is always available and the prompt says so. A judge still needs the
+  /// distinction: "ignored a blocker it was shown" and "could not comply and
+  /// should have omitted" lead to opposite conclusions about the model.
+  bool blockersShownFor(String taskId) =>
+      visibleTaskIds == null || decidedTaskIds.contains(taskId);
+
+  /// Whether the model was shown [taskId]'s own status.
+  ///
+  /// Weaker than [blockersShownFor]: a task rendered as another task's blocker
+  /// carries its status but not its dependencies.
+  bool statusShownFor(String taskId) =>
+      blockersShownFor(taskId) || isBlockerOfVisibleTask(taskId);
 
   EvalCorpusTask? taskById(String id) {
     for (final task in corpus) {

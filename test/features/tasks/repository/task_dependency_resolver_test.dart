@@ -71,7 +71,11 @@ void main() {
     test(
       'one open, resolvable blocker resolves to a named ResolvedBlocker',
       () async {
-        final blocker = TestTaskFactory.create(id: 'blocker', title: 'Blocker');
+        final blocker = TestTaskFactory.create(
+          id: 'blocker',
+          title: 'Blocker',
+          categoryId: 'ops',
+        );
         stubLinks(
           {'blocked'},
           [
@@ -88,8 +92,14 @@ void main() {
             taskId: 'blocker',
             title: 'Blocker',
             status: 'OPEN',
+            categoryId: 'ops',
           ),
         ]);
+        // The blocker's own category, not the blocked task's. The blocked-work
+        // rule tells the model to schedule this blocker, and `draft_day_plan`
+        // requires a categoryId per block — without this the model has to
+        // guess, and guesses the category of the task it is blocking.
+        expect(result['blocked']!.single.toJson()['categoryId'], 'ops');
       },
     );
 
@@ -223,6 +233,53 @@ void main() {
         expect(result, isEmpty);
       },
     );
+
+    test('a blocker outside the allowed categories still blocks, but says '
+        'nothing about itself', () async {
+      final blocker = TestTaskFactory.create(
+        id: 'blocker',
+        title: 'Secret finance work',
+        categoryId: 'finance',
+      );
+      stubLinks(
+        {'blocked'},
+        [
+          blocksLink(id: 'l1', fromId: 'blocker', toId: 'blocked'),
+        ],
+      );
+      stubResolved([blocker]);
+
+      final result = await resolver.resolveBlockedStatus(
+        {'blocked'},
+        allowedCategoryIds: const {'work'},
+      );
+
+      // Degrades to the bare marker: the caller was never granted 'finance',
+      // so the title, status and category do not belong in what it renders.
+      // The entry survives, so the task stays observably blocked.
+      expect(result['blocked'], [const ResolvedBlocker(taskId: 'blocker')]);
+      expect(result['blocked']!.single.toJson(), {'taskId': 'blocker'});
+    });
+
+    test('an empty allow-set leaves every blocker fully described', () async {
+      final blocker = TestTaskFactory.create(
+        id: 'blocker',
+        title: 'Blocker',
+        categoryId: 'finance',
+      );
+      stubLinks(
+        {'blocked'},
+        [
+          blocksLink(id: 'l1', fromId: 'blocker', toId: 'blocked'),
+        ],
+      );
+      stubResolved([blocker]);
+
+      final result = await resolver.resolveBlockedStatus({'blocked'});
+
+      expect(result['blocked']!.single.title, 'Blocker');
+      expect(result['blocked']!.single.categoryId, 'finance');
+    });
   });
 
   group('ResolvedBlocker', () {
@@ -249,6 +306,26 @@ void main() {
         base,
         isNot(const ResolvedBlocker(taskId: 'x', title: 'X', status: 'DONE')),
       );
+      expect(
+        base,
+        isNot(
+          const ResolvedBlocker(
+            taskId: 'x',
+            title: 'X',
+            status: 'OPEN',
+            categoryId: 'ops',
+          ),
+        ),
+      );
+    });
+
+    test('an unresolvable blocker carries no category to guess from', () {
+      // The sync-gap case: the link exists but the task could not be loaded,
+      // so there is no category to report. The entry still blocks.
+      const unresolved = ResolvedBlocker(taskId: 'x');
+
+      expect(unresolved.isUnresolved, isTrue);
+      expect(unresolved.toJson(), {'taskId': 'x'});
     });
   });
 

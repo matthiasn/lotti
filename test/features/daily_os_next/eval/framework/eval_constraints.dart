@@ -207,6 +207,12 @@ EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
     final taskId = block.taskId;
     if (taskId == null) continue;
     final task = outcome.inputs.taskById(taskId);
+    // Every placed blocked task is judged, including one whose own blockers
+    // were never rendered. Hiding the blocker removes both *exceptions* the
+    // rule grants, but not compliance itself: omitting the task is always
+    // available, and the prompt says so explicitly. Exempting these would
+    // credit exactly the defect the constraint exists to catch — a plan that
+    // schedules work the model was told cannot start.
     if (task != null && task.isBlocked) blocked[block] = task;
   }
   if (blocked.isEmpty) {
@@ -236,10 +242,19 @@ EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
           (title != null && title.isNotEmpty && reason.contains(title));
     });
     if (namesBlocker) continue;
+    // Says *why* it could not comply, so a judge reads the failure correctly.
+    // When the blocker was never rendered, neither exception was reachable and
+    // the compliant move was omission — a real defect in the plan, but not the
+    // model ignoring an id it was shown.
+    final blockersHidden =
+        task.blockedBy.isNotEmpty &&
+        !outcome.inputs.blockersShownFor(task.taskId);
     violations.add(
       '"${block.title ?? block.taskId}" is blocked by '
       '${task.blockedBy.isEmpty ? 'status BLOCKED' : task.blockedBy.join(', ')} '
-      'but neither schedules the blocker earlier nor names it in the reason',
+      '${blockersHidden ? 'which was never shown to the model, so neither '
+                'exception was available and it should have been left out' : 'but neither schedules the blocker earlier nor names it in the '
+                'reason'}',
     );
   }
   return EvalConstraintResult(

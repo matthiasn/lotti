@@ -83,11 +83,18 @@ class DraftingContext {
     this.baselinePlan,
     this.decidedTasks = const [],
     this.decidedCaptureItems = const [],
+    this.baselineTaskStates = const {},
   });
 
   final DayPlanEntity? baselinePlan;
   final List<DecidedTaskRef> decidedTasks;
   final List<ParsedItemEntity> decidedCaptureItems;
+
+  /// Blocked-work state (ADR 0043) for tasks the baseline plan schedules,
+  /// keyed by task id, present only for tasks that are actually blocked.
+  /// Annotates the blocks below rather than `decidedTasks`, which the prompt
+  /// defines as tasks the *user* approved for placement.
+  final Map<String, PlannedTaskState> baselineTaskStates;
 
   Map<String, Object?> toJson() {
     final plan = baselinePlan;
@@ -114,6 +121,12 @@ class DraftingContext {
                     'state': block.state.name,
                     'reason': block.reason,
                     'note': block.note,
+                    // Only when the task became blocked since this block was
+                    // drafted — by status or by link, since ADR 0043's rule is
+                    // a union. Absent otherwise, so an unblocked plan
+                    // serializes exactly as before.
+                    if (baselineTaskStates[block.taskId] case final state?)
+                      ...state.toJson(),
                   },
               ],
               'energyBands': [

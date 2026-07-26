@@ -101,6 +101,56 @@ void main() {
       expect(subject.referenceableTaskIds, {'task-decided'});
       expect(subject.taskById('task-hidden'), isNotNull);
     });
+
+    test('includes blockers a visible task names through blockedBy', () {
+      // A decided task carries its one-hop blockedBy even with no capture, and
+      // the blocked-work rule tells the model to schedule that blocker first.
+      // Leaving the blocker id out would make noFabricatedTaskIds fail a model
+      // for doing exactly what the prompt asked.
+      final subject = inputs(
+        corpus: const [
+          EvalCorpusTask(
+            taskId: 'task-c-leaf',
+            title: 'Ship the integration',
+            status: 'BLOCKED',
+            blockedBy: ['task-b-middle'],
+          ),
+          EvalCorpusTask(taskId: 'task-b-middle', title: 'Get credentials'),
+        ],
+        decidedTaskIds: const ['task-c-leaf'],
+        visibleTaskIds: const {'task-c-leaf'},
+      );
+
+      expect(subject.referenceableTaskIds, {'task-c-leaf', 'task-b-middle'});
+    });
+
+    test('stops at one hop, matching ADR 0043', () {
+      // task-a-root is never rendered: only task-c-leaf's own blockers are,
+      // and a blocker's blockers are not resolved. Naming it really would be
+      // fabrication, so the pair keeps its measured gap.
+      final subject = inputs(
+        corpus: const [
+          EvalCorpusTask(
+            taskId: 'task-c-leaf',
+            title: 'Ship the integration',
+            status: 'BLOCKED',
+            blockedBy: ['task-b-middle'],
+          ),
+          EvalCorpusTask(
+            taskId: 'task-b-middle',
+            title: 'Get credentials',
+            status: 'BLOCKED',
+            blockedBy: ['task-a-root'],
+          ),
+          EvalCorpusTask(taskId: 'task-a-root', title: 'Pick a vendor'),
+        ],
+        decidedTaskIds: const ['task-c-leaf'],
+        visibleTaskIds: const {'task-c-leaf'},
+      );
+
+      expect(subject.referenceableTaskIds, {'task-c-leaf', 'task-b-middle'});
+      expect(subject.referenceableTaskIds, isNot(contains('task-a-root')));
+    });
   });
 
   group('EvalConstraintResult', () {

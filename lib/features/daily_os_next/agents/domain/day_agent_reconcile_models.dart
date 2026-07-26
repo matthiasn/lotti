@@ -1,6 +1,7 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 
 // Wake trigger-token vocabulary and extractors live in
 // `day_agent_trigger_tokens.dart`.
@@ -118,6 +119,8 @@ class DecidedTaskRef {
     required this.id,
     required this.title,
     required this.categoryId,
+    this.status,
+    this.blockedBy = const [],
   });
 
   /// Journal task ID.
@@ -129,13 +132,66 @@ class DecidedTaskRef {
   /// Task category ID, if any.
   final String? categoryId;
 
+  /// Task status as the corpus spells it, e.g. `OPEN`, `BLOCKED`.
+  ///
+  /// Carried because ADR 0043's blocked-work rule is stated in terms of it.
+  /// The rule reaches the model on every drafting wake, but the task corpus
+  /// that used to be its only source renders inside `<capture>` alone — so a
+  /// wake without a capture was told to respect blockers while being shown
+  /// nothing that could be blocked. Measured: the eval's blockedWithoutCorpus
+  /// scenario failed `blockerBeforeBlocked` on every sample of every model,
+  /// while its twin with the corpus rendered passed every one.
+  final String? status;
+
+  /// One-hop blockers (ADR 0043), in the same shape the corpus uses.
+  final List<ResolvedBlocker> blockedBy;
+
   /// JSON shape sent to the model in the drafting prompt.
   Map<String, Object?> toJson() => {
     'id': id,
     'title': title,
     'categoryId': categoryId,
+    if (status != null) 'status': status,
+    if (blockedBy.isNotEmpty)
+      'blockedBy': [for (final blocker in blockedBy) blocker.toJson()],
   };
 }
+
+/// Blocked-work state of a task an earlier draft already scheduled.
+///
+/// Exists because ADR 0043's rule is a **union** — a task is blocked when its
+/// `status` is `BLOCKED` *or* it carries a non-empty `blockedBy` — and the two
+/// halves come from different places. `TaskDependencyResolver` only ever
+/// reports link-derived blockers, so a task a user marked blocked by hand
+/// carries no blockers at all and would be invisible if blockers were the only
+/// thing projected.
+///
+/// Only constructed for tasks that are actually blocked, so an ordinary
+/// re-draft adds nothing to the prompt.
+class PlannedTaskState {
+  const PlannedTaskState({required this.status, this.blockedBy = const []});
+
+  /// Task status as the corpus spells it, e.g. `OPEN`, `BLOCKED`.
+  final String status;
+
+  /// One-hop blockers (ADR 0043), empty for a hand-marked blocked task.
+  final List<ResolvedBlocker> blockedBy;
+
+  /// ADR 0043's predicate, stated once.
+  static bool isBlocked({
+    required String status,
+    required List<ResolvedBlocker> blockedBy,
+  }) => status == blockedTaskDbStatus || blockedBy.isNotEmpty;
+
+  Map<String, Object?> toJson() => {
+    'status': status,
+    if (blockedBy.isNotEmpty)
+      'blockedBy': [for (final blocker in blockedBy) blocker.toJson()],
+  };
+}
+
+/// `TaskStatus.blocked.toDbString`, the spelling ADR 0043's rule quotes.
+const String blockedTaskDbStatus = 'BLOCKED';
 
 /// FTS-backed task candidate returned by `match_to_corpus`.
 class DayAgentCorpusMatch {

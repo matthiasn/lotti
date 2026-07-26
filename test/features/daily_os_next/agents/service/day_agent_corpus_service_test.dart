@@ -183,7 +183,10 @@ void main() {
 
         final resolver = MockTaskDependencyResolver();
         when(
-          () => resolver.resolveBlockedStatus({'t-open', 't-blocked'}),
+          () => resolver.resolveBlockedStatus({
+            't-open',
+            't-blocked',
+          }, allowedCategoryIds: any(named: 'allowedCategoryIds')),
         ).thenAnswer(
           (_) async => {
             't-blocked': [
@@ -208,7 +211,10 @@ void main() {
           {'taskId': 'blocker-1', 'title': 'Blocker', 'status': 'OPEN'},
         ]);
         verify(
-          () => resolver.resolveBlockedStatus({'t-open', 't-blocked'}),
+          () => resolver.resolveBlockedStatus({
+            't-open',
+            't-blocked',
+          }, allowedCategoryIds: any(named: 'allowedCategoryIds')),
         ).called(1);
       },
     );
@@ -239,7 +245,9 @@ void main() {
 
         final resolver = MockTaskDependencyResolver();
         when(
-          () => resolver.resolveBlockedStatus({'t-manual'}),
+          () => resolver.resolveBlockedStatus({
+            't-manual',
+          }, allowedCategoryIds: any(named: 'allowedCategoryIds')),
         ).thenAnswer((_) async => const {});
 
         final snapshot = await createService().buildTaskCorpusSnapshot(
@@ -273,7 +281,9 @@ void main() {
 
         final resolver = MockTaskDependencyResolver();
         when(
-          () => resolver.resolveBlockedStatus({'t-blocked'}),
+          () => resolver.resolveBlockedStatus({
+            't-blocked',
+          }, allowedCategoryIds: any(named: 'allowedCategoryIds')),
         ).thenAnswer(
           (_) async => {
             't-blocked': [const ResolvedBlocker(taskId: 'missing-blocker')],
@@ -291,6 +301,49 @@ void main() {
         ]);
       },
     );
+
+    test('passes the agent categories through so a blocker outside them '
+        'cannot describe itself in the corpus', () async {
+      when(
+        () => journalDb.getOpenTasksForDayAgentCorpus(
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          _task(id: 't-blocked', title: 'Blocked', status: _openStatus()),
+        ],
+      );
+      when(
+        () => journalDb.getTasksDueOnOrBefore(any()),
+      ).thenAnswer((_) async => const <Task>[]);
+
+      final resolver = MockTaskDependencyResolver();
+      when(
+        () => resolver.resolveBlockedStatus(
+          any(),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+        ),
+      ).thenAnswer((_) async => const {});
+
+      await createService().buildTaskCorpusSnapshot(
+        allowedCategoryIds: {'work'},
+        day: _day,
+        dependencyResolver: resolver,
+      );
+
+      // The scoping decision belongs to the resolver, but it can only make it
+      // if the corpus hands over the categories it was itself scoped to —
+      // otherwise a blocker in a category this agent cannot see would have
+      // its title and status rendered into the prompt.
+      final captured = verify(
+        () => resolver.resolveBlockedStatus(
+          any(),
+          allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
+        ),
+      ).captured.single;
+      expect(captured, {'work'});
+    });
   });
 
   group('matchToCorpus', () {

@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_diff.
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_writer.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:uuid/uuid.dart';
 
@@ -174,10 +176,20 @@ class DayAgentPlanEditor {
   /// Returns results in insertion order — explicit ids first, then
   /// parsed-item matches — with duplicates collapsed to the first occurrence.
   /// Returns an empty list when both inputs are empty.
+  ///
+  /// When [dependencyResolver] is supplied, each returned ref also carries the
+  /// task's `status` and its one-hop `blockedBy` (ADR 0043), resolved in a
+  /// single batched `resolveBlockedStatus` call over the surviving ids. When
+  /// it is null both are omitted — not merely empty — because the resolver is
+  /// also what gates the blocked-work rule into the prompt, and a wake without
+  /// one must serialize byte-identically to pre-ADR-0043 to keep the prefix
+  /// cache intact. Emitting a `status` no rule refers to would spend prompt
+  /// bytes to say nothing.
   Future<List<DecidedTaskRef>> hydrateDecidedTasks({
     required Set<String> allowedCategoryIds,
     List<String> explicitTaskIds = const [],
     List<ParsedItemEntity> parsedItems = const [],
+    TaskDependencyResolver? dependencyResolver,
   }) async {
     final seen = <String>{};
     final orderedIds = <String>[];
@@ -199,22 +211,108 @@ class DayAgentPlanEditor {
     if (orderedIds.isEmpty) return const [];
 
     final entities = await journalDb.journalEntityMapForIds(orderedIds);
-    final out = <DecidedTaskRef>[];
+    final tasks = <Task>[];
     for (final id in orderedIds) {
       final entity = entities[id];
       if (entity is! Task) continue;
       if (entity.meta.deletedAt != null) continue;
-      final categoryId = entity.meta.categoryId;
-      if (!categoryAllowed(categoryId, allowedCategoryIds)) continue;
-      out.add(
-        DecidedTaskRef(
-          id: entity.id,
-          title: entity.data.title,
-          categoryId: categoryId,
-        ),
-      );
+      if (!categoryAllowed(entity.meta.categoryId, allowedCategoryIds)) {
+        continue;
+      }
+      tasks.add(entity);
     }
-    return out;
+    if (tasks.isEmpty) return const [];
+    // ADR 0043's blocked-work rule is stated in terms of a task's status and
+    // blockers, and it reaches the model on every drafting wake — but the task
+    // corpus that used to carry them renders inside `<capture>` alone. A wake
+    // without a capture was therefore told to respect blockers while being
+    // shown nothing that could be blocked, which is not a rule a model can
+    // follow. One batched resolver call, keyed by the ids already in hand.
+    //
+    // Gated on the resolver rather than always emitted: the same field gates
+    // the rule itself, so a wake without one gets no rule *and* no annotation,
+    // and its prompt stays byte-identical to pre-ADR-0043.
+    final resolver = dependencyResolver;
+    if (resolver == null) {
+      return [
+        for (final task in tasks)
+          DecidedTaskRef(
+            id: task.id,
+            title: task.data.title,
+            categoryId: task.meta.categoryId,
+          ),
+      ];
+    }
+    final blockedBy = await resolver.resolveBlockedStatus({
+      for (final task in tasks) task.id,
+    }, allowedCategoryIds: allowedCategoryIds);
+    return [
+      for (final task in tasks)
+        DecidedTaskRef(
+          id: task.id,
+          title: task.data.title,
+          categoryId: task.meta.categoryId,
+          status: task.data.status.toDbString,
+          blockedBy: blockedBy[task.id] ?? const [],
+        ),
+    ];
+  }
+
+  /// Blocked-work state for tasks an earlier draft already scheduled.
+  ///
+  /// A re-draft replaces the whole block list, so the model re-affirms every
+  /// baseline block — including one whose task became blocked *after* that
+  /// draft was written. Such a task is in neither `decidedTasks` (the user did
+  /// not approve it this wake) nor, on a capture-less wake, the corpus, so
+  /// without this the blocked-work rule reaches the model with nothing behind
+  /// it for exactly that set.
+  ///
+  /// Returns entries **only for tasks that are actually blocked**, by ADR
+  /// 0043's union predicate — so an ordinary re-draft of unblocked work adds
+  /// no prompt bytes. Reads statuses as well as blockers because the resolver
+  /// reports only link-derived blockers: a task marked blocked by hand has
+  /// none, and projecting blockers alone would miss it entirely.
+  ///
+  /// Returns empty when [dependencyResolver] is null, matching the rest of
+  /// ADR 0043's gating — no resolver means no rule, so no data for it either.
+  Future<Map<String, PlannedTaskState>> resolvePlannedTaskStates({
+    required Iterable<String> taskIds,
+    required Set<String> allowedCategoryIds,
+    TaskDependencyResolver? dependencyResolver,
+  }) async {
+    final resolver = dependencyResolver;
+    if (resolver == null) return const {};
+    final ids = {
+      for (final raw in taskIds)
+        if (raw.trim().isNotEmpty) raw.trim(),
+    };
+    if (ids.isEmpty) return const {};
+
+    final entities = await journalDb.journalEntityMapForIds(ids);
+    final tasks = <Task>[
+      for (final id in ids)
+        if (entities[id] case final Task task)
+          if (task.meta.deletedAt == null &&
+              categoryAllowed(task.meta.categoryId, allowedCategoryIds))
+            task,
+    ];
+    if (tasks.isEmpty) return const {};
+
+    final blockedBy = await resolver.resolveBlockedStatus({
+      for (final task in tasks) task.id,
+    }, allowedCategoryIds: allowedCategoryIds);
+
+    return {
+      for (final task in tasks)
+        if (PlannedTaskState.isBlocked(
+          status: task.data.status.toDbString,
+          blockedBy: blockedBy[task.id] ?? const [],
+        ))
+          task.id: PlannedTaskState(
+            status: task.data.status.toDbString,
+            blockedBy: blockedBy[task.id] ?? const [],
+          ),
+    };
   }
 
   /// Persist a structured plan diff against the current plan for [dayId].

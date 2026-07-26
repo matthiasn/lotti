@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Dependency-aware planning
-description: How typed `blocks` links reach the planner as corpus annotations and prompt rules, without changing a dependency-free prompt by a single byte.
+description: How typed `blocks` links reach the planner through three carriers and the prompt rules gated on the same field, without changing a dependency-free prompt by a single byte.
 resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
 tags: [daily-os, dependencies, planning, adr-0043]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T12:00:41Z }
 stale_after: 2026-10-26
 sources:
   - id: resolver
@@ -15,6 +15,14 @@ sources:
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Prompt gates
+    last_modified: 2026-07-26
+  - id: decided-task-ref
+    resource: ../../../lib/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart
+    title: DecidedTaskRef — status + blockedBy projection
+    last_modified: 2026-07-26
+  - id: plan-editor
+    resource: ../../../lib/features/daily_os_next/agents/service/day_agent_plan_editor.dart
+    title: hydrateDecidedTasks — batched blocker resolution
     last_modified: 2026-07-26
   - id: adr-0042
     resource: ../../../docs/adr/0042-typed-task-relationship-links.md
@@ -32,9 +40,11 @@ planning surfaces consume that substrate, per ADR 0043.
 ```mermaid
 flowchart LR
   BL["blocks edges (linked_entries)"] --> DR["TaskDependencyResolver<br/>links + blocker statuses"]
-  DR --> Corpus["DayAgentCorpusService<br/>blockedBy annotation"]
+  DR --> Corpus["DayAgentCorpusService<br/>blockedBy annotation<br/>renders inside capture only"]
+  DR --> Decided["DecidedTaskRef<br/>status + blockedBy<br/>every drafting wake"]
   DR --> Rules["day_agent_prompt_builder<br/>blocked-work + digest rules"]
   Corpus --> Prompt["wake prompt"]
+  Decided --> Prompt
   Rules --> Prompt
 ```
 
@@ -55,8 +65,16 @@ The resolver is stateless, plain Dart, and batch-shaped for a corpus of up to
 
 | Case | Corpus (model-facing) | Task detail header (human-facing) |
 |------|----------------------|-----------------------------------|
-| Blocker resolves to a real, open task | Serializes with title and status | Tappable chip |
-| Blocker link whose target cannot be loaded (a sync gap) | `{"taskId": "<id>"}` with no `title`/`status` — **still a non-empty `blockedBy` entry** | A bare untappable "Blocked" pill |
+| Blocker resolves to a real, open task | Serializes with title, status and **its own `categoryId`** | Tappable chip |
+| Blocker link whose target cannot be loaded (a sync gap) | `{"taskId": "<id>"}` with no `title`/`status`/`categoryId` — **still a non-empty `blockedBy` entry** | A bare untappable "Blocked" pill |
+
+The blocker's own `categoryId` is carried because the rule tells the model to
+schedule that blocker, and `draft_day_plan` requires a `categoryId` on every
+block. On a capture-less wake the nested blocker object is the model's *only*
+description of it — there is no corpus row to read a category from — so without
+it a blocker in a different category than the task it blocks gets guessed wrong.
+The write path validates the block's `taskId` and its `categoryId`
+independently, so a wrong guess persists rather than being rejected.
 
 The corpus keeps the entry so "still blocked" is never silently downgraded to
 "ready" just because the blocker has not synced yet. A bare id is a usable token
@@ -65,12 +83,58 @@ for a model; for a human it is not.
 # One field drives everything
 
 `dependencyResolver` is a **single nullable field** on `DayAgentWorkflow`, threaded
-through the capture-context assembly into
-`DayAgentCorpusService.buildTaskCorpusSnapshot`.
+into **three** carriers of the blocked-work data, so that every wake carrying the
+rules below also carries data they can apply to:
 
-That one field drives both the corpus annotation and the prompt gates below, so
+| Carrier | Assembled in | Covers |
+|---------|--------------|--------|
+| `DayAgentCorpusService.buildTaskCorpusSnapshot` | capture-context | corpus rows — wakes with a capture only (the corpus lives inside `<capture>`) |
+| `DayAgentPlanService.hydrateDecidedTasks` → `DecidedTaskRef` | drafting-context | tasks the user approved for placement, on **every** drafting wake |
+| `resolvePlannedTaskStates` → `drafting.baselinePlan.blocks[]` | drafting-context | tasks an **earlier draft** already scheduled |
+
+That one field drives the annotation on all three paths and the prompt gates below, so
 they **can never drift out of sync** — there is no separate "is this feature on"
 flag.
+
+## Why three carriers
+
+The corpus alone was not enough, and the eval proved it. `<capture>` is absent on
+a drafting wake with no capture — a scheduled pre-warm, or a plan-my-day trigger
+on its own — so the rules arrived describing a `status` and `blockedBy` the model
+was never shown. The `blockedWithoutCorpus` scenario failed `blockerBeforeBlocked`
+on **every sample of every model** while its capture-carrying twin `blockedChain`
+passed every one; after `DecidedTaskRef` gained the fields, both models stopped
+placing the blocked leaf. See [evaluation](evaluation.md).
+
+`DecidedTaskRef` serializes `status` (`toDbString`, e.g. `OPEN`, `BLOCKED`) and
+`blockedBy` in exactly the spelling `DayAgentCorpusService.buildTaskCorpusSnapshot` uses, so the rule
+reads the same against either carrier. Resolution is one batched
+`resolveBlockedStatus` call per wake, keyed by the ids that survive category
+filtering, and skipped entirely when none do.
+
+The third carrier exists because a re-draft **replaces the whole block list**,
+so the model re-affirms every baseline block — including one whose task became
+blocked *after* that draft was written. Such a task is in neither `decidedTasks`
+(the user did not approve it this wake) nor, on a capture-less wake, the corpus.
+Folding it into `decidedTasks` would be wrong: the prompt defines that list as
+tasks the *user* approved for placement, and a block the agent drafted earlier is
+not that. So the annotation lands on the block. Baseline ids already resolved as
+decided tasks are skipped, so the common re-draft costs no extra query.
+
+It projects **`status` as well as `blockedBy`**, because ADR 0043's predicate is
+a *union* — blocked means `"status": "BLOCKED"` **or** a non-empty `blockedBy` —
+and the two halves come from different places. `TaskDependencyResolver` reports
+only link-derived blockers, so a task a user marked blocked by hand has none at
+all and would be invisible if blockers were the only thing projected. Entries
+exist only for tasks that are actually blocked, so an ordinary re-draft of
+unblocked work adds nothing.
+
+**Everything is omitted rather than emitted empty**, on all three carriers: no
+`status` and no `blockedBy` when the resolver is null, no `blockedBy` key on an
+unblocked task or block. The same field gates the rules below, so a wake without
+a resolver gets no rule *and* no annotation, and its prompt stays byte-identical
+to pre-ADR-0043. An empty array would spend prompt bytes to say nothing and break
+the prefix cache for it.
 
 `day_agent_prompt_builder.dart` gates two prompt-contract additions on the same
 field, both rendering the empty string when it is null — so a wake with no
@@ -78,12 +142,22 @@ resolver produces a **byte-identical** prompt to pre-ADR-0043, preserving the
 prefix cache:
 
 - **Blocked-work rules**, appended after the Refine rules for any drafting or
-  refine wake. A task is "blocked for planning" when its corpus row shows
-  `"status": "BLOCKED"` (self-declared, ADR 0042 §4) **or** carries a non-empty
-  `blockedBy` (computed). Place it only if the same plan schedules its blocker
-  earlier the same day, or the block's `reason` explicitly names the blocker and
-  why the work can proceed anyway. Prefer placing the blocker itself when a
-  decided or committed task turns out to be blocked.
+  refine wake. A task is "blocked for planning" when *this wake shows it* with
+  `"status": "BLOCKED"` (self-declared, ADR 0042 §4) **or** a non-empty
+  `blockedBy` (computed) — wherever that appears: a corpus row, a
+  `drafting.decidedTasks` entry, or a `drafting.baselinePlan` block. The rule
+  names all three carriers deliberately; phrased against corpus rows alone it
+  described nothing on a capture-less wake, which is the wake it most needed to
+  govern. Place it only if the same plan schedules its blocker earlier the same
+  day, or the block's `reason` explicitly names the blocker and why the work can
+  proceed anyway.
+- **The no-exception case**, stated rather than left to inference: when a task
+  is shown as blocked but *what it is waiting on* was not shown, neither
+  exception is reachable — one-hop resolution never renders the `blockedBy` of a
+  task reached only as somebody else's blocker. The rule tells the model to
+  leave such a task out rather than schedule work that cannot start. Preferring
+  to place the blocker of a decided task still holds, unless that blocker is
+  itself shown as blocked, in which case the same rule applies to it.
 - **A digest-rule bullet**, appended to the digest rules on coordinator wakes
   only, and only when `directiveService` is also configured: a directive
   commitment on blocked-for-planning work should target the blocker instead, or

@@ -7,18 +7,34 @@ import 'package:meta/meta.dart';
 
 /// One blocker of a task, as resolved by [TaskDependencyResolver].
 ///
-/// `title`/`status` are null when the link exists but its target task could
-/// not be loaded at all (sync gap) — ADR 0042 §4's "unresolvable blocker
-/// keeps blocking" case. The entry is still emitted (never dropped) so a
-/// task whose only blocker is unresolved still serializes to a non-empty
+/// `title`/`status`/`categoryId` are null when the link exists but its target
+/// task could not be loaded at all (sync gap) — ADR 0042 §4's "unresolvable
+/// blocker keeps blocking" case. The entry is still emitted (never dropped) so
+/// a task whose only blocker is unresolved still serializes to a non-empty
 /// `blockedBy`, keeping it observably blocked rather than silently ready.
+///
+/// `categoryId` is carried because the blocked-work rule tells the model to
+/// schedule the blocker itself, and `draft_day_plan` requires a `categoryId`
+/// on every block. On a capture-less wake this object is the model's *only*
+/// description of that blocker — it has no corpus row to read a category from
+/// — so without it the model has to guess, and a blocker in a different
+/// category than the task it blocks gets guessed wrong.
 @immutable
 class ResolvedBlocker {
-  const ResolvedBlocker({required this.taskId, this.title, this.status});
+  const ResolvedBlocker({
+    required this.taskId,
+    this.title,
+    this.status,
+    this.categoryId,
+  });
 
   final String taskId;
   final String? title;
   final String? status;
+
+  /// Category of the blocker task, so a plan block for it can be typed
+  /// correctly rather than inheriting the blocked task's category.
+  final String? categoryId;
 
   /// True when the blocker link's target could not be loaded as a task.
   bool get isUnresolved => title == null;
@@ -27,6 +43,7 @@ class ResolvedBlocker {
     'taskId': taskId,
     if (title != null) 'title': title,
     if (status != null) 'status': status,
+    if (categoryId != null) 'categoryId': categoryId,
   };
 
   @override
@@ -34,10 +51,11 @@ class ResolvedBlocker {
       other is ResolvedBlocker &&
       other.taskId == taskId &&
       other.title == title &&
-      other.status == status;
+      other.status == status &&
+      other.categoryId == categoryId;
 
   @override
-  int get hashCode => Object.hash(taskId, title, status);
+  int get hashCode => Object.hash(taskId, title, status, categoryId);
 }
 
 /// Batch, one-hop, bounded resolver for "which of these tasks are blocked,
@@ -53,9 +71,24 @@ class TaskDependencyResolver {
   /// Returns a map from blocked task id to its open/unresolved blockers.
   /// Keys are present only for tasks with at least one entry — absence means
   /// link-ready, mirroring the corpus's own "absence = ready" contract.
+  ///
+  /// [allowedCategoryIds] scopes what a blocker may *say about itself*, not
+  /// whether it blocks. A blocker outside the caller's categories degrades to
+  /// a bare `{taskId}` — the same shape as an unloadable one — so the blocked
+  /// task stays observably blocked while its blocker's title, status and
+  /// category stay inside the scope the caller was granted. An empty set means
+  /// unrestricted, matching `categoryAllowed` elsewhere.
+  ///
+  /// This is not only about disclosure: the blocked-work rule tells the model
+  /// to schedule the blocker, and the plan writer rejects a task id outside
+  /// the agent's categories. Describing an unschedulable blocker in full
+  /// invites a tool call that is guaranteed to be refused, while the bare
+  /// marker steers the model to the rule's other branch — naming the blocker
+  /// in the block's `reason`.
   Future<Map<String, List<ResolvedBlocker>>> resolveBlockedStatus(
-    Set<String> taskIds,
-  ) async {
+    Set<String> taskIds, {
+    Set<String> allowedCategoryIds = const {},
+  }) async {
     if (taskIds.isEmpty) return const {};
 
     final links = await journalRepository.getTypedLinksForTaskIds(
@@ -89,11 +122,19 @@ class TaskDependencyResolver {
         }
         if (entity.meta.deletedAt != null) continue;
         if (isClosedTask(entity)) continue;
+        // Still blocks, but says nothing about itself: the caller was never
+        // granted this category, so its title, status and category do not
+        // belong in whatever the caller is about to render.
+        if (!categoryAllowed(entity.meta.categoryId, allowedCategoryIds)) {
+          blockers.add(ResolvedBlocker(taskId: entity.id));
+          continue;
+        }
         blockers.add(
           ResolvedBlocker(
             taskId: entity.id,
             title: entity.data.title,
             status: entity.data.status.toDbString,
+            categoryId: entity.meta.categoryId,
           ),
         );
       }

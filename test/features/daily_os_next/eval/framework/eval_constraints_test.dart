@@ -264,6 +264,88 @@ void main() {
       blockedBy: ['task-blocker'],
     );
 
+    test('still fails a visibly-blocked task whose blocker was hidden, and '
+        'says why', () {
+      // The blockedWithoutCorpus shape. task-b-middle is rendered as the
+      // decided leaf's blocker, so its BLOCKED status IS visible — hiding its
+      // own blockedBy removes both *exceptions*, not compliance itself, since
+      // omitting it was always available. Exempting this would credit exactly
+      // the defect the constraint exists to catch.
+      const middle = EvalCorpusTask(
+        taskId: 'task-b-middle',
+        title: 'Get vendor credentials',
+        status: 'BLOCKED',
+        blockedBy: ['task-a-root'],
+      );
+      const leaf = EvalCorpusTask(
+        taskId: 'task-c-leaf',
+        title: 'Ship the integration',
+        status: 'BLOCKED',
+        blockedBy: ['task-b-middle'],
+      );
+      const root = EvalCorpusTask(taskId: 'task-a-root', title: 'Pick vendor');
+
+      final result = scoreBlockerBeforeBlocked(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-b-middle',
+              reason: 'Placing the blocker of task-c-leaf.',
+            ),
+          ],
+          corpus: const [root, middle, leaf],
+          decidedTaskIds: const ['task-c-leaf'],
+          visibleTaskIds: const {'task-c-leaf'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      // The detail must distinguish "ignored a blocker it was shown" from
+      // "could not comply and should have omitted" — a judge reading the
+      // bundle draws opposite conclusions from those two.
+      expect(result.detail, contains('never shown to the model'));
+      expect(result.detail, contains('left out'));
+    });
+
+    test('still judges a placed task whose blockers WERE rendered', () {
+      // The exemption must not swallow the constraint: the decided leaf's own
+      // blockedBy IS rendered, so placing it unjustified is still a failure
+      // even on the same capture-less wake.
+      const middle = EvalCorpusTask(
+        taskId: 'task-b-middle',
+        title: 'Get vendor credentials',
+      );
+      const leaf = EvalCorpusTask(
+        taskId: 'task-c-leaf',
+        title: 'Ship the integration',
+        status: 'BLOCKED',
+        blockedBy: ['task-b-middle'],
+      );
+
+      final result = scoreBlockerBeforeBlocked(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c-leaf',
+              reason: 'Getting it done.',
+            ),
+          ],
+          corpus: const [middle, leaf],
+          decidedTaskIds: const ['task-c-leaf'],
+          visibleTaskIds: const {'task-c-leaf'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-b-middle'));
+    });
+
     test('passes when the blocker is scheduled earlier the same day', () {
       final result = scoreBlockerBeforeBlocked(
         outcome(

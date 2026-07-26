@@ -5,13 +5,13 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T12:00:41Z }
 stale_after: 2026-10-26
 sources:
   - id: eval
     resource: ../../../test/features/daily_os_next/eval
     title: Day-planning eval framework and live runner
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: benchmark
     resource: ../../../test/features/daily_os_next/benchmark
     title: Storage benchmark
@@ -65,9 +65,10 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   than it is.
 - **Fabrication is judged against what the model was shown.** The task corpus
   renders only inside the capture context, so a wake without a capture sees only
-  its decided tasks. `EvalFixtureInputs.corpus` stays ground truth — the scorer
-  must still know what is blocked — while `visibleTaskIds` bounds what the model
-  could legitimately name.
+  its decided tasks — which do carry `status` and `blockedBy`, but not
+  `estimateMinutes`, `due` or `priority`. `EvalFixtureInputs.corpus` stays ground
+  truth — the scorer must still know what is blocked — while `visibleTaskIds`
+  bounds what the model could legitimately name.
 
 `noFabricatedCalendarBlocks` is the only constraint scoring a block's claimed
 **provenance**. `PlannedBlockType.cal` means "imported calendar event" and the
@@ -121,9 +122,13 @@ tool log, and a failing cell is recorded while the matrix continues.
   conversation, whereas a durable job retry opens a fresh one. Counting messages
   across the whole cell would report a transient provider failure as the model
   ignoring the prompt; `jobAttempts` is where infrastructure retries belong.
-- **The dependency resolver is always wired**, matching production. It gates both
-  the corpus annotation and whether the blocked-work rule reaches the prompt at
-  all, so a null resolver would quietly measure a prompt the app never sends.
+- **The dependency resolver is always wired**, matching production. It gates the
+  blocked-work annotation on all three carriers — corpus rows, `decidedTasks` and
+  baseline blocks — *and* whether the rule reaches the prompt at all, so a null
+  resolver would quietly measure a prompt the app never sends. The fixture
+  resolver mirrors production's category scoping and carries each blocker's own
+  `categoryId`, since omitting it would hand the model a materially different
+  prompt than the app does and force it to guess a value the app supplies.
 - **The capture is seeded directly, without its parse job.** Production's
   `submitCapture` also enqueues `parseCapture`, which the runtime drains as a
   *second* wake with its own prompt and tool calls. The unit of measurement here
@@ -136,7 +141,19 @@ tool log, and a failing cell is recorded while the matrix continues.
 Each scenario encodes a tension the planner must resolve: a crowded day; a
 mid-afternoon start with a task too long to fit; four decided tasks that cannot
 all happen; a two-hop blocker chain; and that same chain with the capture removed
-so the blocked-work rule arrives without its data.
+so only the one hop ADR 0043 resolves reaches the model.
+
+That last pair is the instrument justifying itself. With the corpus hidden, every
+sample of every model failed `blockerBeforeBlocked` while the twin passed every
+one — which is how the missing `blockedBy` on `decidedTasks` was found and fixed
+(see [dependency-aware planning](dependency-aware-planning.md)). Post-fix the
+models decline the blocked leaf instead of placing it blindly, and the pair now
+measures the residual one-hop horizon: the leaf names its immediate blocker, and
+nothing reveals the task behind *that*. `blockedWithoutCorpus` therefore still
+fails `requiredWorkPlaced`, and that failure is the finding rather than a defect —
+its ground truth stays identical to the twin's on purpose, so the gap remains
+attributable to the hidden corpus. Weakening it to match what the model can see
+would delete the signal.
 
 Variants are a **matrix dimension rather than a separate run**, so one pass yields
 the A/B. A variant transforms the `DayAgentConfig` a scenario asks for, which is
@@ -186,14 +203,44 @@ carries **every wake of a cell, not just the last**: a durable retry opens a fre
 conversation, and showing one prompt beside tool calls and cost covering the whole
 cell leaves a judge unable to reconcile them.
 
-Corpus rows carry **two separate flags**, because conflating them misleads in
-exactly the direction the flags exist to prevent. `corpusRowShown` is whether the
-row — its status, estimate and `blockedBy` — was rendered at all; the corpus
-appears only inside the capture context. `taskIdReferenceable` is the weaker fact
-that the model could name the id, which a *decided* task satisfies through its own
-projection even on a capture-less wake where its corpus row was never shown.
-Reporting the second as the first would print `blockedBy` next to "the model saw
-this".
+Corpus rows carry **three separate visibility flags**, because conflating any two
+misleads in exactly the direction the flags exist to prevent:
+
+| Flag | True when | Sole carrier of |
+|------|-----------|-----------------|
+| `corpusRowShown` | the corpus rendered, i.e. the wake had a capture | `estimateMinutes`, `due`, `priority` |
+| `statusShown` | the corpus rendered, **or** the task is decided, **or** it appears as a visible task's blocker | — |
+| `blockersShown` | the corpus rendered **or** the task is decided | — |
+| `taskIdReferenceable` | the model could name the id at all | — |
+
+ADR 0043's rule is a **union** — blocked means `status: BLOCKED` *or* a non-empty
+`blockedBy` — and the two halves do not travel together, so they are reported
+apart. A task reached only as somebody else's blocker shows its status (
+`ResolvedBlocker` carries it) but never its own `blockedBy`, because resolution
+is one hop. That is exactly the `blockedWithoutCorpus` shape: the middle task's
+status is visible while its dependency on the root is not.
+
+`blockersShownFor` explains a `blockerBeforeBlocked` failure; it does not
+excuse one. Hiding a task's blockers removes both *exceptions* the rule grants —
+schedule the blocker earlier, or name it in the reason — but not compliance
+itself: omitting the task is always available, and the prompt now says so
+outright. So every placed blocked task is still judged, and the failure detail
+distinguishes "ignored a blocker it was shown" from "could not comply and should
+have left it out". A judge draws opposite conclusions from those two.
+
+Measured, and why the distinction is worth carrying: on `blockedWithoutCorpus`,
+glm-5.2 placed `task-b-middle` (the decided leaf's blocker), noted in the reason
+that it was itself `BLOCKED`, gated it behind an investigation block and
+sequenced the leaf after it. That is thoughtful, and still a plan that schedules
+work the model had been told cannot start — so it fails, with a detail saying
+the blocker was never rendered rather than implying the model ignored one.
+
+Collapsing any two of these misleads in the direction the flags exist to prevent.
+Reading blockedness off `corpusRowShown` would report a model as having ignored a
+blocker it was shown; reading dependency visibility off `statusShown` would report
+the root as something the model ignored rather than never saw; reporting
+referenceability as if it were the row would print `estimateMinutes` next to "the
+model saw this".
 
 # Running it live
 

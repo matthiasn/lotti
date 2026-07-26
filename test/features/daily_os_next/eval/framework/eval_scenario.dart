@@ -149,6 +149,14 @@ class EvalScenario {
                 status: byId[blockerId] == null
                     ? null
                     : _statusString(byId[blockerId]!.status),
+                // Production carries the blocker's own category, because
+                // `draft_day_plan` requires a categoryId on every block and
+                // the nested blocker is the model's only description of it on
+                // a capture-less wake. Omitting it here would send the model a
+                // materially different prompt than the app does, and force it
+                // to guess a value the app would have supplied — inflating
+                // rejected tool calls and corrupting the comparison.
+                categoryId: byId[blockerId]?.categoryId,
               ),
           ],
     };
@@ -318,10 +326,24 @@ class EvalFixtureDependencyResolver implements TaskDependencyResolver {
 
   @override
   Future<Map<String, List<ResolvedBlocker>>> resolveBlockedStatus(
-    Set<String> taskIds,
-  ) async => {
+    Set<String> taskIds, {
+    Set<String> allowedCategoryIds = const {},
+  }) async => {
     for (final entry in blockedStatus.entries)
-      if (taskIds.contains(entry.key)) entry.key: entry.value,
+      if (taskIds.contains(entry.key))
+        entry.key: [
+          for (final blocker in entry.value)
+            // Mirrors production's `categoryAllowed`: an empty allow-set is
+            // unrestricted, and a blocker outside the set still blocks but
+            // describes nothing about itself. Scenarios stay in-scope today,
+            // so this guards a future cross-category scenario from being
+            // measured against a prompt the app would never have sent.
+            if (allowedCategoryIds.isEmpty ||
+                allowedCategoryIds.contains(blocker.categoryId))
+              blocker
+            else
+              ResolvedBlocker(taskId: blocker.taskId),
+        ],
   };
 
   @override
@@ -557,13 +579,30 @@ const _blockedChain = EvalScenario(
   captureTranscript: 'I want to get the vendor integration shipped today.',
 );
 
-/// The rule arrives; the data does not.
+/// The same blocked work with the corpus hidden: how far does one hop get you?
+///
+/// This scenario found a production bug and then outlived it. Originally the
+/// rule arrived with *no* data behind it — the corpus was the only carrier of
+/// `status`/`blockedBy` and it renders inside `<capture>` alone, so every
+/// sample of every model failed `blockerBeforeBlocked` here while the
+/// capture-carrying twin passed every one. `DecidedTaskRef` now projects
+/// `status` and `blockedBy` on every drafting wake, and the models switched to
+/// declining the blocked leaf outright.
+///
+/// What it measures now is the residual gap. ADR 0043 resolves **one hop**, so
+/// the decided leaf arrives naming `task-b-middle` as its blocker — and
+/// nothing reveals that *that* task is itself blocked by `task-a-root`, whose
+/// id never reaches the prompt. Keeping the twin's ground truth means this
+/// scenario still fails `requiredWorkPlaced`, and that failure is the finding:
+/// it is the measured cost of hiding the corpus, not a model defect. Weakening
+/// it to match what the model can see would delete the signal.
 const _blockedWithoutCorpus = EvalScenario(
   id: 'blockedWithoutCorpus',
   intent:
-      'Same blocked work, but no capture — so the corpus (and its '
-      'blockedBy) is never rendered while the blocked-work rule still is. '
-      'Measures what the model does when told a rule it cannot apply.',
+      'Same blocked work, but no capture. The decided leaf still carries its '
+      'one-hop blocker; the corpus that would reveal the second hop does not '
+      'render. Does the planner reach the ready root, or stop at what it was '
+      'handed?',
   tasks: _vendorChainTasks,
   decidedTaskIds: ['task-c-leaf'],
   permittedOmissions: {'task-c-leaf'},

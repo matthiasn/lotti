@@ -19,6 +19,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -1476,6 +1477,226 @@ void main() {
                 ).captured.single
                 as List<String>;
         expect(captured, ['task-1']);
+      });
+
+      test('omits status entirely without a dependency resolver', () async {
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},
+        );
+
+        final result = await createService().hydrateDecidedTasks(
+          allowedCategoryIds: const {'work', 'life'},
+          explicitTaskIds: const ['task-1'],
+        );
+
+        // Not merely empty — absent. The resolver also gates the blocked-work
+        // rule, so a wake without one must serialize byte-identically to
+        // pre-ADR-0043 or the prompt prefix cache is invalidated for nothing.
+        expect(result.single.status, isNull);
+        expect(result.single.blockedBy, isEmpty);
+        expect(result.single.toJson().containsKey('status'), isFalse);
+        expect(result.single.toJson().containsKey('blockedBy'), isFalse);
+      });
+
+      test(
+        'resolves blockers in one batched call for all decided ids',
+        () async {
+          final resolver = MockTaskDependencyResolver();
+          when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+            (_) async => {
+              'task-c-leaf': _task(
+                id: 'task-c-leaf',
+                title: 'Ship the integration',
+              ),
+              'task-1': _task(id: 'task-1', title: 'Prep demo'),
+            },
+          );
+          when(
+            () => resolver.resolveBlockedStatus(
+              any(),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'task-c-leaf': const [
+                ResolvedBlocker(
+                  taskId: 'task-b-middle',
+                  title: 'Get vendor credentials',
+                  status: 'OPEN',
+                ),
+              ],
+            },
+          );
+
+          final result = await createService().hydrateDecidedTasks(
+            allowedCategoryIds: const {'work', 'life'},
+            explicitTaskIds: const ['task-c-leaf', 'task-1'],
+            dependencyResolver: resolver,
+          );
+
+          expect(result.map((t) => t.id).toList(), ['task-c-leaf', 'task-1']);
+          expect(result.first.blockedBy.single.taskId, 'task-b-middle');
+          // Unblocked tasks come back with an empty list, not a null the caller
+          // has to interpret.
+          expect(result.last.blockedBy, isEmpty);
+          // One call for the whole set: this runs on every drafting wake, and a
+          // per-task round trip would put the resolver's cost on the hot path.
+          // The agent's categories travel with it, so a blocker outside them
+          // degrades to a bare id rather than describing itself in the prompt.
+          final asked = verify(
+            () => resolver.resolveBlockedStatus(
+              captureAny(),
+              allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
+            ),
+          ).captured;
+          expect(asked[0], {'task-c-leaf', 'task-1'});
+          expect(asked[1], {'work', 'life'});
+        },
+      );
+
+      test(
+        'does not consult the resolver when nothing survives filtering',
+        () async {
+          final resolver = MockTaskDependencyResolver();
+          when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+            (_) async => {
+              'task-2': _task(
+                id: 'task-2',
+                title: 'Personal errand',
+                categoryId: 'blocked',
+              ),
+            },
+          );
+
+          final result = await createService().hydrateDecidedTasks(
+            allowedCategoryIds: const {'work', 'life'},
+            explicitTaskIds: const ['task-2'],
+            dependencyResolver: resolver,
+          );
+
+          expect(result, isEmpty);
+          verifyNever(
+            () => resolver.resolveBlockedStatus(
+              any(),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          );
+        },
+      );
+    });
+
+    group('resolvePlannedTaskStates', () {
+      test(
+        'reports a hand-marked BLOCKED task that has no blocker links',
+        () async {
+          // The half of ADR 0043's union the resolver can never see: a task the
+          // user marked blocked carries no BlocksLink, so projecting blockers
+          // alone would leave a re-draft re-affirming it as if it were ready.
+          final resolver = MockTaskDependencyResolver();
+          when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+            (_) async => {
+              'task-manual': _task(
+                id: 'task-manual',
+                title: 'Waiting on legal',
+                status: TaskStatus.blocked(
+                  id: 'status-blocked',
+                  createdAt: DateTime(2026, 5, 20),
+                  utcOffset: 120,
+                  reason: 'waiting',
+                ),
+              ),
+            },
+          );
+          when(
+            () => resolver.resolveBlockedStatus(
+              any(),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => const {});
+
+          final states = await createService().resolvePlannedTaskStates(
+            taskIds: const ['task-manual'],
+            allowedCategoryIds: const {'work', 'life'},
+            dependencyResolver: resolver,
+          );
+
+          expect(states['task-manual']!.status, 'BLOCKED');
+          expect(states['task-manual']!.blockedBy, isEmpty);
+          // No blockedBy key: there is nothing to name, and an empty list would
+          // read as "resolved to nothing" rather than "blocked by hand".
+          expect(states['task-manual']!.toJson(), {'status': 'BLOCKED'});
+        },
+      );
+
+      test(
+        'omits a task that is neither status-blocked nor link-blocked',
+        () async {
+          final resolver = MockTaskDependencyResolver();
+          when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+            (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},
+          );
+          when(
+            () => resolver.resolveBlockedStatus(
+              any(),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => const {});
+
+          final states = await createService().resolvePlannedTaskStates(
+            taskIds: const ['task-1'],
+            allowedCategoryIds: const {'work', 'life'},
+            dependencyResolver: resolver,
+          );
+
+          // Absent, so an ordinary re-draft adds no prompt bytes at all.
+          expect(states, isEmpty);
+        },
+      );
+
+      test(
+        'returns empty without a resolver, matching ADR 0043 gating',
+        () async {
+          final states = await createService().resolvePlannedTaskStates(
+            taskIds: const ['task-1'],
+            allowedCategoryIds: const {'work'},
+          );
+
+          expect(states, isEmpty);
+          verifyNever(() => journalDb.journalEntityMapForIds(any()));
+        },
+      );
+
+      test('skips tasks outside the agent categories', () async {
+        final resolver = MockTaskDependencyResolver();
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {
+            'task-2': _task(
+              id: 'task-2',
+              title: 'Finance work',
+              categoryId: 'finance',
+              status: TaskStatus.blocked(
+                id: 'status-blocked',
+                createdAt: DateTime(2026, 5, 20),
+                utcOffset: 120,
+                reason: 'waiting',
+              ),
+            ),
+          },
+        );
+
+        final states = await createService().resolvePlannedTaskStates(
+          taskIds: const ['task-2'],
+          allowedCategoryIds: const {'work', 'life'},
+          dependencyResolver: resolver,
+        );
+
+        expect(states, isEmpty);
+        verifyNever(
+          () => resolver.resolveBlockedStatus(
+            any(),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
       });
     });
 
@@ -5411,6 +5632,7 @@ Task _task({
   required String id,
   required String title,
   String? categoryId = 'work',
+  TaskStatus? status,
 }) {
   return JournalEntity.task(
         meta: Metadata(
@@ -5422,11 +5644,13 @@ Task _task({
           categoryId: categoryId,
         ),
         data: TaskData(
-          status: TaskStatus.open(
-            id: 'status-open',
-            createdAt: DateTime(2026, 5, 20),
-            utcOffset: 120,
-          ),
+          status:
+              status ??
+              TaskStatus.open(
+                id: 'status-open',
+                createdAt: DateTime(2026, 5, 20),
+                utcOffset: 120,
+              ),
           statusHistory: const [],
           dateFrom: DateTime(2026, 5, 20),
           dateTo: DateTime(2026, 5, 20, 1),
