@@ -9917,9 +9917,9 @@ class AppLocalizationsDe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count nicht verifizierte Geräte pausieren die Synchronisierung — lösche oder verifiziere sie unten.',
+          '$count nicht verifizierte Geräte können neue Einträge nicht lesen — lösche oder verifiziere sie unten.',
       one:
-          '1 nicht verifiziertes Gerät pausiert die Synchronisierung — lösche oder verifiziere es unten.',
+          '1 nicht verifiziertes Gerät kann neue Einträge nicht lesen — lösche oder verifiziere es unten.',
     );
     return '$_temp0';
   }
@@ -9930,9 +9930,9 @@ class AppLocalizationsDe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count nicht verifizierte Geräte pausieren die Synchronisierung — lösche sie unten.',
+          '$count nicht verifizierte Geräte können neue Einträge nicht lesen — lösche sie unten.',
       one:
-          '1 nicht verifiziertes Gerät pausiert die Synchronisierung — lösche es unten.',
+          '1 nicht verifiziertes Gerät kann neue Einträge nicht lesen — lösche es unten.',
     );
     return '$_temp0';
   }
@@ -9943,9 +9943,9 @@ class AppLocalizationsDe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count nicht verifizierte Geräte pausieren die Synchronisierung — verifiziere sie unten.',
+          '$count nicht verifizierte Geräte können neue Einträge nicht lesen — verifiziere sie unten.',
       one:
-          '1 nicht verifiziertes Gerät pausiert die Synchronisierung — verifiziere es unten.',
+          '1 nicht verifiziertes Gerät kann neue Einträge nicht lesen — verifiziere es unten.',
     );
     return '$_temp0';
   }
@@ -9957,7 +9957,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncDevicesStaleHint => 'Wahrscheinlich nicht mehr in Gebrauch';
 
   @override
-  String get syncDevicesSyncResumed => 'Die Synchronisierung läuft wieder.';
+  String get syncDevicesSyncResumed =>
+      'Alle Geräte können deine Einträge wieder lesen.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Dieses Gerät';

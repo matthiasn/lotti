@@ -4039,7 +4039,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{1 appareil non vérifié met la synchronisation en pause — supprime-le ou vérifie-le ci-dessous.} other{{count} appareils non vérifiés mettent la synchronisation en pause — supprime-les ou vérifie-les ci-dessous.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{1 appareil non vérifié ne peut pas lire les nouvelles entrées — supprime-le ou vérifie-le ci-dessous.} other{{count} appareils non vérifiés ne peuvent pas lire les nouvelles entrées — supprime-les ou vérifie-les ci-dessous.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {
@@ -4048,7 +4048,7 @@
       }
     }
   },
-  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 appareil non vérifié met la synchronisation en pause — supprime-le ci-dessous.} other{{count} appareils non vérifiés mettent la synchronisation en pause — supprime-les ci-dessous.}}",
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 appareil non vérifié ne peut pas lire les nouvelles entrées — supprime-le ci-dessous.} other{{count} appareils non vérifiés ne peuvent pas lire les nouvelles entrées — supprime-les ci-dessous.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
     "description": "Paused-sync banner variant; count is the number of blocking devices.",
     "placeholders": {
@@ -4057,7 +4057,7 @@
       }
     }
   },
-  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 appareil non vérifié met la synchronisation en pause — vérifie-le ci-dessous.} other{{count} appareils non vérifiés mettent la synchronisation en pause — vérifie-les ci-dessous.}}",
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 appareil non vérifié ne peut pas lire les nouvelles entrées — vérifie-le ci-dessous.} other{{count} appareils non vérifiés ne peuvent pas lire les nouvelles entrées — vérifie-les ci-dessous.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
     "description": "Paused-sync banner variant; count is the number of blocking devices.",
     "placeholders": {
@@ -4068,7 +4068,7 @@
   },
   "syncDevicesSectionTitle": "Appareils",
   "syncDevicesStaleHint": "Probablement plus utilisé",
-  "syncDevicesSyncResumed": "La synchronisation fonctionne à nouveau.",
+  "syncDevicesSyncResumed": "Tous les appareils peuvent à nouveau lire tes entrées.",
   "syncDevicesThisDeviceChip": "Cet appareil",
   "syncDevicesUnverifiedChip": "Non vérifié",
   "syncDevicesVerifiedChip": "Vérifié",

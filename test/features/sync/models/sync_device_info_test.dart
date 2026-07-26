@@ -51,9 +51,9 @@ void main() {
     });
   });
 
-  group('blocksSync', () {
+  group('excludedFromSync', () {
     test('true only for another device with keys that is unverified', () {
-      expect(device(withKeys: true).blocksSync, isTrue);
+      expect(device(withKeys: true).excludedFromSync, isTrue);
     });
 
     test('false for the current device, verified devices and keyless '
@@ -63,11 +63,11 @@ void main() {
           isCurrentDevice: true,
           verified: true,
           withKeys: true,
-        ).blocksSync,
+        ).excludedFromSync,
         isFalse,
       );
-      expect(device(verified: true, withKeys: true).blocksSync, isFalse);
-      expect(device().blocksSync, isFalse);
+      expect(device(verified: true, withKeys: true).excludedFromSync, isFalse);
+      expect(device().excludedFromSync, isFalse);
     });
   });
 

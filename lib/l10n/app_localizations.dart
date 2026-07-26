@@ -17013,19 +17013,19 @@ abstract class AppLocalizations {
   /// Warning banner while unverified devices block outbound sync; count is the number of blocking devices.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{1 unverified device is pausing sync — delete or verify it below.} other{{count} unverified devices are pausing sync — delete or verify them below.}}'**
+  /// **'{count, plural, one{1 unverified device can\'t read new entries — delete or verify it below.} other{{count} unverified devices can\'t read new entries — delete or verify them below.}}'**
   String syncDevicesPausedBanner(int count);
 
   /// Paused-sync banner variant; count is the number of blocking devices.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{1 unverified device is pausing sync — delete it below.} other{{count} unverified devices are pausing sync — delete them below.}}'**
+  /// **'{count, plural, one{1 unverified device can\'t read new entries — delete it below.} other{{count} unverified devices can\'t read new entries — delete them below.}}'**
   String syncDevicesPausedBannerDeleteOnly(int count);
 
   /// Paused-sync banner variant; count is the number of blocking devices.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{1 unverified device is pausing sync — verify it below.} other{{count} unverified devices are pausing sync — verify them below.}}'**
+  /// **'{count, plural, one{1 unverified device can\'t read new entries — verify it below.} other{{count} unverified devices can\'t read new entries — verify them below.}}'**
   String syncDevicesPausedBannerVerifyOnly(int count);
 
   /// No description provided for @syncDevicesSectionTitle.
@@ -17043,7 +17043,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncDevicesSyncResumed.
   ///
   /// In en, this message translates to:
-  /// **'Sync is running again.'**
+  /// **'All devices can read your entries again.'**
   String get syncDevicesSyncResumed;
 
   /// No description provided for @syncDevicesThisDeviceChip.

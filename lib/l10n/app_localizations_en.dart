@@ -9793,8 +9793,9 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count unverified devices are pausing sync — delete or verify them below.',
-      one: '1 unverified device is pausing sync — delete or verify it below.',
+          '$count unverified devices can\'t read new entries — delete or verify them below.',
+      one:
+          '1 unverified device can\'t read new entries — delete or verify it below.',
     );
     return '$_temp0';
   }
@@ -9804,8 +9805,9 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count unverified devices are pausing sync — delete them below.',
-      one: '1 unverified device is pausing sync — delete it below.',
+      other:
+          '$count unverified devices can\'t read new entries — delete them below.',
+      one: '1 unverified device can\'t read new entries — delete it below.',
     );
     return '$_temp0';
   }
@@ -9815,8 +9817,9 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count unverified devices are pausing sync — verify them below.',
-      one: '1 unverified device is pausing sync — verify it below.',
+      other:
+          '$count unverified devices can\'t read new entries — verify them below.',
+      one: '1 unverified device can\'t read new entries — verify it below.',
     );
     return '$_temp0';
   }
@@ -9828,7 +9831,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncDevicesStaleHint => 'Probably no longer in use';
 
   @override
-  String get syncDevicesSyncResumed => 'Sync is running again.';
+  String get syncDevicesSyncResumed =>
+      'All devices can read your entries again.';
 
   @override
   String get syncDevicesThisDeviceChip => 'This device';

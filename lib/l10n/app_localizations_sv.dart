@@ -9864,9 +9864,9 @@ class AppLocalizationsSv extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count overifierade enheter pausar synkroniseringen — ta bort eller verifiera dem nedan.',
+          '$count overifierade enheter kan inte läsa nya poster — ta bort eller verifiera dem nedan.',
       one:
-          '1 overifierad enhet pausar synkroniseringen — ta bort eller verifiera den nedan.',
+          '1 overifierad enhet kan inte läsa nya poster — ta bort eller verifiera den nedan.',
     );
     return '$_temp0';
   }
@@ -9877,8 +9877,8 @@ class AppLocalizationsSv extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count overifierade enheter pausar synkroniseringen — ta bort dem nedan.',
-      one: '1 overifierad enhet pausar synkroniseringen — ta bort den nedan.',
+          '$count overifierade enheter kan inte läsa nya poster — ta bort dem nedan.',
+      one: '1 overifierad enhet kan inte läsa nya poster — ta bort den nedan.',
     );
     return '$_temp0';
   }
@@ -9889,8 +9889,9 @@ class AppLocalizationsSv extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count overifierade enheter pausar synkroniseringen — verifiera dem nedan.',
-      one: '1 overifierad enhet pausar synkroniseringen — verifiera den nedan.',
+          '$count overifierade enheter kan inte läsa nya poster — verifiera dem nedan.',
+      one:
+          '1 overifierad enhet kan inte läsa nya poster — verifiera den nedan.',
     );
     return '$_temp0';
   }
@@ -9902,7 +9903,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncDevicesStaleHint => 'Används förmodligen inte längre';
 
   @override
-  String get syncDevicesSyncResumed => 'Synkroniseringen är igång igen.';
+  String get syncDevicesSyncResumed =>
+      'Alla enheter kan läsa dina poster igen.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Den här enheten';

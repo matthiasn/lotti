@@ -9991,11 +9991,11 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count neověřených zařízení pozastavuje synchronizaci — odstraň je nebo ověř níže.',
+          '$count neověřených zařízení nemůže číst nové záznamy — odstraň je nebo ověř níže.',
       few:
-          '$count neověřená zařízení pozastavují synchronizaci — odstraň je nebo ověř níže.',
+          '$count neověřená zařízení nemohou číst nové záznamy — odstraň je nebo ověř níže.',
       one:
-          '1 neověřené zařízení pozastavuje synchronizaci — odstraň ho nebo ověř níže.',
+          '1 neověřené zařízení nemůže číst nové záznamy — odstraň ho nebo ověř níže.',
     );
     return '$_temp0';
   }
@@ -10006,10 +10006,10 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count neověřených zařízení pozastavuje synchronizaci — odstraň je níže.',
+          '$count neověřených zařízení nemůže číst nové záznamy — odstraň je níže.',
       few:
-          '$count neověřená zařízení pozastavují synchronizaci — odstraň je níže.',
-      one: '1 neověřené zařízení pozastavuje synchronizaci — odstraň ho níže.',
+          '$count neověřená zařízení nemohou číst nové záznamy — odstraň je níže.',
+      one: '1 neověřené zařízení nemůže číst nové záznamy — odstraň ho níže.',
     );
     return '$_temp0';
   }
@@ -10020,10 +10020,10 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count neověřených zařízení pozastavuje synchronizaci — ověř je níže.',
+          '$count neověřených zařízení nemůže číst nové záznamy — ověř je níže.',
       few:
-          '$count neověřená zařízení pozastavují synchronizaci — ověř je níže.',
-      one: '1 neověřené zařízení pozastavuje synchronizaci — ověř ho níže.',
+          '$count neověřená zařízení nemohou číst nové záznamy — ověř je níže.',
+      one: '1 neověřené zařízení nemůže číst nové záznamy — ověř ho níže.',
     );
     return '$_temp0';
   }
@@ -10035,7 +10035,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncDevicesStaleHint => 'Pravděpodobně se už nepoužívá';
 
   @override
-  String get syncDevicesSyncResumed => 'Synchronizace opět běží.';
+  String get syncDevicesSyncResumed =>
+      'Všechna zařízení mohou znovu číst tvé záznamy.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Toto zařízení';

@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1071]
 ### Added
+- **Encryption keys are never shared with unverified devices — and sync never
+  stops for them.** Keys now go only to devices you have emoji-verified; an
+  unverified device receives ciphertext it cannot read. Until now the app
+  protected you the blunt way: one unverified device — typically a dead
+  session left by an uninstalled app — silently stopped all syncing on every
+  device until it was removed. Now everyone you trust keeps syncing, the
+  device list warns that the unverified device can't read new entries, and
+  verifying or removing it stays a calm cleanup step instead of an emergency.
 - **See and manage every device in your sync account.** The sync status page
   now lists all sessions — not just unverified ones — with a "This device"
   marker, Verified/Unverified chips, when the server last saw each device, and

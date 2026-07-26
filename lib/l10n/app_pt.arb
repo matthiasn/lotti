@@ -4594,7 +4594,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo não verificado está pausando a sincronização — exclui-o ou verifica-o abaixo.} other{{count} dispositivos não verificados estão pausando a sincronização — exclui-os ou verifica-os abaixo.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo não verificado não consegue ler as novas entradas — exclui-o ou verifica-o abaixo.} other{{count} dispositivos não verificados não conseguem ler as novas entradas — exclui-os ou verifica-os abaixo.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {
@@ -4603,7 +4603,7 @@
       }
     }
   },
-  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 dispositivo não verificado está pausando a sincronização — exclui-o abaixo.} other{{count} dispositivos não verificados estão pausando a sincronização — exclui-os abaixo.}}",
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 dispositivo não verificado não consegue ler as novas entradas — exclui-o abaixo.} other{{count} dispositivos não verificados não conseguem ler as novas entradas — exclui-os abaixo.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
     "description": "Paused-sync banner variant; count is the number of blocking devices.",
     "placeholders": {
@@ -4612,7 +4612,7 @@
       }
     }
   },
-  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 dispositivo não verificado está pausando a sincronização — verifica-o abaixo.} other{{count} dispositivos não verificados estão pausando a sincronização — verifica-os abaixo.}}",
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 dispositivo não verificado não consegue ler as novas entradas — verifica-o abaixo.} other{{count} dispositivos não verificados não conseguem ler as novas entradas — verifica-os abaixo.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
     "description": "Paused-sync banner variant; count is the number of blocking devices.",
     "placeholders": {
@@ -4623,7 +4623,7 @@
   },
   "syncDevicesSectionTitle": "Dispositivos",
   "syncDevicesStaleHint": "Provavelmente não está mais em uso",
-  "syncDevicesSyncResumed": "A sincronização está funcionando novamente.",
+  "syncDevicesSyncResumed": "Todos os dispositivos conseguem ler suas entradas novamente.",
   "syncDevicesThisDeviceChip": "Este dispositivo",
   "syncDevicesUnverifiedChip": "Não verificado",
   "syncDevicesVerifiedChip": "Verificado",

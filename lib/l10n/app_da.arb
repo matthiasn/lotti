@@ -4595,7 +4595,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — slet eller bekræft den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — slet eller bekræft dem nedenfor.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{1 ubekræftet enhed kan ikke læse nye poster — slet eller bekræft den nedenfor.} other{{count} ubekræftede enheder kan ikke læse nye poster — slet eller bekræft dem nedenfor.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {
@@ -4604,7 +4604,7 @@
       }
     }
   },
-  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — slet den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — slet dem nedenfor.}}",
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 ubekræftet enhed kan ikke læse nye poster — slet den nedenfor.} other{{count} ubekræftede enheder kan ikke læse nye poster — slet dem nedenfor.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
     "description": "Paused-sync banner variant; count is the number of blocking devices.",
     "placeholders": {
@@ -4613,7 +4613,7 @@
       }
     }
   },
-  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — bekræft den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — bekræft dem nedenfor.}}",
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 ubekræftet enhed kan ikke læse nye poster — bekræft den nedenfor.} other{{count} ubekræftede enheder kan ikke læse nye poster — bekræft dem nedenfor.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
     "description": "Paused-sync banner variant; count is the number of blocking devices.",
     "placeholders": {
@@ -4624,7 +4624,7 @@
   },
   "syncDevicesSectionTitle": "Enheder",
   "syncDevicesStaleHint": "Sandsynligvis ikke længere i brug",
-  "syncDevicesSyncResumed": "Synkroniseringen kører igen.",
+  "syncDevicesSyncResumed": "Alle enheder kan læse dine poster igen.",
   "syncDevicesThisDeviceChip": "Denne enhed",
   "syncDevicesUnverifiedChip": "Ubekræftet",
   "syncDevicesVerifiedChip": "Bekræftet",

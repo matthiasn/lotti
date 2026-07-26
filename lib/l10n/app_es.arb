@@ -4039,7 +4039,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo sin verificar está pausando la sincronización: elimínalo o verifícalo abajo.} other{{count} dispositivos sin verificar están pausando la sincronización: elimínalos o verifícalos abajo.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo sin verificar no puede leer las entradas nuevas: elimínalo o verifícalo abajo.} other{{count} dispositivos sin verificar no pueden leer las entradas nuevas: elimínalos o verifícalos abajo.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {
@@ -4048,7 +4048,7 @@
       }
     }
   },
-  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 dispositivo sin verificar está pausando la sincronización: elimínalo abajo.} other{{count} dispositivos sin verificar están pausando la sincronización: elimínalos abajo.}}",
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 dispositivo sin verificar no puede leer las entradas nuevas: elimínalo abajo.} other{{count} dispositivos sin verificar no pueden leer las entradas nuevas: elimínalos abajo.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
     "description": "Paused-sync banner variant; count is the number of blocking devices.",
     "placeholders": {
@@ -4057,7 +4057,7 @@
       }
     }
   },
-  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 dispositivo sin verificar está pausando la sincronización: verifícalo abajo.} other{{count} dispositivos sin verificar están pausando la sincronización: verifícalos abajo.}}",
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 dispositivo sin verificar no puede leer las entradas nuevas: verifícalo abajo.} other{{count} dispositivos sin verificar no pueden leer las entradas nuevas: verifícalos abajo.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
     "description": "Paused-sync banner variant; count is the number of blocking devices.",
     "placeholders": {
@@ -4068,7 +4068,7 @@
   },
   "syncDevicesSectionTitle": "Dispositivos",
   "syncDevicesStaleHint": "Probablemente ya no se usa",
-  "syncDevicesSyncResumed": "La sincronización vuelve a funcionar.",
+  "syncDevicesSyncResumed": "Todos los dispositivos pueden volver a leer tus entradas.",
   "syncDevicesThisDeviceChip": "Este dispositivo",
   "syncDevicesUnverifiedChip": "Sin verificar",
   "syncDevicesVerifiedChip": "Verificado",

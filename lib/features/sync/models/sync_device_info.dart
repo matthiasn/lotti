@@ -44,13 +44,14 @@ class SyncDeviceInfo {
   final DeviceKeys? keys;
 
   /// Whether the homeserver still lists this session. A cache-only entry
-  /// (unverified keys the server no longer knows) blocks sends but can never
-  /// answer a verification — removal is its only remedy.
+  /// (unverified keys the server no longer knows) can never answer a
+  /// verification — removal is its only remedy.
   final bool onServer;
 
   /// Whether the session belongs to this account. Legacy cross-user rooms
-  /// run one Matrix user per device: their unverified devices gate sends and
-  /// can be SAS-verified, but only own-account sessions can be deleted.
+  /// run one Matrix user per device: their unverified devices are excluded
+  /// from key sharing and can be SAS-verified, but only own-account
+  /// sessions can be deleted.
   final bool ownAccount;
 
   /// The Matrix user the session belongs to, when known. Device ids are only
@@ -97,9 +98,10 @@ class SyncDeviceInfo {
     return parts.length > 1 && parts[1].isNotEmpty ? parts[1] : null;
   }
 
-  /// Whether this device blocks outbound sync: it has published keys the
-  /// send path counts as an unverified peer.
-  bool get blocksSync => !isCurrentDevice && !verified && keys != null;
+  /// Whether this device is excluded from key sharing: it has published
+  /// keys but is unverified, so it receives no megolm keys and cannot read
+  /// new entries until it is verified — or removed (ADR 0045).
+  bool get excludedFromSync => !isCurrentDevice && !verified && keys != null;
 
   bool isStaleAt(DateTime now) {
     final seen = lastSeen;
@@ -108,8 +110,8 @@ class SyncDeviceInfo {
   }
 }
 
-/// Orders devices for display: devices that block sync first — they are what
-/// the paused banner points at, so they sit directly beneath it — then the
+/// Orders devices for display: excluded devices first — they are what the
+/// warning banner points at, so they sit directly beneath it — then the
 /// current device, then the rest by recency of last-seen with unreported
 /// timestamps last.
 List<SyncDeviceInfo> sortSyncDevicesForDisplay(List<SyncDeviceInfo> devices) {
@@ -117,8 +119,8 @@ List<SyncDeviceInfo> sortSyncDevicesForDisplay(List<SyncDeviceInfo> devices) {
 
   final sorted = [...devices]
     ..sort((a, b) {
-      if (a.blocksSync != b.blocksSync) {
-        return a.blocksSync ? -1 : 1;
+      if (a.excludedFromSync != b.excludedFromSync) {
+        return a.excludedFromSync ? -1 : 1;
       }
       if (a.isCurrentDevice != b.isCurrentDevice) {
         return a.isCurrentDevice ? -1 : 1;

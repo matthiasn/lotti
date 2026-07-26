@@ -91,46 +91,51 @@ concepts describe. Construction order matters and is documented in
 # Device management
 
 All of a user's devices are sessions on **one Matrix account**; verification
-state is per-install local trust (there is no cross-signing), and the send
-path refuses to send while any cached device key is unverified
-(`matrix/matrix_message_sender.dart`). That makes a dead session — an
-uninstalled app that never logged out — able to block all outbound sync, which
-is why device management exists as a first-class flow:
+state is per-install local trust (there is no cross-signing). The client is
+constructed with `ShareKeysWith.directlyVerifiedOnly` (ADR 0045,
+`matrix/client.dart`): a device this session has not SAS-verified receives
+**no megolm keys** and cannot read new entries, while every verified device
+keeps syncing. Sends are never halted for unverified devices — the sender
+only logs the exclusion (`matrix/matrix_message_sender.dart`). A dead
+session — an uninstalled app that never logged out — therefore costs
+nothing beyond roster noise, and device management exists to explain and
+clean it up:
 
 - **Two account models.** The current pairing flow shares **one Matrix
   account** across all devices. Rooms paired under the **legacy model run one
-  Matrix user per device**, and the send gate
-  (`MatrixSdkGateway.unverifiedDevices()`) deliberately spans every cached
-  user to keep gating those rooms. The roster derives its paused state from
-  that same full set: a foreign user's unverified device appears as a
-  **verify-only** entry (`SyncDeviceInfo.ownAccount == false`) — it can be
-  SAS-verified cross-user but never deleted from this account.
+  Matrix user per device**; direct SAS verification works cross-user, so key
+  sharing honours it identically there. The unverified set
+  (`MatrixSyncGateway.unverifiedDevices()`) deliberately spans every cached
+  user, and the roster derives its warning state from that same full set: a
+  foreign user's unverified device appears as a **verify-only** entry
+  (`SyncDeviceInfo.ownAccount == false`) — it can be SAS-verified cross-user
+  but never deleted from this account.
 - **Inventory.** `MatrixServiceOps.getSyncDevices()` merges the homeserver's
   session inventory (`MatrixSyncGateway.getDevices()`, i.e. `GET /devices`:
   display name, last-seen) with the E2EE key cache (verification state) into
   `models/sync_device_info.dart`, after waiting (bounded) for an in-flight
   key load. Sessions that never published keys appear with `keys == null`:
-  they cannot be verified and never block sync — only removed. An
+  they cannot be verified and hold nothing to exclude — only removed. An
   **own-account unverified cached-keys entry missing from the server list**
   is retained as a **deletion-only** entry (`onServer == false` — a session
-  the server no longer knows can never answer a verification): the send gate
-  reads the key cache, not `GET /devices`, so dropping it would clear the
-  paused banner while sends still fail. Display order: blockers first, then
-  the current device, then recency.
+  the server no longer knows can never answer a verification): exclusion is
+  computed from the key cache, not `GET /devices`, so dropping it would
+  clear the warning while the exclusion persists. Display order: excluded
+  devices first, then the current device, then recency.
 
   ```mermaid
   stateDiagram-v2
-    [*] --> Blocking: unverified cached keys gate every send
-    Blocking --> Verifying: user starts SAS verification (own on-server or legacy foreign device)
-    Verifying --> Blocking: cancelled or times out
+    [*] --> Excluded: unverified, receives no megolm keys, cannot read new entries
+    Excluded --> Verifying: user starts SAS verification (own on-server or legacy foreign device)
+    Verifying --> Excluded: cancelled or times out
     Verifying --> Recovering: emoji ceremony completes
-    Blocking --> Deleting: user confirms removal (own-account sessions only)
-    Deleting --> Blocking: UIA rejected (e.g. stale password)
+    Excluded --> Deleting: user confirms removal (own-account sessions only)
+    Deleting --> Excluded: UIA rejected (e.g. stale password)
     Deleting --> Recovering: homeserver accepts the delete
-    Recovering --> Resumed: keys refreshed, lifecycle reconciled, rescan
+    Recovering --> Trusted: keys refreshed, lifecycle reconciled, rescan
     Recovering --> ConvergesLater: refresh fails or exceeds deleteDeviceRecoveryTimeout
-    ConvergesLater --> Resumed: a later sync prunes the cached keys
-    Resumed --> [*]
+    ConvergesLater --> Trusted: a later sync prunes the cached keys
+    Trusted --> [*]
   ```
 - **Deletion recovery sequence.** `MatrixServiceOps.deleteDeviceById()` runs,
   in order: cancel any in-flight emoji verification against the device (a
@@ -147,8 +152,8 @@ is why device management exists as a first-class flow:
   the `DeviceKeys`-based wrapper refuses devices of another user. Deletion is
   impossible without a stored password (SSO/token UIA is not implemented).
 - **UI.** `ui/widgets/matrix/sync_devices_list.dart` renders the inventory on
-  the provisioned-status page with a sync-paused banner while any device
-  blocks sending; `ui/widgets/matrix/device_card.dart` flips its action
+  the provisioned-status page with a warning banner while any unverified
+  device is excluded from key sharing; `ui/widgets/matrix/device_card.dart` flips its action
   hierarchy for stale unverified devices — removal becomes the labeled
   primary action, verification is demoted — because for a device silent past
   `syncDeviceStaleThreshold` removal is what resumes sync.

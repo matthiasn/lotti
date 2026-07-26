@@ -13,8 +13,8 @@ import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Every session on the sync account: a header with a refresh action, a
-/// "sync is paused" banner while any device still blocks sending, and one
-/// [DeviceCard] per session with its applicable actions.
+/// warning banner while any unverified device is excluded from key sharing,
+/// and one [DeviceCard] per session with its applicable actions.
 class SyncDevicesList extends ConsumerStatefulWidget {
   const SyncDevicesList({super.key, this.now});
 
@@ -70,8 +70,9 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
     // Close the loop when the last blocker disappears: the banner vanishing
     // silently would leave the user unsure whether removing/verifying worked.
     ref.listen(syncDevicesControllerProvider, (previous, next) {
-      final wasBlocked = previous?.value?.any((d) => d.blocksSync) ?? false;
-      final isBlocked = next.value?.any((d) => d.blocksSync) ?? false;
+      final wasBlocked =
+          previous?.value?.any((d) => d.excludedFromSync) ?? false;
+      final isBlocked = next.value?.any((d) => d.excludedFromSync) ?? false;
       if (wasBlocked && !isBlocked && mounted) {
         context.showToast(
           tone: DesignSystemToastTone.success,
@@ -135,7 +136,7 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
     }
 
     final blockers = devices
-        .where((device) => device.blocksSync)
+        .where((device) => device.excludedFromSync)
         .toList(growable: false);
     final blocked = blockers.isNotEmpty;
     // Point at the remedy the cards actually offer: a legacy foreign device

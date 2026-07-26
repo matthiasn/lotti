@@ -606,23 +606,23 @@ void main() {
         final current = devices[1];
         expect(current.isCurrentDevice, isTrue);
         expect(current.verified, isTrue);
-        expect(current.blocksSync, isFalse);
+        expect(current.excludedFromSync, isFalse);
 
         final ghost = devices[0];
         expect(ghost.verified, isFalse);
-        expect(ghost.blocksSync, isTrue);
+        expect(ghost.excludedFromSync, isTrue);
         expect(ghost.lastSeen, DateTime(2026, 5));
         expect(ghost.keys, isNotNull);
 
         final oldVerified = devices[2];
         expect(oldVerified.verified, isTrue);
-        expect(oldVerified.blocksSync, isFalse);
+        expect(oldVerified.excludedFromSync, isFalse);
 
         final keyless = devices[3];
         expect(keyless.verified, isFalse);
         expect(keyless.keys, isNull);
         expect(
-          keyless.blocksSync,
+          keyless.excludedFromSync,
           isFalse,
           reason: 'keyless sessions never gate the send path',
         );
@@ -706,7 +706,7 @@ void main() {
               'verified foreign devices are roster noise',
         );
         final peer = devices.first;
-        expect(peer.blocksSync, isTrue);
+        expect(peer.excludedFromSync, isTrue);
         expect(peer.ownAccount, isFalse);
         expect(peer.onServer, isFalse);
       },
@@ -733,7 +733,7 @@ void main() {
           ['CACHE_ONLY', 'THIS_DEVICE'],
         );
         final ghost = devices.first;
-        expect(ghost.blocksSync, isTrue);
+        expect(ghost.excludedFromSync, isTrue);
         expect(ghost.lastSeen, isNull);
         expect(ghost.keys, isNotNull);
         expect(ghost.onServer, isFalse);

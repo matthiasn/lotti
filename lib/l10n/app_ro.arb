@@ -4039,7 +4039,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — ștergeți-l sau verificați-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — ștergeți-le sau verificați-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — ștergeți-le sau verificați-le mai jos.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{Un dispozitiv neverificat nu poate citi intrările noi — ștergeți-l sau verificați-l mai jos.} few{{count} dispozitive neverificate nu pot citi intrările noi — ștergeți-le sau verificați-le mai jos.} other{{count} de dispozitive neverificate nu pot citi intrările noi — ștergeți-le sau verificați-le mai jos.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {
@@ -4048,7 +4048,7 @@
       }
     }
   },
-  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — ștergeți-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — ștergeți-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — ștergeți-le mai jos.}}",
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{Un dispozitiv neverificat nu poate citi intrările noi — ștergeți-l mai jos.} few{{count} dispozitive neverificate nu pot citi intrările noi — ștergeți-le mai jos.} other{{count} de dispozitive neverificate nu pot citi intrările noi — ștergeți-le mai jos.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
     "description": "Paused-sync banner variant; count is the number of blocking devices.",
     "placeholders": {
@@ -4057,7 +4057,7 @@
       }
     }
   },
-  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — verificați-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — verificați-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — verificați-le mai jos.}}",
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{Un dispozitiv neverificat nu poate citi intrările noi — verificați-l mai jos.} few{{count} dispozitive neverificate nu pot citi intrările noi — verificați-le mai jos.} other{{count} de dispozitive neverificate nu pot citi intrările noi — verificați-le mai jos.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
     "description": "Paused-sync banner variant; count is the number of blocking devices.",
     "placeholders": {
@@ -4068,7 +4068,7 @@
   },
   "syncDevicesSectionTitle": "Dispozitive",
   "syncDevicesStaleHint": "Probabil nu mai este folosit",
-  "syncDevicesSyncResumed": "Sincronizarea funcționează din nou.",
+  "syncDevicesSyncResumed": "Toate dispozitivele pot citi din nou intrările dvs.",
   "syncDevicesThisDeviceChip": "Acest dispozitiv",
   "syncDevicesUnverifiedChip": "Neverificat",
   "syncDevicesVerifiedChip": "Verificat",

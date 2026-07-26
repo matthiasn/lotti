@@ -4,6 +4,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:matrix/matrix.dart' show ShareKeysWith;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +37,9 @@ void main() {
             KeyVerificationMethod.reciprocate,
           }),
         );
+        // ADR 0045: megolm keys go only to directly verified devices — an
+        // unverified device is excluded instead of halting all sends.
+        expect(client.shareKeysWith, ShareKeysWith.directlyVerifiedOnly);
 
         final dbFile = File('${tempDir.path}/matrix/custom_db.db');
         expect(dbFile.existsSync(), isTrue);
