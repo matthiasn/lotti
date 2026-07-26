@@ -16,8 +16,13 @@ syncDevicesControllerProvider =
     );
 
 class SyncDevicesController extends AsyncNotifier<List<SyncDeviceInfo>> {
+  /// Bumped on every [build] so a manual refresh that straddles an
+  /// invalidation can recognize it has been superseded.
+  int _generation = 0;
+
   @override
   Future<List<SyncDeviceInfo>> build() async {
+    _generation++;
     return ref.watch(matrixServiceProvider).getSyncDevices();
   }
 
@@ -37,10 +42,15 @@ class SyncDevicesController extends AsyncNotifier<List<SyncDeviceInfo>> {
       }
       if (!ref.mounted) return false;
     }
+    final generation = _generation;
     final result = await AsyncValue.guard(
       () => ref.read(matrixServiceProvider).getSyncDevices(),
     );
     if (!ref.mounted) return false;
+    // An invalidation (e.g. a completed verification) rebuilt the provider
+    // while this fetch was in flight: the rebuild's snapshot is newer, so
+    // this one must be discarded rather than published over it.
+    if (generation != _generation) return false;
     // Keep showing the previous list rather than replacing it with an error.
     if (result.hasError && state.hasValue) return false;
     state = result;

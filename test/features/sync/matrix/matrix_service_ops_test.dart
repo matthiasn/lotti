@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service_ops.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -605,31 +606,32 @@ void main() {
 
     test(
       'waits for an in-flight device-key load before classifying sessions',
-      () async {
-        final keysLoaded = Completer<void>();
-        when(
-          () => client.userDeviceKeysLoading,
-        ).thenAnswer((_) => keysLoaded.future);
-        when(() => gateway.getDevices()).thenAnswer(
-          (_) async => [Device(deviceId: 'THIS_DEVICE')],
-        );
-        when(() => client.userDeviceKeys).thenReturn({});
+      () {
+        fakeAsync((async) {
+          final keysLoaded = Completer<void>();
+          when(
+            () => client.userDeviceKeysLoading,
+          ).thenAnswer((_) => keysLoaded.future);
+          when(() => gateway.getDevices()).thenAnswer(
+            (_) async => [Device(deviceId: 'THIS_DEVICE')],
+          );
+          when(() => client.userDeviceKeys).thenReturn({});
 
-        var completed = false;
-        final pending = buildOps().getSyncDevices().then((devices) {
-          completed = true;
-          return devices;
+          List<SyncDeviceInfo>? result;
+          unawaited(
+            buildOps().getSyncDevices().then((devices) => result = devices),
+          );
+          async.flushMicrotasks();
+          expect(
+            result,
+            isNull,
+            reason: 'the roster must not snapshot a half-loaded key cache',
+          );
+
+          keysLoaded.complete();
+          async.flushMicrotasks();
+          expect(result?.single.deviceId, 'THIS_DEVICE');
         });
-        await Future<void>.delayed(Duration.zero);
-        expect(
-          completed,
-          isFalse,
-          reason: 'the roster must not snapshot a half-loaded key cache',
-        );
-
-        keysLoaded.complete();
-        final devices = await pending;
-        expect(devices.single.deviceId, 'THIS_DEVICE');
       },
     );
 

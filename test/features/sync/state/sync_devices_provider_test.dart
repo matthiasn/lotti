@@ -108,6 +108,58 @@ void main() {
     },
   );
 
+  test(
+    'an invalidation-triggered rebuild wins over a slower manual refresh '
+    'started earlier',
+    () async {
+      // Sequence: initial load → slow manual refresh (stale snapshot) →
+      // invalidation (e.g. a verification completing) rebuilds with fresh
+      // data → the stale manual result must be discarded, not published.
+      final slowManualFetch = Completer<List<SyncDeviceInfo>>();
+      var calls = 0;
+      when(() => matrixService.getSyncDevices()).thenAnswer((_) {
+        calls++;
+        if (calls == 1) return Future.value(const [deviceA, deviceB]);
+        if (calls == 2) return slowManualFetch.future;
+        return Future.value(const [deviceA]);
+      });
+
+      final sub = container.listen(
+        syncDevicesControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+      await container.read(syncDevicesControllerProvider.future);
+
+      final refreshDone = container
+          .read(syncDevicesControllerProvider.notifier)
+          .refresh();
+
+      // A verification-completion path invalidates the provider while the
+      // manual refresh is still in flight; the rebuild fetches fresh data.
+      container.invalidate(syncDevicesControllerProvider);
+      await container.read(syncDevicesControllerProvider.future);
+      expect(
+        container.read(syncDevicesControllerProvider).value,
+        const [deviceA],
+      );
+
+      // The stale manual snapshot arrives last — and must be dropped: the
+      // notifier it belonged to was recreated by the invalidation.
+      slowManualFetch.complete(const [deviceA, deviceB]);
+      final succeeded = await refreshDone;
+
+      expect(succeeded, isFalse);
+      expect(
+        container.read(syncDevicesControllerProvider).value,
+        const [deviceA],
+        reason:
+            'a rebuilt provider must not be overwritten by a refresh '
+            'started on the previous notifier generation',
+      );
+    },
+  );
+
   test('a failing refresh keeps the previously loaded list', () async {
     when(
       () => matrixService.getSyncDevices(),
