@@ -56,7 +56,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
 
   Future<void> _deleteDevice(BuildContext context) async {
     final matrixService = ref.read(matrixServiceProvider);
-    final deviceName = device.label;
+    final deviceName = device.titleLabel;
     final confirmed = await showConfirmationModal(
       context: context,
       title: context.messages.deleteDeviceLabel,
@@ -211,17 +211,21 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                 children: [
                   if (stale)
                     TextSpan(
-                      text: '${messages.syncDevicesStaleHint} · ',
-                      style: TextStyle(
+                      text: '${messages.syncDevicesStaleHint}\u00a0· ',
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
                         color: device.blocksSync
                             ? tokens.colors.alert.warning.ink
                             : tokens.colors.text.mediumEmphasis,
                       ),
                     ),
                   TextSpan(
-                    text: messages.syncDevicesLastSeen(
-                      _formatDate(context, lastSeen),
-                    ),
+                    // The label-and-date phrase never splits: it is the
+                    // evidence column this surface exists for.
+                    text: messages
+                        .syncDevicesLastSeen(
+                          _formatDate(context, lastSeen),
+                        )
+                        .replaceAll(' ', '\u00a0'),
                   ),
                 ],
               ),
@@ -282,7 +286,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                   if (canDelete)
                     DesignSystemButton(
                       key: const Key('matrix_delete_device'),
-                      variant: DesignSystemButtonVariant.outlined,
+                      variant: DesignSystemButtonVariant.dangerSecondary,
                       isLoading: _busy,
                       onPressed: () => _deleteDevice(context),
                       label: messages.deleteDeviceLabel,

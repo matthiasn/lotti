@@ -341,7 +341,10 @@ void main() {
         buildDevice(lastSeen: DateTime(2026, 7, 24)),
       );
 
-      expect(find.text('Last seen Jul\u00a024,\u00a02026'), findsOneWidget);
+      expect(
+        find.text('Last\u00a0seen\u00a0Jul\u00a024,\u00a02026'),
+        findsOneWidget,
+      );
       expect(find.text('Probably no longer in use'), findsNothing);
     });
 
@@ -355,7 +358,8 @@ void main() {
       // Evidence and explanation merge into one hint line on stale cards.
       expect(
         find.text(
-          'Probably no longer in use · Last seen May\u00a014,\u00a02026',
+          'Probably no longer in use\u00a0· '
+          'Last\u00a0seen\u00a0May\u00a014,\u00a02026',
         ),
         findsOneWidget,
       );
