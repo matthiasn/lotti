@@ -150,7 +150,15 @@ class EventAgentService {
       return identity;
     });
 
-    onPersistedStateChanged?.call(identity.agentId);
+    onPersistedStateChanged
+      ?..call(identity.agentId)
+      // `eventAgentProvider` refreshes on the *event* id, and nothing in the
+      // agent write path emits it — identity, state and links all go through
+      // `AgentSyncService`, which does not notify. Without this the agent
+      // stays invisible until something unrelated happens to ping the event,
+      // in practice the creation wake completing an inference round-trip
+      // later. Both ids coalesce into one `notifyUiOnly` batch.
+      ..call(eventId);
 
     // Mirror the persisted awaitingContent flag in the orchestrator so the
     // content gate suppresses the creation wake until the event has content.

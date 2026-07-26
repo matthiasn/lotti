@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 
@@ -267,6 +268,17 @@ void main() {
   // an opted-in category; the `category automation gate` group flips it.
   late bool categoryAllowsAutomation;
   late List<String> automationLookupTaskIds;
+  late MockDomainLogger mockDomainLogger;
+
+  late List<String> capturedLogLines;
+
+  /// Every `LogDomain.ai` line the service emitted, as "subDomain: message".
+  ///
+  /// Recorded from the stub rather than read back through `verify(...)
+  /// .captured`, because mocktail's `verify` throws when there are no matching
+  /// calls — and "logged nothing at all" is exactly what the capability-probe
+  /// tests need to assert.
+  List<String> loggedLines() => capturedLogLines;
 
   setUp(() {
     originalIsMacOS = platform.isMacOS;
@@ -275,6 +287,21 @@ void main() {
     automationLookupTaskIds = [];
     mockResolver = MockProfileAutomationResolver();
     mockAiConfig = MockAiConfigRepository();
+    mockDomainLogger = MockDomainLogger();
+    capturedLogLines = [];
+    when(
+      () => mockDomainLogger.log(
+        any(),
+        any(),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenAnswer((invocation) {
+      expect(invocation.positionalArguments[0], LogDomain.ai);
+      capturedLogLines.add(
+        '${invocation.namedArguments[#subDomain]}: '
+        '${invocation.positionalArguments[1]}',
+      );
+    });
     service = ProfileAutomationService(
       resolver: mockResolver,
       aiConfigRepository: mockAiConfig,
@@ -282,6 +309,7 @@ void main() {
         automationLookupTaskIds.add(taskId);
         return categoryAllowsAutomation;
       },
+      domainLogger: mockDomainLogger,
     );
     when(
       () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -1160,6 +1188,378 @@ void main() {
     // the category's automatic transcription and image analysis off, and no
     // later model change repairs it, because the agent keeps resolving to the
     // same bare route.
+    // This service declines silently in five independent places, and the
+    // caller only reports the generic "did not handle X". Each decline has to
+    // name itself in the app log, or a missing transcript is only diagnosable
+    // by reading the code.
+    group('skip reasons reach the log', () {
+      test('the per-recording opt-out says so', () async {
+        await service.tryTranscribe(
+          taskId: 'task-1',
+          enableSpeechRecognition: false,
+        );
+
+        expect(
+          loggedLines(),
+          contains(
+            allOf(
+              startsWith('perRecordingOptOut:'),
+              contains('switched off for this recording'),
+            ),
+          ),
+        );
+      });
+
+      test('the category gate says so', () async {
+        categoryAllowsAutomation = false;
+
+        await service.tryAnalyzeImage(taskId: 'task-1');
+
+        expect(
+          loggedLines(),
+          contains(
+            allOf(
+              startsWith('categoryGate:'),
+              contains('switched off for the category'),
+            ),
+          ),
+        );
+      });
+
+      test('an unwired category lookup says so', () async {
+        final unwired = ProfileAutomationService(
+          resolver: mockResolver,
+          aiConfigRepository: mockAiConfig,
+          domainLogger: mockDomainLogger,
+        );
+
+        await unwired.tryAnalyzeImage(taskId: 'task-1');
+
+        expect(
+          loggedLines(),
+          contains(
+            allOf(
+              startsWith('categoryGate:'),
+              contains('no category automation lookup wired'),
+            ),
+          ),
+        );
+      });
+
+      test('an empty model slot names the skill it skipped', () async {
+        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          (_) async => makeProfile(
+            skillAssignments: const [
+              SkillAssignment(skillId: 'skill-transcribe', automate: true),
+            ],
+          ),
+        );
+        when(() => mockAiConfig.getConfigById('skill-transcribe')).thenAnswer(
+          (_) async => makeSkill(id: 'skill-transcribe', name: 'Transcribe'),
+        );
+
+        await service.tryTranscribe(taskId: 'task-1');
+
+        expect(
+          loggedLines(),
+          contains(
+            allOf(
+              startsWith('skillMatch:'),
+              contains('"Transcribe"'),
+              contains('model slot is empty or unresolvable'),
+            ),
+          ),
+        );
+      });
+
+      test('a missing skill config says which assignment broke', () async {
+        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          (_) async => makeProfile(
+            skillAssignments: const [
+              SkillAssignment(skillId: 'skill-gone', automate: true),
+            ],
+            withTranscription: true,
+          ),
+        );
+        when(
+          () => mockAiConfig.getConfigById('skill-gone'),
+        ).thenAnswer((_) async => null);
+
+        await service.tryTranscribe(taskId: 'task-1');
+
+        expect(
+          loggedLines(),
+          contains(
+            allOf(
+              startsWith('skillMatch:'),
+              contains('config is missing or not a skill'),
+            ),
+          ),
+        );
+      });
+
+      test('an ambiguous profile says how many matched', () async {
+        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          (_) async => makeProfile(
+            skillAssignments: const [
+              SkillAssignment(skillId: 'skill-t1', automate: true),
+              SkillAssignment(skillId: 'skill-t2', automate: true),
+            ],
+            withTranscription: true,
+          ),
+        );
+        when(
+          () => mockAiConfig.getConfigById('skill-t1'),
+        ).thenAnswer((_) async => makeSkill(id: 'skill-t1'));
+        when(
+          () => mockAiConfig.getConfigById('skill-t2'),
+        ).thenAnswer((_) async => makeSkill(id: 'skill-t2'));
+
+        await service.tryTranscribe(taskId: 'task-1');
+
+        expect(
+          loggedLines(),
+          contains(
+            allOf(
+              startsWith('skillMatch:'),
+              contains('ambiguous profile: 2 automated'),
+            ),
+          ),
+        );
+      });
+
+      test('exhausting the walk reports how many profiles it tried', () async {
+        when(
+          () => mockResolver.resolveForTask('task-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockResolver.resolveAutomationFallbacks('task-1'),
+        ).thenAnswer((_) async => [makeProfile(), makeProfile()]);
+
+        await service.tryAnalyzeImage(taskId: 'task-1');
+
+        expect(
+          loggedLines(),
+          contains(
+            allOf(
+              startsWith('profileResolution:'),
+              contains('walked 0 task-linked and 2 inherited profile(s)'),
+            ),
+          ),
+        );
+      });
+
+      // The declines are only half of it: a run that picked the wrong profile
+      // is as opaque as one that never happened.
+      test('a successful run names the skill and where it came from', () async {
+        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          (_) async => makeProfile(
+            skillAssignments: const [
+              SkillAssignment(skillId: 'skill-transcribe', automate: true),
+            ],
+            withTranscription: true,
+          ),
+        );
+        when(() => mockAiConfig.getConfigById('skill-transcribe')).thenAnswer(
+          (_) async => makeSkill(id: 'skill-transcribe', name: 'Transcribe'),
+        );
+
+        final result = await service.tryTranscribe(taskId: 'task-1');
+
+        expect(result.handled, isTrue);
+        expect(
+          loggedLines(),
+          contains(
+            allOf(
+              startsWith('resolved:'),
+              contains('"Transcribe"'),
+              contains('task-linked profile'),
+            ),
+          ),
+        );
+      });
+
+      // PII never reaches the log file: ids go through DomainLogger.sanitizeId.
+      test('task ids are sanitized', () async {
+        categoryAllowsAutomation = false;
+
+        await service.tryAnalyzeImage(taskId: 'task-abcdef-secret-suffix');
+
+        final line = loggedLines().singleWhere(
+          (l) => l.startsWith('categoryGate:'),
+        );
+        expect(line, contains('[id:task-a]'));
+        expect(line, isNot(contains('secret-suffix')));
+      });
+
+      // The direct fallback is the second half of transcription and used to
+      // decline without saying anything, so a configured-but-unusable speech
+      // model looked identical to no configuration at all.
+      test(
+        'the direct fallback says when no speech model is configured',
+        () async {
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer(
+            (_) async => [
+              makeModel(inputModalities: const [Modality.text]),
+            ],
+          );
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isFalse);
+          expect(
+            loggedLines(),
+            contains(
+              allOf(
+                startsWith('directFallback:'),
+                contains('no speech-to-text model is configured'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('the direct fallback tallies why each speech model lost', () async {
+        when(
+          () => mockResolver.resolveForTask('task-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            makeModel(id: 'model-orphan', providerId: 'provider-gone'),
+            makeModel(id: 'model-keyless', providerId: 'provider-openai'),
+          ],
+        );
+        when(
+          () => mockAiConfig.getConfigById('provider-gone'),
+        ).thenAnswer((_) async => null);
+        when(() => mockAiConfig.getConfigById('provider-openai')).thenAnswer(
+          (_) async => makeProvider(
+            id: 'provider-openai',
+            type: InferenceProviderType.openAi,
+          ),
+        );
+
+        final result = await service.tryTranscribe(taskId: 'task-1');
+
+        expect(result.handled, isFalse);
+        expect(
+          loggedLines(),
+          contains(
+            allOf(
+              startsWith('directFallback:'),
+              contains(
+                'all 2 configured speech-to-text model(s) were rejected',
+              ),
+              contains('1 without a resolvable provider'),
+              contains('1 missing an API key'),
+            ),
+          ),
+        );
+      });
+
+      // `providerModelId` and `name` are free-text fields, so they can carry
+      // private hostnames or filesystem paths into an exportable log.
+      test('the direct fallback logs no user-entered model text', () async {
+        when(
+          () => mockResolver.resolveForTask('task-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            makeModel(
+              id: 'model-abcdef-secret-suffix',
+              name: 'internal-box.corp.example',
+              providerModelId: '/home/someone/models/private-asr',
+            ),
+          ],
+        );
+        when(
+          () => mockAiConfig.getConfigById('provider-mlx'),
+        ).thenAnswer((_) async => makeProvider());
+
+        final result = await service.tryTranscribe(taskId: 'task-1');
+
+        expect(result.handled, isTrue);
+        final line = loggedLines().singleWhere(
+          (l) => l.startsWith('resolved:'),
+        );
+        expect(line, contains('[id:model-]'));
+        expect(line, contains('mlxAudio'));
+        expect(line, isNot(contains('secret-suffix')));
+        expect(line, isNot(contains('private-asr')));
+        expect(line, isNot(contains('internal-box')));
+      });
+
+      // Capability probes run on every rebuild of the recording UI and start
+      // no inference. Logging them would manufacture execution records and
+      // bury the decision belonging to the recording being diagnosed.
+      test('a matching capability probe records nothing', () async {
+        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          (_) async => makeProfile(
+            skillAssignments: const [
+              SkillAssignment(skillId: 'skill-transcribe', automate: true),
+            ],
+            withTranscription: true,
+          ),
+        );
+        when(() => mockAiConfig.getConfigById('skill-transcribe')).thenAnswer(
+          (_) async => makeSkill(id: 'skill-transcribe', name: 'Transcribe'),
+        );
+
+        final available = await service.hasAutomatedSkillType(
+          taskId: 'task-1',
+          skillType: SkillType.transcription,
+        );
+
+        expect(available, isTrue);
+        expect(loggedLines(), isEmpty);
+      });
+
+      test('a declining capability probe records nothing either', () async {
+        categoryAllowsAutomation = false;
+
+        final available = await service.hasAutomatedSkillType(
+          taskId: 'task-1',
+          skillType: SkillType.imageAnalysis,
+        );
+
+        expect(available, isFalse);
+        expect(loggedLines(), isEmpty);
+      });
+
+      test('the settings fallback probe records nothing', () async {
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [makeModel()]);
+        when(
+          () => mockAiConfig.getConfigById('provider-mlx'),
+        ).thenAnswer((_) async => makeProvider());
+
+        expect(await service.hasDirectTranscriptionFallback(), isTrue);
+        expect(loggedLines(), isEmpty);
+      });
+
+      test('the service works without a logger', () async {
+        final loggerless = ProfileAutomationService(
+          resolver: mockResolver,
+          aiConfigRepository: mockAiConfig,
+          categoryAutomationLookup: (_) async => false,
+        );
+
+        final result = await loggerless.tryAnalyzeImage(taskId: 'task-1');
+
+        expect(result.handled, isFalse);
+      });
+    });
+
     group('inherited profile fallback', () {
       /// What `resolveForTask` returns once a thinking model is picked by hand
       /// and the agent has no base profile — thinking route only.

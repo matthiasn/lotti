@@ -48,15 +48,27 @@ export 'package:lotti/features/agents/state/template_query_providers.dart';
 /// and managers.
 ///
 /// When an agent mutates its persisted state, the returned callback fires a
-/// UI-only [UpdateNotifications] ping (the agent's own id plus the shared
+/// UI-only [UpdateNotifications] ping (the given id plus the shared
 /// [agentNotification] topic) so watching providers — e.g.
 /// `agentUpdateStreamProvider`, the pending-wakes list — refresh without
 /// kicking off another sync round-trip.
+///
+/// The id is whatever entity the watchers key on, not necessarily the agent:
+/// `agentUpdateStreamProvider` is keyed by *whatever the consumer cares
+/// about*, so `eventAgentProvider` waits on the event id and
+/// `projectAgentProvider` on the project id. Callers that create or re-scope
+/// an agent ping the domain id as well as the agent id — otherwise the
+/// freshly created agent stays invisible, because nothing else in the agent
+/// write path emits that token (`AgentSyncService` does not notify at all).
+/// `DayAgentTriageService` already relies on this, pinging a task id.
+///
+/// Repeated calls coalesce: `notifyUiOnly` accumulates ids and emits one
+/// batch per 100 ms window.
 void Function(String) persistedStateChangedNotifier(
   UpdateNotifications notifications,
 ) {
-  return (agentId) {
-    notifications.notifyUiOnly({agentId, agentNotification});
+  return (id) {
+    notifications.notifyUiOnly({id, agentNotification});
   };
 }
 

@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the provider stay readable instead of trailing off mid-name.
 
 ### Fixed
+- **Event and project assistants show up right away too.** Creating an event
+  or a project with an assistant left its card empty for several seconds
+  before the assistant appeared — the same delay tasks had, from the same
+  cause. It now appears as the page opens.
 - **The bottom of the card lines up.** Every row in the update section now
   starts on the same edge, including on a phone and in longer languages, and
   the card keeps the same bottom margin whether or not the "This report …"

@@ -99,5 +99,6 @@ ProfileAutomationService profileAutomationService(Ref ref) {
       final category = await db.getCategoryById(categoryId);
       return category?.automaticInferenceEnabledEffective ?? false;
     },
+    domainLogger: ref.watch(domainLoggerProvider),
   );
 }

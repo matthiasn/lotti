@@ -3,9 +3,9 @@ type: Feature Module
 title: Project and event agents
 description: The digest-shaped project agent that resists waking on every linked-task edit, and the leaner event agent that writes recaps under a hard human-authorship invariant.
 resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
-tags: [agents, project-agent, event-agent, digest]
+tags: [agents, project-agent, event-agent, digest, notifications]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
 stale_after: 2027-01-31
 sources:
   - id: project-workflow
@@ -16,10 +16,18 @@ sources:
     resource: ../../../lib/features/agents/workflow/event_agent_workflow.dart
     title: EventAgentWorkflow
     last_modified: 2026-07-25
+  - id: project-service
+    resource: ../../../lib/features/agents/service/project_agent_service.dart
+    title: ProjectAgentService (creation and announcement)
+    last_modified: 2026-07-26
+  - id: event-service
+    resource: ../../../lib/features/agents/service/event_agent_service.dart
+    title: EventAgentService (creation, content gate and announcement)
+    last_modified: 2026-07-26
   - id: providers
     resource: ../../../lib/features/agents/state/agent_providers.dart
-    title: Wake executor routing and content checkers
-    last_modified: 2026-07-25
+    title: Wake executor routing, content checkers and persistedStateChangedNotifier
+    last_modified: 2026-07-26
 ---
 
 # Project agents
@@ -38,8 +46,36 @@ expensive and useless.
    `nextLocalDayAtTime` always rolls forward a full day, even if today's 06:00
    has not yet passed.
 6. Creates `agent_project` and `template_assignment` links.
-7. Registers a **direct project-edit** subscription.
-8. Enqueues a creation wake.
+7. Announces itself (see below).
+8. Registers a **direct project-edit** subscription.
+9. Enqueues a creation wake.
+
+## Announcing a newly created agent
+
+`projectAgentProvider` and `eventAgentProvider` key their refresh on the
+**project / event** id, and nothing in the agent write path emits it — identity,
+state and links all go through `AgentSyncService`, which does not notify. Without
+an announcement the agent stays invisible until something unrelated pings the
+domain entity, in practice the creation wake completing a full inference round
+trip.
+
+Both services therefore ping the domain id alongside the agent id through the
+`onPersistedStateChanged` callback they already hold:
+
+```dart
+onPersistedStateChanged
+  ?..call(identity.agentId)
+  ..call(eventId);
+```
+
+The callback is wired to `persistedStateChangedNotifier`, which routes to
+`UpdateNotifications.notifyUiOnly` — so both ids coalesce into one 100 ms batch
+and stay off `localUpdateStream`, keeping the orchestrator from reading the agent
+system's own write as domain content changing and stacking a second wake on the
+creation wake. Its parameter is named `id` rather than `agentId` because it is
+whatever token the watchers key on; `DayAgentTriageService` already passed a task
+id through it. Task agents solve the same problem one layer up, by calling
+`notifyUiOnly` directly — see [task agents](task-agents.md).
 
 ## Two different trigger paths
 
@@ -126,8 +162,9 @@ rating/cover tool to misuse.
 `EventAgentService.createEventAgent()` enforces one agent per event, validates
 the template kind, creates identity and state, sets `slots.activeEventId` and the
 `awaitingContent` flag, creates `agent_event` and `template_assignment` links,
-mirrors `awaitingContent` into the orchestrator, registers a subscription on the
-**bare `eventId`**, and enqueues a creation wake.
+announces itself (see [above](#announcing-a-newly-created-agent)), mirrors
+`awaitingContent` into the orchestrator, registers a subscription on the **bare
+`eventId`**, and enqueues a creation wake.
 
 The shared gate (`wake_batch_router._shouldSkipForAwaitingContent`) dispatches
 per active slot: an `activeEventId` agent routes to `eventContentChecker`, with

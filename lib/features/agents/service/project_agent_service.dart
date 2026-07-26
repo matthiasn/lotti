@@ -145,7 +145,14 @@ class ProjectAgentService {
       return identity;
     });
 
-    onPersistedStateChanged?.call(identity.agentId);
+    onPersistedStateChanged
+      ?..call(identity.agentId)
+      // `projectAgentProvider` refreshes on the *project* id, and nothing in
+      // the agent write path emits it — identity, state and links all go
+      // through `AgentSyncService`, which does not notify. Without this the
+      // agent stays invisible until something unrelated happens to ping the
+      // project. Both ids coalesce into one `notifyUiOnly` batch.
+      ..call(projectId);
 
     _registerProjectSubscription(identity.agentId, projectId);
 
