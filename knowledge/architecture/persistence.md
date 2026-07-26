@@ -5,7 +5,7 @@ description: The eleven Drift/SQLite databases, how connections are opened and m
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T19:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: notifications
@@ -181,15 +181,24 @@ thousands.
 
 ## What a notification carries
 
-The payload is a `Set<String>` of **tokens**, not entities — so a listener matches
-on strings and no consumer sees a row it did not ask for.
-`lib/services/db_notification.dart` holds the whole vocabulary, in three groups:
+The payload is a `Set<String>` of **routing keys**, and they are heterogeneous —
+this is the part that surprises people. `JournalEntityExtension.affectedIds` seeds
+the set with the **entity's own id**, adds **related ids** (a habit completion adds
+its `habitId`, a checklist its items), *and* adds a static type token; a task-agent
+notification carries `agentId` and `taskId` the same way. So a listener may be
+matching an id, a type, or a change class:
 
-| Group | Tokens |
-|-------|--------|
-| One per `JournalEntity` variant | `TEXT_ENTRY`, `TASK`, `AUDIO`, `IMAGE`, `EVENT`, `SURVEY`, `WORKOUT`, `HABIT_COMPLETION`, `AI_RESPONSE`, `DAY_PLAN`, `RATING`, `PROJECT` |
+| Kind | Examples |
+|------|----------|
+| **Entity ids** | the written entity's `id`, plus linked ids the write touched |
+| One static token per `JournalEntity` variant | `TEXT_ENTRY`, `TASK`, `AUDIO`, `IMAGE`, `EVENT`, `SURVEY`, `WORKOUT`, `HABIT_COMPLETION`, `AI_RESPONSE`, `DAY_PLAN`, `RATING`, `PROJECT` |
 | Definition and settings changes | `CATEGORIES_CHANGED`, `HABITS_CHANGED`, `DASHBOARDS_CHANGED`, `MEASURABLES_CHANGED`, `LABELS_CHANGED`, `LABEL_USAGE_CHANGED`, `SETTINGS_CHANGED`, `PRIVATE_FLAG_TOGGLED` |
 | Cross-cutting | `LINK_CHANGED`, `AGENT_CHANGED`, `AI_CONSUMPTION_CHANGED`, `INBOX_CHANGED` |
+| **Dynamic, prefixed** | `PROJECT_ENTITY_UPDATE:<projectId>`, and `PROPAGATED::<token>` below |
+
+**No entity *data* travels** — only identifiers and labels — so a listener always
+re-reads. What it must not assume is that a key is one of the static tokens: two of
+the five kinds are computed at emit time.
 
 **The `PROPAGATED::` prefix changes agent behaviour, not just reactivity.** A token
 emitted as a *fan-out* — the project that gained a task because someone linked one,

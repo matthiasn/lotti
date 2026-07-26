@@ -1,6 +1,12 @@
 # Knowledge Bundle Update Log
 
 ## 2026-07-26
+* **Fix**: Corrected three claims the previous day's fixes introduced — a
+  notification payload is **not** token-only (it leads with the entity's own id,
+  carries linked ids, and includes dynamic `PROJECT_ENTITY_UPDATE:<id>` keys),
+  `DerivedAgentState` **drives no production read** yet, and an error reaches two
+  to four files including the PII-safe `error-safe-<date>.log` the sink diagram
+  had omitted.
 * **Creation**: Added [screenshots](conventions/screenshots.md) — the first written
   account of where captured images live (the sibling `lotti-docs` repo, never
   here), the three destinations there and their different lifecycles, and the

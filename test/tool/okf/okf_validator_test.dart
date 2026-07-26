@@ -1098,6 +1098,42 @@ Body.
       expect(result.issues, isEmpty);
     });
 
+    test('a four-space-indented fence is a literal, not a block', () {
+      // CommonMark: at four spaces it is an indented code block — a documented
+      // *example* of a fence. Trimming the indent made it open a real block, so a
+      // doc showing mermaid syntax could be flagged as an unclosed diagram.
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            body: 'How to write one:\n\n    ```mermaid\n    flowchart TD\n',
+          ),
+        ),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a three-space-indented fence is still a real block', () {
+      final result = validateBundle(
+        _bundle(_concept(body: '   ```mermaid\n   flowchart TD\n')),
+      );
+
+      expect(
+        result.errors.single.message,
+        contains('is never closed'),
+      );
+    });
+
+    test('an indented closing fence still closes, up to three spaces', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(body: '```mermaid\nflowchart TD\n  A --> B\n   ```\n'),
+        ),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
     test('a tilde block is not closed by backticks', () {
       final result = validateBundle(
         _bundle(_concept(body: '~~~text\nplain\n```\n')),

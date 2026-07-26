@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,18 +14,30 @@ import { fileURLToPath } from 'node:url';
 const script = join(dirname(fileURLToPath(import.meta.url)), 'check_mermaid.mjs');
 
 /// Runs the checker over a throwaway directory containing [content].
+///
+/// `stdio: 'pipe'` matters for more than tidiness: most cases here expect the
+/// checker to *fail*, and inheriting its stderr printed those expected `FAIL`
+/// banners into a passing `make knowledge_check`, which read as a broken build.
+/// The directory is removed in `finally` — without it each run left a
+/// `/tmp/mermaid-gate-*` behind, and they accumulated in the hundreds.
 function run(content, { name = 'concept.md' } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
-  mkdirSync(join(dir, 'nested'), { recursive: true });
-  writeFileSync(join(dir, name), content);
   try {
-    const stdout = execFileSync('node', [script, dir], { encoding: 'utf8' });
-    return { ok: true, output: stdout };
-  } catch (error) {
-    return {
-      ok: false,
-      output: `${error.stdout ?? ''}${error.stderr ?? ''}`,
-    };
+    writeFileSync(join(dir, name), content);
+    try {
+      const stdout = execFileSync('node', [script, dir], {
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+      return { ok: true, output: stdout };
+    } catch (error) {
+      return {
+        ok: false,
+        output: `${error.stdout ?? ''}${error.stderr ?? ''}`,
+      };
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 }
 
@@ -69,6 +81,20 @@ test('a mermaid example nested in a markdown block is documentation', () => {
   assert.match(r.output, /parsed 0 block/);
 });
 
+test('a four-space-indented fence is a literal, not a diagram', () => {
+  // CommonMark: four spaces makes it an indented code block, so this is a doc
+  // *showing* mermaid syntax. Parsing it would reject valid documentation.
+  const r = run('How to write one:\n\n    ```mermaid\n    not real {{{\n    ```\n');
+  assert.ok(r.ok, r.output);
+  assert.match(r.output, /parsed 0 block/);
+});
+
+test('a three-space-indented fence is still a diagram', () => {
+  const r = run('   ```mermaid\n   flowchart TD\n     A -->\n   ```\n');
+  assert.ok(!r.ok, r.output);
+  assert.match(r.output, /FAIL/);
+});
+
 test('an unclosed mermaid fence is reported', () => {
   const r = run('```mermaid\nflowchart TD\n  A --> B\n');
   assert.ok(!r.ok);
@@ -107,10 +133,16 @@ test('a semicolon inside a note body is safe', () => {
 
 test('markdown files in subdirectories are scanned', () => {
   const dir = mkdtempSync(join(tmpdir(), 'mermaid-gate-'));
-  mkdirSync(join(dir, 'features', 'deep'), { recursive: true });
-  writeFileSync(
-    join(dir, 'features', 'deep', 'c.md'),
-    '```mermaid\nflowchart TD\n  A -->\n```\n',
-  );
-  assert.throws(() => execFileSync('node', [script, dir], { encoding: 'utf8' }));
+  try {
+    mkdirSync(join(dir, 'features', 'deep'), { recursive: true });
+    writeFileSync(
+      join(dir, 'features', 'deep', 'c.md'),
+      '```mermaid\nflowchart TD\n  A -->\n```\n',
+    );
+    assert.throws(() =>
+      execFileSync('node', [script, dir], { encoding: 'utf8', stdio: 'pipe' }),
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

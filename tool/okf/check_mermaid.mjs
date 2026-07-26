@@ -54,13 +54,19 @@ function markdownFiles(dir) {
 // exactly meant a `~~~mermaid` or ````` ````mermaid ````` block was skipped in
 // silence while the CI step claimed to have parsed every diagram — a false green
 // in the one check that exists to prevent false greens.
-const FENCE = /^(`{3,}|~{3,})\s*(\S*)/;
+// The leading-indent group is load-bearing: CommonMark allows a fence to be
+// indented by at most **three** spaces. At four it is an indented code block — a
+// literal example of a fence, not a fence — so trimming the indent away made a
+// documented mermaid snippet indistinguishable from a real diagram.
+const FENCE = /^( {0,3})(`{3,}|~{3,})\s*(\S*)/;
 
-/// Whether `line` closes a block opened by `opener`: same delimiter character,
-/// at least as long, and nothing else on the line.
+/// Whether `line` closes a block opened by `opener`: indented at most three
+/// spaces, same delimiter character, at least as long, and nothing else on it.
 function closesFence(line, opener) {
-  if (line.length < opener.length) return false;
-  return [...line].every((c) => c === opener[0]);
+  const match = /^( {0,3})([`~]+)\s*$/.exec(line);
+  if (match === null) return false;
+  const run = match[2];
+  return run[0] === opener[0] && run.length >= opener.length;
 }
 
 const blocks = [];
@@ -71,19 +77,20 @@ for (const file of markdownFiles(root)) {
   let openedAt = 0;
   let isMermaid = false;
   lines.forEach((line, index) => {
-    const trimmed = line.trim();
+    // Keep the leading indent: only the trailing whitespace is noise.
+    const kept = line.replace(/\s+$/, '');
     if (opener === null) {
-      const match = FENCE.exec(trimmed);
+      const match = FENCE.exec(kept);
       if (match) {
-        opener = match[1];
+        opener = match[2];
         openedAt = index;
         // Only the *outermost* fence counts: a mermaid fence shown as an example
         // inside a ````markdown block is documentation, not a diagram to parse.
-        isMermaid = match[2].toLowerCase() === 'mermaid';
+        isMermaid = match[3].toLowerCase() === 'mermaid';
       }
       return;
     }
-    if (!closesFence(trimmed, opener)) return;
+    if (!closesFence(kept, opener)) return;
     if (isMermaid) {
       blocks.push({
         file,

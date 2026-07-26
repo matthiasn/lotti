@@ -5,7 +5,7 @@ description: Twenty-four opt-in logging domains, where their lines land, and why
 resource: ../../lib/services/logging_domains.dart
 tags: [architecture, logging, diagnostics, observability]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T17:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T19:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: log-domains
@@ -55,23 +55,29 @@ there is no separate registry to keep in step.
 
 ```mermaid
 flowchart TD
-  Call["DomainLogger.log(domain, message, subDomain:)"] --> Enabled{"domain flag enabled?"}
+  Log["DomainLogger.log(domain, ...)"] --> Enabled{"domain flag enabled?"}
   Enabled -->|no| Drop["dropped"]
-  Enabled -->|yes| Route
-  Err["DomainLogger.error(...)"] --> Route["Route by domain"]
-  Route --> SyncFile{"domain == sync?"}
-  SyncFile -->|yes| SyncLog["sync-YYYY-MM-DD.log"]
-  SyncFile -->|no| MainLog["app log file for the day"]
-  Route --> IsError{"error level?"}
-  IsError -->|yes| ErrLog["error-YYYY-MM-DD.log<br/>full mirror, force-flushed"]
+  Enabled -->|yes| General["general app log for the day"]
+  Err["DomainLogger.error(...)"] --> General2["general app log + error-YYYY-MM-DD.log<br/>full text, force-flushed"]
+  Err --> Safe["error-safe-YYYY-MM-DD.log<br/>runtime type only — shareable"]
+  Enabled -->|yes| PerDomain
+  Err --> PerDomain{"domain routes to the sync file?"}
+  PerDomain -->|yes| SyncLog["sync-YYYY-MM-DD.log"]
+  PerDomain -->|no| DomainLog["&lt;domain&gt;-YYYY-MM-DD.log"]
 ```
 
-**Every error is written twice.** It goes to its routed file *and* is mirrored in
-full to `error-<date>.log`, force-flushed, so every error is in one place without
-hunting through domains. So there are more files on disk than the routing suggests:
-the day's app log, the sync log, the error mirror, and — owned by the database
-interceptor rather than by `LoggingService` — `slow_queries` and
-`super_slow_queries`.
+**An error reaches two to four files**, depending on its domain: the general log,
+the full `error-<date>.log` mirror, the PII-safe `error-safe-<date>.log`, and then
+either the shared `sync-<date>.log` or its own `<domain>-<date>.log`.
+
+**The PII-safe log is the one to know about.** `error-safe-<date>.log` records only
+the error's **runtime type**, never the raw exception string, precisely so it can be
+shared or inspected without leaking user-authored content. The full mirror is for
+diagnosis on the device; the safe log is what may leave it.
+
+There are therefore more files on disk than routing suggests — and two more that
+`LoggingService` does not own at all: `slow_queries` and `super_slow_queries`, both
+written by the database interceptor.
 
 **Files are the only sink.** There is no database table and no in-app log viewer.
 The `InsightType` parameter on the capture methods is vestigial — no reader in the

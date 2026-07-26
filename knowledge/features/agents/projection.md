@@ -5,7 +5,7 @@ description: "A pure, deterministic fold over an event *set* — proving that pr
 resource: ../../../lib/features/agents/projection
 tags: [agents, projection, determinism, convergence]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T17:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T19:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: src
@@ -71,9 +71,12 @@ the fold cannot depend on which head arrived first.
 
 # Above the kernel: `DerivedAgentState`
 
-The kernel is deliberately small. The **storage-coupled composite** that production
-reads go through is `DerivedAgentState` (`derived_agent_state.dart`), and it is the
-piece most work will actually touch:
+The kernel is deliberately small. `DerivedAgentState` (`derived_agent_state.dart`)
+is the **storage-coupled composite** built on top of it — and, in its own words,
+it *"drives no production read"* yet. Reads still come from the mutable cache; the
+planned step that flips them onto this fold has not happened, and there are no
+external call sites. Read it as the target shape and the comparison mechanism, not
+as the current read path:
 
 - It calls `project(canonicalOrder(...))` for the structural part — heads and the
   latest report — and aggregates the rest **directly off the messages and links**:
@@ -84,10 +87,11 @@ piece most work will actually touch:
   messages and links derive an equal state regardless of arrival order. That is
   the guarantee **the mutable cache cannot make** under last-write-wins.
 
-`ShadowProjection` (`shadow_projection.dart`) compares the projection against that
-live mutable state and reports match or divergence. **It never drives a production
-read** — it exists as a test assertion and an optional debug-mode runtime check, so
-a cache that has drifted is detectable rather than merely suspected.
+`ShadowProjection` (`shadow_projection.dart`) is what that comparison is for: it
+checks the projection against the live mutable state and reports match or
+divergence, as a test assertion and an optional debug-mode runtime check. So today
+the fold's job is to make a drifted cache **detectable** rather than to serve
+reads.
 
 The projection is plain Dart with no I/O, so it can be exercised with property
 tests over shuffled event sets — the only honest way to test a claim about

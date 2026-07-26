@@ -270,16 +270,20 @@ List<OkfIssue> validateFencedBlocks(String path, String content) {
   String? opener;
   var openedAt = 0;
   for (var i = 0; i < lines.length; i++) {
-    final trimmed = lines[i].trimLeft().trimRight();
+    // Trailing whitespace is noise; the *leading* indent is not. CommonMark
+    // allows a fence to be indented by at most three spaces — at four it is an
+    // indented code block, so a documented example of a fence is not a fence.
+    // Trimming the indent away made those literals open and close real blocks.
+    final line = lines[i].trimRight();
     if (opener == null) {
-      final match = _fenceOpenPattern.firstMatch(trimmed);
+      final match = _fenceOpenPattern.firstMatch(line);
       if (match != null) {
-        opener = match.group(1);
+        opener = match.group(2);
         openedAt = i + 1;
       }
       continue;
     }
-    if (_closesFence(trimmed, opener)) opener = null;
+    if (_closesFence(line, opener)) opener = null;
   }
   if (opener == null) return const [];
   return [
@@ -295,17 +299,16 @@ List<OkfIssue> validateFencedBlocks(String path, String content) {
   ];
 }
 
-final _fenceOpenPattern = RegExp('^(`{3,}|~{3,})');
+final _fenceOpenPattern = RegExp('^( {0,3})(`{3,}|~{3,})');
 
-/// Whether [trimmed] is a valid closing fence for a block opened by [opener]:
-/// the same delimiter character, at least as long, and nothing else on the line.
-bool _closesFence(String trimmed, String opener) {
-  if (trimmed.length < opener.length) return false;
-  final char = opener[0];
-  for (var i = 0; i < trimmed.length; i++) {
-    if (trimmed[i] != char) return false;
-  }
-  return true;
+/// Whether [line] is a valid closing fence for a block opened by [opener]:
+/// indented at most three spaces, the same delimiter character, at least as long
+/// as the opener, and nothing else on the line.
+bool _closesFence(String line, String opener) {
+  final match = RegExp(r'^( {0,3})([`~]+)$').firstMatch(line);
+  if (match == null) return false;
+  final run = match.group(2)!;
+  return run[0] == opener[0] && run.length >= opener.length;
 }
 
 /// Blanks out fenced blocks and inline code so link scanning never treats a

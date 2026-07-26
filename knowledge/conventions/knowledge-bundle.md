@@ -5,7 +5,7 @@ description: The README/knowledge/ADR split, the frontmatter every concept carri
 resource: ../../knowledge
 tags: [convention, documentation, okf, process]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T17:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T19:00:00Z }
 stale_after: 2027-01-18
 sources:
   - id: okf-spec
@@ -280,9 +280,13 @@ Do not read `:=` as a second trap — it was blamed once and is fine on its own;
 `A --> B: id := joinId` parses. It was the `;` beside it that broke the diagram.
 
 Write the canonical ```` ```mermaid ```` fence. The checker accepts every
-CommonMark form — `~~~mermaid`, longer backtick runs — because matching only the
-canonical one skipped the others *in silence*, which is the one failure a checker
-must never have.
+CommonMark form — `~~~mermaid`, longer backtick runs, an indent of up to three
+spaces — because matching only the canonical one skipped the others *in silence*,
+which is the one failure a checker must never have.
+
+**Four spaces of indent is not a fence.** CommonMark reads it as an indented code
+block, so that is how to show a mermaid fence as an *example* without either
+checker treating it as a diagram.
 
 **The gate covers `knowledge/` only.** `check_mermaid.mjs` takes a directory, and
 pointing it at `docs/` currently reports 14 broken diagrams across the ADRs, the
