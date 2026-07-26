@@ -50,6 +50,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A screen reader can now activate the whole "Automatic updates" row.**
   Tapping the wording flipped the switch for everyone else, but assistive
   technology could only reach the switch itself.
+- **Planning a day that has already started no longer wastes a round trip.**
+  When you asked for a plan mid-afternoon, the planner would sensibly start
+  your first block "now" — and the app rejected the whole plan for starting in
+  the past, because by the time the plan came back, "now" had moved on. The
+  planner had no way to win: it would have had to predict how long it was going
+  to think. It is now told a start time that is still valid when the plan
+  lands, so the first attempt succeeds instead of the second.
 - **The update section at the bottom of the AI summary card takes up much less
   room, especially on a phone.** The switch row in particular had far more
   space above and below it than it needed, which pushed the model line down and

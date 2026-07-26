@@ -68,7 +68,22 @@ guards rather than the model. See [evaluation](evaluation.md).
 
 **Planning into the past is refused, whatever the block's type.** For today's
 plan, `draft_day_plan` rejects any block it would be *planning* — state `drafted`
-or `committed` — whose start precedes `current_local_time`. It still accepts
+or `committed` — whose start precedes `clock.now()` **at the moment the tool
+executes**.
+
+That last clause is load-bearing, and getting it wrong was measurable. The
+threshold moves between rendering the prompt and enforcing it, because the model
+thinks in between — 13s to 152s in the eval. So a plan whose first block starts
+at the instant the prompt advertised is *always* rejected: every sampled
+`lateStart` cell across both models started the day at 15:00 when the prompt read
+`15:00:00.005877`, and all 6/6 lost by under six milliseconds. Complying would
+have meant predicting inference latency.
+
+The drafting context therefore advertises `drafting.earliestStart` —
+`advertisedPlanningStart`, the first five-minute boundary at least three minutes
+out — rather than the raw instant. The guard is unchanged and unweakened; only
+what the model is *told to aim at* moved, so a plan built on it is still legal
+when it lands. It still accepts
 earlier blocks whose state is `inProgress`, `completed` or `dropped`, because
 those record what actually happened rather than new planning, and it accepts a
 block that **repeats an existing baseline block at the same id and start**, which

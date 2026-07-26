@@ -145,9 +145,10 @@ class DayAgentPlanWriter {
         pendingByIndex.entries,
         plan,
         identity.allowedCategoryIds,
-        earliestStart: localDay(plan.planDate) == localDay(clock.now())
-            ? clock.now()
-            : null,
+        earliestStart: earliestPlannableStart(
+          planDate: plan.planDate,
+          now: clock.now(),
+        ),
         allowedTaskIds: await resolveAllowedTaskIds(
           journalDb: journalDb,
           taskIds: proposedTaskIds,
@@ -295,7 +296,10 @@ class DayAgentPlanWriter {
     }
 
     final now = clock.now();
-    final earliestDraftStart = localDay(planDate) == localDay(now) ? now : null;
+    final earliestDraftStart = earliestPlannableStart(
+      planDate: planDate,
+      now: now,
+    );
     final allowedCategoryIds = identity.allowedCategoryIds;
     // Resolved and category-filtered like every other task reference. This
     // argument is written by the model itself, so an unchecked set let it

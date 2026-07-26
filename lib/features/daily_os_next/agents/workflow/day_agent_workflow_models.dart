@@ -84,11 +84,23 @@ class DraftingContext {
     this.decidedTasks = const [],
     this.decidedCaptureItems = const [],
     this.baselineTaskStates = const {},
+    this.earliestStart,
   });
 
   final DayPlanEntity? baselinePlan;
   final List<DecidedTaskRef> decidedTasks;
   final List<ParsedItemEntity> decidedCaptureItems;
+
+  /// The earliest instant a new block may start, or null when the plan's day
+  /// has not begun.
+  ///
+  /// Stated rather than left to the model to derive. It previously had to
+  /// notice `<plan_date>` was today, find `<current_local_time>` (the last
+  /// section in the message), and compare — and got it wrong on every sampled
+  /// same-day draft, burning a rejected `draft_day_plan` call each time. Comes
+  /// from `earliestPlannableStart`, the same function the write path guards
+  /// with, so this can never promise something the guard does not enforce.
+  final DateTime? earliestStart;
 
   /// Blocked-work state (ADR 0043) for tasks the baseline plan schedules,
   /// keyed by task id, present only for tasks that are actually blocked.
@@ -133,6 +145,8 @@ class DraftingContext {
                 for (final band in plan.energyBands) band.toJson(),
               ],
             },
+      if (earliestStart case final earliest?)
+        'earliestStart': earliest.toIso8601String(),
       'decidedTasks': [for (final task in decidedTasks) task.toJson()],
       'decidedCaptureItems': [
         for (final item in decidedCaptureItems)

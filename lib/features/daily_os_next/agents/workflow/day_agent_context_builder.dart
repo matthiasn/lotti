@@ -653,6 +653,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
 
   Future<DraftingContext?> _draftingContext({
     required AgentIdentityEntity agentIdentity,
+    required DateTime planDate,
     required DailyOsPlannerWakeContext wakeContext,
     required CaptureContext? captureContext,
   }) async {
@@ -683,6 +684,10 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     ];
     return DraftingContext(
       baselinePlan: baselinePlan,
+      earliestStart: advertisedPlanningStart(
+        planDate: planDate,
+        now: clock.now(),
+      ),
       decidedTasks: decidedTasks,
       decidedCaptureItems: decidedCaptureItems,
       baselineTaskStates: await _baselineTaskStates(

@@ -3209,6 +3209,67 @@ void main() {
     });
 
     test(
+      'states an earliestStart the model can build on for a same-day draft',
+      () async {
+        final planService = MockDayAgentPlanService();
+        stubDraftingPlanContext(planService);
+        stubSuccessfulDraftToolCall(planService);
+
+        final result = await withClock(
+          // Mid-afternoon on the plan day itself, deliberately a few
+          // milliseconds past the minute — the shape that had every sampled
+          // model start the day at 15:00 and get rejected for it.
+          Clock.fixed(DateTime(2026, 5, 25, 15, 0, 0, 5, 877)),
+          () => workflow(planService: planService).execute(
+            agentIdentity: identity(),
+            runKey: runKey,
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+            threadId: threadId,
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        final drafting = sentPrompt().json('drafting')! as Map<String, dynamic>;
+        // Rounded past the instant it was computed, so a plan built on it is
+        // still legal when the guard runs.
+        expect(drafting['earliestStart'], '2026-05-25T15:05:00.000');
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('drafting.earliestStart'),
+        );
+      },
+    );
+
+    test('omits earliestStart when the plan day has not begun', () async {
+      final planService = MockDayAgentPlanService();
+      stubDraftingPlanContext(planService);
+      stubSuccessfulDraftToolCall(planService);
+
+      // Drafting tomorrow, the evening before: nothing about this day has
+      // passed, so there is no floor to advertise.
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 24, 20)),
+        () => workflow(planService: planService).execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {
+            dayAgentDraftingToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final drafting = sentPrompt().json('drafting')! as Map<String, dynamic>;
+      // Absent, not null: the past has no meaning for a day that has not
+      // started, and an empty key would invite the model to invent one.
+      expect(drafting.containsKey('earliestStart'), isFalse);
+    });
+    test(
       'includes a null-baseline drafting context for drafting-token wakes',
       () async {
         final planService = MockDayAgentPlanService();

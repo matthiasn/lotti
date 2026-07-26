@@ -273,6 +273,77 @@ void main() {
     });
   });
 
+  group('earliestPlannableStart / advertisedPlanningStart', () {
+    final planDate = DateTime(2026, 7, 26);
+
+    test('a future plan day is unconstrained on both', () {
+      final now = DateTime(2026, 7, 25, 15);
+      expect(earliestPlannableStart(planDate: planDate, now: now), isNull);
+      expect(advertisedPlanningStart(planDate: planDate, now: now), isNull);
+    });
+
+    test('the enforced threshold is the raw instant', () {
+      final now = DateTime(2026, 7, 26, 15, 0, 0, 5, 877);
+      expect(earliestPlannableStart(planDate: planDate, now: now), now);
+    });
+
+    test('the advertised start clears the instant that caused the '
+        'rejections', () {
+      // The measured failure, exactly: the prompt rendered
+      // 15:00:00.005877, every sampled model sensibly started the day at
+      // 15:00:00.000, and the guard rejected all 6/6 by under six
+      // milliseconds. The advertised value must be strictly later than the
+      // instant the model reads, or it reproduces that.
+      final now = DateTime(2026, 7, 26, 15, 0, 0, 5, 877);
+      final advertised = advertisedPlanningStart(planDate: planDate, now: now);
+
+      expect(advertised, DateTime(2026, 7, 26, 15, 5));
+      expect(advertised!.isAfter(now), isTrue);
+    });
+
+    test('never advertises an instant already lost to the guard', () {
+      // Property: for any moment of the plan day, what the prompt promises is
+      // strictly later than what the write path enforces. Landing exactly on
+      // the boundary is not enough — the guard runs a moment later still.
+      for (var minute = 0; minute < 60; minute++) {
+        for (final second in [0, 30, 59]) {
+          final now = DateTime(2026, 7, 26, 9, minute, second);
+          final enforced = earliestPlannableStart(planDate: planDate, now: now);
+          final advertised = advertisedPlanningStart(
+            planDate: planDate,
+            now: now,
+          );
+
+          expect(
+            advertised!.isAfter(enforced!),
+            isTrue,
+            reason: 'advertised $advertised must be after enforced $enforced',
+          );
+        }
+      }
+    });
+
+    test('gives the model at least the measured worst-case latency', () {
+      // Wake latencies ran to 152s in the eval. The advertised start has to
+      // stay valid across that gap or the model is asked to predict its own
+      // thinking time, which is the bug this replaces.
+      const worstObservedLatency = Duration(seconds: 152);
+      var tightest = const Duration(days: 1);
+      for (var minute = 0; minute < 60; minute++) {
+        final now = DateTime(2026, 7, 26, 9, minute, 59);
+        final advertised = advertisedPlanningStart(
+          planDate: planDate,
+          now: now,
+        )!;
+        final headroom = advertised.difference(now);
+        if (headroom < tightest) tightest = headroom;
+      }
+
+      expect(tightest, greaterThanOrEqualTo(minimumPlanningHeadroom));
+      expect(minimumPlanningHeadroom, greaterThan(worstObservedLatency));
+    });
+  });
+
   group('selectIndices', () {
     test('returns the full range when indices are omitted', () {
       expect(selectIndices(itemIndices: null, itemCount: 3), [0, 1, 2]);
