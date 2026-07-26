@@ -33,6 +33,17 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 
 * [Settings](settings/) - the declarative settings tree and its shared editor kit.
 
+# Supporting
+
+* [Settings v2](settings_v2/) - the declarative settings tree behind both surfaces.
+* [What's New](whats_new/) - remote release notes with local gating.
+* [Notifications](notifications/) - durable alerts that converge across devices.
+* [User activity gate](user_activity/) - the idle gate background work waits on.
+* [Keyboard](keyboard/) - the desktop command layer.
+* [Checklist corrections](checklist/) - learning from title edits.
+* [Text-to-speech](tts/) - on-device spoken summaries.
+* [Theming](theming/) - theme selection and construction.
+
 # UI foundation
 
 * [Design system](design_system/) - tokens, theming, and the component contracts.

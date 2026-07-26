@@ -1,110 +1,33 @@
-# User Activity Feature
+# User activity
 
-The `user_activity` feature is a tiny coordination feature with an outsized effect.
+A small feature with an outsized effect: it knows whether the user is currently
+busy, and lets background work wait until they are not.
 
-It tracks whether the user was active recently and exposes a gate that background work can wait on before doing potentially disruptive processing.
+## What it does for the user
 
-This is the feature that lets other parts of the app say:
+- **Keeps the app responsive.** Heavy background work — sending and receiving
+  sync, processing a day's recordings — waits for a pause rather than competing
+  with typing and scrolling.
+- **Catches up when idle.** As soon as the user stops interacting, queued work
+  drains.
 
-- "The user is actively doing things right now."
-- "Wait until they have been idle for a bit."
+There is nothing to configure; it is invisible when it works.
 
-## What This Feature Owns
+## What it owns
 
-At runtime, the feature owns:
+Activity tracking and the idle gate other features await before starting
+disruptive work.
 
-1. a broadcast stream of user-activity timestamps
-2. the latest known activity time
-3. an idle gate that flips between active and idle based on a threshold
-4. a wait-until-idle API used by background systems
-
-## Directory Shape
+## Where the code lives
 
 ```text
 lib/features/user_activity/
 └── state/
-    ├── user_activity_service.dart
-    └── user_activity_gate.dart
 ```
 
-## Architecture
+## How it works
 
-```mermaid
-flowchart LR
-  UI["Scrolling / user interaction"] --> Service["UserActivityService"]
-  Service --> Stream["activityStream"]
-  Stream --> Gate["UserActivityGate"]
-  Gate --> Consumers["Outbox / other background work"]
-```
+Who waits on the gate, and why it is an awaited gate rather than a boolean check,
+are documented in the knowledge bundle:
 
-The feature is intentionally minimal:
-
-- `UserActivityService` only records activity
-- `UserActivityGate` turns activity into "can process" state
-
-## User Activity Service
-
-`UserActivityService` stores:
-
-- `lastActivity`
-- `activityStream`
-
-and exposes:
-
-- `updateActivity()`
-- `dispose()`
-
-That is all it needs to do. It is a timestamp emitter, not an analytics platform.
-
-## Activity Gate State Machine
-
-`UserActivityGate` is the interesting part.
-
-```mermaid
-stateDiagram-v2
-  [*] --> Idle: no recent activity (elapsed >= idleThreshold)
-  [*] --> Busy: recent activity (elapsed < idleThreshold)
-  Idle --> Busy: activity event
-  Busy --> Busy: more activity events reset timer
-  Busy --> Idle: idleThreshold elapses
-```
-
-Real behavior from the implementation:
-
-- the idle threshold defaults to 1 second (`idleThreshold`)
-- the gate computes its initial state from `lastActivity`
-- each activity event flips `canProcess` to `false`
-- each activity event resets the idle timer
-- once `idleThreshold` elapses without new activity, `canProcess` becomes `true`
-
-## Gate Flow
-
-```mermaid
-sequenceDiagram
-  participant UI as "UI interaction"
-  participant Service as "UserActivityService"
-  participant Gate as "UserActivityGate"
-  participant Worker as "Background worker"
-
-  UI->>Service: updateActivity()
-  Service-->>Gate: activityStream event
-  Gate->>Gate: canProcess = false
-  Gate->>Gate: restart idle timer
-  Worker->>Gate: waitUntilIdle()
-  Gate-->>Worker: unblock when timer completes
-```
-
-This is why the feature exists at all: it gives background systems a clean way to avoid doing heavy or chatty work while the user is actively interacting with the app.
-
-## Where It Is Used
-
-There are two consumers today, both in `sync`. The outbox path (`OutboxService`) calls `waitUntilIdle()` before pushing outbound work, and the inbound queue worker (`InboundWorker`) calls `waitUntilIdle()` before draining so inbound apply does not fight the user's writes. Other UI surfaces also call `updateActivity()` while the user scrolls or interacts.
-
-That means this feature quietly influences perceived app smoothness without ever getting a flashy page of its own.
-
-## Relationship to Other Features
-
-- `sync` uses the gate to defer both outbound sending (outbox) and inbound apply (queue worker) while the user is active
-- pages such as dashboards and task details report activity into the service
-
-This is a very small feature, but it is a good example of useful infrastructure: boring, explicit, and capable of preventing a surprising amount of bad timing.
+**→ [knowledge/features/user_activity/](../../../knowledge/features/user_activity/)**
