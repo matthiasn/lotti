@@ -240,6 +240,7 @@ class DayAgentPlanEditor {
             id: task.id,
             title: task.data.title,
             categoryId: task.meta.categoryId,
+            estimateMinutes: task.data.estimate?.inMinutes,
           ),
       ];
     }
@@ -254,6 +255,7 @@ class DayAgentPlanEditor {
           categoryId: task.meta.categoryId,
           status: task.data.status.toDbString,
           blockedBy: blockedBy[task.id] ?? const [],
+          estimateMinutes: task.data.estimate?.inMinutes,
         ),
     ];
   }

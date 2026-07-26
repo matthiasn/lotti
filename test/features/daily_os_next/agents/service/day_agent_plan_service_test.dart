@@ -1479,6 +1479,27 @@ void main() {
         expect(captured, ['task-1']);
       });
 
+      test('carries the task estimate the capacity rule totals', () async {
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {
+            'task-1': _task(
+              id: 'task-1',
+              title: 'Rewrite the ingestion pipeline',
+              estimate: const Duration(minutes: 240),
+            ),
+          },
+        );
+
+        final result = await createService().hydrateDecidedTasks(
+          allowedCategoryIds: const {'work', 'life'},
+          explicitTaskIds: const ['task-1'],
+        );
+
+        // Present with or without a dependency resolver: the capacity rule is
+        // not gated on ADR 0043.
+        expect(result.single.estimateMinutes, 240);
+      });
+
       test('omits status entirely without a dependency resolver', () async {
         when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
           (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},
@@ -5633,6 +5654,7 @@ Task _task({
   required String title,
   String? categoryId = 'work',
   TaskStatus? status,
+  Duration? estimate,
 }) {
   return JournalEntity.task(
         meta: Metadata(
@@ -5655,6 +5677,7 @@ Task _task({
           dateFrom: DateTime(2026, 5, 20),
           dateTo: DateTime(2026, 5, 20, 1),
           title: title,
+          estimate: estimate,
         ),
       )
       as Task;

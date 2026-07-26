@@ -130,6 +130,17 @@ to express; `drafted` expresses it without claiming a verdict the user never
 gave. `committed` stays in the tool schema, unlike `cal`, because its
 carry-forward use is real — removing it would force a re-draft to call approved
 work `drafted` and silently un-commit it.
+**And so are the estimates it is compared against.** `drafting.decidedTasks`
+projected only `{id, title, categoryId, status, blockedBy}`, while the rules ask
+the model to total `estimateMinutes` and weigh them against `availableMinutes`.
+The task corpus was the only carrier of estimates and it renders inside
+`<capture>` alone, so on a capture-less wake that instruction was unfollowable —
+the same shape as ADR 0043's rule arriving without its data, in a rule written
+one commit earlier. `DecidedTaskRef` carries `estimateMinutes` from
+`task.data.estimate`, the read `hydrateDecidedTasks` already performs, and it is
+omitted rather than zeroed when a task has no estimate: zero would let unsized
+work total as free.
+
 **The day's remaining budget is stated, not derived.** `<planning_window>`
 carries `availableMinutes` — working time still available, bounded by the
 clock *and* by capacity, whichever binds harder. Without it the model had to

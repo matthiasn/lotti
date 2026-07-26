@@ -453,6 +453,33 @@ void _expectDecidedTaskRef() {
       });
     });
 
+    test('toJson carries the estimate the capacity rule needs', () {
+      // The drafting rules ask the model to total estimates and compare them
+      // against availableMinutes. Without this the instruction is
+      // unfollowable on a capture-less wake: the corpus is the only other
+      // carrier of estimates and it renders inside `<capture>` alone.
+      const ref = DecidedTaskRef(
+        id: 'task-a',
+        title: 'Rewrite the ingestion pipeline',
+        categoryId: 'work',
+        estimateMinutes: 240,
+      );
+
+      expect(ref.toJson()['estimateMinutes'], 240);
+    });
+
+    test('toJson omits the estimate when the task has none', () {
+      // Absent rather than zero: an unestimated task is not a free one, and
+      // zero would let it total as nothing.
+      const ref = DecidedTaskRef(
+        id: 'task-a',
+        title: 'Unsized work',
+        categoryId: 'work',
+      );
+
+      expect(ref.toJson().containsKey('estimateMinutes'), isFalse);
+    });
+
     test('toJson omits blockedBy when the task has no blockers', () {
       const ref = DecidedTaskRef(
         id: 'task-1',
@@ -469,8 +496,94 @@ void _expectDecidedTaskRef() {
   });
 }
 
+void _expectDecidedTaskRefProperties() {
+  // The drafting rules tell the model to total these and compare against
+  // availableMinutes, so the projection has to be predictable across every
+  // combination of the optional fields — not just the ones I thought to write
+  // by hand. Absence is load-bearing here: an omitted estimate must not read
+  // as zero, or unsized work totals as free.
+  group('Glados DecidedTaskRef.toJson', () {
+    glados.Glados<_RefShape>(
+      glados.any.refShape,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'optional fields are present exactly when they carry meaning',
+      (
+        shape,
+      ) {
+        final json = shape.ref.toJson();
+
+        // The three identity fields are unconditional; categoryId is emitted
+        // even when null, so the model sees an explicit "no category".
+        expect(json['id'], shape.ref.id);
+        expect(json['title'], shape.ref.title);
+        expect(json.containsKey('categoryId'), isTrue);
+
+        expect(json.containsKey('status'), shape.ref.status != null);
+        expect(json.containsKey('blockedBy'), shape.ref.blockedBy.isNotEmpty);
+        expect(
+          json.containsKey('estimateMinutes'),
+          shape.ref.estimateMinutes != null,
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<_RefShape>(
+      glados.any.refShape,
+      glados.ExploreConfig(numRuns: 300),
+    ).test('an absent estimate never serializes as zero', (shape) {
+      final json = shape.ref.toJson();
+
+      // Zero would let unsized work total as free against availableMinutes.
+      if (shape.ref.estimateMinutes == null) {
+        expect(json['estimateMinutes'], isNull);
+      } else {
+        expect(json['estimateMinutes'], shape.ref.estimateMinutes);
+      }
+    }, tags: 'glados');
+  });
+}
+
 void _expectMain() {
   _expectProjections();
   _expectDedupeAndSortEdges();
   _expectDecidedTaskRef();
+  _expectDecidedTaskRefProperties();
+}
+
+/// One generated shape of the optional fields on a [DecidedTaskRef].
+class _RefShape {
+  _RefShape(this.status, this.blockerCount, this.estimateMinutes);
+
+  final String? status;
+  final int blockerCount;
+  final int? estimateMinutes;
+
+  DecidedTaskRef get ref => DecidedTaskRef(
+    id: 'task-a',
+    title: 'Rewrite the ingestion pipeline',
+    categoryId: 'cat-work',
+    status: status,
+    blockedBy: [
+      for (var i = 0; i < blockerCount; i++)
+        ResolvedBlocker(taskId: 'blocker-$i'),
+    ],
+    estimateMinutes: estimateMinutes,
+  );
+
+  @override
+  String toString() =>
+      '_RefShape(status $status, $blockerCount blockers, '
+      'estimate $estimateMinutes)';
+}
+
+extension _AnyRefShape on glados.Any {
+  glados.Generator<_RefShape> get refShape =>
+      glados.CombinableAny(this).combine3(
+        glados.AnyUtils(this).choose(const [null, 'OPEN', 'BLOCKED']),
+        glados.AnyUtils(this).choose(const [0, 1, 3]),
+        glados.AnyUtils(this).choose(const [null, 0, 1, 25, 180]),
+        _RefShape.new,
+      );
 }

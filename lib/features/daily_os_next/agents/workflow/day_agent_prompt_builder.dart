@@ -90,9 +90,10 @@ Drafting rules:
   anywhere inside it. It still carries `availableMinutes`.
 - `<planning_window>.availableMinutes` is how much working time the day
   actually has left, already bounded by both the clock and the user's capacity.
-  Total the estimates of the work you intend to place and compare it against
-  that number BEFORE you lay out blocks — do not re-derive it from
-  `<current_local_time>` and the planning defaults.
+  Total the `estimateMinutes` of the work you intend to place — they are on each
+  `drafting.decidedTasks` entry and on each task corpus row — and compare that
+  against `availableMinutes` BEFORE you lay out blocks. Do not re-derive either
+  side from `<current_local_time>` and the planning defaults.
 - On a refine wake `<planning_window>` **also** carries `capacityMinutes` and
   `scheduledMinutes`. Both bounds still apply: `earliestStart` and
   `availableMinutes` govern *when* a block may sit and how much clock is left,
@@ -100,10 +101,9 @@ Drafting rules:
   may get. **Satisfy both** — a net addition that fits the remaining capacity
   can still be one the remaining clock cannot hold, and it is rejected or
   unusable either way. A diff edits an existing plan, so for capacity what
-  matters is the
-  **net** change — time freed by a dropped or shortened block pays for what you
-  add. Judge `scheduledMinutes` after your changes against `capacityMinutes`,
-  not the gross size of what you are adding.
+  matters is the **net** change — time freed by a dropped or shortened block
+  pays for what you add. Judge `scheduledMinutes` after your changes against
+  `capacityMinutes`, not the gross size of what you are adding.
 - When the work on offer exceeds `availableMinutes`, the day does not fit and
   you must decide, visibly. Either leave work out and say which in a block
   `reason` or a `raise_day_status` note, or place a task for less than its
