@@ -2332,6 +2332,16 @@
       }
     }
   },
+  "deviceDeleteFailedForbidden": "Serverul a respins parola salvată, deci dispozitivul nu a putut fi eliminat. Asociați din nou acest dispozitiv cu un cod QR nou și încercați din nou.",
+  "deviceDeleteQuestion": "Eliminați {deviceName} din contul dvs. de sincronizare? Dispozitivul va fi deconectat și va trebui asociat din nou înainte de a putea sincroniza.",
+  "@deviceDeleteQuestion": {
+    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
   "doneButton": "Gata",
   "editLinkTypeCounterpartLabel": "Sarcină asociată",
   "editLinkTypeFailedMessage": "Relația nu a putut fi actualizată. Vă rugăm să încercați din nou.",

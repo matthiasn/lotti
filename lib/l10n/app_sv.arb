@@ -2572,6 +2572,16 @@
       }
     }
   },
+  "deviceDeleteFailedForbidden": "Hemservern avvisade det sparade lösenordet, så enheten kunde inte tas bort. Para ihop den här enheten igen med en ny QR-kod och försök igen.",
+  "deviceDeleteQuestion": "Ta bort {deviceName} från ditt synkroniseringskonto? Enheten loggas ut och måste paras ihop igen innan den kan synkronisera.",
+  "@deviceDeleteQuestion": {
+    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
   "doneButton": "Klart",
   "editMenuTitle": "Redigering",
   "editorDiscardChanges": "Ändringar i kassering",

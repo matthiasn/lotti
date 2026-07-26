@@ -5320,6 +5320,15 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get deviceDeleteFailedForbidden =>
+      'Il server ha rifiutato la password salvata, quindi non è stato possibile rimuovere il dispositivo. Associa di nuovo questo dispositivo con un nuovo codice QR e riprova.';
+
+  @override
+  String deviceDeleteQuestion(String deviceName) {
+    return 'Rimuovere $deviceName dal tuo account di sincronizzazione? Il dispositivo verrà disconnesso e dovrà essere associato di nuovo prima di poter sincronizzare.';
+  }
+
+  @override
   String get doneButton => 'Fatto';
 
   @override

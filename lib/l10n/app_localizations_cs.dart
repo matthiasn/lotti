@@ -5309,6 +5309,15 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get deviceDeleteFailedForbidden =>
+      'Domovský server odmítl uložené heslo, takže zařízení nebylo možné odebrat. Spáruj toto zařízení znovu pomocí nového QR kódu a zkus to znovu.';
+
+  @override
+  String deviceDeleteQuestion(String deviceName) {
+    return 'Odebrat $deviceName z tvého synchronizačního účtu? Zařízení bude odhlášeno a před další synchronizací ho bude nutné znovu spárovat.';
+  }
+
+  @override
   String get doneButton => 'Hotovo';
 
   @override

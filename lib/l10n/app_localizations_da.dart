@@ -5251,6 +5251,15 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get deviceDeleteFailedForbidden =>
+      'Hjemmeserveren afviste den gemte adgangskode, så enheden kunne ikke fjernes. Par denne enhed igen med en ny QR-kode, og prøv igen.';
+
+  @override
+  String deviceDeleteQuestion(String deviceName) {
+    return 'Vil du fjerne $deviceName fra din synkroniseringskonto? Enheden logges ud og skal parres igen, før den kan synkronisere.';
+  }
+
+  @override
   String get doneButton => 'Færdig';
 
   @override

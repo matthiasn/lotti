@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.d
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:matrix/matrix.dart';
 
 class DeviceCard extends ConsumerWidget {
@@ -40,25 +41,44 @@ class DeviceCard extends ConsumerWidget {
                 ),
               ),
               IconButton(
+                key: const Key('matrix_delete_device'),
                 padding: const EdgeInsets.all(10),
                 icon: Semantics(
                   label: context.messages.deleteDeviceLabel,
                   child: const Icon(MdiIcons.trashCanOutline),
                 ),
                 onPressed: () async {
+                  final deviceName =
+                      deviceKeys.deviceDisplayName ??
+                      deviceKeys.deviceId ??
+                      'unknown';
+                  final confirmed = await showConfirmationModal(
+                    context: context,
+                    title: context.messages.deleteDeviceLabel,
+                    message: context.messages.deviceDeleteQuestion(deviceName),
+                    confirmLabel: context.messages.deleteDeviceLabel,
+                    cancelLabel: context.messages.settingsMatrixCancel,
+                  );
+                  if (!confirmed || !context.mounted) return;
+
                   try {
                     await matrixService.deleteDevice(deviceKeys);
                     refreshListCallback();
                     if (context.mounted) {
-                      final deviceName =
-                          deviceKeys.deviceDisplayName ??
-                          deviceKeys.deviceId ??
-                          'unknown';
                       context.showToast(
                         tone: DesignSystemToastTone.success,
                         title: context.messages.deviceDeletedSuccess(
                           deviceName,
                         ),
+                      );
+                    }
+                  } on MatrixException catch (e) {
+                    if (context.mounted) {
+                      context.showToast(
+                        tone: DesignSystemToastTone.error,
+                        title: e.errcode == 'M_FORBIDDEN'
+                            ? context.messages.deviceDeleteFailedForbidden
+                            : context.messages.deviceDeleteFailed('$e'),
                       );
                     }
                   } catch (e) {

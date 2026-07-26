@@ -2332,6 +2332,16 @@
       }
     }
   },
+  "deviceDeleteFailedForbidden": "El servidor rechazó la contraseña guardada, así que no se pudo quitar el dispositivo. Vuelve a emparejar este dispositivo con un código QR nuevo e inténtalo de nuevo.",
+  "deviceDeleteQuestion": "¿Quitar {deviceName} de tu cuenta de sincronización? El dispositivo cerrará sesión y tendrá que emparejarse de nuevo antes de poder sincronizar.",
+  "@deviceDeleteQuestion": {
+    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
   "doneButton": "Listo",
   "editLinkTypeCounterpartLabel": "Tarea vinculada",
   "editLinkTypeFailedMessage": "No se pudo actualizar la relación. Inténtalo de nuevo.",

@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service_ops.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -31,6 +33,12 @@ void main() {
   setUpAll(() {
     registerFallbackValue(LogDomain.sync);
     registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(
+      AuthenticationPassword(
+        password: 'fallback',
+        identifier: AuthenticationUserIdentifier(user: '@fallback:server'),
+      ),
+    );
   });
 
   late MockMatrixSyncGateway gateway;
@@ -45,22 +53,26 @@ void main() {
   late MatrixStreamConsumer? currentPipeline;
   late StreamSubscription<KeyVerification>? keyVerSub;
 
-  MatrixServiceOps buildOps() => MatrixServiceOps(
-    gateway: gateway,
-    loggingService: logging,
-    collectSyncMetrics: true,
-    queueCoordinator: coordinator,
-    roomManager: roomManager,
-    sessionManager: sessionManager,
-    syncEngine: syncEngine,
-    incomingKeyVerificationController: incomingController,
-    pipeline: () => currentPipeline,
-    keyVerificationRequestSubscription: () => keyVerSub,
-    setKeyVerificationRequestSubscription: (value) => keyVerSub = value,
-    // The service() seam is only used by the key-verification round-trips
-    // which are covered by the parent MatrixService tests.
-    service: () => throw UnimplementedError('service() not used in this test'),
-  );
+  MatrixServiceOps buildOps({MatrixService Function()? service}) =>
+      MatrixServiceOps(
+        gateway: gateway,
+        loggingService: logging,
+        collectSyncMetrics: true,
+        queueCoordinator: coordinator,
+        roomManager: roomManager,
+        sessionManager: sessionManager,
+        syncEngine: syncEngine,
+        incomingKeyVerificationController: incomingController,
+        pipeline: () => currentPipeline,
+        keyVerificationRequestSubscription: () => keyVerSub,
+        setKeyVerificationRequestSubscription: (value) => keyVerSub = value,
+        // The service() seam is only used by the key-verification round-trips
+        // (covered by the parent MatrixService tests) and by deleteDevice's
+        // runner cancellation, which injects a mock service explicitly.
+        service:
+            service ??
+            () => throw UnimplementedError('service() not used in this test'),
+      );
 
   setUp(() {
     gateway = MockMatrixSyncGateway();
@@ -224,6 +236,201 @@ void main() {
       final keys = <DeviceKeys>[];
       when(gateway.unverifiedDevices).thenReturn(keys);
       expect(buildOps().getUnverifiedDevices(), same(keys));
+    });
+  });
+
+  group('deleteDevice', () {
+    const userId = '@user:server';
+    late MockMatrixClient client;
+    late MockSyncLifecycleCoordinator lifecycle;
+    late MockMatrixService svc;
+    late MockDeviceKeys deviceKeys;
+
+    MatrixServiceOps buildDeleteOps() => buildOps(service: () => svc);
+
+    setUp(() {
+      client = MockMatrixClient();
+      lifecycle = MockSyncLifecycleCoordinator();
+      svc = MockMatrixService();
+      deviceKeys = MockDeviceKeys();
+
+      when(() => sessionManager.client).thenReturn(client);
+      when(() => sessionManager.matrixConfig).thenReturn(
+        const MatrixConfig(
+          homeServer: 'https://server',
+          user: userId,
+          password: 'secret',
+        ),
+      );
+      when(() => client.userID).thenReturn(userId);
+      when(
+        () => client.deleteDevice(any(), auth: any(named: 'auth')),
+      ).thenAnswer((_) async {});
+      when(
+        () => client.updateUserDeviceKeys(
+          additionalUsers: any(named: 'additionalUsers'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => syncEngine.lifecycleCoordinator).thenReturn(lifecycle);
+      when(lifecycle.reconcileLifecycleState).thenAnswer((_) async {});
+      when(() => svc.keyVerificationRunner).thenReturn(null);
+      when(() => svc.incomingKeyVerificationRunner).thenReturn(null);
+
+      when(() => deviceKeys.deviceId).thenReturn('DEV1');
+      when(() => deviceKeys.deviceDisplayName).thenReturn('Pixel 7');
+      when(() => deviceKeys.userId).thenReturn(userId);
+    });
+
+    test(
+      'deletes on the homeserver, then refreshes the device-key cache and '
+      'nudges the pipeline so the removal unblocks sync immediately',
+      () async {
+        await buildDeleteOps().deleteDevice(deviceKeys);
+
+        final captured = verify(
+          () => client.deleteDevice('DEV1', auth: captureAny(named: 'auth')),
+        ).captured;
+        final auth = captured.single as AuthenticationPassword;
+        expect(auth.password, 'secret');
+        expect(
+          (auth.identifier as AuthenticationUserIdentifier?)?.user,
+          userId,
+        );
+
+        verify(
+          () => client.updateUserDeviceKeys(additionalUsers: {userId}),
+        ).called(1);
+        verify(lifecycle.reconcileLifecycleState).called(1);
+        verify(() => coordinator.triggerBridge()).called(1);
+      },
+    );
+
+    test(
+      'cancels an in-flight verification against the device before deleting, '
+      'and leaves runners for other devices alone',
+      () async {
+        final matchingVerification = MockKeyVerification();
+        when(() => matchingVerification.deviceId).thenReturn('DEV1');
+        final matchingRunner = MockKeyVerificationRunner();
+        when(
+          () => matchingRunner.keyVerification,
+        ).thenReturn(matchingVerification);
+        when(matchingRunner.cancelVerification).thenAnswer((_) async {});
+
+        final otherVerification = MockKeyVerification();
+        when(() => otherVerification.deviceId).thenReturn('OTHER');
+        final otherRunner = MockKeyVerificationRunner();
+        when(() => otherRunner.keyVerification).thenReturn(otherVerification);
+
+        when(() => svc.keyVerificationRunner).thenReturn(matchingRunner);
+        when(() => svc.incomingKeyVerificationRunner).thenReturn(otherRunner);
+
+        await buildDeleteOps().deleteDevice(deviceKeys);
+
+        verifyInOrder([
+          matchingRunner.cancelVerification,
+          () => client.deleteDevice('DEV1', auth: any(named: 'auth')),
+        ]);
+        verifyNever(otherRunner.cancelVerification);
+      },
+    );
+
+    test(
+      'a failing runner cancellation is logged and does not abort the '
+      'deletion',
+      () async {
+        final verification = MockKeyVerification();
+        when(() => verification.deviceId).thenReturn('DEV1');
+        final runner = MockKeyVerificationRunner();
+        when(() => runner.keyVerification).thenReturn(verification);
+        when(runner.cancelVerification).thenThrow(Exception('gone'));
+        when(() => svc.keyVerificationRunner).thenReturn(runner);
+
+        await buildDeleteOps().deleteDevice(deviceKeys);
+
+        verify(
+          () => logging.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'deleteDevice.cancelVerification',
+          ),
+        ).called(1);
+        verify(
+          () => client.deleteDevice('DEV1', auth: any(named: 'auth')),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a failing cache refresh is logged but does not fail the deletion, '
+      'and the pipeline nudge still runs',
+      () async {
+        when(
+          () => client.updateUserDeviceKeys(
+            additionalUsers: any(named: 'additionalUsers'),
+          ),
+        ).thenThrow(Exception('offline'));
+
+        await buildDeleteOps().deleteDevice(deviceKeys);
+
+        verify(
+          () => logging.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'deleteDevice.updateUserDeviceKeys',
+          ),
+        ).called(1);
+        verify(lifecycle.reconcileLifecycleState).called(1);
+        verify(() => coordinator.triggerBridge()).called(1);
+      },
+    );
+
+    test('throws ArgumentError and stays offline when deviceId is null', () {
+      when(() => deviceKeys.deviceId).thenReturn(null);
+
+      expect(
+        () => buildDeleteOps().deleteDevice(deviceKeys),
+        throwsArgumentError,
+      );
+      verifyNever(() => client.deleteDevice(any(), auth: any(named: 'auth')));
+    });
+
+    test('throws StateError when no Matrix configuration is stored', () {
+      when(() => sessionManager.matrixConfig).thenReturn(null);
+
+      expect(
+        () => buildDeleteOps().deleteDevice(deviceKeys),
+        throwsStateError,
+      );
+      verifyNever(() => client.deleteDevice(any(), auth: any(named: 'auth')));
+    });
+
+    test('throws StateError when the device belongs to another user', () {
+      when(() => deviceKeys.userId).thenReturn('@intruder:server');
+
+      expect(
+        () => buildDeleteOps().deleteDevice(deviceKeys),
+        throwsStateError,
+      );
+      verifyNever(() => client.deleteDevice(any(), auth: any(named: 'auth')));
+    });
+
+    test('throws UnsupportedError when the stored password is empty', () {
+      when(() => sessionManager.matrixConfig).thenReturn(
+        const MatrixConfig(
+          homeServer: 'https://server',
+          user: userId,
+          password: '',
+        ),
+      );
+
+      expect(
+        () => buildDeleteOps().deleteDevice(deviceKeys),
+        throwsUnsupportedError,
+      );
+      verifyNever(() => client.deleteDevice(any(), auth: any(named: 'auth')));
     });
   });
 

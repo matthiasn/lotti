@@ -2571,6 +2571,16 @@
       }
     }
   },
+  "deviceDeleteFailedForbidden": "O servidor rejeitou a senha armazenada, então não foi possível remover o dispositivo. Pareie este dispositivo novamente com um novo código QR e tente de novo.",
+  "deviceDeleteQuestion": "Remover {deviceName} da sua conta de sincronização? O dispositivo será desconectado e precisará ser pareado novamente antes de poder sincronizar.",
+  "@deviceDeleteQuestion": {
+    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
   "doneButton": "Concluído",
   "editMenuTitle": "Editar",
   "editorDiscardChanges": "Descartar alterações",

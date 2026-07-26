@@ -5340,6 +5340,15 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get deviceDeleteFailedForbidden =>
+      'Le serveur a refusé le mot de passe enregistré, l\'appareil n\'a donc pas pu être supprimé. Appaire à nouveau cet appareil avec un nouveau QR code et réessaie.';
+
+  @override
+  String deviceDeleteQuestion(String deviceName) {
+    return 'Supprimer $deviceName de ton compte de synchronisation ? L\'appareil sera déconnecté et devra être appairé à nouveau avant de pouvoir synchroniser.';
+  }
+
+  @override
   String get doneButton => 'Terminé';
 
   @override

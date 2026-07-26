@@ -5322,6 +5322,15 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get deviceDeleteFailedForbidden =>
+      'El servidor rechazó la contraseña guardada, así que no se pudo quitar el dispositivo. Vuelve a emparejar este dispositivo con un código QR nuevo e inténtalo de nuevo.';
+
+  @override
+  String deviceDeleteQuestion(String deviceName) {
+    return '¿Quitar $deviceName de tu cuenta de sincronización? El dispositivo cerrará sesión y tendrá que emparejarse de nuevo antes de poder sincronizar.';
+  }
+
+  @override
   String get doneButton => 'Listo';
 
   @override

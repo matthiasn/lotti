@@ -5252,6 +5252,15 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get deviceDeleteFailedForbidden =>
+      'Hemservern avvisade det sparade lösenordet, så enheten kunde inte tas bort. Para ihop den här enheten igen med en ny QR-kod och försök igen.';
+
+  @override
+  String deviceDeleteQuestion(String deviceName) {
+    return 'Ta bort $deviceName från ditt synkroniseringskonto? Enheten loggas ut och måste paras ihop igen innan den kan synkronisera.';
+  }
+
+  @override
   String get doneButton => 'Klart';
 
   @override

@@ -5334,6 +5334,15 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get deviceDeleteFailedForbidden =>
+      'Serverul a respins parola salvată, deci dispozitivul nu a putut fi eliminat. Asociați din nou acest dispozitiv cu un cod QR nou și încercați din nou.';
+
+  @override
+  String deviceDeleteQuestion(String deviceName) {
+    return 'Eliminați $deviceName din contul dvs. de sincronizare? Dispozitivul va fi deconectat și va trebui asociat din nou înainte de a putea sincroniza.';
+  }
+
+  @override
   String get doneButton => 'Gata';
 
   @override

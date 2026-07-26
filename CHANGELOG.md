@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1070]
+### Fixed
+- **Removing a dead device now unblocks sync immediately.** Deleting a device
+  from the sync device list refreshes the cached device keys and nudges the
+  pipeline right away, so the remaining devices resume syncing without an app
+  restart. Deleting also asks for confirmation first — it signs the device out
+  of the sync account — and a rejected password now gets a clear explanation
+  instead of a raw error dump.
+
 ### Added
 - **Decide per area whether assistants keep themselves up to date.** New tasks
   in an area got an assistant that only ever updated when you asked it to, and

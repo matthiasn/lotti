@@ -5224,6 +5224,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get deviceDeleteFailedForbidden =>
+      'The homeserver rejected the stored password, so the device couldn\'t be removed. Re-pair this device with a fresh QR code and try again.';
+
+  @override
+  String deviceDeleteQuestion(String deviceName) {
+    return 'Remove $deviceName from your sync account? It will be signed out and will need to be paired again before it can sync.';
+  }
+
+  @override
   String get doneButton => 'Done';
 
   @override
