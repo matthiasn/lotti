@@ -594,6 +594,9 @@ class _GladosBench {
     AttachmentIndex? attachmentIndex,
     UpdateNotifications? updateNotifications,
   }) {
+    // `capacity` is a non-nullable int the bootstrap sink reads to decide
+    // whether it may keep paginating; an unstubbed mock getter yields null.
+    when(() => pen.capacity).thenReturn(256);
     return QueuePipelineCoordinator(
       syncDb: syncDb,
       settingsDb: settingsDb,
@@ -735,6 +738,7 @@ void main() {
     worker = _MockWorker();
     bridge = _MockBridge();
     pen = _MockPen();
+    when(() => pen.capacity).thenReturn(256);
     seeder = _MockSeeder();
     timelineCtl = StreamController<Event>.broadcast(sync: true);
     syncCtl = CachedStreamController<SyncUpdate>();

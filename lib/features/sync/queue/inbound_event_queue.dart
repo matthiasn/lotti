@@ -64,6 +64,16 @@ class InboundQueue {
     onDepthChanged: _depthEmitter.schedule,
   );
 
+  /// Nudges [depthChanges] without an enqueue.
+  ///
+  /// Work can become available to the worker without any row appearing —
+  /// ciphertext landing in `PendingDecryptionPen` is the case that matters,
+  /// since the worker sweeps the pen at the top of each drain iteration but
+  /// only wakes on a depth signal or its idle tick. With an empty queue that
+  /// tick is `_idleTick * 12` (60s), so without this a key arriving right
+  /// after a penned page would sit unused for up to a minute.
+  void signalPendingWork() => _depthEmitter.schedule();
+
   Stream<QueueDepthSignal> get depthChanges => _depthEmitter.changes;
 
   Future<void> dispose() => _depthEmitter.dispose();

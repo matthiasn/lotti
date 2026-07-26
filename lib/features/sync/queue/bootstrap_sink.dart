@@ -75,6 +75,7 @@ class QueueBootstrapSink implements BootstrapSink {
     // `hold` returns false for anything already decrypted, so this only
     // diverts the events the queue would otherwise refuse.
     final heldIn = pen;
+    final penSizeBefore = heldIn?.size ?? 0;
     final forQueue = heldIn == null
         ? events
         : [
@@ -82,9 +83,24 @@ class QueueBootstrapSink implements BootstrapSink {
               if (!heldIn.hold(event)) event,
           ];
     final penned = events.length - forQueue.length;
+    // `hold` returns true for a re-hold as well as a first hold, so count by
+    // the pen's own growth: only entries it did not already have are new.
+    final newlyPenned = (heldIn?.size ?? 0) - penSizeBefore;
 
     final enqueue = await _queue.appendBootstrapPage(forQueue);
-    _lastAcceptedCount = enqueue.accepted;
+
+    // Retained ciphertext counts as accepted. `collectHistoryForBootstrapImpl`
+    // reads `lastAcceptedCount == 0` as a stale-cache signal and pulls up to
+    // five more pages past the boundary; on an all-encrypted page that would
+    // be a lie, and those extra pages are exactly what pushes the pen over
+    // capacity and evicts the boundary events we were trying to keep.
+    _lastAcceptedCount = enqueue.accepted + newlyPenned;
+
+    if (newlyPenned > 0) {
+      // No rows means no depth signal, so an idle worker would not look at
+      // the pen until its 60s empty-queue tick.
+      _queue.signalPendingWork();
+    }
 
     _logging.log(
       LogDomain.sync,
@@ -95,6 +111,7 @@ class QueueBootstrapSink implements BootstrapSink {
       'dupes=${enqueue.duplicatesDropped} '
       'filteredOutByType=${enqueue.filteredOutByType} '
       'penned=$penned '
+      'newlyPenned=$newlyPenned '
       'deferredPendingDecryption=${enqueue.deferredPendingDecryption} '
       'totalEventsSoFar=${info.totalEventsSoFar} '
       'oldestTs=${info.oldestTimestampSoFar} '
@@ -102,6 +119,30 @@ class QueueBootstrapSink implements BootstrapSink {
       'elapsedMs=${info.elapsed.inMilliseconds}',
       subDomain: _logSub,
     );
+
+    // Ciphertext creates no queue rows, so `_waitForDrain` — which watches
+    // queue depth — applies no back-pressure to an all-encrypted run at all.
+    // A forward walk emits up to 50 pages of 200, and manual history
+    // collection is unbounded, against a 256-entry LRU pen: without this the
+    // walk silently evicts the oldest ciphertext long before it finishes,
+    // recreating exactly the loss this sink was changed to prevent.
+    //
+    // Stopping is safe now that held events clamp the sync marker: the marker
+    // cannot advance past what the pen is holding, so the next run resumes
+    // from the right anchor instead of skipping the gap. Evicting is not
+    // safe, so prefer the bounded stop.
+    final holding = heldIn?.size ?? 0;
+    if (heldIn != null && holding >= heldIn.capacity) {
+      _logging.log(
+        LogDomain.sync,
+        'queue.bootstrap.penFull '
+        'page=${info.pageIndex} '
+        'penSize=$holding '
+        'capacity=${heldIn.capacity}',
+        subDomain: _logSub,
+      );
+      return false;
+    }
 
     try {
       await _waitForDrain();

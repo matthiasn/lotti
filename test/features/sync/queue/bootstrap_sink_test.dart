@@ -274,6 +274,49 @@ void main() {
     },
   );
 
+  test(
+    'a full pen stops pagination instead of evicting the oldest ciphertext',
+    () async {
+      // A forward walk emits up to 50 pages of 200 and manual history
+      // collection is unbounded, while the pen is a fixed LRU. Ciphertext
+      // creates no queue rows, so the depth-based back-pressure never fires —
+      // the walk would run the pen's oldest entries straight off the end,
+      // recreating the loss this sink exists to prevent. Stopping is safe:
+      // held events clamp the sync marker, so the next run resumes from the
+      // right anchor rather than skipping the gap.
+      final pen = PendingDecryptionPen(logging: logging, capacity: 2);
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        pen: pen,
+      );
+
+      final page = [
+        for (var i = 0; i < 2; i++)
+          _buildEvent(
+            eventId: '\$sealed$i',
+            originTsMs: i + 1,
+            type: EventTypes.Encrypted,
+          ),
+      ];
+      final cont = await sink.onPage(page, info(0, page.length));
+
+      expect(pen.size, 2);
+      expect(
+        cont,
+        isFalse,
+        reason: 'pagination halts at capacity rather than overflowing it',
+      );
+      expect(
+        sink.lastAcceptedCount,
+        2,
+        reason:
+            'retained ciphertext counts as accepted, so the caller does '
+            'not read this page as a stale-cache miss',
+      );
+    },
+  );
+
   test('cancelSignal stops pagination between pages', () async {
     // Make the pre-cancel queue contain >highWater entries so the sink
     // awaits drain when the next onPage fires.
