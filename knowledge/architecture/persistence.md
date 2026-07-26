@@ -5,9 +5,13 @@ description: The eleven Drift/SQLite databases, how connections are opened and m
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
 stale_after: 2027-01-11
 sources:
+  - id: private-gate
+    resource: ../../lib/database/database_config_flags.dart
+    title: Config-flag cache and the private-visibility gate
+    last_modified: 2026-06-08
   - id: db-common
     resource: ../../lib/database/common.dart
     title: openDbConnection, pragmas, backups
@@ -163,6 +167,29 @@ Picking the right stream is a correctness decision, not a preference:
 Notifications are **batched** — 100 ms for local writes, 1 s for sync arrivals —
 so a bulk import or a sync catch-up produces a handful of rebuilds rather than
 thousands.
+
+# Every read passes a private-visibility gate
+
+`_JournalDbConfigFlags` in `lib/database/database_config_flags.dart` owns the
+in-memory config-flag cache **and** the `private` visibility gate that every
+`JournalDb` query mixin routes through, via `_queryWithPrivateFilter`.
+
+```mermaid
+flowchart TD
+  Q["a JournalDb read"] --> G["_queryWithPrivateFilter"]
+  G --> F{"config flag 'private' on?"}
+  F -->|yes| All["allPrivate() — the unfiltered query"]
+  F -->|no| Filt["filtered([false]) — non-private rows only"]
+```
+
+Two consequences worth holding on to:
+
+- **The gate is a read filter, not encryption.** A private entry is stored exactly
+  like any other; flipping the flag off hides it from queries and nothing more. See
+  [security and privacy](security-and-privacy.md).
+- **Every query mixin has to route through it.** A new read that queries the
+  journal tables directly bypasses the gate silently — there is no compile-time
+  obligation to use it, and a leaked private entry looks like a working query.
 
 # Backups and maintenance
 

@@ -9,6 +9,11 @@
   relationships, the CI story and the build-runner trap. Four `lib/` READMEs were
   wrong too, and `memory-and-compaction`'s subject pointed at a directory holding
   one unrelated file.
+* **Creation**: Documented three things the bundle had no home for — the
+  `private` visibility gate every `JournalDb` read routes through (a filter, not
+  a protection), `TaskStatus`'s five states and the fact that *nothing* constrains
+  their transitions, and which nine of `lib/widgets/`'s sixteen groups the
+  shared-widgets concept does not cover.
 * **Update**: Added diagrams to the seven concepts whose subject has a shape
   prose cannot carry — the `JournalEntity` union, the `linked_entries` row, the
   projection kernel's permutation invariance, the idle gate's state machine, the

@@ -5,7 +5,7 @@ description: What is encrypted, what is not, where secrets live, and what leaves
 resource: ../..
 tags: [architecture, security, privacy, encryption, secure-storage]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: secure-storage
@@ -39,6 +39,12 @@ Matrix account is needed only for multi-device sync, and Matrix is decentralized
 **Nothing leaves the device without a user action.** Journal content reaches a
 network only on two paths: end-to-end encrypted sync to the user's own devices,
 and AI inference the user configured and triggered.
+
+**"Private" is a read filter, not a protection.** Marking an entry private hides
+it from queries while the `private` config flag is off — the row is stored like
+any other, and every read routes through the gate described in
+[persistence](persistence.md#every-read-passes-a-private-visibility-gate). Treat
+it as a shoulder-surfing affordance, not a security boundary.
 
 **The caveat: the SQLite databases are not encrypted at rest.** There is no
 SQLCipher in the dependency set. On-disk protection relies on OS-level

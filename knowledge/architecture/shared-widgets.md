@@ -5,7 +5,7 @@ description: "The widgets that belong to no single feature — app-bar chrome, m
 resource: ../../lib/widgets
 tags: [widgets, shared, modals, selection]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T04:45:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: src
@@ -33,6 +33,12 @@ composition and app-shell chrome.
 
 **Buttons are not here.** They all come from `DesignSystemButton` and its
 relatives.
+
+**That table is the documented subset, not the directory listing.** `lib/widgets/`
+holds sixteen groups; the nine not described above — `cards/`, `charts/`,
+`create/`, `date_time/`, `flags/`, `form/`, `media/`, `search/`, `ui/` — are
+undocumented here. Read them directly, and do not infer from this concept that a
+widget has no shared home just because it is absent.
 
 # Modal presentation is mostly centralized
 

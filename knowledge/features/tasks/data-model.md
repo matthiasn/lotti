@@ -5,7 +5,7 @@ description: What TaskData carries, the two boundaries it deliberately excludes,
 resource: ../../../lib/classes/task.dart
 tags: [tasks, domain, progress, estimates]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
 stale_after: 2027-01-25
 sources:
   - id: task
@@ -23,6 +23,21 @@ sources:
 Tasks are the `Task` journal-entity variant with `TaskData`, which carries title,
 status, priority, estimate, due date, checklist ids, cover-art id, language
 preference, inference profile id, and AI-suppressed label ids.
+
+# `TaskStatus` is five states with no enforced transitions
+
+The sealed `TaskStatus` union in `lib/classes/task.dart` has five variants:
+`open`, `groomed`, `inProgress`, `blocked`, `onHold`.
+
+**Nothing in the code restricts which status may follow which.** There is no
+transition table, no guard, and no validation — a task can go from `onHold`
+straight to `inProgress`, or back to `open`, and the write succeeds. So there is
+deliberately no state diagram here: drawing one would invent a machine the code
+does not implement.
+
+What *is* derived rather than stored is **blockedness**, which comes from live
+`blocks` links at read time and is independent of the `blocked` status value — the
+two can disagree. See [typed relationships](relationships.md).
 
 **Two boundaries are deliberate:**
 
