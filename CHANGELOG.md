@@ -48,6 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **A plan no longer treats work of unknown length as free.** When deciding
+  what fits in a day, the planner is now shown how long each task you approved
+  is expected to take — it previously had to find that elsewhere, and on many
+  plans could not see it at all, so it packed in more than the day held. Tasks
+  with no estimate are marked as unsized rather than counted as taking no time.
 - **Saying "nothing to do today" no longer fails.** When you spoke a note with
   nothing actionable in it, the assistant worked that out correctly and then had
   no way to say so — the app rejected the answer, and it had to either invent a

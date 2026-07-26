@@ -1500,6 +1500,30 @@ void main() {
         expect(result.single.estimateMinutes, 240);
       });
 
+      test('a zero estimate reads as unsized, not as free', () async {
+        // Both creation paths store Duration.zero rather than null for an
+        // unestimated task, so passing inMinutes straight through would tell
+        // the model the work costs nothing — worse than omitting it, since
+        // the capacity rule would total it as free.
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {
+            'task-1': _task(
+              id: 'task-1',
+              title: 'Unsized work',
+              estimate: Duration.zero,
+            ),
+          },
+        );
+
+        final result = await createService().hydrateDecidedTasks(
+          allowedCategoryIds: const {'work', 'life'},
+          explicitTaskIds: const ['task-1'],
+        );
+
+        expect(result.single.estimateMinutes, isNull);
+        expect(result.single.toJson().containsKey('estimateMinutes'), isFalse);
+      });
+
       test('omits status entirely without a dependency resolver', () async {
         when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
           (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},

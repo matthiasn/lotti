@@ -240,7 +240,7 @@ class DayAgentPlanEditor {
             id: task.id,
             title: task.data.title,
             categoryId: task.meta.categoryId,
-            estimateMinutes: task.data.estimate?.inMinutes,
+            estimateMinutes: _estimateMinutesOf(task),
           ),
       ];
     }
@@ -255,9 +255,22 @@ class DayAgentPlanEditor {
           categoryId: task.meta.categoryId,
           status: task.data.status.toDbString,
           blockedBy: blockedBy[task.id] ?? const [],
-          estimateMinutes: task.data.estimate?.inMinutes,
+          estimateMinutes: _estimateMinutesOf(task),
         ),
     ];
+  }
+
+  /// A task's estimate in minutes, or null when it has none.
+  ///
+  /// Zero counts as none. Both creation paths store `Duration.zero` rather
+  /// than null for an unestimated task (`create_entry.dart`, and
+  /// `createTaskFromPhrase` when the model supplies no estimate), so passing
+  /// `inMinutes` straight through would tell the model that unsized work
+  /// costs nothing — actively worse than omitting it, since the capacity
+  /// rule would then total it as free.
+  int? _estimateMinutesOf(Task task) {
+    final minutes = task.data.estimate?.inMinutes;
+    return minutes == null || minutes <= 0 ? null : minutes;
   }
 
   /// Blocked-work state for tasks an earlier draft already scheduled.
