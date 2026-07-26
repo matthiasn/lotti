@@ -11,17 +11,26 @@ import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 /// The trailing rail every row on the linked-tasks card reserves.
 ///
-/// Both axes, not just the width: manage mode occupies two step9 boxes, so
-/// reserving only the width still let rows grow taller on toggle and the card
-/// jump with them. [child] is boxed like an action rather than pinned to the
-/// edge, so a chevron lands on the same vertical line the unlink button
-/// occupies. Shared with the empty card so its rail cannot drift from the
-/// populated one.
+/// Both axes, not just the width: manage mode occupies two action boxes of the
+/// same height, so reserving only the width would let rows grow taller on
+/// toggle and the card jump with them.
+///
+/// step7 tall, not step9. A step9 rail is the list item's whole content box,
+/// and the item's own step3 padding then lands *outside* it — putting every row
+/// at 68pt for a chevron that is not even a tap target, since the whole row is.
+/// The rail carries the height the row's content actually needs; the breathing
+/// room around it is the list item's job, not this box's. Row height lands at
+/// 52pt: content 32, plus the item's 2x step3 padding and its 2x step1 focus
+/// border.
+///
+/// [child] is boxed like an action rather than pinned to the edge, so a chevron
+/// lands on the same vertical line the unlink button occupies. Shared with the
+/// empty card so its rail cannot drift from the populated one.
 Widget linkedRowTrailingRail(BuildContext context, {required Widget child}) {
   final tokens = context.designTokens;
   return SizedBox(
     width: tokens.spacing.step9 * 2,
-    height: tokens.spacing.step9,
+    height: tokens.spacing.step7,
     child: Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -229,11 +238,20 @@ class LinkedTaskRow extends StatelessWidget {
   }
 }
 
-/// One manage-mode action on a [LinkedTaskRow]. A fixed `step9` box so the
-/// trailing rail keeps one width whether the row shows actions or a chevron,
-/// with a 48pt hit area — the Material minimum, and above Apple's 44pt. The
-/// previous `step8` box was 40pt, under both, on controls sitting in adjacent
-/// pairs above a row that is itself tappable.
+/// One manage-mode action on a [LinkedTaskRow]. `step9` wide, so the trailing
+/// rail keeps one width whether the row shows actions or a chevron, and `step7`
+/// tall to match [linkedRowTrailingRail] — rows must not change height when the
+/// mode is toggled.
+///
+/// 48x32, not the 48x48 square this was: the square is the list item's entire
+/// content box, so the row's own padding stacked on top of it and every row —
+/// in both modes — cost 68pt. The full Material minimum is kept on the axis
+/// where these two actions are told apart, since they sit side by side and a
+/// horizontal mis-tap is the one that fires the wrong action. Vertically the
+/// row's step3 padding sits immediately above and below each button and belongs
+/// to the row's own tap target, so a high or low tap opens the task rather than
+/// landing on nothing. Do not take the width below `step9`: an earlier 40pt
+/// square was under the minimum on both axes at once.
 class _RowAction extends StatelessWidget {
   const _RowAction({
     required this.tooltip,
@@ -266,7 +284,7 @@ class _RowAction extends StatelessWidget {
       // the mode resizes every row on the card.
       constraints: BoxConstraints.tightFor(
         width: tokens.spacing.step9,
-        height: tokens.spacing.step9,
+        height: tokens.spacing.step7,
       ),
       icon: Icon(
         icon,

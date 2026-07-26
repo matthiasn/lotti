@@ -263,11 +263,14 @@ class _LinkedTasksHeader extends ConsumerWidget {
     return InkWell(
       onTap: onToggleExpanded,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          tokens.spacing.step5,
-          tokens.spacing.step3,
-          tokens.spacing.step5,
-          tokens.spacing.step3,
+        // step2 vertically, not step3: the row's height is set by the overflow
+        // button's own 48pt target, so this padding is added on top of a
+        // control that is already at its minimum — it buys the header nothing
+        // but height. What is left still keeps the title clear of the card's
+        // top edge and of the first section label below it.
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step5,
+          vertical: tokens.spacing.step2,
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
