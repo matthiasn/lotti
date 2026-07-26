@@ -1,6 +1,15 @@
 # Knowledge Bundle Update Log
 
 ## 2026-07-26
+* **Update**: Added diagrams to the seven concepts whose subject has a shape
+  prose cannot carry — the `JournalEntity` union, the `linked_entries` row, the
+  projection kernel's permutation invariance, the idle gate's state machine, the
+  wake prompt's stability bands, dashboard item dispatch, and theming's
+  arrival-based sync. 69 of 88 concepts now carry at least one.
+* **Fix**: Repaired three Mermaid diagrams that did not parse and one closing
+  fence with prose welded to it, which had been rendering the tail of a concept
+  as code. The validator now fails on an unclosed fence; Mermaid syntax itself
+  still needs the out-of-band parse check documented in the convention.
 * **Update**: Raised the house-rule metadata checks from warnings to errors, so
   a concept missing a description, a freshness date or code provenance now fails
   CI rather than being reported and ignored. What stays a warning is what OKF is

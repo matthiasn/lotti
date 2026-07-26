@@ -50,13 +50,47 @@ a multi-line value cannot fabricate a section.
 # Ordering is stable → volatile
 
 Sections are ordered to maximise the cacheable prompt prefix for local KV-cache
-and provider prefix-cache reuse:
+and provider prefix-cache reuse. `DayAgentContextBuilder` appends them in exactly
+this order, and a section with no content is **omitted rather than reordered or
+emitted empty** — so the bands below always nest the same way:
 
-```text
-day_id · plan_date · knowledge_index · day_log · attention_planning ·
-knowledge_statements · recent_days · week_ahead · <per-wake mode section> ·
-recent_observations · trigger_tokens · current_local_time
+```mermaid
+flowchart TD
+  subgraph Prefix["Byte-stable prefix — reusable across every wake in the day"]
+    direction TB
+    A1["day_id"] --> A2["plan_date"]
+    A2 --> A3["knowledge_index<br/>tier 1 — hook index, scope-independent"]
+    A3 --> A4["day_directive<br/>coordinator's ledger, stable within a revision"]
+    A4 --> A5["day_log<br/>compacted; the section the wake record splices around"]
+    A5 --> A6["day_entries<br/>recording receipts, newest 32, truncation marked"]
+  end
+
+  subgraph DayStable["Day-stable"]
+    B1["attention_planning<br/>claims and agreements"]
+  end
+
+  subgraph PerWake["Per-wake — varies with what this wake touches"]
+    direction TB
+    C1["knowledge_statements<br/>tier 2 — filtered to this wake's scopes"]
+    C1 --> C2["recent_days"]
+    C2 --> C3["week_ahead"]
+    C3 --> C4["capture | drafting | refine<br/>only the mode that owns the wake"]
+    C4 --> C5["recent_weeks · digest<br/>digest wakes only"]
+    C5 --> C6["recent_observations<br/>only while no compacted log exists"]
+  end
+
+  subgraph Tail["Volatile tail"]
+    direction TB
+    D1["trigger_tokens<br/>sorted, so set order never churns"] --> D2["current_local_time"]
+  end
+
+  A6 --> B1 --> C1
+  C6 --> D1
 ```
+
+Read top to bottom, each band is more volatile than the one above it, and the
+cost of a cache miss falls as you descend — which is the whole reason for the
+order.
 
 **The two knowledge tiers are split by stability.** The always-on
 `knowledge_index` — global and slow-changing — leads the prefix *before* the
@@ -68,6 +102,13 @@ prefix behind it.
 Week context trails the knowledge statements because the today-so-far line churns
 with tracked time. `current_local_time` sits last and lets same-day drafting
 distinguish future plan slots from time that has already passed.
+
+**`day_entries` is a bounded index, not a log.** It carries recording receipts so
+a later wake can recover a completed offline check-in immediately, capped at the
+newest 32 with the omitted count rendered explicitly rather than silently — it
+sits high in the prefix, ahead of everything else, so a heavy capture day must
+not be allowed to inflate it. Anything that grows this section pushes the whole
+per-wake band out of cache.
 
 ## Prompt-record splice
 

@@ -32,6 +32,32 @@ the last message *received*, and any inbound message not older than it wins over
 local pick made a second ago. Two devices changing theme concurrently converge on
 whichever message lands last, not on whichever choice was made last.
 
+```mermaid
+flowchart TD
+  subgraph Local["Local pick"]
+    Pick["setLightTheme / setDarkTheme /<br/>onThemeSelectionChanged"]
+    Pick --> SaveVal["SettingsDb: write the value key only"]
+    SaveVal --> Deb["debounce 250 ms"]
+    Deb --> Enq["enqueue SyncMessage.themingSelection<br/>updatedAt = now"]
+    SaveVal -.->|"never advances"| TS[("THEME_PREFS_UPDATED_AT")]
+  end
+
+  subgraph Inbound["Inbound apply"]
+    Msg["SyncThemingSelection(updatedAt)"] --> Cmp{"updatedAt < THEME_PREFS_UPDATED_AT ?"}
+    Cmp -->|yes| Drop["ignore — logs themingSync.ignored.stale"]
+    Cmp -->|"no (including equal)"| Apply["write light + dark + mode,<br/>then set THEME_PREFS_UPDATED_AT = updatedAt"]
+    Apply --> Notify["notify settingsNotification, fromSync: true"]
+  end
+
+  Enq -->|"to peers"| Msg
+  Apply --> TS
+```
+
+The dotted edge is the whole asymmetry: only an **apply** advances the timestamp,
+so the guard compares an incoming message against the last message *received*
+rather than against the local choice. A device that has never received one holds
+`0` and therefore accepts anything.
+
 It is a benign asymmetry for a preference this cheap to re-pick, and it is the
 reason the stale check exists at all: it stops a delayed message from undoing a
 newer one, which is the failure that would actually be noticed.

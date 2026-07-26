@@ -35,7 +35,7 @@ sequenceDiagram
   Runner->>Provider: inference request
   Provider-->>Runner: response + usage/reported impact
   Runner->>Attr: recordInteraction(digests + metadata)
-  Attr->>Sync: persist; enqueue best effort
+  Attr->>Sync: persist, then enqueue best effort
   Runner->>Attr: prepareCompletion(output reference)
   Runner->>Journal: persist carrier with attribution
   Runner->>Attr: finalize local projection

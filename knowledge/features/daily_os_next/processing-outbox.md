@@ -139,7 +139,7 @@ sequenceDiagram
   Wake-->>Executor: runCompletions event (completed/failed/aborted)
   Executor->>Outbox: markSucceeded(resultEntityId) / markFailure(class)
   Outbox-->>UI: changes stream fires
-  UI->>UI: _awaitJobTerminal resolves; project plan/diff
+  UI->>UI: _awaitJobTerminal resolves, then projects plan/diff
 ```
 
 `DayAgentJobExecutor`:

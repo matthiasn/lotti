@@ -31,6 +31,36 @@ existing `type = 'BasicLink'` consumer — recorded-time attribution, capture
 attachment, the generic linked-entries list — stays **structurally blind** to
 typed edges. Typed relationships were added without migrating a single consumer.
 
+```mermaid
+erDiagram
+  JOURNAL_ENTITY ||--o{ LINKED_ENTRIES : "from_id"
+  JOURNAL_ENTITY ||--o{ LINKED_ENTRIES : "to_id"
+
+  LINKED_ENTRIES {
+    TEXT id PK "NOT NULL UNIQUE"
+    TEXT from_id "indexed — the canonical source"
+    TEXT to_id "indexed — the canonical target"
+    TEXT type "indexed — the whole relationship"
+    TEXT serialized "the EntryLink variant as JSON"
+    BOOLEAN hidden "DEFAULT FALSE"
+    DATETIME created_at
+    DATETIME updated_at
+  }
+```
+
+`UNIQUE(from_id, to_id, type)` is what lets one pair hold several different
+relationships while keeping each one singular.
+
+**Only these columns are queryable.** Everything else an `EntryLink` carries —
+`vectorClock`, `collapsed`, `deletedAt` — lives inside `serialized`.
+
+That is a real constraint, not an encoding detail: **a soft-deleted link cannot be
+excluded in SQL.** `TaskDependencyResolver`, `TaskBlockersController` and
+`TaskLinkGroupsController` each filter `deletedAt != null` in Dart, after
+deserializing every row the query returned, because there is no column to filter
+on. Any new link consumer inherits the same obligation — and forgetting it means
+silently treating removed relationships as live.
+
 # One row per relationship
 
 "Is blocked by" and "has follow-up" are **rendering labels for the reverse

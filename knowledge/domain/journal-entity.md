@@ -32,6 +32,60 @@ substrate rather than a note-taking screen: create, browse, search, link, focus
 and delete are implemented **once** over the union, and each variant contributes
 its own detail widget.
 
+```mermaid
+classDiagram
+  class JournalEntity {
+    <<Freezed union — 16 variants>>
+    Metadata meta
+  }
+  class Metadata {
+    String id
+    DateTime createdAt
+    DateTime updatedAt
+    DateTime dateFrom
+    DateTime dateTo
+    String? categoryId
+    List~String~? labelIds
+    int? utcOffset
+    String? timezone
+    VectorClock? vectorClock
+    DateTime? deletedAt
+    EntryFlag? flag
+    bool? starred
+    bool? private
+  }
+  JournalEntity *-- Metadata : every variant carries one
+
+  JournalEntity <|-- JournalEntry
+  JournalEntity <|-- JournalImage
+  JournalEntity <|-- JournalAudio
+  JournalEntity <|-- Task
+  JournalEntity <|-- Event
+  JournalEntity <|-- Checklist
+  JournalEntity <|-- ChecklistItem
+  JournalEntity <|-- Quantitative
+  JournalEntity <|-- MeasurementEntry
+  JournalEntity <|-- AiResponseEntry
+  JournalEntity <|-- WorkoutEntry
+  JournalEntity <|-- HabitCompletionEntry
+  JournalEntity <|-- SurveyEntry
+  JournalEntity <|-- DayPlanEntry
+  JournalEntity <|-- RatingEntry
+  JournalEntity <|-- ProjectEntry
+
+  Task o-- TaskData : payload
+  Event o-- EventData : payload
+  JournalAudio o-- AudioData : payload
+  MeasurementEntry o-- MeasurementData : payload
+  DayPlanEntry o-- DayPlanData : payload
+
+  note for Metadata "The envelope is uniform.\nOnly the payload differs per variant."
+```
+
+The diagram names the *shape*, not every payload class — `TaskData`, `EventData`,
+`AudioData`, `MeasurementData` and `DayPlanData` stand in for the full set listed
+under [where variant data lives](#where-variant-data-lives).
+
 **It is not every piece of user data**, and the boundary matters for anything that
 walks the whole dataset. What the user *configures* — categories, labels, habits,
 dashboards, measurable types — is

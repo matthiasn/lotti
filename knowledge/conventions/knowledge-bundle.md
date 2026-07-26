@@ -185,6 +185,11 @@ House rules — OKF grades these `SHOULD`, this repo does not:
   pull on a reference that points outward.
 - A root `index.md` that declares no `okf_version`, or declares one this
   validator does not implement.
+- **A fenced block that never closes on a line of its own.** CommonMark accepts a
+  closing fence only when nothing else is on the line, so ```` ``` and then
+  prose ```` leaves the block open and renders the rest of the page as code. This
+  shipped once, in a mermaid diagram, and the link scanner did not notice because
+  it is deliberately looser about where a block ends.
 
 **Warnings** — reported, not fatal:
 
@@ -202,6 +207,31 @@ House rules — OKF grades these `SHOULD`, this repo does not:
 Run `dart run tool/okf/validate.dart --warnings-as-errors` to treat everything
 as fatal. `make okf_check` does not, so that an expired concept or a forward
 link never blocks an unrelated change.
+
+# Diagrams
+
+Use Mermaid generously, and **diagram the lifecycle when the code has one** —
+prefer `stateDiagram-v2`, and never draw a state the code does not implement.
+A diagram earns its place by carrying what prose cannot: an ordering, a fork, a
+band of stability. A box-per-paragraph restatement does not.
+
+**The validator does not parse Mermaid**, so a syntactically broken diagram
+reaches the reader as an error box. Three did. Two traps account for all of them:
+
+- **`;` is a statement separator**, in every diagram type. A semicolon inside a
+  label ends the statement there and the remainder parses as garbage. Use a
+  comma.
+- **A second `:` breaks a `stateDiagram-v2` transition label.** `x := y` reads as
+  a new label boundary. Say "becomes" instead.
+
+To check every block for real, parse them with Mermaid itself:
+
+```bash
+npm install mermaid jsdom   # in a scratch directory, not the repo
+```
+
+then load each ```` ```mermaid ```` block from `knowledge/` and call
+`mermaid.parse` on it under jsdom. That catches what CI currently cannot.
 
 # Structure
 

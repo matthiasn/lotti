@@ -245,6 +245,60 @@ final _fencedBlockPattern = RegExp(
 );
 final _inlineCodePattern = RegExp(r'`[^`\n]*`');
 
+/// Reports a fenced code block that never closes on a line of its own.
+///
+/// CommonMark accepts a closing fence only when the line carries nothing but the
+/// delimiter, so ```` ``` and then prose ```` does **not** close the block: every
+/// remaining line of the concept renders as code. That shipped once — a mermaid
+/// diagram whose closing fence had a sentence welded to it swallowed the rest of
+/// the page — and nothing caught it, because [stripCodeSpans] is deliberately
+/// looser about where a block ends and treated the same line as a close.
+///
+/// Line numbers are relative to the whole file, so callers pass the raw content
+/// rather than [OkfDocument.body].
+List<OkfIssue> validateFencedBlocks(String path, String content) {
+  final lines = content.split('\n');
+  String? opener;
+  var openedAt = 0;
+  for (var i = 0; i < lines.length; i++) {
+    final trimmed = lines[i].trimLeft().trimRight();
+    if (opener == null) {
+      final match = _fenceOpenPattern.firstMatch(trimmed);
+      if (match != null) {
+        opener = match.group(1);
+        openedAt = i + 1;
+      }
+      continue;
+    }
+    if (_closesFence(trimmed, opener)) opener = null;
+  }
+  if (opener == null) return const [];
+  return [
+    OkfIssue(
+      severity: _houseRule,
+      path: path,
+      line: openedAt,
+      message:
+          'fenced block opened with `$opener` is never closed by a line '
+          'containing only the delimiter, so the rest of the file renders as '
+          'code',
+    ),
+  ];
+}
+
+final _fenceOpenPattern = RegExp('^(`{3,}|~{3,})');
+
+/// Whether [trimmed] is a valid closing fence for a block opened by [opener]:
+/// the same delimiter character, at least as long, and nothing else on the line.
+bool _closesFence(String trimmed, String opener) {
+  if (trimmed.length < opener.length) return false;
+  final char = opener[0];
+  for (var i = 0; i < trimmed.length; i++) {
+    if (trimmed[i] != char) return false;
+  }
+  return true;
+}
+
 /// Blanks out fenced blocks and inline code so link scanning never treats a
 /// documented link *form* — `` `[Title](/tasks/<taskId>)` `` — as a real link
 /// the bundle must resolve. Replacing rather than deleting keeps byte offsets
@@ -488,6 +542,7 @@ List<OkfIssue> _validateConcept(
     ..addAll(_validateSources(path, frontmatter))
     ..addAll(_validateAttestedComputation(path, frontmatter, document.body))
     ..addAll(_validateBundleLinks(path, document.body, knownPaths))
+    ..addAll(validateFencedBlocks(path, content))
     ..addAll(
       _validateBundleResources(path, document.frontmatterYaml, knownPaths),
     )
@@ -1005,7 +1060,9 @@ List<OkfIssue> _validateIndex(
     );
   }
 
-  issues.addAll(_validateBundleLinks(path, document.body, knownPaths));
+  issues
+    ..addAll(_validateBundleLinks(path, document.body, knownPaths))
+    ..addAll(validateFencedBlocks(path, content));
   return issues;
 }
 
@@ -1021,7 +1078,9 @@ List<OkfIssue> _validateLog(
   // bundle-internal links nothing checked — the repo pass covers its `../../lib`
   // pointers, but a renamed concept left a dead `[x](features/x/overview.md)`
   // here in silence.
-  issues.addAll(_validateBundleLinks(path, document.body, knownPaths));
+  issues
+    ..addAll(_validateBundleLinks(path, document.body, knownPaths))
+    ..addAll(validateFencedBlocks(path, content));
   if (document.frontmatterYaml != null) {
     issues.add(
       OkfIssue(

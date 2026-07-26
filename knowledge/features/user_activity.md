@@ -21,6 +21,36 @@ processing.
 It is what lets other parts of the app ask two questions: *is the user actively
 doing things right now*, and *wait until they have been idle for a bit*.
 
+```mermaid
+stateDiagram-v2
+    [*] --> Deciding: UserActivityGate constructed
+    Deciding --> Idle: now - lastActivity >= idleThreshold
+    Deciding --> Busy: otherwise, timer set for the remainder
+
+    Busy --> Idle: idle timer elapses
+    Idle --> Busy: any activity event
+
+    Busy --> Busy: activity event — timer restarts from full threshold
+
+    note right of Idle
+      canProcess == true
+      waitUntilIdle() returns immediately
+    end note
+    note right of Busy
+      canProcess == false
+      waitUntilIdle() awaits the next true
+    end note
+```
+
+Two details of that machine matter to a caller:
+
+- **Activity restarts the full threshold, it does not extend the remainder.** A
+  user typing steadily holds the gate closed indefinitely, because every keystroke
+  resets the timer to the whole `idleThreshold`.
+- **`canProcessStream` is `.distinct()`.** Listeners see only real idle↔busy
+  flips, never the repeated internal writes — so a caller cannot use the stream to
+  count activity.
+
 # Who waits on it
 
 Every consumer today is in [sync](sync/):
@@ -37,9 +67,12 @@ idle, so day transcription and agent wakes can compete with active interaction.
 That is a real difference from sync, not an omission in this document — wiring
 the gate in would be a behaviour change, not a docs fix.
 
-The idle threshold is a single tuning constant
-(`SyncTuning.outboxIdleThreshold`), wired at registration time in
-[bootstrap](../architecture/bootstrap-and-di.md).
+The idle threshold is a single tuning constant —
+`SyncTuning.outboxIdleThreshold`, **1200 ms** — passed in at registration time in
+[bootstrap](../architecture/bootstrap-and-di.md) and again where `OutboxService`
+builds its own gate. `UserActivityGate` also carries a 1 s constructor default,
+which nothing in the app uses; **1200 ms is the live value**, and the default is
+only what a test or a new caller gets by omission.
 
 # Why a gate rather than a check
 

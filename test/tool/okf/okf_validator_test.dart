@@ -908,6 +908,70 @@ sources:
     });
   });
 
+  group('fenced blocks must close on their own line', () {
+    // The shape that shipped: a mermaid diagram whose closing fence had a
+    // sentence welded to it. CommonMark does not accept that as a close, so
+    // every remaining line of the concept rendered as code — and the link
+    // scanner, which is looser about where a block ends, saw nothing wrong.
+    test('a closing fence with prose after it does not close the block', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            body: '```mermaid\nflowchart TD\n  A --> B\n``` and then prose.\n',
+          ),
+        ),
+      );
+
+      expect(
+        result.errors.single.message,
+        contains('is never closed by a line containing only the delimiter'),
+      );
+      // Whole-file line, not body-relative: 11 lines of frontmatter, a blank,
+      // then the opening fence — so the reported number is the one an editor
+      // jumps to.
+      expect(result.errors.single.line, 13);
+    });
+
+    test('a properly closed block is silent', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            body: '```mermaid\nflowchart TD\n  A --> B\n```\n\nProse.\n',
+          ),
+        ),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a longer closing fence closes a shorter opener', () {
+      final result = validateBundle(
+        _bundle(_concept(body: '```dart\nvar x = 1;\n`````\n')),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a tilde block is not closed by backticks', () {
+      final result = validateBundle(
+        _bundle(_concept(body: '~~~text\nplain\n```\n')),
+      );
+
+      expect(
+        result.errors.single.message,
+        contains('opened with `~~~`'),
+      );
+    });
+
+    test('an unterminated block at end of file is reported', () {
+      final result = validateBundle(
+        _bundle(_concept(body: '```mermaid\nflowchart TD\n  A --> B\n')),
+      );
+
+      expect(result.errors, hasLength(1));
+    });
+  });
+
   group('reference-style links', () {
     test('a reference definition with no bundle target warns', () {
       final result = validateBundle(

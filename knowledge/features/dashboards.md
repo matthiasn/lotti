@@ -39,17 +39,38 @@ that list, made in the [settings](settings.md) dashboard editor rather than here
 # Item rendering is a matrix
 
 The sealed `DashboardItem` has **five** variants, and `DashboardWidget` switches
-each to one chart widget: `DashboardMeasurementItem` → `MeasurablesBarChart`,
-`DashboardHealthItem` → `DashboardHealthChart`, `DashboardWorkoutItem` →
-`DashboardWorkoutChart`, `DashboardSurveyItem` → `DashboardSurveyChart`,
-`DashboardHabitItem` → `DashboardHabitsChart`. Adding a chart type means extending
-that matrix, not the page.
+each to exactly one chart widget. Adding a chart type means extending that
+matrix, not the page.
 
-Each chart is keyed by **item identity, not range** — `ValueKey('survey:$type')`
-and friends. The charts keep their last data across a range change, so the `State`
-has to follow the item; without identity keys, replacing an item with another of
-the same type at the same index would reuse the old `State` and show the previous
-item's cached data under the new header.
+```mermaid
+flowchart LR
+  Def["DashboardDefinition<br/>an EntityDefinition variant"] --> Items["ordered List of DashboardItem"]
+  Items --> Sw{"DashboardWidget<br/>switch on the sealed variant"}
+
+  Sw -->|DashboardMeasurementItem| M["MeasurablesBarChart<br/>key: measurement:id:aggregationType<br/>enableCreate — opens capture"]
+  Sw -->|DashboardSurveyItem| S["DashboardSurveyChart<br/>key: survey:surveyType<br/>runs CFQ-11 / PANAS / GHQ-12"]
+  Sw -->|DashboardHealthItem| H["DashboardHealthChart<br/>key: health:healthType"]
+  Sw -->|DashboardWorkoutItem| W["DashboardWorkoutChart<br/>key: workout:workoutType:valueType"]
+  Sw -->|DashboardHabitItem| B["DashboardHabitsChart<br/>key: habit:habitId"]
+
+  M --> Write(["writes journal entries"])
+  S --> Write
+  H --> Read(["render only"])
+  W --> Read
+  B --> Read
+```
+
+Each chart is keyed by **item identity, not range**. The charts keep their last
+data across a range change, so the `State` has to follow the item; without
+identity keys, replacing an item with another of the same type at the same index
+would reuse the old `State` and show the previous item's cached data under the new
+header.
+
+**Two of those keys carry a second discriminator**, and it is load-bearing:
+`measurement:id:aggregationType` and `workout:workoutType:valueType`. Changing
+only the aggregation on the same measurable is therefore a different chart
+identity — drop that component and the new aggregation would render against the
+old one's retained data.
 
 **Two of the five can write.** A measurement chart is constructed with
 `enableCreate: true` and opens the capture flow for its data type, and a survey

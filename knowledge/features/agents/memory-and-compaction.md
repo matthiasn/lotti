@@ -308,7 +308,7 @@ stateDiagram-v2
   SingleHead --> Forked: two devices append off the same head (concurrent messagePrev children)
   Forked --> Forked: local view still settling (dangling parent or pending join edges) — defer
   Forked --> Joining: a wake starts and observes ≥2 heads over a complete view
-  Joining --> SingleHead: appendJoin (messagePrev → all heads); recentHeadMessageId := joinId; prefix re-warms
+  Joining --> SingleHead: appendJoin (messagePrev → all heads), recentHeadMessageId becomes joinId, prefix re-warms
   Joining --> SingleHead: peer emitted the same joinId concurrently → set-union merges to one node
 ```
 

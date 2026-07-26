@@ -27,6 +27,44 @@ The thesis it proves:
 design is real** — which is why this exists as its own testable kernel rather than
 as logic scattered through the wake path.
 
+```mermaid
+flowchart TD
+  subgraph Inputs["The same event set, two arrival orders"]
+    A["Device A received: e3, e1, e2"]
+    B["Device B received: e1, e2, e3"]
+  end
+
+  A --> CO["canonicalOrder(events)"]
+  B --> CO
+
+  CO --> Dup{"two distinct events<br/>share an id?"}
+  Dup -->|yes| DupEx["throw DuplicateEventIdException"]
+  Dup -->|no| Kahn["Kahn topological sort over causalParents<br/>ready set ordered by (hostId, id)"]
+
+  Kahn --> Stuck{"every event emitted?"}
+  Stuck -->|no — edges form a cycle| CycEx["throw ProjectionCycleException"]
+  Stuck -->|yes| Ordered["one canonical linear extension"]
+
+  Ordered --> Fold["project(ordered)"]
+  Fold --> Result["AgentProjection<br/>headIds · latestReportId · danglingParentIds"]
+
+  Result --> Equal(["Both devices compute an equal AgentProjection"])
+```
+
+Three properties of that pipeline carry the whole design:
+
+- **The tie-break is total.** Among events whose present parents are all emitted,
+  the smallest `(hostId, id)` goes next — so concurrent branches, which the partial
+  order leaves genuinely unordered, still linearise identically everywhere.
+- **A dangling parent is not an error.** A `causalParents` id that is absent from
+  the input — a partial sync window, or a parent compacted away — imposes no edge,
+  so the event is treated as a root and the id is reported in
+  `danglingParentIds`. It never throws.
+- **The fold reads only structure.** `headIds`, `latestReportId` and
+  `danglingParentIds` come from event ids, `kind` and the parent graph — never
+  from vector clocks or wall-clock time. Nothing in the output can depend on when
+  an event happened to arrive.
+
 It is the foundation under [state-as-projection and fork
 healing](memory-and-compaction.md): multi-head tolerance is only safe if
 the fold cannot depend on which head arrived first.
