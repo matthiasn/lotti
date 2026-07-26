@@ -187,8 +187,13 @@ final _logDateHeadingPattern = RegExp(r'^##\s+(.+?)\s*$');
 // space>)`). The bracketed form exists precisely to carry whitespace, so a
 // whitespace-free character class silently misses it — and with it any dangling
 // pointer written that way.
+// The title is optional and CommonMark allows three quotings — `"t"`, `'t'` and
+// `(t)`. Accepting only the double-quoted form left `[impl](../../lib/gone.dart
+// 'source')` matching nothing at all, so the dangling pointer inside it was
+// never even offered for checking.
 final _markdownLinkPattern = RegExp(
-  r'\[[^\]]*\]\(\s*(?:<([^>]*)>|([^)\s]+))(?:\s+"[^"]*")?\s*\)',
+  r'\[[^\]]*\]\(\s*(?:<([^>]*)>|([^)\s]+))'
+  r'''(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)''',
 );
 // Reference-style link definitions: `[label]: target "optional title"`. A
 // reference link (`[text][label]`) carries no target of its own, so scanning
@@ -230,15 +235,44 @@ final _inlineCodePattern = RegExp(r'`[^`\n]*`');
 /// the bundle must resolve. Replacing rather than deleting keeps byte offsets
 /// stable for any future line reporting.
 String stripCodeSpans(String markdown) {
-  return markdown
-      .replaceAllMapped(
-        _fencedBlockPattern,
-        (m) => ' ' * m.group(0)!.length,
-      )
-      .replaceAllMapped(
-        _inlineCodePattern,
-        (m) => ' ' * m.group(0)!.length,
-      );
+  final withoutFences = markdown.replaceAllMapped(
+    _fencedBlockPattern,
+    (m) => ' ' * m.group(0)!.length,
+  );
+  return _stripIndentedBlocks(withoutFences).replaceAllMapped(
+    _inlineCodePattern,
+    (m) => ' ' * m.group(0)!.length,
+  );
+}
+
+/// Blanks four-space (or tab) indented code blocks.
+///
+/// Markdown renders these as code, so a link form documented inside one is not a
+/// live pointer. Missing them produced the one failure mode worse than a missed
+/// dangling link: `make okf_check` failing on a link that never rendered, which
+/// blocks a correct change.
+///
+/// An indented block only starts after a blank line — otherwise the indentation
+/// is a list-item or paragraph continuation, where links *are* live.
+String _stripIndentedBlocks(String markdown) {
+  final lines = markdown.split('\n');
+  var previousBlank = true;
+  var inBlock = false;
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    final blank = line.trim().isEmpty;
+    final indented = line.startsWith('    ') || line.startsWith('\t');
+    if (!inBlock && indented && previousBlank) {
+      inBlock = true;
+    } else if (inBlock && !indented && !blank) {
+      inBlock = false;
+    }
+    if (inBlock && !blank) {
+      lines[i] = ' ' * line.length;
+    }
+    previousBlank = blank;
+  }
+  return lines.join('\n');
 }
 
 /// Every link target in [body]: inline `[a](b)` plus reference definitions.
@@ -300,7 +334,7 @@ OkfValidationResult validateBundle(Map<String, String> files) {
       continue;
     }
     if (filename == 'log.md') {
-      issues.addAll(_validateLog(path, content));
+      issues.addAll(_validateLog(path, content, knownPaths));
       continue;
     }
 
@@ -387,6 +421,36 @@ List<OkfIssue> _validateConcept(
           message:
               'frontmatter is missing `$key`, which this bundle asks every '
               'concept to carry',
+        ),
+      );
+      continue;
+    }
+    // Presence alone was the whole test, so `generated:` with nothing after the
+    // colon — YAML null — satisfied it. The per-field validators below then
+    // treat a null the same as an absent key and stay silent, so an empty
+    // housekeeping field passed clean while carrying no information at all.
+    if (frontmatter[key] == null) {
+      issues.add(
+        OkfIssue(
+          severity: Severity.warning,
+          path: path,
+          message:
+              '`$key` is empty; this bundle asks every concept to carry a '
+              'value for it',
+        ),
+      );
+    }
+  }
+
+  for (final key in const ['title', 'description']) {
+    final value = frontmatter[key];
+    if (value == null) continue; // absent or empty: reported above
+    if (value is! String || value.trim().isEmpty) {
+      issues.add(
+        OkfIssue(
+          severity: Severity.warning,
+          path: path,
+          message: '`$key` must be a non-empty string, got `$value`',
         ),
       );
     }
@@ -625,7 +689,23 @@ List<OkfIssue> _validateAttestedComputation(
     );
   }
 
-  final hasComputationFile = frontmatter['computation'] != null;
+  // §10.3 wants a *path* here. A mere non-null test let `computation: false`,
+  // `computation: []` and `computation: ""` satisfy the file form, so a concept
+  // could claim an attested computation while pointing at nothing followable.
+  final computation = frontmatter['computation'];
+  final hasComputationFile =
+      computation is String && _looksLikePath(computation);
+  if (computation != null && !hasComputationFile) {
+    issues.add(
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message:
+            '`computation` must be a path to the computation definition, got '
+            '`$computation` (§10.3)',
+      ),
+    );
+  }
   final hasComputationHeading = body.contains(
     RegExp(r'^#+\s+Computation\s*$', multiLine: true),
   );
@@ -799,9 +879,19 @@ List<OkfIssue> _validateIndex(
   return issues;
 }
 
-List<OkfIssue> _validateLog(String path, String content) {
+List<OkfIssue> _validateLog(
+  String path,
+  String content,
+  Set<String> knownPaths,
+) {
   final issues = <OkfIssue>[];
   final document = splitDocument(content);
+  // A log entry's whole value is the pointer to what changed, and log.md is the
+  // one file linking concepts most densely. It was the only .md file whose
+  // bundle-internal links nothing checked — the repo pass covers its `../../lib`
+  // pointers, but a renamed concept left a dead `[x](features/x/overview.md)`
+  // here in silence.
+  issues.addAll(_validateBundleLinks(path, document.body, knownPaths));
   if (document.frontmatterYaml != null) {
     issues.add(
       OkfIssue(
@@ -862,17 +952,20 @@ List<OkfIssue> _validateBundleLinks(
 
 /// Checks bundle-internal `sources[].resource` values.
 ///
-/// A resource may be bundle-absolute (`/domain/task.md`, §6.2). Those were
-/// checked by nothing: [validateRepoReferences] skips anything starting with
-/// `/` because for a Markdown link that means "relative to the bundle", and the
-/// body-link scanner never sees frontmatter. This closes that gap.
+/// A resource may be bundle-absolute (`/domain/task.md`, §6.2) or relative
+/// (`./sibling.md`). Both were checked by nothing: [validateRepoReferences]
+/// skips `/`-prefixed targets (for a link that means "relative to the bundle")
+/// and only reports targets that *escape* the bundle, while the body-link
+/// scanner never sees frontmatter at all. Handing every path-shaped resource to
+/// [_validateBundleTargets] closes both halves of that gap — it already skips
+/// escaping targets, leaving them to the repo pass.
 List<OkfIssue> _validateBundleResources(
   String path,
   String? frontmatterYaml,
   Set<String> knownPaths,
 ) => _validateBundleTargets(
   path,
-  _resourceTargets(frontmatterYaml).where((t) => t.startsWith('/')),
+  _resourceTargets(frontmatterYaml),
   knownPaths,
   '`sources[].resource`',
 );
@@ -1000,6 +1093,40 @@ List<OkfIssue> validateRepoReferences({
   return issues;
 }
 
+/// Rewrites [bundleRoot] as a path relative to [workingDirectory].
+///
+/// [validateRepoReferences] resolves a concept's `../../lib/...` pointers
+/// against the bundle root and then asks the filesystem about the result, so
+/// that root has to be relative to where the process runs. Given an absolute
+/// `/home/me/lotti/knowledge`, every pointer resolved to
+/// `home/me/lotti/lib/...` — read relative to the working directory, therefore
+/// nonexistent — so a correct bundle reported hundreds of drift errors purely
+/// because of how it was invoked.
+///
+/// Returns `null` when [bundleRoot] is absolute and lies outside
+/// [workingDirectory], where repository references cannot be resolved at all.
+/// Relative roots are returned unchanged: `../lotti/knowledge` already resolves
+/// correctly against the working directory.
+String? repoRelativeBundleRoot(
+  String bundleRoot, {
+  required String workingDirectory,
+}) {
+  final normalized = bundleRoot.replaceAll(r'\', '/');
+  if (!normalized.startsWith('/')) return normalized;
+
+  final cwd = workingDirectory
+      .replaceAll(r'\', '/')
+      .replaceFirst(
+        RegExp(r'/$'),
+        '',
+      );
+  if (normalized == cwd) return '.';
+  if (normalized.startsWith('$cwd/')) {
+    return normalized.substring(cwd.length + 1);
+  }
+  return null;
+}
+
 /// Whether a `sources[].resource` should be resolved as a path.
 ///
 /// §5.1 lets a resource be either something a consumer can follow or a scope
@@ -1011,11 +1138,19 @@ List<OkfIssue> validateRepoReferences({
 /// So the test is path *shape*, not the absence of spaces: anything carrying a
 /// separator or a leading `.` is a path — spaces and all — while a bare phrase
 /// with neither is a descriptor.
+///
+/// A bare `missing.dart` has neither, yet is unambiguously a same-directory file
+/// rather than prose, so a filename-with-extension shape counts too. The
+/// extension bound keeps a sentence ending in a period (`Discussed in the
+/// design review.`) on the descriptor side.
 bool _looksLikePath(String resource) {
   final trimmed = resource.trim();
   if (trimmed.isEmpty) return false;
-  return trimmed.contains('/') || trimmed.startsWith('.');
+  if (trimmed.contains('/') || trimmed.startsWith('.')) return true;
+  return _bareFilenamePattern.hasMatch(trimmed);
 }
+
+final _bareFilenamePattern = RegExp(r'^[\w][\w-]*\.[A-Za-z0-9]{1,8}$');
 
 /// Collects `resource`-shaped values out of a raw frontmatter block.
 Iterable<String> _resourceTargets(String? frontmatterYaml) sync* {

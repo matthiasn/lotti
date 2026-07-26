@@ -17,7 +17,15 @@ sources:
 On-device text-to-speech that reads a task's AI **TL;DR** aloud. It runs the
 Supertonic 3 ONNX model (~99M params, 44.1 kHz 16-bit WAV) locally via
 `flutter_onnxruntime` and plays the result through the app's existing `media_kit`
-stack. **No cloud, no API.**
+stack.
+
+**Synthesis never leaves the device — but the model has to arrive first.** The
+weights are not bundled. `TtsModelRepository` checks the model directory for the
+six files in `kSupertonicModelFiles` (four `.onnx` graphs plus `tts.json` and
+`unicode_indexer.json`) and downloads whichever are missing from
+`https://huggingface.co/<repo>/resolve/main/onnx/<file>`. So the first speak on a
+fresh install needs the network; every one after it does not, and no text or audio
+is ever sent anywhere.
 
 The engine sits behind a `TtsEngine` interface, with `SupertonicOnnxEngine` wired
 on macOS, iOS, Linux and Android.

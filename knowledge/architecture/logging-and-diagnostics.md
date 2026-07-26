@@ -62,8 +62,13 @@ flowchart TD
   Route --> SyncFile{"domain == sync?"}
   SyncFile -->|yes| SyncLog["sync-YYYY-MM-DD.log"]
   SyncFile -->|no| MainLog["app log file for the day"]
-  Route --> Insights["Insights / in-app log viewer"]
 ```
+
+**Files are the only sink.** There is no database table and no in-app log viewer:
+`LoggingService` appends lines to the day's file and nothing else. The
+`InsightType` parameter on its capture methods is vestigial — no reader in the app
+ever consults it — so diagnosing a report means reading the log files off the
+device, not opening a screen.
 
 **Errors are always logged**, whether or not their domain is enabled. A user who
 has everything toggled off still produces a diagnosable record when something

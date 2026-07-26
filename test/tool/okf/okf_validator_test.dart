@@ -240,6 +240,66 @@ Body.
     });
   });
 
+  group('required house keys carry values, not just colons', () {
+    test('a key present but empty is flagged for each key', () {
+      // `generated:` with nothing after it parses as YAML null. A
+      // `containsKey` test passed it, and every per-field validator treats null
+      // like an absent key and stays silent — so the concept validated clean
+      // while carrying no freshness, provenance or lifecycle data at all.
+      for (final key in [
+        'title',
+        'description',
+        'status',
+        'generated',
+        'stale_after',
+        'sources',
+      ]) {
+        final result = validateBundle(_bundle(_conceptWithEmpty(key)));
+
+        expect(
+          _joined(result.issues),
+          contains('`$key` is empty'),
+          reason: 'an empty `$key` must be reported',
+        );
+      }
+    });
+
+    test('a non-string title or description is flagged', () {
+      for (final entry in {'title': '[a, b]', 'description': '42'}.entries) {
+        final result = validateBundle(
+          _bundle(
+            _validFrontmatter.replaceFirst(
+              RegExp('^${entry.key}:.*\$', multiLine: true),
+              '${entry.key}: ${entry.value}',
+            ),
+          ),
+        );
+
+        expect(
+          _joined(result.issues),
+          contains('`${entry.key}` must be a non-empty string'),
+          reason: '${entry.key}: ${entry.value} must be rejected',
+        );
+      }
+    });
+
+    test('a whitespace-only description is flagged', () {
+      final result = validateBundle(
+        _bundle(
+          _validFrontmatter.replaceFirst(
+            RegExp(r'^description:.*$', multiLine: true),
+            "description: '   '",
+          ),
+        ),
+      );
+
+      expect(
+        _joined(result.issues),
+        contains('`description` must be a non-empty string'),
+      );
+    });
+  });
+
   group('trust and lifecycle fields (§5)', () {
     test('a bare verified mapping is accepted as a one-element list', () {
       final result = validateBundle(
@@ -614,6 +674,49 @@ sources:
 
       expect(result.issues, isEmpty);
     });
+
+    test('a non-path computation value does not satisfy the file form', () {
+      // `computation: false` is non-null, so a presence test accepted it and
+      // suppressed the "needs a computation" warning while pointing at nothing.
+      for (final value in ['false', '[]', "''"]) {
+        final result = validateBundle(
+          _bundle(
+            _concept(
+              type: 'Attested Computation',
+              extra: 'runtime: bigquery\ncomputation: $value\n',
+              body: 'No computation section.',
+            ),
+          ),
+        );
+
+        final messages = _joined(result.issues);
+        expect(
+          messages,
+          contains('`computation` must be a path'),
+          reason: 'computation: $value should be rejected as a path',
+        );
+        expect(
+          messages,
+          contains('`# Computation` body section'),
+          reason: 'computation: $value must not satisfy the file form',
+        );
+      }
+    });
+
+    test('a computation path satisfies the file form', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            type: 'Attested Computation',
+            extra: 'runtime: bigquery\ncomputation: query.sql\n',
+            body: 'No computation section.',
+          ),
+          extra: {'features/query.sql': ''},
+        ),
+      );
+
+      expect(_joined(result.issues), isNot(contains('computation')));
+    });
   });
 
   group('link resolution (§6)', () {
@@ -655,6 +758,60 @@ sources:
       );
 
       expect(result.issues, isEmpty);
+    });
+
+    test('a link title in any of the three quotings is still scanned', () {
+      // CommonMark allows "t", 't' and (t). Accepting only the double-quoted
+      // form meant the whole link matched nothing, so the dangling target
+      // inside it was never even offered for checking.
+      for (final title in ['"source"', "'source'", '(source)']) {
+        final result = validateBundle(
+          _bundle(_concept(body: 'See [impl](./missing.md $title).')),
+        );
+
+        expect(
+          _joined(result.issues),
+          contains('`./missing.md` does not exist in the bundle'),
+          reason: 'a $title title must not hide the target',
+        );
+      }
+    });
+
+    test('a link inside an indented code block is not resolved', () {
+      // Indented blocks are code, so a link form documented in one never
+      // renders as a link. Scanning them produced a false failure — the one
+      // outcome worse than a miss, because it blocks a correct change.
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            body:
+                'Agents write pointers like this:\n\n'
+                '    See [the module](./nope.md) for details.\n\n'
+                'That is the form.',
+          ),
+        ),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('an indented list continuation still has live links', () {
+      // Indentation only means code after a blank line; inside a list item it
+      // is a continuation, where links do render and must resolve.
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            body:
+                '* A list item\n'
+                '    with a [dangling](./nope.md) continuation link.\n',
+          ),
+        ),
+      );
+
+      expect(
+        _joined(result.issues),
+        contains('`./nope.md` does not exist in the bundle'),
+      );
     });
 
     test('a link form quoted in code is not resolved as a link', () {
@@ -768,6 +925,117 @@ Implemented by [the recorder][impl].
         );
       },
     );
+
+    test('a relative bundle-internal source path is checked', () {
+      // This fell between the two passes: `_validateBundleResources` only
+      // looked at `/`-prefixed resources, and `validateRepoReferences` only
+      // reports targets that *escape* the bundle. A `./missing.dart` was
+      // therefore checked by nothing.
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: impl
+    resource: ./missing.dart
+''',
+          ),
+        ),
+      );
+
+      expect(
+        _joined(result.issues),
+        contains('`sources[].resource` `./missing.dart` does not exist'),
+      );
+    });
+
+    test('a bare filename source path is checked, not read as prose', () {
+      // `missing.dart` has neither a separator nor a leading dot, so the
+      // path-shape test classified it as a §5.1 scope descriptor and exempted
+      // it from resolution entirely.
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: impl
+    resource: missing.dart
+''',
+          ),
+        ),
+      );
+
+      expect(
+        _joined(result.issues),
+        contains('`sources[].resource` `missing.dart` does not exist'),
+      );
+    });
+
+    test('a prose scope descriptor ending in a period stays exempt', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: review
+    resource: Discussed in the March design review.
+''',
+          ),
+        ),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('bundle links in index.md are resolved', () {
+      // Found by reverting the index link check and watching every test still
+      // pass: an index whose entries point at renamed concepts is exactly the
+      // drift the bundle's own navigation is supposed to surface.
+      final result = validateBundle(
+        _bundle(
+          _validFrontmatter,
+          index:
+              '---\nokf_version: "0.2"\n---\n\n# Root\n\n'
+              '* [Gone](features/gone.md) - x\n',
+        ),
+      );
+
+      final indexIssues = result.issues.where((i) => i.path == 'index.md');
+      expect(
+        _joined(indexIssues),
+        contains('`features/gone.md` does not exist in the bundle'),
+      );
+    });
+
+    test('bundle links in log.md are resolved', () {
+      // log.md was the one .md file whose bundle-internal links nothing
+      // checked, though it is the file that links concepts most densely.
+      final result = validateBundle(
+        _bundle(
+          _validFrontmatter,
+          extra: {
+            'log.md':
+                '# Log\n\n## 2026-07-26\n\n'
+                '* Split [gone](features/gone/overview.md) out.\n',
+          },
+        ),
+      );
+
+      final logIssues = result.issues.where((i) => i.path == 'log.md');
+      expect(
+        _joined(logIssues),
+        contains('`features/gone/overview.md` does not exist in the bundle'),
+      );
+    });
 
     test('footnote definitions are not treated as paths (§5.1)', () {
       final result = validateBundle(
@@ -938,6 +1206,53 @@ See [sync](./sync.md), [root](/index.md) and [spec](https://example.com).
     });
   });
 
+  group('bundle root normalisation', () {
+    test('an absolute root inside the working directory becomes relative', () {
+      // The validator resolves `../../lib/...` against the bundle root, so an
+      // absolute root made every code pointer resolve outside the checkout and
+      // a clean bundle reported hundreds of drift errors — for nothing but the
+      // shape of the argument.
+      expect(
+        repoRelativeBundleRoot(
+          '/home/me/lotti/knowledge',
+          workingDirectory: '/home/me/lotti',
+        ),
+        'knowledge',
+      );
+    });
+
+    test('the working directory itself normalises to a dot', () {
+      expect(
+        repoRelativeBundleRoot(
+          '/home/me/lotti',
+          workingDirectory: '/home/me/lotti',
+        ),
+        '.',
+      );
+    });
+
+    test('a sibling directory sharing a name prefix is not stripped', () {
+      // `/home/me/lotti-docs` starts with `/home/me/lotti` as a string but is
+      // not inside it.
+      expect(
+        repoRelativeBundleRoot(
+          '/home/me/lotti-docs/knowledge',
+          workingDirectory: '/home/me/lotti',
+        ),
+        isNull,
+      );
+    });
+
+    test('a relative root is handed through untouched', () {
+      for (final root in ['knowledge', '../lotti/knowledge', './knowledge']) {
+        expect(
+          repoRelativeBundleRoot(root, workingDirectory: '/home/me/lotti'),
+          root,
+        );
+      }
+    });
+  });
+
   group('document splitting', () {
     test('separates frontmatter from body', () {
       final document = splitDocument(_validFrontmatter);
@@ -1004,6 +1319,27 @@ sources:
   - id: src
     resource: https://example.com/src
 ''';
+
+/// A complete concept with [key] present but carrying no value.
+///
+/// Built field by field rather than by regex surgery on [_validFrontmatter]:
+/// blanking the `sources:` line alone leaves its indented list items behind, so
+/// the key is not actually empty. Flow style keeps every value on one line.
+String _conceptWithEmpty(String key) {
+  final fields = <String, String>{
+    'type': 'Feature Module',
+    'title': 'Speech',
+    'description': 'Audio capture.',
+    'status': 'stable',
+    'generated': '{ by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }',
+    'stale_after': '2027-01-31',
+    'sources': '[{ id: src, resource: https://example.com/src }]',
+  };
+  final lines = fields.entries.map(
+    (e) => e.key == key ? '${e.key}:' : '${e.key}: ${e.value}',
+  );
+  return '---\n${lines.join('\n')}\n---\n\nBody.\n';
+}
 
 extension _Let<T> on T {
   R let<R>(R Function(T) f) => f(this);

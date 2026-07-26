@@ -44,6 +44,61 @@ same alert in different orders; comparing whole rows would let an older
 Carrying the state timestamp separately means the lifecycle only ever moves
 forward, so the alert leaves the inbox on every device and stays gone.
 
+Each transition is a separate nullable timestamp on the row — `seenAt`,
+`actedOnAt`, `deletedAt` — and `_statePatchWouldChange` only lets a patch through
+when the field it sets is still null. That is what makes the lifecycle a lattice
+rather than a sequence: the three marks are independent, so replaying a
+transition is a no-op and reordering two of them converges either way.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Pending: created — all three timestamps null
+
+  Pending --> Seen: markSeen sets seenAt
+  Pending --> ActedOn: markActedOn sets actedOnAt
+  Pending --> Retracted: retract sets deletedAt
+
+  Seen --> ActedOn: markActedOn
+  ActedOn --> Seen: markSeen
+  Seen --> Retracted: retract
+  ActedOn --> Retracted: retract
+
+  Seen --> Seen: markSeen again — no-op, returns null
+  ActedOn --> ActedOn: markActedOn again — no-op
+  Retracted --> Retracted: retract again — no-op
+
+  note right of Pending
+    Only Pending is schedulable. Any of the
+    three marks makes NotificationScheduler
+    cancel the OS-level alert, so a row seen
+    on the laptop stops buzzing the phone.
+  end note
+
+  note right of Retracted
+    The marks are not exclusive — a row can
+    carry all three. Each is guarded only
+    against its own re-application, so even
+    a retracted row still accepts a late
+    seenAt arriving from another device.
+  end note
+```
+
+Read the states as *which marks are set*, not as a single-valued status column:
+there is no status field, and `Seen --> ActedOn` and `ActedOn --> Seen` are the
+same end state reached in either order.
+
+The three marks differ in what they *hide*, not in what they permit:
+`actedOnAt` and `deletedAt` both drop a suggestion out of the open set, while
+`seenAt` only clears the badge and stops the OS alert.
+
+A no-op returns `null` before touching the vector clock, so it enqueues no
+outbox message either — a device re-marking what it already marked produces no
+sync traffic at all.
+
+Only a transition that actually changed something advances the vector clock,
+enqueues a `notificationStateUpdate`, reschedules and notifies listeners; the
+four steps happen inside one `withVcScope` so a failure part-way commits nothing.
+
 Both `notification` and `notificationStateUpdate` are **sequence-tracked**
 [sync message families](../sync/message-model.md), so a missed transition is a
 detectable gap rather than silent divergence.

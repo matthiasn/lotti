@@ -182,10 +182,16 @@ editing shell but does not insist on owning every write path.
 
 # Localization boundary
 
-Settings-owned leaf pages use `context.messages` for **every** user-visible label,
-**including debug and QA-only actions**.
+Settings-owned leaf pages use `context.messages` for user-visible labels,
+**including debug and QA-only actions**. New copy goes into every ARB source and is
+regenerated — never placed directly in the widget.
 
 That matters most for Advanced → Maintenance: its onboarding preview and
 animation-gallery rows are real app UI and **must not introduce an English island
-in another locale**. New copy goes into every ARB source and is regenerated —
-never placed directly in the widget.
+in another locale**.
+
+**One row currently breaks it.** The repaint-rainbow overlay toggle in
+`maintenance_page.dart` hardcodes its title and subtitle in English, the only such
+row in the settings tree — every other row on that page, destructive maintenance
+actions included, resolves through `context.messages`. It is an unfixed oversight
+rather than an exemption for debug affordances, so do not read it as precedent.

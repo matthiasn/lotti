@@ -83,11 +83,15 @@ planner. See
 
 # Where the consent flag is written
 
-Onboarding is the one caller that sets a category's `automaticInferenceEnabled`
-to `true`, at the moment it creates the areas: having just connected a provider
-and picked those areas *is* the consent. It is written **before** the first
-capture, not because of it — otherwise the flow would teach "speak and it
-transcribes" while the app stopped doing so the next day.
+Onboarding sets a category's `automaticInferenceEnabled` to `true` at the moment
+it creates the areas: having just connected a provider and picked those areas *is*
+the consent. It is written **before** the first capture, not because of it —
+otherwise the flow would teach "speak and it transcribes" while the app stopped
+doing so the next day.
+
+It is not the only writer — the category settings form carries a switch for the
+same flag — but it is the only place the flag is set *without* the user touching
+one, which is why the consent has to be established by the step itself.
 
 **Reused categories are the exception**: an existing `false` is the user having
 switched automation off, so onboarding only fills in a `null`. See

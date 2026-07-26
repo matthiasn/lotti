@@ -49,9 +49,10 @@ already carry a `defaultProfileId`.
 
 That default is the whole point. **Selecting a profile is not consent**: seeded
 inference profiles ship `automate: true` skill assignments, so binding a profile to
-a category would otherwise silently start spending tokens. The one caller that sets
-it to `true` is onboarding, at the moment it creates the areas — having just
-connected a provider and picked those areas *is* the consent.
+a category would otherwise silently start spending tokens. Consent comes from one
+of two places — a switch in the category settings form, or onboarding at the moment
+it creates the areas, where having just connected a provider and picked those areas
+*is* the consent.
 
 `ProfileAutomationService` consults it before **every** automatic path — the
 profile-driven one and the direct transcription fallback alike — so this flag, not

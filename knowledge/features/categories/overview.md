@@ -72,11 +72,19 @@ profile alone would otherwise start spending tokens silently.
 `ProfileAutomationService` consults this flag before **every** automatic path, so
 the flag — not the profile — is the switch.
 
-The one caller that sets it to `true` is onboarding, at the moment it creates the
-areas: having just connected a provider and picked those areas *is* the consent.
-It is written **before** the first capture is recorded, not because of it —
-otherwise the flow would go on teaching "speak and it transcribes" while the app
-stopped doing so the next day.
+Two callers set it. The category settings form owns it from then on — a
+`SettingsSwitchRow` bound to `CategoryDetailsController
+.setAutomaticInferenceEnabled`, which stages the change on the pending category
+like any other field and saves with the form. That row is **conditional**: it
+renders only when `categoryAutomationAvailableProvider(defaultProfileId)`
+resolves true, so a category whose profile automates nothing shows no switch
+rather than a switch that controls nothing.
+
+Onboarding is the other, and the only one that sets it **without the user
+touching a switch**: at the moment it creates the areas, having just connected a
+provider and picked those areas *is* the consent. It is written **before** the
+first capture is recorded, not because of it — otherwise the flow would go on
+teaching "speak and it transcribes" while the app stopped doing so the next day.
 
 **Reused categories are the exception.** An existing `false` is the user having
 switched automation off, so onboarding only fills in a `null`.

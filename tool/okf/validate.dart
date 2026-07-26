@@ -11,10 +11,26 @@ import 'dart:io';
 
 import 'okf_validator.dart';
 
+String _toRepoRelative(String bundleRoot) {
+  final cwd = Directory.current.path;
+  final relative = repoRelativeBundleRoot(bundleRoot, workingDirectory: cwd);
+  if (relative != null) return relative;
+
+  // Reporting hundreds of false failures would be worse than refusing.
+  stderr.writeln(
+    'error: bundle directory `$bundleRoot` is outside the working directory '
+    '`$cwd`, so references to repository files cannot be resolved; run from '
+    'the repository root or pass a relative path',
+  );
+  exit(1);
+}
+
 void main(List<String> args) {
   final positional = args.where((a) => !a.startsWith('--')).toList();
   final strict = args.contains('--warnings-as-errors');
-  final bundleRoot = positional.isEmpty ? 'knowledge' : positional.first;
+  final bundleRoot = _toRepoRelative(
+    positional.isEmpty ? 'knowledge' : positional.first,
+  );
 
   final bundleDir = Directory(bundleRoot);
   if (!bundleDir.existsSync()) {

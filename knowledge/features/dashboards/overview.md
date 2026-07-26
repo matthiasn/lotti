@@ -38,13 +38,28 @@ that list, made in the [settings](../settings/) dashboard editor rather than her
 
 # Item rendering is a matrix
 
-Each `DashboardItem` variant maps to one chart widget: measurement charts,
-health charts, workout charts, habit charts, survey charts and story-time charts.
-Adding a chart type means extending that matrix, not the page.
+The sealed `DashboardItem` has **five** variants, and `DashboardWidget` switches
+each to one chart widget: `DashboardMeasurementItem` → `MeasurablesBarChart`,
+`DashboardHealthItem` → `DashboardHealthChart`, `DashboardWorkoutItem` →
+`DashboardWorkoutChart`, `DashboardSurveyItem` → `DashboardSurveyChart`,
+`DashboardHabitItem` → `DashboardHabitsChart`. Adding a chart type means extending
+that matrix, not the page.
 
-**Measurement charts are the ones that write.** A measurement chart can open the
-capture flow for its data type directly, so recording a value does not require
-navigating away — which is why this feature is not purely read-only.
+Each chart is keyed by **item identity, not range** — `ValueKey('survey:$type')`
+and friends. The charts keep their last data across a range change, so the `State`
+has to follow the item; without identity keys, replacing an item with another of
+the same type at the same index would reuse the old `State` and show the previous
+item's cached data under the new header.
+
+**Two of the five can write.** A measurement chart is constructed with
+`enableCreate: true` and opens the capture flow for its data type, and a survey
+chart runs the matching questionnaire — CFQ-11, PANAS or GHQ-12, dispatched on
+`surveyType` — which records a survey entry through `PersistenceLogic
+.createSurveyEntry`. Both mean recording a value does not require navigating away,
+which is why this feature is not purely read-only.
+
+The other three render only: health and workout data arrive from outside the app,
+and a habit is completed on its own surface.
 
 # Refresh and caching
 
