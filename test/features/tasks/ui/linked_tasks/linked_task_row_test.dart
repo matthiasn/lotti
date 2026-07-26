@@ -380,9 +380,9 @@ void main() {
 
   group('LinkedTaskRow manage-mode hit areas', () {
     testWidgets(
-      'both actions meet the 48pt minimum target — they sit in an adjacent '
-      'pair above a row that is itself tappable, so an undersized box costs '
-      'the wrong action or the page the user was reading',
+      'both actions keep the full 48pt target on the axis that tells them '
+      'apart — they sit in an adjacent pair, so a horizontal mis-tap is the '
+      'one that fires the wrong action',
       (tester) async {
         await tester.pumpWidget(
           WidgetTestBench(
@@ -412,7 +412,45 @@ void main() {
                 .first,
           );
           expect(size.width, greaterThanOrEqualTo(48));
-          expect(size.height, greaterThanOrEqualTo(48));
+          // Vertically the button stops at the list item's content box; the
+          // row's own padding sits directly above and below it and belongs to
+          // the row's tap target, so a high or low tap opens the task rather
+          // than landing on nothing.
+          expect(size.height, greaterThanOrEqualTo(32));
+        }
+      },
+    );
+
+    testWidgets(
+      'the row itself stays a 48pt target while costing far less than the '
+      '68pt a square action box forced on every row of both modes',
+      (tester) async {
+        for (final manageMode in [false, true]) {
+          await tester.pumpWidget(
+            WidgetTestBench(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: 900,
+                  child: LinkedTaskRow(
+                    taskId: 'anchor-task',
+                    data: buildRowData(),
+                    manageMode: manageMode,
+                    onEdit: () async {},
+                    onUnlink: () async => 1,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          final height = tester.getSize(find.byType(LinkedTaskRow)).height;
+          expect(
+            height,
+            greaterThanOrEqualTo(48),
+            reason: 'manage=$manageMode',
+          );
+          expect(height, lessThan(60), reason: 'manage=$manageMode');
         }
       },
     );

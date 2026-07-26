@@ -212,6 +212,8 @@ class LinkedTaskSectionHeader extends StatelessWidget {
 
   /// Set on the first section, which follows the card header's own bottom
   /// padding — without it the two stack into the largest gap on the card.
+  /// Trims the top inset to a hairline so the first label sits under the card
+  /// title rather than floating between it and the first row.
   final bool tightTop;
 
   /// Tints the label and adds a leading glyph. Deliberately the only colour
@@ -251,11 +253,13 @@ class LinkedTaskSectionHeader extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step5,
-        // Bound to the rows below it, not floated between two sections. The
-        // gap below looks smaller than it is — the row adds its own top
-        // padding and the title's line leading on top of that — so the gap
-        // above has to clear both for proximity to group the label downward.
-        tightTop ? tokens.spacing.step4 : tokens.spacing.step7,
+        // Bound to the rows below it, not floated between two sections, and
+        // only just: the gap below the label is the step1 here plus the row's
+        // own step3 top padding, so a step4 above clears it by the smallest
+        // margin that still groups the label downward. Anything larger (this
+        // was step7 between sections) stopped reading as a tighter-than-below
+        // gap and started reading as empty card.
+        tightTop ? tokens.spacing.step2 : tokens.spacing.step4,
         tokens.spacing.step5,
         tokens.spacing.step1,
       ),

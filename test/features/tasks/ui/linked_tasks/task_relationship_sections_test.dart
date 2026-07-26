@@ -491,6 +491,62 @@ void main() {
     );
 
     testWidgets(
+      'a section label sits closer to the rows it labels than to the section '
+      'above it, without floating the two apart',
+      (tester) async {
+        await pumpSections(
+          tester,
+          TaskLinkGroups(
+            flat: const [],
+            typed: [
+              entry(
+                id: 'followup-out',
+                title: 'Outgoing Follow-up',
+                kind: TaskLinkKind.followsUp,
+                direction: TaskLinkDirection.outgoing,
+              ),
+              entry(
+                id: 'followup-in',
+                title: 'Incoming Follow-up',
+                kind: TaskLinkKind.followsUp,
+                direction: TaskLinkDirection.incoming,
+              ),
+            ],
+          ),
+        );
+
+        EdgeInsets insetsOf(String title) => tester
+            .widget<Padding>(
+              find.ancestor(
+                of: find.text(title),
+                matching: find.descendant(
+                  of: find.byType(LinkedTaskSectionHeader),
+                  matching: find.byType(Padding),
+                ),
+              ),
+            )
+            .padding
+            .resolve(TextDirection.ltr);
+
+        final first = insetsOf('Follows up on');
+        final second = insetsOf('Has follow-up');
+
+        // The gap below a label is its own bottom inset plus the small list
+        // row's top padding. A between-section label has to clear that to
+        // group downward — and must not clear it by much, or the section
+        // separator becomes the largest empty band on the card.
+        const rowTopPadding = 8.0; // DesignSystemListItemSize.small
+        final gapBelow = second.bottom + rowTopPadding;
+        expect(second.top, greaterThan(gapBelow));
+        expect(second.top, lessThanOrEqualTo(gapBelow * 1.5));
+
+        // The first label follows the card header's own bottom padding, so it
+        // is tighter still rather than stacking two full gaps.
+        expect(first.top, lessThan(second.top));
+      },
+    );
+
+    testWidgets(
       'the blocked-by accent drops once every blocker is closed — a closed '
       'blocker releases the dependent, so amber there claims something the '
       'header has already retracted',
