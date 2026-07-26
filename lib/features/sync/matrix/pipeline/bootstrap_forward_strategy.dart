@@ -116,25 +116,50 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   // handed back a forward token. `anchorTs == newestTs` is the signature of a
   // genuinely caught-up device; a missing forward window is not.
   //
-  // Unguarded on purpose. Dart builds the message eagerly, so this scan runs
-  // even when the sync domain is disabled — but the list is one `/context`
-  // window (`Room.defaultHistoryCount` is 30) and we have just paid for the
-  // network round trip that produced it, so the cost is noise. Guarding on
-  // `DomainLogger.enabledDomains` would couple this to logger internals and
-  // trade real cost for none.
+  // What the context actually returned, so an empty walk can be told apart
+  // from a healthy one.
+  //
+  // `strictlyAfter` is the load-bearing number, not `newestTs`. Ordering here
+  // is by `(timestamp, eventId)`, so a burst can put later events on the same
+  // millisecond as the anchor — and then `newestTs == anchorTs` even though
+  // events genuinely sort after it. Reporting timestamps alone would show the
+  // "caught up" signature for precisely the missing-forward-window case this
+  // exists to identify. Counting through the same predicate the page filter
+  // uses cannot drift from it.
+  //
+  // Unguarded on purpose: Dart builds the message eagerly, but the list is one
+  // `/context` window (`Room.defaultHistoryCount` is 30) and it follows the
+  // network round trip that produced it, so the cost is noise.
   num? newestTs;
+  String? newestEventId;
+  var strictlyAfter = 0;
   for (final event in timeline.events) {
     final ts = TimelineEventOrdering.timestamp(event);
-    if (newestTs == null || ts > newestTs) newestTs = ts;
+    if (newestTs == null ||
+        ts > newestTs ||
+        (ts == newestTs &&
+            (newestEventId == null ||
+                event.eventId.compareTo(newestEventId) > 0))) {
+      newestTs = ts;
+      newestEventId = event.eventId;
+    }
+    if (CatchUpStrategy.isStrictlyAfter(
+      event,
+      anchorTs: anchorTs,
+      anchorEventId: anchorEventId,
+    )) {
+      strictlyAfter++;
+    }
   }
   logging.log(
     LogDomain.sync,
     'bootstrap.forward.context '
     'anchor=$anchorEventId '
     'events=${timeline.events.length} '
+    'strictlyAfter=$strictlyAfter '
     'canRequestFuture=${timeline.canRequestFuture} '
     'anchorTs=$anchorTs '
-    'newestTs=$newestTs',
+    'newestTs=$newestTs newestEventId=$newestEventId',
     subDomain: 'bootstrap.forward',
   );
 

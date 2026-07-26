@@ -248,6 +248,15 @@ class QueuePipelineCoordinator {
   /// events still in the pipe.
   bool get isBridgeInFlight => _bridge.isBridgeInFlight;
 
+  /// How many encrypted events are held awaiting their Megolm key.
+  ///
+  /// Part of "is anything still outstanding?", and invisible without this: a
+  /// penned event deliberately has no queue row, so queue depth reads zero
+  /// while the work is very much in progress. A caller that treats depth plus
+  /// bridge state as exhaustive will mistake a device waiting on a key for a
+  /// device that has stopped.
+  int get heldCiphertextCount => _pen.size;
+
   /// Callback that fires once per terminal bridge pass. Intended for
   /// the backfill request service to be nudged the moment the walk
   /// settles, so it can dispatch requests for any entries still
