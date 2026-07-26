@@ -100,7 +100,7 @@ deliberately distinct, because collapsing any two misleads:
 | `{"earliestStart": …, "availableMinutes": …}` | today, still plannable — start here, and this is how much is left |
 | `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add nothing |
 | `+ {"capacityMinutes": …, "scheduledMinutes": …}` | added on a refine wake — judge your *net* change against these, alongside whichever row above applies |
-| `{"availableMinutes": …}` | the day has not begun — no part of it is past |
+| `{"availableMinutes": …}` | neither `earliestStart` nor `closed` — the day has not begun, so no part of it is past |
 
 `availableMinutes` is absent from the `closed` row deliberately, and absent
 everywhere when the working hours cannot be parsed.

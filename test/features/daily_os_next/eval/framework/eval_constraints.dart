@@ -500,6 +500,34 @@ EvalConstraintResult scoreRespectsEstimates(EvalRunOutcome outcome) {
             'task to a token is not a partial placement',
       );
     }
+    // The aggregate is not enough on its own: one long task can supply the
+    // fill while the work the scenario actually requires is reduced to
+    // one-minute tokens, and nothing else objects — `requiredWorkPlaced` only
+    // checks that the id appears. So required work keeps a per-task floor. It
+    // is deliberately generous, since a genuinely partial placement is the
+    // point here; it only catches a token.
+    final tokenised = <String>[];
+    for (final taskId in outcome.inputs.requiredTaskIds) {
+      final minutes = allocatedByTask[taskId];
+      if (minutes == null) continue;
+      final estimate = outcome.inputs.taskById(taskId)?.estimateMinutes;
+      if (estimate == null || estimate <= 0) continue;
+      if (minutes * 10 < estimate) {
+        tokenised.add(
+          '"${titleByTask[taskId]}" got ${minutes}min of a ${estimate}min '
+          'estimate',
+        );
+      }
+    }
+    if (tokenised.isNotEmpty) {
+      return EvalConstraintResult(
+        id: id,
+        passed: false,
+        detail:
+            'the day cannot hold this work, but required work was reduced to '
+            'a token: ${tokenised.join('; ')}',
+      );
+    }
     return EvalConstraintResult(
       id: id,
       passed: true,

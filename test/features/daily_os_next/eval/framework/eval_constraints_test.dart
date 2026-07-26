@@ -293,6 +293,68 @@ void main() {
       expect(result.detail, contains('not a partial placement'));
     });
 
+    test('required work reduced to a token fails, even if the total fills', () {
+      // The hole in an aggregate-only check: one long task supplies the fill
+      // while the work the scenario requires is shortened to a minute each.
+      // requiredWorkPlaced only checks that the id appears, so nothing else
+      // objects.
+      const invoice = EvalCorpusTask(
+        taskId: 'task-invoice',
+        title: 'Send the overdue invoice',
+        estimateMinutes: 30,
+      );
+
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 15, endHour: 16, taskId: 'task-long'),
+            block(
+              id: 'b',
+              startHour: 16,
+              endHour: 16,
+              taskId: 'task-invoice',
+            ).copyWith(title: 'Send the overdue invoice'),
+          ],
+          corpus: const [long, invoice],
+          requiredTaskIds: const {'task-invoice'},
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('reduced to a token'));
+      expect(result.detail, contains('Send the overdue invoice'));
+    });
+
+    test('required work shortened but still substantial is allowed', () {
+      // A genuinely partial placement is the point on an impossible day, so
+      // the floor is deliberately generous — it catches a token, not a trim.
+      const invoice = EvalCorpusTask(
+        taskId: 'task-invoice',
+        title: 'Send the overdue invoice',
+        estimateMinutes: 30,
+      );
+
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 15, endHour: 16, taskId: 'task-long'),
+            block(
+              id: 'b',
+              startHour: 16,
+              endHour: 16,
+              taskId: 'task-invoice',
+            ).copyWith(endTime: DateTime(2026, 7, 18, 16, 15)),
+          ],
+          corpus: const [long, invoice],
+          requiredTaskIds: const {'task-invoice'},
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isTrue);
+    });
+
     test('the same block is a partial placement when it could not fit', () {
       // The measured case: every lateStart sample placed
       // "Finish the database migration (partial — 60 of 180 min)", exactly what

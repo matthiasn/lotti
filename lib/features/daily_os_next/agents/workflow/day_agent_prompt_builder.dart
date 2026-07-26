@@ -85,8 +85,9 @@ Drafting rules:
   existing in-progress, completed, or dropped history.
 - When `<planning_window>` carries `closed`, today has no usable slot left. Do
   not add or move blocks into it; say so and leave the plan alone.
-- An empty `<planning_window>` means the plan day has not begun, so no part of
-  it is in the past and you may place work anywhere inside it.
+- A `<planning_window>` carrying neither `earliestStart` nor `closed` means the
+  plan day has not begun, so no part of it is in the past and you may place work
+  anywhere inside it. It still carries `availableMinutes`.
 - `<planning_window>.availableMinutes` is how much working time the day
   actually has left, already bounded by both the clock and the user's capacity.
   Total the estimates of the work you intend to place and compare it against
@@ -96,7 +97,10 @@ Drafting rules:
   `scheduledMinutes`. Both bounds still apply: `earliestStart` and
   `availableMinutes` govern *when* a block may sit and how much clock is left,
   exactly as on a draft, while capacity and occupancy govern how full the plan
-  may get. A diff edits an existing plan, so for capacity what matters is the
+  may get. **Satisfy both** — a net addition that fits the remaining capacity
+  can still be one the remaining clock cannot hold, and it is rejected or
+  unusable either way. A diff edits an existing plan, so for capacity what
+  matters is the
   **net** change — time freed by a dropped or shortened block pays for what you
   add. Judge `scheduledMinutes` after your changes against `capacityMinutes`,
   not the gross size of what you are adding.
