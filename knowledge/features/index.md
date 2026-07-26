@@ -16,6 +16,7 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 * [Categories](categories/) - the app's primary scoping unit and its stored defaults.
 * [Projects](projects/) - grouping between categories and tasks, with agent-authored health.
 * [Labels](labels/) - the lightweight taxonomy and its AI-suggestion coupling.
+* [Habits](habits/) - recurring definitions reconciled with completion entries.
 * [Tasks](tasks/) - the task layer on the journal substrate: checklists, relationships, filters.
 
 # Infrastructure
