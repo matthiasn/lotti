@@ -258,6 +258,63 @@ class DayAgentPlanEditor {
     ];
   }
 
+  /// Blocked-work state for tasks an earlier draft already scheduled.
+  ///
+  /// A re-draft replaces the whole block list, so the model re-affirms every
+  /// baseline block — including one whose task became blocked *after* that
+  /// draft was written. Such a task is in neither `decidedTasks` (the user did
+  /// not approve it this wake) nor, on a capture-less wake, the corpus, so
+  /// without this the blocked-work rule reaches the model with nothing behind
+  /// it for exactly that set.
+  ///
+  /// Returns entries **only for tasks that are actually blocked**, by ADR
+  /// 0043's union predicate — so an ordinary re-draft of unblocked work adds
+  /// no prompt bytes. Reads statuses as well as blockers because the resolver
+  /// reports only link-derived blockers: a task marked blocked by hand has
+  /// none, and projecting blockers alone would miss it entirely.
+  ///
+  /// Returns empty when [dependencyResolver] is null, matching the rest of
+  /// ADR 0043's gating — no resolver means no rule, so no data for it either.
+  Future<Map<String, PlannedTaskState>> resolvePlannedTaskStates({
+    required Iterable<String> taskIds,
+    required Set<String> allowedCategoryIds,
+    TaskDependencyResolver? dependencyResolver,
+  }) async {
+    final resolver = dependencyResolver;
+    if (resolver == null) return const {};
+    final ids = {
+      for (final raw in taskIds)
+        if (raw.trim().isNotEmpty) raw.trim(),
+    };
+    if (ids.isEmpty) return const {};
+
+    final entities = await journalDb.journalEntityMapForIds(ids);
+    final tasks = <Task>[
+      for (final id in ids)
+        if (entities[id] case final Task task)
+          if (task.meta.deletedAt == null &&
+              categoryAllowed(task.meta.categoryId, allowedCategoryIds))
+            task,
+    ];
+    if (tasks.isEmpty) return const {};
+
+    final blockedBy = await resolver.resolveBlockedStatus({
+      for (final task in tasks) task.id,
+    }, allowedCategoryIds: allowedCategoryIds);
+
+    return {
+      for (final task in tasks)
+        if (PlannedTaskState.isBlocked(
+          status: task.data.status.toDbString,
+          blockedBy: blockedBy[task.id] ?? const [],
+        ))
+          task.id: PlannedTaskState(
+            status: task.data.status.toDbString,
+            blockedBy: blockedBy[task.id] ?? const [],
+          ),
+    };
+  }
+
   /// Persist a structured plan diff against the current plan for [dayId].
   ///
   /// Each entry in [rawChanges] becomes a `ChangeItem` on a new

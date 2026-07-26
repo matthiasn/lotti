@@ -149,6 +149,14 @@ class EvalScenario {
                 status: byId[blockerId] == null
                     ? null
                     : _statusString(byId[blockerId]!.status),
+                // Production carries the blocker's own category, because
+                // `draft_day_plan` requires a categoryId on every block and
+                // the nested blocker is the model's only description of it on
+                // a capture-less wake. Omitting it here would send the model a
+                // materially different prompt than the app does, and force it
+                // to guess a value the app would have supplied — inflating
+                // rejected tool calls and corrupting the comparison.
+                categoryId: byId[blockerId]?.categoryId,
               ),
           ],
     };
@@ -325,13 +333,12 @@ class EvalFixtureDependencyResolver implements TaskDependencyResolver {
       if (taskIds.contains(entry.key))
         entry.key: [
           for (final blocker in entry.value)
-            // Mirrors production: a blocker outside the agent's categories
-            // still blocks but describes nothing about itself. Scenarios stay
-            // in-scope today, so this is a guard against a future scenario
-            // that crosses categories being measured against a prompt the app
-            // would never have sent.
-            if (blocker.categoryId == null ||
-                allowedCategoryIds.isEmpty ||
+            // Mirrors production's `categoryAllowed`: an empty allow-set is
+            // unrestricted, and a blocker outside the set still blocks but
+            // describes nothing about itself. Scenarios stay in-scope today,
+            // so this guards a future cross-category scenario from being
+            // measured against a prompt the app would never have sent.
+            if (allowedCategoryIds.isEmpty ||
                 allowedCategoryIds.contains(blocker.categoryId))
               blocker
             else

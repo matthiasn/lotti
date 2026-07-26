@@ -445,6 +445,7 @@ void main() {
             'DecidedTaskRef carries status and blockedBy even with no capture '
             '(ADR 0043), so blockedness is visible where the row is not',
       );
+      expect(decided['statusShown'], isTrue);
       expect(unseen['taskIdReferenceable'], isFalse);
       expect(unseen['corpusRowShown'], isFalse);
       expect(
@@ -452,7 +453,61 @@ void main() {
         isFalse,
         reason: 'neither carrier reaches a task that is not decided',
       );
+      expect(unseen['statusShown'], isFalse);
     });
+
+    test(
+      'reports a nested blocker as status-visible but not blocker-visible',
+      () {
+        // The blockedWithoutCorpus shape. task-b-middle is rendered inside the
+        // decided leaf's blockedBy, so ResolvedBlocker shows its status — but
+        // ADR 0043 resolves one hop, so its OWN blockedBy (naming task-a-root)
+        // is never rendered. Collapsing the two would report task-a-root as
+        // something the model ignored rather than never saw.
+        const chain = EvalScenario(
+          id: 'chain',
+          intent: 'one hop reaches the middle, not the root',
+          tasks: [
+            EvalTaskSpec(
+              id: 'task-c-leaf',
+              title: 'Leaf',
+              status: EvalTaskStatus.blocked,
+              blockedBy: ['task-b-middle'],
+            ),
+            EvalTaskSpec(
+              id: 'task-b-middle',
+              title: 'Middle',
+              status: EvalTaskStatus.blocked,
+              blockedBy: ['task-a-root'],
+            ),
+            EvalTaskSpec(id: 'task-a-root', title: 'Root'),
+          ],
+          decidedTaskIds: ['task-c-leaf'],
+          includeCapture: false,
+        );
+        final report = EvalReport.fromResults([
+          result(
+            forRequest: request(forScenario: chain),
+            constraints: [pass(EvalConstraintIds.withinCapacity)],
+          ),
+        ], generatedAt: generatedAt);
+
+        final rows =
+            ((report.judgeBundle().single['scenario']!
+                        as Map<String, Object?>)['corpus']!
+                    as List)
+                .cast<Map<String, Object?>>();
+        final middle = rows.firstWhere((r) => r['taskId'] == 'task-b-middle');
+        final root = rows.firstWhere((r) => r['taskId'] == 'task-a-root');
+
+        expect(middle['statusShown'], isTrue);
+        expect(middle['blockersShown'], isFalse);
+        expect(middle['taskIdReferenceable'], isTrue);
+        // The root is beyond the one hop in every sense.
+        expect(root['statusShown'], isFalse);
+        expect(root['taskIdReferenceable'], isFalse);
+      },
+    );
 
     test('reports blockers as shown for every row when the corpus renders', () {
       const visible = EvalScenario(

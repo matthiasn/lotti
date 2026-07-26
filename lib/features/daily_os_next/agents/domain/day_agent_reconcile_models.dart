@@ -157,6 +157,42 @@ class DecidedTaskRef {
   };
 }
 
+/// Blocked-work state of a task an earlier draft already scheduled.
+///
+/// Exists because ADR 0043's rule is a **union** — a task is blocked when its
+/// `status` is `BLOCKED` *or* it carries a non-empty `blockedBy` — and the two
+/// halves come from different places. `TaskDependencyResolver` only ever
+/// reports link-derived blockers, so a task a user marked blocked by hand
+/// carries no blockers at all and would be invisible if blockers were the only
+/// thing projected.
+///
+/// Only constructed for tasks that are actually blocked, so an ordinary
+/// re-draft adds nothing to the prompt.
+class PlannedTaskState {
+  const PlannedTaskState({required this.status, this.blockedBy = const []});
+
+  /// Task status as the corpus spells it, e.g. `OPEN`, `BLOCKED`.
+  final String status;
+
+  /// One-hop blockers (ADR 0043), empty for a hand-marked blocked task.
+  final List<ResolvedBlocker> blockedBy;
+
+  /// ADR 0043's predicate, stated once.
+  static bool isBlocked({
+    required String status,
+    required List<ResolvedBlocker> blockedBy,
+  }) => status == blockedTaskDbStatus || blockedBy.isNotEmpty;
+
+  Map<String, Object?> toJson() => {
+    'status': status,
+    if (blockedBy.isNotEmpty)
+      'blockedBy': [for (final blocker in blockedBy) blocker.toJson()],
+  };
+}
+
+/// `TaskStatus.blocked.toDbString`, the spelling ADR 0043's rule quotes.
+const String blockedTaskDbStatus = 'BLOCKED';
+
 /// FTS-backed task candidate returned by `match_to_corpus`.
 class DayAgentCorpusMatch {
   const DayAgentCorpusMatch({

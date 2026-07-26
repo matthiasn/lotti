@@ -123,9 +123,12 @@ tool log, and a failing cell is recorded while the matrix continues.
   across the whole cell would report a transient provider failure as the model
   ignoring the prompt; `jobAttempts` is where infrastructure retries belong.
 - **The dependency resolver is always wired**, matching production. It gates the
-  `blockedBy` annotation on both carriers — corpus rows and `decidedTasks` — *and*
-  whether the blocked-work rule reaches the prompt at all, so a null resolver would
-  quietly measure a prompt the app never sends.
+  blocked-work annotation on all three carriers — corpus rows, `decidedTasks` and
+  baseline blocks — *and* whether the rule reaches the prompt at all, so a null
+  resolver would quietly measure a prompt the app never sends. The fixture
+  resolver mirrors production's category scoping and carries each blocker's own
+  `categoryId`, since omitting it would hand the model a materially different
+  prompt than the app does and force it to guess a value the app supplies.
 - **The capture is seeded directly, without its parse job.** Production's
   `submitCapture` also enqueues `parseCapture`, which the runtime drains as a
   *second* wake with its own prompt and tool calls. The unit of measurement here
@@ -206,13 +209,21 @@ misleads in exactly the direction the flags exist to prevent:
 | Flag | True when | Sole carrier of |
 |------|-----------|-----------------|
 | `corpusRowShown` | the corpus rendered, i.e. the wake had a capture | `estimateMinutes`, `due`, `priority` |
+| `statusShown` | the corpus rendered, **or** the task is decided, **or** it appears as a visible task's blocker | — |
 | `blockersShown` | the corpus rendered **or** the task is decided | — |
 | `taskIdReferenceable` | the model could name the id at all | — |
 
-`blockersShown` is separate from `corpusRowShown` because the corpus stopped being
-the only carrier of blockedness: `DecidedTaskRef` projects `status` and `blockedBy`
-on every drafting wake. Reading blockedness off the row flag would now report a
-model as having ignored a blocker it was shown. Conversely, reporting
+ADR 0043's rule is a **union** — blocked means `status: BLOCKED` *or* a non-empty
+`blockedBy` — and the two halves do not travel together, so they are reported
+apart. A task reached only as somebody else's blocker shows its status (
+`ResolvedBlocker` carries it) but never its own `blockedBy`, because resolution
+is one hop. That is exactly the `blockedWithoutCorpus` shape: the middle task's
+status is visible while its dependency on the root is not.
+
+Collapsing any two of these misleads in the direction the flags exist to prevent.
+Reading blockedness off `corpusRowShown` would report a model as having ignored a
+blocker it was shown; reading dependency visibility off `statusShown` would report
+the root as something the model ignored rather than never saw; reporting
 referenceability as if it were the row would print `estimateMinutes` next to "the
 model saw this".
 

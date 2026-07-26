@@ -5483,20 +5483,24 @@ void main() {
           stubDraftingPlanContext(planService, baselinePlan: baselinePlan);
           stubSuccessfulDraftToolCall(planService);
           when(
-            () => resolver.resolveBlockedStatus(
-              any(),
+            () => planService.resolvePlannedTaskStates(
+              taskIds: any(named: 'taskIds'),
               allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              dependencyResolver: any(named: 'dependencyResolver'),
             ),
           ).thenAnswer(
             (_) async => {
-              'task-since-blocked': const [
-                ResolvedBlocker(
-                  taskId: 'task-b-middle',
-                  title: 'Get vendor credentials',
-                  status: 'OPEN',
-                  categoryId: 'ops',
-                ),
-              ],
+              'task-since-blocked': const PlannedTaskState(
+                status: 'OPEN',
+                blockedBy: [
+                  ResolvedBlocker(
+                    taskId: 'task-b-middle',
+                    title: 'Get vendor credentials',
+                    status: 'OPEN',
+                    categoryId: 'ops',
+                  ),
+                ],
+              ),
             },
           );
 
@@ -5522,12 +5526,13 @@ void main() {
           // Only the ids the baseline actually schedules, and only those not
           // already resolved as decided tasks.
           final asked = verify(
-            () => resolver.resolveBlockedStatus(
-              captureAny(),
-              allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
+            () => planService.resolvePlannedTaskStates(
+              taskIds: captureAny(named: 'taskIds'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              dependencyResolver: any(named: 'dependencyResolver'),
             ),
-          ).captured;
-          expect(asked[0], {'task-since-blocked'});
+          ).captured.single;
+          expect(asked, {'task-since-blocked'});
         },
       );
 
@@ -5562,9 +5567,10 @@ void main() {
           stubDraftingPlanContext(planService, baselinePlan: baselinePlan);
           stubSuccessfulDraftToolCall(planService);
           when(
-            () => resolver.resolveBlockedStatus(
-              any(),
+            () => planService.resolvePlannedTaskStates(
+              taskIds: any(named: 'taskIds'),
               allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              dependencyResolver: any(named: 'dependencyResolver'),
             ),
           ).thenAnswer((_) async => const {});
 

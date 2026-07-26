@@ -685,7 +685,8 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       baselinePlan: baselinePlan,
       decidedTasks: decidedTasks,
       decidedCaptureItems: decidedCaptureItems,
-      baselineBlockedBy: await _baselineBlockedBy(
+      baselineTaskStates: await _baselineTaskStates(
+        service: service,
         baselinePlan: baselinePlan,
         decidedTasks: decidedTasks,
         allowedCategoryIds: agentIdentity.allowedCategoryIds,
@@ -693,7 +694,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     );
   }
 
-  /// One-hop blockers for tasks the baseline plan already schedules.
+  /// Blocked-work state for tasks the baseline plan already schedules.
   ///
   /// A re-draft replaces the whole block list, so the model re-affirms every
   /// baseline block — including one whose task became blocked *since* that
@@ -708,13 +709,13 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   ///
   /// Skips ids already resolved as decided tasks, so the common re-draft costs
   /// nothing extra, and returns empty when there is nothing left to ask about.
-  Future<Map<String, List<ResolvedBlocker>>> _baselineBlockedBy({
+  Future<Map<String, PlannedTaskState>> _baselineTaskStates({
+    required DayAgentPlanService service,
     required DayPlanEntity? baselinePlan,
     required List<DecidedTaskRef> decidedTasks,
     required Set<String> allowedCategoryIds,
   }) async {
-    final resolver = dependencyResolver;
-    if (resolver == null || baselinePlan == null) return const {};
+    if (dependencyResolver == null || baselinePlan == null) return const {};
     final alreadyResolved = {for (final task in decidedTasks) task.id};
     final pending = <String>{
       for (final block in baselinePlan.data.plannedBlocks)
@@ -722,9 +723,10 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
           if (!alreadyResolved.contains(taskId)) taskId,
     };
     if (pending.isEmpty) return const {};
-    return resolver.resolveBlockedStatus(
-      pending,
+    return service.resolvePlannedTaskStates(
+      taskIds: pending,
       allowedCategoryIds: allowedCategoryIds,
+      dependencyResolver: dependencyResolver,
     );
   }
 

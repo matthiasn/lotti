@@ -226,6 +226,14 @@ class EvalFixtureInputs {
         blocker,
   };
 
+  /// Whether [taskId] was rendered as some visible task's blocker.
+  ///
+  /// Such a task shows its *status* — `ResolvedBlocker` carries it — but never
+  /// its own `blockedBy`, because ADR 0043 resolves one hop. That asymmetry is
+  /// why the judge bundle reports status and dependency visibility apart.
+  bool isBlockerOfVisibleTask(String taskId) =>
+      visibleTaskIds != null && _blockersOfVisibleTasks.contains(taskId);
+
   EvalCorpusTask? taskById(String id) {
     for (final task in corpus) {
       if (task.taskId == id) return task;

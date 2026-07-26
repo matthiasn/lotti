@@ -90,7 +90,7 @@ rules below also carries data they can apply to:
 |---------|--------------|--------|
 | `DayAgentCorpusService.buildTaskCorpusSnapshot` | capture-context | corpus rows — wakes with a capture only (the corpus lives inside `<capture>`) |
 | `DayAgentPlanService.hydrateDecidedTasks` → `DecidedTaskRef` | drafting-context | tasks the user approved for placement, on **every** drafting wake |
-| `_baselineBlockedBy` → `drafting.baselinePlan.blocks[].blockedBy` | drafting-context | tasks an **earlier draft** already scheduled |
+| `resolvePlannedTaskStates` → `drafting.baselinePlan.blocks[]` | drafting-context | tasks an **earlier draft** already scheduled |
 
 That one field drives the annotation on both paths and the prompt gates below, so
 they **can never drift out of sync** — there is no separate "is this feature on"
@@ -120,6 +120,14 @@ Folding it into `decidedTasks` would be wrong: the prompt defines that list as
 tasks the *user* approved for placement, and a block the agent drafted earlier is
 not that. So the annotation lands on the block. Baseline ids already resolved as
 decided tasks are skipped, so the common re-draft costs no extra query.
+
+It projects **`status` as well as `blockedBy`**, because ADR 0043's predicate is
+a *union* — blocked means `"status": "BLOCKED"` **or** a non-empty `blockedBy` —
+and the two halves come from different places. `TaskDependencyResolver` reports
+only link-derived blockers, so a task a user marked blocked by hand has none at
+all and would be invisible if blockers were the only thing projected. Entries
+exist only for tasks that are actually blocked, so an ordinary re-draft of
+unblocked work adds nothing.
 
 **Everything is omitted rather than emitted empty**, on all three carriers: no
 `status` and no `blockedBy` when the resolver is null, no `blockedBy` key on an

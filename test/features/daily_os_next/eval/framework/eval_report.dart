@@ -498,25 +498,31 @@ class EvalReport {
         'decidedTaskIds': inputs.decidedTaskIds,
         'requiredTaskIds': inputs.requiredTaskIds.toList()..sort(),
         'expectedOmissions': inputs.expectedOmissions.toList()..sort(),
-        // Three different visibilities, and conflating any two is how a judge
-        // gets misled.
+        // Four different visibilities, and conflating any two is how a judge
+        // gets misled. ADR 0043's rule is a *union* — blocked means
+        // `status: BLOCKED` OR a non-empty `blockedBy` — and the two halves
+        // do not travel together, so they are reported apart.
         //
         // `corpusRowShown` — was the whole row rendered? The corpus appears
         // only inside the capture context, so a capture-less wake sees none of
         // it. This is the only source of `estimateMinutes`, `due` and
         // `priority`.
         //
-        // `blockersShown` — did the model learn this task is blocked? True via
-        // the corpus row, and *also* true for a decided task on a capture-less
-        // wake, because `DecidedTaskRef` carries `status` and `blockedBy` in
-        // the corpus's own spelling (ADR 0043; see the feature README). Kept
-        // separate from `corpusRowShown` precisely because that stopped being
-        // the only carrier: reading blockedness off the row flag would now
-        // report a model as ignoring a blocker it was shown.
+        // `statusShown` — did the model see this task's own status? True via
+        // the corpus row, via `DecidedTaskRef`, and *also* when the task
+        // appears as another visible task's blocker, since `ResolvedBlocker`
+        // carries the blocker's status.
+        //
+        // `blockersShown` — did the model see what this task is waiting on?
+        // Strictly narrower: ADR 0043 resolves one hop, so a task reached only
+        // as somebody else's blocker never has its *own* `blockedBy` rendered.
+        // That is exactly the `blockedWithoutCorpus` case — the middle task's
+        // status is visible while its dependency on the root is not — and
+        // collapsing the two would report the root as something the model
+        // ignored rather than something it was never shown.
         //
         // `taskIdReferenceable` — the weakest fact: could the model name the
-        // id at all. A decided task satisfies this through its own projection
-        // even when its corpus row was never shown.
+        // id at all.
         'corpusRowsShown': inputs.visibleTaskIds == null,
         'corpus': [
           for (final task in inputs.corpus)
@@ -527,6 +533,10 @@ class EvalReport {
               'estimateMinutes': task.estimateMinutes,
               'blockedBy': task.blockedBy,
               'corpusRowShown': inputs.visibleTaskIds == null,
+              'statusShown':
+                  inputs.visibleTaskIds == null ||
+                  inputs.decidedTaskIds.contains(task.taskId) ||
+                  inputs.isBlockerOfVisibleTask(task.taskId),
               'blockersShown':
                   inputs.visibleTaskIds == null ||
                   inputs.decidedTaskIds.contains(task.taskId),

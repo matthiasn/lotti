@@ -3,7 +3,6 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
-import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:uuid/uuid.dart';
 
 /// Raised when a day-agent tool call fails (bad arguments, unknown tool, or a
@@ -84,17 +83,18 @@ class DraftingContext {
     this.baselinePlan,
     this.decidedTasks = const [],
     this.decidedCaptureItems = const [],
-    this.baselineBlockedBy = const {},
+    this.baselineTaskStates = const {},
   });
 
   final DayPlanEntity? baselinePlan;
   final List<DecidedTaskRef> decidedTasks;
   final List<ParsedItemEntity> decidedCaptureItems;
 
-  /// One-hop blockers (ADR 0043) for tasks the baseline plan schedules,
-  /// keyed by task id. Annotates the blocks below rather than `decidedTasks`,
-  /// which the prompt defines as tasks the *user* approved for placement.
-  final Map<String, List<ResolvedBlocker>> baselineBlockedBy;
+  /// Blocked-work state (ADR 0043) for tasks the baseline plan schedules,
+  /// keyed by task id, present only for tasks that are actually blocked.
+  /// Annotates the blocks below rather than `decidedTasks`, which the prompt
+  /// defines as tasks the *user* approved for placement.
+  final Map<String, PlannedTaskState> baselineTaskStates;
 
   Map<String, Object?> toJson() {
     final plan = baselinePlan;
@@ -121,13 +121,12 @@ class DraftingContext {
                     'state': block.state.name,
                     'reason': block.reason,
                     'note': block.note,
-                    // Only when the task picked up a blocker since this block
-                    // was drafted. Absent otherwise, so an unblocked plan
+                    // Only when the task became blocked since this block was
+                    // drafted — by status or by link, since ADR 0043's rule is
+                    // a union. Absent otherwise, so an unblocked plan
                     // serializes exactly as before.
-                    if (baselineBlockedBy[block.taskId] case final blockers?)
-                      'blockedBy': [
-                        for (final blocker in blockers) blocker.toJson(),
-                      ],
+                    if (baselineTaskStates[block.taskId] case final state?)
+                      ...state.toJson(),
                   },
               ],
               'energyBands': [

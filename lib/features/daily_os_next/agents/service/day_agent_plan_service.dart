@@ -125,6 +125,19 @@ class DayAgentPlanService {
     dependencyResolver: dependencyResolver,
   );
 
+  /// Blocked-work state for tasks an earlier draft already scheduled.
+  ///
+  /// See [DayAgentPlanEditor.resolvePlannedTaskStates].
+  Future<Map<String, PlannedTaskState>> resolvePlannedTaskStates({
+    required Iterable<String> taskIds,
+    required Set<String> allowedCategoryIds,
+    TaskDependencyResolver? dependencyResolver,
+  }) => _editor.resolvePlannedTaskStates(
+    taskIds: taskIds,
+    allowedCategoryIds: allowedCategoryIds,
+    dependencyResolver: dependencyResolver,
+  );
+
   /// Persist a structured plan diff against the current plan for [dayId].
   Future<ChangeSetEntity> proposePlanDiff({
     required String agentId,
