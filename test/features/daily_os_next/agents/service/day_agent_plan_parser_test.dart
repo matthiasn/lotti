@@ -928,27 +928,65 @@ PlannedBlock _baselineBlock({
 /// the minute before a five-minute mark, the last minutes before midnight, and
 /// sub-second offsets past the hour.
 class _WindowScenario {
-  _WindowScenario(this.hour, this.minute, this.second, this.capacityMinutes);
+  _WindowScenario(this.hour, this.minute, this.offset, this.capacityMinutes);
 
   final int hour;
   final int minute;
-  final int second;
+
+  /// The sub-minute remainder: seconds, milliseconds and microseconds.
+  ///
+  /// Generated down to microseconds because the failure that started this
+  /// work was one: the prompt rendered 15:00:00.005877 and every model
+  /// sensibly began the day at 15:00, losing by under six milliseconds.
+  /// Whole seconds alone never reach that boundary.
+  final _SubMinute offset;
   final int capacityMinutes;
 
-  DateTime instantOn(DateTime day) =>
-      DateTime(day.year, day.month, day.day, hour, minute, second);
+  DateTime instantOn(DateTime day) => DateTime(
+    day.year,
+    day.month,
+    day.day,
+    hour,
+    minute,
+    offset.second,
+    offset.millisecond,
+    offset.microsecond,
+  );
 
   @override
   String toString() =>
-      '_WindowScenario($hour:$minute:$second, cap $capacityMinutes)';
+      '_WindowScenario($hour:$minute + $offset, cap $capacityMinutes)';
 }
+
+/// A sub-minute offset, down to microseconds.
+class _SubMinute {
+  const _SubMinute(this.second, this.millisecond, this.microsecond);
+
+  final int second;
+  final int millisecond;
+  final int microsecond;
+
+  @override
+  String toString() => '${second}s ${millisecond}ms ${microsecond}us';
+}
+
+/// Includes the exact instant that produced the original defect (.005877),
+/// plus both ends of the second.
+const List<_SubMinute> _subMinuteOffsets = [
+  _SubMinute(0, 0, 0),
+  _SubMinute(0, 0, 1),
+  _SubMinute(0, 5, 877),
+  _SubMinute(1, 0, 0),
+  _SubMinute(30, 500, 0),
+  _SubMinute(59, 999, 999),
+];
 
 extension _AnyPlanningWindow on glados.Any {
   glados.Generator<_WindowScenario> get windowScenario =>
       glados.CombinableAny(this).combine4(
         glados.AnyUtils(this).choose(_hours),
         glados.AnyUtils(this).choose(_minutes),
-        glados.AnyUtils(this).choose(const [0, 1, 30, 59]),
+        glados.AnyUtils(this).choose(_subMinuteOffsets),
         glados.AnyUtils(this).choose(const [15, 60, 240, 480, 960]),
         _WindowScenario.new,
       );
