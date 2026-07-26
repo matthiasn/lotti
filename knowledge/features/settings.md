@@ -51,10 +51,17 @@ right-hand pane through that `ValueNotifier`.
 
 **Mobile builds real stacks, not single pages.** Parent pages stay in the Beamer
 stack so a back tap walks up one level at a time. `SettingsMobileRootPage` is
-always first; for the two **pure-navigation** branches — `definitions` and
-`advanced` — a branch hub is also pushed and **stays beneath** the leaf, making it
-a true drill-down. Every other branch (AI / Agents / Sync) has its own landing
-page and is opened directly.
+always first; for the three branches that are **pure navigation** —
+`definitions`, `advanced` and `sync` — a `SettingsMobileBranchPage` hub is also
+pushed and **stays beneath** the leaf, making it a true drill-down. The sync hub
+is the same page wrapped in `SyncFeatureGate`. AI and Agents are the exception:
+each has its own landing page (`AiSettingsPage` and its agents counterpart) and is
+opened directly.
+
+Each of the three hubs lists its children from the shared tree, which is what
+replaced the hand-maintained `DefinitionsPage`, `AdvancedSettingsPage` and
+`SyncSettingsPage` item lists — entries, icons, copy, ordering and flag gating all
+come from `buildSettingsTree`.
 
 Tapping a node is routed by `handleSettingsNodeTap`: `whats-new` opens a modal,
 everything else beams to its canonical URL from `settingsNodeUrls`, and

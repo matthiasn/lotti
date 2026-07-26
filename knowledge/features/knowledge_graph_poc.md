@@ -31,4 +31,9 @@ ego-centric model inverts that — **the view is always bounded by hops from whe
 you stand**, so complexity stays constant regardless of graph size, and the
 horizon stars preserve a sense of scale without paying to render it.
 
-This is exploratory and not wired into the shipping navigation.
+**It ships, ungated.** Both task-detail app bars — `TaskCompactAppBar` and
+`TaskExpandableAppBar` — render a hub-icon action that pushes
+`TaskKnowledgeGraphPage`, and the gate in front of it,
+`knowledgeGraphEntryPointEnabledProvider`, is `Provider<bool>((_) => true)` with
+no config flag behind it. The concept is still exploratory in ambition, but every
+user with a task open can reach it, so treat changes here as user-facing.

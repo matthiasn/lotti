@@ -88,7 +88,8 @@ The preferred path is an **anchored forward walk**
 `/context/{eventId}` request with `room.getTimeline(eventContextId: marker,
 limit: 0)`, then walk `/messages?dir=f`.
 
-**The zero cache limit is required with Matrix SDK 7.0.0.** Without it, an
+**The zero cache limit is required by the Matrix SDK** (`matrix: ^8.1.0`).
+Without it, an
 anchor already present in the SDK database suppresses the context request,
 leaves the timeline without a forward token, and can make a reconnect
 incorrectly report completion with no bootstrap events. This is a subtle failure

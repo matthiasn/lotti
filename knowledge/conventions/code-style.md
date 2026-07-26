@@ -50,9 +50,14 @@ committing.
 are regenerated with `make build_runner` (or the design-system import).
 
 **One trap is worth memorizing: never pair `--build-filter` with
-`--delete-conflicting-outputs`.** In this repo the combination deletes generated
-files *outside* the filter, and `git status` stays clean — so the damage is
-invisible until an unrelated build fails.
+`--delete-conflicting-outputs`.** The combination deletes generated files
+*outside* the filter and does not regenerate them, because the filter excludes
+them from the build that would have rewritten them.
+
+The build itself **succeeds and reports nothing**, so the only signal is `git
+status` showing generated files as deleted — these files are tracked, not
+ignored. Read it before committing, or the deletions travel with the change and
+surface later as an unrelated build failure.
 
 # Design tokens are mandatory
 

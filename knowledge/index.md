@@ -60,21 +60,25 @@ agent-generated until it does.
 
 # Where the code is documented
 
-Every module under `lib/features/` has a `README.md` that links to its concept,
-so start there. The shared trees have no README, and are documented here:
+Every module under `lib/features/` has a `README.md` that links to its concept, and
+so do [`lib/services/`](../lib/services/README.md) and
+[`lib/widgets/`](../lib/widgets/README.md) — start there. For the trees with no
+README, this is the way in:
 
-| Code | Concept |
-|------|---------|
-| [`lib/database/`](../lib/database) | [Persistence layer](architecture/persistence.md) |
-| [`lib/logic/`](../lib/logic) | [Persistence layer](architecture/persistence.md) — `PersistenceLogic` and the import paths |
-| [`lib/services/`](../lib/services) | [Bootstrap and DI](architecture/bootstrap-and-di.md), and [Logging](architecture/logging-and-diagnostics.md) for `LoggingService` |
-| [`lib/beamer/`](../lib/beamer) | [Navigation and app shell](architecture/navigation.md) |
-| [`lib/classes/`](../lib/classes) | [Domain concepts](domain/) |
-| [`lib/widgets/`](../lib/widgets) | [Shared widgets](architecture/shared-widgets.md) |
-| [`lib/themes/`](../lib/themes) | [Tokens and theming](features/design_system/tokens-and-theming.md) |
-| [`lib/l10n/`](../lib/l10n) | [Localization](conventions/localization.md) |
-| [`test/`](../test) | [Testing conventions](conventions/testing.md) |
-| [`tool/okf/`](../tool/okf) | [How this bundle is maintained](conventions/knowledge-bundle.md) |
+| Code | Concept | Covers |
+|------|---------|--------|
+| [`lib/database/`](../lib/database) | [Persistence layer](architecture/persistence.md) | the whole tree |
+| [`lib/beamer/`](../lib/beamer) | [Navigation and app shell](architecture/navigation.md) | the whole tree |
+| [`lib/classes/`](../lib/classes) | [Domain concepts](domain/) | the entity unions; not every class |
+| [`lib/l10n/`](../lib/l10n) | [Localization](conventions/localization.md) | the ARB workflow |
+| [`lib/logic/`](../lib/logic) | [Persistence layer](architecture/persistence.md) | **`PersistenceLogic`'s role in the write path only** — the import paths and the rest of the tree are undocumented |
+| [`lib/themes/`](../lib/themes) | [Tokens and theming](features/design_system/tokens-and-theming.md) | **`theme_overrides.dart` only**, as the token-injection seam |
+| [`lib/utils/`](../lib/utils) | — | nothing; small helpers, read the code |
+| [`test/`](../test) | [Testing conventions](conventions/testing.md) + [`test/README.md`](../test/README.md) | the whole tree |
+| [`tool/okf/`](../tool/okf) | [How this bundle is maintained](conventions/knowledge-bundle.md) | the whole tree |
+
+Where a row says "only", the concept describes that seam rather than the
+directory. Treat the rest of those trees as undocumented and read the code.
 
 # Architecture
 

@@ -5,7 +5,7 @@ description: "The rules that keep a single-threaded CI lane green — fake time,
 resource: ../../test/README.md
 tags: [convention, testing, fake-time, glados, ci]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T04:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T12:00:00Z }
 stale_after: 2027-01-18
 sources:
   - id: test-readme
@@ -24,11 +24,16 @@ sources:
 
 # The constraint that shapes everything
 
-**CI runs tests with `very_good test` in a single thread.** That is faster on the
-low-end runners, but it is unforgiving: a test that leaks a timer, a stream
-subscription or a database handle fails *a different test*, often in another file.
+**Tests in one file share a process, so a leak escapes the test that caused it.**
+A timer, stream subscription or database handle left open outlives its own test
+and fails a *later* one in the same file — usually one that looks unrelated and
+passes in isolation. Almost every rule below exists because of that.
 
-Almost every rule below exists because of that.
+Be precise about the blast radius, because the looser version of this claim keeps
+coming back. CI runs `very_good test` with **no `-j`, so its default concurrency
+of 4 applies**: four suites run in parallel, each in its own process, sharded ten
+ways across matrix jobs. A leak therefore *cannot* reach another file — the reach
+is within a file, which is exactly where `tearDown` discipline pays.
 
 # Fake time is mandatory
 
@@ -118,6 +123,16 @@ and position. Examples of this discipline in practice:
 
 # Running them
 
-`make test` for the suite with coverage, `make coverage` for the HTML report, or a
-targeted `fvm flutter test <path>` while iterating. **Do not run the whole suite
-casually** — it is slow and rarely what a focused change needs.
+**Locally, run the tests your change touches** — `fvm flutter test <path>`, or a
+directory while iterating. `make coverage` builds the HTML report when you
+genuinely need it.
+
+**Do not run the whole suite locally as a habit.** It is slow enough to stall the
+work it is meant to protect, and CI runs it far faster anyway: the Linux lane
+shards `very_good test` **ten ways** across parallel matrix jobs, so the full
+result arrives on the push without blocking anyone's machine. Push, keep working,
+read the result when it lands.
+
+The exception is a change whose blast radius you cannot bound — a shared
+helper, a `getIt` registration, a design-system token — where the whole suite is
+the only honest check. Even then, prefer letting CI do it.

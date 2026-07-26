@@ -61,15 +61,14 @@ Two more run on **every** branch push despite looking scoped:
 - `flatpak-foreign-deps.yml` — path-filtered on *pull requests*, but unfiltered
   on branch pushes.
 
-Genuinely path-filtered, on pull requests only: `manual.yml` (docs-site) and
-`python-tools-ci.yml` (the Python tools).
+Genuinely path-filtered: `manual.yml` (docs-site), which runs **only** on pull
+requests to `main`, and `python-tools-ci.yml` (the Python tools), which is
+path-filtered on **both** branch pushes and pull requests.
 
 Buildkite pipelines under `.buildkite/` cover the Linux and Windows test lanes
-and JUnit upload. CI runs tests with `very_good test` in a **single thread**,
-which is faster on the low-end runners but unforgiving about resource cleanup:
-a test that leaks a timer, stream subscription or database handle will fail a
-*different* test. That constraint is why the test conventions insist on
-`tearDown` discipline — see [testing conventions](../conventions/testing.md).
+and JUnit upload. The Linux lane shards `very_good test` ten ways across matrix
+jobs; what that means for how tests must be written is in
+[testing conventions](../conventions/testing.md).
 
 # Release
 
@@ -117,10 +116,10 @@ test-only changes and CI tweaks get none.
 | Run the app | `fvm flutter run -d <device>` |
 
 Generated files — `*.g.dart`, `*.freezed.dart` — are checked in and must never
-be hand-edited; regenerate with `make build_runner`. One trap is worth
-remembering: **never pair `--build-filter` with `--delete-conflicting-outputs`**
-in this repo. The combination deletes generated files outside the filter and
-leaves `git status` clean, so the damage is invisible until a build fails.
+be hand-edited; regenerate with `make build_runner`. One build-runner flag
+combination is actively destructive; see
+[code style and analysis](../conventions/code-style.md) for it, which is where the
+generated-code rules live.
 
 # Where to look
 

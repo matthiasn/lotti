@@ -25,39 +25,13 @@
 - Do not modify generated code (`*.g.dart`, `*.freezed.dart`); regenerate via `make build_runner`.
 
 ## Testing Guidelines
-- Framework: `flutter_test` with helpers in `test/`. Name tests `*_test.dart` and co‑locate by feature (e.g., `test/features/...`).
-- Run: `flutter test` or better via mcp. Integration: `make integration_test`.
-- Aim to maintain/improve coverage; open report with `make coverage`.
-- Do not run all tests unless specifically asked to do so. Takes too long, uses too much context.
-- In CI, tests are run with `very_good test` in the same thread. This runs faster on low-end machines such as the CI runner, but requires extra careful cleanup of resources to avoid causes issues in other tests.
-
-### Keeping tests DRY
-- **Extract pump/setup helpers**: When multiple tests in a file share `ProviderScope` + `MaterialApp` + localization + `Scaffold` wrapping, extract a file-level helper (e.g. `_pumpWidget(tester, {...})`) that takes only the varying parts as parameters.
-- **Extract mock stub helpers**: When the same `when(...)` stub appears in 3+ tests, extract a helper like `_stubCreateSession(repo, categoryId: ...)`.
-- **Use test bench classes for complex state**: When tests share a lot of setup (containers, fake channels, services, stream controllers), group them into a `_TestBench` class with a `create()` factory and convenience methods (e.g. `startTranscription()`, `sendPcm()`, `stop()`).
-- **Parameterise varying inputs**: Helpers should accept the parts that differ between tests as named parameters (e.g. `selectedCategoryIds`, `extraOverrides`, `onDelta`) and keep the boilerplate fixed internally.
-- **Avoid copy-pasting test bodies**: If two tests differ only in a parameter value, consider whether they can share the same helper with different arguments instead of duplicating the entire setup.
-
-### Test Infrastructure Rules
-- **Use centralized mocks.** Import from `test/mocks/mocks.dart`. Never define a mock class inline in a test file if it already exists in the central file. If a new mock is needed, add it to `test/mocks/mocks.dart` first, then import it.
-- **Use centralized fallback values.** Import from `test/helpers/fallbacks.dart` and call `registerFallbackValue(...)` with values defined there. If a new fallback is needed, add it to the central file.
-- **Use `setUpTestGetIt()` / `tearDownTestGetIt()`.** Import from `test/widget_test_utils.dart`. Never write inline `getIt.isRegistered` / `getIt.unregister` / `getIt.registerSingleton` boilerplate. If additional services are needed beyond what the helper registers, extend the helper or register them after calling it.
-- **Use `makeTestableWidget()` for widget tests.** Import from `test/widget_test_utils.dart`. Do not create ad-hoc `MaterialApp` / `ProviderScope` / `MediaQuery` wrappers. Use the `overrides` parameter for Riverpod overrides.
-- **Use test data factories** where they exist (e.g., `test/features/categories/test_utils.dart`, `test/features/ai/test_utils.dart`). When creating test entities for a feature that already has a factory, use it. When touching a new feature, consider creating one.
-- **One test file per source file.** Test file paths must mirror source file paths (`lib/features/foo/bar.dart` → `test/features/foo/bar_test.dart`). Never split tests for one source file across multiple test files.
-
-### Test Quality Rules
-- **Every test must assert something meaningful.** `findsOneWidget` alone is not a valid test — it only proves the widget tree built without crashing. Always verify at least one of: displayed content/values, state changes after interaction, callback invocations, or error handling.
-- **No copy-paste test permutations.** If you need to test the same widget with different flag combinations (e.g., `private: true/false`, `favorite: true/false`), use a loop or parameterized helper, not N nearly-identical test bodies.
-- **No constructor smoke tests.** Tests that only instantiate an object and check `isNotNull` have zero value. Test behavior, not existence.
-- **Mock setup must not dwarf test logic.** If a test has 100 lines of mock setup and 5 lines of assertions, the test is either testing the wrong thing or needs a shared helper. Prefer extracting setup into `setUp()` or a helper function.
-
-### Async & Performance Rules
-- **Never use `Future.delayed()`, `sleep()`, or real `Timer` in tests.** See `test/README.md` for the fake time policy.
-- **Prefer `tester.pump(duration)` over `tester.pumpAndSettle()`.** `pumpAndSettle` has a default 10-second timeout and will hang if animations never settle. Use it only when you genuinely need all animations to complete, and never pass a duration > 1 second.
-- **Use `fakeAsync` for unit/service tests** that involve timers, delays, retries, or debounce. See `test/test_utils/retry_fake_time.dart` and `test/test_utils/pump_retry_time.dart` for helpers.
-- **Use deterministic dates.** Never use `DateTime.now()` in tests. Use specific dates like `DateTime(2024, 3, 15)`.
-- **Time-driven UI must never jump.** Any visible count-up or countdown must use tabular figures and stable geometry so digit changes, minute/hour transitions, and format-length changes do not move adjacent controls or trigger responsive reflow. Reserve space for the supported format or isolate the changing label inside a fixed layout region. Add a deterministic widget regression test that crosses representative digit/format boundaries and asserts that the timer and neighboring widgets keep the same size and position.
+- Framework: `flutter_test`, helpers in `test/`. Name tests `*_test.dart` and co-locate by feature. **One test file per source file**, mirroring the path.
+- Run targeted tests via the dart-mcp server. **Do not run the whole suite locally unless asked** — it is slow, and CI runs it ten-way sharded on every push, so let CI do it rather than blocking local work.
+- **Never `Future.delayed`, `sleep()` or a real `Timer` in a test.** Use `fakeAsync` or `tester.pump(duration)`, and deterministic dates rather than `DateTime.now()`.
+- **Reuse the shared harness**: mocks from `test/mocks/mocks.dart`, fallbacks from `test/helpers/fallbacks.dart`, `setUpTestGetIt()` / `tearDownTestGetIt()`, `makeTestableWidget()`. Never improvise a per-file equivalent.
+- **Every test must assert something meaningful.** `findsOneWidget` alone proves only that the tree built; a constructor smoke test proves nothing at all.
+- **Re-run every new regression test with the fix reverted.** If it still passes, it is not testing the fix.
+- The full contract — the DRY rules, the infrastructure table, the quality bar, the vacuous-pass traps, property tests, time-driven UI — is [knowledge/conventions/testing.md](knowledge/conventions/testing.md), plus [test/README.md](test/README.md) for the fake-time policy and mocktail hygiene. Read them rather than working from this summary.
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits (e.g., `feat:`, `fix:`, `chore:`, `ci:`). Keep subjects concise and imperative.
@@ -148,16 +122,17 @@ Rules for `knowledge/`:
 ## Localization (l10n)
 - All user-visible label texts MUST be localized using arb files in `lib/l10n/`.
 - Never hardcode strings that users will see — add them to the arb files instead.
-- **Add every new label to all twelve catalogs**, translated. The full list, the
-  `app_en_GB.arb` exception and the informal-register rules live in
-  [knowledge/conventions/localization.md](knowledge/conventions/localization.md)
-  — that concept is the single source of truth, so read it rather than trusting a
-  list pasted anywhere else.
+- **Add every new label to every catalog in `lib/l10n/`**, translated — not a
+  subset. The catalog list, the `app_en_GB.arb` exception and the per-language
+  register table live in
+  [knowledge/conventions/localization.md](knowledge/conventions/localization.md).
+  Read it rather than working from a count or a list quoted anywhere else,
+  including here.
 - Access localized strings via `context.messages.labelName` (import `app_localizations_context.dart`).
 - After adding labels, run `make l10n` to generate the Dart files.
 - Run `make sort_arb_files` to keep arb files consistently sorted.
 - **NEVER edit the generated `lib/l10n/app_localizations_*.dart` files directly** — always edit the `.arb` source files and regenerate.
-- **Use informal tone** in all translations: German "du/deine" (not "Sie/Ihre"), French "tu/tes" (not "vous/vos"), Spanish "tú/tus" (not "usted/sus"). Romanian is the exception — it uses the formal "dvs." register consistently.
+- **Use the informal register** in every translation, with Romanian as the one deliberate exception. Which pronouns that means per language is in the concept linked above.
 
 ## Implementation discipline
 

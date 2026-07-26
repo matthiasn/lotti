@@ -115,8 +115,9 @@ This is stated plainly rather than pretending the weekly/monthly UI exists.
 
 `HabitsTabPage` is a `CustomScrollView` of **three slivers**. Reading content —
 header, summary, single-column habit list, chart — sits in a centred column
-capped at 820 px: past that plus side padding, horizontal padding becomes
-`(width - 820) / 2`.
+capped at **1100 px**: once the window exceeds that plus side padding, horizontal
+padding becomes `(width - 1100) / 2`, and below it the padding is one spacing
+step.
 
 **Between the list and the chart, the consistency heatmap breaks out to the full
 window width** in its own sliver, so a wide screen shows more history while the
