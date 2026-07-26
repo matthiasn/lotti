@@ -9864,9 +9864,9 @@ class AppLocalizationsSv extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count overifierade enheter pausar synkroniseringen — verifiera eller ta bort dem nedan.',
+          '$count overifierade enheter pausar synkroniseringen — ta bort eller verifiera dem nedan.',
       one:
-          '1 overifierad enhet pausar synkroniseringen — verifiera eller ta bort den nedan.',
+          '1 overifierad enhet pausar synkroniseringen — ta bort eller verifiera den nedan.',
     );
     return '$_temp0';
   }

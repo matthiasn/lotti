@@ -10013,9 +10013,9 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivos sin verificar están pausando la sincronización: verifícalos o quítalos abajo.',
+          '$count dispositivos sin verificar están pausando la sincronización: quítalos o verifícalos abajo.',
       one:
-          '1 dispositivo sin verificar está pausando la sincronización: verifícalo o quítalo abajo.',
+          '1 dispositivo sin verificar está pausando la sincronización: quítalo o verifícalo abajo.',
     );
     return '$_temp0';
   }

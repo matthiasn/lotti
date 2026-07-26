@@ -4594,7 +4594,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{1 niet-geverifieerd apparaat pauzeert de synchronisatie — verifieer of verwijder het hieronder.} other{{count} niet-geverifieerde apparaten pauzeren de synchronisatie — verifieer of verwijder ze hieronder.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{1 niet-geverifieerd apparaat pauzeert de synchronisatie — verwijder of verifieer het hieronder.} other{{count} niet-geverifieerde apparaten pauzeren de synchronisatie — verwijder of verifieer ze hieronder.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {

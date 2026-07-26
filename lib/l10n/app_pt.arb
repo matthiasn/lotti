@@ -4594,7 +4594,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo não verificado está pausando a sincronização — verifica-o ou remove-o abaixo.} other{{count} dispositivos não verificados estão pausando a sincronização — verifica-os ou remove-os abaixo.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo não verificado está pausando a sincronização — remove-o ou verifica-o abaixo.} other{{count} dispositivos não verificados estão pausando a sincronização — remove-os ou verifica-os abaixo.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {

@@ -10043,11 +10043,11 @@ class AppLocalizationsRo extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count de dispozitive neverificate întrerup sincronizarea — verificați-le sau eliminați-le mai jos.',
+          '$count de dispozitive neverificate întrerup sincronizarea — eliminați-le sau verificați-le mai jos.',
       few:
-          '$count dispozitive neverificate întrerup sincronizarea — verificați-le sau eliminați-le mai jos.',
+          '$count dispozitive neverificate întrerup sincronizarea — eliminați-le sau verificați-le mai jos.',
       one:
-          'Un dispozitiv neverificat întrerupe sincronizarea — verificați-l sau eliminați-l mai jos.',
+          'Un dispozitiv neverificat întrerupe sincronizarea — eliminați-l sau verificați-l mai jos.',
     );
     return '$_temp0';
   }

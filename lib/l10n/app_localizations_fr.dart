@@ -10058,9 +10058,9 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count appareils non vérifiés mettent la synchronisation en pause — vérifie-les ou supprime-les ci-dessous.',
+          '$count appareils non vérifiés mettent la synchronisation en pause — supprime-les ou vérifie-les ci-dessous.',
       one:
-          '1 appareil non vérifié met la synchronisation en pause — vérifie-le ou supprime-le ci-dessous.',
+          '1 appareil non vérifié met la synchronisation en pause — supprime-le ou vérifie-le ci-dessous.',
     );
     return '$_temp0';
   }

@@ -87,6 +87,7 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
         ),
         IconButton(
           key: const Key('sync_devices_refresh'),
+          tooltip: messages.matrixStatsRefresh,
           padding: EdgeInsets.zero,
           onPressed: _refreshing ? null : () => unawaited(_refresh()),
           icon: _refreshing

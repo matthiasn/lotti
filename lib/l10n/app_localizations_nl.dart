@@ -9892,9 +9892,9 @@ class AppLocalizationsNl extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count niet-geverifieerde apparaten pauzeren de synchronisatie — verifieer of verwijder ze hieronder.',
+          '$count niet-geverifieerde apparaten pauzeren de synchronisatie — verwijder of verifieer ze hieronder.',
       one:
-          '1 niet-geverifieerd apparaat pauzeert de synchronisatie — verifieer of verwijder het hieronder.',
+          '1 niet-geverifieerd apparaat pauzeert de synchronisatie — verwijder of verifieer het hieronder.',
     );
     return '$_temp0';
   }

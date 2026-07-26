@@ -4039,7 +4039,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{1 nicht verifiziertes Gerät pausiert die Synchronisierung — verifiziere oder entferne es unten.} other{{count} nicht verifizierte Geräte pausieren die Synchronisierung — verifiziere oder entferne sie unten.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{1 nicht verifiziertes Gerät pausiert die Synchronisierung — entferne oder verifiziere es unten.} other{{count} nicht verifizierte Geräte pausieren die Synchronisierung — entferne oder verifiziere sie unten.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {

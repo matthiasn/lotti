@@ -202,37 +202,10 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
             children: trustBadges,
           ),
           // Last-seen has one fixed slot on every card so the dead-device
-          // hunt is a straight column scan; only the blocking card gains the
-          // amber "probably dead" prefix.
-          if (lastSeen != null) ...[
-            SizedBox(height: tokens.spacing.step2),
-            Text.rich(
-              TextSpan(
-                children: [
-                  if (stale)
-                    TextSpan(
-                      text: '${messages.syncDevicesStaleHint}\u00a0· ',
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: device.blocksSync
-                            ? tokens.colors.alert.warning.ink
-                            : tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  TextSpan(
-                    // The date itself is atomic (non-breaking, via
-                    // _formatDate); the localized label may wrap freely so
-                    // long translations cannot overflow narrow cards.
-                    text: messages.syncDevicesLastSeen(
-                      _formatDate(context, lastSeen),
-                    ),
-                  ),
-                ],
-              ),
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-          ] else if (stale) ...[
+          // hunt is a straight column scan; the blocking card adds the amber
+          // "probably dead" hint on its own line above it, so the label-date
+          // pair never wraps apart on the one card the user must judge.
+          if (stale) ...[
             SizedBox(height: tokens.spacing.step2),
             Text(
               messages.syncDevicesStaleHint,
@@ -240,6 +213,18 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                 color: device.blocksSync
                     ? tokens.colors.alert.warning.ink
                     : tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
+          if (lastSeen != null) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              // The date itself is atomic (non-breaking, via _formatDate);
+              // the localized label may wrap freely so long translations
+              // cannot overflow narrow cards.
+              messages.syncDevicesLastSeen(_formatDate(context, lastSeen)),
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           ],
@@ -285,9 +270,12 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                   if (canDelete)
                     DesignSystemButton(
                       key: const Key('matrix_delete_device'),
-                      // Same height as a sibling Verify; the variant alone
-                      // carries the de-emphasis.
-                      size: DesignSystemButtonSize.large,
+                      // Match a sibling Verify's height; standing alone on a
+                      // healthy card it stays small so destruction is never
+                      // the focal element of a card needing nothing done.
+                      size: canVerify
+                          ? DesignSystemButtonSize.large
+                          : DesignSystemButtonSize.small,
                       variant: DesignSystemButtonVariant.dangerSecondary,
                       isLoading: _busy,
                       onPressed: () => _deleteDevice(context),

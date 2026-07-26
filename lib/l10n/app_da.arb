@@ -4595,7 +4595,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — bekræft eller fjern den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — bekræft eller fjern dem nedenfor.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — fjern eller bekræft den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — fjern eller bekræft dem nedenfor.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {

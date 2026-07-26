@@ -355,11 +355,10 @@ void main() {
         buildDevice(lastSeen: DateTime(2026, 5, 14)),
       );
 
-      // Evidence and explanation merge into one hint line on stale cards.
+      // Hint and evidence sit on two deliberate lines on stale cards.
+      expect(find.text('Probably no longer in use'), findsOneWidget);
       expect(
-        find.text(
-          'Probably no longer in use\u00a0· Last seen May\u00a014,\u00a02026',
-        ),
+        find.text('Last seen May\u00a014,\u00a02026'),
         findsOneWidget,
       );
     });

@@ -9793,8 +9793,8 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count unverified devices are pausing sync — verify or remove them below.',
-      one: '1 unverified device is pausing sync — verify or remove it below.',
+          '$count unverified devices are pausing sync — remove or verify them below.',
+      one: '1 unverified device is pausing sync — remove or verify it below.',
     );
     return '$_temp0';
   }

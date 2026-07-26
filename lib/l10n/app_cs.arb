@@ -4046,7 +4046,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{1 neověřené zařízení pozastavuje synchronizaci — ověř ho nebo odeber níže.} few{{count} neověřená zařízení pozastavují synchronizaci — ověř je nebo odeber níže.} other{{count} neověřených zařízení pozastavuje synchronizaci — ověř je nebo odeber níže.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{1 neověřené zařízení pozastavuje synchronizaci — odeber ho nebo ověř níže.} few{{count} neověřená zařízení pozastavují synchronizaci — odeber je nebo ověř níže.} other{{count} neověřených zařízení pozastavuje synchronizaci — odeber je nebo ověř níže.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {
