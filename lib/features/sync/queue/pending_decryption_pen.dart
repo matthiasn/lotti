@@ -49,6 +49,13 @@ class _HeldEvent {
 /// the room for a decrypted copy and enqueues it the moment one exists.
 /// Only the countdown to giving up is rate-limited.
 ///
+/// The window is per session, not absolute: the pen is in memory, so a
+/// teardown discards whatever it still holds. That is not a loss path —
+/// held entries have no queue row yet, and the startup bridge re-fetches
+/// them from the server on the next run. `drainUntilEmptyImpl` therefore
+/// does not wait for the pen to empty before tearing down, which it could
+/// no longer do inside a 30s shutdown now that attempts are spaced.
+///
 /// The pen does not schedule its own timer in production — the
 /// `InboundWorker` ticks it on every drain iteration. Tests may call
 /// [flushInto] directly or pass a custom [sweepInterval] to start its

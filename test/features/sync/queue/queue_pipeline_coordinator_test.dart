@@ -1729,6 +1729,54 @@ void main() {
     );
 
     test(
+      'drainUntilEmpty stops waiting on a pen that cannot produce',
+      () async {
+        // Ciphertext whose key has not arrived is not a stranded row: it has
+        // no queue row yet and the startup bridge re-fetches it next run. Now
+        // that pen attempts are spaced in real time, the pen can no longer
+        // empty itself inside a 30s shutdown — so waiting for it would pin
+        // every teardown to the full timeout.
+        when(() => queue.stats()).thenAnswer(
+          (_) async => const QueueStats(
+            total: 0,
+            byProducer: {},
+            readyNow: 0,
+            oldestEnqueuedAt: null,
+          ),
+        );
+        when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
+        final room = MockRoom();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => pen.size).thenReturn(3);
+        when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
+          (_) async =>
+              const PenFlushOutcome(enqueued: 0, stillEncrypted: 3, dropped: 0),
+        );
+
+        final coordinator = build();
+        final elapsed = Stopwatch()..start();
+        await coordinator.drainUntilEmpty(
+          timeout: const Duration(seconds: 30),
+        );
+        elapsed.stop();
+
+        // Bounded by the stall allowance (~1s), not by the 30s timeout.
+        expect(elapsed.elapsed, lessThan(const Duration(seconds: 10)));
+        verify(
+          () => logging.log(
+            any<LogDomain>(),
+            any<String>(
+              that: contains(
+                'queue.coordinator.drainUntilEmpty.penStillHolding',
+              ),
+            ),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'drainUntilEmpty respects the timeout and logs on timeout',
       () async {
         // Always report remaining rows so the loop only exits via timeout.

@@ -168,6 +168,13 @@ extension QueueLifecycle on QueuePipelineCoordinator {
     );
   }
 
+  /// How many consecutive pen flushes may produce nothing before
+  /// [drainUntilEmptyImpl] stops waiting on it. At the loop's 200ms back-off
+  /// this is ~1s — long enough for the SDK to finish a decryption already in
+  /// progress, short enough that ciphertext whose key has not arrived does not
+  /// hold teardown open for the whole timeout.
+  static const int _penStallFlushes = 5;
+
   /// Implementation of [QueuePipelineCoordinator.drainUntilEmpty]; see [QueueLifecycle].
   /// Drains the queue until every persisted row has applied (or has
   /// been permanently skipped), or the [timeout] elapses.
@@ -185,15 +192,18 @@ extension QueueLifecycle on QueuePipelineCoordinator {
     final deadline = clock.now().add(
       timeout ?? QueuePipelineCoordinator.drainUntilEmptyTimeout,
     );
+    var unproductivePenFlushes = 0;
     while (true) {
       // 1. Flush the pen first so any event the SDK has decrypted
       //    since the last sweep lands in the queue before we ask it
       //    for stats — otherwise the loop can declare the queue empty
       //    while held events are waiting to enter it.
       final room = await _resolveRoom();
+      var penEnqueued = 0;
       if (room != null) {
         try {
-          await _pen.flushInto(queue: _queue, room: room);
+          final outcome = await _pen.flushInto(queue: _queue, room: room);
+          penEnqueued = outcome.enqueued;
         } catch (error, stackTrace) {
           _logging.error(
             LogDomain.sync,
@@ -216,8 +226,32 @@ extension QueueLifecycle on QueuePipelineCoordinator {
         );
       }
 
+      if (penEnqueued > 0) {
+        unproductivePenFlushes = 0;
+      } else if (_pen.size > 0) {
+        unproductivePenFlushes++;
+      }
+
       final stats = await _queue.stats();
-      if (stats.total == 0 && _pen.size == 0) {
+      // Held ciphertext is not a stranded row. Shutdown's contract is that
+      // nothing persisted is left un-applied; an entry in the pen has no row
+      // yet and is re-fetched from the server on the next startup bridge, so
+      // it survives teardown regardless. Waiting past the point where the pen
+      // stops producing only delays teardown — and since attempts are now
+      // spaced in real time, a pen holding an undecryptable event can no
+      // longer empty itself inside this window at all, which would pin every
+      // shutdown to the full timeout.
+      final penIsStuck =
+          _pen.size > 0 && unproductivePenFlushes >= _penStallFlushes;
+      if (stats.total == 0 && (_pen.size == 0 || penIsStuck)) {
+        if (penIsStuck) {
+          _logging.log(
+            LogDomain.sync,
+            'queue.coordinator.drainUntilEmpty.penStillHolding '
+            'penSize=${_pen.size}',
+            subDomain: _logSub,
+          );
+        }
         _logging.log(
           LogDomain.sync,
           'queue.coordinator.drainUntilEmpty.done',
