@@ -4574,6 +4574,7 @@
   "syncActivityTitle": "Sync",
   "syncDeleteConfigConfirm": "JA, JEG ER SIKKER",
   "syncDeleteConfigQuestion": "Vil du slette synkroniseringskonfigurationen?",
+  "syncDevicesKeylessHint": "Parringen blev aldrig fuldført — den kan kun fjernes.",
   "syncDevicesLastSeen": "Sidst set {date}",
   "@syncDevicesLastSeen": {
     "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
@@ -4594,7 +4595,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Synkronisering er sat på pause, indtil alle enheder er bekræftet eller fjernet.",
+  "syncDevicesPausedBanner": "Synkronisering er sat på pause, indtil alle enheder er fjernet eller bekræftet.",
   "syncDevicesSectionTitle": "Enheder",
   "syncDevicesStaleHint": "Sandsynligvis ikke længere i brug",
   "syncDevicesSyncResumed": "Synkroniseringen kører igen.",

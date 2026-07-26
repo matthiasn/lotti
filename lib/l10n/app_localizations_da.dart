@@ -9837,6 +9837,10 @@ class AppLocalizationsDa extends AppLocalizations {
       'Vil du slette synkroniseringskonfigurationen?';
 
   @override
+  String get syncDevicesKeylessHint =>
+      'Parringen blev aldrig fuldført — den kan kun fjernes.';
+
+  @override
   String syncDevicesLastSeen(String date) {
     return 'Sidst set $date';
   }
@@ -9854,7 +9858,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncDevicesPausedBanner =>
-      'Synkronisering er sat på pause, indtil alle enheder er bekræftet eller fjernet.';
+      'Synkronisering er sat på pause, indtil alle enheder er fjernet eller bekræftet.';
 
   @override
   String get syncDevicesSectionTitle => 'Enheder';

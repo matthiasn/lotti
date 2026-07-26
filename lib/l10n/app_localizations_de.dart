@@ -9890,6 +9890,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchtest du die Synchronisierungskonfiguration löschen?';
 
   @override
+  String get syncDevicesKeylessHint =>
+      'Die Kopplung wurde nie abgeschlossen — es kann nur entfernt werden.';
+
+  @override
   String syncDevicesLastSeen(String date) {
     return 'Zuletzt gesehen $date';
   }
@@ -9909,7 +9913,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncDevicesPausedBanner =>
-      'Die Synchronisierung pausiert, bis jedes Gerät verifiziert oder entfernt wurde.';
+      'Die Synchronisierung pausiert, bis jedes Gerät entfernt oder verifiziert wurde.';
 
   @override
   String get syncDevicesSectionTitle => 'Geräte';

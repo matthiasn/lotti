@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -26,9 +27,15 @@ class SyncDevicesList extends ConsumerStatefulWidget {
 
 class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
   bool _refreshing = false;
+  bool _refreshQueued = false;
 
   Future<void> _refresh() async {
-    if (_refreshing) return;
+    // Coalesce instead of dropping: a refresh requested while one is in
+    // flight (e.g. right after a deletion) must still observe its effect.
+    if (_refreshing) {
+      _refreshQueued = true;
+      return;
+    }
     setState(() => _refreshing = true);
     try {
       final succeeded = await ref
@@ -43,6 +50,10 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
       }
     } finally {
       if (mounted) setState(() => _refreshing = false);
+    }
+    if (_refreshQueued && mounted) {
+      _refreshQueued = false;
+      await _refresh();
     }
   }
 
@@ -76,12 +87,12 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
         ),
         IconButton(
           key: const Key('sync_devices_refresh'),
-          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
           onPressed: _refreshing ? null : () => unawaited(_refresh()),
           icon: _refreshing
-              ? SizedBox.square(
-                  dimension: tokens.spacing.step5,
-                  child: const CircularProgressIndicator(strokeWidth: 2),
+              ? DesignSystemSpinner(
+                  size: tokens.spacing.step5,
+                  strokeWidth: tokens.spacing.step1,
                 )
               : const Icon(MdiIcons.refresh),
         ),
@@ -108,7 +119,7 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
                 padding: EdgeInsets.symmetric(
                   vertical: tokens.spacing.step6,
                 ),
-                child: const CircularProgressIndicator(),
+                child: const DesignSystemSpinner(),
               ),
             ),
         ],
@@ -124,10 +135,16 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
         header,
         if (blocked) ...[
           SizedBox(height: tokens.spacing.step3),
+          // The toast's warning-callout grammar (level02 surface, warning
+          // border and icon, high-emphasis text): clearly a message, not a
+          // control, and distinct from the cards' hairline outline.
           DecoratedBox(
             key: const Key('sync_devices_paused_banner'),
             decoration: BoxDecoration(
-              color: tokens.colors.alert.warning.defaultColor,
+              color: tokens.colors.background.level02,
+              border: Border.all(
+                color: tokens.colors.alert.warning.defaultColor,
+              ),
               borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
             ),
             child: Padding(
@@ -136,16 +153,16 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
-                    MdiIcons.syncAlert,
+                    Icons.warning_rounded,
                     size: tokens.spacing.step6,
-                    color: tokens.colors.text.onInteractiveAlert,
+                    color: tokens.colors.alert.warning.defaultColor,
                   ),
                   SizedBox(width: tokens.spacing.step3),
                   Expanded(
                     child: Text(
                       messages.syncDevicesPausedBanner,
                       style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.onInteractiveAlert,
+                        color: tokens.colors.text.highEmphasis,
                       ),
                     ),
                   ),

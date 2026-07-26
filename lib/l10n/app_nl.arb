@@ -4573,6 +4573,7 @@
   "syncActivityTitle": "Synchroniseren",
   "syncDeleteConfigConfirm": "Ja, ik ben zeker.",
   "syncDeleteConfigQuestion": "Wilt u de synchronisatie-configuratie verwijderen?",
+  "syncDevicesKeylessHint": "Het koppelen is nooit voltooid — het kan alleen worden verwijderd.",
   "syncDevicesLastSeen": "Laatst gezien op {date}",
   "@syncDevicesLastSeen": {
     "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
@@ -4593,7 +4594,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Synchronisatie is gepauzeerd totdat elk apparaat is geverifieerd of verwijderd.",
+  "syncDevicesPausedBanner": "Synchronisatie is gepauzeerd totdat elk apparaat is verwijderd of geverifieerd.",
   "syncDevicesSectionTitle": "Apparaten",
   "syncDevicesStaleHint": "Waarschijnlijk niet meer in gebruik",
   "syncDevicesSyncResumed": "Synchronisatie werkt weer.",

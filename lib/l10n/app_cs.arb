@@ -4025,6 +4025,7 @@
   "syncActivityTitle": "Sync",
   "syncDeleteConfigConfirm": "ANO, JSEM SI JISTÝ",
   "syncDeleteConfigQuestion": "Chcete smazat konfiguraci synchronizace?",
+  "syncDevicesKeylessHint": "Párování nebylo nikdy dokončeno — zařízení lze pouze odebrat.",
   "syncDevicesLastSeen": "Naposledy aktivní {date}",
   "@syncDevicesLastSeen": {
     "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
@@ -4045,7 +4046,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Synchronizace je pozastavena, dokud nebude každé zařízení ověřeno nebo odebráno.",
+  "syncDevicesPausedBanner": "Synchronizace je pozastavena, dokud nebude každé zařízení odebráno nebo ověřeno.",
   "syncDevicesSectionTitle": "Zařízení",
   "syncDevicesStaleHint": "Pravděpodobně se už nepoužívá",
   "syncDevicesSyncResumed": "Synchronizace opět běží.",

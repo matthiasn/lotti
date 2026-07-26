@@ -9986,6 +9986,10 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Quieres eliminar la configuración de sincronización?';
 
   @override
+  String get syncDevicesKeylessHint =>
+      'El emparejamiento nunca se completó: solo se puede quitar.';
+
+  @override
   String syncDevicesLastSeen(String date) {
     return 'Visto por última vez el $date';
   }
@@ -10005,7 +10009,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncDevicesPausedBanner =>
-      'La sincronización está en pausa hasta que cada dispositivo esté verificado o eliminado.';
+      'La sincronización está en pausa hasta que cada dispositivo se elimine o verifique.';
 
   @override
   String get syncDevicesSectionTitle => 'Dispositivos';

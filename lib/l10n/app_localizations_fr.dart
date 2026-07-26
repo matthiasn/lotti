@@ -10031,6 +10031,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Veux-tu supprimer la configuration de synchronisation ?';
 
   @override
+  String get syncDevicesKeylessHint =>
+      'L\'appairage n\'a jamais été terminé — il ne peut être que supprimé.';
+
+  @override
   String syncDevicesLastSeen(String date) {
     return 'Vu pour la dernière fois le $date';
   }
@@ -10050,7 +10054,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncDevicesPausedBanner =>
-      'La synchronisation est en pause tant que chaque appareil n\'est pas vérifié ou supprimé.';
+      'La synchronisation est en pause tant que chaque appareil n\'est pas supprimé ou vérifié.';
 
   @override
   String get syncDevicesSectionTitle => 'Appareils';

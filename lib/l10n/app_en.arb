@@ -4795,6 +4795,7 @@
   "syncActivityTitle": "Sync",
   "syncDeleteConfigConfirm": "YES, I'M SURE",
   "syncDeleteConfigQuestion": "Do you want to delete the sync configuration?",
+  "syncDevicesKeylessHint": "Never finished pairing — it can only be removed.",
   "syncDevicesLastSeen": "Last seen {date}",
   "@syncDevicesLastSeen": {
     "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
@@ -4815,7 +4816,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Sync is paused until every device is verified or removed.",
+  "syncDevicesPausedBanner": "Sync is paused until every device is removed or verified.",
   "syncDevicesSectionTitle": "Devices",
   "syncDevicesStaleHint": "Probably no longer in use",
   "syncDevicesSyncResumed": "Sync is running again.",

@@ -16980,6 +16980,12 @@ abstract class AppLocalizations {
   /// **'Do you want to delete the sync configuration?'**
   String get syncDeleteConfigQuestion;
 
+  /// No description provided for @syncDevicesKeylessHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Never finished pairing — it can only be removed.'**
+  String get syncDevicesKeylessHint;
+
   /// Shown per device in the sync device list; {date} is a locale-formatted date.
   ///
   /// In en, this message translates to:
@@ -17007,7 +17013,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncDevicesPausedBanner.
   ///
   /// In en, this message translates to:
-  /// **'Sync is paused until every device is verified or removed.'**
+  /// **'Sync is paused until every device is removed or verified.'**
   String get syncDevicesPausedBanner;
 
   /// No description provided for @syncDevicesSectionTitle.

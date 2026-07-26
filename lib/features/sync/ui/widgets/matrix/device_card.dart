@@ -120,6 +120,12 @@ class DeviceCard extends ConsumerWidget {
             ?pairingHash,
           ].join(' · ');
 
+    // Keyless sessions cannot be verified and never block sync — an amber
+    // chip would cry wolf, so they get the neutral outlined variant and an
+    // explanatory hint instead.
+    final keyless =
+        !device.isCurrentDevice && !device.verified && device.keys == null;
+
     final trustBadges = <Widget>[
       if (device.isCurrentDevice)
         DesignSystemBadge.outlined(
@@ -130,6 +136,11 @@ class DeviceCard extends ConsumerWidget {
         DesignSystemBadge.filled(
           label: messages.syncDevicesVerifiedChip,
           tone: DesignSystemBadgeTone.success,
+        )
+      else if (keyless)
+        DesignSystemBadge.outlined(
+          label: messages.syncDevicesUnverifiedChip,
+          tone: DesignSystemBadgeTone.secondary,
         )
       else
         DesignSystemBadge.filled(
@@ -163,8 +174,8 @@ class DeviceCard extends ConsumerWidget {
                         metaLine,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
                         ),
                       ),
                     ],
@@ -174,6 +185,7 @@ class DeviceCard extends ConsumerWidget {
               if (!device.isCurrentDevice && !removalIsPrimary)
                 IconButton(
                   key: const Key('matrix_delete_device'),
+                  padding: EdgeInsets.zero,
                   icon: Semantics(
                     label: messages.deleteDeviceLabel,
                     child: const Icon(MdiIcons.trashCanOutline),
@@ -189,17 +201,15 @@ class DeviceCard extends ConsumerWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               ...trustBadges,
-              if (lastSeen != null)
+              // On a stale card the date moves down to the hint line so the
+              // chip stays the only warning-toned element in this row.
+              if (lastSeen != null && !stale)
                 Text(
                   messages.syncDevicesLastSeen(
                     DateFormat.yMMMd(locale).format(lastSeen),
                   ),
                   style: tokens.typography.styles.body.bodySmall.copyWith(
-                    // On a stale card the date is the evidence for removal;
-                    // it carries the warning ink instead of the hint prose.
-                    color: stale
-                        ? tokens.colors.alert.warning.ink
-                        : tokens.colors.text.mediumEmphasis,
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),
             ],
@@ -207,7 +217,26 @@ class DeviceCard extends ConsumerWidget {
           if (stale) ...[
             SizedBox(height: tokens.spacing.step2),
             Text(
-              messages.syncDevicesStaleHint,
+              [
+                messages.syncDevicesStaleHint,
+                if (lastSeen != null)
+                  messages.syncDevicesLastSeen(
+                    DateFormat.yMMMd(locale).format(lastSeen),
+                  ),
+              ].join(' · '),
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                // Warning ink only where the staleness actually wedges sync;
+                // amber must keep meaning "this blocks you".
+                color: device.blocksSync
+                    ? tokens.colors.alert.warning.ink
+                    : tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
+          if (keyless) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              messages.syncDevicesKeylessHint,
               style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),
@@ -215,7 +244,9 @@ class DeviceCard extends ConsumerWidget {
           ],
           if (removalIsPrimary) ...[
             SizedBox(height: tokens.spacing.step4),
-            Row(
+            Wrap(
+              spacing: tokens.spacing.step3,
+              runSpacing: tokens.spacing.step2,
               children: [
                 DesignSystemButton(
                   key: const Key('matrix_remove_device_primary'),
@@ -224,15 +255,13 @@ class DeviceCard extends ConsumerWidget {
                   onPressed: () => _deleteDevice(context, ref),
                   label: messages.deleteDeviceLabel,
                 ),
-                if (canVerify) ...[
-                  SizedBox(width: tokens.spacing.step3),
+                if (canVerify)
                   DesignSystemButton(
                     size: DesignSystemButtonSize.large,
                     variant: DesignSystemButtonVariant.secondary,
                     onPressed: () => _verifyDevice(context, ref),
                     label: messages.settingsMatrixVerifyLabel,
                   ),
-                ],
               ],
             ),
           ] else if (canVerify) ...[

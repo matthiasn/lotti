@@ -9839,6 +9839,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vill du ta bort synkroniseringskonfigurationen?';
 
   @override
+  String get syncDevicesKeylessHint =>
+      'Ihopparningen slutfördes aldrig — den kan bara tas bort.';
+
+  @override
   String syncDevicesLastSeen(String date) {
     return 'Senast sedd $date';
   }
@@ -9856,7 +9860,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncDevicesPausedBanner =>
-      'Synkroniseringen är pausad tills varje enhet har verifierats eller tagits bort.';
+      'Synkroniseringen är pausad tills varje enhet har tagits bort eller verifierats.';
 
   @override
   String get syncDevicesSectionTitle => 'Enheter';

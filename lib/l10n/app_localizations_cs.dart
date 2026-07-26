@@ -9965,6 +9965,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Chcete smazat konfiguraci synchronizace?';
 
   @override
+  String get syncDevicesKeylessHint =>
+      'Párování nebylo nikdy dokončeno — zařízení lze pouze odebrat.';
+
+  @override
   String syncDevicesLastSeen(String date) {
     return 'Naposledy aktivní $date';
   }
@@ -9983,7 +9987,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncDevicesPausedBanner =>
-      'Synchronizace je pozastavena, dokud nebude každé zařízení ověřeno nebo odebráno.';
+      'Synchronizace je pozastavena, dokud nebude každé zařízení odebráno nebo ověřeno.';
 
   @override
   String get syncDevicesSectionTitle => 'Zařízení';

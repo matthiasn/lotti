@@ -346,8 +346,11 @@ void main() {
         buildDevice(lastSeen: DateTime(2026, 5, 14)),
       );
 
-      expect(find.text('Last seen May 14, 2026'), findsOneWidget);
-      expect(find.text('Probably no longer in use'), findsOneWidget);
+      // Evidence and explanation merge into one hint line on stale cards.
+      expect(
+        find.text('Probably no longer in use · Last seen May 14, 2026'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('omits the last-seen line when the homeserver reports no '

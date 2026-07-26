@@ -4574,6 +4574,7 @@
   "syncActivityTitle": "Synk",
   "syncDeleteConfigConfirm": "JA, JAG ÄR SÄKER",
   "syncDeleteConfigQuestion": "Vill du ta bort synkroniseringskonfigurationen?",
+  "syncDevicesKeylessHint": "Ihopparningen slutfördes aldrig — den kan bara tas bort.",
   "syncDevicesLastSeen": "Senast sedd {date}",
   "@syncDevicesLastSeen": {
     "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
@@ -4594,7 +4595,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Synkroniseringen är pausad tills varje enhet har verifierats eller tagits bort.",
+  "syncDevicesPausedBanner": "Synkroniseringen är pausad tills varje enhet har tagits bort eller verifierats.",
   "syncDevicesSectionTitle": "Enheter",
   "syncDevicesStaleHint": "Används förmodligen inte längre",
   "syncDevicesSyncResumed": "Synkroniseringen är igång igen.",

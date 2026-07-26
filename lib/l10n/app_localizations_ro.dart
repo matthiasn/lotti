@@ -10016,6 +10016,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Doriți să ștergeți configurația de sincronizare?';
 
   @override
+  String get syncDevicesKeylessHint =>
+      'Asocierea nu a fost finalizată niciodată — poate fi doar eliminat.';
+
+  @override
   String syncDevicesLastSeen(String date) {
     return 'Văzut ultima dată la $date';
   }
@@ -10035,7 +10039,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncDevicesPausedBanner =>
-      'Sincronizarea este întreruptă până când fiecare dispozitiv este verificat sau eliminat.';
+      'Sincronizarea este întreruptă până când fiecare dispozitiv este eliminat sau verificat.';
 
   @override
   String get syncDevicesSectionTitle => 'Dispozitive';

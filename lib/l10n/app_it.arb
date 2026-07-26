@@ -4574,6 +4574,7 @@
   "syncActivityTitle": "Traduzione:",
   "syncDeleteConfigConfirm": "Si', sono sicuro.",
   "syncDeleteConfigQuestion": "Vuoi eliminare la configurazione di sincronizzazione?",
+  "syncDevicesKeylessHint": "L'associazione non è mai stata completata: può solo essere rimosso.",
   "syncDevicesLastSeen": "Ultimo accesso il {date}",
   "@syncDevicesLastSeen": {
     "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
@@ -4594,7 +4595,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "La sincronizzazione è in pausa finché ogni dispositivo non è verificato o rimosso.",
+  "syncDevicesPausedBanner": "La sincronizzazione è in pausa finché ogni dispositivo non è rimosso o verificato.",
   "syncDevicesSectionTitle": "Dispositivi",
   "syncDevicesStaleHint": "Probabilmente non più in uso",
   "syncDevicesSyncResumed": "La sincronizzazione è di nuovo attiva.",

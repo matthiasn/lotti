@@ -9865,6 +9865,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wilt u de synchronisatie-configuratie verwijderen?';
 
   @override
+  String get syncDevicesKeylessHint =>
+      'Het koppelen is nooit voltooid — het kan alleen worden verwijderd.';
+
+  @override
   String syncDevicesLastSeen(String date) {
     return 'Laatst gezien op $date';
   }
@@ -9884,7 +9888,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncDevicesPausedBanner =>
-      'Synchronisatie is gepauzeerd totdat elk apparaat is geverifieerd of verwijderd.';
+      'Synchronisatie is gepauzeerd totdat elk apparaat is verwijderd of geverifieerd.';
 
   @override
   String get syncDevicesSectionTitle => 'Apparaten';

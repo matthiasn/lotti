@@ -9768,6 +9768,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Do you want to delete the sync configuration?';
 
   @override
+  String get syncDevicesKeylessHint =>
+      'Never finished pairing — it can only be removed.';
+
+  @override
   String syncDevicesLastSeen(String date) {
     return 'Last seen $date';
   }
@@ -9785,7 +9789,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncDevicesPausedBanner =>
-      'Sync is paused until every device is verified or removed.';
+      'Sync is paused until every device is removed or verified.';
 
   @override
   String get syncDevicesSectionTitle => 'Devices';

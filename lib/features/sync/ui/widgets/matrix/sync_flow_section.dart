@@ -29,6 +29,8 @@ class SyncFlowSection extends StatelessWidget {
           color:
               accentColor ??
               context.colorScheme.outline.withValues(alpha: 0.16),
+          // The attention state is weight + hue, not hue alone.
+          width: accentColor != null ? tokens.spacing.step1 : 1,
         ),
         boxShadow: [
           BoxShadow(
