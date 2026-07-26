@@ -14,6 +14,8 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 * [Journal](journal/) - the shared entry substrate: detail, browse, search, linking.
 * [Speech](speech/) - audio capture, playback, waveforms, transcripts.
 * [Categories](categories/) - the app's primary scoping unit and its stored defaults.
+* [Projects](projects/) - grouping between categories and tasks, with agent-authored health.
+* [Labels](labels/) - the lightweight taxonomy and its AI-suggestion coupling.
 * [Tasks](tasks/) - the task layer on the journal substrate: checklists, relationships, filters.
 
 # Infrastructure

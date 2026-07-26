@@ -49,7 +49,7 @@ When a user renames an item, `ChecklistItemController.updateTitle` fires a
 fire-and-forget `correctionCaptureService.captureCorrection(...)` with the
 before/after title and the item's category, and the rename surfaces an undo
 affordance. **That before→after pair becomes category-scoped AI guidance** — the
-[`checklist`](../checklist/) feature owns the capture and undo logic.
+the checklist feature feature owns the capture and undo logic.
 
 # The sorting state machine
 
