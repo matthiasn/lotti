@@ -100,10 +100,10 @@ concept tree:
 - **[Sync](../features/sync/)** — single-user multi-device replication over
   end-to-end encrypted Matrix, with an outbox, an ordered inbound queue,
   `(hostId, counter)` coverage tracking and peer backfill for gaps.
-- **[Agents](../features/agents.md)** — a persisted agent runtime with wake
+- **[Agents](../features/agents/)** — a persisted agent runtime with wake
   scheduling, change proposals under human review, and state modelled as a log
   projection.
-- **[Daily OS](../features/daily_os_next.md)** — long-lived day planning built
+- **[Daily OS](../features/daily_os_next/)** — long-lived day planning built
   on the agent runtime, with per-day agents and durable draft/refine jobs.
 
 Architectural decisions behind these are recorded as ADRs in
