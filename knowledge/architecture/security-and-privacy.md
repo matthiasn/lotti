@@ -40,11 +40,13 @@ Matrix account is needed only for multi-device sync, and Matrix is decentralized
 network only on two paths: end-to-end encrypted sync to the user's own devices,
 and AI inference the user configured and triggered.
 
-**"Private" is a read filter, not a protection.** Marking an entry private hides
-it from queries while the `private` config flag is off — the row is stored like
-any other, and every read routes through the gate described in
-[persistence](persistence.md#every-read-passes-a-private-visibility-gate). Treat
-it as a shoulder-surfing affordance, not a security boundary.
+**"Private" is a partial read filter, not a protection.** Marking an entry private
+thins it out of *some* list and search queries while the `private` config flag is
+off. The row is stored like any other, **by-id reads ignore the flag entirely** —
+so a detail page or a deep link still shows it — and most query mixins never
+consult the gate at all. See
+[persistence](persistence.md#some-reads-pass-a-private-visibility-gate). Treat it
+as a shoulder-surfing affordance, and never as a security boundary.
 
 **The caveat: the SQLite databases are not encrypted at rest.** There is no
 SQLCipher in the dependency set. On-disk protection relies on OS-level

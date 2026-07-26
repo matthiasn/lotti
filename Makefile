@@ -54,7 +54,7 @@ okf_check:
 # an error box is invisible to the Dart validator, and three shipped that way.
 .PHONY: mermaid_check
 mermaid_check:
-	cd tool/okf && npm ci --silent && npm run --silent check
+	cd tool/okf && npm ci --silent && npm test --silent && npm run --silent check
 
 # The one target to run after touching knowledge/. Two separate targets meant the
 # mermaid half got skipped, which is how unrenderable diagrams reached main.

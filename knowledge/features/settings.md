@@ -81,7 +81,7 @@ flowchart LR
   Landing --> RecordingStyle["Recording style"]
   Landing --> Theming["Theming"]
   Landing --> Keyboard["Keyboard shortcuts"]
-  Landing --> Speech["Speech"]
+  Landing --> Speech["Speech — if enableSpeechTts"]
   Landing --> Advanced["Advanced"]
   Landing --> Manual["Manual — opens the browser"]
 
@@ -114,7 +114,7 @@ flowchart LR
   Advanced --> Animations["Animations"]
   Advanced --> ManualLanguage["Manual language"]
   Advanced --> Logging["Logging domains"]
-  Advanced --> HealthImport["Health import"]
+  Advanced --> HealthImport["Health import — if enableHealthImport, mobile only"]
   Advanced --> Maintenance["Maintenance"]
   Advanced --> OnboardingMetrics["Onboarding metrics"]
   Advanced --> About["About"]

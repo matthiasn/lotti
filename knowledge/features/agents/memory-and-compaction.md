@@ -76,7 +76,7 @@ read-flip gates), so failure isolation and diagnostics are identical everywhere.
 stateDiagram-v2
   [*] --> Idle
   Idle --> Capturing: wake reads user content
-  Capturing --> Capturing: per source — dedupe payload by contentDigest; append messagePayload link; retract vanished sources
+  Capturing --> Capturing: per source — dedupe payload by contentDigest, append messagePayload link, retract vanished sources
   Capturing --> Folding: event log appended
   Folding --> Compacting: visible tail beyond trigger watermark?
   Compacting --> Idle: append summary checkpoint with cutoff = last folded event

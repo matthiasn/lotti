@@ -60,7 +60,7 @@ _Date: 2026-06-02_
 
 - [x] **[HIGH]** `test/features/journal/state/journal_page_controller_refresh_test.dart` (1 790
   lines) and `journal_page_controller_filter_test.dart` (1 274 lines) **violate the
-  one-test-file-per-source rule** (`AGENTS.md § Test Infrastructure Rules`). Both test the same
+  one-test-file-per-source rule** (`knowledge/conventions/testing.md` (Structure)). Both test the same
   source file (`journal_page_controller.dart`) as the primary `journal_page_controller_test.dart`.
   All three files should be merged back into a single `journal_page_controller_test.dart` and
   then the split should follow the canonical rule — one source file, one test file — and use
@@ -114,7 +114,7 @@ _Date: 2026-06-02_
   `getIt.registerSingleton<T>()` directly for 10+ services, bypassing
   `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. It also
   manually calls `tearDownAll(getIt.reset)`. This is the exact anti-pattern prohibited by
-  `AGENTS.md § Test Infrastructure Rules`. Additionally, individual test groups such as
+  `knowledge/conventions/testing.md` (Structure). Additionally, individual test groups such as
   `updateChecklistOrder` (lines 1 498–1 665) and `setLanguage` (lines 2 616–2 646) have their
   own `setUp` that calls `reset(mockJournalDb)` followed by re-stubbing — repeating mock setup
   that belongs in a shared helper.

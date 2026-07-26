@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T16:00:00Z }
 stale_after: 2026-11-02
 sources:
   - id: queue
@@ -88,8 +88,13 @@ The preferred path is an **anchored forward walk**
 `/context/{eventId}` request with `room.getTimeline(eventContextId: marker,
 limit: 0)`, then walk `/messages?dir=f`.
 
-**The zero cache limit is required by the Matrix SDK** (`matrix: ^8.1.0`).
-Without it, an
+**The zero cache limit is required by the Matrix SDK.** This was established
+against **7.0.0 and has not been re-verified since**; `pubspec.yaml` now pins
+`matrix: ^8.1.0`, and four in-code comments still name 7.0.0
+(`bootstrap_forward_strategy.dart`, `bootstrap_backward_strategy.dart`, and twice
+in `queue_pipeline_coordinator.dart`). Treat the workaround as load-bearing until
+someone re-checks it on 8.x — not as a fact about the pinned version. Without it,
+an
 anchor already present in the SDK database suppresses the context request,
 leaves the timeline without a forward token, and can make a reconnect
 incorrectly report completion with no bootstrap events. This is a subtle failure

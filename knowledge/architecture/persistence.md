@@ -175,28 +175,42 @@ Notifications are **batched** — 100 ms for local writes, 1 s for sync arrivals
 so a bulk import or a sync catch-up produces a handful of rebuilds rather than
 thousands.
 
-# Every read passes a private-visibility gate
+# Some reads pass a private-visibility gate
 
 `_JournalDbConfigFlags` in `lib/database/database_config_flags.dart` owns the
-in-memory config-flag cache **and** the `private` visibility gate that every
-`JournalDb` query mixin routes through, via `_queryWithPrivateFilter`.
+in-memory config-flag cache and the `private` visibility gate, which callers reach
+through `_queryWithPrivateFilter`.
 
 ```mermaid
 flowchart TD
-  Q["a JournalDb read"] --> G["_queryWithPrivateFilter"]
+  Q["a read that opts in"] --> G["_queryWithPrivateFilter"]
   G --> F{"config flag 'private' on?"}
   F -->|yes| All["allPrivate() — the unfiltered query"]
   F -->|no| Filt["filtered([false]) — non-private rows only"]
 ```
 
+**It is opt-in, and most reads do not opt in.** Thirteen call sites across five
+files use it — the linked-entity reads, label definitions, project and day-plan
+queries, and the id-list/batch journal reads. The other mixins never call it,
+including `_JournalDbTaskQueries`, `_JournalDbInsightsQueries` and
+`_JournalDbEntityOps`; `_JournalDbTaskQueriesBuilders` takes `privateStatuses` as
+a parameter instead, so its callers decide.
+
+**By-id reads deliberately do not filter.** `journalEntityById` — the read behind
+every detail page — returns a private entry regardless of the flag, as do
+`getDayAudioEntries`, `journalAudioByRecordingSessionId` and
+`countAllJournalEntries`. That is coherent with what the flag is *for*: it thins
+what browsing and search surface, not what you can open once you hold an id.
+
 Two consequences worth holding on to:
 
-- **The gate is a read filter, not encryption.** A private entry is stored exactly
-  like any other; flipping the flag off hides it from queries and nothing more. See
+- **The gate is a read filter, not encryption**, and not a boundary. A private
+  entry is stored exactly like any other, several reads ignore the flag entirely,
+  and a deep link to one resolves. See
   [security and privacy](security-and-privacy.md).
-- **Every query mixin has to route through it.** A new read that queries the
-  journal tables directly bypasses the gate silently — there is no compile-time
-  obligation to use it, and a leaked private entry looks like a working query.
+- **A new list or search query has to opt in explicitly.** There is no
+  compile-time obligation, so a read that queries the journal tables directly
+  simply shows private rows — and it looks like a working query.
 
 # Backups and maintenance
 

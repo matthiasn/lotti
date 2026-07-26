@@ -5,7 +5,8 @@
   "description": "Parses the knowledge bundle's mermaid diagrams with mermaid itself, which the Dart validator cannot do.",
   "type": "module",
   "scripts": {
-    "check": "node check_mermaid.mjs ../../knowledge"
+    "check": "node check_mermaid.mjs ../../knowledge",
+    "test": "node --test"
   },
   "dependencies": {
     "jsdom": "29.1.1",

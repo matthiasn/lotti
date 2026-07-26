@@ -5,7 +5,7 @@ description: Five platform targets from one codebase, the checks every branch ru
 resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T16:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: workflows
@@ -61,14 +61,15 @@ Two more run on **every** branch push despite looking scoped:
 - `flatpak-foreign-deps.yml` — path-filtered on *pull requests*, but unfiltered
   on branch pushes.
 
-Genuinely path-filtered: `manual.yml` (docs-site), which runs **only** on pull
-requests to `main`, and `python-tools-ci.yml` (the Python tools), which is
-path-filtered on **both** branch pushes and pull requests.
+Genuinely path-filtered, both on pushes *and* pull requests to `main`:
+`python-tools-ci.yml` (the Python tools) and `manual.yml` (docs-site) — the latter
+also runs on a nightly cron (`23 2 * * *`) and on manual dispatch.
 
-Buildkite pipelines under `.buildkite/` cover the Linux and Windows test lanes
-and JUnit upload. The Linux lane shards `very_good test` ten ways across matrix
-jobs; what that means for how tests must be written is in
-[testing conventions](../conventions/testing.md).
+The ten-way shard belongs to `flutter-test-linux-faster.yml` above: it runs
+`very_good test` across a ten-job matrix. **Buildkite is not sharded** — the
+pipelines under `.buildkite/` run a bare `flutter test` for the Linux and Windows
+lanes plus the JUnit upload. What the sharded lane means for how tests must be
+written is in [testing conventions](../conventions/testing.md).
 
 # Release
 

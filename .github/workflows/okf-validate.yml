@@ -54,6 +54,11 @@ jobs:
       - name: Install check dependencies
         run: npm ci
         working-directory: tool/okf
+      # The gate's own tests: fence forms, nesting, and the semicolon split that
+      # parses clean while rendering phantom nodes.
+      - name: Test the mermaid checker
+        run: npm test
+        working-directory: tool/okf
       - name: Parse every mermaid block
         run: npm run check
         working-directory: tool/okf

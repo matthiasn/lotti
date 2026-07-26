@@ -78,7 +78,7 @@ README, this is the way in:
 | [`lib/beamer/`](../lib/beamer) | [Navigation and app shell](architecture/navigation.md) | the whole tree |
 | [`lib/classes/`](../lib/classes) | [Domain concepts](domain/) | the entity unions; not every class |
 | [`lib/l10n/`](../lib/l10n) | [Localization](conventions/localization.md) | the ARB workflow |
-| [`lib/logic/`](../lib/logic) | [Persistence layer](architecture/persistence.md) | **`PersistenceLogic`'s role in the write path only** — the import paths and the rest of the tree are undocumented |
+| [`lib/logic/`](../lib/logic) | [Persistence layer](architecture/persistence.md) | **almost nothing** — `PersistenceLogic` appears only as a node in the write-path diagram. The import paths and the rest of the tree are undocumented; read the code |
 | [`lib/themes/`](../lib/themes) | [Tokens and theming](features/design_system/tokens-and-theming.md) | **`theme_overrides.dart` only**, as the token-injection seam |
 | [`lib/utils/`](../lib/utils) | — | nothing; small helpers, read the code |
 | [`test/`](../test) | [Testing conventions](conventions/testing.md) + [`test/README.md`](../test/README.md) | the whole tree |

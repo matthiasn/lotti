@@ -155,9 +155,9 @@ and what is enforced at construction rather than by review.
 - Prefer running commands via the dart-mcp server.
 - Only move on to adding new files when already created tests are all green.
 - Write meaningful tests that actually assert on valuable information. Refrain from adding BS
-  assertions such as finding a row or whatnot. Focus on useful information. See the
-  "Test Infrastructure Rules", "Test Quality Rules", and "Async & Performance Rules"
-  subsections under Testing Guidelines for specifics.
+  assertions such as finding a row or whatnot. Focus on useful information.
+  [knowledge/conventions/testing.md](knowledge/conventions/testing.md) has the
+  specifics — the infrastructure rules, the quality bar and the async rules.
 - Aim for full coverage of every code path.
 - Every widget we touch should get as close to full test coverage as is reasonable, with meaningful
   tests.

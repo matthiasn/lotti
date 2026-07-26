@@ -34,11 +34,23 @@ are live and two are terminal:
 | Live — `openTaskStatuses` | `open`, `groomed`, `inProgress`, `blocked`, `onHold` |
 | Terminal | `done`, `rejected` |
 
-Every variant carries the same fields (`id`, `createdAt`, `utcOffset`, `timezone`,
-`geolocation`), so the status *is* the discriminator — nothing else distinguishes
-`done` from `rejected` structurally. The live/terminal split is not in the union
-either; it lives in the `openTaskStatuses` list in
-`lib/features/tasks/ui/utils.dart`, which is what filters linkable tasks.
+Every variant carries `id`, `createdAt`, `utcOffset`, `timezone` and
+`geolocation`; **`blocked` and `onHold` additionally require a `reason`**, and are
+the only two that do. Nothing else distinguishes `done` from `rejected`
+structurally, so for the terminal pair the status *is* the discriminator.
+
+**The live/terminal split is not in the union at all, and it is duplicated.** Six
+places re-state "DONE and REJECTED are the closed ones" independently:
+
+| Site | Form |
+|------|------|
+| `tasks/ui/utils.dart` `openTaskStatuses` | the five live labels — what the linking UI filters on |
+| `day_agent_capture_helpers.dart` `isClosedTask` / `closedTaskStatuses` | `{'DONE', 'REJECTED'}` |
+| `agents/tools/task_status_handler.dart` `terminalStatuses` | `{'DONE', 'REJECTED'}` |
+| `database.dart`, `database_task_due_queries.dart`, `database_migration.dart`, `database.drift` | `AND task_status NOT IN ('DONE', 'REJECTED')` in raw SQL |
+
+Adding an eighth status means finding every one of them. There is no shared
+constant to change.
 
 **Nothing in the code restricts which status may follow which.** There is no
 transition table, no guard, and no validation — a task can go from `onHold`

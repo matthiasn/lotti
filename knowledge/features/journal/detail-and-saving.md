@@ -165,7 +165,7 @@ stateDiagram-v2
     end note
 
     SharedDate --> DifferentDates: toggle separate end date ON<br/>(freeze endDateOverride = current end day)
-    DifferentDates --> SharedDate: toggle OFF<br/>(clear endDateOverride; end collapses onto start date)
+    DifferentDates --> SharedDate: toggle OFF<br/>(clear endDateOverride, end collapses onto start date)
     note right of DifferentDates
       reveals a second End date control;
       either date opens the same calendar page.

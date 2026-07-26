@@ -2,13 +2,19 @@
 //
 // The Dart validator cannot do this: Mermaid has no Dart parser, so a diagram
 // that never renders is invisible to `make okf_check`. Three broken diagrams
-// shipped that way before this existed. Two traps caused all three — `;` is a
-// statement separator in every diagram type, and a second `:` ends a
-// stateDiagram transition label — but the point of parsing for real is catching
-// the ones nobody has hit yet.
+// shipped that way before this existed. One trap caused all three: **`;`
+// terminates a statement**, so a semicolon in a label ends it there and the
+// remainder is reparsed. (`:=` was once blamed for this and is innocent —
+// `A --> B: id := joinId` parses fine against the pinned mermaid.)
+//
+// Parsing alone is not enough for that trap, which is why this script also
+// inspects the built diagram: in a state diagram the split usually *succeeds*,
+// silently rendering the remainder as extra state nodes. One real label —
+// `dedupe payload by contentDigest; append messagePayload link; retract
+// vanished sources` — parsed clean and produced six nodes instead of one.
 //
 // Usage: node tool/okf/check_mermaid.mjs [bundle-dir]
-// Exits 0 when every block parses, 1 otherwise.
+// Exits 0 when every block parses and renders the nodes it declares, 1 otherwise.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
@@ -96,8 +102,28 @@ for (const file of markdownFiles(root)) {
   }
 }
 
+/// Node ids that only exist because a statement was split.
+///
+/// A `;` in an unquoted label ends the statement, and the remainder is reparsed —
+/// in a state diagram it usually becomes extra *states*, so the block parses
+/// clean and renders wrongly. Any id carrying a `;` is that split, and nothing
+/// legitimate produces one: a real id cannot contain the separator, and a
+/// semicolon inside a quoted label or a `note` body never reaches the node list.
+export function phantomNodes(diagram) {
+  let data;
+  try {
+    data = diagram.db?.getData?.();
+  } catch {
+    return []; // diagram types without a node view (sequence, etc.)
+  }
+  return (data?.nodes ?? [])
+    .map((n) => String(n.id ?? n.label ?? ''))
+    .filter((id) => id.includes(';'));
+}
+
 let failed = 0;
 for (const block of blocks) {
+  const where = `${block.file}:${block.line}`;
   try {
     await mermaid.parse(block.code);
   } catch (error) {
@@ -106,7 +132,24 @@ for (const block of blocks) {
       .split('\n')
       .slice(0, 6)
       .join('\n      ');
-    console.error(`\nFAIL ${block.file}:${block.line}\n      ${detail}`);
+    console.error(`\nFAIL ${where}\n      ${detail}`);
+    continue;
+  }
+  // Parsed — now check it renders what it declares.
+  try {
+    const diagram = await mermaid.mermaidAPI.getDiagramFromText(block.code);
+    const phantoms = phantomNodes(diagram);
+    if (phantoms.length > 0) {
+      failed++;
+      console.error(
+        `\nFAIL ${where}\n      a \`;\` split a statement: this parses but ` +
+          `renders phantom node(s) ${phantoms.map((p) => `\`${p}\``).join(', ')}` +
+          `\n      Use a comma. A semicolon terminates the statement.`,
+      );
+    }
+  } catch {
+    // Building the diagram can fail for reasons parse tolerates; parse is the
+    // contract this gate promises, so do not fail the run on it.
   }
 }
 

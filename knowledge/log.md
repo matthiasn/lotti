@@ -1,6 +1,14 @@
 # Knowledge Bundle Update Log
 
 ## 2026-07-26
+* **Fix**: Narrowed the privacy claim that mattered most: the `private` gate is
+  **opt-in and most reads skip it** — thirteen call sites in five files, and
+  by-id reads including `journalEntityById` never filter. "Every read passes a
+  private-visibility gate" was wrong by an order of magnitude.
+* **Fix**: The mermaid gate now catches the quiet failure it only documented. Two
+  live state diagrams had a `;` in an unquoted label, parsing clean while
+  rendering five phantom nodes each; the checker inspects the built diagram for
+  ids containing `;`, and it now has thirteen tests of its own.
 * **Fix**: Corrected three claims this bundle got wrong *while* fixing others:
   `TaskStatus` has seven variants, not five (`done` and `rejected` were missed by
   reading a truncated line range); a leak *can* cross test files on CI, because

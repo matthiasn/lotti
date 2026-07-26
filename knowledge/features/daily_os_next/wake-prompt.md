@@ -105,9 +105,9 @@ distinguish future plan slots from time that has already passed.
 
 **`day_entries` is a bounded index, not a log.** It carries recording receipts so
 a later wake can recover a completed offline check-in immediately, capped at the
-newest 32 with the omitted count rendered explicitly rather than silently — it
-sits high in the prefix, ahead of everything else, so a heavy capture day must
-not be allowed to inflate it. Anything that grows this section pushes the whole
+newest 32 with the omitted count rendered explicitly rather than silently. It
+closes the byte-stable prefix — five sections precede it, twelve follow — so a
+heavy capture day must not be allowed to inflate it. Anything that grows this section pushes the whole
 per-wake band out of cache.
 
 ## Prompt-record splice

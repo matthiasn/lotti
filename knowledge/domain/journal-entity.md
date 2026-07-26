@@ -60,10 +60,10 @@ classDiagram
   JournalEntity <|-- JournalImage
   JournalEntity <|-- JournalAudio
   JournalEntity <|-- Task
-  JournalEntity <|-- Event
+  JournalEntity <|-- JournalEvent
   JournalEntity <|-- Checklist
   JournalEntity <|-- ChecklistItem
-  JournalEntity <|-- Quantitative
+  JournalEntity <|-- QuantitativeEntry
   JournalEntity <|-- MeasurementEntry
   JournalEntity <|-- AiResponseEntry
   JournalEntity <|-- WorkoutEntry
@@ -74,7 +74,7 @@ classDiagram
   JournalEntity <|-- ProjectEntry
 
   Task o-- TaskData : payload
-  Event o-- EventData : payload
+  JournalEvent o-- EventData : payload
   JournalAudio o-- AudioData : payload
   MeasurementEntry o-- MeasurementData : payload
   DayPlanEntry o-- DayPlanData : payload

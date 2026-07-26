@@ -5,7 +5,7 @@ description: One row per relationship, eight variants sharing one shape, and why
 resource: ../../lib/classes/entry_link.dart
 tags: [domain, links, relationships]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T02:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T16:00:00Z }
 stale_after: 2027-07-12
 sources:
   - id: entry-link
@@ -55,11 +55,16 @@ relationships while keeping each one singular.
 `vectorClock`, `collapsed`, `deletedAt` — lives inside `serialized`.
 
 That is a real constraint, not an encoding detail: **a soft-deleted link cannot be
-excluded in SQL.** `TaskDependencyResolver`, `TaskBlockersController` and
-`TaskLinkGroupsController` each filter `deletedAt != null` in Dart, after
-deserializing every row the query returned, because there is no column to filter
-on. Any new link consumer inherits the same obligation — and forgetting it means
-silently treating removed relationships as live.
+excluded by a column predicate.** It would take
+`json_extract(serialized, '$.deletedAt')` — a shape this codebase does use
+elsewhere, including an index on `json_extract(serialized, '$.data.due')` — but no
+link query does it.
+
+So the filtering happens in Dart instead: `TaskDependencyResolver`,
+`TaskBlockersController` and `TaskLinkGroupsController` each **keep only rows whose
+`deletedAt` is null**, after deserializing every row the query returned. Any new
+link consumer inherits that obligation, and forgetting it means silently treating
+removed relationships as live.
 
 # One row per relationship
 
