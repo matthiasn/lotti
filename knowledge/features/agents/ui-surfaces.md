@@ -5,7 +5,7 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T14:08:25Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T15:42:59Z }
 stale_after: 2026-10-12
 sources:
   - id: ui

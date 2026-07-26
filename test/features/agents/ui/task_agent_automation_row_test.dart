@@ -251,7 +251,16 @@ void main() {
       final rowRect = tester.getRect(
         find.byKey(const ValueKey('taskAgentAutomaticUpdatesTarget')),
       );
-      expect(node.rect.width, moreOrLessEquals(rowRect.width, epsilon: 1));
+      // Both dimensions, not just width: a node as wide as the row but only
+      // as tall as the switch would still leave the label unreachable by
+      // touch exploration. Size only — `SemanticsNode.rect` is in the node's
+      // own coordinate space, so its origin is (0,0) by construction and
+      // comparing it to a global rect would assert nothing.
+      expect(node.rect.size.width, moreOrLessEquals(rowRect.width, epsilon: 1));
+      expect(
+        node.rect.size.height,
+        moreOrLessEquals(rowRect.height, epsilon: 1),
+      );
 
       await tester.tap(find.text('Automatic updates'));
       expect(changedTo, isTrue);

@@ -1729,6 +1729,71 @@ void main() {
     );
 
     test(
+      'drainUntilEmpty stops waiting on a pen that cannot produce',
+      () async {
+        // Ciphertext whose key has not arrived is not a stranded row: it has
+        // no queue row yet and the startup bridge re-fetches it next run. Now
+        // that pen attempts are spaced in real time, the pen can no longer
+        // empty itself inside a 30s shutdown — so waiting for it would pin
+        // every teardown to the full timeout.
+        when(() => queue.stats()).thenAnswer(
+          (_) async => const QueueStats(
+            total: 0,
+            byProducer: {},
+            readyNow: 0,
+            oldestEnqueuedAt: null,
+          ),
+        );
+        when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
+        final room = MockRoom();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => pen.size).thenReturn(3);
+        when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
+          (_) async =>
+              const PenFlushOutcome(enqueued: 0, stillEncrypted: 3, dropped: 0),
+        );
+
+        final coordinator = build();
+        // Virtual time: the loop's 200ms back-off and the 30s deadline are
+        // both real durations, so a wall-clock version of this test would
+        // idle for a second on every run and could flake on a loaded runner.
+        fakeAsync((async) {
+          var completed = false;
+          withClock(Clock(() => DateTime.utc(2026).add(async.elapsed)), () {
+            unawaited(
+              coordinator
+                  .drainUntilEmpty(timeout: const Duration(seconds: 30))
+                  .then<void>((_) => completed = true),
+            );
+          });
+
+          // Five unproductive flushes at the 200ms back-off, plus slack for
+          // the awaits between them — well short of the 30s timeout.
+          async.elapse(const Duration(seconds: 5));
+          expect(
+            completed,
+            isTrue,
+            reason:
+                'a pen that cannot produce must not hold teardown open '
+                'until the drain timeout',
+          );
+        });
+
+        verify(
+          () => logging.log(
+            any<LogDomain>(),
+            any<String>(
+              that: contains(
+                'queue.coordinator.drainUntilEmpty.penStillHolding',
+              ),
+            ),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'drainUntilEmpty respects the timeout and logs on timeout',
       () async {
         // Always report remaining rows so the loop only exits via timeout.

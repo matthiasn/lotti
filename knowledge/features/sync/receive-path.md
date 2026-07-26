@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T15:42:59Z }
 stale_after: 2026-11-02
 sources:
   - id: queue
@@ -76,6 +76,21 @@ Live events are routed through `PendingDecryptionPen` first, so
 **pre-decryption ciphertext never lands in `inbound_event_queue.raw_json`**. The
 worker re-resolves penned events via `room.getEventById` on every drain
 iteration; only fully-decrypted events reach `raw_json`.
+
+**The pen's give-up budget is measured in time, not in sweeps.** An entry that
+never decrypts is eventually dropped, and a dropped entry is gone — its
+ciphertext is never written to the queue, so nothing retries it and nothing
+records it as abandoned. That makes the budget load-bearing, and it cannot be
+counted per sweep: the worker sweeps at the top of every drain iteration and
+loops straight back after a non-empty batch, so sweep frequency tracks queue
+throughput. Counting one attempt per sweep once spent the entire 20-attempt
+budget in ~2ms while a burst drained, discarding events whose Megolm key was
+still in flight — worst on slow links, where keys take longest and bursts drain
+longest. An attempt is therefore only spent once `attemptInterval` has elapsed
+since the last one, giving a real `maxAttempts * attemptInterval` window
+(10 minutes by default). Spacing the countdown costs no recovery latency: every
+sweep still asks the room for a decrypted copy and enqueues it the moment one
+exists.
 
 # Catch-up: the anchored forward walk
 

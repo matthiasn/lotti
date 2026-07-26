@@ -41,13 +41,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the provider stay readable instead of trailing off mid-name.
 
 ### Fixed
+- **Sync no longer loses messages that arrive before their decryption key.**
+  When a lot of entries arrived at once over a slow connection, some could be
+  discarded while the app was still waiting for the key to decrypt them —
+  leaving that device permanently short of entries the other device had, with
+  nothing pending and no way to notice. Entries now wait for their key for a
+  full ten minutes regardless of how busy the device is.
+- **A screen reader can now activate the whole "Automatic updates" row.**
+  Tapping the wording flipped the switch for everyone else, but assistive
+  technology could only reach the switch itself.
 - **The update section at the bottom of the AI summary card takes up much less
   room, especially on a phone.** The switch row in particular had far more
   space above and below it than it needed, which pushed the model line down and
   made the settings area compete with the summary itself. The card is now about
   36 points shorter on a phone, and 69 shorter in German at large text sizes.
-  Tapping the "Automatic updates" wording now flips the switch too, rather than
-  only the switch itself.
 - **Event and project assistants show up right away too.** Creating an event
   or a project with an assistant left its card empty for several seconds
   before the assistant appeared — the same delay tasks had, from the same
