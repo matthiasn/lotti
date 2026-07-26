@@ -29,9 +29,12 @@ merge of two users' work.
   provider by accident.
 - **Lets the user manage the device roster.** The sync status page lists every
   session on the account — verified or not, with when the server last saw it —
-  and any device except the current one can be removed. A device that was
-  uninstalled without logging out would otherwise block outbound sync forever;
-  the list says so plainly and removal unblocks sync immediately.
+  and any device except the current one can be removed. An unverified session
+  with published keys blocks outbound sync (sessions that never published keys
+  don't); a device uninstalled without logging out would otherwise block sync
+  forever. The list says so plainly, and after removal a bounded, best-effort
+  key refresh lets sync resume right away — or on the next sync cycle if that
+  refresh cannot complete.
 
 ## What it owns
 

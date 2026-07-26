@@ -102,7 +102,23 @@ is why device management exists as a first-class flow:
   display name, last-seen) with the E2EE key cache (verification state) into
   `models/sync_device_info.dart`. Sessions that never published keys appear
   with `keys == null`: they cannot be verified and never block sync — only
-  removed. Display order: current device, then blockers, then recency.
+  removed. An **unverified cached-keys entry missing from the server list**
+  is retained as a roster entry anyway: the send gate reads the key cache,
+  not `GET /devices`, so dropping it would clear the paused banner while
+  sends still fail. Display order: blockers first, then the current device,
+  then recency.
+
+  ```mermaid
+  stateDiagram-v2
+    [*] --> Blocking: unverified cached keys gate every send
+    Blocking --> Deleting: user confirms removal
+    Deleting --> Blocking: UIA rejected (e.g. stale password)
+    Deleting --> Recovering: homeserver accepts the delete
+    Recovering --> Resumed: keys refreshed, lifecycle reconciled, rescan
+    Recovering --> ConvergesLater: refresh fails or exceeds deleteDeviceRecoveryTimeout
+    ConvergesLater --> Resumed: a later sync prunes the cached keys
+    Resumed --> [*]
+  ```
 - **Deletion recovery sequence.** `MatrixServiceOps.deleteDeviceById()` runs,
   in order: cancel any in-flight emoji verification against the device (a
   dead peer can never answer), delete the session on the homeserver

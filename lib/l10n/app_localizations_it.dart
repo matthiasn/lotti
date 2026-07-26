@@ -9966,11 +9966,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncDevicesKeylessHint =>
-      'L\'associazione non è mai stata completata: può solo essere rimosso.';
+      'L\'associazione non è mai stata completata: il dispositivo può solo essere rimosso.';
 
   @override
   String syncDevicesLastSeen(String date) {
-    return 'Ultimo accesso il $date';
+    return 'Visto l\'ultima volta il $date';
   }
 
   @override

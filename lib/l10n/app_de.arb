@@ -4018,7 +4018,7 @@
   "syncActivityTitle": "Sync",
   "syncDeleteConfigConfirm": "JA, ICH BIN SICHER",
   "syncDeleteConfigQuestion": "Möchtest du die Synchronisierungskonfiguration löschen?",
-  "syncDevicesKeylessHint": "Die Kopplung wurde nie abgeschlossen — es kann nur entfernt werden.",
+  "syncDevicesKeylessHint": "Die Kopplung wurde nie abgeschlossen — das Gerät kann nur entfernt werden.",
   "syncDevicesLastSeen": "Zuletzt gesehen {date}",
   "@syncDevicesLastSeen": {
     "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",

@@ -10017,11 +10017,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncDevicesKeylessHint =>
-      'Asocierea nu a fost finalizată niciodată — poate fi doar eliminat.';
+      'Asocierea nu a fost finalizată niciodată — dispozitivul poate fi doar eliminat.';
 
   @override
   String syncDevicesLastSeen(String date) {
-    return 'Văzut ultima dată la $date';
+    return 'Văzut ultima dată pe $date';
   }
 
   @override
@@ -10034,7 +10034,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String syncDevicesPaired(String date) {
-    return 'Asociat la $date';
+    return 'Asociat pe $date';
   }
 
   @override

@@ -9840,7 +9840,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncDevicesKeylessHint =>
-      'Ihopparningen slutfördes aldrig — den kan bara tas bort.';
+      'Ihopparningen slutfördes aldrig — enheten kan bara tas bort.';
 
   @override
   String syncDevicesLastSeen(String date) {
@@ -9855,7 +9855,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String syncDevicesPaired(String date) {
-    return 'Ihopparad $date';
+    return 'Parkopplad $date';
   }
 
   @override

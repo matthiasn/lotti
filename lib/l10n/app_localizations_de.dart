@@ -9891,7 +9891,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncDevicesKeylessHint =>
-      'Die Kopplung wurde nie abgeschlossen — es kann nur entfernt werden.';
+      'Die Kopplung wurde nie abgeschlossen — das Gerät kann nur entfernt werden.';
 
   @override
   String syncDevicesLastSeen(String date) {

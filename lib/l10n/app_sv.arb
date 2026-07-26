@@ -4574,7 +4574,7 @@
   "syncActivityTitle": "Synk",
   "syncDeleteConfigConfirm": "JA, JAG ÄR SÄKER",
   "syncDeleteConfigQuestion": "Vill du ta bort synkroniseringskonfigurationen?",
-  "syncDevicesKeylessHint": "Ihopparningen slutfördes aldrig — den kan bara tas bort.",
+  "syncDevicesKeylessHint": "Ihopparningen slutfördes aldrig — enheten kan bara tas bort.",
   "syncDevicesLastSeen": "Senast sedd {date}",
   "@syncDevicesLastSeen": {
     "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
@@ -4586,7 +4586,7 @@
   },
   "syncDevicesLoadFailed": "Det gick inte att läsa in enhetslistan.",
   "syncDevicesOnlyThisDevice": "Inga andra enheter är inloggade.",
-  "syncDevicesPaired": "Ihopparad {date}",
+  "syncDevicesPaired": "Parkopplad {date}",
   "@syncDevicesPaired": {
     "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
     "placeholders": {

@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
+import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_devices_list.dart';
@@ -166,7 +167,9 @@ class _AutoVerificationLauncherState
       );
     } finally {
       if (mounted) {
-        ref.invalidate(matrixUnverifiedControllerProvider);
+        ref
+          ..invalidate(matrixUnverifiedControllerProvider)
+          ..invalidate(syncDevicesControllerProvider);
       }
       lock.release();
       _launchInFlight = false;

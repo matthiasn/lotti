@@ -322,6 +322,29 @@ class MatrixServiceOps {
       );
     }).toList();
 
+    // The send path gates on the key cache, not the server inventory — an
+    // unverified cached device missing from `GET /devices` (deleted by
+    // another client, or a failed post-delete refresh) still blocks sends.
+    // Keep such blockers in the roster so the paused banner can never clear
+    // while sending is still refused.
+    final serverIds = serverDevices.map((device) => device.deviceId).toSet();
+    for (final entry in keysById.entries) {
+      if (serverIds.contains(entry.key) ||
+          entry.key == ownDeviceId ||
+          entry.value.verified) {
+        continue;
+      }
+      devices.add(
+        SyncDeviceInfo(
+          deviceId: entry.key,
+          displayName: entry.value.deviceDisplayName,
+          isCurrentDevice: false,
+          verified: false,
+          keys: entry.value,
+        ),
+      );
+    }
+
     return sortSyncDevicesForDisplay(devices);
   }
 

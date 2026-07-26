@@ -4018,8 +4018,8 @@
   "syncActivityTitle": "Sincronizare",
   "syncDeleteConfigConfirm": "DA, SUNT SIGUR",
   "syncDeleteConfigQuestion": "Doriți să ștergeți configurația de sincronizare?",
-  "syncDevicesKeylessHint": "Asocierea nu a fost finalizată niciodată — poate fi doar eliminat.",
-  "syncDevicesLastSeen": "Văzut ultima dată la {date}",
+  "syncDevicesKeylessHint": "Asocierea nu a fost finalizată niciodată — dispozitivul poate fi doar eliminat.",
+  "syncDevicesLastSeen": "Văzut ultima dată pe {date}",
   "@syncDevicesLastSeen": {
     "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
     "placeholders": {
@@ -4030,7 +4030,7 @@
   },
   "syncDevicesLoadFailed": "Lista dispozitivelor nu a putut fi încărcată.",
   "syncDevicesOnlyThisDevice": "Niciun alt dispozitiv nu este autentificat.",
-  "syncDevicesPaired": "Asociat la {date}",
+  "syncDevicesPaired": "Asociat pe {date}",
   "@syncDevicesPaired": {
     "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
     "placeholders": {

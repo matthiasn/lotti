@@ -513,6 +513,7 @@ void main() {
     DeviceKeys keysFor(String deviceId, {required bool verified}) {
       final keys = MockDeviceKeys();
       when(() => keys.deviceId).thenReturn(deviceId);
+      when(() => keys.deviceDisplayName).thenReturn(null);
       when(() => keys.verified).thenReturn(verified);
       return keys;
     }
@@ -598,6 +599,33 @@ void main() {
 
         expect(devices.single.isCurrentDevice, isTrue);
         expect(devices.single.verified, isTrue);
+      },
+    );
+
+    test(
+      'retains an unverified cache-only device as a blocker and drops '
+      'verified cache-only leftovers',
+      () async {
+        when(() => gateway.getDevices()).thenAnswer(
+          (_) async => [Device(deviceId: 'THIS_DEVICE')],
+        );
+        stubKeys({
+          // Still gates the sender even though the server no longer lists it.
+          'CACHE_ONLY': keysFor('CACHE_ONLY', verified: false),
+          // Already deleted elsewhere and trusted — pruned, not shown.
+          'DELETED_ELSEWHERE': keysFor('DELETED_ELSEWHERE', verified: true),
+        });
+
+        final devices = await buildOps().getSyncDevices();
+
+        expect(
+          devices.map((d) => d.deviceId).toList(),
+          ['CACHE_ONLY', 'THIS_DEVICE'],
+        );
+        final ghost = devices.first;
+        expect(ghost.blocksSync, isTrue);
+        expect(ghost.lastSeen, isNull);
+        expect(ghost.keys, isNotNull);
       },
     );
   });
