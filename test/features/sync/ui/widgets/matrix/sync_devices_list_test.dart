@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
@@ -202,6 +205,114 @@ void main() {
 
     expect(find.byKey(const Key('sync_devices_paused_banner')), findsNothing);
     expect(find.text('Sync is running again.'), findsOneWidget);
+  });
+
+  testWidgets('a failed refresh keeps the list and surfaces an error toast', (
+    tester,
+  ) async {
+    when(
+      () => mockMatrixService.getSyncDevices(),
+    ).thenThrow(Exception('offline'));
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([currentDevice]),
+    );
+
+    await tester.tap(find.byKey(const Key('sync_devices_refresh')));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // The established list survives; the failure is announced, not eaten.
+    expect(find.byType(DeviceCard), findsOneWidget);
+    expect(find.text("Couldn't load the device list."), findsOneWidget);
+  });
+
+  testWidgets('renders without an injected clock', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const SyncDevicesList(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          syncDevicesControllerProvider.overrideWith(
+            () => _FakeSyncDevicesController([currentDevice]),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // No lastSeen anywhere, so the wall-clock fallback cannot make the
+    // rendering time-dependent.
+    expect(find.byType(DeviceCard), findsOneWidget);
+  });
+
+  testWidgets('a refresh requested mid-flight shows the spinner and is '
+      'coalesced, not dropped', (tester) async {
+    const otherA = SyncDeviceInfo(
+      deviceId: 'OTHER_A',
+      displayName: 'Old laptop',
+      isCurrentDevice: false,
+      verified: true,
+    );
+    const otherB = SyncDeviceInfo(
+      deviceId: 'OTHER_B',
+      displayName: 'Old tablet',
+      isCurrentDevice: false,
+      verified: true,
+    );
+
+    final firstFetch = Completer<List<SyncDeviceInfo>>();
+    var fetchCount = 0;
+    when(() => mockMatrixService.getSyncDevices()).thenAnswer((_) {
+      fetchCount++;
+      if (fetchCount == 1) return firstFetch.future;
+      return Future.value(const [currentDevice]);
+    });
+    when(
+      () => mockMatrixService.deleteDeviceById(any()),
+    ).thenAnswer((_) async {});
+
+    await pumpList(
+      tester,
+      controller: () =>
+          _FakeSyncDevicesController([currentDevice, otherA, otherB]),
+    );
+
+    Future<void> deleteVia(String cardKey) async {
+      await tester.ensureVisible(find.byKey(Key(cardKey)));
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(Key(cardKey)),
+          matching: find.byKey(const Key('matrix_delete_device')),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('DELETE DEVICE'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    // First deletion starts a refresh that stays in flight.
+    await deleteVia('sync_device_OTHER_A');
+    expect(fetchCount, 1);
+    expect(find.byType(DesignSystemSpinner), findsOneWidget);
+
+    // Second deletion lands while the refresh is in flight: coalesced.
+    await deleteVia('sync_device_OTHER_B');
+    expect(fetchCount, 1);
+
+    firstFetch.complete(const [currentDevice, otherB]);
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // The queued refresh ran after the first one resolved.
+    expect(fetchCount, 2);
   });
 
   testWidgets('the refresh button re-fetches the device list', (tester) async {

@@ -22,6 +22,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart'
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:matrix/matrix.dart' show Device;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -1466,6 +1467,54 @@ void main() {
         ).called(1);
       },
     );
+
+    test('deleteDeviceById delegates through ops to the gateway', () async {
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
+      when(() => sessionManager.matrixConfig).thenReturn(
+        const MatrixConfig(
+          homeServer: 'https://hs',
+          user: '@me:server',
+          password: 'secret',
+        ),
+      );
+      when(
+        () => gateway.deleteDevice(any(), auth: any(named: 'auth')),
+      ).thenAnswer((_) async {});
+      when(
+        () => client.updateUserDeviceKeys(
+          additionalUsers: any(named: 'additionalUsers'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final service = createService();
+      await service.deleteDeviceById('KEYLESS');
+
+      verify(
+        () => gateway.deleteDevice('KEYLESS', auth: any(named: 'auth')),
+      ).called(1);
+    });
+
+    test('getSyncDevices returns the merged, ordered inventory', () async {
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => client.userDeviceKeys).thenReturn({});
+      when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
+      when(() => gateway.getDevices()).thenAnswer(
+        (_) async => [
+          Device(deviceId: 'OTHER', displayName: 'Old laptop'),
+          Device(deviceId: 'THIS_DEVICE', displayName: 'This desktop'),
+        ],
+      );
+
+      final service = createService();
+      final devices = await service.getSyncDevices();
+
+      expect(
+        devices.map((d) => d.deviceId).toList(),
+        ['THIS_DEVICE', 'OTHER'],
+      );
+      expect(devices.first.isCurrentDevice, isTrue);
+    });
   });
 
   group('MatrixService getSyncDiagnosticsText', () {
