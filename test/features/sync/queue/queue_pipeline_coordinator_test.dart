@@ -1813,6 +1813,48 @@ void main() {
     );
 
     test(
+      'a pen with no room to resolve counts as stalled straight away',
+      () async {
+        // After logout or room removal the pen can never drain: no room means
+        // no lookup, so the eligible-lookup rule would never fire and
+        // teardown would poll the whole 30s deadline — on the user-visible
+        // flag-off and logout paths.
+        when(() => queue.stats()).thenAnswer(
+          (_) async => const QueueStats(
+            total: 0,
+            byProducer: {},
+            readyNow: 0,
+            oldestEnqueuedAt: null,
+          ),
+        );
+        when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
+        when(() => roomManager.currentRoom).thenReturn(null);
+        when(() => pen.size).thenReturn(2);
+
+        final coordinator = build();
+        fakeAsync((async) {
+          var completed = false;
+          withClock(Clock(() => DateTime.utc(2026).add(async.elapsed)), () {
+            unawaited(
+              coordinator
+                  .drainUntilEmpty(timeout: const Duration(seconds: 30))
+                  .then<void>((_) => completed = true),
+            );
+          });
+
+          async.elapse(const Duration(seconds: 5));
+          expect(
+            completed,
+            isTrue,
+            reason:
+                'teardown must not wait out the deadline for a pen that '
+                'has no room to drain into',
+          );
+        });
+      },
+    );
+
+    test(
       'drainUntilEmpty stops waiting on a pen that cannot produce',
       () async {
         // Ciphertext whose key has not arrived is not a stranded row: it has

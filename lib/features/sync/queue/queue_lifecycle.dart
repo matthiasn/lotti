@@ -203,6 +203,12 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       final room = await _resolveRoom();
       var penEnqueued = 0;
       var penLookups = 0;
+      // No room means no lookup is possible at all — after logout or room
+      // removal the pen can never drain, so a pass with no room counts as
+      // stalled. Without this the eligible-lookup rule below never fires and
+      // teardown polls the whole 30s deadline, blocking the user-visible
+      // flag-off and logout paths.
+      final penCanProgress = room != null;
       if (room != null) {
         try {
           final outcome = await _pen.flushInto(queue: _queue, room: room);
@@ -232,7 +238,7 @@ extension QueueLifecycle on QueuePipelineCoordinator {
 
       if (penEnqueued > 0) {
         unproductivePenFlushes = 0;
-      } else if (_pen.size > 0 && penLookups > 0) {
+      } else if (_pen.size > 0 && (penLookups > 0 || !penCanProgress)) {
         // Only a sweep that actually re-queried the room counts. The pen
         // throttles its own lookups, and this loop polls faster than that
         // interval — counting throttled sweeps would let shutdown exhaust its

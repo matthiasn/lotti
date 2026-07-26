@@ -102,12 +102,20 @@ class QueueBootstrapSink implements BootstrapSink {
         // A re-hold of something already held costs no slot.
         if (!heldIn.holds(event.eventId) &&
             heldIn.sizeForRoom(roomId) >= heldIn.capacity) {
-          // Note it and keep scanning. Breaking here would discard the rest
-          // of a page that has already been fetched — later plaintext and
-          // already-held events included — and the manual "Fetch all history"
-          // path has no automatic retry to pick them up afterwards.
+          // Stop the page here. Nothing after this point may be queued:
+          // this event has no row, no pen entry and therefore no marker
+          // clamp, so a later plaintext event from the same page would
+          // advance the marker straight past it and the incomplete-bootstrap
+          // retry would then anchor after the gap.
+          //
+          // This does discard the remainder of a page that has already been
+          // fetched, which is a real cost on the manual "Fetch all history"
+          // path since nothing retries it automatically. That is the better
+          // side of the trade: re-fetching is free, and losing an event
+          // behind an advanced marker is permanent. Admitting past the gap
+          // safely needs the persisted resume floor tracked as lotti3-0i2.
           penExhausted = true;
-          continue;
+          break;
         }
         final sizeBefore = heldIn.size;
         heldIn.hold(event);

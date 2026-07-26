@@ -201,6 +201,7 @@ class PendingDecryptionPen {
   /// decrypted and the caller should proceed with normal enqueue.
   bool hold(Event event) {
     if (event.type != EventTypes.Encrypted) return false;
+    _protectedRoomId = event.roomId;
 
     final id = event.eventId;
     final existing = _held.remove(id);
@@ -326,9 +327,13 @@ class PendingDecryptionPen {
     }
   }
 
+  /// The room whose entry was most recently held. Eviction prefers any other
+  /// room's entry over this one.
+  String? _protectedRoomId;
+
   void _enforceCapacity() {
     while (_held.length > capacity) {
-      final victim = _held.keys.first;
+      final victim = _pickVictim();
       _held.remove(victim);
       _logging.log(
         LogDomain.sync,
@@ -336,6 +341,25 @@ class PendingDecryptionPen {
         subDomain: _logSub,
       );
     }
+  }
+
+  /// Oldest entry belonging to a room other than the one being held for, or
+  /// the oldest entry overall when every entry belongs to it.
+  ///
+  /// Plain LRU is wrong once admission is budgeted per room. Switching
+  /// A → B → A can leave an A entry as the global oldest while a B entry is
+  /// newer; the per-room budget then admits another A event and LRU evicts
+  /// the *active* room's ciphertext — losing both the event and the marker
+  /// clamp that protects it, so later A commits advance straight past it. The
+  /// inactive room's entry is the right victim: nothing is sweeping it.
+  String _pickVictim() {
+    final protectedRoom = _protectedRoomId;
+    if (protectedRoom != null) {
+      for (final entry in _held.entries) {
+        if (entry.value.event.roomId != protectedRoom) return entry.key;
+      }
+    }
+    return _held.keys.first;
   }
 }
 

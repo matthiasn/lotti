@@ -368,7 +368,7 @@ void main() {
   );
 
   test(
-    'a full pen does not discard the rest of an already-fetched page',
+    'a full pen stops the page at the gap rather than queueing past it',
     () async {
       // Breaking out of the scan throws away work that has already crossed
       // the network — later plaintext and already-held events included — and
@@ -403,8 +403,11 @@ void main() {
       final stats = await queue.stats();
       expect(
         stats.total,
-        1,
-        reason: 'the plaintext after the boundary still reaches the queue',
+        0,
+        reason:
+            'nothing past the gap may be queued: the overflow event has '
+            'no row and no pen entry, so it has no marker clamp, and a later '
+            'event from the same page would advance the marker past it',
       );
     },
   );

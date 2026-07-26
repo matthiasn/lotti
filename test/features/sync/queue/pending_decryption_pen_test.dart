@@ -334,6 +334,44 @@ void main() {
     },
   );
 
+  test(
+    'eviction prefers an inactive room over the room being held for',
+    () async {
+      // Plain LRU is wrong once admission is budgeted per room. Switching
+      // A -> B -> A can leave an A entry as the global oldest while a B entry
+      // is newer; evicting the A entry would cost the active room both the
+      // ciphertext and the marker clamp that protects it, so later A commits
+      // would advance straight past it.
+      final pen = PendingDecryptionPen(logging: logging, capacity: 2);
+      Event sealed(String id, String room, int ts) => buildEvent(
+        eventId: id,
+        roomId: room,
+        originTsMs: ts,
+        type: EventTypes.Encrypted,
+      );
+
+      pen
+        ..hold(sealed(r'$oldestA', roomId, 1))
+        ..hold(sealed(r'$newerB', '!roomB:example.org', 2))
+        // Room A again, over capacity: the B entry is the right victim even
+        // though the A entry is older.
+        ..hold(sealed(r'$freshA', roomId, 3));
+
+      expect(pen.size, 2);
+      expect(
+        pen.holds(r'$oldestA'),
+        isTrue,
+        reason: 'the active room keeps its ciphertext and its marker clamp',
+      );
+      expect(pen.holds(r'$freshA'), isTrue);
+      expect(
+        pen.holds(r'$newerB'),
+        isFalse,
+        reason: 'nothing is sweeping the inactive room, so it yields first',
+      );
+    },
+  );
+
   test('capacity eviction drops the oldest entry', () async {
     final pen = PendingDecryptionPen(logging: logging, capacity: 2);
     final a = buildEvent(
