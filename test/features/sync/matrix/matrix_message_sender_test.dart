@@ -82,7 +82,11 @@ class _GeneratedSendScenario {
   final _GeneratedCoveredClockKind coveredClockKind;
   final int slot;
 
-  bool get reachesTextSend => contextKind == _GeneratedSendContextKind.ready;
+  // Unverified devices no longer halt the send (ADR 0045): the SDK excludes
+  // them from key sharing and the message goes out for everyone verified.
+  bool get reachesTextSend =>
+      contextKind == _GeneratedSendContextKind.ready ||
+      contextKind == _GeneratedSendContextKind.unverifiedDevice;
 
   bool get succeeds =>
       reachesTextSend && textSendKind == _GeneratedTextSendKind.succeeds;
@@ -511,25 +515,53 @@ void main() {
     );
   }
 
-  test('returns false when unverified devices are present', () async {
-    final device = MockDeviceKeys();
-    final context = buildContext(devices: [device]);
+  test(
+    'sends despite unverified devices, logging their exclusion from key '
+    'sharing (ADR 0045: the SDK withholds keys instead of the app halting)',
+    () async {
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((_) async => r'$excluded-send-event');
 
-    final result = await sender.sendMatrixMessage(
-      message: const SyncMessage.aiConfigDelete(id: 'abc'),
-      context: context,
-      onSent: (_, _) {},
-    );
+      final device = MockDeviceKeys();
+      final context = buildContext(devices: [device]);
 
-    expect(result, isFalse);
-    verify(
-      () => loggingService.error(
-        LogDomain.sync,
-        any<Object>(),
-        subDomain: 'sendMatrixMsg',
-      ),
-    ).called(1);
-  });
+      final result = await sender.sendMatrixMessage(
+        message: const SyncMessage.aiConfigDelete(id: 'abc'),
+        context: context,
+        onSent: (_, _) {},
+      );
+
+      expect(result, isTrue);
+      verify(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).called(1);
+      verify(
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('excluded from key sharing')),
+          subDomain: 'sendMatrixMsg.excludedDevices',
+        ),
+      ).called(1);
+      verifyNever(
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(),
+          subDomain: 'sendMatrixMsg',
+        ),
+      );
+    },
+  );
 
   test('returns false when no room id is available', () async {
     const context = MatrixMessageContext(

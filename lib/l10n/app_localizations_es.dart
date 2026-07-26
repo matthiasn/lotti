@@ -10013,9 +10013,9 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivos sin verificar están pausando la sincronización: elimínalos o verifícalos abajo.',
+          '$count dispositivos sin verificar no pueden leer las entradas nuevas: elimínalos o verifícalos abajo.',
       one:
-          '1 dispositivo sin verificar está pausando la sincronización: elimínalo o verifícalo abajo.',
+          '1 dispositivo sin verificar no puede leer las entradas nuevas: elimínalo o verifícalo abajo.',
     );
     return '$_temp0';
   }
@@ -10026,9 +10026,9 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivos sin verificar están pausando la sincronización: elimínalos abajo.',
+          '$count dispositivos sin verificar no pueden leer las entradas nuevas: elimínalos abajo.',
       one:
-          '1 dispositivo sin verificar está pausando la sincronización: elimínalo abajo.',
+          '1 dispositivo sin verificar no puede leer las entradas nuevas: elimínalo abajo.',
     );
     return '$_temp0';
   }
@@ -10039,9 +10039,9 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivos sin verificar están pausando la sincronización: verifícalos abajo.',
+          '$count dispositivos sin verificar no pueden leer las entradas nuevas: verifícalos abajo.',
       one:
-          '1 dispositivo sin verificar está pausando la sincronización: verifícalo abajo.',
+          '1 dispositivo sin verificar no puede leer las entradas nuevas: verifícalo abajo.',
     );
     return '$_temp0';
   }
@@ -10053,7 +10053,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncDevicesStaleHint => 'Probablemente ya no se usa';
 
   @override
-  String get syncDevicesSyncResumed => 'La sincronización vuelve a funcionar.';
+  String get syncDevicesSyncResumed =>
+      'Todos los dispositivos emparejados pueden volver a leer tus entradas.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Este dispositivo';

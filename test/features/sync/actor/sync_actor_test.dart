@@ -1398,6 +1398,82 @@ void main() {
       expect(response['ok'], isFalse);
       expect(response['error'], contains('joinRoom failed'));
     });
+
+    test(
+      'wipes the joined room’s outbound megolm session before the '
+      'outbox is kicked (ADR 0045)',
+      () async {
+        late MockMatrixSdkGateway gateway;
+        late MockMatrixClient client;
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            gateway = g;
+            client = c;
+          },
+        );
+        await handler.handleCommand(_initPayload());
+
+        final encryption = MockEncryption();
+        final keyManager = MockKeyManager();
+        when(() => client.encryption).thenReturn(encryption);
+        when(() => encryption.keyManager).thenReturn(keyManager);
+        when(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            any(),
+            wipe: any(named: 'wipe'),
+            use: any(named: 'use'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(() => gateway.joinRoom(any())).thenAnswer((_) async {});
+
+        final response = await handler.handleCommand(
+          _cmd('joinRoom', {'roomId': '!room:localhost'}),
+        );
+
+        expect(response['ok'], isTrue);
+        verify(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            '!room:localhost',
+            wipe: true,
+            use: false,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a failing megolm rotation is logged but still lets the join succeed',
+      () async {
+        late MockMatrixSdkGateway gateway;
+        late MockMatrixClient client;
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            gateway = g;
+            client = c;
+          },
+        );
+        await handler.handleCommand(_initPayload());
+
+        final encryption = MockEncryption();
+        final keyManager = MockKeyManager();
+        when(() => client.encryption).thenReturn(encryption);
+        when(() => encryption.keyManager).thenReturn(keyManager);
+        when(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            any(),
+            wipe: any(named: 'wipe'),
+            use: any(named: 'use'),
+          ),
+        ).thenThrow(Exception('crypto db locked'));
+        when(() => gateway.joinRoom(any())).thenAnswer((_) async {});
+
+        final response = await handler.handleCommand(
+          _cmd('joinRoom', {'roomId': '!room:localhost'}),
+        );
+
+        expect(response['ok'], isTrue);
+      },
+    );
   });
 
   group('sendText', () {

@@ -10058,9 +10058,9 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count appareils non vérifiés mettent la synchronisation en pause — supprime-les ou vérifie-les ci-dessous.',
+          '$count appareils non vérifiés ne peuvent pas lire les nouvelles entrées — supprime-les ou vérifie-les ci-dessous.',
       one:
-          '1 appareil non vérifié met la synchronisation en pause — supprime-le ou vérifie-le ci-dessous.',
+          '1 appareil non vérifié ne peut pas lire les nouvelles entrées — supprime-le ou vérifie-le ci-dessous.',
     );
     return '$_temp0';
   }
@@ -10071,9 +10071,9 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count appareils non vérifiés mettent la synchronisation en pause — supprime-les ci-dessous.',
+          '$count appareils non vérifiés ne peuvent pas lire les nouvelles entrées — supprime-les ci-dessous.',
       one:
-          '1 appareil non vérifié met la synchronisation en pause — supprime-le ci-dessous.',
+          '1 appareil non vérifié ne peut pas lire les nouvelles entrées — supprime-le ci-dessous.',
     );
     return '$_temp0';
   }
@@ -10084,9 +10084,9 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count appareils non vérifiés mettent la synchronisation en pause — vérifie-les ci-dessous.',
+          '$count appareils non vérifiés ne peuvent pas lire les nouvelles entrées — vérifie-les ci-dessous.',
       one:
-          '1 appareil non vérifié met la synchronisation en pause — vérifie-le ci-dessous.',
+          '1 appareil non vérifié ne peut pas lire les nouvelles entrées — vérifie-le ci-dessous.',
     );
     return '$_temp0';
   }
@@ -10099,7 +10099,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'La synchronisation fonctionne à nouveau.';
+      'Chaque appareil appairé peut à nouveau lire tes entrées.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Cet appareil';

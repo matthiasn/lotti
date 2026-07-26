@@ -9992,9 +9992,9 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivi non verificati stanno mettendo in pausa la sincronizzazione: eliminali o verificali qui sotto.',
+          '$count dispositivi non verificati non possono leggere le nuove voci: eliminali o verificali qui sotto.',
       one:
-          '1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: eliminalo o verificalo qui sotto.',
+          '1 dispositivo non verificato non può leggere le nuove voci: eliminalo o verificalo qui sotto.',
     );
     return '$_temp0';
   }
@@ -10005,9 +10005,9 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivi non verificati stanno mettendo in pausa la sincronizzazione: eliminali qui sotto.',
+          '$count dispositivi non verificati non possono leggere le nuove voci: eliminali qui sotto.',
       one:
-          '1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: eliminalo qui sotto.',
+          '1 dispositivo non verificato non può leggere le nuove voci: eliminalo qui sotto.',
     );
     return '$_temp0';
   }
@@ -10018,9 +10018,9 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivi non verificati stanno mettendo in pausa la sincronizzazione: verificali qui sotto.',
+          '$count dispositivi non verificati non possono leggere le nuove voci: verificali qui sotto.',
       one:
-          '1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: verificalo qui sotto.',
+          '1 dispositivo non verificato non può leggere le nuove voci: verificalo qui sotto.',
     );
     return '$_temp0';
   }
@@ -10032,7 +10032,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncDevicesStaleHint => 'Probabilmente non più in uso';
 
   @override
-  String get syncDevicesSyncResumed => 'La sincronizzazione è di nuovo attiva.';
+  String get syncDevicesSyncResumed =>
+      'Ogni dispositivo associato può leggere di nuovo le tue voci.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Questo dispositivo';

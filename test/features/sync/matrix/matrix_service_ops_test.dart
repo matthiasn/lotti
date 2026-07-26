@@ -45,6 +45,7 @@ void main() {
   });
 
   late MockMatrixSyncGateway gateway;
+  late MockSettingsDb settingsDb;
   late MockDomainLogger logging;
   late MockQueuePipelineCoordinator coordinator;
   late MockInboundQueue queue;
@@ -75,10 +76,12 @@ void main() {
         service:
             service ??
             () => throw UnimplementedError('service() not used in this test'),
+        settingsDb: settingsDb,
       );
 
   setUp(() {
     gateway = MockMatrixSyncGateway();
+    settingsDb = MockSettingsDb();
     logging = MockDomainLogger();
     coordinator = MockQueuePipelineCoordinator();
     queue = MockInboundQueue();
@@ -239,6 +242,149 @@ void main() {
       final keys = <DeviceKeys>[];
       when(gateway.unverifiedDevices).thenReturn(keys);
       expect(buildOps().getUnverifiedDevices(), same(keys));
+    });
+  });
+
+  group('rotateOutboundSessionsForExclusionPolicy', () {
+    late MockMatrixClient client;
+
+    setUp(() {
+      client = MockMatrixClient();
+      when(() => sessionManager.client).thenReturn(client);
+      when(() => client.encryption).thenReturn(null);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+    });
+
+    test(
+      "wipes the room's outbound megolm session so keys shared under the "
+      'old permissive policy stop covering new entries',
+      () async {
+        final encryption = MockEncryption();
+        final keyManager = MockKeyManager();
+        when(() => client.encryption).thenReturn(encryption);
+        when(() => encryption.keyManager).thenReturn(keyManager);
+        when(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            any(),
+            wipe: any(named: 'wipe'),
+            use: any(named: 'use'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+
+        await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+        verify(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            '!room:server',
+            wipe: true,
+            use: false,
+          ),
+        ).called(1);
+        verify(
+          () => settingsDb.saveSettingsItem(
+            MatrixServiceOps.megolmRotatedForExclusionKey('!room:server'),
+            'true',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'leaves the marker unset when encryption is not ready, so a later '
+      'launch retries instead of skipping the rotation forever',
+      () async {
+        when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+        when(() => client.encryption).thenReturn(null);
+
+        await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+        verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any(),
+            subDomain: 'exclusionPolicy.rotate.deferred',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'rotates a newly switched-to room even though another room was already '
+      'migrated',
+      () async {
+        final encryption = MockEncryption();
+        final keyManager = MockKeyManager();
+        when(() => client.encryption).thenReturn(encryption);
+        when(() => encryption.keyManager).thenReturn(keyManager);
+        when(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            any(),
+            wipe: any(named: 'wipe'),
+            use: any(named: 'use'),
+          ),
+        ).thenAnswer((_) async => true);
+        // Room A already migrated; the client now points at room B.
+        when(
+          () => settingsDb.itemByKey(
+            MatrixServiceOps.megolmRotatedForExclusionKey('!room-a:server'),
+          ),
+        ).thenAnswer((_) async => 'true');
+        when(
+          () => settingsDb.itemByKey(
+            MatrixServiceOps.megolmRotatedForExclusionKey('!room-b:server'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(() => roomManager.currentRoomId).thenReturn('!room-b:server');
+
+        await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+        verify(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            '!room-b:server',
+            wipe: true,
+            use: false,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('is a no-op once the marker is set', () async {
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => 'true');
+
+      await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+      verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
+    });
+
+    test('leaves the marker unset when no room is joined yet, so a later '
+        'launch retries', () async {
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+      when(() => roomManager.currentRoomId).thenReturn(null);
+
+      await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+      verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
+    });
+
+    test('swallows and logs failures without setting the marker', () async {
+      when(() => settingsDb.itemByKey(any())).thenThrow(Exception('db'));
+
+      await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+      verify(
+        () => logging.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'exclusionPolicy.rotate',
+        ),
+      ).called(1);
+      verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
     });
   });
 
@@ -606,23 +752,23 @@ void main() {
         final current = devices[1];
         expect(current.isCurrentDevice, isTrue);
         expect(current.verified, isTrue);
-        expect(current.blocksSync, isFalse);
+        expect(current.excludedFromSync, isFalse);
 
         final ghost = devices[0];
         expect(ghost.verified, isFalse);
-        expect(ghost.blocksSync, isTrue);
+        expect(ghost.excludedFromSync, isTrue);
         expect(ghost.lastSeen, DateTime(2026, 5));
         expect(ghost.keys, isNotNull);
 
         final oldVerified = devices[2];
         expect(oldVerified.verified, isTrue);
-        expect(oldVerified.blocksSync, isFalse);
+        expect(oldVerified.excludedFromSync, isFalse);
 
         final keyless = devices[3];
         expect(keyless.verified, isFalse);
         expect(keyless.keys, isNull);
         expect(
-          keyless.blocksSync,
+          keyless.excludedFromSync,
           isFalse,
           reason: 'keyless sessions never gate the send path',
         );
@@ -706,7 +852,7 @@ void main() {
               'verified foreign devices are roster noise',
         );
         final peer = devices.first;
-        expect(peer.blocksSync, isTrue);
+        expect(peer.excludedFromSync, isTrue);
         expect(peer.ownAccount, isFalse);
         expect(peer.onServer, isFalse);
       },
@@ -733,7 +879,7 @@ void main() {
           ['CACHE_ONLY', 'THIS_DEVICE'],
         );
         final ghost = devices.first;
-        expect(ghost.blocksSync, isTrue);
+        expect(ghost.excludedFromSync, isTrue);
         expect(ghost.lastSeen, isNull);
         expect(ghost.keys, isNotNull);
         expect(ghost.onServer, isFalse);
@@ -829,6 +975,7 @@ void main() {
         keyVerificationRequestSubscription: () => keyVerSub,
         setKeyVerificationRequestSubscription: (value) => keyVerSub = value,
         service: () => throw UnimplementedError(),
+        settingsDb: settingsDb,
       );
 
       expect(await ops.getSyncMetrics(), isNull);

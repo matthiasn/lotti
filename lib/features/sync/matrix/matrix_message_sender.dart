@@ -150,17 +150,17 @@ class MatrixMessageSender {
     required MatrixMessageSentCallback onSent,
   }) async {
     if (context.unverifiedDevices.isNotEmpty) {
-      _trace(
-        'FAIL unverifiedDevices=${context.unverifiedDevices.length} '
-        'type=${message.runtimeType}',
-        subDomain: 'matrix.send.error',
-      );
-      _loggingService.error(
+      // Not a failure: the client is constructed with
+      // ShareKeysWith.directlyVerifiedOnly (ADR 0045), so unverified devices
+      // receive no key material and simply cannot read this message. The
+      // device roster's banner is the user-facing signal; sending must keep
+      // working for every verified device.
+      _loggingService.log(
         LogDomain.sync,
-        'Unverified devices found',
-        subDomain: 'sendMatrixMsg',
+        'sending with ${context.unverifiedDevices.length} unverified '
+        'device(s) excluded from key sharing',
+        subDomain: 'sendMatrixMsg.excludedDevices',
       );
-      return false;
     }
 
     final room = context.syncRoom;

@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1071]
 ### Added
+- **Encryption keys are never shared with unverified devices — and sync never
+  stops for them.** Keys now go only to devices you have emoji-verified; an
+  unverified device receives ciphertext it cannot read. Until now the app
+  protected you the blunt way: one unverified device — typically a dead
+  session left by an uninstalled app — silently stopped all syncing on every
+  device until it was removed. Now everyone you trust keeps syncing, the
+  device list warns that the unverified device can't read new entries, and
+  verifying or removing it stays a calm cleanup step instead of an emergency.
 - **See and manage every device in your sync account.** The sync status page
   now lists all sessions — not just unverified ones — with a "This device"
   marker, Verified/Unverified chips, when the server last saw each device, and
@@ -13,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Sessions signed in with this account can be removed — except the one
   you're on — including previously verified ones and sessions that never
   finished pairing. Devices paired the old way, each with its own separate
-  account, can be verified but not removed. While any device still blocks
-  sync, the list says so in plain words instead of sync failing silently.
+  account, can be verified but not removed. While any device is excluded
+  from sync, the list says so in plain words.
 - **Tell the task assistant how tasks relate — in either direction.** Saying
   "this task is blocked by X", "this supersedes the old migration task", or
   "this duplicates Y" now becomes a reviewable suggestion that records the

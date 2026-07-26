@@ -27,16 +27,19 @@ merge of two users' work.
   transcribed automatically on a pinned desktop that has local models
   installed — and the path is built so that audio can never be handed to a cloud
   provider by accident.
+- **Never hands keys to unverified devices.** Encryption keys are shared only
+  with devices this session has emoji-verified (ADR 0045). An unverified
+  device — a fresh install awaiting its ceremony, or a dead session left by
+  an uninstalled app — receives ciphertext it cannot read, while every
+  verified device keeps syncing. Nothing ever halts.
 - **Lets the user manage the device roster.** The sync status page lists every
   session on the account — verified or not, with when the server last saw it —
   and any of this account's sessions except the current one can be removed.
-  (Devices from the legacy one-user-per-device pairing model appear too when
-  they block sync, but they can only be verified, not removed.) An unverified
-  session with published keys blocks outbound sync (sessions that never
-  published keys don't); a device uninstalled without logging out would
-  otherwise block sync forever. The list says so plainly, and after removal a
-  bounded, best-effort key refresh lets sync resume right away — or on the
-  next sync cycle if that refresh cannot complete.
+  (Devices from the legacy one-user-per-device pairing model appear too while
+  unverified, but they can only be verified, not removed.) The roster warns
+  while any device is excluded from sync and names the remedy; removal is
+  hygiene, not an unblock step, and a bounded, best-effort key refresh tidies
+  the cache right away — or on the next sync cycle if it cannot complete.
 
 ## What it owns
 

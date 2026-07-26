@@ -355,6 +355,8 @@ class MockEncryption extends Mock implements Encryption {}
 
 class MockCrossSigning extends Mock implements CrossSigning {}
 
+class MockKeyManager extends Mock implements KeyManager {}
+
 class MockKeyVerificationManager extends Mock
     implements KeyVerificationManager {}
 

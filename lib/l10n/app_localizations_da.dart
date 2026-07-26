@@ -9862,9 +9862,9 @@ class AppLocalizationsDa extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count ubekræftede enheder sætter synkroniseringen på pause — slet eller bekræft dem nedenfor.',
+          '$count ubekræftede enheder kan ikke læse nye poster — slet eller bekræft dem nedenfor.',
       one:
-          '1 ubekræftet enhed sætter synkroniseringen på pause — slet eller bekræft den nedenfor.',
+          '1 ubekræftet enhed kan ikke læse nye poster — slet eller bekræft den nedenfor.',
     );
     return '$_temp0';
   }
@@ -9875,9 +9875,8 @@ class AppLocalizationsDa extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count ubekræftede enheder sætter synkroniseringen på pause — slet dem nedenfor.',
-      one:
-          '1 ubekræftet enhed sætter synkroniseringen på pause — slet den nedenfor.',
+          '$count ubekræftede enheder kan ikke læse nye poster — slet dem nedenfor.',
+      one: '1 ubekræftet enhed kan ikke læse nye poster — slet den nedenfor.',
     );
     return '$_temp0';
   }
@@ -9888,9 +9887,9 @@ class AppLocalizationsDa extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count ubekræftede enheder sætter synkroniseringen på pause — bekræft dem nedenfor.',
+          '$count ubekræftede enheder kan ikke læse nye poster — bekræft dem nedenfor.',
       one:
-          '1 ubekræftet enhed sætter synkroniseringen på pause — bekræft den nedenfor.',
+          '1 ubekræftet enhed kan ikke læse nye poster — bekræft den nedenfor.',
     );
     return '$_temp0';
   }
@@ -9902,7 +9901,8 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncDevicesStaleHint => 'Sandsynligvis ikke længere i brug';
 
   @override
-  String get syncDevicesSyncResumed => 'Synkroniseringen kører igen.';
+  String get syncDevicesSyncResumed =>
+      'Alle parrede enheder kan læse dine poster igen.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Denne enhed';

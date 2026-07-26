@@ -4594,27 +4594,27 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo não verificado está pausando a sincronização — exclui-o ou verifica-o abaixo.} other{{count} dispositivos não verificados estão pausando a sincronização — exclui-os ou verifica-os abaixo.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo não verificado não consegue ler as novas entradas — exclua-o ou verifique-o abaixo.} other{{count} dispositivos não verificados não conseguem ler as novas entradas — exclua-os ou verifique-os abaixo.}}",
   "@syncDevicesPausedBanner": {
-    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 dispositivo não verificado está pausando a sincronização — exclui-o abaixo.} other{{count} dispositivos não verificados estão pausando a sincronização — exclui-os abaixo.}}",
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 dispositivo não verificado não consegue ler as novas entradas — exclua-o abaixo.} other{{count} dispositivos não verificados não conseguem ler as novas entradas — exclua-os abaixo.}}",
   "@syncDevicesPausedBannerDeleteOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 dispositivo não verificado está pausando a sincronização — verifica-o abaixo.} other{{count} dispositivos não verificados estão pausando a sincronização — verifica-os abaixo.}}",
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 dispositivo não verificado não consegue ler as novas entradas — verifique-o abaixo.} other{{count} dispositivos não verificados não conseguem ler as novas entradas — verifique-os abaixo.}}",
   "@syncDevicesPausedBannerVerifyOnly": {
-    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "description": "Warning banner while unverified devices are excluded from key sharing and cannot read new entries; count is the number of excluded devices.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -4623,7 +4623,7 @@
   },
   "syncDevicesSectionTitle": "Dispositivos",
   "syncDevicesStaleHint": "Provavelmente não está mais em uso",
-  "syncDevicesSyncResumed": "A sincronização está funcionando novamente.",
+  "syncDevicesSyncResumed": "Todos os dispositivos pareados conseguem ler suas entradas novamente.",
   "syncDevicesThisDeviceChip": "Este dispositivo",
   "syncDevicesUnverifiedChip": "Não verificado",
   "syncDevicesVerifiedChip": "Verificado",

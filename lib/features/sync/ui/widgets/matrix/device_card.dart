@@ -21,7 +21,7 @@ import 'package:matrix/matrix.dart';
 ///
 /// Every deletable card keeps its removal action in the same bottom zone;
 /// only the weight changes — a quiet outlined button on healthy cards
-/// escalating to the large danger primary on a card that blocks sync.
+/// escalating to the large danger primary on a card excluded from sync.
 class DeviceCard extends ConsumerStatefulWidget {
   const DeviceCard(
     this.device, {
@@ -133,7 +133,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
     final canDelete = !device.isCurrentDevice && device.ownAccount;
 
     // A stale, unverified device is almost certainly dead: removal — not
-    // verification — is what resumes sync, so removal escalates to the
+    // verification — is the realistic remedy, so it escalates to the
     // labeled danger primary.
     final removalIsPrimary =
         canDelete && !device.verified && (stale || !device.onServer);
@@ -147,9 +147,9 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
             ?pairingHash,
           ].join(' · ');
 
-    // Keyless sessions cannot be verified and never block sync — an amber
-    // chip would cry wolf, so they get the neutral outlined variant and an
-    // explanatory hint instead.
+    // Keyless sessions cannot be verified and hold nothing to exclude — an
+    // amber chip would cry wolf, so they get the neutral outlined variant
+    // and an explanatory hint instead.
     final keyless =
         !device.isCurrentDevice && !device.verified && device.keys == null;
 
@@ -177,7 +177,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
     ];
 
     return SyncFlowSection(
-      accentColor: device.blocksSync
+      accentColor: device.excludedFromSync
           ? tokens.colors.alert.warning.defaultColor
           : null,
       // Stretch so every card fills the section width regardless of how
@@ -216,7 +216,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
             Text(
               messages.syncDevicesStaleHint,
               style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: device.blocksSync
+                color: device.excludedFromSync
                     ? tokens.colors.alert.warning.ink
                     : tokens.colors.text.mediumEmphasis,
               ),

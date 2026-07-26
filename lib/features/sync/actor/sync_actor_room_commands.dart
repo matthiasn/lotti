@@ -53,6 +53,13 @@ extension SyncActorRoomCommands on SyncActorCommandHandler {
     try {
       _log('joinRoom: $roomId');
       await _gateway!.joinRoom(roomId);
+      // The actor keeps its own persistent Matrix database, which may hold an
+      // outbound megolm session created before this install adopted
+      // ShareKeysWith.directlyVerifiedOnly (ADR 0045). Withholding future keys
+      // cannot revoke a key already handed out, so discard the session before
+      // anything is sent: the next send starts a fresh one that only directly
+      // verified devices receive.
+      await _rotateOutboundSessionForExclusionPolicy(roomId);
       _outboundQueue?.updateSyncRoomId(roomId);
       _kickOutboxQueue();
       _log('joinRoom ok: $roomId');
@@ -64,6 +71,27 @@ extension SyncActorRoomCommands on SyncActorCommandHandler {
         requestId: requestId,
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  /// Discards [roomId]'s outbound megolm session so keys shared under the
+  /// pre-ADR-0045 policy stop covering new entries. Best-effort: a failure is
+  /// logged and the join still succeeds, and the next join retries.
+  Future<void> _rotateOutboundSessionForExclusionPolicy(String roomId) async {
+    try {
+      final keyManager = _gateway?.client.encryption?.keyManager;
+      if (keyManager == null) {
+        _log('joinRoom: encryption not ready, megolm rotation deferred');
+        return;
+      }
+      await keyManager.clearOrUseOutboundGroupSession(
+        roomId,
+        wipe: true,
+        use: false,
+      );
+      _log('joinRoom: rotated outbound megolm session for $roomId');
+    } catch (e, stackTrace) {
+      _log('joinRoom: megolm rotation failed: $e\n$stackTrace');
     }
   }
 

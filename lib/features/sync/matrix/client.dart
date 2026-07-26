@@ -46,6 +46,13 @@ Future<Client> createMatrixClient({
       KeyVerificationMethod.emoji,
       KeyVerificationMethod.reciprocate,
     },
+    // Never hand megolm keys to a device this session has not SAS-verified.
+    // Without cross-signing the SDK default degrades to sharing with every
+    // non-blocked device, which forced an app-level total send halt as the
+    // only confidentiality backstop. With exclusion, an unverified device
+    // simply receives ciphertext it can never read while every trusted
+    // device keeps syncing. See ADR 0045.
+    shareKeysWith: ShareKeysWith.directlyVerifiedOnly,
     sendTimelineEventTimeout: const Duration(minutes: 2),
     database: database,
   );

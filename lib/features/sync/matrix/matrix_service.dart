@@ -194,6 +194,7 @@ class MatrixService {
       setKeyVerificationRequestSubscription: (value) =>
           _keyVerificationRequestSubscription = value,
       service: () => this,
+      settingsDb: _settingsDb,
     );
   }
 
@@ -357,9 +358,15 @@ class MatrixService {
       'joinedRooms: $joinedRooms',
       subDomain: 'listen',
     );
+    await ensureExclusionPolicyRotation();
   }
 
+  /// Clears the rotation gate so the next login re-evaluates it for whatever
+  /// session and room come back.
+  void _resetExclusionRotationGate() => _megolmRotationGate = null;
+
   Future<void> _onLifecycleLogout() async {
+    _resetExclusionRotationGate();
     _loggingService.log(
       LogDomain.sync,
       'Sync lifecycle paused (logged out).',
@@ -376,10 +383,25 @@ class MatrixService {
   /// `agentEntity`, `agentLink`, `agentBundle`, `outboxBundle`). When the SDK
   /// reports a successful send, the corresponding counter is incremented and
   /// debounced stats are emitted to the Matrix Stats UI.
+  /// Completes once the ADR 0045 megolm rotation has run for this session.
+  ///
+  /// `OutboxService` reacts to `LoginState.loggedIn` independently of
+  /// [listen], so a queued row could otherwise be encrypted with the
+  /// pre-upgrade outbound session before the wipe finishes. Every send waits
+  /// on this gate; the work itself is idempotent and runs at most once per
+  /// login.
+  Future<void>? _megolmRotationGate;
+
+  Future<void> ensureExclusionPolicyRotation() =>
+      _megolmRotationGate ??= _ops.rotateOutboundSessionsForExclusionPolicy();
+
   Future<bool> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
-  }) {
+  }) async {
+    // Never encrypt with a session that predates the exclusion policy.
+    await ensureExclusionPolicyRotation();
+
     var targetRoom = syncRoom;
     var targetRoomId = syncRoomId;
 

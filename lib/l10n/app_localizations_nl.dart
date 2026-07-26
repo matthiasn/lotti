@@ -9892,9 +9892,9 @@ class AppLocalizationsNl extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count niet-geverifieerde apparaten pauzeren de synchronisatie — verwijder of verifieer ze hieronder.',
+          '$count niet-geverifieerde apparaten kunnen nieuwe items niet lezen — verwijder of verifieer ze hieronder.',
       one:
-          '1 niet-geverifieerd apparaat pauzeert de synchronisatie — verwijder of verifieer het hieronder.',
+          '1 niet-geverifieerd apparaat kan nieuwe items niet lezen — verwijder of verifieer het hieronder.',
     );
     return '$_temp0';
   }
@@ -9905,9 +9905,9 @@ class AppLocalizationsNl extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count niet-geverifieerde apparaten pauzeren de synchronisatie — verwijder ze hieronder.',
+          '$count niet-geverifieerde apparaten kunnen nieuwe items niet lezen — verwijder ze hieronder.',
       one:
-          '1 niet-geverifieerd apparaat pauzeert de synchronisatie — verwijder het hieronder.',
+          '1 niet-geverifieerd apparaat kan nieuwe items niet lezen — verwijder het hieronder.',
     );
     return '$_temp0';
   }
@@ -9918,9 +9918,9 @@ class AppLocalizationsNl extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count niet-geverifieerde apparaten pauzeren de synchronisatie — verifieer ze hieronder.',
+          '$count niet-geverifieerde apparaten kunnen nieuwe items niet lezen — verifieer ze hieronder.',
       one:
-          '1 niet-geverifieerd apparaat pauzeert de synchronisatie — verifieer het hieronder.',
+          '1 niet-geverifieerd apparaat kan nieuwe items niet lezen — verifieer het hieronder.',
     );
     return '$_temp0';
   }
@@ -9932,7 +9932,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncDevicesStaleHint => 'Waarschijnlijk niet meer in gebruik';
 
   @override
-  String get syncDevicesSyncResumed => 'Synchronisatie werkt weer.';
+  String get syncDevicesSyncResumed =>
+      'Elk gekoppeld apparaat kan je items weer lezen.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Dit apparaat';

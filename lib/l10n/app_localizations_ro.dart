@@ -10043,11 +10043,11 @@ class AppLocalizationsRo extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count de dispozitive neverificate întrerup sincronizarea — ștergeți-le sau verificați-le mai jos.',
+          '$count de dispozitive neverificate nu pot citi intrările noi — ștergeți-le sau verificați-le mai jos.',
       few:
-          '$count dispozitive neverificate întrerup sincronizarea — ștergeți-le sau verificați-le mai jos.',
+          '$count dispozitive neverificate nu pot citi intrările noi — ștergeți-le sau verificați-le mai jos.',
       one:
-          'Un dispozitiv neverificat întrerupe sincronizarea — ștergeți-l sau verificați-l mai jos.',
+          'Un dispozitiv neverificat nu poate citi intrările noi — ștergeți-l sau verificați-l mai jos.',
     );
     return '$_temp0';
   }
@@ -10058,11 +10058,11 @@ class AppLocalizationsRo extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count de dispozitive neverificate întrerup sincronizarea — ștergeți-le mai jos.',
+          '$count de dispozitive neverificate nu pot citi intrările noi — ștergeți-le mai jos.',
       few:
-          '$count dispozitive neverificate întrerup sincronizarea — ștergeți-le mai jos.',
+          '$count dispozitive neverificate nu pot citi intrările noi — ștergeți-le mai jos.',
       one:
-          'Un dispozitiv neverificat întrerupe sincronizarea — ștergeți-l mai jos.',
+          'Un dispozitiv neverificat nu poate citi intrările noi — ștergeți-l mai jos.',
     );
     return '$_temp0';
   }
@@ -10073,11 +10073,11 @@ class AppLocalizationsRo extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count de dispozitive neverificate întrerup sincronizarea — verificați-le mai jos.',
+          '$count de dispozitive neverificate nu pot citi intrările noi — verificați-le mai jos.',
       few:
-          '$count dispozitive neverificate întrerup sincronizarea — verificați-le mai jos.',
+          '$count dispozitive neverificate nu pot citi intrările noi — verificați-le mai jos.',
       one:
-          'Un dispozitiv neverificat întrerupe sincronizarea — verificați-l mai jos.',
+          'Un dispozitiv neverificat nu poate citi intrările noi — verificați-l mai jos.',
     );
     return '$_temp0';
   }
@@ -10089,7 +10089,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncDevicesStaleHint => 'Probabil nu mai este folosit';
 
   @override
-  String get syncDevicesSyncResumed => 'Sincronizarea funcționează din nou.';
+  String get syncDevicesSyncResumed =>
+      'Fiecare dispozitiv asociat poate citi din nou intrările dvs.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Acest dispozitiv';

@@ -116,7 +116,8 @@ void main() {
     );
     expect(
       find.text(
-        '1 unverified device is pausing sync — delete or verify it below.',
+        "1 unverified device can't read new entries — delete or verify it "
+        'below.',
       ),
       findsOneWidget,
     );
@@ -204,7 +205,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byKey(const Key('sync_devices_paused_banner')), findsNothing);
-    expect(find.text('Sync is running again.'), findsOneWidget);
+    expect(
+      find.text('Every paired device can read your entries again.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a failed refresh keeps the list and surfaces an error toast', (
@@ -470,7 +474,9 @@ void main() {
     );
 
     expect(
-      find.text('1 unverified device is pausing sync — verify it below.'),
+      find.text(
+        "1 unverified device can't read new entries — verify it below.",
+      ),
       findsOneWidget,
     );
   });
@@ -499,7 +505,9 @@ void main() {
     );
 
     expect(
-      find.text('1 unverified device is pausing sync — delete it below.'),
+      find.text(
+        "1 unverified device can't read new entries — delete it below.",
+      ),
       findsOneWidget,
     );
   });
