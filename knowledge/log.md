@@ -1,6 +1,11 @@
 # Knowledge Bundle Update Log
 
 ## 2026-07-26
+* **Creation**: Added [screenshots](conventions/screenshots.md) — the first written
+  account of where captured images live (the sibling `lotti-docs` repo, never
+  here), the three destinations there and their different lifecycles, and the
+  before/after pair a UI pull request carries. The practice had ~1,100 files across
+  37 topics and was documented nowhere, including in `lotti-docs`'s own README.
 * **Creation**: Documented the last three subsystems with no home: the
   `UpdateNotifications` token vocabulary and its `PROPAGATED::` prefix (which
   changes wake throttling, not just reactivity), `DerivedAgentState` and

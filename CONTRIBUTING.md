@@ -33,7 +33,15 @@ Thanks for your interest in contributing! Lotti is built by and for people who v
 - Tests live under `test/` as `*_test.dart`
 
 ## Pull Requests
-- Include a clear description of the change and, for UI changes, screenshots/GIFs
+- Include a clear description of the change
+- **For UI changes, attach a before *and* after screenshot** for each surface you
+  touched — one picture of the new state cannot tell a reviewer an improvement from
+  a regression. Capture the "before" from the base commit, before your change
+  exists; reconstructing it later is the step people skip.
+- **Do not commit images to this repository.** Attach them to the pull request
+  through GitHub's upload. (Maintainers put them in the sibling `lotti-docs` repo
+  and link the raw URLs; that repo is not writable from a fork.) See
+  [knowledge/conventions/screenshots.md](knowledge/conventions/screenshots.md).
 - Ensure `make analyze` and `make test` pass
 - Update documentation and localization as needed (`make l10n`)
 - Keep changes focused; avoid unrelated refactors
