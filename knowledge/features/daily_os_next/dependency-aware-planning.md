@@ -83,7 +83,7 @@ for a model; for a human it is not.
 # One field drives everything
 
 `dependencyResolver` is a **single nullable field** on `DayAgentWorkflow`, threaded
-into **two** carriers of the blocked-work data, so that every wake carrying the
+into **three** carriers of the blocked-work data, so that every wake carrying the
 rules below also carries data they can apply to:
 
 | Carrier | Assembled in | Covers |
@@ -92,7 +92,7 @@ rules below also carries data they can apply to:
 | `DayAgentPlanService.hydrateDecidedTasks` → `DecidedTaskRef` | drafting-context | tasks the user approved for placement, on **every** drafting wake |
 | `resolvePlannedTaskStates` → `drafting.baselinePlan.blocks[]` | drafting-context | tasks an **earlier draft** already scheduled |
 
-That one field drives the annotation on both paths and the prompt gates below, so
+That one field drives the annotation on all three paths and the prompt gates below, so
 they **can never drift out of sync** — there is no separate "is this feature on"
 flag.
 

@@ -240,13 +240,12 @@ class EvalFixtureInputs {
   /// a task reached only as somebody else's blocker: one-hop resolution never
   /// renders that task's own `blockedBy`.
   ///
-  /// Load-bearing for scoring, not just reporting. `blockerBeforeBlocked`
-  /// offers two ways to place blocked work — schedule its blocker earlier, or
-  /// name that blocker in the reason — and **both require knowing the blocker's
-  /// id**. Judging a task whose blockers were never rendered asks for something
-  /// no plan could supply, and rewards a model that placed nothing over one
-  /// that engaged. Shared with the judge bundle so the two can never disagree
-  /// about what the model saw.
+  /// Explains a `blockerBeforeBlocked` failure; it does not excuse one. Hiding
+  /// a blocker removes both *exceptions* the rule grants — schedule it earlier,
+  /// or name it in the reason — but not compliance itself, since omitting the
+  /// task is always available and the prompt says so. A judge still needs the
+  /// distinction: "ignored a blocker it was shown" and "could not comply and
+  /// should have omitted" lead to opposite conclusions about the model.
   bool blockersShownFor(String taskId) =>
       visibleTaskIds == null || decidedTaskIds.contains(taskId);
 

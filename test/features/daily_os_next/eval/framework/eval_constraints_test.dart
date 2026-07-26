@@ -264,13 +264,13 @@ void main() {
       blockedBy: ['task-blocker'],
     );
 
-    test('exempts a placed task whose own blockers were never rendered', () {
-      // The blockedWithoutCorpus shape, and the reason this exemption exists:
-      // one-hop resolution renders task-b-middle as the decided leaf's blocker
-      // (so its status is visible) but never its OWN blockedBy. Both escape
-      // branches the rule grants — schedule the blocker earlier, or name it in
-      // the reason — need an id the model was never given, so judging it asks
-      // for something no plan could supply.
+    test('still fails a visibly-blocked task whose blocker was hidden, and '
+        'says why', () {
+      // The blockedWithoutCorpus shape. task-b-middle is rendered as the
+      // decided leaf's blocker, so its BLOCKED status IS visible — hiding its
+      // own blockedBy removes both *exceptions*, not compliance itself, since
+      // omitting it was always available. Exempting this would credit exactly
+      // the defect the constraint exists to catch.
       const middle = EvalCorpusTask(
         taskId: 'task-b-middle',
         title: 'Get vendor credentials',
@@ -302,8 +302,12 @@ void main() {
         ),
       );
 
-      expect(result.passed, isNull);
-      expect(result.detail, contains('hidden blockers'));
+      expect(result.passed, isFalse);
+      // The detail must distinguish "ignored a blocker it was shown" from
+      // "could not comply and should have omitted" — a judge reading the
+      // bundle draws opposite conclusions from those two.
+      expect(result.detail, contains('never shown to the model'));
+      expect(result.detail, contains('left out'));
     });
 
     test('still judges a placed task whose blockers WERE rendered', () {

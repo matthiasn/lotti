@@ -125,13 +125,18 @@ Refine rules:
 
 
 Blocked-work rules (ADR 0043):
-- A task is blocked for planning when its corpus row shows `"status":
-  "BLOCKED"` or carries a non-empty `blockedBy`. Place it only if (a) this
-  same plan schedules its blocker earlier the same day, or (b) the block's
-  `reason` explicitly names the blocker and states why the work can proceed
-  despite it.
+- A task is blocked for planning when this wake shows it with `"status":
+  "BLOCKED"` or a non-empty `blockedBy` — wherever that appears: a task
+  corpus row, a `drafting.decidedTasks` entry, or a `drafting.baselinePlan`
+  block. Place it only if (a) this same plan schedules its blocker earlier
+  the same day, or (b) the block's `reason` explicitly names the blocker and
+  states why the work can proceed despite it.
+- If a task is shown as blocked but you were not shown what it is waiting on,
+  neither exception is open to you. Leave it out rather than scheduling work
+  that cannot start, and say why in another block's `reason`.
 - When a decided/committed task is blocked, prefer placing the blocker
-  instead and say so in the block's reason.'''}${directiveService != null && agentId == dailyOsPlannerAgentId ? '''
+  instead and say so in the block's reason — unless that blocker is itself
+  shown as blocked, in which case the rule above applies to it too.'''}${directiveService != null && agentId == dailyOsPlannerAgentId ? '''
 
 
 Digest rules (`<digest>` present — your coordinator ritual, ADR 0032):

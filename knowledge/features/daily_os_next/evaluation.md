@@ -220,21 +220,20 @@ apart. A task reached only as somebody else's blocker shows its status (
 is one hop. That is exactly the `blockedWithoutCorpus` shape: the middle task's
 status is visible while its dependency on the root is not.
 
-`blockersShownFor` / `statusShownFor` are **shared with the scorers**, not just
-the report. `blockerBeforeBlocked` exempts a placed task whose own `blockedBy`
-was never rendered, because both escapes the rule grants — schedule the blocker
-earlier, or name it in the reason — need an id the model was never given.
+`blockersShownFor` explains a `blockerBeforeBlocked` failure; it does not
+excuse one. Hiding a task's blockers removes both *exceptions* the rule grants —
+schedule the blocker earlier, or name it in the reason — but not compliance
+itself: omitting the task is always available, and the prompt now says so
+outright. So every placed blocked task is still judged, and the failure detail
+distinguishes "ignored a blocker it was shown" from "could not comply and should
+have left it out". A judge draws opposite conclusions from those two.
 
-Measured, and the reason the exemption exists: on `blockedWithoutCorpus`,
+Measured, and why the distinction is worth carrying: on `blockedWithoutCorpus`,
 glm-5.2 placed `task-b-middle` (the decided leaf's blocker), noted in the reason
 that it was itself `BLOCKED`, gated it behind an investigation block and
-sequenced the leaf after it — then was failed for not naming `task-a-root`, an
-id it had never seen. A model that placed nothing scored 100% on the same
-constraint. That is the "laziest model looks best" inversion this eval exists to
-avoid, so the exemption is a correctness fix, not a leniency. It is narrow: a
-decided task whose blockers *were* rendered is still judged in full, and the
-`notApplicable` detail names how many placements were exempted rather than
-passing them in silence.
+sequenced the leaf after it. That is thoughtful, and still a plan that schedules
+work the model had been told cannot start — so it fails, with a detail saying
+the blocker was never rendered rather than implying the model ignored one.
 
 Collapsing any two of these misleads in the direction the flags exist to prevent.
 Reading blockedness off `corpusRowShown` would report a model as having ignored a
