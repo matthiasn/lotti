@@ -112,13 +112,16 @@ every glyph lands on `spacing.cardPadding`, sharing one leading edge with the
 summary prose and proposal rows, while interactive rows still get ink that
 breathes around their content.
 
-**Vertically the band declares no gaps at all, and that is the contract.** Every
-row here is a touch-target box taller than the ink inside it — all of them on
-one `spacing.step8` minimum — so each already contributes ~10 logical px of air
-above and below the text a reader can see. Declared gaps stack on top of that
-and the band pays twice: `step5` between two stacked rows rendered as ~34px of
-visible space, and the settings zone grew to a third of the card on a phone.
-Space the row boxes, not the text inside them.
+**Vertically the band declares no gaps at all, and that is the contract.** Its
+*interactive* rows — the trigger, the switch row, the identity rows — are
+touch-target boxes taller than the ink inside them, on one `spacing.step8`
+minimum, so each contributes ~10 logical px of air above and below the text a
+reader sees. The schedule line is the exception and stays a bare text row
+(`_ScheduleLabel` reserves width, never height); it needs no target of its own,
+and the boxes above and below it space it. Declared gaps stack on top of all
+that and the band pays twice: `step5` between two stacked rows rendered as
+~34px of visible space, and the settings zone grew to a third of the card on a
+phone. Space the row boxes, not the text inside them.
 
 The switch row earns its height rather than reserving it. An earlier revision
 wrapped the 40×24 switch in a `step9` box "for a full-size interaction target",
@@ -182,7 +185,7 @@ flowchart TD
   T1 -->|yes| W1["one line, short sentence"]
   T1 -->|no| T2{"...with '1:30'?"}
   T2 -->|yes| W2["one line, value only"]
-  T2 -->|no| S["stack: state / schedule / switch<br/>(no declared gaps; each row is<br/>a step8 box that spaces itself)"]
+  T2 -->|no| S["stack: state / schedule / switch<br/>(no declared gaps; the step8 target<br/>boxes space themselves)"]
   S --> S1{"freshness + trigger<br/>fit one line?"}
   S1 -->|no| S2["freshness above the trigger"]
   S --> S3{"countdown + 'Skip once'<br/>fit one line?"}

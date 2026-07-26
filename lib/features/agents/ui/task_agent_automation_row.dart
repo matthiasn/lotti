@@ -613,14 +613,18 @@ class _AutomationSetting extends StatelessWidget {
     final row = Row(
       children: [
         Expanded(
-          child: Text(
-            messages.taskAgentAutomaticUpdatesLabel,
-            // Wraps rather than truncates: "Automatische Aktualisierungen"
-            // cut to "Automatische Aktuali…" says less than the same words on
-            // two lines.
-            maxLines: 2,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.aiCard.metaText,
+          // Silent: the toggle already publishes this exact string as its
+          // label, and the merged node below would otherwise say it twice.
+          child: ExcludeSemantics(
+            child: Text(
+              messages.taskAgentAutomaticUpdatesLabel,
+              // Wraps rather than truncates: "Automatische Aktualisierungen"
+              // cut to "Automatische Aktuali…" says less than the same words on
+              // two lines.
+              maxLines: 2,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.aiCard.metaText,
+              ),
             ),
           ),
         ),
@@ -652,35 +656,43 @@ class _AutomationSetting extends StatelessWidget {
     // 48 minimum in its short dimension. The switch keeps its own ink for
     // direct hits; nested taps resolve to the innermost, so this cannot fire
     // twice.
-    return Material(
-      key: const ValueKey('taskAgentAutomationSetting'),
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: enabled ? () => onChanged(!value) : null,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        // The enlarged target is for pointers and thumbs. The switch inside
-        // already publishes the accessible control — button, toggled state and
-        // label — so this row must not add a second, unlabelled button node
-        // beside it.
-        excludeFromSemantics: true,
-        // ...and it must not add a second *focus* stop either. Excluding
-        // semantics does nothing to focus traversal, so without this Tab lands
-        // twice on one setting — once on this wrapper, once on the switch —
-        // and both stops toggle it. The switch keeps the keyboard; the row is
-        // pointer-only.
-        canRequestFocus: false,
-        // ...and it must not add a second *focus* stop either. Excluding
-        // semantics does nothing to focus traversal, so without this Tab lands
-        // twice on one setting — once on this wrapper, once on the switch —
-        // and both stops toggle it. The switch keeps the keyboard; the row is
-        // pointer-only.
-        // One row box, on the same `step8` minimum as every other row in this
-        // band. It is 8px shorter than the slot it replaces and, unlike that
-        // slot, all of it is tappable.
-        child: ConstrainedBox(
-          key: const ValueKey('taskAgentAutomaticUpdatesTarget'),
-          constraints: BoxConstraints(minHeight: tokens.spacing.step8),
-          child: row,
+    // `excludeFromSemantics` on the ink below stops the row publishing a
+    // second, unlabelled button — but on its own it also left the enlarged
+    // target invisible to assistive tech, since the only actionable node was
+    // the switch's own 40x24 track and the label beside it was inert. Merging
+    // makes the row one node: the switch's toggled state and tap action, over
+    // the union of their rects. Same shape as `SwitchListTile`.
+    return MergeSemantics(
+      child: Material(
+        key: const ValueKey('taskAgentAutomationSetting'),
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? () => onChanged(!value) : null,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          // The enlarged target is for pointers and thumbs. The switch inside
+          // already publishes the accessible control — button, toggled state and
+          // label — so this row must not add a second, unlabelled button node
+          // beside it.
+          excludeFromSemantics: true,
+          // ...and it must not add a second *focus* stop either. Excluding
+          // semantics does nothing to focus traversal, so without this Tab lands
+          // twice on one setting — once on this wrapper, once on the switch —
+          // and both stops toggle it. The switch keeps the keyboard; the row is
+          // pointer-only.
+          canRequestFocus: false,
+          // ...and it must not add a second *focus* stop either. Excluding
+          // semantics does nothing to focus traversal, so without this Tab lands
+          // twice on one setting — once on this wrapper, once on the switch —
+          // and both stops toggle it. The switch keeps the keyboard; the row is
+          // pointer-only.
+          // One row box, on the same `step8` minimum as every other row in this
+          // band. It is 8px shorter than the slot it replaces and, unlike that
+          // slot, all of it is tappable.
+          child: ConstrainedBox(
+            key: const ValueKey('taskAgentAutomaticUpdatesTarget'),
+            constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+            child: row,
+          ),
         ),
       ),
     );
