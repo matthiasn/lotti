@@ -1064,6 +1064,100 @@ void main() {
     );
   });
 
+  group('MatrixService exclusion-policy rotation gate', () {
+    test(
+      'a send started before the rotation finishes waits for it, so no entry '
+      'is encrypted with the pre-upgrade session (ADR 0045)',
+      () async {
+        final settingsGate = Completer<String?>();
+        final encryption = MockEncryption();
+        final keyManager = MockKeyManager();
+        when(() => sessionManager.client).thenReturn(client);
+        when(() => client.encryption).thenReturn(encryption);
+        when(() => encryption.keyManager).thenReturn(keyManager);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        // The marker read is what the rotation awaits first; hold it open to
+        // keep the migration in flight while a send is attempted.
+        when(
+          () => settingsDb.itemByKey(any()),
+        ).thenAnswer((_) => settingsGate.future);
+        when(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            any(),
+            wipe: any(named: 'wipe'),
+            use: any(named: 'use'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => settingsDb.saveSettingsItem(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => messageSender.sendMatrixMessage(
+            message: any(named: 'message'),
+            context: any(named: 'context'),
+            onSent: any(named: 'onSent'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final service = createService();
+        var sendCompleted = false;
+        unawaited(
+          service
+              .sendMatrixMsg(const SyncMessage.aiConfigDelete(id: 'abc'))
+              .then((_) => sendCompleted = true),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        // The rotation has not finished, so nothing may have been sent yet.
+        expect(sendCompleted, isFalse);
+        verifyNever(
+          () => messageSender.sendMatrixMessage(
+            message: any(named: 'message'),
+            context: any(named: 'context'),
+            onSent: any(named: 'onSent'),
+          ),
+        );
+
+        settingsGate.complete(null);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        verifyInOrder([
+          () => keyManager.clearOrUseOutboundGroupSession(
+            '!room:server',
+            wipe: true,
+            use: false,
+          ),
+          () => messageSender.sendMatrixMessage(
+            message: any(named: 'message'),
+            context: any(named: 'context'),
+            onSent: any(named: 'onSent'),
+          ),
+        ]);
+      },
+    );
+
+    test('the rotation runs at most once per login', () async {
+      when(() => sessionManager.client).thenReturn(client);
+      when(() => client.encryption).thenReturn(null);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+      when(
+        () => messageSender.sendMatrixMessage(
+          message: any(named: 'message'),
+          context: any(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final service = createService();
+      await service.sendMatrixMsg(const SyncMessage.aiConfigDelete(id: 'a'));
+      await service.sendMatrixMsg(const SyncMessage.aiConfigDelete(id: 'b'));
+
+      verify(() => settingsDb.itemByKey(any())).called(1);
+    });
+  });
+
   group('MatrixService sendMatrixMsg variants', () {
     // Helper that wires sendMatrixMessage to invoke onSent and return true.
     void stubSenderSuccess() {
