@@ -44,6 +44,15 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 * [Text-to-speech](tts/) - on-device spoken summaries.
 * [Theming](theming/) - theme selection and construction.
 
+* [Surveys](surveys/) - predefined questionnaires scored at submission.
+* [AI consumption](ai_consumption/) - the receipt for every piece of AI work.
+* [Projection kernel](agents_projection/) - the permutation-invariance proof under the agent log.
+
+# Exploratory
+
+* [Character animation](character/) - a deterministic 2D skeletal engine.
+* [Knowledge-graph explorer](knowledge_graph_poc/) - a walkable ego-centric graph view.
+
 # UI foundation
 
 * [Design system](design_system/) - tokens, theming, and the component contracts.
