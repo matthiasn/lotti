@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -77,9 +76,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   }
 
-  /// Taps the trash icon and confirms the deletion in the modal that opens.
+  /// Taps the delete button and confirms the deletion in the modal.
   Future<void> tapDeleteAndConfirm(WidgetTester tester) async {
-    await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+    await tester.tap(find.byKey(const Key('matrix_delete_device')));
     await tester.pumpAndSettle();
 
     // The confirm button renders the upper-cased delete label.
@@ -101,7 +100,7 @@ void main() {
         refreshListCallback: () => refreshed = true,
       );
 
-      await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+      await tester.tap(find.byKey(const Key('matrix_delete_device')));
       await tester.pumpAndSettle();
 
       // Nothing is deleted while the confirmation is open.
@@ -135,7 +134,7 @@ void main() {
         refreshListCallback: () => refreshed = true,
       );
 
-      await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+      await tester.tap(find.byKey(const Key('matrix_delete_device')));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Cancel'));
@@ -213,7 +212,11 @@ void main() {
         buildDevice(isCurrentDevice: true, verified: true),
       );
 
-      expect(find.byIcon(MdiIcons.trashCanOutline), findsNothing);
+      expect(find.byKey(const Key('matrix_delete_device')), findsNothing);
+      expect(
+        find.byKey(const Key('matrix_remove_device_primary')),
+        findsNothing,
+      );
     });
   });
 
@@ -235,7 +238,7 @@ void main() {
 
       expect(find.text('Verified'), findsOneWidget);
       expect(find.text('Verify'), findsNothing);
-      expect(find.byIcon(MdiIcons.trashCanOutline), findsOneWidget);
+      expect(find.byKey(const Key('matrix_delete_device')), findsOneWidget);
     });
 
     testWidgets('an unverified device with keys gets the Unverified chip and '
@@ -253,7 +256,7 @@ void main() {
 
       expect(find.text('Unverified'), findsOneWidget);
       expect(find.text('Verify'), findsNothing);
-      expect(find.byIcon(MdiIcons.trashCanOutline), findsOneWidget);
+      expect(find.byKey(const Key('matrix_delete_device')), findsOneWidget);
     });
 
     testWidgets('a stale unverified device promotes removal to the labeled '
@@ -267,8 +270,8 @@ void main() {
         buildDevice(lastSeen: DateTime(2026, 5, 14)),
       );
 
-      // The corner trash icon is replaced by a labeled danger button.
-      expect(find.byIcon(MdiIcons.trashCanOutline), findsNothing);
+      // The quiet delete button escalates to the labeled danger primary.
+      expect(find.byKey(const Key('matrix_delete_device')), findsNothing);
       expect(
         find.byKey(const Key('matrix_remove_device_primary')),
         findsOneWidget,
@@ -285,7 +288,7 @@ void main() {
       verify(() => mockMatrixService.deleteDeviceById('DEVICE1')).called(1);
     });
 
-    testWidgets('a stale but verified device keeps the corner trash icon', (
+    testWidgets('a stale but verified device keeps the quiet delete button', (
       tester,
     ) async {
       await pumpCard(
@@ -293,7 +296,7 @@ void main() {
         buildDevice(verified: true, lastSeen: DateTime(2026, 5, 14)),
       );
 
-      expect(find.byIcon(MdiIcons.trashCanOutline), findsOneWidget);
+      expect(find.byKey(const Key('matrix_delete_device')), findsOneWidget);
       expect(
         find.byKey(const Key('matrix_remove_device_primary')),
         findsNothing,
@@ -321,7 +324,10 @@ void main() {
       );
 
       expect(find.text('dammy-pixel'), findsOneWidget);
-      expect(find.text('Paired May 14, 2026 · 3f9c01aa'), findsOneWidget);
+      expect(
+        find.text('Paired May\u00a014,\u00a02026 · 3f9c01aa'),
+        findsOneWidget,
+      );
       expect(
         find.text('dammy-pixel 2026-05-14T18:22 3f9c01aa'),
         findsNothing,
@@ -335,7 +341,7 @@ void main() {
         buildDevice(lastSeen: DateTime(2026, 7, 24)),
       );
 
-      expect(find.text('Last seen Jul 24, 2026'), findsOneWidget);
+      expect(find.text('Last seen Jul\u00a024,\u00a02026'), findsOneWidget);
       expect(find.text('Probably no longer in use'), findsNothing);
     });
 
@@ -348,7 +354,9 @@ void main() {
 
       // Evidence and explanation merge into one hint line on stale cards.
       expect(
-        find.text('Probably no longer in use · Last seen May 14, 2026'),
+        find.text(
+          'Probably no longer in use · Last seen May\u00a014,\u00a02026',
+        ),
         findsOneWidget,
       );
     });

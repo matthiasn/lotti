@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
@@ -18,9 +17,12 @@ import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:matrix/matrix.dart';
 
 /// One session of the sync account: name, trust state, last-seen, and the
-/// actions that apply to it (verify when it has keys and is unverified,
-/// remove when it is not the session the app itself runs as).
-class DeviceCard extends ConsumerWidget {
+/// actions that apply to it.
+///
+/// Every deletable card keeps its removal action in the same bottom zone;
+/// only the weight changes — a quiet outlined button on healthy cards
+/// escalating to the large danger primary on a card that blocks sync.
+class DeviceCard extends ConsumerStatefulWidget {
   const DeviceCard(
     this.device, {
     required this.refreshListCallback,
@@ -34,7 +36,25 @@ class DeviceCard extends ConsumerWidget {
   /// Reference time for the staleness hint, injected for determinism.
   final DateTime now;
 
-  Future<void> _deleteDevice(BuildContext context, WidgetRef ref) async {
+  @override
+  ConsumerState<DeviceCard> createState() => _DeviceCardState();
+}
+
+class _DeviceCardState extends ConsumerState<DeviceCard> {
+  /// True while a deletion network call is in flight — the buttons show it
+  /// instead of leaving a confirm-to-toast silence.
+  bool _busy = false;
+
+  SyncDeviceInfo get device => widget.device;
+
+  /// Formats [date] with non-breaking spaces so a date can never split
+  /// across lines — it is the evidence this surface exists to show.
+  String _formatDate(BuildContext context, DateTime date) {
+    final locale = Localizations.localeOf(context).toString();
+    return DateFormat.yMMMd(locale).format(date).replaceAll(' ', ' ');
+  }
+
+  Future<void> _deleteDevice(BuildContext context) async {
     final matrixService = ref.read(matrixServiceProvider);
     final deviceName = device.label;
     final confirmed = await showConfirmationModal(
@@ -44,11 +64,12 @@ class DeviceCard extends ConsumerWidget {
       confirmLabel: context.messages.deleteDeviceLabel,
       cancelLabel: context.messages.settingsMatrixCancel,
     );
-    if (!confirmed || !context.mounted) return;
+    if (!confirmed || !context.mounted || _busy) return;
 
+    setState(() => _busy = true);
     try {
       await matrixService.deleteDeviceById(device.deviceId);
-      refreshListCallback();
+      widget.refreshListCallback();
       if (context.mounted) {
         context.showToast(
           tone: DesignSystemToastTone.success,
@@ -71,12 +92,14 @@ class DeviceCard extends ConsumerWidget {
           title: context.messages.deviceDeleteFailed('$e'),
         );
       }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _verifyDevice(BuildContext context, WidgetRef ref) async {
+  Future<void> _verifyDevice(BuildContext context) async {
     final keys = device.keys;
-    if (keys == null) return;
+    if (keys == null || _busy) return;
 
     final lock = ref.read(matrixVerificationModalLockProvider.notifier);
     if (!lock.tryAcquire()) return;
@@ -89,34 +112,32 @@ class DeviceCard extends ConsumerWidget {
       );
     } finally {
       lock.release();
-      refreshListCallback();
+      widget.refreshListCallback();
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final stale = device.isStaleAt(now);
+    final stale = device.isStaleAt(widget.now);
     final lastSeen = device.lastSeen;
     final canVerify =
         !device.isCurrentDevice && !device.verified && device.keys != null;
+    final canDelete = !device.isCurrentDevice;
 
     // A stale, unverified device is almost certainly dead: removal — not
-    // verification — is what resumes sync, so removal gets the labeled
-    // primary action and the corner trash icon disappears.
+    // verification — is what resumes sync, so removal escalates to the
+    // labeled danger primary.
     final removalIsPrimary =
         stale && !device.isCurrentDevice && !device.verified;
 
-    final locale = Localizations.localeOf(context).toString();
     final pairedAt = device.pairedAt;
     final pairingHash = device.pairingHash;
     final metaLine = pairedAt == null
         ? device.metaLabel
         : [
-            messages.syncDevicesPaired(
-              DateFormat.yMMMd(locale).format(pairedAt),
-            ),
+            messages.syncDevicesPaired(_formatDate(context, pairedAt)),
             ?pairingHash,
           ].join(' · ');
 
@@ -153,80 +174,66 @@ class DeviceCard extends ConsumerWidget {
       accentColor: device.blocksSync
           ? tokens.colors.alert.warning.defaultColor
           : null,
+      // Stretch so every card fills the section width regardless of how
+      // short its content happens to be.
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      device.titleLabel,
-                      style: tokens.typography.styles.subtitle.subtitle2,
-                      softWrap: true,
-                    ),
-                    if (metaLine != null) ...[
-                      SizedBox(height: tokens.spacing.step1),
-                      Text(
-                        metaLine,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (!device.isCurrentDevice && !removalIsPrimary)
-                IconButton(
-                  key: const Key('matrix_delete_device'),
-                  padding: EdgeInsets.zero,
-                  icon: Semantics(
-                    label: messages.deleteDeviceLabel,
-                    child: const Icon(MdiIcons.trashCanOutline),
-                  ),
-                  onPressed: () => _deleteDevice(context, ref),
-                ),
-            ],
+          Text(
+            device.titleLabel,
+            style: tokens.typography.styles.subtitle.subtitle2,
+            softWrap: true,
           ),
+          if (metaLine != null) ...[
+            SizedBox(height: tokens.spacing.step1),
+            Text(
+              metaLine,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
+          ],
           SizedBox(height: tokens.spacing.step3),
           Wrap(
             spacing: tokens.spacing.step3,
             runSpacing: tokens.spacing.step2,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ...trustBadges,
-              // On a stale card the date moves down to the hint line so the
-              // chip stays the only warning-toned element in this row.
-              if (lastSeen != null && !stale)
-                Text(
-                  messages.syncDevicesLastSeen(
-                    DateFormat.yMMMd(locale).format(lastSeen),
-                  ),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-            ],
+            children: trustBadges,
           ),
-          if (stale) ...[
+          // Last-seen has one fixed slot on every card so the dead-device
+          // hunt is a straight column scan; only the blocking card gains the
+          // amber "probably dead" prefix.
+          if (lastSeen != null) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text.rich(
+              TextSpan(
+                children: [
+                  if (stale)
+                    TextSpan(
+                      text: '${messages.syncDevicesStaleHint} · ',
+                      style: TextStyle(
+                        color: device.blocksSync
+                            ? tokens.colors.alert.warning.ink
+                            : tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  TextSpan(
+                    text: messages.syncDevicesLastSeen(
+                      _formatDate(context, lastSeen),
+                    ),
+                  ),
+                ],
+              ),
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ] else if (stale) ...[
             SizedBox(height: tokens.spacing.step2),
             Text(
-              [
-                messages.syncDevicesStaleHint,
-                if (lastSeen != null)
-                  messages.syncDevicesLastSeen(
-                    DateFormat.yMMMd(locale).format(lastSeen),
-                  ),
-              ].join(' · '),
+              messages.syncDevicesStaleHint,
               style: tokens.typography.styles.body.bodySmall.copyWith(
-                // Warning ink only where the staleness actually wedges sync;
-                // amber must keep meaning "this blocks you".
                 color: device.blocksSync
                     ? tokens.colors.alert.warning.ink
                     : tokens.colors.text.mediumEmphasis,
@@ -242,34 +249,46 @@ class DeviceCard extends ConsumerWidget {
               ),
             ),
           ],
-          if (removalIsPrimary) ...[
+          if (canDelete || canVerify) ...[
             SizedBox(height: tokens.spacing.step4),
             Wrap(
               spacing: tokens.spacing.step3,
               runSpacing: tokens.spacing.step2,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                DesignSystemButton(
-                  key: const Key('matrix_remove_device_primary'),
-                  size: DesignSystemButtonSize.large,
-                  variant: DesignSystemButtonVariant.danger,
-                  onPressed: () => _deleteDevice(context, ref),
-                  label: messages.deleteDeviceLabel,
-                ),
-                if (canVerify)
+                if (removalIsPrimary) ...[
                   DesignSystemButton(
+                    key: const Key('matrix_remove_device_primary'),
                     size: DesignSystemButtonSize.large,
-                    variant: DesignSystemButtonVariant.secondary,
-                    onPressed: () => _verifyDevice(context, ref),
-                    label: messages.settingsMatrixVerifyLabel,
+                    variant: DesignSystemButtonVariant.danger,
+                    isLoading: _busy,
+                    onPressed: () => _deleteDevice(context),
+                    label: messages.deleteDeviceLabel,
                   ),
+                  if (canVerify)
+                    DesignSystemButton(
+                      size: DesignSystemButtonSize.large,
+                      variant: DesignSystemButtonVariant.outlined,
+                      onPressed: _busy ? null : () => _verifyDevice(context),
+                      label: messages.settingsMatrixVerifyLabel,
+                    ),
+                ] else ...[
+                  if (canVerify)
+                    DesignSystemButton(
+                      size: DesignSystemButtonSize.large,
+                      onPressed: _busy ? null : () => _verifyDevice(context),
+                      label: messages.settingsMatrixVerifyLabel,
+                    ),
+                  if (canDelete)
+                    DesignSystemButton(
+                      key: const Key('matrix_delete_device'),
+                      variant: DesignSystemButtonVariant.outlined,
+                      isLoading: _busy,
+                      onPressed: () => _deleteDevice(context),
+                      label: messages.deleteDeviceLabel,
+                    ),
+                ],
               ],
-            ),
-          ] else if (canVerify) ...[
-            SizedBox(height: tokens.spacing.step4),
-            DesignSystemButton(
-              size: DesignSystemButtonSize.large,
-              onPressed: () => _verifyDevice(context, ref),
-              label: messages.settingsMatrixVerifyLabel,
             ),
           ],
         ],
