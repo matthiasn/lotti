@@ -3281,6 +3281,49 @@ void main() {
       );
     });
 
+    test('a refine wake budgets against the plan it is editing', () async {
+      // propose_plan_diff applies changes on top of an existing plan, so its
+      // budget is what that plan has left. Advertising a fresh day here told
+      // the model another 300 minutes would fit into a 360-minute plan that
+      // already held 300.
+      final planService = MockDayAgentPlanService();
+      when(
+        () => planService.draftPlanForDay(agentId: agentId, dayId: dayId),
+      ).thenAnswer(
+        (_) async => makeTestDayPlan(
+          agentId: agentId,
+          planDate: DateTime(2026, 5, 25),
+          data: DayPlanData(
+            planDate: DateTime(2026, 5, 25),
+            status: const DayPlanStatus.draft(),
+          ),
+          capacityMinutes: 360,
+          scheduledMinutes: 300,
+          createdAt: DateTime(2026, 5, 24, 20),
+          updatedAt: DateTime(2026, 5, 24, 20),
+        ),
+      );
+
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 24, 20)),
+        () => workflow(planService: planService).execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {
+            dayAgentRefineToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      // 360 capacity minus 300 already committed, not the config's 480.
+      expect(window['availableMinutes'], 60);
+    });
+
     test('a closed window states no budget beside it', () async {
       final result = await withClock(
         Clock.fixed(DateTime(2026, 5, 25, 23, 58)),

@@ -97,9 +97,12 @@ deliberately distinct, because collapsing any two misleads:
 
 | `<planning_window>` | Meaning |
 |---|---|
-| `{"earliestStart": …}` | today, still plannable — start here |
+| `{"earliestStart": …, "availableMinutes": …}` | today, still plannable — start here, and this is how much is left |
 | `{"closed": true}` | today, no usable slot left — add nothing |
-| `{}` | the day has not begun — no part of it is past |
+| `{"availableMinutes": …}` | the day has not begun — no part of it is past |
+
+`availableMinutes` is absent from the `closed` row deliberately, and absent
+everywhere when the working hours cannot be parsed.
 
 Reading `closed` as `{}` would let a wake at 23:58 plan freely from this
 morning, and the guard would reject every block of it.
@@ -143,6 +146,12 @@ second number saying the same thing invites the model to reconcile two
 signals. Zero is a real answer, meaning the working day is over. Malformed
 working hours leave it unstated rather than guessed, since they are free-text
 config nothing else parses.
+
+On a **refine** wake the budget is the baseline plan's own capacity minus the
+minutes it already commits, not the workflow config's full day: `propose_plan_diff`
+applies changes incrementally, so advertising a fresh day there told the model
+another 300 minutes would fit into a 360-minute plan that already held 300. A
+drafting baseline is replaced wholesale, so full capacity is correct for it.
 
 The rules pair it with what to do when the work does not fit: decide visibly —
 leave work out and name it, or place a task for less than its estimate and say

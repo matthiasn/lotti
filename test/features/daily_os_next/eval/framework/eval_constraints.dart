@@ -483,11 +483,30 @@ EvalConstraintResult scoreRespectsEstimates(EvalRunOutcome outcome) {
         sum + (outcome.inputs.taskById(taskId)?.estimateMinutes ?? 0),
   );
   if (placedEstimate > outcome.inputs.plannableMinutes) {
-    return EvalConstraintResult.notApplicable(
-      id,
-      'the day cannot hold this work ($placedEstimate min of estimates '
-      'against ${outcome.inputs.plannableMinutes} plannable), so a shortened '
-      'block is a partial placement rather than a compressed one',
+    // Standing down entirely was wrong: it let a plan of one-minute tokens
+    // score as clean as an honest partial one, since nothing else on an
+    // impossible day objects to under-filling. So the question changes rather
+    // than disappearing — not "did each task get its estimate", which is
+    // impossible here, but "did the plan use the time it had".
+    final allocated = allocatedByTask.values.fold<int>(0, (a, b) => a + b);
+    final plannable = outcome.inputs.plannableMinutes;
+    if (allocated * 2 < plannable) {
+      return EvalConstraintResult(
+        id: id,
+        passed: false,
+        detail:
+            'the day cannot hold this work, but the plan only fills '
+            '${allocated}min of $plannable plannable — shortening every '
+            'task to a token is not a partial placement',
+      );
+    }
+    return EvalConstraintResult(
+      id: id,
+      passed: true,
+      detail:
+          'the day cannot hold this work ($placedEstimate min of estimates '
+          'against $plannable plannable), and the plan fills ${allocated}min '
+          'of it — a partial placement rather than a compressed one',
     );
   }
   final compressed = <String>[];

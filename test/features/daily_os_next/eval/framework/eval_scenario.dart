@@ -482,14 +482,16 @@ const _lateStart = EvalScenario(
   // minutes), so requiring them makes the real question measurable — defer the
   // migration and do the urgent short work, or cram it and fail working hours.
   requiredTaskIds: {'task-short-invoice', 'task-short-replies'},
-  // 235 minutes of work against under two hours of clock, so the day cannot
-  // hold it and the planner has to say so rather than quietly shrink the
-  // migration to fit. Without this the scenario had no check on *saying* it:
-  // `respectsEstimates` stands down on a day that cannot fit — truncation
-  // there is the honest plan, not compression — and nothing else asked whether
-  // the model admitted the squeeze.
-  requiresConflictSurfaced: true,
-  conflictEscalationReasons: {'overCommitted'},
+  // Deliberately NOT requiresConflictSurfaced, despite the day being 235
+  // minutes of work against under two hours of clock. `scoreSurfacedConflict`
+  // derives omissions from `decidedTaskIds`, which this scenario leaves empty
+  // on purpose — nothing here was user-approved — so the flag would never fire
+  // and the scenario would read as covering a check it cannot perform. That is
+  // worse than an acknowledged gap.
+  //
+  // What actually needs checking is whether a *truncated* task was declared
+  // partial, which no scorer reads today (lotti3-qip). `respectsEstimates`
+  // holds the line meanwhile by requiring the plan to fill the time it has.
   startHour: 15,
   captureTranscript: 'Late start, only the afternoon left.',
 );

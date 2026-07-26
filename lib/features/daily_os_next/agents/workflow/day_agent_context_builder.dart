@@ -154,7 +154,14 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       // the guard does not care which mode asked.
       ..addJson(
         DayAgentPromptTags.planningWindow,
-        _planningWindowJson(planDate: planDate, now: now),
+        _planningWindowJson(
+          planDate: planDate,
+          now: now,
+          // Refine edits an existing plan incrementally, so its budget is what
+          // that plan has left, not a fresh day's. A drafting baseline is
+          // replaced wholesale, so full capacity is right there.
+          refineBaseline: refineContext?.baselinePlan,
+        ),
       )
       // The volatile wall-clock is the trailing section.
       ..addText(DayAgentPromptTags.currentLocalTime, now.toIso8601String());
@@ -666,11 +673,22 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   Map<String, Object?> _planningWindowJson({
     required DateTime planDate,
     required DateTime now,
+    DayPlanEntity? refineBaseline,
   }) {
+    // A refine wake proposes changes *on top of* a plan that already spends
+    // part of the day, and `propose_plan_diff` applies them incrementally. Its
+    // own capacity governs, not the workflow config's, and the minutes it has
+    // already committed are gone. Advertising a fresh day's budget there told
+    // the model another 300 minutes would fit into a 360-minute plan that
+    // already held 300.
+    final capacity = refineBaseline == null
+        ? config.capacityMinutes
+        : (refineBaseline.capacityMinutes - refineBaseline.scheduledMinutes)
+              .clamp(0, refineBaseline.capacityMinutes);
     final available = remainingWorkingMinutes(
       planDate: planDate,
       now: now,
-      capacityMinutes: config.capacityMinutes,
+      capacityMinutes: capacity,
       workingHoursStart: config.workingHoursStart,
       workingHoursEnd: config.workingHoursEnd,
     );

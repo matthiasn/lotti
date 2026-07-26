@@ -1,4 +1,5 @@
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
 import 'package:meta/meta.dart';
 
 /// Value types the day-planning eval scores over.
@@ -206,16 +207,27 @@ class EvalFixtureInputs {
 
   /// Working minutes the scenario actually leaves for planning.
   ///
-  /// Mirrors production's `remainingWorkingMinutes`: bounded by the clock *and*
-  /// by capacity, whichever binds harder, and counted from [now] on a same-day
-  /// draft. `lateStart` advertises 480 minutes of capacity while leaving under
-  /// two hours of clock, so scoring against capacity alone would call an
-  /// impossible day satisfiable.
+  /// Bounded by the clock *and* by capacity, whichever binds harder, and
+  /// counted from the later of the working-day start and the instant the model
+  /// was told it may plan from. `lateStart` advertises 480 minutes of capacity
+  /// while leaving under two hours of clock, so scoring against capacity alone
+  /// would call an impossible day satisfiable.
+  ///
+  /// Uses production's own [advertisedPlanningStart] rather than raw [now]:
+  /// the prompt tells the model to start at 15:05, so counting its budget from
+  /// 15:00 would credit it five minutes it was explicitly forbidden to use, and
+  /// call a 118-minute plan fitting when the model was told it had 115.
   int get plannableMinutes {
-    final start = now == null || now!.hour < workingHoursStartHour
-        ? workingHoursStartHour * 60
-        : now!.hour * 60 + now!.minute;
-    final byClock = workingHoursEndHour * 60 - start;
+    final dayStartMinutes = workingHoursStartHour * 60;
+    final advertised = now == null
+        ? null
+        : advertisedPlanningStart(planDate: planDate, now: now!);
+    final startMinutes = advertised == null
+        ? dayStartMinutes
+        : (advertised.hour * 60 + advertised.minute) > dayStartMinutes
+        ? advertised.hour * 60 + advertised.minute
+        : dayStartMinutes;
+    final byClock = workingHoursEndHour * 60 - startMinutes;
     if (byClock <= 0) return 0;
     return byClock < capacityMinutes ? byClock : capacityMinutes;
   }

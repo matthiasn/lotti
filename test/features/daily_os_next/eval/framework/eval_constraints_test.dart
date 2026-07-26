@@ -273,6 +273,26 @@ void main() {
       expect(result.detail, contains('180min estimate'));
     });
 
+    test('a plan of tokens fails even on a day that cannot fit', () {
+      // The hole in standing down entirely: shortening every task to a token
+      // leaves requiredWorkPlaced satisfied, estimate-capacity under the cap,
+      // and surfacedConflict silent because nothing was omitted. The question
+      // becomes "did the plan use the time it had", not "did each task get its
+      // estimate", which is impossible here.
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 15, endHour: 15, taskId: 'task-long'),
+          ],
+          corpus: const [long],
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('not a partial placement'));
+    });
+
     test('the same block is a partial placement when it could not fit', () {
       // The measured case: every lateStart sample placed
       // "Finish the database migration (partial — 60 of 180 min)", exactly what
@@ -288,19 +308,37 @@ void main() {
         ),
       );
 
-      expect(result.passed, isNull);
+      expect(result.passed, isTrue);
       expect(result.detail, contains('cannot hold this work'));
+      expect(result.detail, contains('fills'));
     });
 
     test('plannableMinutes follows the clock, not just capacity', () {
       // lateStart advertises 480 minutes of capacity while leaving under two
       // hours of clock; scoring against capacity alone would call an
       // impossible day satisfiable.
-      final lateAfternoon = outcome(now: DateTime(2026, 7, 18, 15)).inputs;
-      final freshDay = outcome(now: DateTime(2026, 7, 18, 9)).inputs;
+      //
+      // 115, not 120: the prompt advertises 15:05, so counting from 15:00
+      // would credit five minutes the model was forbidden to use.
+      expect(
+        outcome(now: DateTime(2026, 7, 18, 15)).inputs.plannableMinutes,
+        115,
+      );
+    });
 
-      expect(lateAfternoon.plannableMinutes, 120);
-      expect(freshDay.plannableMinutes, 480);
+    test('a day that has not begun gets the whole working day', () {
+      // No `now` means a future-day draft: nothing is in the past, so the
+      // budget is capacity against the full 09:00-17:00 window.
+      expect(outcome().inputs.plannableMinutes, 480);
+    });
+
+    test('a same-day draft at the opening bell loses only the headroom', () {
+      // 09:00 on the plan day still advertises 09:05, so 475 is the honest
+      // figure — the five minutes are real and the model may not use them.
+      expect(
+        outcome(now: DateTime(2026, 7, 18, 9)).inputs.plannableMinutes,
+        475,
+      );
     });
   });
 
