@@ -1754,14 +1754,31 @@ void main() {
         );
 
         final coordinator = build();
-        final elapsed = Stopwatch()..start();
-        await coordinator.drainUntilEmpty(
-          timeout: const Duration(seconds: 30),
-        );
-        elapsed.stop();
+        // Virtual time: the loop's 200ms back-off and the 30s deadline are
+        // both real durations, so a wall-clock version of this test would
+        // idle for a second on every run and could flake on a loaded runner.
+        fakeAsync((async) {
+          var completed = false;
+          withClock(Clock(() => DateTime.utc(2026).add(async.elapsed)), () {
+            unawaited(
+              coordinator
+                  .drainUntilEmpty(timeout: const Duration(seconds: 30))
+                  .then<void>((_) => completed = true),
+            );
+          });
 
-        // Bounded by the stall allowance (~1s), not by the 30s timeout.
-        expect(elapsed.elapsed, lessThan(const Duration(seconds: 10)));
+          // Five unproductive flushes at the 200ms back-off, plus slack for
+          // the awaits between them — well short of the 30s timeout.
+          async.elapse(const Duration(seconds: 5));
+          expect(
+            completed,
+            isTrue,
+            reason:
+                'a pen that cannot produce must not hold teardown open '
+                'until the drain timeout',
+          );
+        });
+
         verify(
           () => logging.log(
             any<LogDomain>(),
