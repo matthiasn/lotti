@@ -2,19 +2,20 @@
 type: Architecture
 title: Security and privacy posture
 description: What is encrypted, what is not, where secrets live, and what leaves the device.
+resource: ../..
 tags: [architecture, security, privacy, encryption, secure-storage]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-31
+generated: { by: claude-code/opus-5, at: 2026-07-26T20:00:00Z }
+stale_after: 2027-01-11
 sources:
   - id: secure-storage
     resource: ../../lib/features/sync/secure_storage.dart
     title: SecureStorage
-    last_modified: 2026-07-20
+    last_modified: 2026-06-16
   - id: privacy-policy
     resource: ../../PRIVACY.md
     title: Lotti privacy policy
-    last_modified: 2026-04-30
+    last_modified: 2026-04-29
   - id: pubspec
     resource: ../../pubspec.yaml
     title: Dependency manifest — evidence of what is absent
@@ -38,6 +39,14 @@ Matrix account is needed only for multi-device sync, and Matrix is decentralized
 **Nothing leaves the device without a user action.** Journal content reaches a
 network only on two paths: end-to-end encrypted sync to the user's own devices,
 and AI inference the user configured and triggered.
+
+**"Private" is a read filter, not a protection.** With the `private` config flag
+off, lists, searches and batch reads leave private entries out — but the row is
+stored like any other, and **fetching a single entity by id does not filter**, so a
+detail page or a deep link still shows it. See
+[persistence](persistence.md#private-visibility-is-gated-three-different-ways) for
+the three mechanisms and the exact reads that skip them. Treat it as a
+shoulder-surfing affordance, never as a security boundary.
 
 **The caveat: the SQLite databases are not encrypted at rest.** There is no
 SQLCipher in the dependency set. On-disk protection relies on OS-level
@@ -129,7 +138,7 @@ governed by explicit configuration rather than a default:
   profile is deliberately **not** sufficient to start spending tokens.
 
 See [the AI feature](../features/ai/) for how requests are routed and
-[categories](../features/categories/) for where that consent flag is set.
+[categories](../features/categories.md) for where that consent flag is set.
 
 # Error handling as a privacy surface
 

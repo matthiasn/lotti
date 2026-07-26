@@ -6,7 +6,7 @@ resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T14:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-12
 sources:
   - id: ui
     resource: ../../../lib/features/agents/ui
@@ -15,15 +15,15 @@ sources:
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
-    last_modified: 2026-07-26
+    last_modified: 2026-07-25
   - id: motion
     resource: ../../../lib/features/design_system/theme/motion_tokens.dart
     title: Motion tokens
-    last_modified: 2026-07-26
+    last_modified: 2026-06-20
   - id: sidebar
     resource: ../../../lib/features/agents/ui/sidebar_wake_queue.dart
     title: SidebarWakeQueue
-    last_modified: 2026-07-26
+    last_modified: 2026-07-25
 ---
 
 None of these widgets owns business logic. They read from the providers in

@@ -5,17 +5,17 @@ description: What TaskData carries, the two boundaries it deliberately excludes,
 resource: ../../../lib/classes/task.dart
 tags: [tasks, domain, progress, estimates]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-31
+generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
+stale_after: 2027-01-25
 sources:
   - id: task
     resource: ../../../lib/classes/task.dart
     title: Task and TaskData
-    last_modified: 2026-07-22
+    last_modified: 2026-06-20
   - id: progress
     resource: ../../../lib/features/tasks/repository/task_progress_repository.dart
     title: TaskProgressRepository
-    last_modified: 2026-07-25
+    last_modified: 2026-07-12
 ---
 
 # `TaskData`
@@ -24,11 +24,49 @@ Tasks are the `Task` journal-entity variant with `TaskData`, which carries title
 status, priority, estimate, due date, checklist ids, cover-art id, language
 preference, inference profile id, and AI-suppressed label ids.
 
+# `TaskStatus` is seven states with no enforced transitions
+
+The sealed `TaskStatus` union in `lib/classes/task.dart` has seven variants. Five
+are live and two are terminal:
+
+| | Variants |
+|---|---|
+| Live — `openTaskStatuses` | `open`, `groomed`, `inProgress`, `blocked`, `onHold` |
+| Terminal | `done`, `rejected` |
+
+Every variant carries `id`, `createdAt`, `utcOffset`, `timezone` and
+`geolocation`; **`blocked` and `onHold` additionally require a `reason`**, and are
+the only two that do. Nothing else distinguishes `done` from `rejected`
+structurally, so for the terminal pair the status *is* the discriminator.
+
+**The live/terminal split is not in the union at all, and it is duplicated.** Six
+places re-state "DONE and REJECTED are the closed ones" independently:
+
+| Site | Form |
+|------|------|
+| `tasks/ui/utils.dart` `openTaskStatuses` | the five live labels — what the linking UI filters on |
+| `day_agent_capture_helpers.dart` `isClosedTask` / `closedTaskStatuses` | `{'DONE', 'REJECTED'}` |
+| `agents/tools/task_status_handler.dart` `terminalStatuses` | `{'DONE', 'REJECTED'}` |
+| `database.dart`, `database_task_due_queries.dart`, `database_migration.dart`, `database.drift` | `AND task_status NOT IN ('DONE', 'REJECTED')` in raw SQL |
+
+Adding an eighth status means finding every one of them. There is no shared
+constant to change.
+
+**Nothing in the code restricts which status may follow which.** There is no
+transition table, no guard, and no validation — a task can go from `onHold`
+straight to `inProgress`, from `done` back to `open`, and the write succeeds. So
+there is deliberately no state diagram here: drawing one would invent a machine
+the code does not implement.
+
+What *is* derived rather than stored is **blockedness**, which comes from live
+`blocks` links at read time and is independent of the `blocked` status value — the
+two can disagree. See [typed relationships](relationships.md).
+
 **Two boundaries are deliberate:**
 
 - **Label assignments live on entry metadata** (`meta.labelIds`), not in
   `TaskData`.
-- **Project membership is resolved through the [projects](../projects/)
+- **Project membership is resolved through the [projects](../projects.md)
   feature**, not embedded as a task field.
 
 Checklist content is modelled separately through checklist entities and linked

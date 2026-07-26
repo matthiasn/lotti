@@ -41,4 +41,4 @@ Metrics live in their own database, `onboarding_metrics.sqlite`, and never sync.
 The flow, why measurement has a dedicated store, the cadence rules, and where the
 AI consent flag is written are documented in the knowledge bundle:
 
-**→ [knowledge/features/onboarding/](../../../knowledge/features/onboarding/)**
+**→ [knowledge/features/onboarding.md](../../../knowledge/features/onboarding.md)**

@@ -6,16 +6,16 @@ resource: ../../../lib/features/ai_consumption
 tags: [ai, attribution, consumption, cost, provenance]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-19
 sources:
   - id: consumption
     resource: ../../../lib/features/ai_consumption
     title: AI consumption feature — audit model and ledger
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner attribution sessions
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
 ---
 
 # The boundary
@@ -35,7 +35,7 @@ sequenceDiagram
   Runner->>Provider: inference request
   Provider-->>Runner: response + usage/reported impact
   Runner->>Attr: recordInteraction(digests + metadata)
-  Attr->>Sync: persist; enqueue best effort
+  Attr->>Sync: persist, then enqueue best effort
   Runner->>Attr: prepareCompletion(output reference)
   Runner->>Journal: persist carrier with attribution
   Runner->>Attr: finalize local projection

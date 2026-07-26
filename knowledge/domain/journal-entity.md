@@ -6,7 +6,7 @@ resource: ../../lib/classes/journal_entities.dart
 tags: [domain, journal-entity, metadata, freezed]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T02:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-07-12
 sources:
   - id: entities
     resource: ../../lib/classes/journal_entities.dart
@@ -15,7 +15,7 @@ sources:
   - id: db
     resource: ../../lib/database/database.dart
     title: JournalDb — the storage side
-    last_modified: 2026-07-25
+    last_modified: 2026-07-22
 ---
 
 # One union, sixteen variants
@@ -31,6 +31,60 @@ That breadth is why the [journal feature](../features/journal/) is the app's
 substrate rather than a note-taking screen: create, browse, search, link, focus
 and delete are implemented **once** over the union, and each variant contributes
 its own detail widget.
+
+```mermaid
+classDiagram
+  class JournalEntity {
+    <<Freezed union — 16 variants>>
+    Metadata meta
+  }
+  class Metadata {
+    String id
+    DateTime createdAt
+    DateTime updatedAt
+    DateTime dateFrom
+    DateTime dateTo
+    String? categoryId
+    List~String~? labelIds
+    int? utcOffset
+    String? timezone
+    VectorClock? vectorClock
+    DateTime? deletedAt
+    EntryFlag? flag
+    bool? starred
+    bool? private
+  }
+  JournalEntity *-- Metadata : every variant carries one
+
+  JournalEntity <|-- JournalEntry
+  JournalEntity <|-- JournalImage
+  JournalEntity <|-- JournalAudio
+  JournalEntity <|-- Task
+  JournalEntity <|-- JournalEvent
+  JournalEntity <|-- Checklist
+  JournalEntity <|-- ChecklistItem
+  JournalEntity <|-- QuantitativeEntry
+  JournalEntity <|-- MeasurementEntry
+  JournalEntity <|-- AiResponseEntry
+  JournalEntity <|-- WorkoutEntry
+  JournalEntity <|-- HabitCompletionEntry
+  JournalEntity <|-- SurveyEntry
+  JournalEntity <|-- DayPlanEntry
+  JournalEntity <|-- RatingEntry
+  JournalEntity <|-- ProjectEntry
+
+  Task o-- TaskData : payload
+  JournalEvent o-- EventData : payload
+  JournalAudio o-- AudioData : payload
+  MeasurementEntry o-- MeasurementData : payload
+  DayPlanEntry o-- DayPlanData : payload
+
+  note for Metadata "The envelope is uniform.\nOnly the payload differs per variant."
+```
+
+The diagram names the *shape*, not every payload class — `TaskData`, `EventData`,
+`AudioData`, `MeasurementData` and `DayPlanData` stand in for the full set listed
+under [where variant data lives](#where-variant-data-lives).
 
 **It is not every piece of user data**, and the boundary matters for anything that
 walks the whole dataset. What the user *configures* — categories, labels, habits,
@@ -68,6 +122,12 @@ Two consequences worth stating:
 - **Deletion is a stamp, not a row removal.** That is what makes "deleted"
   distinguishable from "never existed" on a peer, and it is the same pattern the
   [AI config lifecycle](../features/ai/seeding-and-lifecycle.md) adopted later.
+- **But the tombstone is not permanent.** `JournalDb.purgeDeleted` — reachable
+  from *Settings → Advanced → Maintenance*, and irreversible by its own
+  confirmation copy — hard-deletes every row flagged `deleted`, along with their
+  files. After a purge this device can no longer tell "deleted" from "never
+  existed", so do not build a sync or backup invariant on the tombstone always
+  being there.
 
 # Where variant data lives
 

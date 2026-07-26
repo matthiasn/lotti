@@ -5,8 +5,8 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
-stale_after: 2027-01-31
+generated: { by: claude-code/opus-5, at: 2026-07-26T17:00:00Z }
+stale_after: 2026-10-12
 sources:
   - id: db
     resource: ../../../lib/features/agents/database/agent_database.dart
@@ -15,15 +15,15 @@ sources:
   - id: constants
     resource: ../../../lib/features/agents/model/agent_constants.dart
     title: AgentLinkTypes
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: sync-service
     resource: ../../../lib/features/agents/sync/agent_sync_service.dart
     title: AgentSyncService
-    last_modified: 2026-07-25
+    last_modified: 2026-06-13
   - id: adr-0007
     resource: ../../../docs/adr/0007-token-usage-wake-run-log-storage.md
     title: ADR 0007 — Token usage and wake run log storage
-    last_modified: 2026-07-24
+    last_modified: 2026-02-28
 ---
 
 # One database, two shapes
@@ -56,18 +56,25 @@ that model.
   tell you", ADR 0022). **Compaction-exempt**; the active Head set is a pure
   recency-wins projection over the entries, with no separate Head entity.
   Carries optional immutable author-time `tags`, set once at origin.
-- Daily OS capture-pipeline variants: `CaptureEntity`, `ParsedItemEntity`,
-  `DayPlanEntity`, `DaySummaryEntity`.
+- Daily OS capture-pipeline and planning variants: `CaptureEntity`,
+  `ParsedItemEntity`, `DayPlanEntity`, `DaySummaryEntity`, `DayDirectiveEntity`,
+  `DayStatusEventEntity`, `WeekRollupEntity`.
 - `AgentUnknownEntity` — the forward-compat fallback for variants an older
   client cannot decode.
 
 ## Links
 
-`agent_state`, `agent_task`, `agent_project`, `template_assignment`,
-`improver_target`, `soul_assignment`; the Daily OS capture/plan links
-`toolEffect`, `captureToParsedItem`, `parsedItemToTask`, `captureToPlan`; the
-attention-negotiation links `attentionRequestEvidence`, `attentionAwardRequest`,
-`attentionAwardPlan`; and `basic` as the generic fallback.
+All eighteen kinds live in `agent_constants.dart`:
+
+- **Ownership** — `agent_state`, `agent_task`, `agent_project`, `agent_day`,
+  `agent_event`, `template_assignment`, `improver_target`, `soul_assignment`.
+- **The message log** — `message_prev` (the causal chain the fold walks) and
+  `message_payload`.
+- **Daily OS capture and plan** — `tool_effect`, `capture_to_parsed_item`,
+  `parsed_item_to_task`, `capture_to_plan`.
+- **Attention negotiation** — `attention_request_evidence`,
+  `attention_award_request`, `attention_award_plan`.
+- **`basic`** as the generic fallback.
 
 **`agent_day` is legacy.** It linked the old per-day day-agent identity to its
 day, back-linking `slots.activeDayId`. ADR 0022's single long-lived planner pins

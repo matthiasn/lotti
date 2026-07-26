@@ -4,9 +4,10 @@
 /// The spec is at
 /// https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md.
 /// This validator enforces the three normative conformance rules of §11 as
-/// [Severity.error], and reports the SHOULD-level guidance of §4, §5, §7 and
-/// §9 as [Severity.warning] so the bundle stays useful without the checker
-/// rejecting documents the spec says must be tolerated.
+/// [Severity.error], and — because this repository treats the metadata that
+/// makes drift detectable as mandatory rather than advisory — raises the
+/// SHOULD-level guidance of §4, §5 and §7 to an error too. See [_houseRule] for
+/// what that covers and [Severity.warning] for the narrow set left advisory.
 ///
 /// The validator is deliberately dependency-light and filesystem-agnostic:
 /// [validateBundle] takes an in-memory map of relative path to file contents so
@@ -20,12 +21,26 @@ import 'package:yaml/yaml.dart';
 
 /// How badly a [OkfIssue] breaks the spec.
 enum Severity {
-  /// Violates a normative MUST in §11. The bundle is not conformant.
+  /// Violates a normative MUST in §11, or a house rule this repo requires.
+  /// The bundle is not conformant and CI fails.
   error,
 
-  /// Violates a SHOULD, or a repo-local convention layered on top of OKF.
+  /// Advisory, and deliberately narrow: OKF is permissive here. A link to
+  /// knowledge that has not been written yet is legitimate (§6.1), an index
+  /// without headings is untidy rather than wrong, and `Attested Computation`
+  /// fields matter only to a type nothing in this bundle uses.
   warning,
 }
+
+/// Severity for metadata this repository requires but OKF only recommends.
+///
+/// The spec grades a missing `description`, freshness date or source list as a
+/// SHOULD. This bundle fails the build on them, because a concept without them
+/// is exactly the one whose drift nobody can detect: no description to show in
+/// an index, no date to reason about, and nothing for the anti-drift check to
+/// resolve. Treating them as warnings meant the rules that keep the map honest
+/// were the only ones CI did not enforce.
+const Severity _houseRule = Severity.error;
 
 /// A single problem found in a bundle.
 class OkfIssue {
@@ -90,17 +105,26 @@ const reservedFilenames = {'index.md', 'log.md'};
 /// The OKF version this validator understands.
 const okfVersion = '0.2';
 
-/// Frontmatter keys the repo asks every concept to carry.
+/// Frontmatter keys every concept must carry.
 ///
 /// `type` is the spec's only hard requirement (§4.1); the rest are `SHOULD`s
-/// that this repo treats as house style so agents always find a description to
-/// show, a freshness date to reason about, and the code the concept was derived
-/// from. `stale_after` and `sources` are in here rather than only validated
-/// when present, because a concept that omits them is exactly the one whose
-/// drift nobody can detect.
+/// that this repo raises to a [_houseRule] error, so agents always find a
+/// description to show, a freshness date to reason about, and the code the
+/// concept was derived from. `stale_after` and `sources` are in here rather than
+/// only validated when present, because a concept that omits them is exactly the
+/// one whose drift nobody can detect.
+///
+/// `resource` and `tags` joined the set once the convention that documents them
+/// as mandatory turned out not to be enforced: two architecture concepts had no
+/// `resource` at all and validated clean, which is exactly the gap between
+/// documented and checked that this bundle exists to close. A concept whose
+/// subject is the repository itself says so — `resource: ../..` — rather than
+/// omitting the key.
 const _requiredHouseKeys = {
   'title',
   'description',
+  'resource',
+  'tags',
   'status',
   'generated',
   'stale_after',
@@ -230,6 +254,63 @@ final _fencedBlockPattern = RegExp(
 );
 final _inlineCodePattern = RegExp(r'`[^`\n]*`');
 
+/// Reports a fenced code block that never closes on a line of its own.
+///
+/// CommonMark accepts a closing fence only when the line carries nothing but the
+/// delimiter, so ```` ``` and then prose ```` does **not** close the block: every
+/// remaining line of the concept renders as code. That shipped once — a mermaid
+/// diagram whose closing fence had a sentence welded to it swallowed the rest of
+/// the page — and nothing caught it, because [stripCodeSpans] is deliberately
+/// looser about where a block ends and treated the same line as a close.
+///
+/// Line numbers are relative to the whole file, so callers pass the raw content
+/// rather than [OkfDocument.body].
+List<OkfIssue> validateFencedBlocks(String path, String content) {
+  final lines = content.split('\n');
+  String? opener;
+  var openedAt = 0;
+  for (var i = 0; i < lines.length; i++) {
+    // Trailing whitespace is noise; the *leading* indent is not. CommonMark
+    // allows a fence to be indented by at most three spaces — at four it is an
+    // indented code block, so a documented example of a fence is not a fence.
+    // Trimming the indent away made those literals open and close real blocks.
+    final line = lines[i].trimRight();
+    if (opener == null) {
+      final match = _fenceOpenPattern.firstMatch(line);
+      if (match != null) {
+        opener = match.group(2);
+        openedAt = i + 1;
+      }
+      continue;
+    }
+    if (_closesFence(line, opener)) opener = null;
+  }
+  if (opener == null) return const [];
+  return [
+    OkfIssue(
+      severity: _houseRule,
+      path: path,
+      line: openedAt,
+      message:
+          'fenced block opened with `$opener` is never closed by a line '
+          'containing only the delimiter, so the rest of the file renders as '
+          'code',
+    ),
+  ];
+}
+
+final _fenceOpenPattern = RegExp('^( {0,3})(`{3,}|~{3,})');
+
+/// Whether [line] is a valid closing fence for a block opened by [opener]:
+/// indented at most three spaces, the same delimiter character, at least as long
+/// as the opener, and nothing else on the line.
+bool _closesFence(String line, String opener) {
+  final match = RegExp(r'^( {0,3})([`~]+)$').firstMatch(line);
+  if (match == null) return false;
+  final run = match.group(2)!;
+  return run[0] == opener[0] && run.length >= opener.length;
+}
+
 /// Blanks out fenced blocks and inline code so link scanning never treats a
 /// documented link *form* — `` `[Title](/tasks/<taskId>)` `` — as a real link
 /// the bundle must resolve. Replacing rather than deleting keeps byte offsets
@@ -306,7 +387,15 @@ OkfDocument splitDocument(String content) {
 /// [files] maps bundle-relative POSIX paths (`features/sync.md`) to file
 /// contents. Only `.md` files are inspected; other paths are still used to
 /// resolve links, so pass the full file listing when link checking matters.
-OkfValidationResult validateBundle(Map<String, String> files) {
+///
+/// [today] is the day expiry is measured against: a concept whose `stale_after`
+/// has passed is reported as a warning. It is a parameter rather than a
+/// `DateTime.now()` call so the check is deterministic under test; when omitted,
+/// expiry is not checked at all.
+OkfValidationResult validateBundle(
+  Map<String, String> files, {
+  DateTime? today,
+}) {
   final issues = <OkfIssue>[];
   final markdownPaths = files.keys.where((p) => p.endsWith('.md')).toList()
     ..sort();
@@ -339,7 +428,7 @@ OkfValidationResult validateBundle(Map<String, String> files) {
     }
 
     conceptCount++;
-    issues.addAll(_validateConcept(path, content, knownPaths));
+    issues.addAll(_validateConcept(path, content, knownPaths, today));
   }
 
   return OkfValidationResult(issues: issues, conceptCount: conceptCount);
@@ -349,6 +438,7 @@ List<OkfIssue> _validateConcept(
   String path,
   String content,
   Set<String> knownPaths,
+  DateTime? today,
 ) {
   final issues = <OkfIssue>[];
   final document = splitDocument(content);
@@ -416,7 +506,7 @@ List<OkfIssue> _validateConcept(
     if (!frontmatter.containsKey(key)) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message:
               'frontmatter is missing `$key`, which this bundle asks every '
@@ -432,7 +522,7 @@ List<OkfIssue> _validateConcept(
     if (frontmatter[key] == null) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message:
               '`$key` is empty; this bundle asks every concept to carry a '
@@ -442,13 +532,17 @@ List<OkfIssue> _validateConcept(
     }
   }
 
-  for (final key in const ['title', 'description']) {
+  // `resource` is in here, not just in the presence check: `resource: ""`
+  // satisfied containsKey, is not null, and is then skipped by both reference
+  // checks — so a concept could declare no subject at all and validate clean
+  // while the convention promised that an empty value fails the build.
+  for (final key in const ['title', 'description', 'resource']) {
     final value = frontmatter[key];
     if (value == null) continue; // absent or empty: reported above
     if (value is! String || value.trim().isEmpty) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message: '`$key` must be a non-empty string, got `$value`',
         ),
@@ -456,14 +550,28 @@ List<OkfIssue> _validateConcept(
     }
   }
 
+  // `tags: []` passed for the same reason. Values stay unchecked — they are
+  // free-form search keys — but an empty list carries none of them.
+  final tags = frontmatter['tags'];
+  if (tags != null && (tags is! YamlList || tags.isEmpty)) {
+    issues.add(
+      OkfIssue(
+        severity: _houseRule,
+        path: path,
+        message: '`tags` must be a non-empty list, got `$tags`',
+      ),
+    );
+  }
+
   issues
     ..addAll(_validateStatus(path, frontmatter))
     ..addAll(_validateGenerated(path, frontmatter))
     ..addAll(_validateVerified(path, frontmatter))
-    ..addAll(_validateStaleAfter(path, frontmatter))
+    ..addAll(_validateStaleAfter(path, frontmatter, today))
     ..addAll(_validateSources(path, frontmatter))
     ..addAll(_validateAttestedComputation(path, frontmatter, document.body))
     ..addAll(_validateBundleLinks(path, document.body, knownPaths))
+    ..addAll(validateFencedBlocks(path, content))
     ..addAll(
       _validateBundleResources(path, document.frontmatterYaml, knownPaths),
     )
@@ -530,7 +638,7 @@ List<OkfIssue> _validateProvenanceLeavesBundle(
 
   return [
     OkfIssue(
-      severity: Severity.warning,
+      severity: _houseRule,
       path: path,
       message:
           'every `sources[].resource` stays inside the bundle, so the concept '
@@ -546,7 +654,7 @@ List<OkfIssue> _validateStatus(String path, YamlMap frontmatter) {
   if (status is! String || !_statusValues.contains(status)) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             '`status` must be one of ${_statusValues.join(', ')}, '
@@ -563,7 +671,7 @@ List<OkfIssue> _validateGenerated(String path, YamlMap frontmatter) {
   if (generated is! YamlMap) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message: '`generated` must be a mapping with `by` and `at` (§5.2)',
       ),
@@ -575,7 +683,7 @@ List<OkfIssue> _validateGenerated(String path, YamlMap frontmatter) {
   if (by == null) {
     issues.add(
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message: '`generated.by` is required within `generated` (§5.2)',
       ),
@@ -598,7 +706,7 @@ List<OkfIssue> _validateVerified(String path, YamlMap frontmatter) {
     if (entry is! YamlMap) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message:
               'each `verified` entry must be a `{ by, at }` mapping (§5.2)',
@@ -610,7 +718,7 @@ List<OkfIssue> _validateVerified(String path, YamlMap frontmatter) {
     if (by == null) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message: 'a `verified` entry is missing `by` (§5.2)',
         ),
@@ -623,13 +731,32 @@ List<OkfIssue> _validateVerified(String path, YamlMap frontmatter) {
   return issues;
 }
 
-List<OkfIssue> _validateStaleAfter(String path, YamlMap frontmatter) {
+/// Days before `stale_after` at which a concept starts warning.
+///
+/// Expiry is an error, so without this the first signal would be a red push on
+/// the morning a date arrived — for a whole subsystem at once, since the dates
+/// are batched. Two weeks is enough to schedule the re-read deliberately.
+const staleWarningWindowDays = 14;
+
+/// Checks `stale_after` for shape, and — when [today] is given — for expiry.
+///
+/// Expiry is an error, so `make okf_check` and CI both stop on it. The date is a
+/// commitment to re-read by, and a reminder nothing ever fails on is not a
+/// reminder. The cost is real and accepted: when a subsystem's date arrives,
+/// clearing it means re-reading those concepts against the code, or deciding
+/// deliberately to move the date. [staleWarningWindowDays] before that, the same
+/// check warns, so the deadline is never a surprise.
+List<OkfIssue> _validateStaleAfter(
+  String path,
+  YamlMap frontmatter,
+  DateTime? today,
+) {
   final staleAfter = frontmatter['stale_after'];
   if (staleAfter == null) return const [];
   if (!_isIsoDate(staleAfter)) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             '`stale_after` must be an absolute `YYYY-MM-DD` date, '
@@ -637,7 +764,46 @@ List<OkfIssue> _validateStaleAfter(String path, YamlMap frontmatter) {
       ),
     ];
   }
-  return const [];
+  if (today == null) return const [];
+  final deadline = _parseIsoDate(staleAfter);
+  if (deadline == null) return const [];
+  final day = DateTime.utc(today.year, today.month, today.day);
+  if (day.isAfter(deadline)) {
+    return [
+      OkfIssue(
+        severity: _houseRule,
+        path: path,
+        message:
+            '`stale_after` passed on $staleAfter; re-read this concept against '
+            'the code and either confirm it or rewrite it (§5.5)',
+      ),
+    ];
+  }
+  final daysLeft = deadline.difference(day).inDays;
+  if (daysLeft > staleWarningWindowDays) return const [];
+  return [
+    OkfIssue(
+      severity: Severity.warning,
+      path: path,
+      message:
+          '`stale_after` is $staleAfter — $daysLeft day(s) away; schedule the '
+          're-read before it becomes an error (§5.5)',
+    ),
+  ];
+}
+
+/// Parses an already shape-checked `YYYY-MM-DD` value into a UTC day.
+DateTime? _parseIsoDate(Object? value) {
+  if (value is DateTime) {
+    return DateTime.utc(value.year, value.month, value.day);
+  }
+  final match = _isoDatePattern.firstMatch(value.toString());
+  if (match == null) return null;
+  return DateTime.utc(
+    int.parse(match.group(1)!),
+    int.parse(match.group(2)!),
+    int.parse(match.group(3)!),
+  );
 }
 
 List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
@@ -649,7 +815,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
     return frontmatter.containsKey('sources')
         ? [
             OkfIssue(
-              severity: Severity.warning,
+              severity: _houseRule,
               path: path,
               message:
                   '`sources` is present but null; a concept needs at '
@@ -661,7 +827,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
   if (sources is! YamlList) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message: '`sources` must be a list of entries (§5.1)',
       ),
@@ -670,7 +836,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
   if (sources.isEmpty) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             '`sources` is empty; a concept needs at least one source to '
@@ -685,7 +851,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
     if (entry is! YamlMap) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message: 'each `sources` entry must be a mapping (§5.1)',
         ),
@@ -699,7 +865,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
     if (resource is! String || resource.trim().isEmpty) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message: resource == null
               ? '`resource` is required within a `sources` entry (§5.1)'
@@ -712,7 +878,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
     if (id is String && !seenIds.add(id)) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message:
               'duplicate `sources[].id` `$id`; footnote attribution joins '
@@ -724,7 +890,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
     if (lastModified != null && !_isIsoDate(lastModified)) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message:
               '`sources[].last_modified` must be `YYYY-MM-DD`, '
@@ -796,7 +962,7 @@ List<OkfIssue> _validateActor(String path, Object? actor, String label) {
   if (actor is! String || !_actorPattern.hasMatch(actor)) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             '$label `$actor` does not follow the actor convention '
@@ -811,7 +977,7 @@ List<OkfIssue> _validateDateTime(String path, Object? value, String label) {
   if (value == null) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             '$label is missing; consumers use it to tell a recent edit '
@@ -823,7 +989,7 @@ List<OkfIssue> _validateDateTime(String path, Object? value, String label) {
   if (value is String && _isRealIsoDateTime(value)) return const [];
   return [
     OkfIssue(
-      severity: Severity.warning,
+      severity: _houseRule,
       path: path,
       message:
           '$label must be an ISO 8601 datetime such as '
@@ -901,7 +1067,7 @@ List<OkfIssue> _validateIndex(
           // whole block is missing.
           issues.add(
             OkfIssue(
-              severity: Severity.warning,
+              severity: _houseRule,
               path: path,
               message:
                   'root index.md frontmatter declares no `okf_version`, so '
@@ -911,7 +1077,7 @@ List<OkfIssue> _validateIndex(
         } else if (declared.toString() != okfVersion) {
           issues.add(
             OkfIssue(
-              severity: Severity.warning,
+              severity: _houseRule,
               path: path,
               message:
                   'bundle declares okf_version `$declared` but this '
@@ -924,7 +1090,7 @@ List<OkfIssue> _validateIndex(
   } else if (path == 'index.md') {
     issues.add(
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             'root index.md should declare `okf_version: "$okfVersion"` so '
@@ -944,7 +1110,9 @@ List<OkfIssue> _validateIndex(
     );
   }
 
-  issues.addAll(_validateBundleLinks(path, document.body, knownPaths));
+  issues
+    ..addAll(_validateBundleLinks(path, document.body, knownPaths))
+    ..addAll(validateFencedBlocks(path, content));
   return issues;
 }
 
@@ -960,7 +1128,9 @@ List<OkfIssue> _validateLog(
   // bundle-internal links nothing checked — the repo pass covers its `../../lib`
   // pointers, but a renamed concept left a dead `[x](features/x/overview.md)`
   // here in silence.
-  issues.addAll(_validateBundleLinks(path, document.body, knownPaths));
+  issues
+    ..addAll(_validateBundleLinks(path, document.body, knownPaths))
+    ..addAll(validateFencedBlocks(path, content));
   if (document.frontmatterYaml != null) {
     issues.add(
       OkfIssue(
@@ -1135,7 +1305,12 @@ List<OkfIssue> validateRepoReferences({
       // Resolve against the concept's own directory *inside the repo*, so
       // `knowledge/architecture/x.md` + `../../lib/main.dart` = `lib/main.dart`.
       final repoBase = [rootPrefix, dir].where((s) => s.isNotEmpty).join('/');
-      final repoPath = _normalizeRelative(repoBase, withoutAnchor);
+      // A reference that lands exactly on the repository root normalizes to the
+      // empty string, and neither `File('')` nor `Directory('')` exists — so a
+      // repo-wide concept declaring `resource: ../..` was reported as a dangling
+      // pointer. `.` is the same directory, and it does exist.
+      final normalized = _normalizeRelative(repoBase, withoutAnchor);
+      final repoPath = normalized.isEmpty ? '.' : normalized;
       if (repoPath.startsWith('..')) {
         issues.add(
           OkfIssue(

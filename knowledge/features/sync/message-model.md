@@ -6,7 +6,7 @@ resource: ../../../lib/features/sync/model/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-11-02
 sources:
   - id: sync-message
     resource: ../../../lib/features/sync/model/sync_message.dart
@@ -15,7 +15,7 @@ sources:
   - id: payload-type
     resource: ../../../lib/features/sync/sequence/sync_sequence_payload_type.dart
     title: SyncSequencePayloadType
-    last_modified: 2026-07-13
+    last_modified: 2026-07-05
   - id: apply
     resource: ../../../lib/features/sync/matrix/sync_event_processor_apply.dart
     title: Apply path

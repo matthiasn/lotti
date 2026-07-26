@@ -31,4 +31,4 @@ lib/features/surveys/
 Why scoring happens at submission time, and what that buys, is documented in the
 knowledge bundle:
 
-**→ [knowledge/features/surveys/](../../../knowledge/features/surveys/)**
+**→ [knowledge/features/surveys.md](../../../knowledge/features/surveys.md)**

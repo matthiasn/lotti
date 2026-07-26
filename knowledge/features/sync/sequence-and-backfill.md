@@ -6,7 +6,7 @@ resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-11-02
 sources:
   - id: sequence
     resource: ../../../lib/features/sync/sequence
@@ -15,7 +15,7 @@ sources:
   - id: status
     resource: ../../../lib/database/sync_sequence_status.dart
     title: SyncSequenceStatus
-    last_modified: 2026-07-25
+    last_modified: 2026-06-06
   - id: backfill
     resource: ../../../lib/features/sync/backfill
     title: Backfill request and response services

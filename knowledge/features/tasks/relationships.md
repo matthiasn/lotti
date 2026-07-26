@@ -6,7 +6,7 @@ resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
 tags: [tasks, links, dependencies, adr-0042]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-25
 sources:
   - id: entry-link
     resource: ../../../lib/classes/entry_link.dart
@@ -15,7 +15,7 @@ sources:
   - id: resolver
     resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
     title: TaskDependencyResolver
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: adr-0042
     resource: ../../../docs/adr/0042-typed-task-relationship-links.md
     title: ADR 0042 — Typed task relationship links
@@ -101,10 +101,13 @@ An **unresolvable** blocker — the link row exists but its `fromId` task cannot
 loaded, typically a sync gap — keeps the dependent blocked conservatively. That is
 distinct from a **tombstoned** blocker (`deletedAt` set), which releases it.
 
-## Two resolvers, on purpose
+## Three readers, two of which resolve blockedness
 
-| Resolver | Shape | Treats unresolvable blockers |
-|----------|-------|------------------------------|
+The UI-facing and model-facing resolvers differ *deliberately*; the third reader
+only groups links for display and resolves nothing.
+
+| Reader | Shape | Treats unresolvable blockers |
+|--------|-------|------------------------------|
 | `TaskBlockersController(taskId)` | Single task, UI-facing, autoDispose Riverpod | **Distinguishes** them — reports `TaskBlockersResult(openBlockers, unresolvedCount)`, with `isBlocked = openBlockers.isNotEmpty \|\| unresolvedCount > 0` |
 | `TaskLinkGroupsController` | Display grouping | Drops tombstoned and unresolvable identically — fine for display |
 | `TaskDependencyResolver` | Batch, model-facing, stateless plain Dart | Serializes a bare `{"taskId": …}` so "still blocked" is never downgraded |

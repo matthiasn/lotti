@@ -33,4 +33,4 @@ The engine, the platform matrix, and the targeted CocoaPods workaround that lets
 statically linked runtime coexist with dynamic frameworks are documented in the
 knowledge bundle:
 
-**→ [knowledge/features/tts/](../../../knowledge/features/tts/)**
+**→ [knowledge/features/tts.md](../../../knowledge/features/tts.md)**

@@ -8,8 +8,9 @@ The particle style varies by content type — sparks, confetti, bubbles — but 
 choreography around it is shared, and each variant is tunable through a
 playground.
 
-Visual beats respect the user's animation switches and system reduce-motion;
-haptics always fire.
+Visual beats respect the user's animation switches and system reduce-motion. Those
+switches never silence the haptic — but a separate haptics preference does, and
+consumers honour it by passing `onCelebrate: null`.
 
 ## How it works
 

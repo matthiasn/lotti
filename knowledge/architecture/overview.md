@@ -6,12 +6,12 @@ resource: ../../lib
 tags: [architecture, overview, entry-point]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-11
 sources:
   - id: lib
     resource: ../../lib
     title: Application source tree
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: pubspec
     resource: ../../pubspec.yaml
     title: Dependency manifest

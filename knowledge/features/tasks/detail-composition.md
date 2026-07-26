@@ -6,7 +6,7 @@ resource: ../../../lib/features/tasks/ui/header
 tags: [tasks, detail, header, scroll-stability, design-tokens]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-25
 sources:
   - id: header
     resource: ../../../lib/features/tasks/ui/header
@@ -19,7 +19,7 @@ sources:
   - id: tokens
     resource: ../../../assets/design_system/tokens.json
     title: aiCard and proposalKind tokens
-    last_modified: 2026-07-04
+    last_modified: 2026-07-26
 ---
 
 # Band order

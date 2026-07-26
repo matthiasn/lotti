@@ -48,4 +48,4 @@ The three read models, the last-write-wins resolution per habit and day, exactly
 what the tab controller derives, and where the data model outruns the current
 editing surface are documented in the knowledge bundle:
 
-**→ [knowledge/features/habits/](../../../knowledge/features/habits/)**
+**→ [knowledge/features/habits.md](../../../knowledge/features/habits.md)**

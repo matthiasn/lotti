@@ -6,20 +6,20 @@ resource: ../../../lib/features/ai/service/embedding_service.dart
 tags: [ai, embeddings, vector-search, objectbox]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-19
 sources:
   - id: embedding-service
     resource: ../../../lib/features/ai/service/embedding_service.dart
     title: EmbeddingService
-    last_modified: 2026-07-25
+    last_modified: 2026-03-07
   - id: store
     resource: ../../../lib/features/ai/database/objectbox_embedding_store.dart
     title: ObjectBox-backed embedding store
-    last_modified: 2026-07-25
+    last_modified: 2026-03-08
   - id: search
     resource: ../../../lib/features/ai/repository/vector_search_repository.dart
     title: VectorSearchRepository
-    last_modified: 2026-07-25
+    last_modified: 2026-06-07
 ---
 
 The AI feature owns local embeddings and vector search — the one place where the

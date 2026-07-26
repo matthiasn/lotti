@@ -6,7 +6,7 @@ resource: ../../../lib/features/sync/outbox
 tags: [sync, outbox, bundling, retries]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-11-02
 sources:
   - id: outbox
     resource: ../../../lib/features/sync/outbox
@@ -15,7 +15,7 @@ sources:
   - id: payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding
-    last_modified: 2026-07-25
+    last_modified: 2026-06-16
   - id: tuning
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning

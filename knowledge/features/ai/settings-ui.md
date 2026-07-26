@@ -6,12 +6,12 @@ resource: ../../../lib/features/ai/ui/settings
 tags: [ai, settings, ui, slivers]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:45:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-19
 sources:
   - id: src
     resource: ../../../lib/features/ai/ui/settings
     title: AI settings UI source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 The AI settings page renders as **one `CustomScrollView`** in which **nothing is

@@ -49,6 +49,18 @@ analyze:
 okf_check:
 	$(DART_CMD) run tool/okf/validate.dart knowledge
 
+# Parses every mermaid diagram in the bundle with mermaid itself. Separate from
+# okf_check because there is no Dart mermaid parser — a diagram that renders as
+# an error box is invisible to the Dart validator, and three shipped that way.
+.PHONY: mermaid_check
+mermaid_check:
+	cd tool/okf && npm ci --silent && npm test --silent && npm run --silent check
+
+# The one target to run after touching knowledge/. Two separate targets meant the
+# mermaid half got skipped, which is how unrenderable diagrams reached main.
+.PHONY: knowledge_check
+knowledge_check: okf_check mermaid_check
+
 .PHONY: junit_test
 junit_test:
 	$(FLUTTER_CMD) test --coverage --reporter json > TEST-report.jsonl

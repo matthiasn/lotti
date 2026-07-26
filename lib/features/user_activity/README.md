@@ -6,7 +6,7 @@ busy, and lets background work wait until they are not.
 ## What it does for the user
 
 - **Keeps the app responsive.** Heavy background work — sending and receiving
-  sync, processing a day's recordings — waits for a pause rather than competing
+  sync's send and receive passes — waits for a pause rather than competing
   with typing and scrolling.
 - **Catches up when idle.** As soon as the user stops interacting, queued work
   drains.
@@ -30,4 +30,4 @@ lib/features/user_activity/
 Who waits on the gate, and why it is an awaited gate rather than a boolean check,
 are documented in the knowledge bundle:
 
-**→ [knowledge/features/user_activity/](../../../knowledge/features/user_activity/)**
+**→ [knowledge/features/user_activity.md](../../../knowledge/features/user_activity.md)**

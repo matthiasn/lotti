@@ -35,3 +35,30 @@ jobs:
       # architecture has drifted from the code.
       - name: Validate knowledge bundle
         run: dart run tool/okf/validate.dart knowledge
+
+  mermaid:
+    name: Parse mermaid diagrams
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: tool/okf/package-lock.json
+      # The Dart validator cannot parse mermaid — there is no Dart parser — so a
+      # diagram that renders as an error box is invisible to `make okf_check`.
+      # Three shipped that way. This runs mermaid itself under jsdom.
+      - name: Install check dependencies
+        run: npm ci
+        working-directory: tool/okf
+      # The gate's own tests: fence forms, nesting, and the semicolon split that
+      # parses clean while rendering phantom nodes.
+      - name: Test the mermaid checker
+        run: npm test
+        working-directory: tool/okf
+      - name: Parse every mermaid block
+        run: npm run check
+        working-directory: tool/okf

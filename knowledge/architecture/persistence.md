@@ -5,25 +5,33 @@ description: The eleven Drift/SQLite databases, how connections are opened and m
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-31
+generated: { by: claude-code/opus-5, at: 2026-07-26T20:00:00Z }
+stale_after: 2027-01-11
 sources:
+  - id: notifications
+    resource: ../../lib/services/db_notification.dart
+    title: UpdateNotifications token vocabulary
+    last_modified: 2026-07-05
+  - id: private-gate
+    resource: ../../lib/database/database_config_flags.dart
+    title: Config-flag cache and the private-visibility gate
+    last_modified: 2026-07-26
   - id: db-common
     resource: ../../lib/database/common.dart
     title: openDbConnection, pragmas, backups
-    last_modified: 2026-07-25
+    last_modified: 2026-06-05
   - id: journal-db
     resource: ../../lib/database/database.dart
     title: JournalDb
-    last_modified: 2026-07-25
+    last_modified: 2026-07-22
   - id: journal-migration
     resource: ../../lib/database/database_migration.dart
     title: JournalDb migration strategy
-    last_modified: 2026-07-25
+    last_modified: 2026-07-09
   - id: update-notifications
     resource: ../../lib/services/db_notification.dart
     title: UpdateNotifications
-    last_modified: 2026-07-20
+    last_modified: 2026-07-05
 ---
 
 # One store per concern
@@ -108,6 +116,13 @@ logs is already a meaningful slice of a frame. Writing is gated behind the
 logging domain in *Settings → Advanced → Logging Domains*, so the interceptor
 costs nothing until someone is investigating.
 
+**There is a second tier at 200 ms**, and it does more than log louder. A query
+crossing `superSlowThreshold` has its **`EXPLAIN QUERY PLAN` captured** (selects
+only) and is duplicated into a separate `super_slow_queries` file alongside the
+`slow_queries` one. So the 10 ms tier tells you *that* something is slow, while
+the 200 ms tier tells you *why* — start with the super-slow file, because it is
+the only one carrying a plan.
+
 The threshold deliberately does not catch N+1 chains: each individual link sits
 under the bar. Those are caught by the coalescers in `JournalDb` and by
 counting round-trips in tests. Tests and deep-dive captures pass
@@ -164,14 +179,113 @@ Notifications are **batched** — 100 ms for local writes, 1 s for sync arrivals
 so a bulk import or a sync catch-up produces a handful of rebuilds rather than
 thousands.
 
+## What a notification carries
+
+The payload is a `Set<String>` of **routing keys**, and they are heterogeneous —
+this is the part that surprises people. `JournalEntityExtension.affectedIds` seeds
+the set with the **entity's own id**, adds **related ids** (a habit completion adds
+its `habitId`, a checklist its items), *and* adds a static type token; a task-agent
+notification carries `agentId` and `taskId` the same way. So a listener may be
+matching an id, a type, or a change class:
+
+| Kind | Examples |
+|------|----------|
+| **Entity ids** | the written entity's `id`, plus linked ids the write touched |
+| Static type tokens — **most** `JournalEntity` variants, not all sixteen | `TEXT_ENTRY`, `TASK`, `AUDIO`, `IMAGE`, `EVENT`, `SURVEY`, `WORKOUT`, `HABIT_COMPLETION`, `AI_RESPONSE`, `DAY_PLAN`, `RATING`, `PROJECT`. `checklist`, `checklistItem`, `measurement` and `quantitative` have no token of their own |
+| Definition and settings changes | `CATEGORIES_CHANGED`, `HABITS_CHANGED`, `DASHBOARDS_CHANGED`, `MEASURABLES_CHANGED`, `LABELS_CHANGED`, `LABEL_USAGE_CHANGED`, `SETTINGS_CHANGED`, `PRIVATE_FLAG_TOGGLED` |
+| Cross-cutting | `LINK_CHANGED`, `AGENT_CHANGED`, `AI_CONSUMPTION_CHANGED`, `INBOX_CHANGED` |
+| **Dynamic, prefixed** | `PROJECT_ENTITY_UPDATE:<projectId>`, and `PROPAGATED::<token>` below |
+
+**No entity *data* travels** — only identifiers and labels — so a listener always
+re-reads. What it must not assume is that a key is one of the static tokens: two of
+the five kinds are computed at emit time.
+
+**The `PROPAGATED::` prefix is additive, and it exists for the wake orchestrator.**
+When a write is a *fan-out* — the project that gained a task because someone linked
+one, rather than the task that was edited — the emitter puts **both** forms in the
+same set: the bare token *and* `PROPAGATED::<token>`. The bare one is kept
+deliberately, so consumers reacting to the legacy form keep refreshing.
+
+So a UI provider matching only the bare token is **correct and complete** — it
+cannot miss a fan-out, because the bare token is always there too. The prefix is
+for the one consumer that needs to tell the two apart:
+`WakeBatchRouter` **can** defer a propagated-only match to the next morning, so a
+project agent does not spend tokens every time a task appears under it.
+
+**That deferral is opt-in per subscription, not a global rule.** `WakeOrchestrator`
+defaults `deferPropagatedMatches` to `true`, and subscriptions that need immediacy
+pass `false` — task agents and the sync event handlers both opt out.
+
+`agentExecutionZoneKey` is the other half of the same concern. Writes made *inside*
+an agent's own execution run in a zone carrying that key, which
+`PersistenceLogic` reads as `isAgentExecution` — so an agent's own writes do not
+feed back as a reason to wake it again.
+
+# Private visibility is gated three different ways
+
+`_JournalDbConfigFlags` owns the in-memory config-flag cache and
+`_queryWithPrivateFilter`, which dispatches a read to an all-private or a
+filtered variant:
+
+```mermaid
+flowchart TD
+  Q["a read that gates"] --> G["_queryWithPrivateFilter"]
+  G --> F{"config flag 'private' on?"}
+  F -->|yes| All["allPrivate() — the unfiltered query"]
+  F -->|no| Filt["filtered([false]) — non-private rows only"]
+```
+
+**That helper is only one of three mechanisms**, which is why grepping for it
+undercounts the gate badly:
+
+| Mechanism | Where |
+|-----------|-------|
+| `_queryWithPrivateFilter` | `journal_queries`, `data_queries`, `definitions`, `project_queries`, `links_ratings` |
+| **`privateStatuses` passed as a parameter**, so the caller decides | `task_queries`, `task_query_builders`, `task_due_queries` |
+| **Raw SQL reading the flag directly** — `WITH private_flag AS (SELECT status FROM config_flags WHERE name = 'private')`, then `COALESCE(t.private, FALSE) IN (FALSE, pf.visible)` | `insights_queries` |
+
+Of the ten query-bearing mixins, **nine gate on private one of these ways**. The
+exception is `_JournalDbEntityOps`, which is maintenance and write operations
+rather than a read path.
+
+## What is genuinely not filtered
+
+Not "by-id reads" as a class — `getDayPlanById`, `getLabelDefinitionById` and the
+id-**batch** journal reads (`getJournalEntitiesForIds` and friends) all go through
+the helper. What does not filter is narrower:
+
+- **`journalEntityById`** — the single-entity read behind every detail page.
+- `getDayAudioEntries` and `journalAudioByRecordingSessionId`.
+- `countAllJournalEntries`, which counts deleted rows too.
+
+So the shape is: **lists, searches and batches thin out private entries; fetching
+one entity you already have the id for does not.** That is coherent with what the
+flag is for — it changes what browsing surfaces, not what you can open when you
+already hold the identifier.
+
+Two consequences worth holding on to:
+
+- **The gate is a read filter, not encryption, and not a boundary.** The row is
+  stored like any other, a detail page shows it, and a deep link to one resolves.
+  See [security and privacy](security-and-privacy.md).
+- **A new list or search query must gate deliberately**, by one of the three
+  mechanisms above. Nothing in the type system obliges it, so a read that queries
+  the journal tables directly simply returns private rows — and looks like a
+  working query.
+
 # Backups and maintenance
 
 `createDbBackup(fileName)` copies a database to
 `backup/db.<yyyy-MM-dd_HH-mm-ss-S>.sqlite`. It runs automatically before a
-`JournalDb` migration and on demand from the maintenance surfaces in
-`lib/database/maintenance.dart`, which can also re-run FTS indexing, purge
-deleted entries and recreate derived state. Timestamps come from
-`package:clock`'s `clock.now()`, so tests can drive them with `withClock`.
+`JournalDb` migration and on demand from *Settings → Advanced → Maintenance*.
+Timestamps come from `package:clock`'s `clock.now()`, so tests can drive them
+with `withClock`.
+
+`lib/database/maintenance.dart` holds re-sync and whole-database deletion
+(`reSyncInterval`, `deleteAgentDb`, `deleteEditorDb`, `deleteSyncDb`, and the
+`sent`-outbox purge). **The deleted-entry purge is not there** — `purgeDeleted`
+lives in `lib/database/database_entity_ops.dart` alongside the rest of `JournalDb`'s
+entity operations, which is where to look for it.
 
 # Where to look
 

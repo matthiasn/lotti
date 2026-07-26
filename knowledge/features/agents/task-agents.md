@@ -5,29 +5,29 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
-stale_after: 2027-01-31
+generated: { by: claude-code/opus-5, at: 2026-07-26T17:00:00Z }
+stale_after: 2026-10-12
 sources:
   - id: workflow
     resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
     title: TaskAgentWorkflow
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: strategy
     resource: ../../../lib/features/agents/workflow/task_agent_strategy.dart
     title: TaskAgentStrategy
-    last_modified: 2026-07-25
+    last_modified: 2026-07-12
   - id: confirmation
     resource: ../../../lib/features/agents/service/change_set_confirmation_service.dart
     title: ChangeSetConfirmationService
-    last_modified: 2026-07-25
+    last_modified: 2026-06-13
   - id: adr-0004
     resource: ../../../docs/adr/0004-task-agent-tool-execution-policy.md
     title: ADR 0004 — Task agent tool execution policy
-    last_modified: 2026-07-24
+    last_modified: 2026-04-19
   - id: adr-0006
     resource: ../../../docs/adr/0006-change-set-deferred-tool-confirmation.md
     title: ADR 0006 — Change set deferred tool confirmation
-    last_modified: 2026-07-24
+    last_modified: 2026-02-28
 ---
 
 # Creation
@@ -65,10 +65,14 @@ back into existing agents.
 via an explicit per-task toggle or the next app start's `restoreSubscriptions` —
 **so persisting alone would make the category switch look dead until a restart.**
 
-Four category-default paths construct a task agent and each forwards those
+Five category-default paths construct a task agent and each forwards those
 defaults itself:
 
-- `assignCategoryDefaultTaskAgent()` — every UI creation path
+- `assignCategoryDefaultTaskAgent()` — the shared helper, called from
+  `create_entry.dart` for UI task creation **and** from the day agent's capture
+  tools, so it is not a UI-only path
+- `_assignCategoryAgentForTask()` in `day_agent_capture_service_tools.dart` — a
+  task the day agent creates from a capture, which reaches the helper above
 - `ProjectToolDispatcher._tryAutoAssignTaskAgent()` — tasks a project agent creates
 - `FollowUpTaskHandler._tryAutoAssignAgent()` — follow-up tasks a task agent creates
 - `OnboardingCaptureToTaskService._assignCategoryAgent()` — the first task of a reused area

@@ -39,4 +39,4 @@ lib/features/settings_v2/
 The declarative tree, the two renderings, and the headerless-body embedding
 contract are documented in the knowledge bundle:
 
-**→ [knowledge/features/settings_v2/](../../../knowledge/features/settings_v2/)**
+**→ [knowledge/features/settings_v2.md](../../../knowledge/features/settings_v2.md)**

@@ -6,12 +6,12 @@ resource: ../../analysis_options.yaml
 tags: [convention, style, analyzer, codegen, tokens]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-18
 sources:
   - id: analysis
     resource: ../../analysis_options.yaml
     title: Analyzer configuration
-    last_modified: 2026-06-21
+    last_modified: 2026-06-20
   - id: agents-md
     resource: ../../AGENTS.md
     title: Repository guidelines
@@ -50,9 +50,14 @@ committing.
 are regenerated with `make build_runner` (or the design-system import).
 
 **One trap is worth memorizing: never pair `--build-filter` with
-`--delete-conflicting-outputs`.** In this repo the combination deletes generated
-files *outside* the filter, and `git status` stays clean — so the damage is
-invisible until an unrelated build fails.
+`--delete-conflicting-outputs`.** The combination deletes generated files
+*outside* the filter and does not regenerate them, because the filter excludes
+them from the build that would have rewritten them.
+
+The build itself **succeeds and reports nothing**, so the only signal is `git
+status` showing generated files as deleted — these files are tracked, not
+ignored. Read it before committing, or the deletions travel with the change and
+surface later as an unrelated build failure.
 
 # Design tokens are mandatory
 

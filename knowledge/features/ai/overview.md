@@ -6,12 +6,12 @@ resource: ../../../lib/features/ai
 tags: [ai, inference, configuration, profiles, skills]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-19
 sources:
   - id: ai-src
     resource: ../../../lib/features/ai
     title: AI feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: config
     resource: ../../../lib/features/ai/model/ai_config.dart
     title: AiConfig variants
@@ -19,11 +19,11 @@ sources:
   - id: skills
     resource: ../../../lib/features/ai/skills/built_in_skills.dart
     title: Built-in skill registry
-    last_modified: 2026-07-25
+    last_modified: 2026-06-27
   - id: runtime-settings
     resource: ../../../lib/features/ai/model/ai_runtime_settings.dart
     title: AiRuntimeSettings
-    last_modified: 2026-07-25
+    last_modified: 2026-07-15
 ---
 
 The `ai` feature is the shared AI plumbing behind manual prompts, skill-driven

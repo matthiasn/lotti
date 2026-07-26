@@ -38,4 +38,4 @@ lib/features/dashboards/
 What the feature owns, the item rendering matrix, and the refresh model are
 documented in the knowledge bundle:
 
-**→ [knowledge/features/dashboards/](../../../knowledge/features/dashboards/)**
+**→ [knowledge/features/dashboards.md](../../../knowledge/features/dashboards.md)**

@@ -2,15 +2,16 @@
 type: Architecture
 title: Platform targets, CI and release
 description: Five platform targets from one codebase, the checks every branch runs, and the tag that triggers seven release pipelines.
+resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-31
+generated: { by: claude-code/opus-5, at: 2026-07-26T16:00:00Z }
+stale_after: 2027-01-11
 sources:
   - id: workflows
     resource: ../../.github/workflows
     title: GitHub Actions workflows
-    last_modified: 2026-07-24
+    last_modified: 2026-07-26
   - id: makefile
     resource: ../../Makefile
     title: Developer and build entry points
@@ -60,15 +61,15 @@ Two more run on **every** branch push despite looking scoped:
 - `flatpak-foreign-deps.yml` — path-filtered on *pull requests*, but unfiltered
   on branch pushes.
 
-Genuinely path-filtered, on pull requests only: `manual.yml` (docs-site) and
-`python-tools-ci.yml` (the Python tools).
+Genuinely path-filtered, both on pushes *and* pull requests to `main`:
+`python-tools-ci.yml` (the Python tools) and `manual.yml` (docs-site) — the latter
+also runs on a nightly cron (`23 2 * * *`) and on manual dispatch.
 
-Buildkite pipelines under `.buildkite/` cover the Linux and Windows test lanes
-and JUnit upload. CI runs tests with `very_good test` in a **single thread**,
-which is faster on the low-end runners but unforgiving about resource cleanup:
-a test that leaks a timer, stream subscription or database handle will fail a
-*different* test. That constraint is why the test conventions insist on
-`tearDown` discipline — see [testing conventions](../conventions/testing.md).
+The ten-way shard belongs to `flutter-test-linux-faster.yml` above: it runs
+`very_good test` across a ten-job matrix. **Buildkite is not sharded** — the
+pipelines under `.buildkite/` run a bare `flutter test` for the Linux and Windows
+lanes plus the JUnit upload. What the sharded lane means for how tests must be
+written is in [testing conventions](../conventions/testing.md).
 
 # Release
 
@@ -112,14 +113,14 @@ test-only changes and CI tweaks get none.
 | Code generation | `make build_runner` (watch: `make watch`) |
 | Localization | `make l10n`, `make sort_arb_files` |
 | Integration tests | `make integration_test` |
-| Knowledge bundle check | `make okf_check` |
+| Knowledge bundle check | `make knowledge_check` (validator + mermaid) |
 | Run the app | `fvm flutter run -d <device>` |
 
 Generated files — `*.g.dart`, `*.freezed.dart` — are checked in and must never
-be hand-edited; regenerate with `make build_runner`. One trap is worth
-remembering: **never pair `--build-filter` with `--delete-conflicting-outputs`**
-in this repo. The combination deletes generated files outside the filter and
-leaves `git status` clean, so the damage is invisible until a build fails.
+be hand-edited; regenerate with `make build_runner`. One build-runner flag
+combination is actively destructive; see
+[code style and analysis](../conventions/code-style.md) for it, which is where the
+generated-code rules live.
 
 # Where to look
 

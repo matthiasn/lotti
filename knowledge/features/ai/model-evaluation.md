@@ -6,20 +6,20 @@ resource: ../../../tool
 tags: [ai, evaluation, benchmarking, model-selection]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-19
 sources:
   - id: tools
     resource: ../../../tool
     title: Eval shell entry points
-    last_modified: 2026-07-18
+    last_modified: 2026-07-26
   - id: judge
     resource: ../../../tool/task_agent_model_eval_judge.py
     title: Rubric judge
-    last_modified: 2026-07-18
+    last_modified: 2026-07-12
   - id: eval-docs
     resource: ../../../docs/evaluations/task_agent_models/README.md
     title: Task-agent model evaluations
-    last_modified: 2026-07-18
+    last_modified: 2026-07-12
 ---
 
 Four harnesses sit at increasing levels of fidelity. Each catches a failure the

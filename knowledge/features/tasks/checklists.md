@@ -6,7 +6,7 @@ resource: ../../../lib/features/tasks/ui/checklists
 tags: [tasks, checklists, motion, accessibility]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-25
 sources:
   - id: ui
     resource: ../../../lib/features/tasks/ui/checklists
@@ -15,7 +15,7 @@ sources:
   - id: checklist-feature
     resource: ../../../lib/features/checklist
     title: Correction capture and undo
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: motion
     resource: ../../../lib/features/design_system/components/motion
     title: SizeFadeCollapse and SizeFadeEntrance

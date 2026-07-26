@@ -6,20 +6,20 @@ resource: ../../../lib/features/journal/state/entry_controller.dart
 tags: [journal, entry-controller, editor, drafts, datetime]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-02-01
 sources:
   - id: controller
     resource: ../../../lib/features/journal/state/entry_controller.dart
     title: EntryController
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: datetime
     resource: ../../../lib/features/journal/ui/widgets/entry_details/entry_datetime_range.dart
     title: EntryDateTimeRange
-    last_modified: 2026-07-25
+    last_modified: 2026-07-15
   - id: editor-service
     resource: ../../../lib/services/editor_state_service.dart
     title: EditorStateService
-    last_modified: 2026-07-20
+    last_modified: 2026-06-21
 ---
 
 `EntryController` is the detail-side brain for **one** entry. It loads the
@@ -165,7 +165,7 @@ stateDiagram-v2
     end note
 
     SharedDate --> DifferentDates: toggle separate end date ON<br/>(freeze endDateOverride = current end day)
-    DifferentDates --> SharedDate: toggle OFF<br/>(clear endDateOverride; end collapses onto start date)
+    DifferentDates --> SharedDate: toggle OFF<br/>(clear endDateOverride, end collapses onto start date)
     note right of DifferentDates
       reveals a second End date control;
       either date opens the same calendar page.

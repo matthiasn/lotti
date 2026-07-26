@@ -6,12 +6,12 @@ resource: ../../../lib/features/ai/conversation
 tags: [ai, conversation, tool-calling, streaming]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-19
 sources:
   - id: conversation
     resource: ../../../lib/features/ai/conversation
     title: ConversationRepository and ConversationManager
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
 ---
 
 `ConversationRepository` and `ConversationManager` provide the reusable

@@ -1,44 +1,64 @@
 # Contributing to Lotti
 
-Thanks for your interest in contributing! Lotti is built by and for people who value privacy and data ownership.
+Two things genuinely help: **issue reports** and **translations**. Both are
+valued, and both are read.
 
-## Ways to Contribute
-- Report bugs and request features via Issues: https://github.com/matthiasn/lotti/issues
-- Improve test coverage (see Codecov badge in README)
-- Add or improve translations
-- Submit pull requests for fixes and features
-- Join discussions: https://github.com/matthiasn/lotti/discussions
+## Code pull requests are not accepted
 
-## Current Focus Areas
-- Improving local inference performance
+We do not merge outside code contributions. This is not a judgement on anyone's
+work — it follows from three constraints:
 
-## Future Improvements
-- Chat persistence and richer AI conversation features
-- Enhanced reporting and analytics
-- Easier cross-platform synchronization setup
-- AI-enhanced habit monitoring with custom notifications
+- **Review capacity is the binding limit.** Maintainer time, not ideas, is what
+  gates what lands.
+- **Lotti holds people's personal data on their own devices.** Accepting code we
+  have not reviewed carefully is a risk taken on their behalf, not ours.
+- **AI-generated code arrives faster than anyone can review it**, and varies
+  wildly in quality. Reviewing it properly is expensive; accepting it incorrectly
+  is easy.
 
-## Development Workflow
-- Setup and day-to-day commands are documented in `docs/DEVELOPMENT.md`.
-- Typical flow:
-  - `make deps` → `make analyze` → `make test` (and `make coverage`)
-  - `make l10n` and `make build_runner` when changing ARB files or generated sources
+An unsolicited code PR will be closed unmerged, with thanks and without review.
+We would rather not waste your time, so we are saying it here rather than after
+you have written the code.
 
-## Coding Standards
-- Conventional Commits for messages (e.g., `feat:`, `fix:`, `docs:`, `chore:`)
-- Keep analyzer at zero warnings/info before opening a PR
-- Prefer `const`/`final`; 2-space indentation; follow `analysis_options.yaml`
-- Format code: `dart format .`
-- Don’t modify generated files (`*.g.dart`, `*.freezed.dart`); use `make build_runner`
-- Tests live under `test/` as `*_test.dart`
+**Open an issue instead.** A clear description of the bug, or of the idea and why
+you want it, is genuinely more useful to us than a patch — and costs you far less.
 
-## Pull Requests
-- Include a clear description of the change and, for UI changes, screenshots/GIFs
-- Ensure `make analyze` and `make test` pass
-- Update documentation and localization as needed (`make l10n`)
-- Keep changes focused; avoid unrelated refactors
+Lotti is GPL-3.0. Fork it and build whatever you want on top for yourself.
+
+## Translations are the exception
+
+Translation pull requests **are** welcome, and are the one kind we merge.
+
+- Strings live in the ARB catalogs under `lib/l10n/`. A new or corrected label
+  belongs in **every** catalog, not a subset — the full list, the `app_en_GB`
+  exception and the per-language register rules are in
+  [knowledge/conventions/localization.md](knowledge/conventions/localization.md).
+- The app addresses people **informally**, with Romanian as the deliberate
+  exception. The concept above has the pronouns per language.
+- Never edit the generated `app_localizations_*.dart` files. Edit the `.arb`
+  source and run `make l10n`, then `make sort_arb_files`.
+- **AI-assisted translation is fine**, provided you contribute from a real-name,
+  established GitHub profile rather than a recently created account.
+- If a longer string changes a layout, include a screenshot of the affected
+  screen. Attach it to the PR — please do not commit images to this repository.
+
+## Bug reports
+
+Useful reports beat thorough ones. Include the platform and app version, what you
+did, what you expected, and what happened instead. If it is reproducible, the
+steps matter more than anything else.
+
+There is no telemetry and no crash reporting, so nothing reaches us unless you
+send it. Logs are local: *Settings → Advanced → Logging* controls what is
+recorded, and the files stay on your device until you choose to share them.
 
 ## Security
-- See `SECURITY.md` for vulnerability reporting.
 
-We appreciate your help making Lotti better!
+Please do not open a public issue for a vulnerability. See
+[SECURITY.md](SECURITY.md).
+
+## Building it locally
+
+Setup and day-to-day commands are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md),
+and [GETTING_STARTED.md](GETTING_STARTED.md) covers configuring AI. Both exist so
+you can run and modify your own copy — not as an on-ramp to a pull request.

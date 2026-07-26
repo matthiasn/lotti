@@ -6,7 +6,7 @@ resource: ../../lib/get_it.dart
 tags: [architecture, startup, dependency-injection, get-it, riverpod]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-01-11
 sources:
   - id: main
     resource: ../../lib/main.dart
@@ -19,7 +19,7 @@ sources:
   - id: get-it-helpers
     resource: ../../lib/get_it_helpers.dart
     title: Late and optional service registration
-    last_modified: 2026-07-25
+    last_modified: 2026-06-13
 ---
 
 # Two containers, one boundary

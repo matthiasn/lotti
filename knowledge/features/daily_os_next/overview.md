@@ -6,12 +6,12 @@ resource: ../../../lib/features/daily_os_next
 tags: [daily-os, planning, day-agent, calendar]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: src
     resource: ../../../lib/features/daily_os_next
     title: Daily OS Next source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: day-plan
     resource: ../../../lib/classes/day_plan.dart
     title: Shared day-plan aggregate
@@ -19,7 +19,7 @@ sources:
   - id: adr-0022
     resource: ../../../docs/adr/0022-long-lived-daily-os-planner.md
     title: ADR 0022 — Long-lived Daily OS planner
-    last_modified: 2026-07-24
+    last_modified: 2026-06-09
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination

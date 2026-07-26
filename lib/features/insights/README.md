@@ -45,4 +45,4 @@ The query shape and year-window cache, the data semantics that make the numbers
 trustworthy, and the period-navigation model are documented in the knowledge
 bundle:
 
-**→ [knowledge/features/insights/](../../../knowledge/features/insights/)**
+**→ [knowledge/features/insights.md](../../../knowledge/features/insights.md)**

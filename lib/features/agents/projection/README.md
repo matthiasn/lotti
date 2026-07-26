@@ -17,7 +17,7 @@ and asserting the result never changes.
 
 ## How it works
 
-**→ [knowledge/features/agents_projection/](../../../../knowledge/features/agents_projection/)**
+**→ [knowledge/features/agents/projection.md](../../../../knowledge/features/agents/projection.md)**
 
 For how the projection is used at wake time — reconciled state, multi-head
 tolerance and fork healing — see

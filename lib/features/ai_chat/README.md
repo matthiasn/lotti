@@ -39,7 +39,7 @@ persistence.
 
 ```text
 lib/features/ai_chat/
-├── model/ · repository/ · state/
+├── models/ · repository/ · services/
 └── ui/
 ```
 
@@ -49,4 +49,4 @@ The two controllers, the in-memory session model, the turn flow with concurrent
 tool accumulation, and the single batched retrieval tool are documented in the
 knowledge bundle:
 
-**→ [knowledge/features/ai_chat/](../../../knowledge/features/ai_chat/)**
+**→ [knowledge/features/ai_chat.md](../../../knowledge/features/ai_chat.md)**

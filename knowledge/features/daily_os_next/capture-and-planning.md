@@ -6,12 +6,12 @@ resource: ../../../lib/features/daily_os_next/agents/service
 tags: [daily-os, capture, planning, transcription, tools]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: services
     resource: ../../../lib/features/daily_os_next/agents/service
     title: Capture and plan services
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: state
     resource: ../../../lib/features/daily_os_next/state
     title: Controllers and runtime wiring
@@ -19,7 +19,7 @@ sources:
   - id: adr-0031
     resource: ../../../docs/adr/0031-batch-first-day-audio-capture.md
     title: ADR 0031 — Batch-first day audio capture
-    last_modified: 2026-07-24
+    last_modified: 2026-07-22
 ---
 
 # The tool surface

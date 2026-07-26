@@ -5,13 +5,13 @@ description: "The widgets that belong to no single feature — app-bar chrome, m
 resource: ../../lib/widgets
 tags: [widgets, shared, modals, selection]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T04:45:00Z }
-stale_after: 2027-01-31
+generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
+stale_after: 2027-01-11
 sources:
   - id: src
     resource: ../../lib/widgets
     title: Shared widgets source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 `lib/widgets/` holds the reusable widgets that belong to no single feature.
@@ -34,6 +34,12 @@ composition and app-shell chrome.
 **Buttons are not here.** They all come from `DesignSystemButton` and its
 relatives.
 
+**That table is the documented subset, not the directory listing.** `lib/widgets/`
+holds sixteen groups; the nine not described above — `cards/`, `charts/`,
+`create/`, `date_time/`, `flags/`, `form/`, `media/`, `search/`, `ui/` — are
+undocumented here. Read them directly, and do not infer from this concept that a
+widget has no shared home just because it is absent.
+
 # Modal presentation is mostly centralized
 
 `ModalUtils` is the **only public export** of `lib/widgets/modal/`, and it is how
@@ -51,7 +57,7 @@ assuming a single entry point:
 | Flow | Why |
 |------|-----|
 | [The Daily OS planning modal](../features/daily_os_next/ui-surfaces.md) | Calls `WoltModalSheet.show` directly and picks its responsive type itself, because it needs a right-anchored full-height **side panel** on wide screens rather than a centred dialog. It still borrows `ModalUtils` helpers for the barrier colour and its sliver pages |
-| [What's New](../features/whats_new/) | Invokes Wolt directly for its own presentation |
+| [What's New](../features/whats_new.md) | Invokes Wolt directly for its own presentation |
 
 So the accurate rule is: `ModalUtils` owns the shared styling and navigation
 helpers, and a flow may own its presentation when its layout genuinely differs —

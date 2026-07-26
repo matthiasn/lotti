@@ -34,6 +34,8 @@ String _concept({
 type: $type
 title: Speech
 description: Audio capture.
+resource: ../../lib/features/speech
+tags: [speech]
 $house$extra---
 
 $body
@@ -89,6 +91,8 @@ void main() {
 ---
 title: Speech
 description: Audio capture.
+resource: ../../lib/features/speech
+tags: [speech]
 $_houseKeys---
 
 Body.
@@ -219,15 +223,18 @@ Body.
       expect(_messages(result), isEmpty);
     });
 
-    test('a minimal concept carrying only type is conformant (§4.1)', () {
+    test('a concept carrying only type fails every house rule', () {
+      // §4.1 asks for nothing but `type`, so this document is spec-conformant.
+      // This repo requires the rest, because a concept with no description, no
+      // freshness date and no sources is precisely the one whose drift nobody
+      // can detect — so each missing key is an error here, not a suggestion.
       final result = validateBundle(
         _bundle('---\ntype: Reference\n---\n\nx\n'),
       );
 
-      expect(result.isConformant, isTrue);
-      // ... but the house rules still ask for every recommended key.
+      expect(result.isConformant, isFalse);
       expect(
-        _joined(result.warnings),
+        _joined(result.errors),
         allOf(
           contains('`title`'),
           contains('`description`'),
@@ -237,6 +244,7 @@ Body.
           contains('`sources`'),
         ),
       );
+      expect(result.warnings, isEmpty);
     });
   });
 
@@ -346,9 +354,9 @@ sources:
         ),
       );
 
-      expect(result.isConformant, isTrue);
+      expect(result.isConformant, isFalse);
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('does not follow the actor convention'),
       );
     });
@@ -370,7 +378,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('draft, stable, deprecated'),
       );
     });
@@ -381,9 +389,83 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('absolute `YYYY-MM-DD` date'),
       );
+    });
+
+    test('an expired stale_after fails the build', () {
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-01-31'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+
+      // An error, not a warning: the date is a commitment to re-read by, and a
+      // reminder nothing ever fails on is not a reminder.
+      expect(result.isConformant, isFalse);
+      expect(
+        result.errors.single.message,
+        contains('`stale_after` passed on 2026-01-31'),
+      );
+    });
+
+    test('the day stale_after names is not yet an error', () {
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-07-26'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+
+      // Due today, not overdue — so it warns rather than failing the build.
+      expect(result.isConformant, isTrue);
+      expect(result.warnings.single.message, contains('0 day(s) away'));
+    });
+
+    test('a future stale_after is silent', () {
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2027-01-31'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a stale_after inside the warning window warns without failing', () {
+      // Without this, the first signal that a date had arrived was a red push,
+      // for a whole subsystem at once — the dates are batched by subsystem.
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-08-05'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+
+      expect(result.isConformant, isTrue);
+      expect(
+        result.warnings.single.message,
+        allOf(contains('2026-08-05'), contains('10 day(s) away')),
+      );
+    });
+
+    test('the day the window opens warns, the day before is silent', () {
+      final onEdge = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-08-09'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+      final outside = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-08-10'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+
+      expect(onEdge.warnings, hasLength(1), reason: '14 days away');
+      expect(outside.issues, isEmpty, reason: '15 days away');
+    });
+
+    test('expiry is not checked when the caller names no day', () {
+      // Callers that omit `today` — every test fixture above — must not pick up
+      // a clock-dependent result, or the suite would start failing on a date.
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2020-01-01'))),
+      );
+
+      expect(result.issues, isEmpty);
     });
 
     test('generated.at must be a datetime, not a bare date', () {
@@ -402,7 +484,7 @@ sources:
         ),
       );
 
-      expect(result.warnings.single.message, contains('ISO 8601 datetime'));
+      expect(result.errors.single.message, contains('ISO 8601 datetime'));
     });
 
     test('duplicate source ids are flagged because footnotes join on them', () {
@@ -424,7 +506,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('duplicate `sources[].id`'),
       );
     });
@@ -444,7 +526,7 @@ sources:
       );
 
       expect(
-        _joined(result.warnings),
+        _joined(result.errors),
         contains('present but null'),
       );
     });
@@ -463,7 +545,7 @@ sources: []
         ),
       );
 
-      expect(result.warnings.single.message, contains('`sources` is empty'));
+      expect(result.errors.single.message, contains('`sources` is empty'));
     });
 
     test('a bundle-absolute source resource is resolved in the bundle', () {
@@ -488,7 +570,7 @@ sources:
       // Not `.single`: a source set that is entirely bundle-internal also trips
       // the provenance rule, which is correct for this fixture.
       expect(
-        _joined(result.warnings),
+        _joined(result.issues),
         allOf(
           contains('`sources[].resource`'),
           contains('does not exist in the bundle'),
@@ -516,7 +598,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('`sources[].resource` must be a non-empty string'),
       );
     });
@@ -538,7 +620,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('`resource` is required'),
       );
     });
@@ -553,7 +635,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('absolute `YYYY-MM-DD` date'),
       );
     });
@@ -564,7 +646,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('absolute `YYYY-MM-DD` date'),
       );
     });
@@ -593,7 +675,7 @@ sources:
         ),
       );
 
-      expect(result.warnings.single.message, contains('ISO 8601 datetime'));
+      expect(result.errors.single.message, contains('ISO 8601 datetime'));
     });
 
     test('an offset-bearing timestamp is accepted', () {
@@ -633,7 +715,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('`sources[].last_modified` must be `YYYY-MM-DD`'),
       );
     });
@@ -658,9 +740,13 @@ sources:
         ),
       );
 
-      final messages = _joined(result.issues);
+      // Warnings on purpose: nothing in this bundle uses the type, so a missing
+      // field is not worth failing a build over. Pinned, so an accidental
+      // promotion to error is caught rather than silently accepted.
+      final messages = _joined(result.warnings);
       expect(messages, contains('`runtime` is required'));
       expect(messages, contains('`# Computation` body section'));
+      expect(result.errors, isEmpty);
     });
 
     test('a body computation section satisfies the requirement', () {
@@ -691,12 +777,13 @@ sources:
           ),
         );
 
-        final messages = _joined(result.issues);
+        final messages = _joined(result.warnings);
         expect(
           messages,
           contains('`computation` must be a path'),
           reason: 'computation: $value should be rejected as a path',
         );
+        expect(result.errors, isEmpty, reason: 'stays advisory');
         expect(
           messages,
           contains('`# Computation` body section'),
@@ -860,6 +947,213 @@ sources:
     });
   });
 
+  group('resource and tags are required, not merely documented', () {
+    // The convention has always described these as part of the frontmatter every
+    // concept carries. Until they joined the required set, two architecture
+    // concepts had no `resource` at all and validated clean.
+    test('a concept with no resource is an error', () {
+      final result = validateBundle(
+        _bundle('''
+---
+type: Feature Module
+title: Speech
+description: Audio capture.
+tags: [speech]
+$_houseKeys---
+
+Body.
+'''),
+      );
+
+      expect(
+        result.errors.map((e) => e.message).single,
+        contains('missing `resource`'),
+      );
+    });
+
+    test('a concept with no tags is an error', () {
+      final result = validateBundle(
+        _bundle('''
+---
+type: Feature Module
+title: Speech
+description: Audio capture.
+resource: ../../lib/features/speech
+$_houseKeys---
+
+Body.
+'''),
+      );
+
+      expect(
+        result.errors.map((e) => e.message).single,
+        contains('missing `tags`'),
+      );
+    });
+
+    test('an empty resource string is an error, not just a present key', () {
+      // `resource: ""` satisfied containsKey, is not null, and is skipped by both
+      // reference checks — so it validated clean while the convention promised
+      // that an empty value fails the build.
+      final result = validateBundle(
+        _bundle('''
+---
+type: Feature Module
+title: Speech
+description: Audio capture.
+resource: ""
+tags: [speech]
+$_houseKeys---
+
+Body.
+'''),
+      );
+
+      expect(
+        result.errors.map((e) => e.message).single,
+        contains('`resource` must be a non-empty string'),
+      );
+    });
+
+    test('an empty tags list is an error', () {
+      final result = validateBundle(
+        _bundle('''
+---
+type: Feature Module
+title: Speech
+description: Audio capture.
+resource: ../../lib/features/speech
+tags: []
+$_houseKeys---
+
+Body.
+'''),
+      );
+
+      expect(
+        result.errors.map((e) => e.message).single,
+        contains('`tags` must be a non-empty list'),
+      );
+    });
+
+    test('a repo-wide concept may name the repository root as its subject', () {
+      // `../..` from `knowledge/architecture/` normalizes to the empty string,
+      // and neither `File('')` nor `Directory('')` exists — so a concept whose
+      // subject genuinely is the whole repository used to read as a dangling
+      // pointer.
+      final issues = validateRepoReferences(
+        files: {
+          'architecture/platform-and-release.md':
+              '---\ntype: Architecture\nresource: ../..\n---\n\nBody.\n',
+        },
+        bundleRoot: 'knowledge',
+        repoFileExists: (path) => path == '.',
+      );
+
+      expect(issues, isEmpty);
+    });
+  });
+
+  group('fenced blocks must close on their own line', () {
+    // The shape that shipped: a mermaid diagram whose closing fence had a
+    // sentence welded to it. CommonMark does not accept that as a close, so
+    // every remaining line of the concept rendered as code — and the link
+    // scanner, which is looser about where a block ends, saw nothing wrong.
+    test('a closing fence with prose after it does not close the block', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            body: '```mermaid\nflowchart TD\n  A --> B\n``` and then prose.\n',
+          ),
+        ),
+      );
+
+      expect(
+        result.errors.single.message,
+        contains('is never closed by a line containing only the delimiter'),
+      );
+      // Whole-file line, not body-relative: 13 lines of frontmatter, a blank,
+      // then the opening fence — so the reported number is the one an editor
+      // jumps to.
+      expect(result.errors.single.line, 15);
+    });
+
+    test('a properly closed block is silent', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            body: '```mermaid\nflowchart TD\n  A --> B\n```\n\nProse.\n',
+          ),
+        ),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a longer closing fence closes a shorter opener', () {
+      final result = validateBundle(
+        _bundle(_concept(body: '```dart\nvar x = 1;\n`````\n')),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a four-space-indented fence is a literal, not a block', () {
+      // CommonMark: at four spaces it is an indented code block — a documented
+      // *example* of a fence. Trimming the indent made it open a real block, so a
+      // doc showing mermaid syntax could be flagged as an unclosed diagram.
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            body: 'How to write one:\n\n    ```mermaid\n    flowchart TD\n',
+          ),
+        ),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a three-space-indented fence is still a real block', () {
+      final result = validateBundle(
+        _bundle(_concept(body: '   ```mermaid\n   flowchart TD\n')),
+      );
+
+      expect(
+        result.errors.single.message,
+        contains('is never closed'),
+      );
+    });
+
+    test('an indented closing fence still closes, up to three spaces', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(body: '```mermaid\nflowchart TD\n  A --> B\n   ```\n'),
+        ),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a tilde block is not closed by backticks', () {
+      final result = validateBundle(
+        _bundle(_concept(body: '~~~text\nplain\n```\n')),
+      );
+
+      expect(
+        result.errors.single.message,
+        contains('opened with `~~~`'),
+      );
+    });
+
+    test('an unterminated block at end of file is reported', () {
+      final result = validateBundle(
+        _bundle(_concept(body: '```mermaid\nflowchart TD\n  A --> B\n')),
+      );
+
+      expect(result.errors, hasLength(1));
+    });
+  });
+
   group('reference-style links', () {
     test('a reference definition with no bundle target warns', () {
       final result = validateBundle(
@@ -974,8 +1268,16 @@ sources:
       );
 
       expect(
-        _joined(result.issues),
+        _joined(result.warnings),
         contains('`sources[].resource` `missing.dart` does not exist'),
+      );
+      // The severity split, pinned in one place: a bundle-internal target that
+      // does not exist is a warning because §6.1 permits a forward pointer,
+      // while a source set that never leaves the bundle is an error. Asserting
+      // on `issues` alone would let either half flip unnoticed.
+      expect(
+        _joined(result.errors),
+        contains('grounded in nothing the drift check can verify'),
       );
     });
 
@@ -1000,7 +1302,7 @@ sources:
       );
 
       expect(
-        _joined(result.issues),
+        _joined(result.errors),
         contains('grounded in nothing the drift check can verify'),
       );
     });
@@ -1058,7 +1360,7 @@ sources:
       );
 
       expect(
-        _joined(result.issues),
+        _joined(result.errors),
         contains('grounded in nothing the drift check can verify'),
       );
     });

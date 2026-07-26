@@ -6,28 +6,28 @@ resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-12
 sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
     title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine
-    last_modified: 2026-07-25
+    last_modified: 2026-07-22
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason
-    last_modified: 2026-07-25
+    last_modified: 2026-07-13
   - id: runtime-settings
     resource: ../../../lib/features/ai/model/ai_runtime_settings.dart
     title: Concurrency bounds
-    last_modified: 2026-07-25
+    last_modified: 2026-07-15
   - id: adr-0002
     resource: ../../../docs/adr/0002-wake-scheduling-and-throttling-policy.md
     title: ADR 0002 — Wake scheduling and throttling policy
-    last_modified: 2026-07-24
+    last_modified: 2026-06-10
   - id: adr-0022
     resource: ../../../docs/adr/0022-long-lived-daily-os-planner.md
     title: ADR 0022 — Long-lived Daily OS planner
-    last_modified: 2026-07-24
+    last_modified: 2026-06-09
 ---
 
 # Why the design is this defensive

@@ -6,7 +6,7 @@ resource: ../../../lib/features/daily_os_next/agents
 tags: [daily-os, agents, identity, adr-0022, adr-0032]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: identity
     resource: ../../../lib/features/daily_os_next/agents/domain/day_agent_identity.dart
@@ -15,11 +15,11 @@ sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Day-agent services and workflow
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: adr-0022
     resource: ../../../docs/adr/0022-long-lived-daily-os-planner.md
     title: ADR 0022 — Long-lived Daily OS planner
-    last_modified: 2026-07-24
+    last_modified: 2026-06-09
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination

@@ -6,16 +6,16 @@ resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
 tags: [agents, project-agent, event-agent, digest, notifications]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-12
 sources:
   - id: project-workflow
     resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
     title: ProjectAgentWorkflow
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
   - id: event-workflow
     resource: ../../../lib/features/agents/workflow/event_agent_workflow.dart
     title: EventAgentWorkflow
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
   - id: project-service
     resource: ../../../lib/features/agents/service/project_agent_service.dart
     title: ProjectAgentService (creation and announcement)

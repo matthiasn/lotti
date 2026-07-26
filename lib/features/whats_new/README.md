@@ -36,4 +36,4 @@ The remote-content-with-local-gating split, and the consequences of filtering by
 installed version and keeping seen-state per device, are documented in the
 knowledge bundle:
 
-**→ [knowledge/features/whats_new/](../../../knowledge/features/whats_new/)**
+**→ [knowledge/features/whats_new.md](../../../knowledge/features/whats_new.md)**

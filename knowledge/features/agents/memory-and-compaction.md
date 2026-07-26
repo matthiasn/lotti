@@ -2,32 +2,40 @@
 type: Feature Module
 title: Agent memory and log compaction
 description: The append-only input event log, LLM-distilled summary checkpoints, the byte-stable prompt prefix invariant, state-as-projection, and fork healing.
-resource: ../../../lib/features/agents/memory
+resource: ../../../lib/features/agents/projection
 tags: [agents, memory, compaction, event-log, prefix-cache]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-12
 sources:
+  - id: projection
+    resource: ../../../lib/features/agents/projection
+    title: Event log, input capture, checkpoint selection, the pure fold
+    last_modified: 2026-07-26
+  - id: summarizer
+    resource: ../../../lib/features/agents/service/agent_log_llm_summarizer.dart
+    title: Summary checkpoint writer
+    last_modified: 2026-07-21
   - id: agents-src
     resource: ../../../lib/features/agents
     title: Agents feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: adr-0017
     resource: ../../../docs/adr/0017-deterministic-log-compaction.md
     title: ADR 0017 — Deterministic log compaction
-    last_modified: 2026-07-24
+    last_modified: 2026-06-09
   - id: adr-0020
     resource: ../../../docs/adr/0020-agent-input-capture.md
     title: ADR 0020 — Agent input capture
-    last_modified: 2026-07-24
+    last_modified: 2026-06-05
   - id: adr-0016
     resource: ../../../docs/adr/0016-agent-state-as-log-projection.md
     title: ADR 0016 — Agent state as log projection
-    last_modified: 2026-07-24
+    last_modified: 2026-06-05
   - id: adr-0018
     resource: ../../../docs/adr/0018-convergent-multi-device-execution.md
     title: ADR 0018 — Convergent multi-device execution
-    last_modified: 2026-07-24
+    last_modified: 2026-06-05
 ---
 
 # There is no memory blob
@@ -68,7 +76,7 @@ read-flip gates), so failure isolation and diagnostics are identical everywhere.
 stateDiagram-v2
   [*] --> Idle
   Idle --> Capturing: wake reads user content
-  Capturing --> Capturing: per source — dedupe payload by contentDigest; append messagePayload link; retract vanished sources
+  Capturing --> Capturing: per source — dedupe payload by contentDigest, append messagePayload link, retract vanished sources
   Capturing --> Folding: event log appended
   Folding --> Compacting: visible tail beyond trigger watermark?
   Compacting --> Idle: append summary checkpoint with cutoff = last folded event
@@ -308,7 +316,7 @@ stateDiagram-v2
   SingleHead --> Forked: two devices append off the same head (concurrent messagePrev children)
   Forked --> Forked: local view still settling (dangling parent or pending join edges) — defer
   Forked --> Joining: a wake starts and observes ≥2 heads over a complete view
-  Joining --> SingleHead: appendJoin (messagePrev → all heads); recentHeadMessageId := joinId; prefix re-warms
+  Joining --> SingleHead: appendJoin (messagePrev → all heads), recentHeadMessageId becomes joinId, prefix re-warms
   Joining --> SingleHead: peer emitted the same joinId concurrently → set-union merges to one node
 ```
 

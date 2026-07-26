@@ -6,7 +6,7 @@ resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
 tags: [daily-os, outbox, jobs, durability, adr-0044]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-26
 sources:
   - id: schema
     resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
@@ -23,7 +23,7 @@ sources:
   - id: adr-0044
     resource: ../../../docs/adr/0044-day-processing-outbox-storage.md
     title: ADR 0044 — Day processing outbox storage
-    last_modified: 2026-07-24
+    last_modified: 2026-07-25
 ---
 
 # A table, not a file per job
@@ -139,7 +139,7 @@ sequenceDiagram
   Wake-->>Executor: runCompletions event (completed/failed/aborted)
   Executor->>Outbox: markSucceeded(resultEntityId) / markFailure(class)
   Outbox-->>UI: changes stream fires
-  UI->>UI: _awaitJobTerminal resolves; project plan/diff
+  UI->>UI: _awaitJobTerminal resolves, then projects plan/diff
 ```
 
 `DayAgentJobExecutor`:

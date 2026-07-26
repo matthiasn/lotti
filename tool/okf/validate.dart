@@ -25,8 +25,39 @@ String _toRepoRelative(String bundleRoot) {
   exit(1);
 }
 
+/// Flags this CLI understands. Anything else is rejected rather than ignored:
+/// an unrecognised `--flag` used to be filtered out of the positional list and
+/// then never looked at, so a near-miss like `--warnings-as-error` silently ran
+/// in non-strict mode and reported a clean bundle that had not been checked
+/// strictly at all.
+const _knownFlags = {'--warnings-as-errors'};
+
+const _usage = '''
+Validates the OKF knowledge bundle.
+
+Usage: dart run tool/okf/validate.dart [bundle-dir] [--warnings-as-errors]
+
+  bundle-dir             Defaults to `knowledge`.
+  --warnings-as-errors   Exit non-zero on warnings too.
+
+Exits 0 when the bundle is conformant, 1 otherwise.''';
+
 void main(List<String> args) {
+  if (args.contains('--help') || args.contains('-h')) {
+    stdout.writeln(_usage);
+    return;
+  }
   final positional = args.where((a) => !a.startsWith('--')).toList();
+  final unknown = args.where(
+    (a) => a.startsWith('--') && !_knownFlags.contains(a),
+  );
+  if (unknown.isNotEmpty) {
+    stderr.writeln(
+      'error: unknown flag(s) ${unknown.join(', ')}; supported: '
+      '${_knownFlags.join(', ')}',
+    );
+    exit(1);
+  }
   final strict = args.contains('--warnings-as-errors');
   final bundleRoot = _toRepoRelative(
     positional.isEmpty ? 'knowledge' : positional.first,
@@ -50,7 +81,7 @@ void main(List<String> args) {
         : '';
   }
 
-  final result = validateBundle(files);
+  final result = validateBundle(files, today: DateTime.now());
   final repoIssues = validateRepoReferences(
     files: files,
     bundleRoot: bundleRoot,

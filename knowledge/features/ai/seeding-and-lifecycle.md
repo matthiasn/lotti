@@ -6,7 +6,7 @@ resource: ../../../lib/features/ai/util/profile_seeding_service.dart
 tags: [ai, seeding, migration, soft-delete, lifecycle]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2027-01-31
+stale_after: 2026-10-19
 sources:
   - id: seeding
     resource: ../../../lib/features/ai/util/profile_seeding_service.dart
@@ -107,12 +107,12 @@ stateDiagram-v2
       Only hard delete returns here, and
       only where re-seeding is the intent.
     end note
-``` The row itself is the tombstone, which
-makes "deleted" distinguishable from "never seeded" in the same database and the
-same write. Because `SyncMessage.aiConfig` already carries the whole config, the
-deletion replicates on the existing sync path and converges across devices with
-no separate ledger and no new message type — mirroring how the journal domain
-deletes synced entities.
+```
+
+Because `SyncMessage.aiConfig` already carries the whole config, the deletion
+replicates on the existing sync path and converges across devices with no separate
+ledger and no new message type — mirroring how the journal domain deletes synced
+entities.
 
 Reads split by intent:
 

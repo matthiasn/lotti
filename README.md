@@ -246,7 +246,7 @@ The application is in active daily use. The agentic layer is real, working, and 
 
 - **Design system rollout is in progress.** Some screens follow the new design system, some don't yet, so you'll see visual inconsistencies. The path to full App Store polish is an ongoing effort.
 - **The agentic layer is new.** Mission/soul/report‑directive ergonomics, grievance handling, and pruning strategies are areas of active development — feedback here is especially valuable.
-- **Local image generation isn't there yet.** See the contribution call below.
+- **Local image generation isn't there yet.** Cloud image models work; a local, on-device image-generation service does not exist yet.
 - **At‑rest encryption isn't there yet.** See [Sync, Encryption, and Caveats](#sync-encryption-and-caveats).
 
 ---
@@ -299,26 +299,18 @@ A short, honest version of where this is headed.
 
 ## Contributing
 
-Contributions are welcome — but with deliberate boundaries. Please read this before opening a PR.
+Two things genuinely help, and one thing to know up front.
 
-### What's very welcome
+**Welcome:**
 
 - 🐛 **Issues and bug reports** — the best place to start. Tell us what broke and how to reproduce it.
-- 🌍 **Translations** — new languages, corrections, improvements to existing locales (currently English, Danish, German, Spanish, French, Italian, Dutch, Portuguese, Romanian, Czech, Swedish). AI‑assisted translations are fine **provided you contribute from a real‑name, established GitHub profile** (not a recently created throwaway).
-- 💡 **Discussion of new features** — open an issue, describe what you'd like to have and why, and let's agree on the shape before any code is written.
-- 🐍 **Local image generation service** — a reliable, local Python‑based image‑gen service (following the same architecture as our local Voxtral integration) is a **specifically wanted contribution**. If you have experience in this area and want to take it on, please open an issue first so we can align on the integration shape.
+- 🌍 **Translations** — new languages and corrections to existing ones. AI‑assisted translation is fine **provided you contribute from a real‑name, established GitHub profile**. Translation PRs are the one kind we merge.
 
-### What will be rejected by default
+**Not accepted: code pull requests.** Review capacity is the binding constraint, Lotti holds people's personal data on their own devices, and AI‑generated code now arrives far faster than it can be reviewed carefully. An unsolicited code PR will be closed unmerged, with thanks and without review — so please open an issue instead of writing the patch. It is more useful to us and cheaper for you.
 
-**Unsolicited large pull requests.** This isn't gatekeeping — it's three real constraints:
+Lotti is GPL‑3.0: fork it and build whatever you like on top for yourself.
 
-1. **AI‑generated code varies wildly in quality.** A 2,000‑line PR from someone we've never spoken to is, statistically, expensive to review carefully and easy to accept incorrectly.
-2. **Review capacity is limited.** Maintainer time is the binding constraint on what can land.
-3. **Trust matters.** Lotti holds people's personal data on their own devices. A large unreviewed PR — well‑meant or not — is a vector for problems we can't afford to ship.
-
-So: **for any non‑trivial feature, open an issue first.** We'll talk about it, agree on scope, and then a PR might be welcome. Small, focused PRs that fix a clear bug are also welcome without prior discussion.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the formal version.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the details, including what makes a translation PR mergeable.
 
 ---
 
@@ -328,6 +320,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the formal version.
 - [Manual](https://matthiasn.github.io/lotti/manual/development/) — how to use Lotti
 - [Task management and voice capture](https://matthiasn.github.io/lotti/manual/development/getting-started/first-task/) — the everyday voice-to-checklist workflow
 - [Architecture](docs/ARCHITECTURE.md) — technical design
+- [Knowledge bundle](knowledge/index.md) — how the app actually works at runtime, subsystem by subsystem, written to be read by contributors and coding agents alike
 - [Background](docs/BACKGROUND.md) — the story behind the project
 - [Privacy Policy](PRIVACY.md)
 - [Contributing](CONTRIBUTING.md)

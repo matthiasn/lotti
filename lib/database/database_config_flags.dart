@@ -3,9 +3,13 @@ part of 'database.dart';
 /// Config-flag state, lookups, and private-visibility helpers for
 /// [JournalDb].
 ///
-/// Owns the in-memory flag cache behind [watchConfigFlags] and the
-/// `private` visibility gate that every query mixin routes through via
-/// [_queryWithPrivateFilter].
+/// Owns the in-memory flag cache behind [watchConfigFlags] and
+/// [_queryWithPrivateFilter], **one of three ways** a read gates on the
+/// `private` flag — the others being `privateStatuses` passed in by the caller
+/// (the task query mixins) and raw SQL reading `config_flags` directly
+/// (`_JournalDbInsightsQueries`). Not every query mixin routes through this
+/// helper, and single-entity reads such as `journalEntityById` do not filter at
+/// all: the flag thins what browsing surfaces, not what an id can open.
 mixin _JournalDbConfigFlags on _$JournalDb {
   final Map<String, ConfigFlag> _configFlagsByName = <String, ConfigFlag>{};
   final StreamController<Set<ConfigFlag>> _configFlagsController =

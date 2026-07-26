@@ -6,20 +6,20 @@ resource: ../../../lib/features/journal/state/journal_page_controller.dart
 tags: [journal, search, pagination, linked-entries, focus]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:30:00Z }
-stale_after: 2027-01-31
+stale_after: 2027-02-01
 sources:
   - id: page-controller
     resource: ../../../lib/features/journal/state/journal_page_controller.dart
     title: JournalPageController
-    last_modified: 2026-07-25
+    last_modified: 2026-07-20
   - id: linked
     resource: ../../../lib/features/journal/state/linked_entries_controller.dart
     title: LinkedEntriesController
-    last_modified: 2026-07-25
+    last_modified: 2026-06-26
   - id: db-queries
     resource: ../../../lib/database/database_task_queries.dart
     title: Task query paths
-    last_modified: 2026-07-25
+    last_modified: 2026-06-13
 ---
 
 # One controller, two tabs

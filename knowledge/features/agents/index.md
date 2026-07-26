@@ -1,6 +1,6 @@
 # Agents
 
-The persisted agent runtime: five agent kinds, their wake scheduling, memory, and
+The persisted agent runtime: the agent kinds, their wake scheduling, memory, and
 the human review gates in front of every task mutation.
 
 * [Overview](overview.md) - agent kinds, lifecycle, startup wiring, and the code reading guide.
@@ -10,6 +10,7 @@ the human review gates in front of every task mutation.
 * [Project and event agents](project-and-event-agents.md) - the digest-shaped and recap-shaped variants.
 * [Templates, souls and evolution](templates-souls-evolution.md) - skills versus personality, and the ritual loop that evolves both.
 * [Persistence and sync](persistence-and-sync.md) - the agent.sqlite entity and link model, and exactly what leaves the device.
+* [Projection kernel](projection.md) - the pure fold under the agent log, and the permutation-invariance proof that makes replay order irrelevant.
 * [UI surfaces](ui-surfaces.md) - the AI summary card, internals panel, settings tabs and sidebar wake queue.
 
 # Related

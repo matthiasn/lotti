@@ -5,8 +5,8 @@ description: "The rules that keep a single-threaded CI lane green — fake time,
 resource: ../../test/README.md
 tags: [convention, testing, fake-time, glados, ci]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T04:30:00Z }
-stale_after: 2027-01-31
+generated: { by: claude-code/opus-5, at: 2026-07-26T15:00:00Z }
+stale_after: 2027-01-18
 sources:
   - id: test-readme
     resource: ../../test/README.md
@@ -24,11 +24,29 @@ sources:
 
 # The constraint that shapes everything
 
-**CI runs tests with `very_good test` in a single thread.** That is faster on the
-low-end runners, but it is unforgiving: a test that leaks a timer, a stream
-subscription or a database handle fails *a different test*, often in another file.
+**On CI, every test in a shard shares one isolate — so a leak can fail a test in a
+file you never touched.** A timer, stream subscription, database handle or
+unconsumed Mocktail matcher left behind outlives its own test and breaks a later,
+unrelated one. Almost every rule below exists because of that.
 
-Almost every rule below exists because of that.
+The mechanism is `very_good test`'s **optimizer, which is on by default** and which
+CI does not disable: it generates a single `.test_optimizer.dart` importing every
+test file, and `package:test` then slices *that one suite* into the ten shards. So
+`--concurrency` is not what bounds the blast radius, and the isolation you get
+under a plain `fvm flutter test <file>` locally — one isolate per file — is **not**
+what CI runs.
+
+Two consequences:
+
+- **A leak's victim is not deterministic.** Which test breaks depends on the
+  bundle order inside a shard, which is why these failures show up on one
+  machine or one shard and not another.
+- **Passing locally proves less than it looks.** A file that passes alone can
+  still be the file that breaks CI.
+
+`test/flutter_test_config.dart` registers a global `tearDown(resetMocktailState)`
+for exactly this reason. [`test/README.md`](../../test/README.md) carries the full
+account of the Mocktail case; do not re-derive it here.
 
 # Fake time is mandatory
 
@@ -118,6 +136,20 @@ and position. Examples of this discipline in practice:
 
 # Running them
 
-`make test` for the suite with coverage, `make coverage` for the HTML report, or a
-targeted `fvm flutter test <path>` while iterating. **Do not run the whole suite
-casually** — it is slow and rarely what a focused change needs.
+**Locally, run the test files for the source files you actually touched.**
+`fvm flutter test <path/to/one_test.dart>` — that is the unit of work, not the
+directory it sits in.
+
+**Not the whole suite, and not a whole feature either.** A single feature's suite
+— `agents` is the clearest case — runs for many minutes locally, and worse inside
+a Linux VM, which is long enough to stall the work the tests exist to protect.
+CI is both faster and free of your machine: the Linux lane shards
+`very_good test` **ten ways** across parallel matrix jobs. Push, keep working,
+read the result when it lands.
+
+Two exceptions, and only two: when someone asks for a broader run, and when a
+change's blast radius genuinely cannot be bounded to the files you touched — a
+shared test helper, a `getIt` registration, a design-system token. Even then,
+prefer letting CI do the sweep.
+
+`make coverage` builds the HTML report when you genuinely need it.
