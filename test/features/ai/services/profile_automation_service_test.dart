@@ -270,22 +270,15 @@ void main() {
   late List<String> automationLookupTaskIds;
   late MockDomainLogger mockDomainLogger;
 
+  late List<String> capturedLogLines;
+
   /// Every `LogDomain.ai` line the service emitted, as "subDomain: message".
-  List<String> loggedLines() {
-    final captured = verify(
-      () => mockDomainLogger.log(
-        captureAny(),
-        captureAny(),
-        subDomain: captureAny(named: 'subDomain'),
-      ),
-    ).captured;
-    final lines = <String>[];
-    for (var i = 0; i < captured.length; i += 3) {
-      expect(captured[i], LogDomain.ai);
-      lines.add('${captured[i + 2]}: ${captured[i + 1]}');
-    }
-    return lines;
-  }
+  ///
+  /// Recorded from the stub rather than read back through `verify(...)
+  /// .captured`, because mocktail's `verify` throws when there are no matching
+  /// calls — and "logged nothing at all" is exactly what the capability-probe
+  /// tests need to assert.
+  List<String> loggedLines() => capturedLogLines;
 
   setUp(() {
     originalIsMacOS = platform.isMacOS;
@@ -295,13 +288,20 @@ void main() {
     mockResolver = MockProfileAutomationResolver();
     mockAiConfig = MockAiConfigRepository();
     mockDomainLogger = MockDomainLogger();
+    capturedLogLines = [];
     when(
       () => mockDomainLogger.log(
         any(),
         any(),
         subDomain: any(named: 'subDomain'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((invocation) {
+      expect(invocation.positionalArguments[0], LogDomain.ai);
+      capturedLogLines.add(
+        '${invocation.namedArguments[#subDomain]}: '
+        '${invocation.positionalArguments[1]}',
+      );
+    });
     service = ProfileAutomationService(
       resolver: mockResolver,
       aiConfigRepository: mockAiConfig,
@@ -1390,6 +1390,161 @@ void main() {
         );
         expect(line, contains('[id:task-a]'));
         expect(line, isNot(contains('secret-suffix')));
+      });
+
+      // The direct fallback is the second half of transcription and used to
+      // decline without saying anything, so a configured-but-unusable speech
+      // model looked identical to no configuration at all.
+      test(
+        'the direct fallback says when no speech model is configured',
+        () async {
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer(
+            (_) async => [
+              makeModel(inputModalities: const [Modality.text]),
+            ],
+          );
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isFalse);
+          expect(
+            loggedLines(),
+            contains(
+              allOf(
+                startsWith('directFallback:'),
+                contains('no speech-to-text model is configured'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('the direct fallback tallies why each speech model lost', () async {
+        when(
+          () => mockResolver.resolveForTask('task-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            makeModel(id: 'model-orphan', providerId: 'provider-gone'),
+            makeModel(id: 'model-keyless', providerId: 'provider-openai'),
+          ],
+        );
+        when(
+          () => mockAiConfig.getConfigById('provider-gone'),
+        ).thenAnswer((_) async => null);
+        when(() => mockAiConfig.getConfigById('provider-openai')).thenAnswer(
+          (_) async => makeProvider(
+            id: 'provider-openai',
+            type: InferenceProviderType.openAi,
+          ),
+        );
+
+        final result = await service.tryTranscribe(taskId: 'task-1');
+
+        expect(result.handled, isFalse);
+        expect(
+          loggedLines(),
+          contains(
+            allOf(
+              startsWith('directFallback:'),
+              contains(
+                'all 2 configured speech-to-text model(s) were rejected',
+              ),
+              contains('1 without a resolvable provider'),
+              contains('1 missing an API key'),
+            ),
+          ),
+        );
+      });
+
+      // `providerModelId` and `name` are free-text fields, so they can carry
+      // private hostnames or filesystem paths into an exportable log.
+      test('the direct fallback logs no user-entered model text', () async {
+        when(
+          () => mockResolver.resolveForTask('task-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            makeModel(
+              id: 'model-abcdef-secret-suffix',
+              name: 'internal-box.corp.example',
+              providerModelId: '/home/someone/models/private-asr',
+            ),
+          ],
+        );
+        when(
+          () => mockAiConfig.getConfigById('provider-mlx'),
+        ).thenAnswer((_) async => makeProvider());
+
+        final result = await service.tryTranscribe(taskId: 'task-1');
+
+        expect(result.handled, isTrue);
+        final line = loggedLines().singleWhere(
+          (l) => l.startsWith('resolved:'),
+        );
+        expect(line, contains('[id:model-]'));
+        expect(line, contains('mlxAudio'));
+        expect(line, isNot(contains('secret-suffix')));
+        expect(line, isNot(contains('private-asr')));
+        expect(line, isNot(contains('internal-box')));
+      });
+
+      // Capability probes run on every rebuild of the recording UI and start
+      // no inference. Logging them would manufacture execution records and
+      // bury the decision belonging to the recording being diagnosed.
+      test('a matching capability probe records nothing', () async {
+        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          (_) async => makeProfile(
+            skillAssignments: const [
+              SkillAssignment(skillId: 'skill-transcribe', automate: true),
+            ],
+            withTranscription: true,
+          ),
+        );
+        when(() => mockAiConfig.getConfigById('skill-transcribe')).thenAnswer(
+          (_) async => makeSkill(id: 'skill-transcribe', name: 'Transcribe'),
+        );
+
+        final available = await service.hasAutomatedSkillType(
+          taskId: 'task-1',
+          skillType: SkillType.transcription,
+        );
+
+        expect(available, isTrue);
+        expect(loggedLines(), isEmpty);
+      });
+
+      test('a declining capability probe records nothing either', () async {
+        categoryAllowsAutomation = false;
+
+        final available = await service.hasAutomatedSkillType(
+          taskId: 'task-1',
+          skillType: SkillType.imageAnalysis,
+        );
+
+        expect(available, isFalse);
+        expect(loggedLines(), isEmpty);
+      });
+
+      test('the settings fallback probe records nothing', () async {
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [makeModel()]);
+        when(
+          () => mockAiConfig.getConfigById('provider-mlx'),
+        ).thenAnswer((_) async => makeProvider());
+
+        expect(await service.hasDirectTranscriptionFallback(), isTrue);
+        expect(loggedLines(), isEmpty);
       });
 
       test('the service works without a logger', () async {

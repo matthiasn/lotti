@@ -1,9 +1,9 @@
 ---
 type: Feature Module
 title: AI execution paths
-description: The legacy prompt path, the skill/profile path, the category consent gate that stops silent token spend, and per-invocation model overrides.
+description: The legacy prompt path, the skill/profile path, the category consent gate that stops silent token spend, per-invocation model overrides, and the decline log that makes a no-op diagnosable.
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
-tags: [ai, skills, automation, consent, overrides]
+tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
 stale_after: 2027-01-31
@@ -15,7 +15,7 @@ sources:
   - id: automation
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
     title: ProfileAutomationService
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: prompt-builder
     resource: ../../../lib/features/ai/helpers/skill_prompt_builder.dart
     title: SkillPromptBuilder
@@ -135,6 +135,45 @@ Past the gate the automatic branch is intentionally strict:
 - The resolved profile must expose the required model slot for that skill type.
 - The per-recording `enableSpeechRecognition: false` opt-out wins independently
   of the category switch.
+
+# Reading the log when nothing happened
+
+The service declines silently in several independent places, and the caller only
+ever reports the generic "profile automation did not handle X". Every decline
+therefore names itself under `LogDomain.ai` via `DomainLogger` (ids sanitized
+through `DomainLogger.sanitizeId`). Grep the sub-domain to find which gate
+rejected a recording or an image:
+
+| subDomain | what declined |
+|---|---|
+| `perRecordingOptOut` | the user unticked speech recognition for that one clip |
+| `categoryGate` | the category's `automaticInferenceEnabled` is off, or no lookup is wired |
+| `profileResolution` | no profile resolved, or the whole walk finished without a match (reports how many profiles it tried) |
+| `skillMatch` | an assignment's skill config is missing, the profile's model slot for that type is empty or unresolvable, or two skills of the same type made it ambiguous |
+| `directFallback` | the profile walk found nothing **and** the direct transcription fallback could not run either — no speech-to-text model is configured at all, or every configured one was rejected (tallied by unresolvable provider vs. missing API key) |
+| `resolved` | it *did* run — names the skill and whether it came from the task-linked or an inherited profile |
+
+`resolved` is not decoration: a run against the wrong profile is as opaque as no
+run at all.
+
+Two rules keep these lines trustworthy:
+
+- **Only the run paths write.** `hasAutomatedSkillType` and
+  `hasDirectTranscriptionFallback` are capability probes evaluated during a
+  widget build or on a settings screen, so they walk the same resolution with
+  `_CallIntent.probe` and log nothing. Otherwise rendering a checkbox would
+  manufacture a `resolved` record, and every rebuild would repeat the declines
+  until the decision belonging to the actual recording was buried. Nothing is
+  lost — `automatic_prompt_trigger` calls the run path whether or not the
+  checkbox is visible.
+- **No user-authored text.** Model rows are identified by sanitized config id
+  plus provider *type*, never `providerModelId` or `name` — both are free-text
+  fields that can carry private hostnames, deployment names or filesystem paths
+  into an exportable log.
+
+The trigger helpers add the outer bookends (`triggerAutomaticPrompts`,
+`triggerAutomaticImageAnalysis`), including the "no linked task" early return
+that happens before this service is reached.
 
 # The per-capability profile walk
 
