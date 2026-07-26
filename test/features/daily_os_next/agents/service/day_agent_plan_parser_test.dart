@@ -164,7 +164,7 @@ void main() {
             ..['id'] = 'block-existing'
             ..['taskId'] = 'task-smuggled'
             ..['note'] = 'smuggled note',
-          decidedTaskIds: const {'task-smuggled'},
+          decidedTaskIds: const {'task-smuggled': 'cat-1'},
           baselineBlocks: {'block-existing': baseline},
         );
 

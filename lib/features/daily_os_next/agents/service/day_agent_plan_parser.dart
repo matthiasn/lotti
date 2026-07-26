@@ -43,6 +43,31 @@ Future<Map<String, String?>> resolveAllowedTaskIds({
   };
 }
 
+/// The category a block belongs to, given the task it references.
+///
+/// A block that names a task is filed under *that task's* category, not
+/// whichever one the model wrote: the block's category and its task were
+/// validated against the agent's allow-set independently but never against each
+/// other, so a block could carry a task from one area and bill its time to
+/// another. `plannedMinutesByCategory` and every rollup built on it read this.
+///
+/// Derived rather than rejected, because the task's category is the only
+/// correct answer — asking the model to guess it costs a round trip to learn
+/// something already known. Safe by construction: [resolveAllowedTaskIds] only
+/// returns tasks whose category this agent may touch, so the derived value is
+/// always inside the allow-set the block was checked against.
+///
+/// Stated once and used at both doors — a fresh draft and an accepted diff —
+/// because fixing only one of them is how the original defect arose.
+/// [fallback] holds for a block with no task (buffers, breaks) and for a task
+/// with no category, where nulling the block's would drop it out of every
+/// per-category rollup.
+String categoryForPlannedBlock({
+  required String? taskId,
+  required String fallback,
+  required Map<String, String?> taskCategoryIds,
+}) => taskId == null ? fallback : taskCategoryIds[taskId] ?? fallback;
+
 /// Block states that represent a *plan* rather than a record of something that
 /// already happened.
 ///
@@ -311,21 +336,11 @@ PlannedBlock parsePlannedBlock({
       'taskId $taskId is not an allowed task for this plan',
     );
   }
-  // A block that references a task is filed under *that task's* category, not
-  // whichever one the model wrote. The two were validated independently — the
-  // block's category had to be allowed, and the task had to be allowed — but
-  // never against each other, so a block could carry a task from one area and
-  // bill its time to another, corrupting `plannedMinutesByCategory` and every
-  // rollup built on it.
-  //
-  // Derived rather than rejected: the task's category is the only correct
-  // answer, so asking the model to guess it costs a round trip to learn
-  // something we already know. Safe by construction — `resolveAllowedTaskIds`
-  // only returns tasks whose category this agent may touch, so the derived
-  // value is always inside the allow-set the block was checked against.
-  final effectiveCategoryId = taskId == null
-      ? categoryId
-      : decidedTaskIds[taskId] ?? allowedExistingTaskIds[taskId] ?? categoryId;
+  final effectiveCategoryId = categoryForPlannedBlock(
+    taskId: taskId,
+    fallback: categoryId,
+    taskCategoryIds: {...allowedExistingTaskIds, ...decidedTaskIds},
+  );
   return PlannedBlock(
     id: blockId ?? 'block_${_uuid.v4()}',
     categoryId: effectiveCategoryId,

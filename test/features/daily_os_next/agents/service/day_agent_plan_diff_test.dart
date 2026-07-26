@@ -138,6 +138,76 @@ void main() {
     ChangeItem item(String toolName, Map<String, dynamic> args) =>
         ChangeItem(toolName: toolName, args: args, humanSummary: 's');
 
+    test('add_block files the block under its task category', () {
+      // The accepted-diff door of the same rule the draft path enforces.
+      // Fixing only one of them is how the original mismatch arose.
+      final result = applyPlanDiffItem(
+        item('add_block', {
+          'categoryId': 'cat-1',
+          'toStart': DateTime(2024, 3, 15, 14).toIso8601String(),
+          'toEnd': DateTime(2024, 3, 15, 15).toIso8601String(),
+          'title': 'Ops work',
+          'taskId': 'task-ops',
+          'blockReason': 'why',
+        }),
+        const [],
+        addedBlockState: PlannedBlockState.drafted,
+        taskCategoryIds: const {'task-ops': 'cat-ops'},
+      );
+
+      expect(result.single.categoryId, 'cat-ops');
+    });
+
+    test('move_block re-derives the category even when only times move', () {
+      // Applied at acceptance, not only at proposal: a change set written
+      // before this rule — or by a peer on an older build — is filed
+      // correctly when the user accepts it, rather than persisting the old
+      // mismatch.
+      final result = applyPlanDiffItem(
+        item('move_block', {
+          'blockId': 'block-1',
+          'toStart': DateTime(2024, 3, 15, 14).toIso8601String(),
+          'toEnd': DateTime(2024, 3, 15, 15).toIso8601String(),
+        }),
+        [block().copyWith(taskId: 'task-ops')],
+        addedBlockState: PlannedBlockState.drafted,
+        taskCategoryIds: const {'task-ops': 'cat-ops'},
+      );
+
+      expect(result.single.categoryId, 'cat-ops');
+    });
+
+    test('move_block ignores a category that disagrees with the task', () {
+      final result = applyPlanDiffItem(
+        item('move_block', {
+          'blockId': 'block-1',
+          'categoryId': 'cat-1',
+          'taskId': 'task-ops',
+        }),
+        [block()],
+        addedBlockState: PlannedBlockState.drafted,
+        taskCategoryIds: const {'task-ops': 'cat-ops'},
+      );
+
+      expect(result.single.categoryId, 'cat-ops');
+    });
+
+    test('a block with no task keeps the category the change supplied', () {
+      final result = applyPlanDiffItem(
+        item('add_block', {
+          'categoryId': 'cat-1',
+          'toStart': DateTime(2024, 3, 15, 14).toIso8601String(),
+          'toEnd': DateTime(2024, 3, 15, 15).toIso8601String(),
+          'title': 'Buffer',
+          'blockReason': 'why',
+        }),
+        const [],
+        addedBlockState: PlannedBlockState.drafted,
+      );
+
+      expect(result.single.categoryId, 'cat-1');
+    });
+
     test('move_block updates times and keeps the block reason', () {
       final result = applyPlanDiffItem(
         item('move_block', {

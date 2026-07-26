@@ -123,6 +123,11 @@ class DayAgentPlanWriter {
       }
     }
 
+    // Task id -> its category, resolved inside the apply branch below and read
+    // again when the changes are applied, so a block always lands in the
+    // category of the task it names.
+    var taskCategoryIds = const <String, String?>{};
+
     if (apply) {
       // Pre-validate every pending selected change against the current
       // plan before mutating anything (atomic all-or-nothing). The sweep
@@ -137,10 +142,26 @@ class DayAgentPlanWriter {
       // been deleted or moved out of scope, and the part of the day it aimed
       // at may already have passed — or arrive from a peer on an older build
       // that never ran these checks at all.
-      final proposedTaskIds = {
-        for (final entry in pendingByIndex.entries)
-          if (entry.value.args['taskId'] case final String taskId) taskId,
+      // Both the tasks a change proposes and the ones already on the blocks it
+      // touches. A move that leaves the taskId alone still has its category
+      // re-derived, so a change set written before this rule is filed
+      // correctly when the user accepts it rather than persisting the old
+      // mismatch.
+      final blocksById = {
+        for (final block in plan.data.plannedBlocks) block.id: block,
       };
+      final referencedTaskIds = <String>{
+        for (final entry in pendingByIndex.entries) ...{
+          if (entry.value.args['taskId'] case final String taskId) taskId,
+          if (entry.value.args['blockId'] case final String blockId)
+            if (blocksById[blockId]?.taskId case final String onBlock) onBlock,
+        },
+      };
+      taskCategoryIds = await resolveAllowedTaskIds(
+        journalDb: journalDb,
+        taskIds: referencedTaskIds,
+        allowedCategoryIds: identity.allowedCategoryIds,
+      );
       validateApplicablePlanDiffBatch(
         pendingByIndex.entries,
         plan,
@@ -149,11 +170,7 @@ class DayAgentPlanWriter {
           planDate: plan.planDate,
           now: clock.now(),
         ),
-        allowedTaskIds: (await resolveAllowedTaskIds(
-          journalDb: journalDb,
-          taskIds: proposedTaskIds,
-          allowedCategoryIds: identity.allowedCategoryIds,
-        )).keys.toSet(),
+        allowedTaskIds: taskCategoryIds.keys.toSet(),
       );
     }
 
@@ -177,6 +194,7 @@ class DayAgentPlanWriter {
           item,
           mutatedBlocks,
           addedBlockState: addedBlockState,
+          taskCategoryIds: taskCategoryIds,
         );
       }
       updatedItems[index] = item.copyWith(status: newItemStatus);

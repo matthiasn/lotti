@@ -142,6 +142,15 @@ apart again. Blocks with no task (buffers, breaks, manual blocks) keep the
 category the model chose, and an uncategorised task leaves it alone rather than
 nulling it out of every rollup.
 
+`categoryForPlannedBlock` states the rule once and **both doors apply it** — a
+fresh `draft_day_plan` and an accepted `propose_plan_diff`. Enforcing it on one
+door only is precisely how the original mismatch existed, so the diff route
+derives at *acceptance* rather than at proposal: a ChangeSet is durable and
+synced, so one written before this rule, or by a peer on an older build, is
+filed correctly when the user accepts it instead of persisting the old
+mismatch. A move re-derives even when it only shifts times, which is what makes
+that self-healing.
+
 **The agent cannot emit a `cal` block at all**, through either `draft_day_plan` or
 `propose_plan_diff`, and the type is absent from both tool schemas. `cal` means
 "imported calendar event", and no calendar reaches this agent — `calendarBlocks`
