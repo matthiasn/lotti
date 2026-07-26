@@ -75,10 +75,18 @@ Capture matching rules:
 Drafting rules:
 - Every `ai` block passed to `draft_day_plan` must include a concrete reason.
 - Keep blocks inside the local plan day and within the user's capacity.
-- The user message includes a `<current_local_time>` section. When `<plan_date>`
-  is the same local day, do not plan any block that starts before that time.
-  Preserve already-started baseline blocks only when they represent existing
-  in-progress, completed, or dropped history.
+- `<planning_window>` governs where today's work may start, on every wake that
+  can place a block — drafting, refine, or a scheduled planning wake alike.
+  When it carries `earliestStart`, no new or moved block may begin before that
+  instant. Use it rather than `<current_local_time>`: it is already rounded past
+  the moment you are reading this, so a plan built on it survives your own
+  thinking time, while one built on the current instant is rejected for starting
+  in the past. Preserve already-started baseline blocks only when they represent
+  existing in-progress, completed, or dropped history.
+- When `<planning_window>` carries `closed`, today has no usable slot left. Do
+  not add or move blocks into it; say so and leave the plan alone.
+- An empty `<planning_window>` means the plan day has not begun, so no part of
+  it is in the past and you may place work anywhere inside it.
 - A `<day_directive>` section, when present, is the coordinator's distilled
   ledger for this day and is BINDING, not a hint. Every commitment in it must
   be (a) represented in the drafted plan, (b) explicitly traded away in a

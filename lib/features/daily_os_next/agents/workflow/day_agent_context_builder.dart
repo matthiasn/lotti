@@ -149,6 +149,13 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         DayAgentPromptTags.triggerTokens,
         triggerTokens.toList()..sort(),
       )
+      // The day's planning floor, next to the wall-clock it is derived from.
+      // Rendered for every wake that could place a block, not just drafting:
+      // the guard does not care which mode asked.
+      ..addJson(
+        DayAgentPromptTags.planningWindow,
+        _planningWindowJson(planDate: planDate, now: now),
+      )
       // The volatile wall-clock is the trailing section.
       ..addText(DayAgentPromptTags.currentLocalTime, now.toIso8601String());
     return sections.build();
@@ -649,6 +656,25 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       return CaptureContext(capture: capture, taskCorpus: corpus);
     }
     return null;
+  }
+
+  /// The day's planning floor as the model sees it.
+  ///
+  /// Empty on a day that has not begun — there is no past to guard. Otherwise
+  /// either the padded start to build on, or `closed` when no usable slot
+  /// remains, which are different instructions and must not collapse.
+  Map<String, Object?> _planningWindowJson({
+    required DateTime planDate,
+    required DateTime now,
+  }) {
+    final earliest = advertisedPlanningStart(planDate: planDate, now: now);
+    if (earliest != null) {
+      return {'earliestStart': earliest.toIso8601String()};
+    }
+    if (planningWindowClosed(planDate: planDate, now: now)) {
+      return {'closed': true};
+    }
+    return const {};
   }
 
   Future<DraftingContext?> _draftingContext({

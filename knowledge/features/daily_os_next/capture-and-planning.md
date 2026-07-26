@@ -68,11 +68,46 @@ guards rather than the model. See [evaluation](evaluation.md).
 
 **Planning into the past is refused, whatever the block's type.** For today's
 plan, `draft_day_plan` rejects any block it would be *planning* — state `drafted`
-or `committed` — whose start precedes `current_local_time`. It still accepts
-earlier blocks whose state is `inProgress`, `completed` or `dropped`, because
-those record what actually happened rather than new planning, and it accepts a
-block that **repeats an existing baseline block at the same id and start**, which
-is carrying history forward rather than inventing it.
+or `committed` — whose start precedes `clock.now()` **at the moment the tool
+executes**.
+
+That last clause is load-bearing, and getting it wrong was measurable. The
+threshold moves between rendering the prompt and enforcing it, because the model
+thinks in between — 13s to 152s in the eval. So a plan whose first block starts
+at the instant the prompt advertised is *always* rejected: every sampled
+`lateStart` cell across both models started the day at 15:00 when the prompt read
+`15:00:00.005877`, and all 6/6 lost by under six milliseconds. Complying would
+have meant predicting inference latency.
+
+The prompt therefore carries a top-level `<planning_window>` section —
+`advertisedPlanningStart`, the first five-minute boundary at least three minutes
+out — rather than the raw instant. It is **top-level on purpose**: the
+constraint belongs to the day, not to a wake mode. `draft_day_plan` is always
+exposed and a scheduled `planning_day` wake builds neither a drafting nor a
+refine context, so nesting it under either left exactly those wakes deriving the
+threshold themselves. The guard is unchanged and unweakened; only what the model
+is *told to aim at* moved.
+
+Late enough in the day, walking forward for that headroom runs past midnight,
+and a block outside the plan day is rejected just as firmly — advertising 00:05
+tomorrow would steer the model into the same rejection from the other end. So
+the window **closes**: `<planning_window>` carries `closed` instead, and the
+rules say to leave the day alone rather than add to it. The three states are
+deliberately distinct, because collapsing any two misleads:
+
+| `<planning_window>` | Meaning |
+|---|---|
+| `{"earliestStart": …}` | today, still plannable — start here |
+| `{"closed": true}` | today, no usable slot left — add nothing |
+| `{}` | the day has not begun — no part of it is past |
+
+Reading `closed` as `{}` would let a wake at 23:58 plan freely from this
+morning, and the guard would reject every block of it.
+
+The day boundary is computed with calendar arithmetic (`DateTime(y, m, d + 1)`),
+not by adding 24 hours: on a DST transition day the latter lands on 01:00 or
+23:00 and would either advertise into tomorrow or close the window an hour
+early.
 
 **The agent cannot emit a `cal` block at all**, through either `draft_day_plan` or
 `propose_plan_diff`, and the type is absent from both tool schemas. `cal` means

@@ -3208,6 +3208,92 @@ void main() {
       );
     });
 
+    test('states a planning floor the model can build on for today', () async {
+      final planService = MockDayAgentPlanService();
+      stubDraftingPlanContext(planService);
+      stubSuccessfulDraftToolCall(planService);
+
+      final result = await withClock(
+        // Mid-afternoon on the plan day, a few milliseconds past the minute —
+        // the shape that had every sampled model start at 15:00 and be
+        // rejected for it.
+        Clock.fixed(DateTime(2026, 5, 25, 15, 0, 0, 5, 877)),
+        () => workflow(planService: planService).execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {
+            dayAgentDraftingToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      expect(window['earliestStart'], '2026-05-25T15:05:00.000');
+      expect(window.containsKey('closed'), isFalse);
+    });
+
+    test('states the floor on a wake that builds no mode context', () async {
+      // A scheduled planning_day wake builds neither drafting nor refine
+      // context, yet draft_day_plan stays exposed and the writer still guards
+      // it. Keying this on the mode sections left those wakes deriving the
+      // threshold from the raw instant — the original bug.
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 15, 0, 0, 5, 877)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      expect(window['earliestStart'], '2026-05-25T15:05:00.000');
+    });
+
+    test('reports a closed window late in the day', () async {
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 23, 58)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      // Closed, never a next-day earliestStart, and never silently empty —
+      // empty would read as "the day has not begun, plan anywhere".
+      expect(window['closed'], isTrue);
+      expect(window.containsKey('earliestStart'), isFalse);
+    });
+
+    test('leaves the window empty for a day that has not begun', () async {
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 24, 20)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      expect(window, isEmpty);
+    });
+
     test(
       'includes a null-baseline drafting context for drafting-token wakes',
       () async {

@@ -50,6 +50,96 @@ const plannedBlockStatesGuardedFromThePast = <PlannedBlockState>{
   PlannedBlockState.committed,
 };
 
+/// The earliest instant a *planned* block may start on [planDate], or null when
+/// the day has not begun yet and the past has no meaning for it.
+///
+/// This is the **enforced** threshold, evaluated when the tool call lands.
+DateTime? earliestPlannableStart({
+  required DateTime planDate,
+  required DateTime now,
+}) => localDay(planDate) == localDay(now) ? now : null;
+
+/// Clock granularity the advertised start snaps to, so the model is handed a
+/// time a person would actually write down.
+const advertisedStartGranularity = Duration(minutes: 5);
+
+/// Minimum gap between the advertised start and the instant it was computed.
+///
+/// Covers the model's own thinking time — the window between rendering the
+/// prompt and the guard evaluating `clock.now()`. Measured wake latencies ran
+/// 13s to 152s, so three minutes clears the worst observed case.
+///
+/// Enforced separately from [advertisedStartGranularity] because snapping alone
+/// does not guarantee it: at 09:59:59 the next five-minute boundary is one
+/// second away, which reproduces exactly the failure this exists to prevent.
+const minimumPlanningHeadroom = Duration(minutes: 3);
+
+/// The earliest start the *prompt* advertises, or null when the day has not
+/// begun.
+///
+/// Deliberately later than [earliestPlannableStart], and that asymmetry is the
+/// whole point. The guard compares against `clock.now()` at the moment
+/// `draft_day_plan` executes, which is unavoidably *after* the instant rendered
+/// into the prompt — the model has to think in between. Advertising the raw
+/// instant therefore asks the model to predict its own latency: it reads
+/// "15:00:00.005877", sensibly starts the day at 15:00, and is rejected by five
+/// milliseconds.
+///
+/// That is not hypothetical. Every sampled `lateStart` cell across both models
+/// did exactly this and was rejected, 6/6, burning a whole round trip on the
+/// most ordinary case there is — planning a day that has already started.
+///
+/// It is the first [advertisedStartGranularity] boundary at least
+/// [minimumPlanningHeadroom] after [now], so the advertised value is still
+/// valid when the guard runs — without weakening the guard by a single second.
+DateTime? advertisedPlanningStart({
+  required DateTime planDate,
+  required DateTime now,
+}) {
+  final earliest = earliestPlannableStart(planDate: planDate, now: now);
+  if (earliest == null) return null;
+  final step = advertisedStartGranularity.inMinutes;
+  final floor = DateTime(
+    earliest.year,
+    earliest.month,
+    earliest.day,
+    earliest.hour,
+    earliest.minute - (earliest.minute % step),
+  );
+  // Walk forward rather than snapping once: the nearest boundary can be a
+  // second away, which is no headroom at all.
+  var candidate = floor;
+  while (candidate.difference(earliest) < minimumPlanningHeadroom) {
+    candidate = candidate.add(advertisedStartGranularity);
+  }
+  // Late enough and the walk runs out of day: at 23:58 it lands on 00:05
+  // tomorrow, and `parsePlannedBlock` rejects anything outside the plan day —
+  // so advertising it would steer the model into the very rejection this
+  // function exists to prevent, at the other end of the day. Null means the
+  // window is closed, which [planningWindowClosed] distinguishes from the
+  // never-constrained future-day case.
+  // Calendar arithmetic, not +24h: on a DST day adding a fixed duration to
+  // local midnight lands on 01:00 or 23:00, which would either advertise into
+  // tomorrow or close the window an hour early.
+  final day = localDay(planDate);
+  final dayEnd = DateTime(day.year, day.month, day.day + 1);
+  if (candidate.add(advertisedStartGranularity).isAfter(dayEnd)) return null;
+  return candidate;
+}
+
+/// Whether today's planning window has run out: the plan is for today, but no
+/// usable slot remains before midnight.
+///
+/// Distinct from "no constraint at all". Both leave [advertisedPlanningStart]
+/// null, and collapsing them would let a wake at 23:58 plan freely from 09:00
+/// this morning — the past-start guard would reject every block of it.
+bool planningWindowClosed({
+  required DateTime planDate,
+  required DateTime now,
+}) =>
+    earliestPlannableStart(planDate: planDate, now: now) != null &&
+    advertisedPlanningStart(planDate: planDate, now: now) == null;
+
 /// Validates and parses one model-emitted block into a [PlannedBlock],
 /// throwing [DayAgentCaptureException] on any contract violation: a `cal`
 /// type (no calendar reaches this agent), an out-of-allowlist category, `end`

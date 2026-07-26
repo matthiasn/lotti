@@ -273,6 +273,171 @@ void main() {
     });
   });
 
+  group('earliestPlannableStart / advertisedPlanningStart', () {
+    final planDate = DateTime(2026, 7, 26);
+
+    test('a future plan day is unconstrained on both', () {
+      final now = DateTime(2026, 7, 25, 15);
+      expect(earliestPlannableStart(planDate: planDate, now: now), isNull);
+      expect(advertisedPlanningStart(planDate: planDate, now: now), isNull);
+    });
+
+    test('the enforced threshold is the raw instant', () {
+      final now = DateTime(2026, 7, 26, 15, 0, 0, 5, 877);
+      expect(earliestPlannableStart(planDate: planDate, now: now), now);
+    });
+
+    test('the advertised start clears the instant that caused the '
+        'rejections', () {
+      // The measured failure, exactly: the prompt rendered
+      // 15:00:00.005877, every sampled model sensibly started the day at
+      // 15:00:00.000, and the guard rejected all 6/6 by under six
+      // milliseconds. The advertised value must be strictly later than the
+      // instant the model reads, or it reproduces that.
+      final now = DateTime(2026, 7, 26, 15, 0, 0, 5, 877);
+      final advertised = advertisedPlanningStart(planDate: planDate, now: now);
+
+      expect(advertised, DateTime(2026, 7, 26, 15, 5));
+      expect(advertised!.isAfter(now), isTrue);
+    });
+
+    test('never advertises an instant already lost to the guard', () {
+      // Property: for any moment of the plan day, what the prompt promises is
+      // strictly later than what the write path enforces. Landing exactly on
+      // the boundary is not enough — the guard runs a moment later still.
+      for (var minute = 0; minute < 60; minute++) {
+        for (final second in [0, 30, 59]) {
+          final now = DateTime(2026, 7, 26, 9, minute, second);
+          final enforced = earliestPlannableStart(planDate: planDate, now: now);
+          final advertised = advertisedPlanningStart(
+            planDate: planDate,
+            now: now,
+          );
+
+          expect(
+            advertised!.isAfter(enforced!),
+            isTrue,
+            reason: 'advertised $advertised must be after enforced $enforced',
+          );
+        }
+      }
+    });
+
+    test('closes the window rather than advertising tomorrow', () {
+      // The same bug at the other end of the day: walking forward for headroom
+      // runs past midnight, and `parsePlannedBlock` rejects anything outside
+      // the plan day — so advertising it would steer the model straight into
+      // the rejection this function exists to prevent.
+      for (final now in [
+        DateTime(2026, 7, 26, 23, 56),
+        DateTime(2026, 7, 26, 23, 58),
+        DateTime(2026, 7, 26, 23, 59, 59),
+      ]) {
+        expect(
+          advertisedPlanningStart(planDate: planDate, now: now),
+          isNull,
+          reason: 'must not advertise a slot outside the plan day at $now',
+        );
+        expect(
+          planningWindowClosed(planDate: planDate, now: now),
+          isTrue,
+          reason: 'closed is not the same as unconstrained',
+        );
+      }
+    });
+
+    test('still advertises the last usable slot of the day', () {
+      // 23:55-00:00 is a legal five-minute block, so the window is not closed
+      // yet. Closing it early would silently drop the tail of the day.
+      final now = DateTime(2026, 7, 26, 23, 50);
+
+      expect(
+        advertisedPlanningStart(planDate: planDate, now: now),
+        DateTime(2026, 7, 26, 23, 55),
+      );
+      expect(planningWindowClosed(planDate: planDate, now: now), isFalse);
+    });
+
+    test('a closed window is distinguishable from an unconstrained day', () {
+      // Both leave advertisedPlanningStart null. Collapsing them would let a
+      // wake at 23:58 plan freely from this morning.
+      expect(
+        planningWindowClosed(
+          planDate: planDate,
+          now: DateTime(2026, 7, 25, 23, 58),
+        ),
+        isFalse,
+        reason: 'a future plan day is unconstrained, not closed',
+      );
+    });
+
+    test('uses calendar arithmetic for the day boundary, not +24h', () {
+      // On a DST day, local midnight + 24h is 01:00 or 23:00, not the next
+      // midnight — which would either advertise into tomorrow or close the
+      // window an hour early. Asserted through the observable behaviour: the
+      // last usable slot of the day is the same on a transition day as on an
+      // ordinary one.
+      for (final day in [
+        DateTime(2026, 3, 29), // European spring forward
+        DateTime(2026, 10, 25), // European fall back
+        DateTime(2026, 7, 26), // ordinary day, as a control
+      ]) {
+        final lastSlot = DateTime(day.year, day.month, day.day, 23, 50);
+        expect(
+          advertisedPlanningStart(planDate: day, now: lastSlot),
+          DateTime(day.year, day.month, day.day, 23, 55),
+          reason: 'last usable slot must not move on $day',
+        );
+        expect(
+          advertisedPlanningStart(
+            planDate: day,
+            now: DateTime(day.year, day.month, day.day, 23, 58),
+          ),
+          isNull,
+          reason: 'window must still close before midnight on $day',
+        );
+      }
+    });
+
+    test('never advertises a start outside the plan day, at any minute', () {
+      for (var hour = 0; hour < 24; hour++) {
+        for (var minute = 0; minute < 60; minute++) {
+          final now = DateTime(2026, 7, 26, hour, minute);
+          final advertised = advertisedPlanningStart(
+            planDate: planDate,
+            now: now,
+          );
+          if (advertised == null) continue;
+          expect(
+            localDay(advertised),
+            localDay(planDate),
+            reason: 'advertised $advertised escaped the plan day from $now',
+          );
+        }
+      }
+    });
+
+    test('gives the model at least the measured worst-case latency', () {
+      // Wake latencies ran to 152s in the eval. The advertised start has to
+      // stay valid across that gap or the model is asked to predict its own
+      // thinking time, which is the bug this replaces.
+      const worstObservedLatency = Duration(seconds: 152);
+      var tightest = const Duration(days: 1);
+      for (var minute = 0; minute < 60; minute++) {
+        final now = DateTime(2026, 7, 26, 9, minute, 59);
+        final advertised = advertisedPlanningStart(
+          planDate: planDate,
+          now: now,
+        )!;
+        final headroom = advertised.difference(now);
+        if (headroom < tightest) tightest = headroom;
+      }
+
+      expect(tightest, greaterThanOrEqualTo(minimumPlanningHeadroom));
+      expect(minimumPlanningHeadroom, greaterThan(worstObservedLatency));
+    });
+  });
+
   group('selectIndices', () {
     test('returns the full range when indices are omitted', () {
       expect(selectIndices(itemIndices: null, itemCount: 3), [0, 1, 2]);
