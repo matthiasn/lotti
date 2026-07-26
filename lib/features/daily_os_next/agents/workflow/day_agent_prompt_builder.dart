@@ -63,6 +63,9 @@ ${toolLines.join('\n')}
 Capture matching rules:
 - Use the embedded task corpus when parsing a submitted capture.
 - Emit `parse_capture_to_items` with confidenceScore in [0, 1].
+- If the capture holds nothing to act on, call it with an empty `items` array.
+  That is how you say so — do not invent an item to fill it, and do not skip
+  the call.
 - confidenceScore >= 0.75 is a strong match.
 - confidenceScore >= 0.5 and < 0.75 is a low-confidence match.
 - confidenceScore < 0.5 should be treated as a new item.

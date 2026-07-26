@@ -2610,18 +2610,22 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.output, contains('items must be a non-empty array'));
+        expect(result.output, contains('items must be an array'));
       },
     );
 
     test(
-      'executeTool parse_capture_to_items rejects an empty items list',
+      'executeTool parse_capture_to_items accepts an empty items list',
       () async {
+        // "This capture holds nothing to act on" is a real answer, and the
+        // only one a competent model has for a transcript like "Nothing much
+        // on today." Rejecting it left no compliant move: invent an item, or
+        // skip the call and trip the forced retry.
         final capture =
             AgentDomainEntity.capture(
                   id: 'capture-1',
                   agentId: _agentId,
-                  transcript: 'test',
+                  transcript: 'Nothing much on today.',
                   capturedAt: _now,
                   createdAt: _now,
                   vectorClock: null,
@@ -2637,8 +2641,68 @@ void main() {
           args: const {'captureId': 'capture-1', 'items': <dynamic>[]},
         );
 
-        expect(result.success, isFalse);
-        expect(result.output, contains('items must be a non-empty array'));
+        expect(result.success, isTrue);
+        final output = jsonDecode(result.output) as Map<String, dynamic>;
+        expect(output['captureId'], 'capture-1');
+        expect(output['items'], isEmpty);
+      },
+    );
+
+    test(
+      'an empty parse clears a previous one rather than leaving it stale',
+      () async {
+        // What makes the empty call meaningful rather than a no-op: a re-parse
+        // replaces the capture's items wholesale, so a model correcting itself
+        // to "nothing here" must not leave the earlier queue in the reconcile
+        // panel.
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: _agentId,
+                  transcript: 'Nothing much on today.',
+                  capturedAt: _now,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        agentEntities[capture.id] = capture;
+        final service = createService();
+
+        await service.executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.parseCaptureToItems,
+          args: const {
+            'captureId': 'capture-1',
+            'items': [
+              {
+                'kind': 'newTask',
+                'title': 'Buy milk',
+                'categoryId': 'work',
+                'confidenceScore': 0.9,
+              },
+            ],
+          },
+        );
+
+        final second = await service.executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.parseCaptureToItems,
+          args: const {'captureId': 'capture-1', 'items': <dynamic>[]},
+        );
+
+        expect(second.success, isTrue);
+        final live = await service.parsedItemsForCapture('capture-1');
+        expect(
+          live.whereType<ParsedItemEntity>().where(
+            (item) => item.deletedAt == null,
+          ),
+          isEmpty,
+          reason: 'the earlier parse must not survive an empty re-parse',
+        );
       },
     );
 

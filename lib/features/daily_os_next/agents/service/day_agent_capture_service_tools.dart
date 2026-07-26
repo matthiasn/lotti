@@ -35,9 +35,20 @@ extension _DayAgentCaptureToolHandlers on DayAgentCaptureService {
   ) async {
     final captureId = _requiredString(args, 'captureId');
     final rawItems = args['items'];
-    if (rawItems is! List || rawItems.isEmpty) {
-      throw const DayAgentCaptureException('items must be a non-empty array');
+    if (rawItems is! List) {
+      throw const DayAgentCaptureException('items must be an array');
     }
+    // An empty array is a real answer: "this capture holds nothing to act on".
+    // Rejecting it left a model that had correctly found nothing with no
+    // compliant move — invent an item, or end the wake without the call and
+    // trip the forced retry. Measured as the second most frequent rejection
+    // across the eval runs, and six of seven were the same capture:
+    // "Nothing much on today."
+    //
+    // `persistParsedItems` already means the right thing here: it replaces the
+    // capture's parse wholesale, so an empty one clears any earlier items
+    // rather than leaving a stale queue behind.
+
     final items = await persistParsedItems(
       agentId: agentId,
       captureId: captureId,

@@ -64,6 +64,19 @@ The distinction matters for reading eval results and for trusting the model:
 So **the persisted plan is always *legal***, and inspecting it alone measures the
 guards rather than the model. See [evaluation](evaluation.md).
 
+**A capture may parse to nothing.** `parse_capture_to_items` accepts an empty
+`items` array, meaning "this capture holds nothing to act on" — the only honest
+answer to a transcript like *"Nothing much on today."* It used to be rejected,
+which left a model that had correctly found nothing with no compliant move:
+invent an item, or skip the call and trip `MissingCaptureParseException` and a
+forced retry. It was the second most frequent rejection across the eval runs,
+and six of seven were that same capture.
+
+An empty parse is not a no-op. `persistParsedItems` replaces a capture's items
+wholesale, so it clears an earlier parse rather than leaving a stale queue in
+the reconcile panel — which is what makes "nothing here" a correction the model
+can actually make.
+
 ## Three guards worth stating precisely
 
 **Planning into the past is refused, whatever the block's type.** For today's
