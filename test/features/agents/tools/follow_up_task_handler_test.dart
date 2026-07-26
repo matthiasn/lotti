@@ -746,22 +746,34 @@ void main() {
         },
       );
 
-      test('a typed link failure stays a warning, not a failure', () async {
-        stubSourceTaskLookup(makeSourceTask());
-        stubCreateTask(makeNewTask('new-task-warn'));
-        stubTypedLinkCreation(result: false);
+      test(
+        'a typed link failure stays a warning that names the relation',
+        () async {
+          stubSourceTaskLookup(makeSourceTask());
+          stubCreateTask(makeNewTask('new-task-warn'));
+          stubTypedLinkCreation(result: false);
 
-        await withClock(Clock.fixed(testDate), () async {
-          final result = await handler.handle(sourceTaskId, {
-            'title': 'Cycle Task',
-            'relation': 'is_blocked_by',
+          await withClock(Clock.fixed(testDate), () async {
+            final result = await handler.handle(sourceTaskId, {
+              'title': 'Cycle Task',
+              'relation': 'is_blocked_by',
+            });
+
+            // Task creation stays the primary outcome (a failure would make a
+            // retried confirmation create a second task), but the warning must
+            // say exactly which relationship is missing.
+            expect(result.success, isTrue);
+            expect(result.mutatedEntityId, 'new-task-warn');
+            expect(
+              result.output,
+              contains(
+                '"is blocked by" relationship could not be recorded',
+              ),
+            );
+            expect(result.output, contains('link the tasks manually'));
           });
-
-          expect(result.success, isTrue);
-          expect(result.mutatedEntityId, 'new-task-warn');
-          expect(result.output, contains('failed to link source task'));
-        });
-      });
+        },
+      );
 
       test('no relation keeps the historic untyped call shape', () async {
         stubSourceTaskLookup(makeSourceTask());

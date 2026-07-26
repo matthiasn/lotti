@@ -199,7 +199,7 @@ class FollowUpTaskHandler {
         );
       }
       if (!linked) {
-        warnings.add('Warning: failed to link source task');
+        warnings.add(_linkFailureWarning(relation));
       }
     } catch (e) {
       _domainLogger?.error(
@@ -210,7 +210,7 @@ class FollowUpTaskHandler {
             '${DomainLogger.sanitizeId(newTaskId)}',
         subDomain: _sub,
       );
-      warnings.add('Warning: failed to link source task');
+      warnings.add(_linkFailureWarning(relation));
     }
 
     // Inherit project from source task.
@@ -240,6 +240,20 @@ class FollowUpTaskHandler {
       mutatedEntityId: newTaskId,
     );
   }
+
+  /// The warning for a failed source↔new-task link.
+  ///
+  /// Task creation is the primary outcome and stays a success — a
+  /// compensating delete would destroy the task the user asked for, and a
+  /// failure result would make a retried confirmation create a second task.
+  /// A typed relationship is load-bearing though, so its warning names
+  /// exactly what is missing instead of a generic "failed to link".
+  static String _linkFailureWarning(DirectedRelation? relation) =>
+      relation == null
+      ? 'Warning: failed to link source task'
+      : 'Warning: the task was created but the '
+            '"${relation.englishPhrase}" relationship could not be recorded '
+            '— link the tasks manually';
 
   /// Parses a priority string. Returns `null` if the value is present but
   /// not a recognized priority string (caller should reject).
