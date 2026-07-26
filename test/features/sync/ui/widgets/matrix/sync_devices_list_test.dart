@@ -385,6 +385,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a header refresh resolving after the list is disposed is a '
+      'no-op', (tester) async {
+    final pendingFetch = Completer<List<SyncDeviceInfo>>();
+    when(
+      () => mockMatrixService.getSyncDevices(),
+    ).thenAnswer((_) => pendingFetch.future);
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([currentDevice]),
+    );
+
+    await tester.tap(find.byKey(const Key('sync_devices_refresh')));
+    await tester.pump();
+
+    // The sheet closes while the fetch is still in flight.
+    await tester.pumpWidget(const SizedBox.shrink());
+    pendingFetch.complete(const [currentDevice]);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('two users sharing a device id render as distinct cards', (
     tester,
   ) async {

@@ -43,6 +43,9 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
       final succeeded = await ref
           .read(syncDevicesControllerProvider.notifier)
           .refresh();
+      // The sheet can close while the fetch was in flight; a disposed
+      // state must not touch its ref again.
+      if (!mounted) return;
       ref.invalidate(matrixUnverifiedControllerProvider);
       if (!succeeded && mounted) {
         context.showToast(
