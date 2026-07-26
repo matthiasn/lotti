@@ -253,6 +253,39 @@ PlannedBlock parsePlannedBlock({
       'blocks planned for today must not start before current time',
     );
   }
+  // `committed` asserts that the *user approved this block*. Only two things
+  // may say that, and neither is the model: the user committing the day
+  // through the UI, and `acceptPlanDiff` on an already-agreed plan. So the
+  // only legitimate `committed` block the model can emit is a faithful repeat
+  // of one the plan already had — which is what a re-draft over an agreed
+  // plan does.
+  //
+  // Unconditional, not just for the past. The past-start guard above happened
+  // to catch the backdated case, which made this look covered; a future-dated
+  // `committed` block sailed through and persisted, projecting to the UI as
+  // agreed work the user never agreed to. Observed in 4 of 9 archived eval
+  // runs, always on `bindingDirective`, always a single 09:00 block titled
+  // "Already scheduled" — the model depicting the directive's
+  // `alreadyScheduledMinutes` as existing commitments. A fair thing to want to
+  // say, and `drafted` says it without claiming the user's verdict.
+  if (blockState == PlannedBlockState.committed) {
+    if (!carriedForward) {
+      throw const DayAgentCaptureException(
+        'blocks may not be created as committed — committed means the user '
+        'approved this block, which only they can do. Use drafted',
+      );
+    }
+    // The baseline block verbatim, not the model's version of it. Matching on
+    // id, start and state proves the block *existed* and was approved; it says
+    // nothing about the end time, title, task, category, type, reason or note
+    // the model wrote around them. Rebuilding from those fields would let a
+    // re-draft rewrite approved work under the user's prior consent — the same
+    // defect as inventing a committed block, wearing a real block's id.
+    //
+    // Changing a committed block is what `propose_plan_diff` is for, where the
+    // user sees the change and accepts it.
+    return baseline;
+  }
   final reason = optionalStringArg(data['reason']);
   if (blockType == PlannedBlockType.ai && reason == null) {
     throw const DayAgentCaptureException(

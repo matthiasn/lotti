@@ -318,6 +318,13 @@ const dayAgentTools = <AgentToolDefinition>[
               },
               'state': {
                 'type': 'string',
+                // `committed` stays in the enum, unlike `cal`, because it has
+                // one legitimate use: repeating a block the plan already had
+                // as committed. Removing it would force a re-draft to call
+                // such a block `drafted` and silently un-commit work the user
+                // approved. The description carries the rule the parser
+                // enforces, so the one valid case is reachable and the
+                // invented one is not attempted.
                 'enum': [
                   'drafted',
                   'committed',
@@ -325,6 +332,12 @@ const dayAgentTools = <AgentToolDefinition>[
                   'completed',
                   'dropped',
                 ],
+                'description':
+                    'Defaults to "drafted". Use "committed" ONLY to repeat a '
+                    'block that is already committed in '
+                    '`drafting.baselinePlan`, at the same id and start — it '
+                    'asserts the user approved this block, and creating one '
+                    'is rejected.',
               },
               'reason': {
                 'type': 'string',

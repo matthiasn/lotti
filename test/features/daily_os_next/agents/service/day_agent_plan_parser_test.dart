@@ -93,6 +93,148 @@ void main() {
       );
     });
 
+    group('committed blocks assert user approval', () {
+      test('rejects a freshly invented committed block', () {
+        // Future-dated on purpose: the past-start guard already caught the
+        // backdated case, which made this look covered. It was not — a
+        // forward-dated committed block persisted and projected to the UI as
+        // work the user had agreed to. Observed in 4 of 9 archived eval runs,
+        // always a single 09:00 block on bindingDirective.
+        expect(
+          () => parse(rawBlock()..['state'] = 'committed'),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('may not be created as committed'),
+            ),
+          ),
+        );
+      });
+
+      test('rejects it even with no past-start guard in play at all', () {
+        // A future-day draft passes earliestDraftStart: null, so the past-start
+        // guard is inert. The commitment rule has to stand on its own.
+        expect(
+          () => parse(rawBlock()..['state'] = 'committed'),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+      });
+
+      test('still repeats an already-committed baseline block', () {
+        // The one legitimate use, and the reason `committed` stays in the tool
+        // schema: a re-draft over an agreed plan must be able to carry the
+        // user's approved blocks forward without downgrading them.
+        final block = parse(
+          rawBlock()
+            ..['state'] = 'committed'
+            ..['id'] = 'block-existing',
+          baselineBlocks: {
+            'block-existing': _baselineBlock(
+              id: 'block-existing',
+              start: DateTime(2026, 3, 16, 9),
+              state: PlannedBlockState.committed,
+            ),
+          },
+        );
+
+        expect(block.state, PlannedBlockState.committed);
+        expect(block.id, 'block-existing');
+      });
+
+      test('returns the baseline verbatim, ignoring what the model wrote', () {
+        // Matching id, start and state proves the block existed and was
+        // approved. It says nothing about the fields written around them, so
+        // rebuilding from the model's payload would let a re-draft rewrite
+        // approved work under the user's prior consent — the same defect as
+        // inventing a committed block, wearing a real block's id.
+        final baseline = _baselineBlock(
+          id: 'block-existing',
+          start: DateTime(2026, 3, 16, 9),
+          state: PlannedBlockState.committed,
+        );
+
+        final block = parse(
+          rawBlock(
+              title: 'Rewritten title',
+              endHour: 12,
+              reason: 'different reason',
+            )
+            ..['state'] = 'committed'
+            ..['id'] = 'block-existing'
+            ..['taskId'] = 'task-smuggled'
+            ..['note'] = 'smuggled note',
+          decidedTaskIds: const {'task-smuggled'},
+          baselineBlocks: {'block-existing': baseline},
+        );
+
+        expect(block, baseline);
+        expect(block.title, 'block-existing');
+        expect(block.endTime, DateTime(2026, 3, 16, 10));
+        expect(block.taskId, isNull);
+        expect(block.note, isNull);
+      });
+
+      test('will not promote a drafted baseline block to committed', () {
+        // Matching an id is not approval. The baseline block was drafted, so
+        // calling it committed invents the user's verdict just as much as a
+        // brand-new block would.
+        expect(
+          () => parse(
+            rawBlock()
+              ..['state'] = 'committed'
+              ..['id'] = 'block-existing',
+            baselineBlocks: {
+              'block-existing': _baselineBlock(
+                id: 'block-existing',
+                start: DateTime(2026, 3, 16, 9),
+                state: PlannedBlockState.drafted,
+              ),
+            },
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('may not be created as committed'),
+            ),
+          ),
+        );
+      });
+
+      test('will not move a committed baseline block to a new time', () {
+        // Same id, same state, different start: that is rescheduling approved
+        // work, which goes through an approved diff, not a redraft.
+        expect(
+          () => parse(
+            rawBlock(startHour: 11, endHour: 12)
+              ..['state'] = 'committed'
+              ..['id'] = 'block-existing',
+            baselineBlocks: {
+              'block-existing': _baselineBlock(
+                id: 'block-existing',
+                start: DateTime(2026, 3, 16, 9),
+                state: PlannedBlockState.committed,
+              ),
+            },
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+      });
+
+      test('leaves the other states alone', () {
+        // Only commitment is the user's to grant. History states stay
+        // governed by the past-start rule, not by this one.
+        for (final state in ['drafted', 'inProgress', 'completed', 'dropped']) {
+          expect(
+            parse(rawBlock()..['state'] = state).startTime,
+            DateTime(2026, 3, 16, 9),
+            reason: 'state=$state must still parse',
+          );
+        }
+      });
+    });
+
     group('earliestDraftStart guard', () {
       final earliest = DateTime(2026, 3, 16, 14);
 

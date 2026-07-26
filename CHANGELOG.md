@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one, so it stops guessing parent/child roles from link direction and won't
   re-suggest a relationship that already exists.
 
+### Fixed
+- **The planner can no longer mark blocks as agreed on your behalf.** A fresh
+  plan could come back with blocks already marked committed — the state that
+  means *you approved this* — so work you had never seen presented itself as
+  settled, and uncommitting the day was the only way to undo it. Only you can
+  commit a block now. A re-plan still carries forward blocks you already
+  committed, unchanged.
+
 ## [0.9.1070]
 ### Fixed
 - **Removing a dead device now unblocks sync immediately.** Deleting a device
