@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -634,6 +635,148 @@ void main() {
             () => mockPersistenceLogic.createLink(
               fromId: sourceTaskId,
               toId: 'new-task-003',
+            ),
+          ).called(1);
+        });
+      });
+    });
+
+    group('typed relation', () {
+      void stubTypedLinkCreation({bool result = true}) {
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async => result);
+      }
+
+      test('rejects an unknown relation before creating anything', () async {
+        stubSourceTaskLookup(makeSourceTask());
+
+        final result = await handler.handle(sourceTaskId, {
+          'title': 'Doomed Task',
+          'relation': 'parent_of',
+        });
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Invalid relation');
+        expect(result.output, contains('is_superseded_by'));
+        verifyNever(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      });
+
+      test('"blocks" stores the source task as the blocker of the new task',
+          () async {
+        stubSourceTaskLookup(makeSourceTask());
+        stubCreateTask(makeNewTask('new-task-b1'));
+        stubTypedLinkCreation();
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(sourceTaskId, {
+            'title': 'Downstream Task',
+            'relation': 'blocks',
+          });
+
+          expect(result.success, isTrue);
+          expect(result.output, contains('this task blocks it'));
+          verify(
+            () => mockPersistenceLogic.createLink(
+              fromId: sourceTaskId,
+              toId: 'new-task-b1',
+              linkType: EntryLinkType.blocks,
+            ),
+          ).called(1);
+        });
+      });
+
+      test('"is_blocked_by" stores the NEW task as the blocker', () async {
+        stubSourceTaskLookup(makeSourceTask());
+        stubCreateTask(makeNewTask('new-task-b2'));
+        stubTypedLinkCreation();
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(sourceTaskId, {
+            'title': 'Prerequisite Task',
+            'relation': 'is_blocked_by',
+          });
+
+          expect(result.success, isTrue);
+          expect(result.output, contains('this task is blocked by it'));
+          verify(
+            () => mockPersistenceLogic.createLink(
+              fromId: 'new-task-b2',
+              toId: sourceTaskId,
+              linkType: EntryLinkType.blocks,
+            ),
+          ).called(1);
+        });
+      });
+
+      test('"is_superseded_by" stores the NEW task as the superseder',
+          () async {
+        stubSourceTaskLookup(makeSourceTask());
+        stubCreateTask(makeNewTask('new-task-s1'));
+        stubTypedLinkCreation();
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(sourceTaskId, {
+            'title': 'Replacement Task',
+            'relation': 'is_superseded_by',
+          });
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockPersistenceLogic.createLink(
+              fromId: 'new-task-s1',
+              toId: sourceTaskId,
+              linkType: EntryLinkType.supersedes,
+            ),
+          ).called(1);
+        });
+      });
+
+      test('a typed link failure stays a warning, not a failure', () async {
+        stubSourceTaskLookup(makeSourceTask());
+        stubCreateTask(makeNewTask('new-task-warn'));
+        stubTypedLinkCreation(result: false);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(sourceTaskId, {
+            'title': 'Cycle Task',
+            'relation': 'is_blocked_by',
+          });
+
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, 'new-task-warn');
+          expect(result.output, contains('failed to link source task'));
+        });
+      });
+
+      test('no relation keeps the historic untyped call shape', () async {
+        stubSourceTaskLookup(makeSourceTask());
+        stubCreateTask(makeNewTask('new-task-plain'));
+        stubLinkCreation();
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(sourceTaskId, {
+            'title': 'Plain Task',
+          });
+
+          expect(result.success, isTrue);
+          expect(result.output, isNot(contains('this task')));
+          // The untyped overload (no linkType argument) is what preserves
+          // pre-relation behavior; a typed call would not match this shape.
+          verify(
+            () => mockPersistenceLogic.createLink(
+              fromId: sourceTaskId,
+              toId: 'new-task-plain',
             ),
           ).called(1);
         });

@@ -4033,6 +4033,76 @@ void main() {
       );
 
       test(
+        'create_follow_up_task with a relation names it in the summary',
+        () async {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-split-rel',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'create_follow_up_task',
+                arguments: jsonEncode({
+                  'title': 'Prerequisite work',
+                  'relation': 'is_blocked_by',
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(csBuilder.items, hasLength(1));
+          expect(csBuilder.items.first.args['relation'], 'is_blocked_by');
+          expect(
+            csBuilder.items.first.humanSummary,
+            'Create follow-up task: "Prerequisite work" — '
+            'this task is blocked by it',
+          );
+        },
+      );
+
+      test(
+        'create_follow_up_task rejects an unknown relation fail-closed',
+        () async {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-split-bad',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'create_follow_up_task',
+                arguments: jsonEncode({
+                  'title': 'Doomed',
+                  'relation': 'parent_of',
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(csBuilder.items, isEmpty);
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-split-bad',
+              response: any(
+                named: 'response',
+                that: allOf(
+                  contains('"relation" must be one of'),
+                  contains('No proposal was queued'),
+                ),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'migrate_checklist_items passes targetTaskId as groupId',
         () async {
           final toolCalls = [

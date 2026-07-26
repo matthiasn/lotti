@@ -498,16 +498,24 @@ class ChangeSetBuilder {
     final title = args['title'];
     final dueDate = args['dueDate'];
     final priority = args['priority'];
-    // Canonicalize: trim whitespace, uppercase priority so trivial
-    // formatting differences don't produce different placeholders.
+    final relation = args['relation'];
+    // Canonicalize: trim whitespace, uppercase priority, lowercase relation
+    // so trivial formatting differences don't produce different placeholders.
     final canonTitle = title is String ? title.trim() : '';
     final canonDueDate = dueDate is String ? dueDate.trim() : '';
     final canonPriority = priority is String
         ? priority.trim().toUpperCase()
         : '';
+    final canonRelation = relation is String
+        ? relation.trim().toLowerCase()
+        : '';
+    // The relation joins the key only when present, so proposals without one
+    // keep their pre-relation placeholder and still dedup across wakes
+    // against pending items queued before the parameter existed.
     final placeholderId = deterministicPlaceholder(
       taskId,
-      '$canonTitle|$canonDueDate|$canonPriority',
+      '$canonTitle|$canonDueDate|$canonPriority'
+      '${canonRelation.isEmpty ? '' : '|$canonRelation'}',
     );
 
     final enrichedArgs = Map<String, dynamic>.from(args);
@@ -526,6 +534,13 @@ class ChangeSetBuilder {
         enrichedArgs.remove('priority');
       } else {
         enrichedArgs['priority'] = canonPriority;
+      }
+    }
+    if (relation is String) {
+      if (canonRelation.isEmpty) {
+        enrichedArgs.remove('relation');
+      } else {
+        enrichedArgs['relation'] = canonRelation;
       }
     }
     enrichedArgs['_placeholderTaskId'] = placeholderId;

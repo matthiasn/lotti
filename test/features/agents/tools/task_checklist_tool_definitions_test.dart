@@ -102,6 +102,14 @@ void main() {
         expect((properties['description'] as Map)['type'], equals('string'));
       });
 
+      test('relation is an optional enum of the directed wire vocabulary', () {
+        final properties = tool.parameters['properties'] as Map;
+        final relationProp = properties['relation'] as Map;
+        expect(relationProp['type'], equals('string'));
+        expect(relationProp['enum'], equals(taskRelationWireNames));
+        expect(tool.parameters['required'], isNot(contains('relation')));
+      });
+
       test('is in deferredTools', () {
         expect(
           AgentToolRegistry.deferredTools,

@@ -99,11 +99,14 @@ const taskChecklistTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: TaskAgentToolNames.createFollowUpTask,
     description:
-        'Create a follow-up task linked to the current task. Use when the '
+        'Create a new task linked to the current task. Use when the '
         'user describes a distinct new task in audio or notes, especially '
-        'when combined with checklist items to migrate. The new task '
-        "inherits the source task's category. Returns a placeholder "
-        'targetTaskId for use with migrate_checklist_items.',
+        'when combined with checklist items to migrate. When the user '
+        'states HOW the new task relates to this one — "this task is '
+        'blocked by a new task X", "a follow-up will supersede this" — '
+        'pass the matching relation; omit it for a plain association. The '
+        "new task inherits the source task's category. Returns a "
+        'placeholder targetTaskId for use with migrate_checklist_items.',
     parameters: {
       'type': 'object',
       'properties': {
@@ -127,6 +130,7 @@ const taskChecklistTools = <AgentToolDefinition>[
               'Optional description text for the new task. '
               "Becomes the task's entry text.",
         },
+        'relation': taskRelationParameterSchema,
       },
       'required': ['title'],
       'additionalProperties': false,

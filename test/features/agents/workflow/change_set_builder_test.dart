@@ -2426,6 +2426,71 @@ void main() {
       expect(args['priority'], 'HIGH');
     });
 
+    test('canonicalizes the relation and keys the placeholder on it',
+        () async {
+      await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up R', 'relation': '  IS_BLOCKED_BY '},
+        humanSummary: 'Create follow-up task R',
+      );
+
+      final args = builder.items.single.args;
+      expect(args['relation'], 'is_blocked_by');
+      // The relation joins the distinguishing key only when present…
+      expect(
+        args['_placeholderTaskId'],
+        ChangeSetBuilder.deterministicPlaceholder(
+          'task-001',
+          'Follow-Up R|||is_blocked_by',
+        ),
+      );
+    });
+
+    test('a relation-less proposal keeps its pre-relation placeholder',
+        () async {
+      // …so proposals queued before the parameter existed still dedup
+      // against identical relation-less ones across the upgrade.
+      final placeholder = await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up R2'},
+        humanSummary: 'Create follow-up task R2',
+      );
+
+      expect(
+        placeholder,
+        ChangeSetBuilder.deterministicPlaceholder('task-001', 'Follow-Up R2||'),
+      );
+      expect(builder.items.single.args.containsKey('relation'), isFalse);
+    });
+
+    test('strips a whitespace-only relation from enriched args', () async {
+      await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up R3', 'relation': '   '},
+        humanSummary: 'Create follow-up task R3',
+      );
+
+      final args = builder.items.single.args;
+      expect(args.containsKey('relation'), isFalse);
+      expect(
+        args['_placeholderTaskId'],
+        ChangeSetBuilder.deterministicPlaceholder('task-001', 'Follow-Up R3||'),
+      );
+    });
+
+    test('the same title with different relations queues twice', () async {
+      // Direction is part of a relationship's identity, so "blocks" and
+      // "is_blocked_by" over the same new task title are distinct proposals.
+      final p1 = await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up R4', 'relation': 'blocks'},
+        humanSummary: 'Create follow-up task R4 (blocks)',
+      );
+      final p2 = await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up R4', 'relation': 'is_blocked_by'},
+        humanSummary: 'Create follow-up task R4 (is blocked by)',
+      );
+
+      expect(p1, isNot(p2));
+      expect(builder.items, hasLength(2));
+    });
+
     test('uses placeholder as default groupId', () async {
       final placeholder = await builder.addFollowUpTask(
         args: {'title': 'Follow-Up C'},

@@ -43,6 +43,17 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
     // Route create_follow_up_task to the dedicated builder method that
     // injects a placeholder ID and returns it for migrate_checklist_items.
     if (toolName == TaskAgentToolNames.createFollowUpTask) {
+      // Fail-closed on an unparseable relation so the user never reviews a
+      // proposal the apply path would reject anyway.
+      final rawRelation = args['relation'];
+      if (rawRelation != null &&
+          (rawRelation is! String ||
+              DirectedRelation.fromWireName(rawRelation) == null)) {
+        return 'ERROR: "relation" must be one of '
+            '${taskRelationWireNames.join(', ')}, or omitted for a plain '
+            'link. No proposal was queued.';
+      }
+
       final placeholderId = await csBuilder.addFollowUpTask(
         args: args,
         humanSummary: _generateHumanSummary(toolName, args),
@@ -325,8 +336,16 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         'Set status to ${args['status'] ?? '?'}',
       TaskAgentToolNames.setTaskLanguage =>
         'Set language to "${args['languageCode'] ?? '?'}"',
-      TaskAgentToolNames.createFollowUpTask =>
-        'Create follow-up task: "${args['title'] ?? ''}"',
+      TaskAgentToolNames.createFollowUpTask => () {
+        final rawRelation = args['relation'];
+        final relation = rawRelation is String
+            ? DirectedRelation.fromWireName(rawRelation)
+            : null;
+        final base = 'Create follow-up task: "${args['title'] ?? ''}"';
+        return relation == null
+            ? base
+            : '$base — this task ${relation.englishPhrase} it';
+      }(),
       TaskAgentToolNames.createTimeEntry => () {
         final startRaw = args['startTime'] is String
             ? args['startTime'] as String

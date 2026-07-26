@@ -6,7 +6,9 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/task_link_tool_definitions.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -18,7 +20,14 @@ import 'package:uuid/uuid.dart';
 ///
 /// Used by the task agent's split workflow: the agent identifies a new task
 /// from user audio/notes, calls `create_follow_up_task`, and the handler
-/// creates the task entity plus a `BasicLink` from source to new task.
+/// creates the task entity plus exactly one link from source to new task.
+///
+/// Without a `relation` argument that link is a plain `BasicLink` from
+/// source to new task (the historic behavior). With a `relation` — one of
+/// the directed wire phrases from `DirectedRelation.wireNames`, read with
+/// the SOURCE task as subject ("this task is_blocked_by the new task") —
+/// the single edge is typed, and inverse phrases swap `fromId`/`toId` so
+/// the canonical stored direction matches the UI's (ADR 0042).
 ///
 /// The new task inherits the source task's category and project. Priority
 /// defaults to P2 if not specified.
@@ -90,6 +99,21 @@ class FollowUpTaskHandler {
         errorMessage: 'Invalid dueDate',
       );
     }
+    // Validated before any write so an invalid relation cannot leave an
+    // orphaned task behind.
+    final rawRelation = args['relation'];
+    final relation = rawRelation is String
+        ? DirectedRelation.fromWireName(rawRelation)
+        : null;
+    if (rawRelation != null && relation == null) {
+      return ToolExecutionResult(
+        success: false,
+        output:
+            'Error: "relation" must be one of '
+            '${taskRelationWireNames.join(', ')}',
+        errorMessage: 'Invalid relation',
+      );
+    }
     final description = args['description'];
 
     // Look up category defaults for profile inheritance.
@@ -154,14 +178,31 @@ class FollowUpTaskHandler {
       warnings: warnings,
     );
 
-    // Link source task → new task. Wrapped in try-catch so a link failure
-    // does not lose the already-created task ID. Also checks the bool return
-    // value since PersistenceLogic.createLink reports some failures that way.
+    // Link source task ↔ new task. Without a relation this is the historic
+    // plain link from source to new task; with one, the single edge is typed
+    // and canonically directed (mirroring the UI's LinkTaskModal create
+    // path, which never writes a basic edge alongside a typed one).
+    // Wrapped in try-catch so a link failure does not lose the
+    // already-created task ID. Also checks the bool return value since
+    // PersistenceLogic.createLink reports some failures that way.
     try {
-      final linked = await _persistenceLogic.createLink(
-        fromId: sourceTaskId,
-        toId: newTaskId,
-      );
+      final bool linked;
+      if (relation == null) {
+        linked = await _persistenceLogic.createLink(
+          fromId: sourceTaskId,
+          toId: newTaskId,
+        );
+      } else {
+        final endpoints = relation.canonicalEndpoints(
+          anchorId: sourceTaskId,
+          otherId: newTaskId,
+        );
+        linked = await _persistenceLogic.createLink(
+          fromId: endpoints.fromId,
+          toId: endpoints.toId,
+          linkType: relation.type,
+        );
+      }
       if (!linked) {
         warnings.add('Warning: failed to link source task');
       }
@@ -181,6 +222,9 @@ class FollowUpTaskHandler {
     await _tryInheritProject(sourceTaskId, newTaskId, warnings);
 
     final output = StringBuffer('Created follow-up task "$title" ($newTaskId)');
+    if (relation != null) {
+      output.write(' — this task ${relation.englishPhrase} it');
+    }
     for (final w in warnings) {
       output.write('. $w');
     }
