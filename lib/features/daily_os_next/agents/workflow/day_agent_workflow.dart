@@ -37,7 +37,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart'
-    show advertisedPlanningStart;
+    show advertisedPlanningStart, planningWindowClosed;
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
@@ -333,6 +333,7 @@ class DayAgentWorkflow {
     );
     final refineContext = await _refineContext(
       agentIdentity: agentIdentity,
+      planDate: dayDate,
       wakeContext: wakeContext,
     );
     final attentionPlanning = await _attentionPlanningContext(dayDate);

@@ -79,11 +79,23 @@ at the instant the prompt advertised is *always* rejected: every sampled
 `15:00:00.005877`, and all 6/6 lost by under six milliseconds. Complying would
 have meant predicting inference latency.
 
-The drafting context therefore advertises `drafting.earliestStart` —
+The drafting and refine contexts therefore advertise `earliestStart` —
 `advertisedPlanningStart`, the first five-minute boundary at least three minutes
-out — rather than the raw instant. The guard is unchanged and unweakened; only
-what the model is *told to aim at* moved, so a plan built on it is still legal
-when it lands. It still accepts
+out — rather than the raw instant. Refine carries it too, because
+`proposePlanDiff` enforces the same guard. The guard is unchanged and
+unweakened; only what the model is *told to aim at* moved, so a plan built on it
+is still legal when it lands.
+
+Late enough in the day, walking forward for that headroom runs past midnight,
+and a block outside the plan day is rejected just as firmly — advertising
+00:05 tomorrow would steer the model into the same rejection from the other
+end. So the window **closes** instead: `advertisedPlanningStart` returns null
+once no five-minute slot remains, and `planningWindowClosed` marks that
+distinctly from a day that has not begun. Collapsing the two would let a wake at
+23:58 plan freely from this morning.
+
+Wakes carrying neither section still get the original rule stated against
+`<current_local_time>`, since `draft_day_plan` is always exposed. It still accepts
 earlier blocks whose state is `inProgress`, `completed` or `dropped`, because
 those record what actually happened rather than new planning, and it accepts a
 block that **repeats an existing baseline block at the same id and start**, which

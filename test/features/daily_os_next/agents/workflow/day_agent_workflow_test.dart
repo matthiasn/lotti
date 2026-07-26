@@ -3243,6 +3243,51 @@ void main() {
       },
     );
 
+    test('refine wakes get the same stated floor as drafting', () async {
+      // Refine enforces the same past-start guard through proposePlanDiff, so
+      // a rule keyed only on drafting.earliestStart would leave these wakes
+      // deriving the threshold — the exact failure drafting had.
+      final planService = MockDayAgentPlanService();
+      when(
+        () => planService.draftPlanForDay(agentId: agentId, dayId: dayId),
+      ).thenAnswer((_) async => null);
+
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 15, 0, 0, 5, 877)),
+        () => workflow(planService: planService).execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {
+            dayAgentRefineToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final refine = sentPrompt().json('refine')! as Map<String, dynamic>;
+      expect(refine['earliestStart'], '2026-05-25T15:05:00.000');
+      expect(
+        conversationRepository.lastSystemMessage,
+        contains('refine.earliestStart'),
+      );
+    });
+
+    test(
+      'keeps a past-start rule for wakes carrying neither section',
+      () async {
+        // The always-exposed draft_day_plan means a wake with no drafting or
+        // refine section can still place blocks, and the writer still guards
+        // them. Removing the fallback left those models unwarned.
+        await execute(workflow());
+
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('do not start any block'),
+        );
+      },
+    );
     test('omits earliestStart when the plan day has not begun', () async {
       final planService = MockDayAgentPlanService();
       stubDraftingPlanContext(planService);

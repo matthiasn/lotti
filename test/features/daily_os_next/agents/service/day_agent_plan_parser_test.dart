@@ -323,6 +323,72 @@ void main() {
       }
     });
 
+    test('closes the window rather than advertising tomorrow', () {
+      // The same bug at the other end of the day: walking forward for headroom
+      // runs past midnight, and `parsePlannedBlock` rejects anything outside
+      // the plan day — so advertising it would steer the model straight into
+      // the rejection this function exists to prevent.
+      for (final now in [
+        DateTime(2026, 7, 26, 23, 56),
+        DateTime(2026, 7, 26, 23, 58),
+        DateTime(2026, 7, 26, 23, 59, 59),
+      ]) {
+        expect(
+          advertisedPlanningStart(planDate: planDate, now: now),
+          isNull,
+          reason: 'must not advertise a slot outside the plan day at $now',
+        );
+        expect(
+          planningWindowClosed(planDate: planDate, now: now),
+          isTrue,
+          reason: 'closed is not the same as unconstrained',
+        );
+      }
+    });
+
+    test('still advertises the last usable slot of the day', () {
+      // 23:55-00:00 is a legal five-minute block, so the window is not closed
+      // yet. Closing it early would silently drop the tail of the day.
+      final now = DateTime(2026, 7, 26, 23, 50);
+
+      expect(
+        advertisedPlanningStart(planDate: planDate, now: now),
+        DateTime(2026, 7, 26, 23, 55),
+      );
+      expect(planningWindowClosed(planDate: planDate, now: now), isFalse);
+    });
+
+    test('a closed window is distinguishable from an unconstrained day', () {
+      // Both leave advertisedPlanningStart null. Collapsing them would let a
+      // wake at 23:58 plan freely from this morning.
+      expect(
+        planningWindowClosed(
+          planDate: planDate,
+          now: DateTime(2026, 7, 25, 23, 58),
+        ),
+        isFalse,
+        reason: 'a future plan day is unconstrained, not closed',
+      );
+    });
+
+    test('never advertises a start outside the plan day, at any minute', () {
+      for (var hour = 0; hour < 24; hour++) {
+        for (var minute = 0; minute < 60; minute++) {
+          final now = DateTime(2026, 7, 26, hour, minute);
+          final advertised = advertisedPlanningStart(
+            planDate: planDate,
+            now: now,
+          );
+          if (advertised == null) continue;
+          expect(
+            localDay(advertised),
+            localDay(planDate),
+            reason: 'advertised $advertised escaped the plan day from $now',
+          );
+        }
+      }
+    });
+
     test('gives the model at least the measured worst-case latency', () {
       // Wake latencies ran to 152s in the eval. The advertised start has to
       // stay valid across that gap or the model is asked to predict its own

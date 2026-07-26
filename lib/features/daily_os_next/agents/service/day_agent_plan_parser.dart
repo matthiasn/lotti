@@ -112,8 +112,29 @@ DateTime? advertisedPlanningStart({
   while (candidate.difference(earliest) < minimumPlanningHeadroom) {
     candidate = candidate.add(advertisedStartGranularity);
   }
+  // Late enough and the walk runs out of day: at 23:58 it lands on 00:05
+  // tomorrow, and `parsePlannedBlock` rejects anything outside the plan day —
+  // so advertising it would steer the model into the very rejection this
+  // function exists to prevent, at the other end of the day. Null means the
+  // window is closed, which [planningWindowClosed] distinguishes from the
+  // never-constrained future-day case.
+  final dayEnd = localDay(planDate).add(const Duration(days: 1));
+  if (candidate.add(advertisedStartGranularity).isAfter(dayEnd)) return null;
   return candidate;
 }
+
+/// Whether today's planning window has run out: the plan is for today, but no
+/// usable slot remains before midnight.
+///
+/// Distinct from "no constraint at all". Both leave [advertisedPlanningStart]
+/// null, and collapsing them would let a wake at 23:58 plan freely from 09:00
+/// this morning — the past-start guard would reject every block of it.
+bool planningWindowClosed({
+  required DateTime planDate,
+  required DateTime now,
+}) =>
+    earliestPlannableStart(planDate: planDate, now: now) != null &&
+    advertisedPlanningStart(planDate: planDate, now: now) == null;
 
 /// Validates and parses one model-emitted block into a [PlannedBlock],
 /// throwing [DayAgentCaptureException] on any contract violation: a `cal`

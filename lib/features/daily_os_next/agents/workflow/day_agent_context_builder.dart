@@ -688,6 +688,10 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         planDate: planDate,
         now: clock.now(),
       ),
+      planningWindowClosed: planningWindowClosed(
+        planDate: planDate,
+        now: clock.now(),
+      ),
       decidedTasks: decidedTasks,
       decidedCaptureItems: decidedCaptureItems,
       baselineTaskStates: await _baselineTaskStates(
@@ -747,6 +751,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
 
   Future<RefineContext?> _refineContext({
     required AgentIdentityEntity agentIdentity,
+    required DateTime planDate,
     required DailyOsPlannerWakeContext wakeContext,
   }) async {
     final service = planService;
@@ -757,6 +762,12 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       agentId: agentIdentity.agentId,
       dayId: wakeContext.dayId,
     );
-    return RefineContext(baselinePlan: baselinePlan);
+    return RefineContext(
+      baselinePlan: baselinePlan,
+      earliestStart: advertisedPlanningStart(
+        planDate: planDate,
+        now: clock.now(),
+      ),
+    );
   }
 }
