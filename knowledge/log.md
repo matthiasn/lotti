@@ -9,6 +9,9 @@
   relationships, the CI story and the build-runner trap. Four `lib/` READMEs were
   wrong too, and `memory-and-compaction`'s subject pointed at a directory holding
   one unrelated file.
+* **Creation**: Documented the slow-query capture's **second tier** — the 200 ms
+  threshold that also captures `EXPLAIN QUERY PLAN` and writes a separate
+  `super_slow_queries` file, which is the one worth reading first.
 * **Creation**: Documented three things the bundle had no home for — the
   `private` visibility gate every `JournalDb` read routes through (a filter, not
   a protection), `TaskStatus`'s five states and the fact that *nothing* constrains

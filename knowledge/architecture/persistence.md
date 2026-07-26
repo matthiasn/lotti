@@ -112,6 +112,13 @@ logs is already a meaningful slice of a frame. Writing is gated behind the
 logging domain in *Settings → Advanced → Logging Domains*, so the interceptor
 costs nothing until someone is investigating.
 
+**There is a second tier at 200 ms**, and it does more than log louder. A query
+crossing `superSlowThreshold` has its **`EXPLAIN QUERY PLAN` captured** (selects
+only) and is duplicated into a separate `super_slow_queries` file alongside the
+`slow_queries` one. So the 10 ms tier tells you *that* something is slow, while
+the 200 ms tier tells you *why* — start with the super-slow file, because it is
+the only one carrying a plan.
+
 The threshold deliberately does not catch N+1 chains: each individual link sits
 under the bar. Those are caught by the coalescers in `JournalDb` and by
 counting round-trips in tests. Tests and deep-dive captures pass
