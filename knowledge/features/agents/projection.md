@@ -5,7 +5,7 @@ description: "A pure, deterministic fold over an event *set* — proving that pr
 resource: ../../../lib/features/agents/projection
 tags: [agents, projection, determinism, convergence]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T19:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T20:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: src
@@ -87,11 +87,12 @@ as the current read path:
   messages and links derive an equal state regardless of arrival order. That is
   the guarantee **the mutable cache cannot make** under last-write-wins.
 
-`ShadowProjection` (`shadow_projection.dart`) is what that comparison is for: it
-checks the projection against the live mutable state and reports match or
-divergence, as a test assertion and an optional debug-mode runtime check. So today
-the fold's job is to make a drifted cache **detectable** rather than to serve
-reads.
+`compareShadowProjection` (`shadow_projection.dart`) is what that comparison is
+for: it checks the projection against the live mutable state and returns a
+`ShadowProjectionReport` — match or divergence — used as a test assertion and an
+optional debug-mode runtime check. There is no `ShadowProjection` type; the pieces
+are the function, that report and `ShadowProjectionStatus`. So today the fold's job
+is to make a drifted cache **detectable** rather than to serve reads.
 
 The projection is plain Dart with no I/O, so it can be exercised with property
 tests over shuffled event sets — the only honest way to test a claim about

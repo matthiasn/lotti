@@ -5,7 +5,7 @@ description: What is encrypted, what is not, where secrets live, and what leaves
 resource: ../..
 tags: [architecture, security, privacy, encryption, secure-storage]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T20:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: secure-storage
@@ -40,13 +40,13 @@ Matrix account is needed only for multi-device sync, and Matrix is decentralized
 network only on two paths: end-to-end encrypted sync to the user's own devices,
 and AI inference the user configured and triggered.
 
-**"Private" is a partial read filter, not a protection.** Marking an entry private
-thins it out of *some* list and search queries while the `private` config flag is
-off. The row is stored like any other, **by-id reads ignore the flag entirely** —
-so a detail page or a deep link still shows it — and most query mixins never
-consult the gate at all. See
-[persistence](persistence.md#some-reads-pass-a-private-visibility-gate). Treat it
-as a shoulder-surfing affordance, and never as a security boundary.
+**"Private" is a read filter, not a protection.** With the `private` config flag
+off, lists, searches and batch reads leave private entries out — but the row is
+stored like any other, and **fetching a single entity by id does not filter**, so a
+detail page or a deep link still shows it. See
+[persistence](persistence.md#private-visibility-is-gated-three-different-ways) for
+the three mechanisms and the exact reads that skip them. Treat it as a
+shoulder-surfing affordance, never as a security boundary.
 
 **The caveat: the SQLite databases are not encrypted at rest.** There is no
 SQLCipher in the dependency set. On-disk protection relies on OS-level

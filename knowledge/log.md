@@ -1,6 +1,13 @@
 # Knowledge Bundle Update Log
 
 ## 2026-07-26
+* **Fix**: Corrected an inverted rule and a doubly-overshot narrowing. The
+  `PROPAGATED::` prefix is **additive** — every emitter sends the bare token in the
+  same set, so matching it alone is complete, and the deferral it enables is opt-in
+  per subscription. The privacy gate has **three** mechanisms, nine of ten
+  query-bearing mixins use one, and what skips filtering is single-entity journal
+  reads, not by-id reads as a class. The stale source comment that seeded the
+  original error was corrected too.
 * **Fix**: Corrected three claims the previous day's fixes introduced — a
   notification payload is **not** token-only (it leads with the entity's own id,
   carries linked ids, and includes dynamic `PROJECT_ENTITY_UPDATE:<id>` keys),
