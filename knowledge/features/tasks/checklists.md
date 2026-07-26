@@ -81,9 +81,11 @@ celebration on the status pill.
 
 **Visual beats are gated** on the user's celebration switches
 (`.checklistItems` for the item pop/burst, wipe and 100% glow; `.tasks` for the
-task-done beat) and on system reduce-motion. **Haptics always fire** — the switch
-turns off animations, not feedback. Every beat fires only on the not-done → done
-transition.
+task-done beat) and on system reduce-motion.
+
+**Those switches do not silence haptics** — but a separate haptics preference
+does, honoured by passing `onCelebrate: null`. Every beat fires only on the
+not-done → done transition.
 
 # The checkbox is 20×20 inside a 44×44 target
 

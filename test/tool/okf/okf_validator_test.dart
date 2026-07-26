@@ -190,6 +190,21 @@ Body.
       expect(error.message, contains('must use ISO 8601'));
     });
 
+    test('a fenced example in log.md is not read as a heading', () {
+      final result = validateBundle(
+        _bundle(
+          _validFrontmatter,
+          extra: {
+            'log.md':
+                '# Log\n\n## 2026-05-22\n* **Update**: x\n\n'
+                '```markdown\n## example\n```\n',
+          },
+        ),
+      );
+
+      expect(result.errors, isEmpty);
+    });
+
     test('a well-formed log.md passes', () {
       final result = validateBundle(
         _bundle(
@@ -351,6 +366,71 @@ sources:
       expect(
         result.warnings.single.message,
         contains('duplicate `sources[].id`'),
+      );
+    });
+
+    test('a null sources value is flagged', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+''',
+          ),
+        ),
+      );
+
+      expect(
+        _joined(result.warnings),
+        contains('present but null'),
+      );
+    });
+
+    test('an empty sources list is flagged', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources: []
+''',
+          ),
+        ),
+      );
+
+      expect(result.warnings.single.message, contains('`sources` is empty'));
+    });
+
+    test('a bundle-absolute source resource is resolved in the bundle', () {
+      // Checked by nothing before: validateRepoReferences skips `/` prefixes
+      // because for a link that means bundle-relative, and the body-link
+      // scanner never sees frontmatter.
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: gone
+    resource: /domain/missing.md
+''',
+          ),
+        ),
+      );
+
+      expect(
+        result.warnings.single.message,
+        allOf(
+          contains('`sources[].resource`'),
+          contains('does not exist in the bundle'),
+        ),
       );
     });
 
@@ -589,6 +669,21 @@ sources:
       );
 
       expect(result.issues, isEmpty);
+    });
+
+    test('an angle-bracket destination with whitespace is scanned', () {
+      // The bracketed form exists to carry whitespace, so a whitespace-free
+      // character class silently missed it.
+      final result = validateBundle(
+        _bundle(
+          _concept(body: 'See [impl](<./missing file.md>).'),
+        ),
+      );
+
+      expect(
+        result.warnings.single.message,
+        contains('does not exist in the bundle'),
+      );
     });
 
     test('external URLs and anchors are not treated as bundle paths', () {

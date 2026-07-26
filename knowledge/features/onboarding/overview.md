@@ -44,8 +44,13 @@ flowchart TD
     WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
 ```
 
-**Skipping persists nothing** and preserves the grace period, so "look around
-first" is genuinely free.
+**Skipping preserves the grace period** — it records no completion, so the
+welcome remains eligible to reappear within its cadence budget.
+
+It is not, however, storage-neutral: the modal records a `welcomeSkipped` event,
+and the auto-show path has already written the shown count and first-shown
+timestamp *before* opening. What "look around first" costs you is a slot in the
+cadence budget, not the offer itself.
 
 # A dedicated measurement store
 

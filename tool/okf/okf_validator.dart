@@ -183,7 +183,13 @@ final _actorPattern = RegExp(
 // heading text is the candidate date — matching only a single token would let
 // `## May 22, 2026` slip through as "not a date heading at all".
 final _logDateHeadingPattern = RegExp(r'^##\s+(.+?)\s*$');
-final _markdownLinkPattern = RegExp(r'\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)');
+// Two destination forms: bare (`(path)`) and angle-bracketed (`(<path with
+// space>)`). The bracketed form exists precisely to carry whitespace, so a
+// whitespace-free character class silently misses it — and with it any dangling
+// pointer written that way.
+final _markdownLinkPattern = RegExp(
+  r'\[[^\]]*\]\(\s*(?:<([^>]*)>|([^)\s]+))(?:\s+"[^"]*")?\s*\)',
+);
 // Reference-style link definitions: `[label]: target "optional title"`. A
 // reference link (`[text][label]`) carries no target of its own, so scanning
 // only inline links would let `[impl]: ../../lib/gone.dart` pass while the
@@ -242,7 +248,8 @@ String stripCodeSpans(String markdown) {
 Iterable<String> linkTargets(String body) {
   final stripped = stripCodeSpans(body);
   return [
-    for (final m in _markdownLinkPattern.allMatches(stripped)) m.group(1)!,
+    for (final m in _markdownLinkPattern.allMatches(stripped))
+      (m.group(1) ?? m.group(2))!.trim(),
     for (final m in _referenceDefinitionPattern.allMatches(stripped))
       m.group(2)!,
   ];
@@ -392,7 +399,10 @@ List<OkfIssue> _validateConcept(
     ..addAll(_validateStaleAfter(path, frontmatter))
     ..addAll(_validateSources(path, frontmatter))
     ..addAll(_validateAttestedComputation(path, frontmatter, document.body))
-    ..addAll(_validateBundleLinks(path, document.body, knownPaths));
+    ..addAll(_validateBundleLinks(path, document.body, knownPaths))
+    ..addAll(
+      _validateBundleResources(path, document.frontmatterYaml, knownPaths),
+    );
 
   return issues;
 }
@@ -499,13 +509,39 @@ List<OkfIssue> _validateStaleAfter(String path, YamlMap frontmatter) {
 
 List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
   final sources = frontmatter['sources'];
-  if (sources == null) return const [];
+  // `sources: null` satisfies the containsKey house check and `sources: []`
+  // satisfies the list check with nothing to validate — either would let a
+  // concept carry no code provenance while the checker called it clean.
+  if (sources == null) {
+    return frontmatter.containsKey('sources')
+        ? [
+            OkfIssue(
+              severity: Severity.warning,
+              path: path,
+              message:
+                  '`sources` is present but null; a concept needs at '
+                  'least one source to be attributable (§5.1)',
+            ),
+          ]
+        : const [];
+  }
   if (sources is! YamlList) {
     return [
       OkfIssue(
         severity: Severity.warning,
         path: path,
         message: '`sources` must be a list of entries (§5.1)',
+      ),
+    ];
+  }
+  if (sources.isEmpty) {
+    return [
+      OkfIssue(
+        severity: Severity.warning,
+        path: path,
+        message:
+            '`sources` is empty; a concept needs at least one source to '
+            'be attributable (§5.1)',
       ),
     ];
   }
@@ -535,7 +571,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
           message: resource == null
               ? '`resource` is required within a `sources` entry (§5.1)'
               : '`sources[].resource` must be a non-empty string, '
-                  'got `$resource` (§5.1)',
+                    'got `$resource` (§5.1)',
         ),
       );
     }
@@ -777,7 +813,9 @@ List<OkfIssue> _validateLog(String path, String content) {
     );
   }
 
-  final lines = const LineSplitter().convert(content);
+  // Strip fences first, exactly as the link scanner does: a `## example` line
+  // inside a fenced Markdown sample is not a log heading.
+  final lines = const LineSplitter().convert(stripCodeSpans(content));
   var sawDateHeading = false;
   for (var i = 0; i < lines.length; i++) {
     final match = _logDateHeadingPattern.firstMatch(lines[i]);
@@ -820,13 +858,37 @@ List<OkfIssue> _validateBundleLinks(
   String path,
   String body,
   Set<String> knownPaths,
+) => _validateBundleTargets(path, linkTargets(body), knownPaths, 'link target');
+
+/// Checks bundle-internal `sources[].resource` values.
+///
+/// A resource may be bundle-absolute (`/domain/task.md`, §6.2). Those were
+/// checked by nothing: [validateRepoReferences] skips anything starting with
+/// `/` because for a Markdown link that means "relative to the bundle", and the
+/// body-link scanner never sees frontmatter. This closes that gap.
+List<OkfIssue> _validateBundleResources(
+  String path,
+  String? frontmatterYaml,
+  Set<String> knownPaths,
+) => _validateBundleTargets(
+  path,
+  _resourceTargets(frontmatterYaml).where((t) => t.startsWith('/')),
+  knownPaths,
+  '`sources[].resource`',
+);
+
+List<OkfIssue> _validateBundleTargets(
+  String path,
+  Iterable<String> targets,
+  Set<String> knownPaths,
+  String label,
 ) {
   final issues = <OkfIssue>[];
   final dir = path.contains('/')
       ? path.substring(0, path.lastIndexOf('/'))
       : '';
 
-  for (final target in linkTargets(body)) {
+  for (final target in targets) {
     if (target.startsWith('http://') ||
         target.startsWith('https://') ||
         target.startsWith('mailto:') ||
@@ -855,7 +917,7 @@ List<OkfIssue> _validateBundleLinks(
       OkfIssue(
         severity: Severity.warning,
         path: path,
-        message: 'link target `$target` does not exist in the bundle (§6.1)',
+        message: '$label `$target` does not exist in the bundle (§6.1)',
       ),
     );
   }

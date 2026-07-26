@@ -53,10 +53,15 @@ Every push to every branch runs:
 | `flutter-matrix-test.yml` | Sync tests against a real Matrix homeserver |
 | `okf-validate.yml` | This knowledge bundle stays conformant and its code pointers still resolve |
 
-Path-filtered workflows run only when their area changes: `manual.yml`
-(docs-site), `flatpak-foreign-deps.yml` (packaging manifests),
-`python-tools-ci.yml` (the Python tools), `type-check.yml` (mypy, advisory —
-it runs with `continue-on-error`).
+Two more run on **every** branch push despite looking scoped:
+
+- `type-check.yml` — mypy, with **no path filter at all**. Advisory: it runs
+  with `continue-on-error`.
+- `flatpak-foreign-deps.yml` — path-filtered on *pull requests*, but unfiltered
+  on branch pushes.
+
+Genuinely path-filtered, on pull requests only: `manual.yml` (docs-site) and
+`python-tools-ci.yml` (the Python tools).
 
 Buildkite pipelines under `.buildkite/` cover the Linux and Windows test lanes
 and JUnit upload. CI runs tests with `very_good test` in a **single thread**,
