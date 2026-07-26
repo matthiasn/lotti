@@ -1,4 +1,5 @@
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
 import 'package:meta/meta.dart';
 
 /// Value types the day-planning eval scores over.
@@ -203,6 +204,41 @@ class EvalFixtureInputs {
   /// Wall instant the draft ran at, for same-day scenarios. Null for a
   /// future-day draft, where "the past" has no meaning.
   final DateTime? now;
+
+  /// Working minutes the scenario actually leaves for planning.
+  ///
+  /// Bounded by the clock *and* by capacity, whichever binds harder, and
+  /// counted from the later of the working-day start and the instant the model
+  /// was told it may plan from. `lateStart` advertises 480 minutes of capacity
+  /// while leaving under two hours of clock, so scoring against capacity alone
+  /// would call an impossible day satisfiable.
+  ///
+  /// Uses production's own [advertisedPlanningStart] rather than raw [now]:
+  /// the prompt tells the model to start at 15:05, so counting its budget from
+  /// 15:00 would credit it five minutes it was explicitly forbidden to use, and
+  /// call a 118-minute plan fitting when the model was told it had 115.
+  int get plannableMinutes {
+    final dayStartMinutes = workingHoursStartHour * 60;
+    final advertised = now == null
+        ? null
+        : advertisedPlanningStart(planDate: planDate, now: now!);
+    // A same-day run late enough to close the window has no plannable time at
+    // all. Falling back to the working-day start there would report a full day
+    // and let a late-night impossible plan be graded as though it had one.
+    if (advertised == null &&
+        now != null &&
+        planningWindowClosed(planDate: planDate, now: now!)) {
+      return 0;
+    }
+    final startMinutes = advertised == null
+        ? dayStartMinutes
+        : (advertised.hour * 60 + advertised.minute) > dayStartMinutes
+        ? advertised.hour * 60 + advertised.minute
+        : dayStartMinutes;
+    final byClock = workingHoursEndHour * 60 - startMinutes;
+    if (byClock <= 0) return 0;
+    return byClock < capacityMinutes ? byClock : capacityMinutes;
+  }
 
   /// Ids the model could legitimately have used.
   ///

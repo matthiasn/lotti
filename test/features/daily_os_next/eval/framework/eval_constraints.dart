@@ -467,6 +467,76 @@ EvalConstraintResult scoreRespectsEstimates(EvalRunOutcome outcome) {
     );
     titleByTask.putIfAbsent(taskId, () => block.title ?? taskId);
   }
+  // On a day that cannot hold the work, truncation is not compression — it is
+  // the only honest plan, and the prompt explicitly asks for it ("place a task
+  // for less than its estimate and say so"). Judging allocation against a full
+  // estimate there fails a model for obeying, which is what it did: every
+  // `lateStart` sample placed "Finish the database migration (partial — 60 of
+  // 180 min)" and was marked down for the label it was told to write.
+  //
+  // The premise of this constraint is a day with room. `surfacedConflict`
+  // carries the other half — whether the model *said* the day does not fit —
+  // so nothing is lost by standing down here.
+  final placedEstimate = allocatedByTask.keys.fold<int>(
+    0,
+    (sum, taskId) =>
+        sum + (outcome.inputs.taskById(taskId)?.estimateMinutes ?? 0),
+  );
+  if (placedEstimate > outcome.inputs.plannableMinutes) {
+    // Standing down entirely was wrong: it let a plan of one-minute tokens
+    // score as clean as an honest partial one, since nothing else on an
+    // impossible day objects to under-filling. So the question changes rather
+    // than disappearing — not "did each task get its estimate", which is
+    // impossible here, but "did the plan use the time it had".
+    final allocated = allocatedByTask.values.fold<int>(0, (a, b) => a + b);
+    final plannable = outcome.inputs.plannableMinutes;
+    if (allocated * 2 < plannable) {
+      return EvalConstraintResult(
+        id: id,
+        passed: false,
+        detail:
+            'the day cannot hold this work, but the plan only fills '
+            '${allocated}min of $plannable plannable — shortening every '
+            'task to a token is not a partial placement',
+      );
+    }
+    // The aggregate is not enough on its own: one long task can supply the
+    // fill while the work the scenario actually requires is reduced to
+    // one-minute tokens, and nothing else objects — `requiredWorkPlaced` only
+    // checks that the id appears. So required work keeps a per-task floor. It
+    // is deliberately generous, since a genuinely partial placement is the
+    // point here; it only catches a token.
+    final tokenised = <String>[];
+    for (final taskId in outcome.inputs.requiredTaskIds) {
+      final minutes = allocatedByTask[taskId];
+      if (minutes == null) continue;
+      final estimate = outcome.inputs.taskById(taskId)?.estimateMinutes;
+      if (estimate == null || estimate <= 0) continue;
+      if (minutes * 10 < estimate) {
+        tokenised.add(
+          '"${titleByTask[taskId]}" got ${minutes}min of a ${estimate}min '
+          'estimate',
+        );
+      }
+    }
+    if (tokenised.isNotEmpty) {
+      return EvalConstraintResult(
+        id: id,
+        passed: false,
+        detail:
+            'the day cannot hold this work, but required work was reduced to '
+            'a token: ${tokenised.join('; ')}',
+      );
+    }
+    return EvalConstraintResult(
+      id: id,
+      passed: true,
+      detail:
+          'the day cannot hold this work ($placedEstimate min of estimates '
+          'against $plannable plannable), and the plan fills ${allocated}min '
+          'of it — a partial placement rather than a compressed one',
+    );
+  }
   final compressed = <String>[];
   var checked = 0;
   for (final entry in allocatedByTask.entries) {

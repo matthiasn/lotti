@@ -97,9 +97,13 @@ deliberately distinct, because collapsing any two misleads:
 
 | `<planning_window>` | Meaning |
 |---|---|
-| `{"earliestStart": …}` | today, still plannable — start here |
-| `{"closed": true}` | today, no usable slot left — add nothing |
-| `{}` | the day has not begun — no part of it is past |
+| `{"earliestStart": …, "availableMinutes": …}` | today, still plannable — start here, and this is how much is left |
+| `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add nothing |
+| `+ {"capacityMinutes": …, "scheduledMinutes": …}` | added on a refine wake — judge your *net* change against these, alongside whichever row above applies |
+| `{"availableMinutes": …}` | neither `earliestStart` nor `closed` — the day has not begun, so no part of it is past |
+
+`availableMinutes` is absent from the `closed` row deliberately, and absent
+everywhere when the working hours cannot be parsed.
 
 Reading `closed` as `{}` would let a wake at 23:58 plan freely from this
 morning, and the guard would reject every block of it.
@@ -126,6 +130,49 @@ to express; `drafted` expresses it without claiming a verdict the user never
 gave. `committed` stays in the tool schema, unlike `cal`, because its
 carry-forward use is real — removing it would force a re-draft to call approved
 work `drafted` and silently un-commit it.
+**The day's remaining budget is stated, not derived.** `<planning_window>`
+carries `availableMinutes` — working time still available, bounded by the
+clock *and* by capacity, whichever binds harder. Without it the model had to
+combine three separate facts: `capacityMinutes` and `workingHours` from the
+system prompt's planning defaults, and `earliestStart` from the user message.
+It did not, and the failures were exactly what that predicts — a plan running
+to 17:45 against a 17:00 day, and 780 minutes scheduled against 480 of
+capacity.
+
+Same move as `advertisedPlanningStart`: compute what is already known rather
+than asking the model to. It counts from the *advertised* start, so the budget
+never describes minutes the model is not allowed to use, and it is suppressed
+when the window is `closed` — that already carries the instruction, and a
+second number saying the same thing invites the model to reconcile two
+signals. **It is therefore never zero:** a day with no working minutes left
+reports `closed` instead (see below), so `availableMinutes` always names time
+the model can actually use. Malformed working hours leave it unstated rather
+than guessed, since they are free-text config nothing else parses.
+
+A **refine** wake gets `capacityMinutes` and `scheduledMinutes` *in addition to*
+the temporal fields, not instead of them — `proposePlanDiff` enforces the same
+past-start guard, so a diff still needs the floor and the clock-bounded
+remainder. A diff edits an
+existing plan, so what matters is the *net* change — dropping a 180-minute block
+to add another is net zero, and judging the addition against the unused
+remainder alone would report a conflict that does not exist. Occupancy is
+recomputed from the blocks rather than read from the denormalized
+`scheduledMinutes`, which can drift; the projection and the agenda view
+recompute for the same reason. A drafting baseline is replaced wholesale, so the
+whole-day budget is correct there.
+
+A day with **no working minutes left** reports `closed` rather than a start
+paired with a budget of zero. Those are the same instruction, and the pair left
+a fresh draft no coherent move: the rules forbid running past working hours,
+and there is no time left inside them. (`closed` still collides with the
+mandatory `draft_day_plan` call on a drafting wake — a pre-existing conflict
+tracked in lotti3-ddp, not introduced here.)
+
+The rules pair it with what to do when the work does not fit: decide visibly —
+leave work out and name it, or place a task for less than its estimate and say
+so — rather than running past the end of the day or quietly shrinking
+estimates so everything appears to fit.
+
 **A block that names a task is filed under that task's category.** The block's
 own `categoryId` and its `taskId` were each validated against the agent's
 allow-set but never against *each other*, so a block could carry a task from one

@@ -31,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   re-suggest a relationship that already exists.
 
 ### Fixed
+- **The planner is told how much of the day is actually left.** It knew your
+  capacity and your working hours, but had to work out for itself how much time
+  a mid-afternoon plan really had — and got it wrong, running plans past the end
+  of the working day. It is now given the remaining minutes directly, and when
+  the work on offer does not fit it is asked to say so: leave something out and
+  name it, or schedule part of a task and say how much is left, rather than
+  quietly shrinking everything until it appears to fit.
 - **Time on a task is credited to that task's area.** A planned block could
   name a task from one area while being filed under another, so the day's
   per-area totals — and the weekly rollups built on them — quietly credited

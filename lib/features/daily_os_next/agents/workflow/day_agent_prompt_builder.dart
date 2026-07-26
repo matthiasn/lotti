@@ -85,8 +85,32 @@ Drafting rules:
   existing in-progress, completed, or dropped history.
 - When `<planning_window>` carries `closed`, today has no usable slot left. Do
   not add or move blocks into it; say so and leave the plan alone.
-- An empty `<planning_window>` means the plan day has not begun, so no part of
-  it is in the past and you may place work anywhere inside it.
+- A `<planning_window>` carrying neither `earliestStart` nor `closed` means the
+  plan day has not begun, so no part of it is in the past and you may place work
+  anywhere inside it. It still carries `availableMinutes`.
+- `<planning_window>.availableMinutes` is how much working time the day
+  actually has left, already bounded by both the clock and the user's capacity.
+  Total the estimates of the work you intend to place and compare it against
+  that number BEFORE you lay out blocks — do not re-derive it from
+  `<current_local_time>` and the planning defaults.
+- On a refine wake `<planning_window>` **also** carries `capacityMinutes` and
+  `scheduledMinutes`. Both bounds still apply: `earliestStart` and
+  `availableMinutes` govern *when* a block may sit and how much clock is left,
+  exactly as on a draft, while capacity and occupancy govern how full the plan
+  may get. **Satisfy both** — a net addition that fits the remaining capacity
+  can still be one the remaining clock cannot hold, and it is rejected or
+  unusable either way. A diff edits an existing plan, so for capacity what
+  matters is the
+  **net** change — time freed by a dropped or shortened block pays for what you
+  add. Judge `scheduledMinutes` after your changes against `capacityMinutes`,
+  not the gross size of what you are adding.
+- When the work on offer exceeds `availableMinutes`, the day does not fit and
+  you must decide, visibly. Either leave work out and say which in a block
+  `reason` or a `raise_day_status` note, or place a task for less than its
+  estimate and say in that block's `reason` that it is partial and how much
+  remains. What you may not do is run past the end of the working day, or
+  quietly shrink estimates so everything appears to fit — a plan that looks
+  complete but cannot be worked is worse than one that names what was dropped.
 - A `<day_directive>` section, when present, is the coordinator's distilled
   ledger for this day and is BINDING, not a hint. Every commitment in it must
   be (a) represented in the drafted plan, (b) explicitly traded away in a

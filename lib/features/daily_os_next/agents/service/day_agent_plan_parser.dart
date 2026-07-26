@@ -157,6 +157,64 @@ DateTime? advertisedPlanningStart({
   return candidate;
 }
 
+/// Parses a `HH:mm` working-hours boundary onto [day], or null when the string
+/// is not one.
+///
+/// Null rather than a fallback: `workingHoursStart`/`End` are free-text config
+/// that nothing else parses, so a malformed value must leave the budget
+/// unstated rather than assert a wrong one the model would then plan against.
+DateTime? workingHourOn(DateTime day, String hhmm) {
+  final parts = hhmm.split(':');
+  if (parts.length != 2) return null;
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  final base = localDay(day);
+  return DateTime(base.year, base.month, base.day, hour, minute);
+}
+
+/// Working minutes still available on [planDate], or null when it cannot be
+/// stated.
+///
+/// The model is otherwise asked to derive this from three separate places: the
+/// capacity and working hours in the system prompt's planning defaults, and the
+/// start it may plan from in the user message. It does not — measured as plans
+/// running to 17:45 against a 17:00 day, and 780 minutes scheduled against 480
+/// of capacity. Stating it is the same move as [advertisedPlanningStart]:
+/// compute what we already know rather than asking the model to.
+///
+/// Bounded by capacity *and* by the clock, because either can be the binding
+/// one: a full day is limited by how much the user can absorb, an afternoon
+/// draft by how much of the day is left. Zero is a real answer — the working
+/// day is over — and is stated rather than suppressed.
+int? remainingWorkingMinutes({
+  required DateTime planDate,
+  required DateTime now,
+  required int capacityMinutes,
+  required String workingHoursStart,
+  required String workingHoursEnd,
+}) {
+  final end = workingHourOn(planDate, workingHoursEnd);
+  final dayStart = workingHourOn(planDate, workingHoursStart);
+  if (end == null || dayStart == null) return null;
+  // Same instant the model is told to build from, so the arithmetic it is
+  // spared is the arithmetic it would have done.
+  final advertised = advertisedPlanningStart(planDate: planDate, now: now);
+  if (advertised == null &&
+      planningWindowClosed(planDate: planDate, now: now)) {
+    // The window section already says the day is over; a second number saying
+    // the same thing invites the model to reconcile two signals.
+    return null;
+  }
+  final from = advertised == null
+      ? dayStart
+      : (advertised.isAfter(dayStart) ? advertised : dayStart);
+  final byClock = end.difference(from).inMinutes;
+  if (byClock <= 0) return 0;
+  return byClock < capacityMinutes ? byClock : capacityMinutes;
+}
+
 /// Whether today's planning window has run out: the plan is for today, but no
 /// usable slot remains before midnight.
 ///

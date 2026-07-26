@@ -3257,6 +3257,251 @@ void main() {
       expect(window['earliestStart'], '2026-05-25T15:05:00.000');
     });
 
+    test('states the working minutes the day actually has left', () async {
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 15)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      // 15:05 to 17:00, not the 480 of capacity the planning defaults carry.
+      // Deriving that gap is what models were getting wrong.
+      expect(window['availableMinutes'], 115);
+      expect(window['earliestStart'], '2026-05-25T15:05:00.000');
+      expect(
+        conversationRepository.lastSystemMessage,
+        contains('availableMinutes'),
+      );
+    });
+
+    test('a refine wake budgets against the plan it is editing', () async {
+      // propose_plan_diff applies changes on top of an existing plan, so its
+      // budget is what that plan has left. Advertising a fresh day here told
+      // the model another 300 minutes would fit into a 360-minute plan that
+      // already held 300.
+      final planService = MockDayAgentPlanService();
+      when(
+        () => planService.draftPlanForDay(agentId: agentId, dayId: dayId),
+      ).thenAnswer(
+        (_) async => makeTestDayPlan(
+          agentId: agentId,
+          planDate: DateTime(2026, 5, 25),
+          data: DayPlanData(
+            planDate: DateTime(2026, 5, 25),
+            status: const DayPlanStatus.draft(),
+            plannedBlocks: [
+              PlannedBlock(
+                id: 'block-1',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 9),
+                endTime: DateTime(2026, 5, 25, 11),
+                title: 'Deep work',
+                reason: 'morning',
+              ),
+            ],
+          ),
+          capacityMinutes: 360,
+          scheduledMinutes: 120,
+          createdAt: DateTime(2026, 5, 24, 20),
+          updatedAt: DateTime(2026, 5, 24, 20),
+        ),
+      );
+
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 24, 20)),
+        () => workflow(planService: planService).execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {
+            dayAgentRefineToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      // The two facts a diff needs, not a single "available" number: dropping
+      // a 180-minute block to add another is net zero, and reading that
+      // against the unused remainder alone would report a conflict that does
+      // not exist.
+      expect(window['capacityMinutes'], 360);
+      expect(window['scheduledMinutes'], 120);
+      // Drafted the evening before, so no clock floor applies and the full
+      // working day is still ahead. The refine fields sit *beside* the
+      // temporal ones rather than replacing them.
+      expect(window.containsKey('earliestStart'), isFalse);
+      expect(window['availableMinutes'], 480);
+    });
+
+    test(
+      'a same-day refine keeps the clock bounds beside its capacity',
+      () async {
+        // proposePlanDiff enforces the same past-start guard as drafting, so
+        // dropping the temporal fields let a 480-minute baseline advertise room
+        // for a 240-minute addition at 15:00 with 115 working minutes left.
+        final planService = MockDayAgentPlanService();
+        when(
+          () => planService.draftPlanForDay(agentId: agentId, dayId: dayId),
+        ).thenAnswer(
+          (_) async => makeTestDayPlan(
+            agentId: agentId,
+            planDate: DateTime(2026, 5, 25),
+            data: DayPlanData(
+              planDate: DateTime(2026, 5, 25),
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: [
+                PlannedBlock(
+                  id: 'block-1',
+                  categoryId: 'work',
+                  startTime: DateTime(2026, 5, 25, 9),
+                  endTime: DateTime(2026, 5, 25, 11),
+                  title: 'Deep work',
+                  reason: 'morning',
+                ),
+              ],
+            ),
+            // Matches the config default, and stated so the test reads as a
+            // whole-day baseline rather than an accident.
+            // ignore: avoid_redundant_argument_values
+            capacityMinutes: 480,
+            scheduledMinutes: 120,
+            createdAt: DateTime(2026, 5, 25, 8),
+            updatedAt: DateTime(2026, 5, 25, 8),
+          ),
+        );
+
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 15)),
+          () => workflow(planService: planService).execute(
+            agentIdentity: identity(),
+            runKey: runKey,
+            triggerTokens: {
+              dayAgentRefineToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+            threadId: threadId,
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        final window =
+            sentPrompt().json('planning_window')! as Map<String, dynamic>;
+        expect(window['capacityMinutes'], 480);
+        expect(window['scheduledMinutes'], 120);
+        expect(window['earliestStart'], '2026-05-25T15:05:00.000');
+        expect(window['availableMinutes'], 115);
+      },
+    );
+
+    test(
+      'refine occupancy is recomputed from blocks, not the stored total',
+      () async {
+        // The denormalized `scheduledMinutes` can drift; the projection and the
+        // agenda view both recompute for that reason. A stale zero would expose
+        // the full capacity and let a diff double-book the day.
+        final planService = MockDayAgentPlanService();
+        when(
+          () => planService.draftPlanForDay(agentId: agentId, dayId: dayId),
+        ).thenAnswer(
+          (_) async => makeTestDayPlan(
+            agentId: agentId,
+            planDate: DateTime(2026, 5, 25),
+            data: DayPlanData(
+              planDate: DateTime(2026, 5, 25),
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: [
+                PlannedBlock(
+                  id: 'block-1',
+                  categoryId: 'work',
+                  startTime: DateTime(2026, 5, 25, 9),
+                  endTime: DateTime(2026, 5, 25, 11),
+                  title: 'Deep work',
+                  reason: 'morning',
+                ),
+              ],
+            ),
+            capacityMinutes: 360,
+            // The stale value is the subject of the test, not an oversight.
+            // ignore: avoid_redundant_argument_values
+            scheduledMinutes: 0,
+            createdAt: DateTime(2026, 5, 24, 20),
+            updatedAt: DateTime(2026, 5, 24, 20),
+          ),
+        );
+
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 5, 24, 20)),
+          () => workflow(planService: planService).execute(
+            agentIdentity: identity(),
+            runKey: runKey,
+            triggerTokens: {
+              dayAgentRefineToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+            threadId: threadId,
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        final window =
+            sentPrompt().json('planning_window')! as Map<String, dynamic>;
+        expect(window['scheduledMinutes'], 120);
+      },
+    );
+
+    test(
+      'a working day already over reads as closed, not zero minutes',
+      () async {
+        // Pairing earliestStart 18:05 with availableMinutes 0 left a fresh draft
+        // no coherent move: the rules forbid running past working hours, and
+        // there is no time left inside them.
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 18)),
+          () => workflow().execute(
+            agentIdentity: identity(),
+            runKey: runKey,
+            triggerTokens: {dayAgentPlanningDayToken(dayId)},
+            threadId: threadId,
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        final window =
+            sentPrompt().json('planning_window')! as Map<String, dynamic>;
+        expect(window['closed'], isTrue);
+        expect(window.containsKey('earliestStart'), isFalse);
+        expect(window.containsKey('availableMinutes'), isFalse);
+      },
+    );
+
+    test('a closed window states no budget beside it', () async {
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 23, 58)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      expect(window['closed'], isTrue);
+      expect(window.containsKey('availableMinutes'), isFalse);
+    });
+
     test('reports a closed window late in the day', () async {
       final result = await withClock(
         Clock.fixed(DateTime(2026, 5, 25, 23, 58)),
@@ -3291,7 +3536,11 @@ void main() {
       expect(result.success, isTrue, reason: result.error);
       final window =
           sentPrompt().json('planning_window')! as Map<String, dynamic>;
-      expect(window, isEmpty);
+      // No floor — none of tomorrow is in the past — but it still has a
+      // budget, and the whole working day is available.
+      expect(window.containsKey('earliestStart'), isFalse);
+      expect(window.containsKey('closed'), isFalse);
+      expect(window['availableMinutes'], 480);
     });
 
     test(

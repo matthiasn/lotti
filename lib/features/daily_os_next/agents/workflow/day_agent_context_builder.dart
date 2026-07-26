@@ -154,7 +154,14 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       // the guard does not care which mode asked.
       ..addJson(
         DayAgentPromptTags.planningWindow,
-        _planningWindowJson(planDate: planDate, now: now),
+        _planningWindowJson(
+          planDate: planDate,
+          now: now,
+          // Refine edits an existing plan incrementally, so its budget is what
+          // that plan has left, not a fresh day's. A drafting baseline is
+          // replaced wholesale, so full capacity is right there.
+          refineBaseline: refineContext?.baselinePlan,
+        ),
       )
       // The volatile wall-clock is the trailing section.
       ..addText(DayAgentPromptTags.currentLocalTime, now.toIso8601String());
@@ -666,15 +673,61 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   Map<String, Object?> _planningWindowJson({
     required DateTime planDate,
     required DateTime now,
+    DayPlanEntity? refineBaseline,
   }) {
+    // A refine wake proposes changes *on top of* a plan that already spends
+    // part of the day, and `propose_plan_diff` applies them incrementally. Its
+    // own capacity governs, not the workflow config's.
+    //
+    // But a single "available" number cannot describe an incremental edit:
+    // dropping a 180-minute block and adding another is net zero, and reading
+    // it against the unused remainder alone would report a conflict that does
+    // not exist. So refine gets the two facts it needs — the plan's capacity
+    // and what it currently spends — and judges its own net change against
+    // them.
+    //
+    // Occupancy is recomputed from the blocks rather than read from the
+    // denormalized `scheduledMinutes`, which can drift; the projection and the
+    // agenda view both recompute for the same reason.
+    final refineBudget = refineBaseline == null
+        ? const <String, Object?>{}
+        : {
+            'capacityMinutes': refineBaseline.capacityMinutes,
+            'scheduledMinutes': scheduledMinutesFor(
+              refineBaseline.data.plannedBlocks,
+            ),
+          };
+    final available = remainingWorkingMinutes(
+      planDate: planDate,
+      now: now,
+      capacityMinutes: config.capacityMinutes,
+      workingHoursStart: config.workingHoursStart,
+      workingHoursEnd: config.workingHoursEnd,
+    );
+    // Zero working minutes is the same instruction as a closed window, so it
+    // says so rather than pairing a start with a budget of nothing. Emitting
+    // `earliestStart: 18:05` beside `availableMinutes: 0` gave a fresh draft no
+    // coherent move: the rules forbid running past working hours, and there is
+    // no time left inside them.
+    if (available == 0) return {'closed': true, ...refineBudget};
+    // The clock bounds hold for refine too — `proposePlanDiff` enforces the
+    // same past-start guard — so the temporal fields are *added to* the refine
+    // budget rather than replacing it. Returning capacity and occupancy alone
+    // dropped the floor a diff still has to respect, and let a 480-minute
+    // baseline advertise room for a 240-minute addition at 15:00 with 115
+    // working minutes left.
+    final budget = <String, Object?>{
+      'availableMinutes': ?available,
+      ...refineBudget,
+    };
     final earliest = advertisedPlanningStart(planDate: planDate, now: now);
     if (earliest != null) {
-      return {'earliestStart': earliest.toIso8601String()};
+      return {'earliestStart': earliest.toIso8601String(), ...budget};
     }
     if (planningWindowClosed(planDate: planDate, now: now)) {
-      return {'closed': true};
+      return {'closed': true, ...refineBudget};
     }
-    return const {};
+    return budget;
   }
 
   Future<DraftingContext?> _draftingContext({
