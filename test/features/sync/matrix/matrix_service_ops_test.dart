@@ -634,6 +634,42 @@ void main() {
     );
 
     test(
+      "includes a foreign user's unverified device as a verify-only blocker",
+      () async {
+        when(() => gateway.getDevices()).thenAnswer(
+          (_) async => [Device(deviceId: 'THIS_DEVICE')],
+        );
+        final ownList = MockDeviceKeysList();
+        when(() => ownList.deviceKeys).thenReturn({});
+        final foreignUnverified = keysFor('PEER_DEV', verified: false);
+        final foreignVerified = keysFor('PEER_OK', verified: true);
+        final foreignList = MockDeviceKeysList();
+        when(() => foreignList.deviceKeys).thenReturn({
+          'PEER_DEV': foreignUnverified,
+          'PEER_OK': foreignVerified,
+        });
+        when(() => client.userDeviceKeys).thenReturn({
+          userId: ownList,
+          '@peer:server': foreignList,
+        });
+
+        final devices = await buildOps().getSyncDevices();
+
+        expect(
+          devices.map((d) => d.deviceId).toList(),
+          ['PEER_DEV', 'THIS_DEVICE'],
+          reason:
+              'unverified foreign devices gate sends and must appear; '
+              'verified foreign devices are roster noise',
+        );
+        final peer = devices.first;
+        expect(peer.blocksSync, isTrue);
+        expect(peer.ownAccount, isFalse);
+        expect(peer.onServer, isFalse);
+      },
+    );
+
+    test(
       'retains an unverified cache-only device as a blocker and drops '
       'verified cache-only leftovers',
       () async {

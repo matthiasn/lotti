@@ -122,22 +122,21 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
     final messages = context.messages;
     final stale = device.isStaleAt(widget.now);
     final lastSeen = device.lastSeen;
-    // A session the homeserver no longer lists can never answer an
-    // interactive verification, however present its cached keys are.
+    // An own-account session the homeserver no longer lists can never
+    // answer an interactive verification; a foreign device (legacy
+    // one-user-per-device rooms) can be verified but never deleted.
     final canVerify =
         !device.isCurrentDevice &&
         !device.verified &&
         device.keys != null &&
-        device.onServer;
-    final canDelete = !device.isCurrentDevice;
+        (device.onServer || !device.ownAccount);
+    final canDelete = !device.isCurrentDevice && device.ownAccount;
 
     // A stale, unverified device is almost certainly dead: removal — not
     // verification — is what resumes sync, so removal escalates to the
     // labeled danger primary.
     final removalIsPrimary =
-        (stale || !device.onServer) &&
-        !device.isCurrentDevice &&
-        !device.verified;
+        canDelete && !device.verified && (stale || !device.onServer);
 
     final pairedAt = device.pairedAt;
     final pairingHash = device.pairingHash;

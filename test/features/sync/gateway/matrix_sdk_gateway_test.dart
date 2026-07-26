@@ -737,19 +737,15 @@ void main() {
     expect(result, verification);
   });
 
-  test('unverifiedDevices returns only own-account devices missing '
-      'verification', () {
+  test('unverifiedDevices spans every cached user, own and foreign', () {
     final verifiedDevice = MockDeviceKeys();
     when(() => verifiedDevice.verified).thenReturn(true);
-    when(() => verifiedDevice.userId).thenReturn('@user:server');
     final unverifiedDevice = MockDeviceKeys();
     when(() => unverifiedDevice.verified).thenReturn(false);
-    when(() => unverifiedDevice.userId).thenReturn('@user:server');
-    // A foreign user's unverified device must not gate this account's sends:
-    // the device roster (and its paused banner) only ever shows own sessions.
+    // Legacy pairing runs one Matrix user per device: a peer user's
+    // unverified device must keep gating sends.
     final foreignDevice = MockDeviceKeys();
     when(() => foreignDevice.verified).thenReturn(false);
-    when(() => foreignDevice.userId).thenReturn('@intruder:server');
 
     final deviceList = MockDeviceKeysList();
     when(() => deviceList.deviceKeys).thenReturn({
@@ -759,21 +755,14 @@ void main() {
     final foreignList = MockDeviceKeysList();
     when(() => foreignList.deviceKeys).thenReturn({'three': foreignDevice});
 
-    when(() => client.userID).thenReturn('@user:server');
     when(() => client.userDeviceKeys).thenReturn({
       '@user:server': deviceList,
-      '@intruder:server': foreignList,
+      '@peer:server': foreignList,
     });
 
     final devices = gateway.unverifiedDevices();
 
-    expect(devices, [unverifiedDevice]);
-  });
-
-  test('unverifiedDevices is empty when logged out', () {
-    when(() => client.userID).thenReturn(null);
-
-    expect(gateway.unverifiedDevices(), isEmpty);
+    expect(devices, [unverifiedDevice, foreignDevice]);
   });
 
   test(

@@ -22,6 +22,7 @@ class SyncDeviceInfo {
     this.lastSeen,
     this.keys,
     this.onServer = true,
+    this.ownAccount = true,
   });
 
   final String deviceId;
@@ -45,6 +46,11 @@ class SyncDeviceInfo {
   /// (unverified keys the server no longer knows) blocks sends but can never
   /// answer a verification — removal is its only remedy.
   final bool onServer;
+
+  /// Whether the session belongs to this account. Legacy cross-user rooms
+  /// run one Matrix user per device: their unverified devices gate sends and
+  /// can be SAS-verified, but only own-account sessions can be deleted.
+  final bool ownAccount;
 
   /// The name shown to the user, falling back to the raw device id.
   String get label {

@@ -363,6 +363,28 @@ class MatrixServiceOps {
       );
     }
 
+    // The sender's gate spans every cached user (legacy one-user-per-device
+    // rooms), so foreign unverified devices must appear here too — otherwise
+    // the banner could clear while sends still fail. They can be verified,
+    // never deleted.
+    for (final userEntry in _client.userDeviceKeys.entries) {
+      if (userEntry.key == userId) continue;
+      for (final keyEntry in userEntry.value.deviceKeys.entries) {
+        if (keyEntry.value.verified) continue;
+        devices.add(
+          SyncDeviceInfo(
+            deviceId: keyEntry.key,
+            displayName: keyEntry.value.deviceDisplayName,
+            isCurrentDevice: false,
+            verified: false,
+            keys: keyEntry.value,
+            onServer: false,
+            ownAccount: false,
+          ),
+        );
+      }
+    }
+
     return sortSyncDevicesForDisplay(devices);
   }
 

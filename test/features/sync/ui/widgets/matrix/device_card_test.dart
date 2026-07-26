@@ -36,6 +36,7 @@ void main() {
     bool verified = false,
     bool withKeys = true,
     bool onServer = true,
+    bool ownAccount = true,
   }) => SyncDeviceInfo(
     deviceId: deviceId,
     displayName: displayName,
@@ -44,6 +45,7 @@ void main() {
     verified: verified,
     keys: withKeys ? mockDeviceKeys : null,
     onServer: onServer,
+    ownAccount: ownAccount,
   );
 
   setUp(() {
@@ -249,6 +251,24 @@ void main() {
 
       expect(find.text('Unverified'), findsOneWidget);
       expect(find.text('Verify'), findsOneWidget);
+    });
+
+    testWidgets("a foreign user's device can be verified but never deleted", (
+      tester,
+    ) async {
+      // Legacy one-user-per-device rooms: the peer's device gates sends and
+      // is SAS-verifiable, but deletion only works for own sessions.
+      await pumpCard(
+        tester,
+        buildDevice(onServer: false, ownAccount: false),
+      );
+
+      expect(find.text('Verify'), findsOneWidget);
+      expect(find.byKey(const Key('matrix_delete_device')), findsNothing);
+      expect(
+        find.byKey(const Key('matrix_remove_device_primary')),
+        findsNothing,
+      );
     });
 
     testWidgets('a cache-only session offers removal as the only action', (
