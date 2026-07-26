@@ -88,9 +88,18 @@ each in a 40×40 hit zone with a `step2` dead band between them.
 ## The controls band is the only surface
 
 All secondary controls live in a quiet, flat footer pinned to the card bottom.
-The band answers three questions in order — *what am I looking at*, *when does it
-update*, *which AI is answering* — with the first two sharing a line when they
-fit.
+The band answers **two** questions and keeps each one in one place:
+
+| Question | Where |
+|----------|-------|
+| *Is this current, and can I refresh it now* | Freshness word plus the manual trigger, on the leading edge |
+| *Does it refresh itself, and when next* | The automatic-updates switch with the countdown as its own readout, on the trailing rail |
+
+The model identity sits below both.
+
+**Grouping the countdown with the switch rather than the trigger is deliberate** —
+it is the switch's readout, and putting the trigger between the two halves made
+"Automatic updates" read as a caption for the button.
 
 Its `aiCard.footerWash` and top hairline **are** the container; nothing inside
 draws a second fill, border or radius. An earlier revision boxed the automation
@@ -110,9 +119,19 @@ label and glyph in place (`DesignSystemButton.isLoading` → spinner +
 `Thinking…`) rather than vacating the row. Until #3568 the countdown *replaced*
 the trigger, so running the agent by hand meant cancelling the schedule first.
 
-Cancelling one pending run is a worded `Skip` grouped with the countdown it
+Cancelling one pending run is a worded `Skip once` grouped with the countdown it
 cancels — not a bare glyph beside the switch it does not control. It calls
 `cancelScheduledWake` and leaves automatic updates on.
+
+**Accent is spent on the trigger alone.** It sits at
+`DesignSystemButtonSize.dense` — the caption tier — while `Skip once` and the
+freshness glyph use `aiCard.metaText`. So accent means "this starts work", and
+nothing in the settings band shares a type tier with `Confirm all`.
+
+One layout detail is easy to get wrong: **`DesignSystemButton` pays its own
+content inset**, so the trigger is translated back out by exactly that amount.
+Otherwise a button box on the leading edge puts its *glyph* inside the inset —
+invisible until the row stacks, and then reading as a broken column.
 
 ## Prose degrades before payloads do
 
@@ -123,20 +142,23 @@ trigger at 1.3× text scale.
 
 ```mermaid
 flowchart TD
-  M["measure at the live locale + textScaler:<br/>status · trigger · switch"] --> T0{"status with<br/>'Next update in 1:30'<br/>+ trigger + switch<br/>fits one line?"}
+  M["measure at the live locale + textScaler:<br/>state group · schedule · switch"] --> T0{"state + schedule<br/>'Next update in 1:30'<br/>+ switch fit one line?"}
   T0 -->|yes| W0["one line, full sentence"]
   T0 -->|no| T1{"...with 'in 1:30'?"}
   T1 -->|yes| W1["one line, short sentence"]
   T1 -->|no| T2{"...with '1:30'?"}
   T2 -->|yes| W2["one line, value only"]
-  T2 -->|no| S{"status alone fits<br/>a full-width line?"}
-  S -->|yes| S1["stack: status / trigger / switch"]
-  S -->|no| S2["stack, and split the status:<br/>freshness above, schedule below"]
+  T2 -->|no| S["stack: state / schedule / switch<br/>(schedule tight to the switch,<br/>larger gap above it)"]
+  S --> S1{"freshness + trigger<br/>fit one line?"}
+  S1 -->|no| S2["freshness above the trigger"]
+  S --> S3{"countdown + 'Skip once'<br/>fit one line?"}
+  S3 -->|no| S4["Skip once below the countdown"]
 ```
 
-The schedule wording steps down `Next update in 1:30` → `in 1:30` → `1:30`, and
-only when no rung fits does the row stack onto the shared leading edge. **The
-countdown value, the trigger and the switch never degrade**; the
+The schedule wording steps down `Next update in 1:30` → `in 1:30` → `1:30`; when
+no rung fits the row stacks onto the shared leading edge, and at the narrowest
+measures **the state pair and the schedule pair each split onto their own lines
+too**. **The countdown value, the trigger and the switch never degrade**; the
 automatic-updates label wraps to two lines rather than truncating.
 
 **Ticking digits move nothing.** The schedule label reserves the width of the
@@ -161,8 +183,16 @@ different routes render separate *Current setup* and *This report* lines.
 
 Both rows **shrink-wrap** — a stretching `Column` hands its children a *tight*
 width, which silently defeats the `MainAxisSize.min` they declare and inflates
-their ink, tooltip and tap target to the full reading measure — and both truncate
-rather than wrap, with the full route in the tooltip and semantics label.
+their ink, tooltip and tap target to the full reading measure.
+
+**Routes shed segments rather than wrapping or ellipsising.** A route is
+structured, so `inferenceRouteIdentityTiers` drops whole segments —
+`Qwen 3.5 Plus · Alibaba · via Melious.ai` → `Qwen 3.5 Plus · Melious.ai` →
+`Qwen 3.5 Plus` — instead of ellipsising away the serving provider and leaving the
+connective "via" stranded behind it. **Only the last rung may ellipsise.** The
+fixed `This report` label never gives ground; its route does. The full route stays
+in the semantics label, and the setup row's tooltip **names its action**
+(`Change AI setup`) rather than repeating a route that is usually fully visible.
 
 ## Proposal accept/reject motion
 

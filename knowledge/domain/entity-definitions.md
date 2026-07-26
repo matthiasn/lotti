@@ -36,6 +36,7 @@ features read:
 | `speechDictionary` | Transcription prompt context and `context_bias` |
 | `correctionExamples` | Category-scoped AI guidance from user corrections |
 | `automaticInferenceEnabled` | **The consent gate for automatic inference** |
+| `automaticAgentWakesEnabled` | Seeds whether auto-created task agents wake on their own |
 
 ## The consent flag
 
@@ -56,6 +57,17 @@ connected a provider and picked those areas *is* the consent.
 profile-driven one and the direct transcription fallback alike — so this flag, not
 the profile, is the switch that decides whether automation runs. See
 [AI execution paths](../features/ai/execution-paths.md).
+
+## The agent-wake seed is a different thing
+
+`automaticAgentWakesEnabled` is **independent** of the consent gate: it seeds
+`AgentConfig.automaticUpdatesEnabled` on task agents this category auto-creates,
+and switching it off leaves automatic transcription and image analysis running.
+
+It is a **seed, not a gate** — the per-task switch owns the preference afterwards,
+so a later category edit does not reach back into existing agents. See
+[categories](../features/categories/) and
+[task agents](../features/agents/task-agents.md).
 
 The category model deliberately does **not** contain prompt allowlists, and the
 old `automaticPrompts` concept is not part of it.

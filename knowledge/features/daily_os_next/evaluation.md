@@ -71,10 +71,16 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
 
 `noFabricatedCalendarBlocks` is the only constraint scoring a block's claimed
 **provenance**. `PlannedBlockType.cal` means "imported calendar event" and the
-plan editor refuses in-app edits to one, **but the day agent is shown no calendar
-events at all** — `calendarBlocks` is a deferred parameter `RealDayAgent` drops,
-and no context section renders events. So every `cal` block the model emits
-asserts an import that never happened.
+plan editor refuses in-app edits to one, while the day agent is shown no calendar
+events — `calendarBlocks` is a deferred parameter `RealDayAgent` drops, and no
+context section renders events.
+
+**The write path now refuses a model-emitted `cal` block outright**, on both the
+draft and the diff route, and `cal` is no longer offered in either tool schema —
+so this constraint can no longer fail through the agent. **It stays because the
+eval is also how a regression would be caught**: if calendar events are ever wired
+into the drafting context and the exemption returns, this is the scorer that has
+to be taught what a *legitimate* calendar block looks like.
 
 # The matrix runner
 

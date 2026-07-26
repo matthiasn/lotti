@@ -54,7 +54,8 @@ gestures and prompt assembly where an async round trip would be visible.
 - Settings surfaces: `CategoriesListPage`, `CategoryDetailsPage`, create mode.
 - Reusable pickers: `CategoryField`, `CategoryPickerSheet`, `CategoryCreateModal`.
 - Presentation metadata (`name`, `color`, `icon`) and flags (`private`, `active`,
-  `favorite`, `isAvailableForDayPlan`, `automaticInferenceEnabled`).
+  `favorite`, `isAvailableForDayPlan`, `automaticInferenceEnabled`,
+  `automaticAgentWakesEnabled`).
 - Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`,
   `defaultEventTemplateId`.
 - Category-scoped AI and speech context: `speechDictionary`,
@@ -82,6 +83,27 @@ switched automation off, so onboarding only fills in a `null`.
 
 See [AI execution paths](../ai/execution-paths.md) for where the gate sits in the
 chain, and [entity definitions](../../domain/entity-definitions.md) for the model.
+
+# The agent-wake seed
+
+`automaticAgentWakesEnabled` seeds `AgentConfig.automaticUpdatesEnabled` on the
+task agents this category auto-creates — whether each one wakes on task changes or
+only when asked.
+
+**It is a seed, not a gate.** The per-task switch on the AI summary card owns the
+preference afterwards, so turning this on later does **not** reach back into tasks
+that already exist. The service mirrors the value into the wake orchestrator as
+well as persisting it, so a seeded-on agent wakes in the session it was created in
+rather than after the next restart.
+
+Two boundaries keep it honest:
+
+- **The details-page row is hidden without a `defaultTemplateId`**, since no agent
+  is created there for it to govern.
+- **It is independent of `automaticInferenceEnabled`** — switching wakes off leaves
+  automatic transcription and image analysis running.
+
+See [task agents](../agents/task-agents.md) for the creation paths that forward it.
 
 # Model boundaries
 

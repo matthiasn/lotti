@@ -58,15 +58,37 @@ The distinction matters for reading eval results and for trusting the model:
 
 | Enforcement | Constraints |
 |-------------|-------------|
-| **Hard — throws `DayAgentCaptureException`**, rejecting the whole `draft_day_plan` call and handing the message back to the model, which retries | Day boundaries, `end > start`, same-day past-start, allowed categories, committed-plan overwrite |
+| **Hard — throws `DayAgentCaptureException`**, rejecting the whole `draft_day_plan` call and handing the message back to the model, which retries | Day boundaries, `end > start`, same-day past-start, allowed categories, committed-plan overwrite, `cal` blocks, unresolvable `taskId` |
 | **Prompt contract only** | Block overlap, capacity, decided tasks actually being placed, blocker ordering |
 
 So **the persisted plan is always *legal***, and inspecting it alone measures the
 guards rather than the model. See [evaluation](evaluation.md).
 
-The past-start guard exempts `PlannedBlockType.cal` alone — which is how a model
-plans the past without being rejected, and why fabricated `cal` blocks are worth
-scoring.
+## Three guards worth stating precisely
+
+**Planning into the past is refused, whatever the block's type.** For today's
+plan, `draft_day_plan` rejects any block it would be *planning* — state `drafted`
+or `committed` — whose start precedes `current_local_time`. It still accepts
+earlier blocks whose state is `inProgress`, `completed` or `dropped`, because
+those record what actually happened rather than new planning, and it accepts a
+block that **repeats an existing baseline block at the same id and start**, which
+is carrying history forward rather than inventing it.
+
+**The agent cannot emit a `cal` block at all**, through either `draft_day_plan` or
+`propose_plan_diff`, and the type is absent from both tool schemas. `cal` means
+"imported calendar event", and no calendar reaches this agent — `calendarBlocks`
+is a deferred parameter `RealDayAgent` drops, and no context section renders
+events. Such a block could therefore only assert an import that never happened,
+and `DayAgentPlanEditor` would then refuse to edit it, **leaving the user a block
+they can neither change here nor find in a calendar.** All of this reverses
+together if calendar events are ever rendered into the drafting context.
+
+**A block's `taskId` must resolve to a live task in a category this agent may
+touch, on both routes.** `decidedTaskIds` is an argument the model writes itself,
+so it is resolved against the journal rather than trusted — and a
+`propose_plan_diff` snapshot is held to the same standard, because an accepted
+diff copies its `taskId` onto the live plan while the approval summary shows only
+title and times. An unchecked reference would be **approved unseen**.
 
 # Batch-first durable voice capture
 
