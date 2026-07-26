@@ -241,6 +241,44 @@ void main() {
     },
   );
 
+  test('reports the oldest held timestamp per room', () async {
+    // This is what keeps the sync marker from stepping over held ciphertext.
+    final pen = PendingDecryptionPen(logging: logging);
+    expect(pen.oldestHeldOriginTs(roomId), isNull);
+
+    pen
+      ..hold(
+        buildEvent(
+          eventId: r'$mid',
+          roomId: roomId,
+          originTsMs: 5000,
+          type: EventTypes.Encrypted,
+        ),
+      )
+      ..hold(
+        buildEvent(
+          eventId: r'$old',
+          roomId: roomId,
+          originTsMs: 2000,
+          type: EventTypes.Encrypted,
+        ),
+      )
+      ..hold(
+        buildEvent(
+          eventId: r'$elsewhere',
+          roomId: '!other:example.org',
+          originTsMs: 100,
+          type: EventTypes.Encrypted,
+        ),
+      );
+
+    // Oldest, not most recently held — and scoped to the room, so one room's
+    // backlog cannot pin another room's marker.
+    expect(pen.oldestHeldOriginTs(roomId), 2000);
+    expect(pen.oldestHeldOriginTs('!other:example.org'), 100);
+    expect(pen.oldestHeldOriginTs('!empty:example.org'), isNull);
+  });
+
   test('capacity eviction drops the oldest entry', () async {
     final pen = PendingDecryptionPen(logging: logging, capacity: 2);
     final a = buildEvent(

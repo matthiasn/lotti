@@ -1729,6 +1729,30 @@ void main() {
     );
 
     test(
+      'the queue is given the pen as its unqueued marker floor',
+      () async {
+        // Without this wiring the two halves of the fix are inert: the pen
+        // can report its oldest held event and the advancer can clamp on a
+        // floor, but nothing connects them, so the marker still steps over
+        // held ciphertext. Deleting the assignment leaves every other test in
+        // this change passing, so it needs its own.
+        build();
+
+        final assigned =
+            verify(
+                  () => queue.unqueuedFloorTs = captureAny(),
+                ).captured.last
+                as int? Function(String);
+
+        when(
+          () => pen.oldestHeldOriginTs('!roomA:example.org'),
+        ).thenReturn(4242);
+        expect(assigned('!roomA:example.org'), 4242);
+        verify(() => pen.oldestHeldOriginTs('!roomA:example.org')).called(1);
+      },
+    );
+
+    test(
       'drainUntilEmpty stops waiting on a pen that cannot produce',
       () async {
         // Ciphertext whose key has not arrived is not a stranded row: it has

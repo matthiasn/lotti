@@ -88,6 +88,24 @@ class PendingDecryptionPen {
 
   int get size => _held.length;
 
+  /// Oldest `origin_server_ts` still held for [roomId], or null when the pen
+  /// holds nothing for that room.
+  ///
+  /// The marker clamp needs this. A held entry is received-but-not-applied,
+  /// exactly like a row sitting in `enqueued`/`leased`/`retrying` — but it has
+  /// no row, so `QueueMarkerAdvancer` cannot see it in the queue table. Left
+  /// invisible, a newer event applying moves `last_applied_ts` past the held
+  /// one, and the next startup's strictly-forward bridge never re-fetches it.
+  int? oldestHeldOriginTs(String roomId) {
+    int? oldest;
+    for (final held in _held.values) {
+      if (held.event.roomId != roomId) continue;
+      final ts = held.event.originServerTs.millisecondsSinceEpoch;
+      if (oldest == null || ts < oldest) oldest = ts;
+    }
+    return oldest;
+  }
+
   /// Starts the internal sweep timer if [sweepInterval] was provided.
   /// Optional — the `InboundWorker` can drive [flushInto] by calling
   /// it directly.

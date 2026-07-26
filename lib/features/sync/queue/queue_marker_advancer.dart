@@ -10,9 +10,22 @@ import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 /// (drift transactions are zone-based, so this class participates in
 /// the caller's ambient transaction through the shared [SyncDatabase]).
 class QueueMarkerAdvancer {
-  QueueMarkerAdvancer(this._db);
+  QueueMarkerAdvancer(this._db, {this.unqueuedFloorTs});
 
   final SyncDatabase _db;
+
+  /// Oldest `origin_ts` for a room that is received-but-not-applied yet has
+  /// no queue row — today that means ciphertext parked in
+  /// `PendingDecryptionPen`.
+  ///
+  /// The clamp below is what keeps the marker from stepping over work that is
+  /// still outstanding, but it can only see the queue table. A penned event is
+  /// deliberately absent from it, so without this hook a newer event applying
+  /// advances `last_applied_ts` past the penned one, and the next startup's
+  /// strictly-forward bridge (`collectForwardForBootstrap` — "only events that
+  /// sort strictly after the anchor") never fetches it again. The event is
+  /// then gone with no row, no ledger entry and no counter to notice.
+  final int? Function(String roomId)? unqueuedFloorTs;
 
   /// Advances `queue_markers` for [entry]'s room if the candidate
   /// timestamp — clamped against any still-active queue rows for the
@@ -26,8 +39,9 @@ class QueueMarkerAdvancer {
   /// from regressing `lastAppliedTs` (F2).
   ///
   /// The clamp: an older row still in `enqueued`/`leased`/`retrying`
-  /// for the same room pins the candidate marker at `oldestActive −
-  /// 1`. This is what makes bounded retries safe under the ledger
+  /// for the same room — or an older event held by [unqueuedFloorTs],
+  /// which has no row at all — pins the candidate marker at
+  /// `oldestActive − 1`. This is what makes bounded retries safe under the ledger
   /// model — a poison row held as `abandoned` *does not* pin the
   /// marker (it is out of the active set by design), but the same
   /// event is still visible in the ledger for diagnostics and can be
@@ -43,10 +57,19 @@ class QueueMarkerAdvancer {
     // Probe the oldest still-active row for this room, excluding the
     // row we're about to transition out of the active set (commit or
     // abandon — caller is responsible for the status flip already).
-    final oldestActive = await _oldestActiveOriginTs(
+    final oldestActiveRow = await _oldestActiveOriginTs(
       roomId: entry.roomId,
       excludeQueueId: entry.queueId,
     );
+    // Rows and penned ciphertext are the same thing for this purpose: work
+    // that has arrived and has not been applied. Take the older of the two.
+    final oldestUnqueued = unqueuedFloorTs?.call(entry.roomId);
+    final oldestActive = switch ((oldestActiveRow, oldestUnqueued)) {
+      (null, null) => null,
+      (final int row, null) => row,
+      (null, final int held) => held,
+      (final int row, final int held) => row < held ? row : held,
+    };
     final clampedCandidateTs = oldestActive == null
         ? entry.originTs
         : (entry.originTs < oldestActive ? entry.originTs : oldestActive - 1);

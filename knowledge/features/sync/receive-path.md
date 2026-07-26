@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T15:42:59Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T16:45:44Z }
 stale_after: 2026-11-02
 sources:
   - id: queue

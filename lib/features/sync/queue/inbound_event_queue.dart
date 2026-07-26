@@ -44,7 +44,20 @@ class InboundQueue {
   late final QueueDepthEmitter _depthEmitter = QueueDepthEmitter(
     loadStats: _depthStats,
   );
-  late final QueueMarkerAdvancer _markerAdvancer = QueueMarkerAdvancer(_db);
+
+  /// Reports the oldest received-but-unapplied event for a room that has no
+  /// queue row — ciphertext held in `PendingDecryptionPen`. Set by
+  /// `QueuePipelineCoordinator` once both collaborators exist; the queue
+  /// cannot own the pen, because the pen enqueues *into* the queue.
+  ///
+  /// Without it the marker can advance past held ciphertext, which the next
+  /// startup's strictly-forward bridge then never re-fetches.
+  int? Function(String roomId)? unqueuedFloorTs;
+
+  late final QueueMarkerAdvancer _markerAdvancer = QueueMarkerAdvancer(
+    _db,
+    unqueuedFloorTs: (roomId) => unqueuedFloorTs?.call(roomId),
+  );
   late final InboundQueueResurrection _resurrection = InboundQueueResurrection(
     db: _db,
     logging: _logging,
