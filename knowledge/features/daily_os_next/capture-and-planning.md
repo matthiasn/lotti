@@ -144,9 +144,10 @@ than asking the model to. It counts from the *advertised* start, so the budget
 never describes minutes the model is not allowed to use, and it is suppressed
 when the window is `closed` — that already carries the instruction, and a
 second number saying the same thing invites the model to reconcile two
-signals. Zero is a real answer, meaning the working day is over. Malformed
-working hours leave it unstated rather than guessed, since they are free-text
-config nothing else parses.
+signals. **It is therefore never zero:** a day with no working minutes left
+reports `closed` instead (see below), so `availableMinutes` always names time
+the model can actually use. Malformed working hours leave it unstated rather
+than guessed, since they are free-text config nothing else parses.
 
 A **refine** wake gets `capacityMinutes` and `scheduledMinutes` *in addition to*
 the temporal fields, not instead of them — `proposePlanDiff` enforces the same
