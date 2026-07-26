@@ -374,8 +374,16 @@ class _FreshnessCluster extends StatelessWidget {
             // The state register, one step above the schedule and the control
             // labels: live status and static metadata must not read as the
             // same class of information.
+            //
+            // The word stays `bodyText` in both states and the glyph alone
+            // carries the alert tint. Tinting the word too made the quiet
+            // settings band the most chromatic thing on the card — louder
+            // than `Confirm all`, which is the action that actually changes
+            // the task — and it read *lower* contrast than the plain ink it
+            // replaced. The state is already said twice, in the glyph and in
+            // the word, so colour is not carrying it alone.
             style: tokens.typography.styles.others.caption.copyWith(
-              color: isStale ? tokens.colors.alert.warning.ink : ai.bodyText,
+              color: ai.bodyText,
             ),
           ),
         ),
@@ -515,9 +523,12 @@ TextStyle scheduleLabelStyle(DsTokens tokens) =>
 
 /// Cancels the pending automatic update without turning automation off.
 ///
-/// Worded rather than a bare glyph, and in metadata ink: accent in this band
-/// means "this starts work", and Skip is its opposite. The underline carries
-/// the affordance.
+/// Worded rather than a bare glyph, and never accented: accent in this band
+/// means "this starts work", and Skip is its opposite. It sits at `bodyText`,
+/// the same register as the countdown it acts on — an action quieter than the
+/// static text beside it inverts the two. The shared hover fill carries the
+/// affordance; an underline here made the cancel out-decorate the value it
+/// cancels and gave the band a third dialect for "this is tappable".
 class _SkipAction extends StatelessWidget {
   const _SkipAction({
     required this.label,
@@ -536,8 +547,7 @@ class _SkipAction extends StatelessWidget {
       label: label,
       semanticsLabel: tooltip,
       tooltip: tooltip,
-      ink: context.designTokens.colors.aiCard.metaText,
-      underline: true,
+      ink: context.designTokens.colors.aiCard.bodyText,
       onTap: onSkip,
     );
   }

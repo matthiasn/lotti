@@ -22,6 +22,12 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 ///    corners cut into the leading glyph.
 ///  * **One interaction target.** The row's minimum height is
 ///    `spacing.step8`, so a caption-sized label still has a real target.
+///
+/// It deliberately offers no way to decorate its label. An underline here lets
+/// a caption-tier action out-decorate the value it acts on, and gives a surface
+/// a third dialect for "this is tappable" alongside the glyph and the hover
+/// fill — so the affordance is the fill, everywhere, and the knob does not
+/// exist to be reached for.
 class DesignSystemInlineAction extends StatelessWidget {
   const DesignSystemInlineAction({
     required this.onTap,
@@ -33,7 +39,6 @@ class DesignSystemInlineAction extends StatelessWidget {
     this.tooltip,
     this.ink,
     this.iconInk,
-    this.underline = false,
     super.key,
   }) : assert(
          label != null || labelWidget != null,
@@ -67,10 +72,6 @@ class DesignSystemInlineAction extends StatelessWidget {
   /// its icon while keeping the text readable, for example.
   final Color? iconInk;
 
-  /// Underlines the label. For actions that sit inside a sentence, where
-  /// position alone does not make them look pressable.
-  final bool underline;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -78,8 +79,6 @@ class DesignSystemInlineAction extends StatelessWidget {
     final glyphColor = iconInk ?? foreground;
     final style = tokens.typography.styles.others.caption.copyWith(
       color: foreground,
-      decoration: underline ? TextDecoration.underline : null,
-      decorationColor: underline ? foreground : null,
     );
 
     final row = Row(

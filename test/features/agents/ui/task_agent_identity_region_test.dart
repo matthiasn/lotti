@@ -127,6 +127,57 @@ void main() {
     );
   });
 
+  testWidgets('the card keeps its bottom margin with or without attribution', (
+    tester,
+  ) async {
+    // The two states differ only in whether the attribution row exists, so
+    // the air under the last line must not: otherwise the card's bottom
+    // margin visibly changes as a report ages into a different route.
+    //
+    // Measured ink-to-ink, not by reading the declared padding back — an
+    // earlier revision kept the *declared* geometry constant and still
+    // shifted on screen, because the tappable row's `step8` ink box centres
+    // its glyph and contributes optical air that a bare text row does not.
+    double trailingAir(WidgetTester tester) {
+      final region = find.byType(TaskAgentIdentityRegion);
+      final lastText = find.descendant(of: region, matching: find.byType(Text));
+      final bottomOfInk = tester.widgetList<Text>(lastText).isEmpty
+          ? 0.0
+          : tester.getRect(lastText.last).bottom;
+      return tester.getRect(region).bottom - bottomOfInk;
+    }
+
+    await pumpRegion(
+      tester,
+      data: const TaskAgentModelIdentityViewData(
+        presentation: TaskAgentIdentityPresentation.combined,
+        currentRoute: route,
+        reportRoute: route,
+      ),
+      width: 600,
+    );
+    final withoutAttribution = trailingAir(tester);
+
+    await pumpRegion(
+      tester,
+      data: const TaskAgentModelIdentityViewData(
+        presentation: TaskAgentIdentityPresentation.split,
+        currentRoute: route,
+        reportRoute: priorRoute,
+      ),
+      width: 600,
+    );
+    expect(find.text(priorRouteLabel), findsOneWidget);
+    final withAttribution = trailingAir(tester);
+
+    expect(
+      withAttribution,
+      moreOrLessEquals(withoutAttribution, epsilon: 1),
+      reason:
+          'attribution present: $withAttribution, absent: $withoutAttribution',
+    );
+  });
+
   testWidgets('no setup is a visible error with a concrete recovery hint', (
     tester,
   ) async {

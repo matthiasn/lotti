@@ -157,47 +157,55 @@ class _ReportIdentityRow extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final caption = tokens.typography.styles.others.caption;
-    // Matches the tappable row's inset so both glyphs share a leading edge.
-    // Top-only vertical space: a symmetric inset made the card's bottom
-    // margin depend on whether the attribution happened to be present.
+    // The same row box as the tappable row above: identical horizontal inset,
+    // so both glyphs share a leading edge, and the identical `step8` minimum
+    // height, so the air below the last line is the same whether or not this
+    // row is present.
+    //
+    // Padding alone could not do that. An earlier revision paid top-only
+    // vertical space to keep the *declared* geometry constant, but the
+    // tappable row's ink box centres a ~`step5` glyph in `step8` and so
+    // contributes optical air below its text that a bare `Row` does not —
+    // making the card's bottom margin visibly depend on whether the
+    // attribution happened to exist. Spacing row boxes rather than text is
+    // what actually holds.
     return Padding(
-      padding: EdgeInsets.only(
-        left: tokens.spacing.step2,
-        right: tokens.spacing.step2,
-        top: tokens.spacing.step2,
-      ),
-      // The full attribution lives in the tooltip; on screen it truncates
-      // rather than wrapping, so a long route cannot spill a stray fragment
-      // onto a second line under the row it belongs to.
-      child: Tooltip(
-        message: '$label ${tiers.first}',
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.description_outlined,
-              size: tokens.spacing.step5,
-              color: ai.metaText,
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            // Not flexible: the label is short fixed vocabulary, and
-            // "This rep…" tells the reader strictly less than nothing. It
-            // costs a bounded ~60px, so only the route below can be squeezed.
-            Text(
-              label,
-              maxLines: 1,
-              style: caption.copyWith(color: ai.faintMeta),
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            // The route sheds whole segments rather than characters; the
-            // label above it never gives ground.
-            Flexible(
-              child: _TieredIdentityText(
-                tiers: tiers,
-                style: caption.copyWith(color: ai.metaText),
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+        // The full attribution lives in the tooltip; on screen it truncates
+        // rather than wrapping, so a long route cannot spill a stray fragment
+        // onto a second line under the row it belongs to.
+        child: Tooltip(
+          message: '$label ${tiers.first}',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.description_outlined,
+                size: tokens.spacing.step5,
+                color: ai.metaText,
               ),
-            ),
-          ],
+              SizedBox(width: tokens.spacing.step2),
+              // Not flexible: the label is short fixed vocabulary, and
+              // "This rep…" tells the reader strictly less than nothing. It
+              // costs a bounded ~60px, so only the route below can be squeezed.
+              Text(
+                label,
+                maxLines: 1,
+                style: caption.copyWith(color: ai.faintMeta),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              // The route sheds whole segments rather than characters; the
+              // label above it never gives ground.
+              Flexible(
+                child: _TieredIdentityText(
+                  tiers: tiers,
+                  style: caption.copyWith(color: ai.metaText),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

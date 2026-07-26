@@ -125,7 +125,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('underline and inks are applied to the label and the glyphs', (
+  testWidgets('the label and the glyph can be inked independently', (
     tester,
   ) async {
     const ink = Color(0xFF112233);
@@ -138,19 +138,33 @@ void main() {
         leadingIcon: Icons.schedule_rounded,
         ink: ink,
         iconInk: iconInk,
-        underline: true,
         onTap: () {},
       ),
     );
 
     final text = tester.widget<Text>(find.text('Skip once'));
     expect(text.style?.color, ink);
-    expect(text.style?.decoration, TextDecoration.underline);
-    expect(text.style?.decorationColor, ink);
     expect(
       tester.widget<Icon>(find.byIcon(Icons.schedule_rounded)).color,
       iconInk,
     );
+  });
+
+  testWidgets('the component never decorates its label', (tester) async {
+    // One affordance language for the whole family: glyph, ink and the shared
+    // hover fill. An underline here let a caption-tier action out-decorate the
+    // value it acts on, so the knob is gone rather than merely unused.
+    await pumpAction(
+      tester,
+      DesignSystemInlineAction(
+        label: 'Skip once',
+        semanticsLabel: 'Skip once',
+        onTap: () {},
+      ),
+    );
+
+    final text = tester.widget<Text>(find.text('Skip once'));
+    expect(text.style?.decoration, anyOf(isNull, TextDecoration.none));
   });
 
   testWidgets('a labelWidget replaces the label and still shrink-wraps', (

@@ -124,14 +124,32 @@ cancels — not a bare glyph beside the switch it does not control. It calls
 `cancelScheduledWake` and leaves automatic updates on.
 
 **Accent is spent on the trigger alone.** It sits at
-`DesignSystemButtonSize.dense` — the caption tier — while `Skip once` and the
-freshness glyph use `aiCard.metaText`. So accent means "this starts work", and
-nothing in the settings band shares a type tier with `Confirm all`.
+`DesignSystemButtonSize.dense` — the caption tier — so accent means "this starts
+work", and nothing in the settings band shares a type tier with `Confirm all`.
+
+`Skip once` is the trigger's opposite and is inked at `aiCard.bodyText`: the
+same register as the countdown it acts on. An action rendered *fainter* than the
+static text beside it inverts the two. It carries no underline — the shared
+hover fill is the affordance, and a decorated cancel out-decorated the value it
+cancels while giving the band a third dialect for "this is tappable".
+
+**The alert tint is spent on the freshness glyph alone.** The word stays
+`aiCard.bodyText` in both states. Tinting it too made the quiet settings band
+the loudest thing on the card — louder than `Confirm all`, the action that
+actually changes the task — and in dark it read at *lower* contrast than the
+plain ink it replaced. The state is already said twice, in the glyph and in the
+word, so colour is not carrying it alone.
+
+Both `Skip once` and the model-identity row are `DesignSystemInlineAction`s
+rather than open-coded `Material`/`InkWell` scaffolds, so they share one radius,
+target, inset and state-layer behaviour — and one accessibility fix, since both
+predecessors excluded semantics *above* their `InkWell` and so published a
+button with no tap action.
 
 One layout detail is easy to get wrong: **`DesignSystemButton` pays its own
-content inset**, so the trigger is translated back out by exactly that amount.
-Otherwise a button box on the leading edge puts its *glyph* inside the inset —
-invisible until the row stacks, and then reading as a broken column.
+content inset**, so a button box on the leading edge puts its *glyph* inside the
+inset — invisible until the row stacks, and then reading as a broken column. The
+trigger sets `alignsLabelToLeadingEdge` to cancel it.
 
 ## Prose degrades before payloads do
 
@@ -193,6 +211,14 @@ connective "via" stranded behind it. **Only the last rung may ellipsise.** The
 fixed `This report` label never gives ground; its route does. The full route stays
 in the semantics label, and the setup row's tooltip **names its action**
 (`Change AI setup`) rather than repeating a route that is usually fully visible.
+
+**Both rows are the same row box**, sharing a horizontal inset and a `step8`
+minimum height. That is what keeps the card's bottom margin constant whether or
+not the attribution line exists. Padding alone could not: the tappable row's ink
+box centres a `step5` glyph in `step8` and so contributes optical air below its
+text that a bare text row does not, so a revision that equalised the *declared*
+padding still shifted the card's bottom edge on screen as a report aged into a
+different route. Space row boxes, not text.
 
 ## Proposal accept/reject motion
 

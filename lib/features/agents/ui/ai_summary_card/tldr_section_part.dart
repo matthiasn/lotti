@@ -93,16 +93,8 @@ class TldrHeader extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  messages.aiCardTitle,
-                                  // Two lines, not one: the card's own name
-                                  // must stay readable, and "KI-Zusammen…"
-                                  // at phone width is not a name. Where it
-                                  // fits on one line — which is everywhere
-                                  // the ink extent is actually noticeable —
-                                  // the button still shrink-wraps.
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                _HeaderTitle(
+                                  text: messages.aiCardTitle,
                                   style: tokens
                                       .typography
                                       .styles
@@ -139,6 +131,56 @@ class TldrHeader extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The card's own name — two lines where they help, one where they would not.
+///
+/// German compounds this title into a single unbreakable token
+/// ("KI-Zusammenfassung"), and at 320 logical px with 1.3x text scale that
+/// token is wider than the line the header can give it. Flutter's line breaker
+/// then falls back to breaking *inside* the word — "KI-Zusammenf / assung" —
+/// which reads as a typo rather than as shortening, because nothing marks it
+/// as incomplete.
+///
+/// So the choice is measured rather than declared: if the widest run with no
+/// break opportunity in it still fits, two lines are safe and every break will
+/// land between words. If it cannot fit, no amount of lines will help, and one
+/// line with an ellipsis is the honest form — it at least tells the reader
+/// that something was left out.
+class _HeaderTitle extends StatelessWidget {
+  const _HeaderTitle({required this.text, required this.style});
+
+  final String text;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final direction = Directionality.of(context);
+    final scaler = MediaQuery.textScalerOf(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var widest = 0.0;
+        // Flutter may break after whitespace or after a hyphen; whatever sits
+        // between two such points has to fit on one line or be split mid-word.
+        for (final run in text.split(RegExp(r'[\s\u00AD\u2010-\u2015-]+'))) {
+          if (run.isEmpty) continue;
+          final painter = TextPainter(
+            text: TextSpan(text: run, style: style),
+            textDirection: direction,
+            textScaler: scaler,
+            maxLines: 1,
+          )..layout();
+          widest = widest > painter.width ? widest : painter.width;
+        }
+        return Text(
+          text,
+          maxLines: widest <= constraints.maxWidth ? 2 : 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        );
+      },
     );
   }
 }

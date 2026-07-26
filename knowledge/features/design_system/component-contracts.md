@@ -31,6 +31,36 @@ and hover fill rather than by out-weighing the text around it. Use it for action
 that live inside metadata rows and settings zones, where a `small` button would
 share a type tier with the surface's primary action.
 
+A button pays its own content inset, which puts its *label* — not its box — off
+the column when it sits first on a leading edge. `alignsLabelToLeadingEdge`
+cancels exactly that inset, direction-aware, so a button can start a shared
+column without a call site open-coding a `Transform`.
+
+## Below the button tier: `DesignSystemInlineAction`
+
+A caption-tier tappable row for metadata contexts — "skip this one", "change
+this setting" — where even a `dense` button would read as the surface's primary
+action. It reads as a control through its glyph, its ink and the shared hover
+fill; **it never decorates its label**, so a band cannot end up with three
+different dialects for "this is tappable".
+
+Three behaviours are the reason it exists as a component rather than as an
+open-coded `Material`/`InkWell` per call site:
+
+- **The ink hugs its content.** It wraps *itself* in an `Align`, because a
+  stretching parent hands children a *tight* width under which
+  `MainAxisSize.min` is silently a no-op — and the hover layer then runs the
+  width of whatever column it happens to sit in.
+- **The inset lives inside the ink**, so the rounded corners cannot clip the
+  leading glyph.
+- **`ExcludeSemantics` sits *below* the `InkWell`, never above it.** Excluding
+  above drops the ink's own node and with it the tap and focus actions, leaving
+  a control that announces as a button but cannot be activated by assistive
+  tech. Both open-coded predecessors had this bug.
+
+Disabled means `onTap: null` and the row still renders: a control that vanishes
+when unavailable is worse than one that explains itself.
+
 Destructive **secondary and tertiary** button labels use the stronger error
 *interaction* tokens rather than the filled-action default red, keeping small
 danger labels at AA on light and dark hosts. Their pressed state uses the
