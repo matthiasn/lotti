@@ -529,7 +529,11 @@ List<OkfIssue> _validateConcept(
     }
   }
 
-  for (final key in const ['title', 'description']) {
+  // `resource` is in here, not just in the presence check: `resource: ""`
+  // satisfied containsKey, is not null, and is then skipped by both reference
+  // checks — so a concept could declare no subject at all and validate clean
+  // while the convention promised that an empty value fails the build.
+  for (final key in const ['title', 'description', 'resource']) {
     final value = frontmatter[key];
     if (value == null) continue; // absent or empty: reported above
     if (value is! String || value.trim().isEmpty) {
@@ -541,6 +545,19 @@ List<OkfIssue> _validateConcept(
         ),
       );
     }
+  }
+
+  // `tags: []` passed for the same reason. Values stay unchecked — they are
+  // free-form search keys — but an empty list carries none of them.
+  final tags = frontmatter['tags'];
+  if (tags != null && (tags is! YamlList || tags.isEmpty)) {
+    issues.add(
+      OkfIssue(
+        severity: _houseRule,
+        path: path,
+        message: '`tags` must be a non-empty list, got `$tags`',
+      ),
+    );
   }
 
   issues
@@ -711,13 +728,21 @@ List<OkfIssue> _validateVerified(String path, YamlMap frontmatter) {
   return issues;
 }
 
+/// Days before `stale_after` at which a concept starts warning.
+///
+/// Expiry is an error, so without this the first signal would be a red push on
+/// the morning a date arrived — for a whole subsystem at once, since the dates
+/// are batched. Two weeks is enough to schedule the re-read deliberately.
+const staleWarningWindowDays = 14;
+
 /// Checks `stale_after` for shape, and — when [today] is given — for expiry.
 ///
 /// Expiry is an error, so `make okf_check` and CI both stop on it. The date is a
 /// commitment to re-read by, and a reminder nothing ever fails on is not a
 /// reminder. The cost is real and accepted: when a subsystem's date arrives,
 /// clearing it means re-reading those concepts against the code, or deciding
-/// deliberately to move the date.
+/// deliberately to move the date. [staleWarningWindowDays] before that, the same
+/// check warns, so the deadline is never a surprise.
 List<OkfIssue> _validateStaleAfter(
   String path,
   YamlMap frontmatter,
@@ -740,14 +765,26 @@ List<OkfIssue> _validateStaleAfter(
   final deadline = _parseIsoDate(staleAfter);
   if (deadline == null) return const [];
   final day = DateTime.utc(today.year, today.month, today.day);
-  if (!day.isAfter(deadline)) return const [];
+  if (day.isAfter(deadline)) {
+    return [
+      OkfIssue(
+        severity: _houseRule,
+        path: path,
+        message:
+            '`stale_after` passed on $staleAfter; re-read this concept against '
+            'the code and either confirm it or rewrite it (§5.5)',
+      ),
+    ];
+  }
+  final daysLeft = deadline.difference(day).inDays;
+  if (daysLeft > staleWarningWindowDays) return const [];
   return [
     OkfIssue(
-      severity: _houseRule,
+      severity: Severity.warning,
       path: path,
       message:
-          '`stale_after` passed on $staleAfter; re-read this concept against '
-          'the code and either confirm it or rewrite it (§5.5)',
+          '`stale_after` is $staleAfter — $daysLeft day(s) away; schedule the '
+          're-read before it becomes an error (§5.5)',
     ),
   ];
 }

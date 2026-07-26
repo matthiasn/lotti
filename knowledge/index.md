@@ -50,7 +50,7 @@ question to its authority first:
 | **How should this work be done?** | The user's instructions, then [`AGENTS.md`](../AGENTS.md). |
 | **What does the app actually do today?** | The source code — then a concept here as its description, then an ADR or git history as a record of how it got that way. |
 
-Within the second column the order is strict: **the code outranks the prose.** If a
+Within that second row the order is strict: **the code outranks the prose.** If a
 concept contradicts the code, the concept is the defect — fix it in the same
 change rather than working around it or, worse, "fixing" the code to match the
 prose.
@@ -60,10 +60,10 @@ The split matters in one direction especially. `AGENTS.md` governs process, so a
 carries no more weight than any other stale prose, and **less** than the code it
 describes. Treat it as a pointer to check, not a fact to trust.
 
-Two caveats on the concepts themselves: one past its `stale_after` is not wrong by
-definition but has not been re-read recently, and `make okf_check` says so. And no
-concept here carries a `verified` entry yet, so treat every one of them as
-agent-generated until it does.
+Two caveats on the concepts themselves. One past its `stale_after` is not wrong by
+definition, but it has not been re-read recently — and it **fails the build**, with
+a warning for the fortnight beforehand. And no concept here carries a `verified`
+entry yet, so treat every one of them as agent-generated until it does.
 
 # Where the code is documented
 

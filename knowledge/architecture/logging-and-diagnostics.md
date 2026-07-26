@@ -5,7 +5,7 @@ description: Twenty-four opt-in logging domains, where their lines land, and why
 resource: ../../lib/services/logging_domains.dart
 tags: [architecture, logging, diagnostics, observability]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T17:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: log-domains
@@ -62,12 +62,20 @@ flowchart TD
   Route --> SyncFile{"domain == sync?"}
   SyncFile -->|yes| SyncLog["sync-YYYY-MM-DD.log"]
   SyncFile -->|no| MainLog["app log file for the day"]
+  Route --> IsError{"error level?"}
+  IsError -->|yes| ErrLog["error-YYYY-MM-DD.log<br/>full mirror, force-flushed"]
 ```
 
-**Files are the only sink.** There is no database table and no in-app log viewer:
-`LoggingService` appends lines to the day's file and nothing else. The
-`InsightType` parameter on its capture methods is vestigial — no reader in the app
-ever consults it — so diagnosing a report means reading the log files off the
+**Every error is written twice.** It goes to its routed file *and* is mirrored in
+full to `error-<date>.log`, force-flushed, so every error is in one place without
+hunting through domains. So there are more files on disk than the routing suggests:
+the day's app log, the sync log, the error mirror, and — owned by the database
+interceptor rather than by `LoggingService` — `slow_queries` and
+`super_slow_queries`.
+
+**Files are the only sink.** There is no database table and no in-app log viewer.
+The `InsightType` parameter on the capture methods is vestigial — no reader in the
+app ever consults it — so diagnosing a report means reading the log files off the
 device, not opening a screen.
 
 **Errors are always logged**, whether or not their domain is enabled. A user who
@@ -94,9 +102,14 @@ skipped entirely — tests assert on the logger, not on disk.
 
 The database layer has its own gate, described in
 [persistence](persistence.md). `SlowQueryInterceptor` wraps every connection but
-stays inert until its logging domain is enabled, so the 10 ms threshold costs
-nothing in normal use. `LoggingService` keeps the slow-query gate in sync with
-the config flag alongside the general logging gate.
+stays inert until its logging domain is enabled, so it costs nothing in normal
+use. `LoggingService` keeps that gate in sync with the config flag alongside the
+general logging gate.
+
+**It has two tiers, and they write different files** — 10 ms to `slow_queries`,
+200 ms to `super_slow_queries` with an `EXPLAIN QUERY PLAN` attached. Start with
+the second file, since it is the only one carrying a plan; the thresholds and what
+each tier is for are in [persistence](persistence.md).
 
 # Where to look
 

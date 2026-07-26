@@ -5,7 +5,7 @@ description: The README/knowledge/ADR split, the frontmatter every concept carri
 resource: ../../knowledge
 tags: [convention, documentation, okf, process]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T15:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T17:30:00Z }
 stale_after: 2027-01-18
 sources:
   - id: okf-spec
@@ -63,11 +63,11 @@ the same thing:
 
 ```yaml
 ---
-type: Feature Module          # presence only — no allowlist (see below)
+type: Feature Module          # must be a non-empty string; no allowlist (see below)
 title: Speech                 # must be a non-empty string
 description: One sentence.    # must be a non-empty string. Shown in index listings.
-resource: ../../lib/features/speech    # must resolve in the repo
-tags: [speech, audio]         # presence only — values unchecked
+resource: ../../lib/features/speech    # non-empty; must resolve if it leaves the bundle
+tags: [speech, audio]         # must be a non-empty list; values unchecked
 status: stable                # must be draft | stable | deprecated
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
                               # `by` must match the actor convention, `at` a real ISO 8601 instant
@@ -89,8 +89,10 @@ sources:                      # must be a non-empty list; one entry must leave t
   only with a reason, since nothing will stop you.
 - **`resource`** is the *subject* of the concept: the directory or file it
   describes, as a bundle-relative path. One per concept. A concept whose subject
-  genuinely is the whole repository — release pipelines, security posture — says
-  `../..` rather than omitting the key.
+  genuinely is the whole repository — release pipelines, security posture — names the
+  repository root rather than omitting the key. **`../..` is only correct from a
+  concept one directory deep** (`architecture/`, `domain/`, `conventions/`); from
+  `features/agents/` it is `../../..`. Count the hops.
 - **`tags`** are lowercase search keys — the feature name, the subsystem, the
   nouns someone would grep for. They are not a taxonomy; nothing dispatches on
   them. Required, but the values are free-form and unchecked.
@@ -131,10 +133,12 @@ sources:                      # must be a non-empty list; one entry must leave t
   A concept whose `status` is `draft` is **not** settled by definition, whatever
   its subject — it takes the ~6-month window until it earns `stable`.
 
-  Then **use the date its siblings already carry.** One date per subsystem is
-  deliberate: re-reading all of `sync/` in one sitting is far cheaper than seven
-  separate visits, because the reader holds the whole subsystem in mind once. A
-  new concept inherits its directory's date rather than inventing one.
+  Then **use the date its siblings already carry.** For a concept inside a
+  directory that is the subsystem's date: re-reading all of `sync/` in one sitting
+  is far cheaper than seven separate visits. The 23 single-file features have no
+  subsystem to inherit from, so they are batched **alphabetically** in three groups
+  (`ai_chat`…`habits`, `insights`…`ratings`, `settings`…`whats_new`) — arbitrary,
+  but stable and easy to extend. Never invent a new date.
 
   Across subsystems the dates are **staggered a week apart**, so the reminders
   arrive as a trickle of coherent batches. Two failure modes to avoid: a single
@@ -200,11 +204,13 @@ House rules — OKF grades these `SHOULD`, this repo does not:
 - A missing or empty `title`, `description`, `resource`, `tags`, `status`,
   `generated`, `stale_after` or `sources`.
 - A `status` outside `draft`, `stable`, `deprecated`; a `title` or `description`
-  that is not a non-empty string. **`type` and `tags` are checked for presence
-  only** — `type` against no allowlist, `tags` not at all beyond being non-empty.
+  that is not a non-empty string. **`type` is checked for non-emptiness against no
+  allowlist**, and `tags` only for being a non-empty list — the tag values
+  themselves are never checked.
 - A `generated` that is not a `{ by, at }` mapping, a missing `generated.by`, a
   missing `at`, or a datetime that is malformed or names an impossible instant.
-- A `verified` entry that is not `{ by, at }`, or is missing `by`.
+- A `verified` entry that is not `{ by, at }`, is missing `by`, or carries an `at`
+  that is missing or malformed.
 - An actor outside the `<producer>/<version>` / `human:<id>` / `process:<id>`
   convention — in `generated.by`, in `verified[].by`, or in the optional
   `sources[].author`.
@@ -219,9 +225,10 @@ House rules — OKF grades these `SHOULD`, this repo does not:
 - A root `index.md` that declares no `okf_version`, or declares one this
   validator does not implement.
 - **A concept whose `stale_after` has passed.** The date is a commitment to
-  re-read by, so `make okf_check` and CI both stop on it. Clearing it means
+  re-read by, so `make knowledge_check` and CI both stop on it. Clearing it means
   re-reading the concept against the code — or deciding, deliberately, to move the
-  date.
+  date. **Fourteen days out it starts warning**, so a batch coming due is never
+  first heard about as a red push.
 - **A fenced block that never closes on a line of its own.** CommonMark accepts a
   closing fence only when nothing else is on the line, so ```` ``` and then
   prose ```` leaves the block open and renders the rest of the page as code. This
@@ -230,9 +237,10 @@ House rules — OKF grades these `SHOULD`, this repo does not:
 
 **Warnings** — reported, not fatal:
 
-- A bundle-internal link with no target yet. OKF §6.1 says a link to
-  not-yet-written knowledge is legitimate, so this one stays advisory on
-  purpose.
+- A bundle-internal reference with no target yet — a body link, a
+  `sources[].resource`, or the top-level `resource`. OKF §6.1 says a pointer to
+  not-yet-written knowledge is legitimate, so this stays advisory on purpose.
+  **Only references that leave the bundle are errors.**
 - An `index.md` with no heading to group its entries under, a `log.md` with no
   dated entries, or a bundle with no root `index.md`.
 - An `Attested Computation` missing `runtime`, missing both a `computation` path
@@ -275,6 +283,12 @@ Write the canonical ```` ```mermaid ```` fence. The checker accepts every
 CommonMark form — `~~~mermaid`, longer backtick runs — because matching only the
 canonical one skipped the others *in silence*, which is the one failure a checker
 must never have.
+
+**The gate covers `knowledge/` only.** `check_mermaid.mjs` takes a directory, and
+pointing it at `docs/` currently reports 14 broken diagrams across the ADRs, the
+implementation plans and one architecture note — 8 parse failures and 5 phantom-node
+splits. Those are outside this bundle's contract and are not fixed here; widening
+the gate means fixing them first.
 
 **`make knowledge_check` is the one target to run after touching `knowledge/`.**
 It runs the Dart validator and the Mermaid parse together, because two targets

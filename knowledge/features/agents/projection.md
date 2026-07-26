@@ -5,7 +5,7 @@ description: "A pure, deterministic fold over an event *set* — proving that pr
 resource: ../../../lib/features/agents/projection
 tags: [agents, projection, determinism, convergence]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T04:15:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T17:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: src
@@ -68,6 +68,26 @@ Three properties of that pipeline carry the whole design:
 It is the foundation under [state-as-projection and fork
 healing](memory-and-compaction.md): multi-head tolerance is only safe if
 the fold cannot depend on which head arrived first.
+
+# Above the kernel: `DerivedAgentState`
+
+The kernel is deliberately small. The **storage-coupled composite** that production
+reads go through is `DerivedAgentState` (`derived_agent_state.dart`), and it is the
+piece most work will actually touch:
+
+- It calls `project(canonicalOrder(...))` for the structural part — heads and the
+  latest report — and aggregates the rest **directly off the messages and links**:
+  milestone watermarks as `max(createdAt)`, active slots from the agent's
+  association links.
+- Every field is a pure function of the log's *set*, so the convergence property
+  the kernel proves extends to the composite: two devices holding the same
+  messages and links derive an equal state regardless of arrival order. That is
+  the guarantee **the mutable cache cannot make** under last-write-wins.
+
+`ShadowProjection` (`shadow_projection.dart`) compares the projection against that
+live mutable state and reports match or divergence. **It never drives a production
+read** — it exists as a test assertion and an optional debug-mode runtime check, so
+a cache that has drifted is detectable rather than merely suspected.
 
 The projection is plain Dart with no I/O, so it can be exercised with property
 tests over shuffled event sets — the only honest way to test a claim about

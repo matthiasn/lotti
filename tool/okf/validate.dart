@@ -32,7 +32,21 @@ String _toRepoRelative(String bundleRoot) {
 /// strictly at all.
 const _knownFlags = {'--warnings-as-errors'};
 
+const _usage = '''
+Validates the OKF knowledge bundle.
+
+Usage: dart run tool/okf/validate.dart [bundle-dir] [--warnings-as-errors]
+
+  bundle-dir             Defaults to `knowledge`.
+  --warnings-as-errors   Exit non-zero on warnings too.
+
+Exits 0 when the bundle is conformant, 1 otherwise.''';
+
 void main(List<String> args) {
+  if (args.contains('--help') || args.contains('-h')) {
+    stdout.writeln(_usage);
+    return;
+  }
   final positional = args.where((a) => !a.startsWith('--')).toList();
   final unknown = args.where(
     (a) => a.startsWith('--') && !_knownFlags.contains(a),

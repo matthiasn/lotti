@@ -409,13 +409,15 @@ sources:
       );
     });
 
-    test('the day stale_after names is still fresh', () {
+    test('the day stale_after names is not yet an error', () {
       final result = validateBundle(
         _bundle(_concept(house: _houseWithStaleAfter('2026-07-26'))),
         today: DateTime.utc(2026, 7, 26),
       );
 
-      expect(result.issues, isEmpty);
+      // Due today, not overdue — so it warns rather than failing the build.
+      expect(result.isConformant, isTrue);
+      expect(result.warnings.single.message, contains('0 day(s) away'));
     });
 
     test('a future stale_after is silent', () {
@@ -425,6 +427,35 @@ sources:
       );
 
       expect(result.issues, isEmpty);
+    });
+
+    test('a stale_after inside the warning window warns without failing', () {
+      // Without this, the first signal that a date had arrived was a red push,
+      // for a whole subsystem at once — the dates are batched by subsystem.
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-08-05'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+
+      expect(result.isConformant, isTrue);
+      expect(
+        result.warnings.single.message,
+        allOf(contains('2026-08-05'), contains('10 day(s) away')),
+      );
+    });
+
+    test('the day the window opens warns, the day before is silent', () {
+      final onEdge = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-08-09'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+      final outside = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-08-10'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+
+      expect(onEdge.warnings, hasLength(1), reason: '14 days away');
+      expect(outside.issues, isEmpty, reason: '15 days away');
     });
 
     test('expiry is not checked when the caller names no day', () {
@@ -709,9 +740,13 @@ sources:
         ),
       );
 
-      final messages = _joined(result.issues);
+      // Warnings on purpose: nothing in this bundle uses the type, so a missing
+      // field is not worth failing a build over. Pinned, so an accidental
+      // promotion to error is caught rather than silently accepted.
+      final messages = _joined(result.warnings);
       expect(messages, contains('`runtime` is required'));
       expect(messages, contains('`# Computation` body section'));
+      expect(result.errors, isEmpty);
     });
 
     test('a body computation section satisfies the requirement', () {
@@ -742,12 +777,13 @@ sources:
           ),
         );
 
-        final messages = _joined(result.issues);
+        final messages = _joined(result.warnings);
         expect(
           messages,
           contains('`computation` must be a path'),
           reason: 'computation: $value should be rejected as a path',
         );
+        expect(result.errors, isEmpty, reason: 'stays advisory');
         expect(
           messages,
           contains('`# Computation` body section'),
@@ -952,6 +988,51 @@ Body.
       expect(
         result.errors.map((e) => e.message).single,
         contains('missing `tags`'),
+      );
+    });
+
+    test('an empty resource string is an error, not just a present key', () {
+      // `resource: ""` satisfied containsKey, is not null, and is skipped by both
+      // reference checks — so it validated clean while the convention promised
+      // that an empty value fails the build.
+      final result = validateBundle(
+        _bundle('''
+---
+type: Feature Module
+title: Speech
+description: Audio capture.
+resource: ""
+tags: [speech]
+$_houseKeys---
+
+Body.
+'''),
+      );
+
+      expect(
+        result.errors.map((e) => e.message).single,
+        contains('`resource` must be a non-empty string'),
+      );
+    });
+
+    test('an empty tags list is an error', () {
+      final result = validateBundle(
+        _bundle('''
+---
+type: Feature Module
+title: Speech
+description: Audio capture.
+resource: ../../lib/features/speech
+tags: []
+$_houseKeys---
+
+Body.
+'''),
+      );
+
+      expect(
+        result.errors.map((e) => e.message).single,
+        contains('`tags` must be a non-empty list'),
       );
     });
 

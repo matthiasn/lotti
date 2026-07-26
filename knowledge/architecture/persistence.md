@@ -8,6 +8,10 @@ status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
 stale_after: 2027-01-11
 sources:
+  - id: notifications
+    resource: ../../lib/services/db_notification.dart
+    title: UpdateNotifications token vocabulary
+    last_modified: 2026-07-05
   - id: private-gate
     resource: ../../lib/database/database_config_flags.dart
     title: Config-flag cache and the private-visibility gate
@@ -174,6 +178,33 @@ Picking the right stream is a correctness decision, not a preference:
 Notifications are **batched** — 100 ms for local writes, 1 s for sync arrivals —
 so a bulk import or a sync catch-up produces a handful of rebuilds rather than
 thousands.
+
+## What a notification carries
+
+The payload is a `Set<String>` of **tokens**, not entities — so a listener matches
+on strings and no consumer sees a row it did not ask for.
+`lib/services/db_notification.dart` holds the whole vocabulary, in three groups:
+
+| Group | Tokens |
+|-------|--------|
+| One per `JournalEntity` variant | `TEXT_ENTRY`, `TASK`, `AUDIO`, `IMAGE`, `EVENT`, `SURVEY`, `WORKOUT`, `HABIT_COMPLETION`, `AI_RESPONSE`, `DAY_PLAN`, `RATING`, `PROJECT` |
+| Definition and settings changes | `CATEGORIES_CHANGED`, `HABITS_CHANGED`, `DASHBOARDS_CHANGED`, `MEASURABLES_CHANGED`, `LABELS_CHANGED`, `LABEL_USAGE_CHANGED`, `SETTINGS_CHANGED`, `PRIVATE_FLAG_TOGGLED` |
+| Cross-cutting | `LINK_CHANGED`, `AGENT_CHANGED`, `AI_CONSUMPTION_CHANGED`, `INBOX_CHANGED` |
+
+**The `PROPAGATED::` prefix changes agent behaviour, not just reactivity.** A token
+emitted as a *fan-out* — the project that gained a task because someone linked one,
+rather than the task that was edited — is wrapped as `PROPAGATED::<token>`. The wake
+orchestrator reads that prefix: a propagated match **defers to the next morning**,
+while a direct match keeps the fast throttle, so a project agent does not spend
+tokens every time a task appears under it.
+
+The rule that follows: **a consumer that only cares about reactivity must match
+both forms.** Matching the bare token alone silently misses fan-out emissions.
+
+`agentExecutionZoneKey` is the other half of the same concern. Writes made *inside*
+an agent's own execution run in a zone carrying that key, which
+`PersistenceLogic` reads as `isAgentExecution` — so an agent's own writes do not
+feed back as a reason to wake it again.
 
 # Some reads pass a private-visibility gate
 

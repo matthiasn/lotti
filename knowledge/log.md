@@ -1,6 +1,15 @@
 # Knowledge Bundle Update Log
 
 ## 2026-07-26
+* **Creation**: Documented the last three subsystems with no home: the
+  `UpdateNotifications` token vocabulary and its `PROPAGATED::` prefix (which
+  changes wake throttling, not just reactivity), `DerivedAgentState` and
+  `ShadowProjection` above the projection kernel, and the error-log mirror the
+  logging sink diagram had omitted.
+* **Update**: Closed three documented-but-unenforced gaps in the validator —
+  `resource: ""` and `tags: []` now fail, and a `stale_after` warns for the
+  fortnight before it becomes an error, so a batch coming due is never first heard
+  about as a red push.
 * **Fix**: Narrowed the privacy claim that mattered most: the `private` gate is
   **opt-in and most reads skip it** — thirteen call sites in five files, and
   by-id reads including `journalEntityById` never filter. "Every read passes a
