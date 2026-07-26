@@ -195,6 +195,60 @@ extension _AnyGeneratedBridgeScenario on glados.Any {
 }
 
 void main() {
+  group('BridgeMarker.anchorIsSafe', () {
+    // A forward walk emits only events strictly after its anchor. If the
+    // durable floor sits at or behind the applied timestamp, that walk would
+    // step over known-missing work — which is how held ciphertext used to be
+    // lost for good once the pen was discarded.
+    test('no floor means the anchor is trusted', () {
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: 5000,
+          lastAppliedEventId: r'$a',
+        ).anchorIsSafe,
+        isTrue,
+      );
+    });
+
+    test('a floor ahead of the marker leaves the anchor usable', () {
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: 5000,
+          lastAppliedEventId: r'$a',
+          resumeFloorTs: 7000,
+        ).anchorIsSafe,
+        isTrue,
+        reason:
+            'the outstanding event is newer than the anchor, so a '
+            'forward walk still reaches it',
+      );
+    });
+
+    test('a floor behind the marker rules the anchor out', () {
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: 5000,
+          lastAppliedEventId: r'$a',
+          resumeFloorTs: 3000,
+        ).anchorIsSafe,
+        isFalse,
+        reason: 'anchoring here would skip the outstanding event entirely',
+      );
+    });
+
+    test('a floor equal to the marker also rules it out', () {
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: 5000,
+          lastAppliedEventId: r'$a',
+          resumeFloorTs: 5000,
+        ).anchorIsSafe,
+        isFalse,
+        reason: 'strictly-after would exclude an event at the anchor itself',
+      );
+    });
+  });
+
   late SyncDatabase db;
   late MockDomainLogger logging;
   late InboundQueue queue;

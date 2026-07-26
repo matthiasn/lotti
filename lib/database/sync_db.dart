@@ -85,7 +85,7 @@ class SyncDatabase extends _$SyncDatabase
   bool inMemoryDatabase = false;
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration {
@@ -589,6 +589,13 @@ class SyncDatabase extends _$SyncDatabase
             await customStatement(_createIdxOutboxActionableSubject);
             await customStatement('ANALYZE');
           }
+        }
+        if (from < 28) {
+          // Durable floor for received-but-unresolved work. Additive and
+          // nullable: an existing device simply has nothing outstanding
+          // recorded, which is the correct starting state — anything the pen
+          // was holding at upgrade time was in memory and already lost.
+          await m.addColumn(queueMarkers, queueMarkers.resumeFloorTs);
         }
       },
     );

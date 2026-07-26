@@ -85,6 +85,7 @@ class QueueBootstrapSink implements BootstrapSink {
     var penned = 0;
     var newlyPenned = 0;
     var penExhausted = false;
+    final overflowFloors = <({String roomId, int originTs})>[];
 
     if (heldIn == null) {
       forQueue.addAll(events);
@@ -102,26 +103,39 @@ class QueueBootstrapSink implements BootstrapSink {
         // A re-hold of something already held costs no slot.
         if (!heldIn.holds(event.eventId) &&
             heldIn.sizeForRoom(roomId) >= heldIn.capacity) {
-          // Stop the page here. Nothing after this point may be queued:
-          // this event has no row, no pen entry and therefore no marker
-          // clamp, so a later plaintext event from the same page would
-          // advance the marker straight past it and the incomplete-bootstrap
-          // retry would then anchor after the gap.
+          // No slot for it, so record it durably and keep going. The floor
+          // is what makes that safe: an omitted event has no row and no pen
+          // entry, so nothing in memory protects it, but
+          // `queue_markers.resume_floor_ts` now says a resume must reach
+          // back to it — and the bridge refuses a forward anchor that sits
+          // ahead of the floor. Later events from this page can therefore be
+          // queued without the marker stepping over the gap.
           //
-          // This does discard the remainder of a page that has already been
-          // fetched, which is a real cost on the manual "Fetch all history"
-          // path since nothing retries it automatically. That is the better
-          // side of the trade: re-fetching is free, and losing an event
-          // behind an advanced marker is permanent. Admitting past the gap
-          // safely needs the persisted resume floor tracked as lotti3-0i2.
+          // Before the floor existed this had to choose between discarding
+          // the rest of an already-fetched page and letting the marker
+          // advance past a dropped event. Neither was good; both were fixed
+          // here in turn, and the real answer was durable state.
           penExhausted = true;
-          break;
+          overflowFloors.add((
+            roomId: roomId,
+            originTs: event.originServerTs.millisecondsSinceEpoch,
+          ));
+          continue;
         }
         final sizeBefore = heldIn.size;
         heldIn.hold(event);
         penned++;
         if (heldIn.size > sizeBefore) newlyPenned++;
       }
+    }
+
+    // Record the floors *before* anything from this page becomes a queue
+    // row, so no commit can advance the marker in the window between.
+    for (final floor in overflowFloors) {
+      await _queue.lowerResumeFloor(
+        roomId: floor.roomId,
+        originTs: floor.originTs,
+      );
     }
 
     final enqueue = await _queue.appendBootstrapPage(forQueue);
