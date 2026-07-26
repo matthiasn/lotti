@@ -429,9 +429,11 @@ Each row may carry a `relations` array naming how THIS task relates to that
 row's task, in the same directed vocabulary the `link_task` tool uses (e.g.
 `blocks`, `is_blocked_by`, `has_follow_up`, `is_superseded_by`, `relates_to`).
 Read every phrase with THIS task as the subject: a row with
-`"relations": ["is_blocked_by"]` is a task that blocks this one. A row without
-`relations` is a plain association. Never propose a relationship a row already
-lists.
+`"relations": ["is_blocked_by"]` is a task that blocks this one. Plain
+associations are listed explicitly as `relates_to`; a row with NO `relations`
+array means the relationship data could not be read — treat it as unknown,
+never as a plain link, and do not describe or rely on a specific relationship
+for that row. Never propose a relationship a row already lists.
 
 Each row carries the linked task's metadata and, when a report exists, a compact
 summary of that task's own agent report (`latestTaskAgentReportTldr`,

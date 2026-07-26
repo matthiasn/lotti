@@ -100,8 +100,20 @@ class TaskLinkHandler {
     );
 
     if (!created) {
-      // The duplicate case was pre-checked, so a refused `blocks` edge is the
-      // creation-time cycle guard (ADR 0042 §5) speaking.
+      // createLink also returns false for a duplicate row, and another
+      // device or a manual link can write the same edge between the
+      // precheck and the insert. Recheck before naming a cause: a lost
+      // race means the requested relationship now exists — success, not a
+      // cycle error that would leave a dead retry.
+      if (await _linkExists(relation, endpoints)) {
+        return ToolExecutionResult(
+          success: true,
+          output: 'Already linked: $summary — nothing to change',
+        );
+      }
+
+      // Not a duplicate, so a refused `blocks` edge is the creation-time
+      // cycle guard (ADR 0042 §5) speaking.
       final reason = relation.type == EntryLinkType.blocks
           ? 'the link would create a blocking cycle'
           : 'the link could not be created';

@@ -507,6 +507,49 @@ void main() {
   });
 
   group('TaskLinkHandler createLink refusal', () {
+    test(
+      'a lost duplicate race reports success, not a cycle',
+      () async {
+        // Another device writes the same edge between the precheck and the
+        // insert: the precheck sees nothing, createLink refuses the
+        // now-duplicate row, and the recheck finds the edge present.
+        var lookups = 0;
+        when(
+          () => mockJournalDb.typedLinksForTaskIds(
+            any(),
+            types: any(named: 'types'),
+          ),
+        ).thenAnswer((_) async {
+          lookups++;
+          if (lookups == 1) return [];
+          return [
+            makeLink(
+              fromId: targetTaskId,
+              toId: sourceTaskId,
+              type: EntryLinkType.blocks,
+            ),
+          ];
+        });
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        final result = await handler.handle(sourceTaskId, {
+          'relation': 'is_blocked_by',
+          'targetTaskId': targetTaskId,
+        });
+
+        expect(result.success, isTrue);
+        expect(result.output, contains('Already linked'));
+        expect(result.errorMessage, isNull);
+        expect(lookups, 2);
+      },
+    );
+
     test('a refused blocks edge is reported as a cycle', () async {
       when(
         () => mockPersistenceLogic.createLink(

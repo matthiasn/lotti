@@ -2166,6 +2166,59 @@ void main() {
         },
       );
 
+      test(
+        'keeps the proposal when the relations resolver throws',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveLinkableTaskTitle: (_) async => 'Target',
+            resolveExistingTaskRelations: () async =>
+                throw Exception('db down'),
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call({'relation': 'blocks', 'targetTaskId': 'target-1'}),
+            ],
+            manager: mockManager,
+          );
+
+          // A transient failure must not suppress a possibly-new
+          // relationship — the apply-time precheck still guards duplicates.
+          expect(bench.builder.items, hasLength(1));
+        },
+      );
+
+      test(
+        'canonicalRelationTripleOfLink agrees with the field form',
+        () {
+          final link = EntryLinkType.blocks.buildLink(
+            id: 'link-1',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+          // The link-derived form is what the execute-side resolver feeds
+          // the suppression set; it must equal the proposal-side key.
+          expect(
+            TaskAgentChangeHandlers.canonicalRelationTripleOfLink(link),
+            TaskAgentChangeHandlers.canonicalRelationTriple(
+              fromId: 'a',
+              toId: 'b',
+              type: EntryLinkType.blocks,
+            ),
+          );
+          expect(
+            TaskAgentChangeHandlers.canonicalRelationTripleOfLink(link),
+            'a|b|BlocksLink',
+          );
+        },
+      );
+
       test('allows multiple different relationships in one wake', () async {
         final bench = _createStrategy(
           executor: mockExecutor,

@@ -1124,6 +1124,62 @@ void main() {
         });
       });
 
+      // Creating the agent enqueues its creation wake immediately, so the
+      // relationship must already be on disk — otherwise the new agent's
+      // first report describes a task without the edge the user dictated.
+      test('persists the typed link before creating the agent', () async {
+        when(() => mockEntitiesCache.getCategoryById(categoryId)).thenReturn(
+          CategoryDefinition(
+            id: categoryId,
+            name: 'Test Category',
+            color: '#0000FFFF',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: null,
+            active: true,
+            private: false,
+            defaultProfileId: 'profile-from-category',
+            defaultTemplateId: 'template-from-category',
+          ),
+        );
+
+        stubSourceTaskLookup(makeSourceTask());
+        stubCreateTask(makeNewTask('new-task-ordered'));
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handlerWithAgent.handle(
+            sourceTaskId,
+            {'title': 'Ordered Task', 'relation': 'is_blocked_by'},
+          );
+
+          expect(result.success, isTrue);
+          verifyInOrder([
+            () => mockPersistenceLogic.createLink(
+              fromId: 'new-task-ordered',
+              toId: sourceTaskId,
+              linkType: EntryLinkType.blocks,
+            ),
+            () => mockTaskAgentService.createTaskAgent(
+              taskId: 'new-task-ordered',
+              templateId: any(named: 'templateId'),
+              profileId: any(named: 'profileId'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              awaitContent: any(named: 'awaitContent'),
+              automaticUpdatesEnabled: any(
+                named: 'automaticUpdatesEnabled',
+              ),
+            ),
+          ]);
+        });
+      });
+
       // This path builds a category-default agent without going through
       // `assignCategoryDefaultTaskAgent`, so the category's wake preference
       // has to be forwarded here too — otherwise an agent-created follow-up

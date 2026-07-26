@@ -169,19 +169,14 @@ class FollowUpTaskHandler {
 
     final warnings = <String>[];
 
-    // Auto-assign an agent from the category's default template, matching
-    // the behavior of UI-created tasks in create_entry.dart.
-    await _tryAutoAssignAgent(
-      newTask,
-      categoryId: categoryId,
-      category: category,
-      warnings: warnings,
-    );
-
     // Link source task ↔ new task. Without a relation this is the historic
     // plain link from source to new task; with one, the single edge is typed
     // and canonically directed (mirroring the UI's LinkTaskModal create
     // path, which never writes a basic edge alongside a typed one).
+    // Persisted BEFORE the agent auto-assignment below: creating the agent
+    // enqueues its creation wake immediately, and that first wake must see
+    // the relationship (and inherited project) or its first report describes
+    // a task without the very context the user just dictated.
     // Wrapped in try-catch so a link failure does not lose the
     // already-created task ID. Also checks the bool return value since
     // PersistenceLogic.createLink reports some failures that way.
@@ -220,6 +215,16 @@ class FollowUpTaskHandler {
 
     // Inherit project from source task.
     await _tryInheritProject(sourceTaskId, newTaskId, warnings);
+
+    // Auto-assign an agent from the category's default template, matching
+    // the behavior of UI-created tasks in create_entry.dart. Runs last so
+    // the creation wake it enqueues sees the link and project written above.
+    await _tryAutoAssignAgent(
+      newTask,
+      categoryId: categoryId,
+      category: category,
+      warnings: warnings,
+    );
 
     final output = StringBuffer('Created follow-up task "$title" ($newTaskId)');
     if (relation != null) {
