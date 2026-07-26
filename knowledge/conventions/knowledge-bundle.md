@@ -6,7 +6,7 @@ resource: ../../knowledge
 tags: [convention, documentation, okf, process]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T09:30:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-01-18
 sources:
   - id: okf-spec
     resource: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
@@ -32,51 +32,68 @@ Documentation in this repository is split by *audience*, not by convenience:
 | `knowledge/features/<x>*.md` | **How does it actually work at runtime?** Flows, state machines, invariants, key classes, gotchas. | "Recording writes to disk first; transcription is a separate AI-side call with no realtime path." |
 | [`docs/adr/`](../../docs/adr) | **Why was it decided this way, and when?** One decision, at one point in time, not rewritten afterwards. | "ADR 0022: time analysis queries julianday over epoch ints." |
 
-The rule is that **no fact is written twice.** A README that starts explaining
+The rule is **one authoritative home per fact.** A README that starts explaining
 provider routing or wake scheduling has drifted into the bundle's territory;
 move it and link. A concept that opens by explaining what a task is for has
 drifted into the README's territory. A concept that argues for a decision rather
 than describing what runs belongs in an ADR — concepts *cite* ADRs, because an
 ADR is frozen at its date while a concept tracks today's code.
 
-The same rule binds `AGENTS.md`. When a repository instruction and a concept
-would state the same fact, the instruction links the concept instead of repeating
-it — a copy in `AGENTS.md` is loaded into every agent's context and is the copy
-nobody remembers to update.
+**A short operational summary may repeat a fact, and must link to its home.**
+`AGENTS.md` is loaded into every agent's context, so a guardrail that has to fire
+before anyone thinks to open a concept — *use informal register*, *tokens are
+mandatory* — earns its place there. What must never live in a summary is the
+**detail that drifts**: an enumerated list, a count, a table, a value. That is the
+distinction between a guardrail and a stale copy, and it is why the twelve ARB
+catalogues are named in
+[localization](localization.md) while `AGENTS.md` only says *all of them, and here
+is where they are listed*.
+
+Applied to this bundle: if you find yourself updating the same sentence in two
+files, one of them is the home and the other should have been a link.
 
 Feature READMEs stay short — roughly 40 to 100 lines — and end with a link to
 their concept.
 
 # Frontmatter every concept carries
 
+Every key below is **required** — a missing or empty one fails the build. The
+comments mark how far the check goes, because presence and correctness are not
+the same thing:
+
 ```yaml
 ---
-type: Feature Module          # Architecture | Domain Model | Feature Module | Convention
-title: Speech
-description: One sentence. Shown in index listings and search snippets.
-resource: ../../lib/features/speech    # the code this concept describes
-tags: [speech, audio, transcription]
-status: stable                # draft | stable | deprecated
+type: Feature Module          # presence only — no allowlist (see below)
+title: Speech                 # must be a non-empty string
+description: One sentence.    # must be a non-empty string. Shown in index listings.
+resource: ../../lib/features/speech    # must resolve in the repo
+tags: [speech, audio]         # presence only — values unchecked
+status: stable                # must be draft | stable | deprecated
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-25       # from the volatility table below
-sources:
-  - id: speech-repo
+                              # `by` must match the actor convention, `at` a real ISO 8601 instant
+stale_after: 2027-01-25       # must be a real YYYY-MM-DD day, and must not have passed
+sources:                      # must be a non-empty list; one entry must leave the bundle
+  - id: speech-repo           # must be unique within the concept
     resource: ../../lib/features/speech/repository/audio_recorder_repository.dart
-    title: AudioRecorderRepository
-    last_modified: 2026-07-14
+                              # required per entry; must resolve in the repo
+    title: AudioRecorderRepository   # unchecked
+    last_modified: 2026-07-14 # must be a real YYYY-MM-DD day if present
 ---
 ```
 
-Every one of those keys is required here, and a missing or malformed one is a
-build failure — see [what the validator checks](#what-the-validator-checks).
-
-- **`type`** is one of `Architecture`, `Domain Model`, `Feature Module` or
-  `Convention`. It is the only key OKF itself requires.
+- **`type`** is `Architecture`, `Domain Model`, `Feature Module` or `Convention`
+  in this bundle. It is the only key OKF itself requires, and the validator only
+  requires it to be a non-empty string: **the four names are convention, not an
+  enforced allowlist.** OKF defines others, and the validator has extra checks for
+  `Attested Computation` (§10.2) should anyone introduce one. Pick a fifth name
+  only with a reason, since nothing will stop you.
 - **`resource`** is the *subject* of the concept: the directory or file it
-  describes, as a bundle-relative path. One per concept.
+  describes, as a bundle-relative path. One per concept. A concept whose subject
+  genuinely is the whole repository — release pipelines, security posture — says
+  `../..` rather than omitting the key.
 - **`tags`** are lowercase search keys — the feature name, the subsystem, the
   nouns someone would grep for. They are not a taxonomy; nothing dispatches on
-  them.
+  them. Required, but the values are free-form and unchecked.
 - **`generated.by`** follows the OKF actor convention: `<producer>/<version>`
   for a tool, `human:<id>` for a person. Be honest — if an agent wrote it, say
   so. **`generated.at`** is a full ISO 8601 timestamp, bumped whenever the prose
@@ -88,20 +105,22 @@ build failure — see [what the validator checks](#what-the-validator-checks).
   defeats the point of having the field. No concept in this bundle carries one
   yet, so treat every concept as agent-written until it does.
 - **`sources[].resource`** points at the code the concept was derived from,
-  as a repo-relative path. The validator resolves these, so a source that moves
-  or disappears fails the build. At least one source must point *outside* the
-  bundle — a concept sourced only from sibling concepts is grounded in nothing
-  the drift check can pull on.
+  as a repo-relative path. At least one source must point *outside* the bundle —
+  a concept sourced only from sibling concepts is grounded in nothing the drift
+  check can pull on. **Where it points decides the severity**: a source outside
+  the bundle that no longer resolves is an error, while one pointing at a
+  bundle-internal path that does not exist is only a warning, because §6.1 allows
+  a pointer to knowledge not written yet.
 - **`sources[].id`** is a short slug, unique within the concept, that footnote
   attribution joins on. **`sources[].title`** names the thing in prose.
 - **`sources[].last_modified`** is the day that source was last changed, as
-  `YYYY-MM-DD` — `git log -1 --format=%ad --date=short <path>` is where to get
+  `YYYY-MM-DD` — `git log -1 --format=%ad --date=short -- <path>` is where to get
   it. It is a record of what the concept was written against, not a promise
   about now: when it trails the file's real history by a lot, the concept was
   written against an older shape of the code.
-- **`stale_after`** is an absolute date. A concept past it is not wrong by
-  definition, but it is due for a re-read, and the validator says so. Pick the
-  window from how fast the subject changes:
+- **`stale_after`** is an absolute date, and **passing it fails the build** — it
+  is a commitment to re-read by, not a hint. Pick the window from how fast the
+  subject changes:
 
   | Subject | Window |
   |---------|--------|
@@ -109,9 +128,16 @@ build failure — see [what the validator checks](#what-the-validator-checks).
   | Other features, architecture, conventions | ~6 months |
   | Domain models and settled exploratory work | ~12 months |
 
-  A single shared date across the bundle is the failure mode to avoid: it
-  expires everything on one day and tells a reader nothing about which concepts
-  actually move.
+  Then **use the date its siblings already carry.** One date per subsystem is
+  deliberate: re-reading all of `sync/` in one sitting is far cheaper than seven
+  separate visits, because the reader holds the whole subsystem in mind once. A
+  new concept inherits its directory's date rather than inventing one.
+
+  Across subsystems the dates are **staggered a week apart**, so the reminders
+  arrive as a trickle of coherent batches. Two failure modes to avoid: a single
+  shared date, which expires the bundle in one burst and says nothing about what
+  actually moves, and a per-file date, which turns one afternoon of re-reading
+  into fifteen interruptions.
 
 # The rule that keeps it honest
 
@@ -168,14 +194,18 @@ Spec conformance:
 
 House rules — OKF grades these `SHOULD`, this repo does not:
 
-- A missing or empty `title`, `description`, `status`, `generated`,
-  `stale_after` or `sources`.
+- A missing or empty `title`, `description`, `resource`, `tags`, `status`,
+  `generated`, `stale_after` or `sources`.
 - A `status` outside `draft`, `stable`, `deprecated`; a `title` or `description`
-  that is not a non-empty string.
-- A `generated` that is not a `{ by, at }` mapping, a missing `generated.by`, an
-  actor outside the convention, or a datetime that is malformed or names an
-  impossible instant.
+  that is not a non-empty string. **`type` and `tags` are checked for presence
+  only** — `type` against no allowlist, `tags` not at all beyond being non-empty.
+- A `generated` that is not a `{ by, at }` mapping, a missing `generated.by`, a
+  missing `at`, or a datetime that is malformed or names an impossible instant.
 - A `verified` entry that is not `{ by, at }`, or is missing `by`.
+- An actor outside the `<producer>/<version>` / `human:<id>` / `process:<id>`
+  convention — in `generated.by`, in `verified[].by`, or in the optional
+  `sources[].author`.
+- A root `index.md` whose frontmatter will not parse, or is not a mapping.
 - A `stale_after` that is not an absolute `YYYY-MM-DD` day.
 - A `sources` that is null, not a list, or empty; an entry that is not a mapping;
   a missing or non-string `resource`; a duplicate `id`; a `last_modified` that is
@@ -185,6 +215,10 @@ House rules — OKF grades these `SHOULD`, this repo does not:
   pull on a reference that points outward.
 - A root `index.md` that declares no `okf_version`, or declares one this
   validator does not implement.
+- **A concept whose `stale_after` has passed.** The date is a commitment to
+  re-read by, so `make okf_check` and CI both stop on it. Clearing it means
+  re-reading the concept against the code — or deciding, deliberately, to move the
+  date.
 - **A fenced block that never closes on a line of its own.** CommonMark accepts a
   closing fence only when nothing else is on the line, so ```` ``` and then
   prose ```` leaves the block open and renders the rest of the page as code. This
@@ -196,17 +230,17 @@ House rules — OKF grades these `SHOULD`, this repo does not:
 - A bundle-internal link with no target yet. OKF §6.1 says a link to
   not-yet-written knowledge is legitimate, so this one stays advisory on
   purpose.
-- A concept whose `stale_after` has passed. The calendar caused it, not the
-  change under review; failing an unrelated PR for it would only teach people to
-  push the date out without re-reading the code.
 - An `index.md` with no heading to group its entries under, a `log.md` with no
   dated entries, or a bundle with no root `index.md`.
-- An `Attested Computation` missing `runtime` or a `# Computation` section. No
-  concept here uses that type yet.
+- An `Attested Computation` missing `runtime`, missing both a `computation` path
+  and a `# Computation` section, or carrying a `computation` that is not a path.
+  No concept here uses that type yet.
 
-Run `dart run tool/okf/validate.dart --warnings-as-errors` to treat everything
-as fatal. `make okf_check` does not, so that an expired concept or a forward
-link never blocks an unrelated change.
+`dart run tool/okf/validate.dart --warnings-as-errors` treats everything as fatal,
+which is useful locally before a PR. CI does not pass it, because it would also
+reject the forward links §6.1 permits. An unrecognised flag is rejected rather
+than ignored — a near-miss like `--warnings-as-error` used to run non-strict and
+report a clean bundle that had never been checked strictly.
 
 # Diagrams
 
@@ -215,8 +249,10 @@ prefer `stateDiagram-v2`, and never draw a state the code does not implement.
 A diagram earns its place by carrying what prose cannot: an ordering, a fork, a
 band of stability. A box-per-paragraph restatement does not.
 
-**The validator does not parse Mermaid**, so a syntactically broken diagram
-reaches the reader as an error box. Three did. Two traps account for all of them:
+**The Dart validator cannot parse Mermaid** — there is no Dart parser — so
+`make mermaid_check` runs Mermaid itself under jsdom, and the `mermaid` CI job
+does the same on every push. Before that existed, three broken diagrams shipped.
+Two traps account for all of them:
 
 - **`;` is a statement separator**, in every diagram type. A semicolon inside a
   label ends the statement there and the remainder parses as garbage. Use a
@@ -224,14 +260,9 @@ reaches the reader as an error box. Three did. Two traps account for all of them
 - **A second `:` breaks a `stateDiagram-v2` transition label.** `x := y` reads as
   a new label boundary. Say "becomes" instead.
 
-To check every block for real, parse them with Mermaid itself:
-
-```bash
-npm install mermaid jsdom   # in a scratch directory, not the repo
-```
-
-then load each ```` ```mermaid ```` block from `knowledge/` and call
-`mermaid.parse` on it under jsdom. That catches what CI currently cannot.
+Run `make mermaid_check` before pushing a diagram. It lives in
+[`tool/okf/check_mermaid.mjs`](../../tool/okf/check_mermaid.mjs) with its own
+pinned `package.json`, so it needs Node but nothing from the Flutter toolchain.
 
 # Structure
 

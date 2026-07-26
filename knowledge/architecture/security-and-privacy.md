@@ -2,10 +2,11 @@
 type: Architecture
 title: Security and privacy posture
 description: What is encrypted, what is not, where secrets live, and what leaves the device.
+resource: ../..
 tags: [architecture, security, privacy, encryption, secure-storage]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-01-11
 sources:
   - id: secure-storage
     resource: ../../lib/features/sync/secure_storage.dart

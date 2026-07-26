@@ -6,7 +6,7 @@ resource: ../../lib/features/ai_consumption
 tags: [ai-consumption, attribution, cost, impact]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:15:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-02-22
 sources:
   - id: src
     resource: ../../lib/features/ai_consumption

@@ -6,7 +6,7 @@ resource: ../../lib/features/whats_new
 tags: [whats-new, releases, remote-content]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:00:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-03-08
 sources:
   - id: src
     resource: ../../lib/features/whats_new

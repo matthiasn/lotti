@@ -6,7 +6,7 @@ resource: ../../lib/features/events
 tags: [events, memories, view-models, localization]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T03:45:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-02-22
 sources:
   - id: src
     resource: ../../lib/features/events

@@ -6,7 +6,7 @@ resource: ../../../lib/features/tasks/state/saved_filters
 tags: [tasks, filters, saved-filters, keyboard]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-01-25
 sources:
   - id: saved-filters
     resource: ../../../lib/features/tasks/state/saved_filters

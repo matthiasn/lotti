@@ -6,7 +6,7 @@ resource: ../../../lib/features/design_system/theme
 tags: [design-system, tokens, theming, accessibility, contrast]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T11:00:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-02-08
 sources:
   - id: generator
     resource: ../../../tool/design_system/generate_tokens.dart

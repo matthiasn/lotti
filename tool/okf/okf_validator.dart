@@ -25,10 +25,10 @@ enum Severity {
   /// The bundle is not conformant and CI fails.
   error,
 
-  /// Advisory. Either OKF is deliberately permissive here — a link to knowledge
-  /// that has not been written yet is legitimate (§6.1) — or the signal is not
-  /// something the change under review caused, like a concept whose
-  /// `stale_after` has passed.
+  /// Advisory, and deliberately narrow: OKF is permissive here. A link to
+  /// knowledge that has not been written yet is legitimate (§6.1), an index
+  /// without headings is untidy rather than wrong, and `Attested Computation`
+  /// fields matter only to a type nothing in this bundle uses.
   warning,
 }
 
@@ -113,9 +113,18 @@ const okfVersion = '0.2';
 /// concept was derived from. `stale_after` and `sources` are in here rather than
 /// only validated when present, because a concept that omits them is exactly the
 /// one whose drift nobody can detect.
+///
+/// `resource` and `tags` joined the set once the convention that documents them
+/// as mandatory turned out not to be enforced: two architecture concepts had no
+/// `resource` at all and validated clean, which is exactly the gap between
+/// documented and checked that this bundle exists to close. A concept whose
+/// subject is the repository itself says so — `resource: ../..` — rather than
+/// omitting the key.
 const _requiredHouseKeys = {
   'title',
   'description',
+  'resource',
+  'tags',
   'status',
   'generated',
   'stale_after',
@@ -704,10 +713,11 @@ List<OkfIssue> _validateVerified(String path, YamlMap frontmatter) {
 
 /// Checks `stale_after` for shape, and — when [today] is given — for expiry.
 ///
-/// Expiry is a warning rather than an error on purpose. A malformed date is
-/// something the author did; an expired one is something the calendar did, and
-/// failing an unrelated PR for it would only teach people to push the date out
-/// without re-reading the code, which is the opposite of what the field is for.
+/// Expiry is an error, so `make okf_check` and CI both stop on it. The date is a
+/// commitment to re-read by, and a reminder nothing ever fails on is not a
+/// reminder. The cost is real and accepted: when a subsystem's date arrives,
+/// clearing it means re-reading those concepts against the code, or deciding
+/// deliberately to move the date.
 List<OkfIssue> _validateStaleAfter(
   String path,
   YamlMap frontmatter,
@@ -733,7 +743,7 @@ List<OkfIssue> _validateStaleAfter(
   if (!day.isAfter(deadline)) return const [];
   return [
     OkfIssue(
-      severity: Severity.warning,
+      severity: _houseRule,
       path: path,
       message:
           '`stale_after` passed on $staleAfter; re-read this concept against '
@@ -1255,7 +1265,12 @@ List<OkfIssue> validateRepoReferences({
       // Resolve against the concept's own directory *inside the repo*, so
       // `knowledge/architecture/x.md` + `../../lib/main.dart` = `lib/main.dart`.
       final repoBase = [rootPrefix, dir].where((s) => s.isNotEmpty).join('/');
-      final repoPath = _normalizeRelative(repoBase, withoutAnchor);
+      // A reference that lands exactly on the repository root normalizes to the
+      // empty string, and neither `File('')` nor `Directory('')` exists — so a
+      // repo-wide concept declaring `resource: ../..` was reported as a dangling
+      // pointer. `.` is the same directory, and it does exist.
+      final normalized = _normalizeRelative(repoBase, withoutAnchor);
+      final repoPath = normalized.isEmpty ? '.' : normalized;
       if (repoPath.startsWith('..')) {
         issues.add(
           OkfIssue(

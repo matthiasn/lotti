@@ -2,10 +2,11 @@
 type: Architecture
 title: Platform targets, CI and release
 description: Five platform targets from one codebase, the checks every branch runs, and the tag that triggers seven release pipelines.
+resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-01-11
 sources:
   - id: workflows
     resource: ../../.github/workflows

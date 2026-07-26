@@ -6,7 +6,7 @@ resource: ../../lib/widgets
 tags: [widgets, shared, modals, selection]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:45:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-01-11
 sources:
   - id: src
     resource: ../../lib/widgets

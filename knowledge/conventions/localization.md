@@ -6,7 +6,7 @@ resource: ../../lib/l10n
 tags: [convention, l10n, arb, translation]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T10:00:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-01-18
 sources:
   - id: l10n
     resource: ../../lib/l10n

@@ -6,7 +6,7 @@ resource: ../../lib/features/settings
 tags: [settings, navigation, tree, forms]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T10:00:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-03-08
 sources:
   - id: settings
     resource: ../../lib/features/settings

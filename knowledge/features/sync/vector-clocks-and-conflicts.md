@@ -6,7 +6,7 @@ resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
-stale_after: 2026-10-26
+stale_after: 2026-11-02
 sources:
   - id: vector-clock
     resource: ../../../lib/features/sync/vector_clock.dart

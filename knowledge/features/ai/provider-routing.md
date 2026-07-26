@@ -6,7 +6,7 @@ resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
 tags: [ai, providers, routing, audio, gemini, mlx]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2026-10-26
+stale_after: 2026-10-19
 sources:
   - id: router
     resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart

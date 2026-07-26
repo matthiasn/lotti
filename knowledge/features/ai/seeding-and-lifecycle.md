@@ -6,7 +6,7 @@ resource: ../../../lib/features/ai/util/profile_seeding_service.dart
 tags: [ai, seeding, migration, soft-delete, lifecycle]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2026-10-26
+stale_after: 2026-10-19
 sources:
   - id: seeding
     resource: ../../../lib/features/ai/util/profile_seeding_service.dart

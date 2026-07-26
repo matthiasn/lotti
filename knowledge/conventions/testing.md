@@ -6,7 +6,7 @@ resource: ../../test/README.md
 tags: [convention, testing, fake-time, glados, ci]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:30:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-01-18
 sources:
   - id: test-readme
     resource: ../../test/README.md

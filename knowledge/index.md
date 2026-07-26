@@ -35,20 +35,27 @@ change and run `make okf_check`.
 
 # Which authority wins
 
-When two of these disagree, the one higher up is right:
+These answer different questions, so they do not sit in one ranking. Match the
+question to its authority first:
 
-| Rank | Source | Why |
-|------|--------|-----|
-| 1 | `AGENTS.md` and the user's instructions | They say what to do, not what is. |
-| 2 | **The current source code** | It is what runs. Nothing here outranks it. |
-| 3 | A concept in this bundle | A derived description, true as of its `generated.at`. |
-| 4 | An ADR, a `log.md` entry, git history | A record of a past decision, deliberately not updated. |
+| Question | Authority |
+|----------|-----------|
+| **How should this work be done?** | The user's instructions, then [`AGENTS.md`](../AGENTS.md). |
+| **What does the app actually do today?** | The source code — then a concept here as its description, then an ADR or git history as a record of how it got that way. |
 
-So: **if a concept contradicts the code, the concept is the defect** — fix it in
-the same change rather than working around it or, worse, "fixing" the code to
-match the prose. A concept past its `stale_after` is not wrong by definition, but
-it has not been re-read recently; `make okf_check` reports it. And no concept
-here carries a `verified` entry yet, so treat every one of them as
+Within the second column the order is strict: **the code outranks the prose.** If a
+concept contradicts the code, the concept is the defect — fix it in the same
+change rather than working around it or, worse, "fixing" the code to match the
+prose.
+
+The split matters in one direction especially. `AGENTS.md` governs process, so a
+*descriptive* claim that has drifted into it — a count, a file list, a version —
+carries no more weight than any other stale prose, and **less** than the code it
+describes. Treat it as a pointer to check, not a fact to trust.
+
+Two caveats on the concepts themselves: one past its `stale_after` is not wrong by
+definition but has not been re-read recently, and `make okf_check` says so. And no
+concept here carries a `verified` entry yet, so treat every one of them as
 agent-generated until it does.
 
 # Where the code is documented

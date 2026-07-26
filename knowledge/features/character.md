@@ -6,7 +6,7 @@ resource: ../../lib/features/character
 tags: [character, animation, skeletal, deterministic]
 status: draft
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:15:00Z }
-stale_after: 2027-07-26
+stale_after: 2027-07-19
 sources:
   - id: src
     resource: ../../lib/features/character

@@ -6,7 +6,7 @@ resource: ../../../lib/features/journal/state/journal_page_controller.dart
 tags: [journal, search, pagination, linked-entries, focus]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:30:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-02-01
 sources:
   - id: page-controller
     resource: ../../../lib/features/journal/state/journal_page_controller.dart

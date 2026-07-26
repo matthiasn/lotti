@@ -6,7 +6,7 @@ resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
-stale_after: 2026-10-26
+stale_after: 2026-10-12
 sources:
   - id: workflow
     resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart

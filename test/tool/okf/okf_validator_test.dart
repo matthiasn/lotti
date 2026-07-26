@@ -34,6 +34,8 @@ String _concept({
 type: $type
 title: Speech
 description: Audio capture.
+resource: ../../lib/features/speech
+tags: [speech]
 $house$extra---
 
 $body
@@ -89,6 +91,8 @@ void main() {
 ---
 title: Speech
 description: Audio capture.
+resource: ../../lib/features/speech
+tags: [speech]
 $_houseKeys---
 
 Body.
@@ -390,18 +394,17 @@ sources:
       );
     });
 
-    test('an expired stale_after warns without failing the build', () {
+    test('an expired stale_after fails the build', () {
       final result = validateBundle(
         _bundle(_concept(house: _houseWithStaleAfter('2026-01-31'))),
         today: DateTime.utc(2026, 7, 26),
       );
 
-      // A warning, not an error: the calendar caused this, not the change under
-      // review, and failing an unrelated PR would only teach people to push the
-      // date out without re-reading the code.
-      expect(result.isConformant, isTrue);
+      // An error, not a warning: the date is a commitment to re-read by, and a
+      // reminder nothing ever fails on is not a reminder.
+      expect(result.isConformant, isFalse);
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('`stale_after` passed on 2026-01-31'),
       );
     });
@@ -908,6 +911,68 @@ sources:
     });
   });
 
+  group('resource and tags are required, not merely documented', () {
+    // The convention has always described these as part of the frontmatter every
+    // concept carries. Until they joined the required set, two architecture
+    // concepts had no `resource` at all and validated clean.
+    test('a concept with no resource is an error', () {
+      final result = validateBundle(
+        _bundle('''
+---
+type: Feature Module
+title: Speech
+description: Audio capture.
+tags: [speech]
+$_houseKeys---
+
+Body.
+'''),
+      );
+
+      expect(
+        result.errors.map((e) => e.message).single,
+        contains('missing `resource`'),
+      );
+    });
+
+    test('a concept with no tags is an error', () {
+      final result = validateBundle(
+        _bundle('''
+---
+type: Feature Module
+title: Speech
+description: Audio capture.
+resource: ../../lib/features/speech
+$_houseKeys---
+
+Body.
+'''),
+      );
+
+      expect(
+        result.errors.map((e) => e.message).single,
+        contains('missing `tags`'),
+      );
+    });
+
+    test('a repo-wide concept may name the repository root as its subject', () {
+      // `../..` from `knowledge/architecture/` normalizes to the empty string,
+      // and neither `File('')` nor `Directory('')` exists — so a concept whose
+      // subject genuinely is the whole repository used to read as a dangling
+      // pointer.
+      final issues = validateRepoReferences(
+        files: {
+          'architecture/platform-and-release.md':
+              '---\ntype: Architecture\nresource: ../..\n---\n\nBody.\n',
+        },
+        bundleRoot: 'knowledge',
+        repoFileExists: (path) => path == '.',
+      );
+
+      expect(issues, isEmpty);
+    });
+  });
+
   group('fenced blocks must close on their own line', () {
     // The shape that shipped: a mermaid diagram whose closing fence had a
     // sentence welded to it. CommonMark does not accept that as a close, so
@@ -926,10 +991,10 @@ sources:
         result.errors.single.message,
         contains('is never closed by a line containing only the delimiter'),
       );
-      // Whole-file line, not body-relative: 11 lines of frontmatter, a blank,
+      // Whole-file line, not body-relative: 13 lines of frontmatter, a blank,
       // then the opening fence — so the reported number is the one an editor
       // jumps to.
-      expect(result.errors.single.line, 13);
+      expect(result.errors.single.line, 15);
     });
 
     test('a properly closed block is silent', () {
@@ -1086,8 +1151,16 @@ sources:
       );
 
       expect(
-        _joined(result.issues),
+        _joined(result.warnings),
         contains('`sources[].resource` `missing.dart` does not exist'),
+      );
+      // The severity split, pinned in one place: a bundle-internal target that
+      // does not exist is a warning because §6.1 permits a forward pointer,
+      // while a source set that never leaves the bundle is an error. Asserting
+      // on `issues` alone would let either half flip unnoticed.
+      expect(
+        _joined(result.errors),
+        contains('grounded in nothing the drift check can verify'),
       );
     });
 
@@ -1112,7 +1185,7 @@ sources:
       );
 
       expect(
-        _joined(result.issues),
+        _joined(result.errors),
         contains('grounded in nothing the drift check can verify'),
       );
     });
@@ -1170,7 +1243,7 @@ sources:
       );
 
       expect(
-        _joined(result.issues),
+        _joined(result.errors),
         contains('grounded in nothing the drift check can verify'),
       );
     });

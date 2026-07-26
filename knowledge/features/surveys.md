@@ -6,7 +6,7 @@ resource: ../../lib/features/surveys
 tags: [surveys, questionnaires, scoring]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:15:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-03-08
 sources:
   - id: src
     resource: ../../lib/features/surveys

@@ -6,7 +6,7 @@ resource: ../../lib/features/knowledge_graph_poc
 tags: [knowledge-graph, visualization, poc]
 status: draft
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:15:00Z }
-stale_after: 2027-07-26
+stale_after: 2027-07-19
 sources:
   - id: src
     resource: ../../lib/features/knowledge_graph_poc

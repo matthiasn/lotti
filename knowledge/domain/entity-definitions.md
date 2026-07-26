@@ -6,7 +6,7 @@ resource: ../../lib/classes/entity_definitions.dart
 tags: [domain, categories, labels, habits, dashboards]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T02:30:00Z }
-stale_after: 2027-07-26
+stale_after: 2027-07-12
 sources:
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart

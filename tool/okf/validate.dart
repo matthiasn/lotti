@@ -25,8 +25,25 @@ String _toRepoRelative(String bundleRoot) {
   exit(1);
 }
 
+/// Flags this CLI understands. Anything else is rejected rather than ignored:
+/// an unrecognised `--flag` used to be filtered out of the positional list and
+/// then never looked at, so a near-miss like `--warnings-as-error` silently ran
+/// in non-strict mode and reported a clean bundle that had not been checked
+/// strictly at all.
+const _knownFlags = {'--warnings-as-errors'};
+
 void main(List<String> args) {
   final positional = args.where((a) => !a.startsWith('--')).toList();
+  final unknown = args.where(
+    (a) => a.startsWith('--') && !_knownFlags.contains(a),
+  );
+  if (unknown.isNotEmpty) {
+    stderr.writeln(
+      'error: unknown flag(s) ${unknown.join(', ')}; supported: '
+      '${_knownFlags.join(', ')}',
+    );
+    exit(1);
+  }
   final strict = args.contains('--warnings-as-errors');
   final bundleRoot = _toRepoRelative(
     positional.isEmpty ? 'knowledge' : positional.first,

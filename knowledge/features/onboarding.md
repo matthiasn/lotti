@@ -6,7 +6,7 @@ resource: ../../lib/features/onboarding
 tags: [onboarding, ftue, metrics, activation]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T03:45:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-03-01
 sources:
   - id: src
     resource: ../../lib/features/onboarding

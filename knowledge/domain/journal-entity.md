@@ -6,7 +6,7 @@ resource: ../../lib/classes/journal_entities.dart
 tags: [domain, journal-entity, metadata, freezed]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T02:30:00Z }
-stale_after: 2027-07-26
+stale_after: 2027-07-12
 sources:
   - id: entities
     resource: ../../lib/classes/journal_entities.dart

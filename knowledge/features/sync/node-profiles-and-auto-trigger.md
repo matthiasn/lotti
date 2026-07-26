@@ -6,7 +6,7 @@ resource: ../../../lib/features/sync/services/synced_audio_inference_dispatcher.
 tags: [sync, ai, transcription, capabilities, privacy]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
-stale_after: 2026-10-26
+stale_after: 2026-11-02
 sources:
   - id: node-profile
     resource: ../../../lib/features/sync/model/sync_node_profile.dart

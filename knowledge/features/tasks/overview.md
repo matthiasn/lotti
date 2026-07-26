@@ -6,7 +6,7 @@ resource: ../../../lib/features/tasks
 tags: [tasks, journal, detail, browse]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-01-25
 sources:
   - id: src
     resource: ../../../lib/features/tasks

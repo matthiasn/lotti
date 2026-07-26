@@ -6,7 +6,7 @@ resource: ../../../lib/features/ai/util/profile_resolver.dart
 tags: [ai, profiles, resolution, pinning, privacy]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2026-10-26
+stale_after: 2026-10-19
 sources:
   - id: resolver
     resource: ../../../lib/features/ai/util/profile_resolver.dart

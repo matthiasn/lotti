@@ -6,7 +6,7 @@ resource: ../../lib/features/checklist
 tags: [checklist, corrections, ai-guidance, undo]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:00:00Z }
-stale_after: 2027-01-26
+stale_after: 2027-02-22
 sources:
   - id: src
     resource: ../../lib/features/checklist
