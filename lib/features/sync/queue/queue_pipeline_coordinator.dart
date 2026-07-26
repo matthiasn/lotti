@@ -94,6 +94,17 @@ class QueuePipelineCoordinator {
          journalDb: journalDb,
          logging: logging,
        ) {
+    // Held ciphertext has no queue row, so the marker advancer cannot see it
+    // in the table. Give it the pen's floor, or a newer event applying will
+    // step the marker past ciphertext that the next startup's
+    // strictly-forward bridge then never re-fetches.
+
+    // Held ciphertext has no queue row, so the marker advancer cannot see it
+    // in the table. Give it the pen's floor, or a newer event applying will
+    // step the marker past ciphertext that the next startup's
+    // strictly-forward bridge then never re-fetches.
+    _queue.unqueuedFloorTs = _pen.oldestHeldOriginTs;
+
     _worker =
         workerOverride ??
         InboundWorker(
