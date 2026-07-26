@@ -6,6 +6,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -2262,13 +2263,13 @@ not describe task configuration or tool activity as progress.
           capturedSystemMessage,
           contains('## Parent Project Context'),
         );
-        // Linked-tasks legend (graph-3): the from/to directionality is
-        // explained so the model can read it, and the freshness marker
+        // Linked-tasks legend (graph-3): the directed `relations` vocabulary
+        // is explained so the model can read it, and the freshness marker
         // (graph-5) is documented.
         expect(capturedSystemMessage, contains('## Linked Tasks'));
         expect(
           capturedSystemMessage,
-          contains('`linked_from`: child tasks that reference THIS task'),
+          contains('with THIS task as the subject'),
         );
         expect(capturedSystemMessage, contains('summaryStatus'));
         // The enforced single-use contract is surfaced up front (sp-3).
@@ -7185,6 +7186,163 @@ not describe task configuration or tool activity as progress.
             verify(
               () => mockJournalDb.journalEntityById('cl-new'),
             ).called(1);
+          },
+        );
+      });
+
+      group('link_task through the workflow-wired resolvers', () {
+        /// A live task on the other end of the proposed relationship.
+        final linkTargetTask = Task(
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status_id',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 60,
+            ),
+            title: 'Ship the migration',
+            statusHistory: [],
+            dateTo: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+          ),
+          meta: Metadata(
+            id: 'link-target-1',
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            categoryId: 'cat-001',
+          ),
+        );
+
+        EntryLink storedLink({
+          required String fromId,
+          required String toId,
+          EntryLinkType type = EntryLinkType.blocks,
+          DateTime? deletedAt,
+        }) => type.buildLink(
+          id: 'link-$fromId-$toId-${type.name}',
+          fromId: fromId,
+          toId: toId,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          deletedAt: deletedAt,
+        );
+
+        List<String> capturedToolResponses() => verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: captureAny(named: 'response'),
+          ),
+        ).captured.cast<String>();
+
+        test(
+          'queues a proposal with the title resolved from the journal',
+          () async {
+            when(
+              () => mockJournalDb.journalEntityById('link-target-1'),
+            ).thenAnswer((_) async => linkTargetTask);
+            when(
+              () => mockJournalDb.linksForEntryIdsBidirectional({taskId}),
+            ).thenAnswer((_) async => []);
+
+            final result = await executeWithToolCallOnRealTask(
+              'link_task',
+              '{"relation":"is_blocked_by","targetTaskId":"link-target-1"}',
+            );
+
+            expect(result.success, isTrue);
+            // The workflow-wired resolver looked the target up in the DB and
+            // fed its title into the queued proposal's response.
+            verify(
+              () => mockJournalDb.journalEntityById('link-target-1'),
+            ).called(1);
+            expect(
+              capturedToolResponses(),
+              contains(contains('link_task proposal recorded')),
+            );
+          },
+        );
+
+        test(
+          'rejects a hallucinated target id via the journal lookup',
+          () async {
+            when(
+              () => mockJournalDb.journalEntityById('ghost-task'),
+            ).thenAnswer((_) async => null);
+
+            final result = await executeWithToolCallOnRealTask(
+              'link_task',
+              '{"relation":"blocks","targetTaskId":"ghost-task"}',
+            );
+
+            // The wake itself succeeds; the proposal was rejected fail-closed
+            // with model-facing feedback instead of being queued.
+            expect(result.success, isTrue);
+            expect(
+              capturedToolResponses(),
+              contains(contains('does not exist')),
+            );
+          },
+        );
+
+        test(
+          'a tombstoned target task is rejected like a missing one',
+          () async {
+            final deletedTarget = linkTargetTask.copyWith(
+              meta: linkTargetTask.meta.copyWith(
+                deletedAt: DateTime(2024, 3, 16),
+              ),
+            );
+            when(
+              () => mockJournalDb.journalEntityById('link-target-1'),
+            ).thenAnswer((_) async => deletedTarget);
+
+            final result = await executeWithToolCallOnRealTask(
+              'link_task',
+              '{"relation":"blocks","targetTaskId":"link-target-1"}',
+            );
+
+            expect(result.success, isTrue);
+            expect(
+              capturedToolResponses(),
+              contains(contains('does not exist')),
+            );
+          },
+        );
+
+        test(
+          'suppresses an existing relationship read from the links table',
+          () async {
+            when(
+              () => mockJournalDb.journalEntityById('link-target-1'),
+            ).thenAnswer((_) async => linkTargetTask);
+            when(
+              () => mockJournalDb.linksForEntryIdsBidirectional({taskId}),
+            ).thenAnswer(
+              (_) async => [
+                // The exact edge being proposed, already stored and live.
+                storedLink(fromId: taskId, toId: 'link-target-1'),
+                // A tombstoned edge that must be filtered out, not matched.
+                storedLink(
+                  fromId: 'link-target-1',
+                  toId: taskId,
+                  type: EntryLinkType.supersedes,
+                  deletedAt: DateTime(2024, 3, 16),
+                ),
+              ],
+            );
+
+            final result = await executeWithToolCallOnRealTask(
+              'link_task',
+              '{"relation":"blocks","targetTaskId":"link-target-1"}',
+            );
+
+            expect(result.success, isTrue);
+            expect(
+              capturedToolResponses(),
+              contains(contains('the relationship exists')),
+            );
           },
         );
       });

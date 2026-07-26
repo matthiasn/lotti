@@ -34,8 +34,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 20 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(20));
+    test('contains exactly 21 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(21));
     });
 
     test('all tools have non-empty name and description', () {
@@ -132,8 +132,8 @@ void main() {
   });
 
   group('AgentToolRegistry.deferredTools', () {
-    test('contains exactly 14 deferred tool names', () {
-      expect(AgentToolRegistry.deferredTools, hasLength(14));
+    test('contains exactly 15 deferred tool names', () {
+      expect(AgentToolRegistry.deferredTools, hasLength(15));
     });
 
     test('includes all expected deferred tool names', () {
@@ -150,6 +150,7 @@ void main() {
           TaskAgentToolNames.updateChecklistItems,
           TaskAgentToolNames.setTaskLanguage,
           TaskAgentToolNames.createFollowUpTask,
+          TaskAgentToolNames.linkTask,
           TaskAgentToolNames.migrateChecklistItems,
           TaskAgentToolNames.createTimeEntry,
           TaskAgentToolNames.updateTimeEntry,

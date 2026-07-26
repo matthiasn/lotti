@@ -6,7 +6,9 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/task_link_tool_definitions.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -18,7 +20,14 @@ import 'package:uuid/uuid.dart';
 ///
 /// Used by the task agent's split workflow: the agent identifies a new task
 /// from user audio/notes, calls `create_follow_up_task`, and the handler
-/// creates the task entity plus a `BasicLink` from source to new task.
+/// creates the task entity plus exactly one link from source to new task.
+///
+/// Without a `relation` argument that link is a plain `BasicLink` from
+/// source to new task (the historic behavior). With a `relation` — one of
+/// the directed wire phrases from `DirectedRelation.wireNames`, read with
+/// the SOURCE task as subject ("this task is_blocked_by the new task") —
+/// the single edge is typed, and inverse phrases swap `fromId`/`toId` so
+/// the canonical stored direction matches the UI's (ADR 0042).
 ///
 /// The new task inherits the source task's category and project. Priority
 /// defaults to P2 if not specified.
@@ -90,6 +99,21 @@ class FollowUpTaskHandler {
         errorMessage: 'Invalid dueDate',
       );
     }
+    // Validated before any write so an invalid relation cannot leave an
+    // orphaned task behind.
+    final rawRelation = args['relation'];
+    final relation = rawRelation is String
+        ? DirectedRelation.fromWireName(rawRelation)
+        : null;
+    if (rawRelation != null && relation == null) {
+      return ToolExecutionResult(
+        success: false,
+        output:
+            'Error: "relation" must be one of '
+            '${taskRelationWireNames.join(', ')}',
+        errorMessage: 'Invalid relation',
+      );
+    }
     final description = args['description'];
 
     // Look up category defaults for profile inheritance.
@@ -145,25 +169,37 @@ class FollowUpTaskHandler {
 
     final warnings = <String>[];
 
-    // Auto-assign an agent from the category's default template, matching
-    // the behavior of UI-created tasks in create_entry.dart.
-    await _tryAutoAssignAgent(
-      newTask,
-      categoryId: categoryId,
-      category: category,
-      warnings: warnings,
-    );
-
-    // Link source task → new task. Wrapped in try-catch so a link failure
-    // does not lose the already-created task ID. Also checks the bool return
-    // value since PersistenceLogic.createLink reports some failures that way.
+    // Link source task ↔ new task. Without a relation this is the historic
+    // plain link from source to new task; with one, the single edge is typed
+    // and canonically directed (mirroring the UI's LinkTaskModal create
+    // path, which never writes a basic edge alongside a typed one).
+    // Persisted BEFORE the agent auto-assignment below: creating the agent
+    // enqueues its creation wake immediately, and that first wake must see
+    // the relationship (and inherited project) or its first report describes
+    // a task without the very context the user just dictated.
+    // Wrapped in try-catch so a link failure does not lose the
+    // already-created task ID. Also checks the bool return value since
+    // PersistenceLogic.createLink reports some failures that way.
     try {
-      final linked = await _persistenceLogic.createLink(
-        fromId: sourceTaskId,
-        toId: newTaskId,
-      );
+      final bool linked;
+      if (relation == null) {
+        linked = await _persistenceLogic.createLink(
+          fromId: sourceTaskId,
+          toId: newTaskId,
+        );
+      } else {
+        final endpoints = relation.canonicalEndpoints(
+          anchorId: sourceTaskId,
+          otherId: newTaskId,
+        );
+        linked = await _persistenceLogic.createLink(
+          fromId: endpoints.fromId,
+          toId: endpoints.toId,
+          linkType: relation.type,
+        );
+      }
       if (!linked) {
-        warnings.add('Warning: failed to link source task');
+        warnings.add(_linkFailureWarning(relation));
       }
     } catch (e) {
       _domainLogger?.error(
@@ -174,13 +210,26 @@ class FollowUpTaskHandler {
             '${DomainLogger.sanitizeId(newTaskId)}',
         subDomain: _sub,
       );
-      warnings.add('Warning: failed to link source task');
+      warnings.add(_linkFailureWarning(relation));
     }
 
     // Inherit project from source task.
     await _tryInheritProject(sourceTaskId, newTaskId, warnings);
 
+    // Auto-assign an agent from the category's default template, matching
+    // the behavior of UI-created tasks in create_entry.dart. Runs last so
+    // the creation wake it enqueues sees the link and project written above.
+    await _tryAutoAssignAgent(
+      newTask,
+      categoryId: categoryId,
+      category: category,
+      warnings: warnings,
+    );
+
     final output = StringBuffer('Created follow-up task "$title" ($newTaskId)');
+    if (relation != null) {
+      output.write(' — this task ${relation.englishPhrase} it');
+    }
     for (final w in warnings) {
       output.write('. $w');
     }
@@ -191,6 +240,20 @@ class FollowUpTaskHandler {
       mutatedEntityId: newTaskId,
     );
   }
+
+  /// The warning for a failed source↔new-task link.
+  ///
+  /// Task creation is the primary outcome and stays a success — a
+  /// compensating delete would destroy the task the user asked for, and a
+  /// failure result would make a retried confirmation create a second task.
+  /// A typed relationship is load-bearing though, so its warning names
+  /// exactly what is missing instead of a generic "failed to link".
+  static String _linkFailureWarning(DirectedRelation? relation) =>
+      relation == null
+      ? 'Warning: failed to link source task'
+      : 'Warning: the task was created but the '
+            '"${relation.englishPhrase}" relationship could not be recorded '
+            '— link the tasks manually';
 
   /// Parses a priority string. Returns `null` if the value is present but
   /// not a recognized priority string (caller should reject).

@@ -6,11 +6,13 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 /// concatenated here so the registry exposes a single flat list:
 /// - [taskFieldTools] — core task fields and metadata.
 /// - [taskChecklistTools] — checklist items and follow-up task splitting.
+/// - [taskLinkTools] — typed relationships to other tasks.
 /// - [taskTimeTools] — time entries and running timers.
 /// - [taskPlanningTools] — attention, reporting, and observations.
 const taskAgentToolList = <AgentToolDefinition>[
   ...taskFieldTools,
   ...taskChecklistTools,
+  ...taskLinkTools,
   ...taskTimeTools,
   ...taskPlanningTools,
 ];

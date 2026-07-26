@@ -639,6 +639,25 @@ void main() {
     );
   });
 
+  group('entryLinkTypeOf', () {
+    test('inverts buildLink for every link type', () {
+      // Readers use this to recover a loaded link's semantics; it must agree
+      // with the factory for every variant or a typed edge would be
+      // misclassified after a round-trip.
+      for (final type in EntryLinkType.values) {
+        final link = type.buildLink(
+          id: 'id-${type.name}',
+          fromId: 'from',
+          toId: 'to',
+          createdAt: DateTime.utc(2024),
+          updatedAt: DateTime.utc(2024),
+          vectorClock: null,
+        );
+        expect(entryLinkTypeOf(link), type, reason: type.name);
+      }
+    });
+  });
+
   group('entryLinkTypeDbName', () {
     test('maps every link type to its linked_entries.type column value', () {
       // Undo removes a link the caller only knows the *type* of, so this must

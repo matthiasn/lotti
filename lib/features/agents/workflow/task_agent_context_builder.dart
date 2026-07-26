@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/features/agents/workflow/project_agent_context_builder.dar
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -131,6 +133,8 @@ class TaskAgentContextBuilder {
         row.remove('latestSummary');
       }
 
+      await _annotateRelations(taskId, allRows);
+
       final taskIds = allRows
           .map((row) => row['id'])
           .whereType<String>()
@@ -239,6 +243,62 @@ class TaskAgentContextBuilder {
         stackTrace: stackTrace,
       );
       return '{}';
+    }
+  }
+
+  /// Adds a `relations` array to each linked-task row: the directed wire
+  /// phrases (ADR 0042) describing how the CURRENT task relates to that row's
+  /// task, e.g. `["blocks"]` or `["is_superseded_by", "relates_to"]`.
+  ///
+  /// One bulk link query; failures leave the rows unannotated rather than
+  /// failing the wake. The phrases are the same vocabulary the `link_task`
+  /// tool accepts, so the model can read a row's existing relationships in
+  /// exactly the terms it would use to propose a new one.
+  Future<void> _annotateRelations(
+    String taskId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    try {
+      final links = await journalDb.linksForEntryIdsBidirectional({taskId});
+      final relationsByOtherId = <String, List<String>>{};
+      for (final link in links) {
+        if (link.deletedAt != null || link.hidden == true) continue;
+        final type = entryLinkTypeOf(link);
+        if (type == EntryLinkType.rating || type == EntryLinkType.project) {
+          continue;
+        }
+        // The anchor reads a link it originates as the primary phrase and an
+        // incoming one as the inverse phrase — the same swap the UI renders.
+        final String otherId;
+        final DirectedRelation relation;
+        if (link.fromId == taskId) {
+          otherId = link.toId;
+          relation = DirectedRelation(type);
+        } else if (link.toId == taskId) {
+          otherId = link.fromId;
+          relation = DirectedRelation(type, inverse: true);
+        } else {
+          continue;
+        }
+        relationsByOtherId
+            .putIfAbsent(otherId, () => <String>[])
+            .add(relation.wireName);
+      }
+
+      for (final row in rows) {
+        final rowTaskId = row['id'];
+        if (rowTaskId is! String) continue;
+        final relations = relationsByOtherId[rowTaskId];
+        if (relations != null && relations.isNotEmpty) {
+          row['relations'] = relations;
+        }
+      }
+    } catch (e, s) {
+      logError(
+        'failed to annotate linked-task relations',
+        error: e,
+        stackTrace: s,
+      );
     }
   }
 

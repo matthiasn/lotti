@@ -461,6 +461,25 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           if (current is! JournalEntry) return null;
           return timeService.linkedFrom?.id == taskId ? current.meta.id : null;
         },
+        // A `link_task` target must be a live task; anything else is a
+        // hallucinated id. Returns the title for the proposal summary.
+        resolveLinkableTaskTitle: (targetTaskId) async {
+          final entity = await journalDb.journalEntityById(targetTaskId);
+          if (entity is! Task || entity.meta.deletedAt != null) return null;
+          return entity.data.title;
+        },
+        // Canonical triples of every live link touching this task, so an
+        // already-existing relationship is suppressed instead of re-proposed.
+        resolveExistingTaskRelations: () async {
+          final links = await journalDb.linksForEntryIdsBidirectional({
+            taskId,
+          });
+          return {
+            for (final link in links)
+              if (link.deletedAt == null && link.hidden != true)
+                TaskAgentChangeHandlers.canonicalRelationTripleOfLink(link),
+          };
+        },
       );
 
       final tools = _buildToolDefinitions();

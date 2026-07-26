@@ -61,26 +61,10 @@ void main() {
     );
   });
 
-  group('relationshipDirectedOptions', () {
-    test('offers the symmetric link first, then every type both ways', () {
-      expect(relationshipDirectedOptions, [
-        const DirectedRelation(EntryLinkType.basic),
-        const DirectedRelation(EntryLinkType.blocks),
-        const DirectedRelation(EntryLinkType.blocks, inverse: true),
-        const DirectedRelation(EntryLinkType.followsUp),
-        const DirectedRelation(EntryLinkType.followsUp, inverse: true),
-        const DirectedRelation(EntryLinkType.duplicates),
-        const DirectedRelation(EntryLinkType.duplicates, inverse: true),
-        const DirectedRelation(EntryLinkType.fixes),
-        const DirectedRelation(EntryLinkType.fixes, inverse: true),
-        const DirectedRelation(EntryLinkType.supersedes),
-        const DirectedRelation(EntryLinkType.supersedes, inverse: true),
-      ]);
-      // Ids are unique, so a dropdown item always maps back to one relation.
-      final ids = relationshipDirectedOptions.map((r) => r.id).toList();
-      expect(ids.toSet(), hasLength(ids.length));
-    });
-
+  // Pure DirectedRelation/ExistingRelation semantics live in
+  // test/features/tasks/model/directed_relation_test.dart; this file covers
+  // only the localized phrasing and the picker widget.
+  group('directedRelationLabel', () {
     testWidgets('labels each option with its own directed phrase', (
       tester,
     ) async {
@@ -100,65 +84,6 @@ void main() {
       expect(
         label(EntryLinkType.supersedes, inverse: true),
         'Is superseded by',
-      );
-    });
-  });
-
-  group('DirectedRelation', () {
-    test('equality and hashCode cover both type and direction', () {
-      const primary = DirectedRelation(EntryLinkType.blocks);
-      const inverse = DirectedRelation(EntryLinkType.blocks, inverse: true);
-
-      expect(primary, const DirectedRelation(EntryLinkType.blocks));
-      expect(
-        primary.hashCode,
-        const DirectedRelation(EntryLinkType.blocks).hashCode,
-      );
-      expect(primary, isNot(inverse));
-      expect(primary, isNot(const DirectedRelation(EntryLinkType.fixes)));
-    });
-  });
-
-  group('ExistingRelation', () {
-    test('identity spans both the task and the exact relation it holds', () {
-      const plainLink = ExistingRelation(
-        taskId: 'a',
-        relation: DirectedRelation(EntryLinkType.basic),
-      );
-
-      expect(
-        plainLink,
-        const ExistingRelation(
-          taskId: 'a',
-          relation: DirectedRelation(EntryLinkType.basic),
-        ),
-      );
-      expect(
-        plainLink.hashCode,
-        const ExistingRelation(
-          taskId: 'a',
-          relation: DirectedRelation(EntryLinkType.basic),
-        ).hashCode,
-      );
-      // Same task, different relation — a pair may hold both.
-      expect(
-        plainLink,
-        isNot(
-          const ExistingRelation(
-            taskId: 'a',
-            relation: DirectedRelation(EntryLinkType.blocks),
-          ),
-        ),
-      );
-      // Different task, same relation.
-      expect(
-        plainLink,
-        isNot(
-          const ExistingRelation(
-            taskId: 'b',
-            relation: DirectedRelation(EntryLinkType.basic),
-          ),
-        ),
       );
     });
   });

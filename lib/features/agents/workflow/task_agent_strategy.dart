@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -84,6 +86,8 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.allowedRelatedTaskIds = const <String>{},
     this.resolveEditableTimeEntryIds,
     this.resolveRunningTimerId,
+    this.resolveLinkableTaskTitle,
+    this.resolveExistingTaskRelations,
   });
 
   /// The [AgentToolExecutor] that wraps handler calls with enforcement and
@@ -152,6 +156,19 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// task, or null when no such timer is running. When provided,
   /// `update_running_timer` is rejected unless its `timerId` matches.
   final Future<String?> Function()? resolveRunningTimerId;
+
+  /// Optional resolver mapping a task id to its title, or null when the id
+  /// does not resolve to a live task. When provided, a `link_task` proposal
+  /// naming an unresolvable `targetTaskId` is rejected as a hallucinated id
+  /// rather than queued. A transient resolver failure keeps the proposal
+  /// (we cannot prove the id is fake).
+  final Future<String?> Function(String taskId)? resolveLinkableTaskTitle;
+
+  /// Optional resolver for the canonical `'fromId|toId|DbType'` triples of
+  /// every live link touching the current task. When provided, a `link_task`
+  /// proposal for a relationship that already exists is suppressed instead of
+  /// queued as a no-op the user would have to review.
+  final Future<Set<String>> Function()? resolveExistingTaskRelations;
 
   String? _reportContent;
   String? _reportTldr;
@@ -332,11 +349,12 @@ class TaskAgentStrategy extends ConversationStrategy {
         // Reject repeat calls to the same single-use deferred tool name
         // (even with different args). Smaller models tend to burn all
         // turns on one tool (e.g. calling set_task_title 4 times).
-        // Batch tools and create_follow_up_task are excluded — they may
-        // legitimately be called multiple times in one wake.
+        // Batch tools, create_follow_up_task, and link_task are excluded —
+        // they may legitimately be called multiple times in one wake.
         final isSingleUse =
             !AgentToolRegistry.explodedBatchTools.containsKey(toolName) &&
-            toolName != TaskAgentToolNames.createFollowUpTask;
+            toolName != TaskAgentToolNames.createFollowUpTask &&
+            toolName != TaskAgentToolNames.linkTask;
         if (isSingleUse && _usedDeferredTools.contains(toolName)) {
           await _recordActionMessage(toolName: toolName, args: args);
           final errorResponse =

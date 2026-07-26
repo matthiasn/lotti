@@ -256,6 +256,28 @@ Use the task language and omit empty sections.
       expect(qwenPrompt, contains('Omit absent'));
     });
 
+    test('both scaffolds teach the typed-relationship tools', () {
+      // The full scaffold: relation-aware Linked Tasks reading plus the
+      // link_task / create_follow_up_task+relation guidance.
+      const full =
+          TaskAgentPromptBuilder.taskAgentScaffoldProjectContext +
+          TaskAgentPromptBuilder.taskAgentScaffoldTrailing;
+      expect(full, contains('`relations` array'));
+      expect(full, contains('with THIS task as the subject'));
+      expect(full, isNot(contains('typically subtasks')));
+      expect(full, isNot(contains('typically epics')));
+      expect(full, contains('link_task'));
+      expect(full, contains('`is_blocked_by`'));
+      expect(full, contains('never assert both directions'));
+      expect(full, contains('`create_follow_up_task` with a\n    `relation`'));
+
+      // The compact scaffold carries the same capability in short form.
+      const compact = TaskAgentPromptBuilder.taskAgentCompactScaffold;
+      expect(compact, contains('link_task'));
+      expect(compact, contains('`relation`'));
+      expect(compact, contains('never invent ids'));
+    });
+
     test('compact scaffold preserves soul and custom directives', () {
       final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
         version: makeTestTemplateVersion(
