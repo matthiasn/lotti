@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 
 class _GeneratedPendingItemSpec {
   const _GeneratedPendingItemSpec({
@@ -416,6 +417,54 @@ void _expectDecidedTaskRef() {
       final json = ref.toJson();
       expect(json.containsKey('categoryId'), isTrue);
       expect(json['categoryId'], isNull);
+    });
+
+    test('toJson carries status and blockers in the corpus shape', () {
+      const ref = DecidedTaskRef(
+        id: 'task-c-leaf',
+        title: 'Ship the integration',
+        categoryId: 'work',
+        status: 'BLOCKED',
+        blockedBy: [
+          ResolvedBlocker(
+            taskId: 'task-b-middle',
+            title: 'Get vendor credentials',
+            status: 'OPEN',
+          ),
+        ],
+      );
+
+      // ADR 0043's rule is phrased against `"status": "BLOCKED"` and a
+      // non-empty `blockedBy`, and `DayAgentCorpusService.n` spells both this
+      // way. A drafting wake that renders decided tasks instead of the corpus
+      // has to speak the same dialect or the rule describes nothing.
+      expect(ref.toJson(), <String, Object?>{
+        'id': 'task-c-leaf',
+        'title': 'Ship the integration',
+        'categoryId': 'work',
+        'status': 'BLOCKED',
+        'blockedBy': [
+          {
+            'taskId': 'task-b-middle',
+            'title': 'Get vendor credentials',
+            'status': 'OPEN',
+          },
+        ],
+      });
+    });
+
+    test('toJson omits blockedBy when the task has no blockers', () {
+      const ref = DecidedTaskRef(
+        id: 'task-1',
+        title: 'Prep demo',
+        categoryId: 'work',
+        status: 'OPEN',
+      );
+
+      // Omitted rather than sent empty: an empty list says nothing the absent
+      // key does not, and every decided task would otherwise carry one.
+      expect(ref.toJson().containsKey('blockedBy'), isFalse);
+      expect(ref.toJson()['status'], 'OPEN');
     });
   });
 }

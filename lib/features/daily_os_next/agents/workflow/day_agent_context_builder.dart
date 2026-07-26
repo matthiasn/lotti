@@ -671,6 +671,11 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       allowedCategoryIds: agentIdentity.allowedCategoryIds,
       explicitTaskIds: explicitTaskIds,
       parsedItems: parsedItems,
+      // The same resolver that gates whether the blocked-work rule is emitted
+      // at all, so the rule and the data behind it cannot drift apart: if the
+      // model is told to respect blockers, this is what tells it which tasks
+      // have any.
+      dependencyResolver: dependencyResolver,
     );
     final decidedCaptureItems = [
       for (final item in parsedItems)

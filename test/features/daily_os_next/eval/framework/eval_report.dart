@@ -498,15 +498,25 @@ class EvalReport {
         'decidedTaskIds': inputs.decidedTaskIds,
         'requiredTaskIds': inputs.requiredTaskIds.toList()..sort(),
         'expectedOmissions': inputs.expectedOmissions.toList()..sort(),
-        // Two different visibilities, and conflating them is how a judge gets
-        // misled. `corpusRowShown` is whether this row — its status, estimate
-        // and blockedBy — was rendered at all; the corpus appears only inside
-        // the capture context, so a capture-less wake sees none of it.
-        // `taskIdReferenceable` is the weaker fact that the model could name
-        // the id, which a decided task satisfies through its own projection
-        // even when its corpus row was never shown. Reporting the second as
-        // if it were the first would print `blockedBy` next to "the model saw
-        // this", inviting exactly the wrong conclusion.
+        // Three different visibilities, and conflating any two is how a judge
+        // gets misled.
+        //
+        // `corpusRowShown` — was the whole row rendered? The corpus appears
+        // only inside the capture context, so a capture-less wake sees none of
+        // it. This is the only source of `estimateMinutes`, `due` and
+        // `priority`.
+        //
+        // `blockersShown` — did the model learn this task is blocked? True via
+        // the corpus row, and *also* true for a decided task on a capture-less
+        // wake, because `DecidedTaskRef` carries `status` and `blockedBy` in
+        // the corpus's own spelling (ADR 0043; see the feature README). Kept
+        // separate from `corpusRowShown` precisely because that stopped being
+        // the only carrier: reading blockedness off the row flag would now
+        // report a model as ignoring a blocker it was shown.
+        //
+        // `taskIdReferenceable` — the weakest fact: could the model name the
+        // id at all. A decided task satisfies this through its own projection
+        // even when its corpus row was never shown.
         'corpusRowsShown': inputs.visibleTaskIds == null,
         'corpus': [
           for (final task in inputs.corpus)
@@ -517,6 +527,9 @@ class EvalReport {
               'estimateMinutes': task.estimateMinutes,
               'blockedBy': task.blockedBy,
               'corpusRowShown': inputs.visibleTaskIds == null,
+              'blockersShown':
+                  inputs.visibleTaskIds == null ||
+                  inputs.decidedTaskIds.contains(task.taskId),
               'taskIdReferenceable': inputs.referenceableTaskIds.contains(
                 task.taskId,
               ),

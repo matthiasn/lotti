@@ -48,6 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   own band in dark mode.** Its tint was mixed the wrong way for a dark
   background, so it was all but invisible against the card; it now separates
   the way it always did in light mode.
+- **Day plans stop scheduling work that is waiting on something else.** When
+  the planner drafted a day without a voice note to work from — a scheduled
+  draft, or the "plan my day" button on its own — it was told to respect
+  blocked tasks but never shown which tasks were blocked, so it would place
+  blocked work as if it were ready. Blocked tasks now arrive with their status
+  and what they are waiting on, and the planner either schedules the blocker
+  first or leaves the blocked task out and says why.
 - **The bottom of the card lines up.** Every row in the update section now
   starts on the same edge, including on a phone and in longer languages, and
   the card keeps the same bottom margin whether or not the "This report …"

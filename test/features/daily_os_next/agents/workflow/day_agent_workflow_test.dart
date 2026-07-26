@@ -293,6 +293,7 @@ void main() {
         allowedCategoryIds: any(named: 'allowedCategoryIds'),
         explicitTaskIds: any(named: 'explicitTaskIds'),
         parsedItems: any(named: 'parsedItems'),
+        dependencyResolver: any(named: 'dependencyResolver'),
       ),
     ).thenAnswer((_) async => decidedTasks);
   }
@@ -5374,6 +5375,75 @@ void main() {
               dependencyResolver: resolver,
             ),
           ).called(1);
+        },
+      );
+
+      test(
+        'passes the exact dependencyResolver instance to hydrateDecidedTasks '
+        'on a drafting wake with no capture',
+        () async {
+          final resolver = MockTaskDependencyResolver();
+          final planService = MockDayAgentPlanService();
+          stubDraftingPlanContext(
+            planService,
+            decidedTasks: const [
+              DecidedTaskRef(
+                id: 'task-c-leaf',
+                title: 'Ship the integration',
+                categoryId: 'work',
+                status: 'BLOCKED',
+                blockedBy: [
+                  ResolvedBlocker(
+                    taskId: 'task-b-middle',
+                    title: 'Get vendor credentials',
+                    status: 'OPEN',
+                  ),
+                ],
+              ),
+            ],
+          );
+          stubSuccessfulDraftToolCall(planService);
+
+          final result = await execute(
+            workflow(planService: planService, dependencyResolver: resolver),
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+          );
+
+          expect(result.success, isTrue, reason: result.error);
+          // The wake that has no capture is precisely the one the blocked-work
+          // rule used to reach empty-handed: `buildTaskCorpusSnapshot` — the
+          // only other carrier of status/blockedBy — renders inside
+          // `<capture>` alone, so with no capture the model was told to
+          // respect blockers while being shown nothing that could be blocked.
+          // Same instance as the one gating the rule's emission, so the rule
+          // and the data behind it cannot drift apart again.
+          verify(
+            () => planService.hydrateDecidedTasks(
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              explicitTaskIds: any(named: 'explicitTaskIds'),
+              parsedItems: any(named: 'parsedItems'),
+              dependencyResolver: resolver,
+            ),
+          ).called(1);
+          // And it lands in the prompt the model reads, in the shape the rule
+          // is phrased against.
+          final drafting =
+              sentPrompt().json('drafting')! as Map<String, dynamic>;
+          final decided =
+              (drafting['decidedTasks'] as List<dynamic>).single
+                  as Map<String, dynamic>;
+          expect(decided['status'], 'BLOCKED');
+          expect(
+            (decided['blockedBy'] as List<dynamic>).single,
+            containsPair('taskId', 'task-b-middle'),
+          );
+          expect(
+            conversationRepository.lastSystemMessage,
+            contains('Blocked-work rules (ADR 0043)'),
+          );
         },
       );
     });

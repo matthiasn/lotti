@@ -12,6 +12,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_reads
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_tool_dispatcher.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_writer.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Newest planner day-plan rows inspected when syncing a renamed task title.
@@ -116,10 +117,12 @@ class DayAgentPlanService {
     required Set<String> allowedCategoryIds,
     List<String> explicitTaskIds = const [],
     List<ParsedItemEntity> parsedItems = const [],
+    TaskDependencyResolver? dependencyResolver,
   }) => _editor.hydrateDecidedTasks(
     allowedCategoryIds: allowedCategoryIds,
     explicitTaskIds: explicitTaskIds,
     parsedItems: parsedItems,
+    dependencyResolver: dependencyResolver,
   );
 
   /// Persist a structured plan diff against the current plan for [dayId].

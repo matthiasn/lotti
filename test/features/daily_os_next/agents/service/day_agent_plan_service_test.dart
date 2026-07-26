@@ -19,6 +19,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -1477,6 +1478,92 @@ void main() {
                 as List<String>;
         expect(captured, ['task-1']);
       });
+
+      test('carries status even without a dependency resolver', () async {
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-1': _task(id: 'task-1', title: 'Prep demo')},
+        );
+
+        final result = await createService().hydrateDecidedTasks(
+          allowedCategoryIds: const {'work', 'life'},
+          explicitTaskIds: const ['task-1'],
+        );
+
+        expect(result.single.status, 'OPEN');
+        expect(result.single.blockedBy, isEmpty);
+      });
+
+      test(
+        'resolves blockers in one batched call for all decided ids',
+        () async {
+          final resolver = MockTaskDependencyResolver();
+          when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+            (_) async => {
+              'task-c-leaf': _task(
+                id: 'task-c-leaf',
+                title: 'Ship the integration',
+              ),
+              'task-1': _task(id: 'task-1', title: 'Prep demo'),
+            },
+          );
+          when(() => resolver.resolveBlockedStatus(any())).thenAnswer(
+            (_) async => {
+              'task-c-leaf': const [
+                ResolvedBlocker(
+                  taskId: 'task-b-middle',
+                  title: 'Get vendor credentials',
+                  status: 'OPEN',
+                ),
+              ],
+            },
+          );
+
+          final result = await createService().hydrateDecidedTasks(
+            allowedCategoryIds: const {'work', 'life'},
+            explicitTaskIds: const ['task-c-leaf', 'task-1'],
+            dependencyResolver: resolver,
+          );
+
+          expect(result.map((t) => t.id).toList(), ['task-c-leaf', 'task-1']);
+          expect(result.first.blockedBy.single.taskId, 'task-b-middle');
+          // Unblocked tasks come back with an empty list, not a null the caller
+          // has to interpret.
+          expect(result.last.blockedBy, isEmpty);
+          // One call for the whole set: this runs on every drafting wake, and a
+          // per-task round trip would put the resolver's cost on the hot path.
+          final asked =
+              verify(
+                    () => resolver.resolveBlockedStatus(captureAny()),
+                  ).captured.single
+                  as Set<String>;
+          expect(asked, {'task-c-leaf', 'task-1'});
+        },
+      );
+
+      test(
+        'does not consult the resolver when nothing survives filtering',
+        () async {
+          final resolver = MockTaskDependencyResolver();
+          when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+            (_) async => {
+              'task-2': _task(
+                id: 'task-2',
+                title: 'Personal errand',
+                categoryId: 'blocked',
+              ),
+            },
+          );
+
+          final result = await createService().hydrateDecidedTasks(
+            allowedCategoryIds: const {'work', 'life'},
+            explicitTaskIds: const ['task-2'],
+            dependencyResolver: resolver,
+          );
+
+          expect(result, isEmpty);
+          verifyNever(() => resolver.resolveBlockedStatus(any()));
+        },
+      );
     });
 
     group('proposePlanDiff', () {

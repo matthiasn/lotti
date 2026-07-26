@@ -435,11 +435,52 @@ void main() {
         decided['corpusRowShown'],
         isFalse,
         reason:
-            'its status, estimate and blockedBy were never rendered, so a '
-            'judge must not read them as something the model ignored',
+            'its estimate, due and priority were never rendered, so a judge '
+            'must not read them as something the model ignored',
+      );
+      expect(
+        decided['blockersShown'],
+        isTrue,
+        reason:
+            'DecidedTaskRef carries status and blockedBy even with no capture '
+            '(ADR 0043), so blockedness is visible where the row is not',
       );
       expect(unseen['taskIdReferenceable'], isFalse);
       expect(unseen['corpusRowShown'], isFalse);
+      expect(
+        unseen['blockersShown'],
+        isFalse,
+        reason: 'neither carrier reaches a task that is not decided',
+      );
+    });
+
+    test('reports blockers as shown for every row when the corpus renders', () {
+      const visible = EvalScenario(
+        id: 'visible',
+        intent: 'rule and data both arrive',
+        tasks: [
+          EvalTaskSpec(id: 'task-decided', title: 'Decided work'),
+          EvalTaskSpec(id: 'task-corpus', title: 'Corpus-only work'),
+        ],
+        decidedTaskIds: ['task-decided'],
+      );
+      final report = EvalReport.fromResults([
+        result(
+          forRequest: request(forScenario: visible),
+          constraints: [pass(EvalConstraintIds.withinCapacity)],
+        ),
+      ], generatedAt: generatedAt);
+
+      final rows =
+          ((report.judgeBundle().single['scenario']!
+                      as Map<String, Object?>)['corpus']!
+                  as List)
+              .cast<Map<String, Object?>>();
+
+      // With the corpus rendered the row itself carries blockedBy, so the
+      // undecided task is just as visible as the decided one.
+      expect(rows.map((r) => r['blockersShown']), everyElement(isTrue));
+      expect(rows.map((r) => r['corpusRowShown']), everyElement(isTrue));
     });
 
     test(

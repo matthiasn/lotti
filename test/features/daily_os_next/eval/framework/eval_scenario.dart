@@ -557,13 +557,30 @@ const _blockedChain = EvalScenario(
   captureTranscript: 'I want to get the vendor integration shipped today.',
 );
 
-/// The rule arrives; the data does not.
+/// The same blocked work with the corpus hidden: how far does one hop get you?
+///
+/// This scenario found a production bug and then outlived it. Originally the
+/// rule arrived with *no* data behind it — the corpus was the only carrier of
+/// `status`/`blockedBy` and it renders inside `<capture>` alone, so every
+/// sample of every model failed `blockerBeforeBlocked` here while the
+/// capture-carrying twin passed every one. `DecidedTaskRef` now projects
+/// `status` and `blockedBy` on every drafting wake, and the models switched to
+/// declining the blocked leaf outright.
+///
+/// What it measures now is the residual gap. ADR 0043 resolves **one hop**, so
+/// the decided leaf arrives naming `task-b-middle` as its blocker — and
+/// nothing reveals that *that* task is itself blocked by `task-a-root`, whose
+/// id never reaches the prompt. Keeping the twin's ground truth means this
+/// scenario still fails `requiredWorkPlaced`, and that failure is the finding:
+/// it is the measured cost of hiding the corpus, not a model defect. Weakening
+/// it to match what the model can see would delete the signal.
 const _blockedWithoutCorpus = EvalScenario(
   id: 'blockedWithoutCorpus',
   intent:
-      'Same blocked work, but no capture — so the corpus (and its '
-      'blockedBy) is never rendered while the blocked-work rule still is. '
-      'Measures what the model does when told a rule it cannot apply.',
+      'Same blocked work, but no capture. The decided leaf still carries its '
+      'one-hop blocker; the corpus that would reveal the second hop does not '
+      'render. Does the planner reach the ready root, or stop at what it was '
+      'handed?',
   tasks: _vendorChainTasks,
   decidedTaskIds: ['task-c-leaf'],
   permittedOmissions: {'task-c-leaf'},
