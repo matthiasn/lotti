@@ -104,6 +104,12 @@ test('a mixed closing run does not close the block', () => {
   assert.match(r.output, /unclosed mermaid fence/);
 });
 
+test('a literal > inside a top-level fence does not close it', () => {
+  const r = run('```mermaid\nflowchart TD\n> ```\n');
+  assert.ok(!r.ok, r.output);
+  assert.match(r.output, /unclosed mermaid fence/);
+});
+
 test('a blockquoted fence is a real diagram', () => {
   // CommonMark strips the container prefix before recognising the fence, so
   // `> ```mermaid` opens a block. Requiring column 0 skipped it in silence.

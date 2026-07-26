@@ -59,7 +59,7 @@ flowchart TD
   Enabled -->|no| Drop["dropped"]
   Enabled -->|yes| General["general app log for the day"]
   Err["DomainLogger.error(...)"] --> General2["general app log + error-YYYY-MM-DD.log<br/>full text, force-flushed"]
-  Err --> Safe["error-safe-YYYY-MM-DD.log<br/>runtime type only — shareable"]
+  Err --> Safe["error-safe-YYYY-MM-DD.log<br/>no raw error, no stack trace<br/>message kept verbatim"]
   Enabled -->|yes| PerDomain
   Err --> PerDomain{"domain routes to the sync file?"}
   PerDomain -->|yes| SyncLog["sync-YYYY-MM-DD.log"]

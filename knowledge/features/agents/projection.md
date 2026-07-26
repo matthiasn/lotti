@@ -5,7 +5,7 @@ description: "A pure, deterministic fold over an event *set* — proving that pr
 resource: ../../../lib/features/agents/projection
 tags: [agents, projection, determinism, convergence]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T22:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: sync-service
@@ -94,9 +94,12 @@ Two boundaries make that precise:
   the log does not own — `recentHeadMessageId`, the G-counters, device-local
   scheduling — stay on the cache by construction.
 - **Only the wake path reads this way.** UI and service reads stay on the raw cache
-  via `AgentRepository.getAgentState`, which is eventual and self-healing. And the
-  reconcile loads *markers*, not the full message log, so its cost does not grow
-  with an agent's history.
+  via `AgentRepository.getAgentState`, which is eventual and self-healing.
+- **It loads markers, not the whole log — but it is not free.**
+  `getMessagesByKind(agentId, system)` passes no limit, and a milestone marker is
+  appended on every completed wake (plus retractions and fork joins), so the read
+  and the fold **grow with the number of wakes**. Far smaller than the full message
+  log, and still linear in history — worth knowing before adding work to this path.
 
 A malformed synced log (a duplicate id or a cycle from a peer) makes the fold
 throw; the wake falls back to the cached row and logs, rather than aborting.

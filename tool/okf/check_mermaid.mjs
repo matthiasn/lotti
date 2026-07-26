@@ -75,13 +75,27 @@ function closesFence(line, opener) {
   return run[0] === opener[0] && run.length >= opener.length;
 }
 
-/// Strips blockquote markers, which CommonMark removes before a fence is
-/// recognised — `> ```mermaid` opens a real block. Nested quotes are handled by
-/// repetition. **List-item containers are not modelled**: a fence indented past
-/// three spaces inside a list item is read here as an indented code block, so
-/// keep diagrams at the top level of a document.
-function stripContainers(line) {
-  return line.replace(/^(?: {0,3}>(?: |\t)?)+/, '');
+const CONTAINER = /^(?: {0,3}>(?: |\t)?)+/;
+
+/// The blockquote prefix `line` carries, or `''`.
+function containerPrefix(line) {
+  return CONTAINER.exec(line)?.[0] ?? '';
+}
+
+/// Removes exactly `prefix` from the front of `line`.
+///
+/// Tied to the opener on purpose. Stripping `>` unconditionally meant a
+/// **top-level** fence whose body contained a literal `` > ``` `` had that marker
+/// stripped and then read as the close — so an unclosed fence was reported as a
+/// clean block. CommonMark treats content inside a fence as literal; only the
+/// container the fence was opened *under* is removed from its body.
+///
+/// **List-item containers are not modelled**: a fence indented past three spaces
+/// inside a list item reads as an indented code block, so keep diagrams at the
+/// top level of a document.
+function stripPrefix(line, prefix) {
+  if (prefix === '') return line;
+  return line.startsWith(prefix) ? line.slice(prefix.length) : line;
 }
 
 const blocks = [];
@@ -91,13 +105,17 @@ for (const file of markdownFiles(root)) {
   let opener = null;
   let openedAt = 0;
   let isMermaid = false;
+  let prefix = '';
   lines.forEach((line, index) => {
-    // Keep the leading indent: only trailing whitespace and containers are noise.
-    const kept = stripContainers(line.replace(/\s+$/, ''));
+    const trimmedEnd = line.replace(/\s+$/, '');
     if (opener === null) {
-      const match = FENCE.exec(kept);
+      // Outside a fence, a blockquote marker is a container: strip it, and
+      // remember it so the body and the close are read in the same context.
+      const candidate = containerPrefix(trimmedEnd);
+      const match = FENCE.exec(stripPrefix(trimmedEnd, candidate));
       if (match) {
         opener = match[2];
+        prefix = candidate;
         openedAt = index;
         // Only the *outermost* fence counts: a mermaid fence shown as an example
         // inside a ````markdown block is documentation, not a diagram to parse.
@@ -105,7 +123,8 @@ for (const file of markdownFiles(root)) {
       }
       return;
     }
-    if (!closesFence(kept, opener)) return;
+    // Inside a fence, only the opener's own container is removed.
+    if (!closesFence(stripPrefix(trimmedEnd, prefix), opener)) return;
     if (isMermaid) {
       blocks.push({
         file,
@@ -114,12 +133,13 @@ for (const file of markdownFiles(root)) {
         // and reports "no diagram type detected" for a diagram that renders fine.
         code: lines
           .slice(openedAt + 1, index)
-          .map(stripContainers)
+          .map((l) => stripPrefix(l, prefix))
           .join('\n'),
       });
     }
     opener = null;
     isMermaid = false;
+    prefix = '';
   });
   if (opener !== null && isMermaid) {
     // The Dart validator reports any unclosed fence; repeated here so this

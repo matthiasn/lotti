@@ -5,7 +5,7 @@ description: The README/knowledge/ADR split, the frontmatter every concept carri
 resource: ../../knowledge
 tags: [convention, documentation, okf, process]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T22:00:00Z }
 stale_after: 2027-01-18
 sources:
   - id: okf-spec
@@ -300,10 +300,13 @@ diagram rather than reporting one:
 - **A closing fence must be a uniform run** of the opener's character, at least as
   long. A mixed `` `~~ `` does not close a ``` block — it used to, which left the
   remainder of a file rendering as code while the check passed.
-- **Blockquote containers are stripped** before matching, so `> ```mermaid` is a
-  real diagram and its body is unwrapped before parsing. **List-item containers are
-  not modelled**: a fence indented past three spaces inside a list item reads as an
-  indented code block, so keep diagrams at the top level of a document.
+- **Blockquote containers are stripped, but only the opener's own.** `> ```mermaid`
+  is a real diagram and its body is unwrapped before parsing; a `>` appearing
+  *inside* a top-level fence stays literal, because stripping unconditionally let it
+  masquerade as the close and an unclosed fence validated clean. **List-item
+  containers are not modelled**: a fence indented past three spaces inside a list
+  item reads as an indented code block, so keep diagrams at the top level of a
+  document.
 
 **The gate covers `knowledge/` only.** `check_mermaid.mjs` takes a directory, and
 pointing it at `docs/` currently reports 14 broken diagrams across the ADRs, the

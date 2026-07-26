@@ -269,21 +269,32 @@ List<OkfIssue> validateFencedBlocks(String path, String content) {
   final lines = content.split('\n');
   String? opener;
   var openedAt = 0;
+  var prefix = '';
   for (var i = 0; i < lines.length; i++) {
     // Trailing whitespace and blockquote markers are noise; the *leading indent*
     // is not. CommonMark allows a fence to be indented by at most three spaces —
     // at four it is an indented code block, so a documented example of a fence is
     // not a fence. Trimming the indent away made those literals open real blocks.
-    final line = _stripContainers(lines[i].trimRight());
+    final trimmedEnd = lines[i].trimRight();
     if (opener == null) {
-      final match = _fenceOpenPattern.firstMatch(line);
+      // Outside a fence a blockquote marker is a container: strip it, and
+      // remember it so the close is read in the same context.
+      final candidate = _containerPrefix(trimmedEnd);
+      final match = _fenceOpenPattern.firstMatch(
+        _stripPrefix(trimmedEnd, candidate),
+      );
       if (match != null) {
         opener = match.group(2);
+        prefix = candidate;
         openedAt = i + 1;
       }
       continue;
     }
-    if (_closesFence(line, opener)) opener = null;
+    // Inside a fence, only the opener's own container is removed.
+    if (_closesFence(_stripPrefix(trimmedEnd, prefix), opener)) {
+      opener = null;
+      prefix = '';
+    }
   }
   if (opener == null) return const [];
   return [
@@ -316,12 +327,26 @@ bool _closesFence(String line, String opener) {
   return run[0] == opener[0] && run.length >= opener.length;
 }
 
-/// Strips blockquote markers, which CommonMark removes before a fence is
-/// recognised, so `> ```dart` opens a real block. List-item containers are not
-/// modelled: a fence indented past three spaces inside a list item reads as an
-/// indented code block here.
-String _stripContainers(String line) =>
-    line.replaceFirst(RegExp('^(?: {0,3}>(?: |\t)?)+'), '');
+final _containerPattern = RegExp('^(?: {0,3}>(?: |\t)?)+');
+
+/// The blockquote prefix [line] carries, or `''`.
+String _containerPrefix(String line) =>
+    _containerPattern.firstMatch(line)?.group(0) ?? '';
+
+/// Removes exactly [prefix] from the front of [line].
+///
+/// Tied to the fence opener on purpose. Stripping `>` unconditionally meant a
+/// **top-level** fence whose body contained a literal `` > ``` `` had that marker
+/// removed and the line then read as the close — so an unclosed fence validated
+/// clean. CommonMark treats fence content as literal; only the container the
+/// fence was opened *under* is stripped from its body.
+///
+/// List-item containers are not modelled: a fence indented past three spaces
+/// inside a list item reads as an indented code block here.
+String _stripPrefix(String line, String prefix) {
+  if (prefix.isEmpty) return line;
+  return line.startsWith(prefix) ? line.substring(prefix.length) : line;
+}
 
 /// Blanks out fenced blocks and inline code so link scanning never treats a
 /// documented link *form* — `` `[Title](/tasks/<taskId>)` `` — as a real link

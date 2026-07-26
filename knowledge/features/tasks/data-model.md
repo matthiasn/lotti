@@ -5,7 +5,7 @@ description: What TaskData carries, the two boundaries it deliberately excludes,
 resource: ../../../lib/classes/task.dart
 tags: [tasks, domain, progress, estimates]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T22:00:00Z }
 stale_after: 2027-01-25
 sources:
   - id: task
@@ -39,19 +39,24 @@ Every variant carries `id`, `createdAt`, `utcOffset`, `timezone` and
 the only two that do. Nothing else distinguishes `done` from `rejected`
 structurally, so for the terminal pair the status *is* the discriminator.
 
-**The live/terminal split is not in the union at all, and it is duplicated.** Seven
-files re-state "DONE and REJECTED are the closed ones" independently — four of them
-as the same raw SQL predicate:
+**The live/terminal split is not in the union, and it is duplicated widely.** At
+least thirteen files decide "DONE and REJECTED are the closed ones" independently,
+in five idioms — the exact count is not the point, the absence of a shared constant
+is:
 
-| Site | Form |
-|------|------|
-| `tasks/ui/utils.dart` `openTaskStatuses` | the five live labels — what the linking UI filters on |
-| `day_agent_capture_helpers.dart` `isClosedTask` / `closedTaskStatuses` | `{'DONE', 'REJECTED'}` |
-| `agents/tools/task_status_handler.dart` `terminalStatuses` | `{'DONE', 'REJECTED'}` |
-| `database.dart`, `database_task_due_queries.dart`, `database_migration.dart`, `database.drift` | `AND task_status NOT IN ('DONE', 'REJECTED')` in raw SQL |
+| Idiom | Where |
+|-------|-------|
+| The five live labels as a list | `tasks/ui/utils.dart` `openTaskStatuses` — what the linking UI filters on |
+| A `{'DONE', 'REJECTED'}` set | `day_agent_capture_helpers.dart` (`isClosedTask`), `agents/tools/task_status_handler.dart` |
+| Raw SQL `NOT IN ('DONE', 'REJECTED')` | `database.dart`, `database.drift`, `database_task_due_queries.dart`, `database_migration.dart` |
+| A sealed-type test, `is TaskDone \|\| is TaskRejected` | `wake_run_chart_providers.dart` (`_findResolution`), `task_resolution_time_series.dart`, `task_blockers_controller.dart`, `desktop_task_header_connector.dart` |
+| Prompt and tool contracts | `task_field_tool_definitions.dart`, `task_agent_prompt_builder.dart` |
 
-Adding an eighth status means finding all seven. There is no shared constant to
-change.
+**Adding an eighth status means finding all of them** — grep for both the string
+pair and the type pair; there is no constant to change. The quietest to miss is the
+metrics path: `_findResolution` returning null makes a wake run read as
+*unresolved* rather than erroring, so a new terminal status would silently distort
+the charts.
 
 **Nothing in the code restricts which status may follow which.** There is no
 transition table, no guard, and no validation — a task can go from `onHold`

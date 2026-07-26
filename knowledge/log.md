@@ -26,7 +26,9 @@
   ten query-bearing mixins use one, while **single-entity journal reads** skip
   filtering; `PROPAGATED::` is **additive**, so matching the bare token alone is
   complete, and the wake deferral it enables is opt-in per subscription;
-  `DerivedAgentState` **drives no production read** yet; CI runs `very_good test`
+  `DerivedAgentState` **is** on the wake critical path via
+  `AgentSyncService.reconciledAgentState`, while UI and service reads stay on the
+  raw cache; CI runs `very_good test`
   with its optimizer on, so a leak reaches other files **in the same shard**;
   `TaskStatus` has **seven** variants; an error reaches **two to four** files
   including the PII-safe `error-safe-<date>.log`; and the build-runner
