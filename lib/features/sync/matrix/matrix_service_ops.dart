@@ -263,13 +263,27 @@ class MatrixServiceOps {
 
     await _cancelActiveVerificationsFor(deviceId);
 
-    await gateway.deleteDevice(
-      deviceId,
-      auth: AuthenticationPassword(
-        password: config.password,
-        identifier: AuthenticationUserIdentifier(user: config.user),
-      ),
-    );
+    try {
+      await gateway.deleteDevice(
+        deviceId,
+        auth: AuthenticationPassword(
+          password: config.password,
+          identifier: AuthenticationUserIdentifier(user: config.user),
+        ),
+      );
+    } on MatrixException catch (error) {
+      // A cache-only entry exists precisely because the homeserver no longer
+      // knows the session — "not found" means already deleted, and the
+      // recovery below (pruning the cached keys) is the part that actually
+      // unblocks sync. Anything else still propagates to the caller.
+      if (error.errcode != 'M_NOT_FOUND') rethrow;
+      loggingService.log(
+        LogDomain.sync,
+        'device $deviceId already absent on the homeserver - '
+        'continuing into cache recovery',
+        subDomain: 'deleteDevice.alreadyAbsent',
+      );
+    }
 
     loggingService.log(
       LogDomain.sync,

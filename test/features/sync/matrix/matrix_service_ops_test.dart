@@ -437,6 +437,47 @@ void main() {
       verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
     });
 
+    test(
+      'treats an already-absent device as deleted and still runs the '
+      'cache recovery that actually unblocks sync',
+      () async {
+        when(
+          () => gateway.deleteDevice(any(), auth: any(named: 'auth')),
+        ).thenThrow(
+          MatrixException.fromJson(
+            const {'errcode': 'M_NOT_FOUND', 'error': 'Unknown device'},
+          ),
+        );
+
+        await buildDeleteOps().deleteDeviceById('CACHE_ONLY');
+
+        verify(
+          () => client.updateUserDeviceKeys(additionalUsers: {userId}),
+        ).called(1);
+        verify(() => coordinator.triggerBridge()).called(1);
+      },
+    );
+
+    test('other homeserver rejections still propagate and skip recovery', () {
+      when(
+        () => gateway.deleteDevice(any(), auth: any(named: 'auth')),
+      ).thenThrow(
+        MatrixException.fromJson(
+          const {'errcode': 'M_FORBIDDEN', 'error': 'Invalid password'},
+        ),
+      );
+
+      expect(
+        () => buildDeleteOps().deleteDeviceById('DEV1'),
+        throwsA(isA<MatrixException>()),
+      );
+      verifyNever(
+        () => client.updateUserDeviceKeys(
+          additionalUsers: any(named: 'additionalUsers'),
+        ),
+      );
+    });
+
     test('refuses to delete the session the app itself runs as', () {
       expect(
         () => buildDeleteOps().deleteDeviceById('THIS_DEVICE'),
