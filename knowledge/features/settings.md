@@ -195,3 +195,7 @@ in another locale**.
 row in the settings tree — every other row on that page, destructive maintenance
 actions included, resolves through `context.messages`. It is an unfixed oversight
 rather than an exemption for debug affordances, so do not read it as precedent.
+
+# Related
+
+* [Navigation and app shell](../architecture/navigation.md) - the chrome rules that decide which settings routes hide the bottom nav: menus keep the bar, terminal destinations take the bottom edge.
