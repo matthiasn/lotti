@@ -4845,7 +4845,7 @@
   },
   "syncDevicesSectionTitle": "Devices",
   "syncDevicesStaleHint": "Probably no longer in use",
-  "syncDevicesSyncResumed": "No devices are excluded from sync anymore.",
+  "syncDevicesSyncResumed": "Every paired device can read your entries again.",
   "syncDevicesThisDeviceChip": "This device",
   "syncDevicesUnverifiedChip": "Unverified",
   "syncDevicesVerifiedChip": "Verified",

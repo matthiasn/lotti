@@ -10054,7 +10054,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'Ya no hay dispositivos excluidos de la sincronización.';
+      'Todos los dispositivos emparejados pueden volver a leer tus entradas.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Este dispositivo';

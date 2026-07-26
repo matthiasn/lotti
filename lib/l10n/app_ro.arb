@@ -4068,7 +4068,7 @@
   },
   "syncDevicesSectionTitle": "Dispozitive",
   "syncDevicesStaleHint": "Probabil nu mai este folosit",
-  "syncDevicesSyncResumed": "Niciun dispozitiv nu mai este exclus din sincronizare.",
+  "syncDevicesSyncResumed": "Fiecare dispozitiv asociat poate citi din nou intrările dvs.",
   "syncDevicesThisDeviceChip": "Acest dispozitiv",
   "syncDevicesUnverifiedChip": "Neverificat",
   "syncDevicesVerifiedChip": "Verificat",

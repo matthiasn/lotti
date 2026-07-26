@@ -4068,7 +4068,7 @@
   },
   "syncDevicesSectionTitle": "Appareils",
   "syncDevicesStaleHint": "Probablement plus utilisé",
-  "syncDevicesSyncResumed": "Plus aucun appareil n’est exclu de la synchronisation.",
+  "syncDevicesSyncResumed": "Chaque appareil appairé peut à nouveau lire tes entrées.",
   "syncDevicesThisDeviceChip": "Cet appareil",
   "syncDevicesUnverifiedChip": "Non vérifié",
   "syncDevicesVerifiedChip": "Vérifié",

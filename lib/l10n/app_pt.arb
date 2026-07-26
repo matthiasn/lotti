@@ -4623,7 +4623,7 @@
   },
   "syncDevicesSectionTitle": "Dispositivos",
   "syncDevicesStaleHint": "Provavelmente não está mais em uso",
-  "syncDevicesSyncResumed": "Nenhum dispositivo está mais excluído da sincronização.",
+  "syncDevicesSyncResumed": "Todos os dispositivos pareados conseguem ler suas entradas novamente.",
   "syncDevicesThisDeviceChip": "Este dispositivo",
   "syncDevicesUnverifiedChip": "Não verificado",
   "syncDevicesVerifiedChip": "Verificado",

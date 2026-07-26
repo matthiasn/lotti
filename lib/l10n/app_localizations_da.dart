@@ -9902,7 +9902,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'Ingen enheder er længere udelukket fra synkronisering.';
+      'Alle parrede enheder kan læse dine poster igen.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Denne enhed';

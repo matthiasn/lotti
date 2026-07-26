@@ -271,6 +271,41 @@ void main() {
       ).called(1);
     });
 
+    test(
+      "wipes the room's outbound megolm session so keys shared under the "
+      'old permissive policy stop covering new entries',
+      () async {
+        final encryption = MockEncryption();
+        final keyManager = MockKeyManager();
+        when(() => client.encryption).thenReturn(encryption);
+        when(() => encryption.keyManager).thenReturn(keyManager);
+        when(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            any(),
+            wipe: any(named: 'wipe'),
+            use: any(named: 'use'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+
+        await buildOps().rotateOutboundSessionsForExclusionPolicy();
+
+        verify(
+          () => keyManager.clearOrUseOutboundGroupSession(
+            '!room:server',
+            wipe: true,
+            use: false,
+          ),
+        ).called(1);
+        verify(
+          () => settingsDb.saveSettingsItem(
+            MatrixServiceOps.megolmRotatedForExclusionKey,
+            'true',
+          ),
+        ).called(1);
+      },
+    );
+
     test('is a no-op once the marker is set', () async {
       when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => 'true');
 

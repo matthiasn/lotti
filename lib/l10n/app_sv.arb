@@ -4624,7 +4624,7 @@
   },
   "syncDevicesSectionTitle": "Enheter",
   "syncDevicesStaleHint": "Används förmodligen inte längre",
-  "syncDevicesSyncResumed": "Inga enheter är längre uteslutna från synkroniseringen.",
+  "syncDevicesSyncResumed": "Alla ihopparade enheter kan läsa dina poster igen.",
   "syncDevicesThisDeviceChip": "Den här enheten",
   "syncDevicesUnverifiedChip": "Overifierad",
   "syncDevicesVerifiedChip": "Verifierad",

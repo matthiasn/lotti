@@ -206,7 +206,7 @@ void main() {
 
     expect(find.byKey(const Key('sync_devices_paused_banner')), findsNothing);
     expect(
-      find.text('No devices are excluded from sync anymore.'),
+      find.text('Every paired device can read your entries again.'),
       findsOneWidget,
     );
   });

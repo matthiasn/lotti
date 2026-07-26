@@ -17043,7 +17043,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncDevicesSyncResumed.
   ///
   /// In en, this message translates to:
-  /// **'No devices are excluded from sync anymore.'**
+  /// **'Every paired device can read your entries again.'**
   String get syncDevicesSyncResumed;
 
   /// No description provided for @syncDevicesThisDeviceChip.

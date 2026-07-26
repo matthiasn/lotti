@@ -4624,7 +4624,7 @@
   },
   "syncDevicesSectionTitle": "Enheder",
   "syncDevicesStaleHint": "Sandsynligvis ikke længere i brug",
-  "syncDevicesSyncResumed": "Ingen enheder er længere udelukket fra synkronisering.",
+  "syncDevicesSyncResumed": "Alle parrede enheder kan læse dine poster igen.",
   "syncDevicesThisDeviceChip": "Denne enhed",
   "syncDevicesUnverifiedChip": "Ubekræftet",
   "syncDevicesVerifiedChip": "Bekræftet",

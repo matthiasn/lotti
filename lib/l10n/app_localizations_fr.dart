@@ -10099,7 +10099,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncDevicesSyncResumed =>
-      'Plus aucun appareil n’est exclu de la synchronisation.';
+      'Chaque appareil appairé peut à nouveau lire tes entrées.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Cet appareil';

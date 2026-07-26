@@ -4075,7 +4075,7 @@
   },
   "syncDevicesSectionTitle": "Zařízení",
   "syncDevicesStaleHint": "Pravděpodobně se už nepoužívá",
-  "syncDevicesSyncResumed": "Ze synchronizace už není vyloučené žádné zařízení.",
+  "syncDevicesSyncResumed": "Každé spárované zařízení může znovu číst tvé záznamy.",
   "syncDevicesThisDeviceChip": "Toto zařízení",
   "syncDevicesUnverifiedChip": "Neověřeno",
   "syncDevicesVerifiedChip": "Ověřeno",

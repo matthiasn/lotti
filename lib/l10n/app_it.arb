@@ -4624,7 +4624,7 @@
   },
   "syncDevicesSectionTitle": "Dispositivi",
   "syncDevicesStaleHint": "Probabilmente non più in uso",
-  "syncDevicesSyncResumed": "Nessun dispositivo è più escluso dalla sincronizzazione.",
+  "syncDevicesSyncResumed": "Ogni dispositivo associato può leggere di nuovo le tue voci.",
   "syncDevicesThisDeviceChip": "Questo dispositivo",
   "syncDevicesUnverifiedChip": "Non verificato",
   "syncDevicesVerifiedChip": "Verificato",
