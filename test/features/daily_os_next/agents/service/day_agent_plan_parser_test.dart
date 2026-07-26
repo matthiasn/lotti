@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart'
     show DayAgentCaptureException;
@@ -588,44 +589,6 @@ void main() {
         );
       }
     });
-
-    test('never advertises a start outside the plan day, at any minute', () {
-      for (var hour = 0; hour < 24; hour++) {
-        for (var minute = 0; minute < 60; minute++) {
-          final now = DateTime(2026, 7, 26, hour, minute);
-          final advertised = advertisedPlanningStart(
-            planDate: planDate,
-            now: now,
-          );
-          if (advertised == null) continue;
-          expect(
-            localDay(advertised),
-            localDay(planDate),
-            reason: 'advertised $advertised escaped the plan day from $now',
-          );
-        }
-      }
-    });
-
-    test('gives the model at least the measured worst-case latency', () {
-      // Wake latencies ran to 152s in the eval. The advertised start has to
-      // stay valid across that gap or the model is asked to predict its own
-      // thinking time, which is the bug this replaces.
-      const worstObservedLatency = Duration(seconds: 152);
-      var tightest = const Duration(days: 1);
-      for (var minute = 0; minute < 60; minute++) {
-        final now = DateTime(2026, 7, 26, 9, minute, 59);
-        final advertised = advertisedPlanningStart(
-          planDate: planDate,
-          now: now,
-        )!;
-        final headroom = advertised.difference(now);
-        if (headroom < tightest) tightest = headroom;
-      }
-
-      expect(tightest, greaterThanOrEqualTo(minimumPlanningHeadroom));
-      expect(minimumPlanningHeadroom, greaterThan(worstObservedLatency));
-    });
   });
 
   group('remainingWorkingMinutes', () {
@@ -694,6 +657,206 @@ void main() {
     });
   });
 
+  // ── Block-category invariants ────────────────────────────────────────────
+  // A block naming a task is filed under that task's category. The defect this
+  // replaces existed because the two were checked independently, and the fix
+  // was then shipped at one of the two doors, so the rule is worth stating as
+  // an invariant rather than as a handful of cases.
+  group('Glados categoryForPlannedBlock', () {
+    glados.Glados<_CategoryPick>(
+      glados.any.categoryPick,
+      glados.ExploreConfig(numRuns: 300),
+    ).test('a task-backed block always lands on its task category', (pick) {
+      final resolved = categoryForPlannedBlock(
+        taskId: pick.taskId,
+        fallback: pick.fallback,
+        taskCategoryIds: pick.taskCategoryIds,
+      );
+
+      if (pick.taskId == null) {
+        // Nothing to inherit from: buffers and breaks keep what was chosen.
+        expect(resolved, pick.fallback);
+        return;
+      }
+      // The queried id is generated independently of the map, so a task
+      // *missing* from it — a deleted or out-of-scope reference — is a case
+      // this actually reaches rather than one assumed away.
+      final known = pick.taskCategoryIds[pick.taskId];
+      expect(resolved, known ?? pick.fallback);
+    }, tags: 'glados');
+
+    glados.Glados<_CategoryPick>(
+      glados.any.categoryPick,
+      glados.ExploreConfig(numRuns: 300),
+    ).test('a missing key behaves exactly like a key mapped to null', (pick) {
+      final taskId = pick.taskId;
+      if (taskId == null) return;
+
+      final withNullValue = categoryForPlannedBlock(
+        taskId: taskId,
+        fallback: pick.fallback,
+        taskCategoryIds: {taskId: null},
+      );
+      final withNoKey = categoryForPlannedBlock(
+        taskId: taskId,
+        fallback: pick.fallback,
+        taskCategoryIds: const {},
+      );
+
+      expect(withNullValue, withNoKey);
+      expect(withNoKey, pick.fallback);
+    }, tags: 'glados');
+
+    glados.Glados<_CategoryPick>(
+      glados.any.categoryPick,
+      glados.ExploreConfig(numRuns: 300),
+    ).test('the result is never null and never invents a category', (pick) {
+      final resolved = categoryForPlannedBlock(
+        taskId: pick.taskId,
+        fallback: pick.fallback,
+        taskCategoryIds: pick.taskCategoryIds,
+      );
+
+      expect(
+        resolved == pick.fallback ||
+            pick.taskCategoryIds.values.contains(resolved),
+        isTrue,
+        reason: '$resolved came from neither the fallback nor the task map',
+      );
+    }, tags: 'glados');
+  });
+
+  // ── Planning-window invariants ───────────────────────────────────────────
+  // Every defect found in these functions has been a boundary: one second of
+  // headroom just before a five-minute mark, a walk running past midnight, a
+  // DST day where +24h is not the next midnight.
+  //
+  // Coverage is split deliberately. Minutes of a day are a *small finite*
+  // domain — 1,440 of them — so they are swept exhaustively; sampling would
+  // leave most of them unvisited on any given seed. Glados then explores what
+  // is not finite: sub-minute offsets, capacities, and their combinations.
+  group('planning window', () {
+    final planDate = DateTime(2026, 7, 26);
+
+    test('every minute of the day upholds the window invariants', () {
+      for (var minuteOfDay = 0; minuteOfDay < 24 * 60; minuteOfDay++) {
+        final now = DateTime(
+          planDate.year,
+          planDate.month,
+          planDate.day,
+          minuteOfDay ~/ 60,
+          minuteOfDay % 60,
+        );
+        final enforced = earliestPlannableStart(planDate: planDate, now: now);
+        final advertised = advertisedPlanningStart(
+          planDate: planDate,
+          now: now,
+        );
+        final closed = planningWindowClosed(planDate: planDate, now: now);
+
+        // Plannable or closed, never both and never neither. Collapsing them
+        // would let a 23:58 wake read as unconstrained and plan from this
+        // morning.
+        expect(
+          advertised != null,
+          isNot(closed),
+          reason: 'ambiguous window at $now',
+        );
+        if (advertised == null) continue;
+
+        expect(
+          advertised.difference(enforced!) >= minimumPlanningHeadroom,
+          isTrue,
+          reason: 'advertised $advertised is not clear of $enforced',
+        );
+        // Whole boundary, not just the minute field: 10:05:59 is not aligned.
+        expect(localDay(advertised), localDay(planDate), reason: '$now');
+        expect(advertised.minute % advertisedStartGranularity.inMinutes, 0);
+        expect(advertised.second, 0, reason: '$now');
+        expect(advertised.millisecond, 0, reason: '$now');
+        expect(advertised.microsecond, 0, reason: '$now');
+      }
+    });
+
+    test('the configured headroom clears the worst observed wake latency', () {
+      // Independent of the implementation constant on purpose: asserting the
+      // gap against `minimumPlanningHeadroom` alone would let the constant and
+      // the test weaken together. 152s is the slowest wake measured in the
+      // 48-cell matrix.
+      expect(
+        minimumPlanningHeadroom,
+        greaterThan(const Duration(seconds: 152)),
+      );
+    });
+
+    glados.Glados<_WindowScenario>(
+      glados.any.windowScenario,
+      glados.ExploreConfig(numRuns: 300),
+    ).test('sub-minute offsets never break alignment or the headroom', (
+      scenario,
+    ) {
+      final now = scenario.instantOn(planDate);
+      final enforced = earliestPlannableStart(planDate: planDate, now: now);
+      final advertised = advertisedPlanningStart(planDate: planDate, now: now);
+      if (advertised == null) {
+        expect(planningWindowClosed(planDate: planDate, now: now), isTrue);
+        return;
+      }
+
+      expect(
+        advertised.difference(enforced!) >= minimumPlanningHeadroom,
+        isTrue,
+        reason: 'advertised $advertised is not clear of $enforced',
+      );
+      expect(localDay(advertised), localDay(planDate));
+      expect(advertised.minute % advertisedStartGranularity.inMinutes, 0);
+      expect(advertised.second, 0);
+      expect(advertised.millisecond, 0);
+      expect(advertised.microsecond, 0);
+    }, tags: 'glados');
+
+    glados.Glados<_WindowScenario>(
+      glados.any.windowScenario,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'the budget is bounded by capacity and by the clock it may use',
+      (
+        scenario,
+      ) {
+        const dayEnd = 17 * 60;
+        final now = scenario.instantOn(planDate);
+        final minutes = remainingWorkingMinutes(
+          planDate: planDate,
+          now: now,
+          capacityMinutes: scenario.capacityMinutes,
+          workingHoursStart: '09:00',
+          workingHoursEnd: '17:00',
+        );
+        if (minutes == null) {
+          expect(planningWindowClosed(planDate: planDate, now: now), isTrue);
+          return;
+        }
+
+        expect(minutes, greaterThanOrEqualTo(0));
+        expect(minutes, lessThanOrEqualTo(scenario.capacityMinutes));
+
+        // Bounded by the clock the model was actually told it may use, for this
+        // scenario's own capacity — not by the length of the working day. A
+        // regression returning 480 at 16:00 on a 960-minute capacity has to
+        // fail here.
+        final advertised = advertisedPlanningStart(
+          planDate: planDate,
+          now: now,
+        );
+        final startMinutes = advertised == null
+            ? 9 * 60
+            : (advertised.hour * 60 + advertised.minute).clamp(9 * 60, dayEnd);
+        expect(minutes, lessThanOrEqualTo(dayEnd - startMinutes));
+      },
+      tags: 'glados',
+    );
+  });
+
   group('selectIndices', () {
     test('returns the full range when indices are omitted', () {
       expect(selectIndices(itemIndices: null, itemCount: 3), [0, 1, 2]);
@@ -757,3 +920,74 @@ PlannedBlock _baselineBlock({
   title: id,
   state: state,
 );
+
+/// One generated moment of a plan day, plus the capacity in force.
+///
+/// `now` is built from the parts rather than generated as a `DateTime` so the
+/// exploration lands on the boundaries that have actually broken this code:
+/// the minute before a five-minute mark, the last minutes before midnight, and
+/// sub-second offsets past the hour.
+class _WindowScenario {
+  _WindowScenario(this.hour, this.minute, this.second, this.capacityMinutes);
+
+  final int hour;
+  final int minute;
+  final int second;
+  final int capacityMinutes;
+
+  DateTime instantOn(DateTime day) =>
+      DateTime(day.year, day.month, day.day, hour, minute, second);
+
+  @override
+  String toString() =>
+      '_WindowScenario($hour:$minute:$second, cap $capacityMinutes)';
+}
+
+extension _AnyPlanningWindow on glados.Any {
+  glados.Generator<_WindowScenario> get windowScenario =>
+      glados.CombinableAny(this).combine4(
+        glados.AnyUtils(this).choose(_hours),
+        glados.AnyUtils(this).choose(_minutes),
+        glados.AnyUtils(this).choose(const [0, 1, 30, 59]),
+        glados.AnyUtils(this).choose(const [15, 60, 240, 480, 960]),
+        _WindowScenario.new,
+      );
+}
+
+final List<int> _hours = List<int>.generate(24, (i) => i);
+final List<int> _minutes = List<int>.generate(60, (i) => i);
+
+/// One generated block/task category pairing.
+class _CategoryPick {
+  _CategoryPick(this.taskId, this.fallback, this.mappedTaskId, this.mapped);
+
+  /// The id the block references.
+  final String? taskId;
+  final String fallback;
+
+  /// The id the map knows about — generated *independently* of [taskId], so
+  /// the unknown-task case is actually reached rather than assumed away.
+  final String? mappedTaskId;
+  final String? mapped;
+
+  Map<String, String?> get taskCategoryIds =>
+      mappedTaskId == null ? const {} : {mappedTaskId!: mapped};
+
+  @override
+  String toString() =>
+      '_CategoryPick(query $taskId, map {$mappedTaskId: $mapped}, '
+      'else $fallback)';
+}
+
+extension _AnyCategoryPick on glados.Any {
+  glados.Generator<_CategoryPick> get categoryPick =>
+      glados.CombinableAny(this).combine4(
+        glados.AnyUtils(this).choose(const [null, 'task-a', 'task-b']),
+        glados.AnyUtils(this).choose(const ['cat-fallback', 'cat-work']),
+        // Independently chosen, so the map often does not contain the queried
+        // id at all.
+        glados.AnyUtils(this).choose(const [null, 'task-a', 'task-c']),
+        glados.AnyUtils(this).choose(const [null, 'cat-ops', 'cat-work']),
+        _CategoryPick.new,
+      );
+}
