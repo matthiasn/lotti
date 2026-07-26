@@ -113,7 +113,7 @@ void main() {
     );
     expect(
       find.text(
-        '1 unverified device is pausing sync — remove or verify it below.',
+        '1 unverified device is pausing sync — delete or verify it below.',
       ),
       findsOneWidget,
     );

@@ -9991,11 +9991,11 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count neověřených zařízení pozastavuje synchronizaci — odeber je nebo ověř níže.',
+          '$count neověřených zařízení pozastavuje synchronizaci — odstraň je nebo ověř níže.',
       few:
-          '$count neověřená zařízení pozastavují synchronizaci — odeber je nebo ověř níže.',
+          '$count neověřená zařízení pozastavují synchronizaci — odstraň je nebo ověř níže.',
       one:
-          '1 neověřené zařízení pozastavuje synchronizaci — odeber ho nebo ověř níže.',
+          '1 neověřené zařízení pozastavuje synchronizaci — odstraň ho nebo ověř níže.',
     );
     return '$_temp0';
   }

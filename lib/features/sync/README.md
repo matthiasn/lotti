@@ -27,6 +27,11 @@ merge of two users' work.
   transcribed automatically on a pinned desktop that has local models
   installed — and the path is built so that audio can never be handed to a cloud
   provider by accident.
+- **Lets the user manage the device roster.** The sync status page lists every
+  session on the account — verified or not, with when the server last saw it —
+  and any device except the current one can be removed. A device that was
+  uninstalled without logging out would otherwise block outbound sync forever;
+  the list says so plainly and removal unblocks sync immediately.
 
 ## What it owns
 

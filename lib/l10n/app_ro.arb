@@ -4039,7 +4039,7 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — eliminați-l sau verificați-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — eliminați-le sau verificați-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — eliminați-le sau verificați-le mai jos.}}",
+  "syncDevicesPausedBanner": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — ștergeți-l sau verificați-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — ștergeți-le sau verificați-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — ștergeți-le sau verificați-le mai jos.}}",
   "@syncDevicesPausedBanner": {
     "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
     "placeholders": {

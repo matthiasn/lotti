@@ -9917,9 +9917,9 @@ class AppLocalizationsDe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count nicht verifizierte Geräte pausieren die Synchronisierung — entferne oder verifiziere sie unten.',
+          '$count nicht verifizierte Geräte pausieren die Synchronisierung — lösche oder verifiziere sie unten.',
       one:
-          '1 nicht verifiziertes Gerät pausiert die Synchronisierung — entferne oder verifiziere es unten.',
+          '1 nicht verifiziertes Gerät pausiert die Synchronisierung — lösche oder verifiziere es unten.',
     );
     return '$_temp0';
   }

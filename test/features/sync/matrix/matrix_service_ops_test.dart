@@ -525,7 +525,7 @@ void main() {
 
     test(
       'merges the server inventory with the key cache and orders devices '
-      'current-first, then blockers, then by recency',
+      'blockers-first, then the current device, then by recency',
       () async {
         when(() => gateway.getDevices()).thenAnswer(
           (_) async => [
@@ -556,15 +556,15 @@ void main() {
 
         expect(
           devices.map((d) => d.deviceId).toList(),
-          ['THIS_DEVICE', 'GHOST', 'OLD_VERIFIED', 'KEYLESS'],
+          ['GHOST', 'THIS_DEVICE', 'OLD_VERIFIED', 'KEYLESS'],
         );
 
-        final current = devices[0];
+        final current = devices[1];
         expect(current.isCurrentDevice, isTrue);
         expect(current.verified, isTrue);
         expect(current.blocksSync, isFalse);
 
-        final ghost = devices[1];
+        final ghost = devices[0];
         expect(ghost.verified, isFalse);
         expect(ghost.blocksSync, isTrue);
         expect(ghost.lastSeen, DateTime(2026, 5));

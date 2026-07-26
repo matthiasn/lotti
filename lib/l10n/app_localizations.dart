@@ -17013,7 +17013,7 @@ abstract class AppLocalizations {
   /// Warning banner while unverified devices block outbound sync; count is the number of blocking devices.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{1 unverified device is pausing sync — remove or verify it below.} other{{count} unverified devices are pausing sync — remove or verify them below.}}'**
+  /// **'{count, plural, one{1 unverified device is pausing sync — delete or verify it below.} other{{count} unverified devices are pausing sync — delete or verify them below.}}'**
   String syncDevicesPausedBanner(int count);
 
   /// No description provided for @syncDevicesSectionTitle.

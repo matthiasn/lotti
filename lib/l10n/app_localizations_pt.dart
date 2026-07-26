@@ -9960,9 +9960,9 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivos não verificados estão pausando a sincronização — remove-os ou verifica-os abaixo.',
+          '$count dispositivos não verificados estão pausando a sincronização — exclui-os ou verifica-os abaixo.',
       one:
-          '1 dispositivo não verificado está pausando a sincronização — remove-o ou verifica-o abaixo.',
+          '1 dispositivo não verificado está pausando a sincronização — exclui-o ou verifica-o abaixo.',
     );
     return '$_temp0';
   }

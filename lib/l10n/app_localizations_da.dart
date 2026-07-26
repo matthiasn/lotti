@@ -9862,9 +9862,9 @@ class AppLocalizationsDa extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count ubekræftede enheder sætter synkroniseringen på pause — fjern eller bekræft dem nedenfor.',
+          '$count ubekræftede enheder sætter synkroniseringen på pause — slet eller bekræft dem nedenfor.',
       one:
-          '1 ubekræftet enhed sætter synkroniseringen på pause — fjern eller bekræft den nedenfor.',
+          '1 ubekræftet enhed sætter synkroniseringen på pause — slet eller bekræft den nedenfor.',
     );
     return '$_temp0';
   }

@@ -9992,9 +9992,9 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count dispositivi non verificati stanno mettendo in pausa la sincronizzazione: rimuovili o verificali qui sotto.',
+          '$count dispositivi non verificati stanno mettendo in pausa la sincronizzazione: eliminali o verificali qui sotto.',
       one:
-          '1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: rimuovilo o verificalo qui sotto.',
+          '1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: eliminalo o verificalo qui sotto.',
     );
     return '$_temp0';
   }

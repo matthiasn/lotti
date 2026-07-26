@@ -184,8 +184,14 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
             style: tokens.typography.styles.subtitle.subtitle2,
             softWrap: true,
           ),
+          SizedBox(height: tokens.spacing.step2),
+          Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step2,
+            children: trustBadges,
+          ),
           if (metaLine != null) ...[
-            SizedBox(height: tokens.spacing.step1),
+            SizedBox(height: tokens.spacing.step2),
             Text(
               metaLine,
               maxLines: 2,
@@ -195,12 +201,6 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
               ),
             ),
           ],
-          SizedBox(height: tokens.spacing.step3),
-          Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step2,
-            children: trustBadges,
-          ),
           // Last-seen has one fixed slot on every card so the dead-device
           // hunt is a straight column scan; the blocking card adds the amber
           // "probably dead" hint on its own line above it, so the label-date
