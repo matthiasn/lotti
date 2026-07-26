@@ -2465,6 +2465,27 @@ void main() {
       },
     );
 
+    test(
+      'an explicit relates_to canonicalizes to the omitted default',
+      () async {
+        // Both spellings apply the identical plain link; they must share a
+        // placeholder and fingerprint or Confirm all would create two tasks.
+        final placeholder = await builder.addFollowUpTask(
+          args: {'title': 'Follow-Up R5', 'relation': 'relates_to'},
+          humanSummary: 'Create follow-up task R5',
+        );
+
+        expect(
+          placeholder,
+          ChangeSetBuilder.deterministicPlaceholder(
+            'task-001',
+            'Follow-Up R5||',
+          ),
+        );
+        expect(builder.items.single.args.containsKey('relation'), isFalse);
+      },
+    );
+
     test('strips a whitespace-only relation from enriched args', () async {
       await builder.addFollowUpTask(
         args: {'title': 'Follow-Up R3', 'relation': '   '},

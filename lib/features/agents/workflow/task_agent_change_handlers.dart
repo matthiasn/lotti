@@ -46,17 +46,27 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       // Fail-closed on an unparseable relation so the user never reviews a
       // proposal the apply path would reject anyway.
       final rawRelation = args['relation'];
-      if (rawRelation != null &&
-          (rawRelation is! String ||
-              DirectedRelation.fromWireName(rawRelation) == null)) {
+      final parsedRelation = rawRelation is String
+          ? DirectedRelation.fromWireName(rawRelation)
+          : null;
+      if (rawRelation != null && parsedRelation == null) {
         return 'ERROR: "relation" must be one of '
             '${taskRelationWireNames.join(', ')}, or omitted for a plain '
             'link. No proposal was queued.';
       }
 
+      // An explicit relates_to applies the identical plain link the omitted
+      // form does, so it is normalized away — otherwise the two spellings
+      // would carry different placeholders and fingerprints, survive dedup
+      // as siblings, and Confirm all would create the follow-up twice.
+      var effectiveArgs = args;
+      if (parsedRelation != null && parsedRelation.isSymmetric) {
+        effectiveArgs = Map<String, dynamic>.from(args)..remove('relation');
+      }
+
       final placeholderId = await csBuilder.addFollowUpTask(
-        args: args,
-        humanSummary: _generateHumanSummary(toolName, args),
+        args: effectiveArgs,
+        humanSummary: _generateHumanSummary(toolName, effectiveArgs),
       );
 
       developer.log(
@@ -188,12 +198,23 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         // Transient lookup failure — keep the proposal.
         existing = null;
       }
-      final triple = canonicalRelationTriple(
-        fromId: endpoints.fromId,
-        toId: endpoints.toId,
-        type: relation.type,
-      );
-      if (existing != null && existing.contains(triple)) {
+      // A symmetric relates_to matches either row orientation — a plain link
+      // means the same thing read from both ends, so the reverse of an
+      // existing plain link is the same relationship, not a new one.
+      final triples = {
+        canonicalRelationTriple(
+          fromId: endpoints.fromId,
+          toId: endpoints.toId,
+          type: relation.type,
+        ),
+        if (relation.isSymmetric)
+          canonicalRelationTriple(
+            fromId: endpoints.toId,
+            toId: endpoints.fromId,
+            type: relation.type,
+          ),
+      };
+      if (existing != null && existing.intersection(triples).isNotEmpty) {
         return 'Skipped: this task already ${relation.englishPhrase} '
             '"${targetTitle ?? targetTaskId}" — the relationship exists. '
             'Do NOT propose it again.';
@@ -230,11 +251,24 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
 
   /// The stable identity of one stored relationship, for redundancy checks:
   /// canonical `fromId|toId|<linked_entries.type>`.
+  ///
+  /// This is the **sole producer** of the key. The consumer side
+  /// (`resolveExistingTaskRelations` in `task_agent_execute.dart`) derives
+  /// its entries via [canonicalRelationTripleOfLink], so the two sides can
+  /// never disagree on the format and silently stop matching.
   static String canonicalRelationTriple({
     required String fromId,
     required String toId,
     required EntryLinkType type,
   }) => '$fromId|$toId|${entryLinkTypeDbName(type)}';
+
+  /// [canonicalRelationTriple] derived from a loaded [EntryLink] row.
+  static String canonicalRelationTripleOfLink(EntryLink link) =>
+      canonicalRelationTriple(
+        fromId: link.fromId,
+        toId: link.toId,
+        type: entryLinkTypeOf(link),
+      );
 
   /// Returns a model-facing error string when [toolName]'s arguments reference
   /// an entity by id that cannot be looked up (a hallucinated id), or `null`

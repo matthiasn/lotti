@@ -2262,13 +2262,13 @@ not describe task configuration or tool activity as progress.
           capturedSystemMessage,
           contains('## Parent Project Context'),
         );
-        // Linked-tasks legend (graph-3): the from/to directionality is
-        // explained so the model can read it, and the freshness marker
+        // Linked-tasks legend (graph-3): the directed `relations` vocabulary
+        // is explained so the model can read it, and the freshness marker
         // (graph-5) is documented.
         expect(capturedSystemMessage, contains('## Linked Tasks'));
         expect(
           capturedSystemMessage,
-          contains('`linked_from`: child tasks that reference THIS task'),
+          contains('with THIS task as the subject'),
         );
         expect(capturedSystemMessage, contains('summaryStatus'));
         // The enforced single-use contract is surfaced up front (sp-3).

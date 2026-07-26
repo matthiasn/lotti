@@ -128,6 +128,12 @@ class TaskLinkHandler {
 
   /// Whether a live link with the same canonical `(fromId, toId, type)`
   /// triple already exists.
+  ///
+  /// A symmetric `relates_to` matches **either** row orientation: a plain
+  /// link means the same thing read from both ends, but the schema's
+  /// `UNIQUE(from_id, to_id, type)` is directional, so without this the
+  /// reverse of an existing plain link would be written as a second row —
+  /// two linked-task entries for one relationship.
   Future<bool> _linkExists(
     DirectedRelation relation,
     ({String fromId, String toId}) endpoints,
@@ -137,13 +143,16 @@ class TaskLinkHandler {
         {endpoints.fromId},
         types: {entryLinkTypeDbName(relation.type)},
       );
-      return existing.any(
-        (link) =>
-            link.fromId == endpoints.fromId &&
-            link.toId == endpoints.toId &&
-            link.deletedAt == null &&
-            link.hidden != true,
-      );
+      return existing.any((link) {
+        if (link.deletedAt != null || link.hidden == true) return false;
+        final direct =
+            link.fromId == endpoints.fromId && link.toId == endpoints.toId;
+        final reverse =
+            relation.isSymmetric &&
+            link.fromId == endpoints.toId &&
+            link.toId == endpoints.fromId;
+        return direct || reverse;
+      });
     } catch (e) {
       _domainLogger?.error(
         LogDomain.agentWorkflow,

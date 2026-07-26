@@ -417,6 +417,37 @@ void main() {
     });
 
     test(
+      'the reverse of an existing plain link is the same relationship',
+      () async {
+        // A plain link is symmetric: an incoming BasicLink already relates
+        // the pair, so asserting relates_to must not write the reverse row.
+        when(
+          () => mockJournalDb.typedLinksForTaskIds(
+            any(),
+            types: any(named: 'types'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            makeLink(
+              fromId: targetTaskId,
+              toId: sourceTaskId,
+              type: EntryLinkType.basic,
+            ),
+          ],
+        );
+
+        final result = await handler.handle(sourceTaskId, {
+          'relation': 'relates_to',
+          'targetTaskId': targetTaskId,
+        });
+
+        expect(result.success, isTrue);
+        expect(result.output, contains('Already linked'));
+        verifyNoLinkWritten();
+      },
+    );
+
+    test(
       'the reverse direction of an existing edge is not a duplicate',
       () async {
         when(

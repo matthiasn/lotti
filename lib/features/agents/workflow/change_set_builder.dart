@@ -506,9 +506,15 @@ class ChangeSetBuilder {
     final canonPriority = priority is String
         ? priority.trim().toUpperCase()
         : '';
-    final canonRelation = relation is String
+    final rawCanonRelation = relation is String
         ? relation.trim().toLowerCase()
         : '';
+    // An explicit relates_to IS the omitted default (a plain link), so it
+    // canonicalizes to absence — both spellings must share one placeholder
+    // and fingerprint or they would queue as two separate follow-ups.
+    final canonRelation = rawCanonRelation == 'relates_to'
+        ? ''
+        : rawCanonRelation;
     // The relation joins the key only when present, so proposals without one
     // keep their pre-relation placeholder and still dedup across wakes
     // against pending items queued before the parameter existed.

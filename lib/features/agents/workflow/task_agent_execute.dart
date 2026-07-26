@@ -477,7 +477,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           return {
             for (final link in links)
               if (link.deletedAt == null && link.hidden != true)
-                '${link.fromId}|${link.toId}|${entryLinkTypeName(link)}',
+                TaskAgentChangeHandlers.canonicalRelationTripleOfLink(link),
           };
         },
       );

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
@@ -2070,7 +2071,11 @@ void main() {
           // Canonical triple for "this task blocks target-1": the anchor
           // 'task-001' is the blocker, so it is fromId.
           resolveExistingTaskRelations: () async => {
-            'task-001|target-1|BlocksLink',
+            TaskAgentChangeHandlers.canonicalRelationTriple(
+              fromId: 'task-001',
+              toId: 'target-1',
+              type: EntryLinkType.blocks,
+            ),
           },
         );
 
@@ -2094,6 +2099,45 @@ void main() {
       });
 
       test(
+        'an existing reverse plain link suppresses relates_to',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveLinkableTaskTitle: (_) async => 'Target',
+            // The stored plain link happens to run target-1 → task-001, but
+            // a plain link is symmetric — proposing relates_to would write
+            // the reverse row for the same relationship.
+            resolveExistingTaskRelations: () async => {
+              TaskAgentChangeHandlers.canonicalRelationTriple(
+                fromId: 'target-1',
+                toId: 'task-001',
+                type: EntryLinkType.basic,
+              ),
+            },
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call({'relation': 'relates_to', 'targetTaskId': 'target-1'}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(bench.builder.items, isEmpty);
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-1',
+              response: any(
+                named: 'response',
+                that: contains('the relationship exists'),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'an existing reverse edge does not suppress the opposite direction',
         () async {
           final bench = _createStrategy(
@@ -2103,7 +2147,11 @@ void main() {
             // target-1 blocks task-001 — direction is part of identity, so
             // asserting "this task blocks target-1" is a NEW relationship.
             resolveExistingTaskRelations: () async => {
-              'target-1|task-001|BlocksLink',
+              TaskAgentChangeHandlers.canonicalRelationTriple(
+                fromId: 'target-1',
+                toId: 'task-001',
+                type: EntryLinkType.blocks,
+              ),
             },
           );
 
@@ -4065,6 +4113,46 @@ void main() {
             'Create follow-up task: "Prerequisite work" — '
             'this task is blocked by it',
           );
+        },
+      );
+
+      test(
+        'create_follow_up_task treats relates_to as the omitted default',
+        () async {
+          // Both spellings apply the identical plain link, so they must
+          // collapse to one proposal — otherwise Confirm all would create
+          // the same follow-up twice.
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-split-plain',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'create_follow_up_task',
+                arguments: jsonEncode({'title': 'Twin task'}),
+              ),
+            ),
+            ChatCompletionMessageToolCall(
+              id: 'call-split-relates',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'create_follow_up_task',
+                arguments: jsonEncode({
+                  'title': 'Twin task',
+                  'relation': 'relates_to',
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(csBuilder.items, hasLength(1));
+          final item = csBuilder.items.single;
+          expect(item.args.containsKey('relation'), isFalse);
+          expect(item.humanSummary, 'Create follow-up task: "Twin task"');
         },
       );
 
