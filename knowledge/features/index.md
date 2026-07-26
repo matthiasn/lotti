@@ -17,6 +17,8 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 * [Projects](projects/) - grouping between categories and tasks, with agent-authored health.
 * [Labels](labels/) - the lightweight taxonomy and its AI-suggestion coupling.
 * [Habits](habits/) - recurring definitions reconciled with completion entries.
+* [Insights](insights/) - time analysis over the journal.
+* [AI chat](ai_chat/) - a session-scoped Q&A surface over task history.
 * [Tasks](tasks/) - the task layer on the journal substrate: checklists, relationships, filters.
 
 # Infrastructure
