@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
@@ -112,7 +113,11 @@ void main() {
   test(
     'entry exceeding maxAttempts is dropped without being enqueued',
     () async {
-      final pen = PendingDecryptionPen(logging: logging, maxAttempts: 2);
+      final pen = PendingDecryptionPen(
+        logging: logging,
+        maxAttempts: 2,
+        attemptInterval: Duration.zero,
+      );
       final encrypted = buildEvent(
         eventId: r'$doomed',
         roomId: roomId,
@@ -130,6 +135,109 @@ void main() {
       expect(pen.size, 0);
       final stats = await queue.stats();
       expect(stats.total, 0);
+    },
+  );
+
+  test(
+    'a fast drain loop cannot burn the decryption budget',
+    () async {
+      // The InboundWorker sweeps the pen at the top of every drain
+      // iteration and loops straight back after a non-empty batch, so while
+      // a burst drains the pen is swept many times a second. Counting one
+      // attempt per sweep made the whole 20-attempt budget cost ~2ms of
+      // wall clock: ciphertext was dropped while its Megolm key was still
+      // in flight, on exactly the slow links where keys take longest.
+      final pen = PendingDecryptionPen(logging: logging, maxAttempts: 3);
+      final encrypted = buildEvent(
+        eventId: r'$keyStillInFlight',
+        roomId: roomId,
+        originTsMs: 1,
+        type: EventTypes.Encrypted,
+      );
+      final held = DateTime.utc(2026, 7, 26, 12);
+      await withClock(Clock.fixed(held), () async {
+        pen.hold(encrypted);
+      });
+      when(
+        () => room.getEventById(r'$keyStillInFlight'),
+      ).thenAnswer((_) async => encrypted);
+
+      // A hundred sweeps inside one second — what a draining burst does.
+      await withClock(
+        Clock.fixed(held.add(const Duration(seconds: 1))),
+        () async {
+          for (var i = 0; i < 100; i++) {
+            await pen.flushInto(queue: queue, room: room);
+          }
+        },
+      );
+      expect(
+        pen.size,
+        1,
+        reason: 'sweeps are free; only elapsed time may spend the budget',
+      );
+
+      // The key finally lands, well after those 100 sweeps would have
+      // exhausted a per-sweep budget.
+      final decrypted = buildEvent(
+        eventId: r'$keyStillInFlight',
+        roomId: roomId,
+        originTsMs: 1,
+        type: EventTypes.Message,
+      );
+      when(
+        () => room.getEventById(r'$keyStillInFlight'),
+      ).thenAnswer((_) async => decrypted);
+      await withClock(
+        Clock.fixed(held.add(const Duration(seconds: 5))),
+        () async {
+          await pen.flushInto(queue: queue, room: room);
+        },
+      );
+
+      expect(pen.size, 0);
+      final stats = await queue.stats();
+      expect(stats.total, 1, reason: 'the event still reaches the queue');
+    },
+  );
+
+  test(
+    'the budget is still spent once attempts are properly spaced',
+    () async {
+      // The give-up path must survive: an entry whose key never arrives is
+      // dropped after maxAttempts * attemptInterval of real time.
+      final pen = PendingDecryptionPen(
+        logging: logging,
+        maxAttempts: 3,
+        // Spelled out even though it is the default: the interval is the
+        // subject of this test, not incidental configuration.
+        // ignore: avoid_redundant_argument_values
+        attemptInterval: const Duration(seconds: 30),
+      );
+      final encrypted = buildEvent(
+        eventId: r'$neverArrives',
+        roomId: roomId,
+        originTsMs: 1,
+        type: EventTypes.Encrypted,
+      );
+      final held = DateTime.utc(2026, 7, 26, 12);
+      await withClock(Clock.fixed(held), () async => pen.hold(encrypted));
+      when(
+        () => room.getEventById(r'$neverArrives'),
+      ).thenAnswer((_) async => encrypted);
+
+      for (final minutes in [1, 2, 3]) {
+        await withClock(
+          Clock.fixed(held.add(Duration(minutes: minutes))),
+          () async {
+            await pen.flushInto(queue: queue, room: room);
+          },
+        );
+      }
+
+      expect(pen.size, 0, reason: 'a key that never arrives still gives up');
+      final stats = await queue.stats();
+      expect(stats.total, 0, reason: 'ciphertext never reaches the queue');
     },
   );
 
@@ -306,6 +414,9 @@ void main() {
           logging: localLogging,
           capacity: scenario.capacity,
           maxAttempts: scenario.maxAttempts,
+          // The model counts one attempt per flush, so this scenario opts
+          // out of the real-time spacing production uses.
+          attemptInterval: Duration.zero,
         );
         final expected = ExpectedPenModel(
           capacity: scenario.capacity,

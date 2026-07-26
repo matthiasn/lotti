@@ -9,10 +9,16 @@ import 'package:matrix/matrix.dart';
 const _logSub = 'queue.decryptionPen';
 
 class _HeldEvent {
-  _HeldEvent({required this.event, required this.heldAtMs});
+  _HeldEvent({required this.event, required this.heldAtMs})
+    : lastAttemptAtMs = heldAtMs;
 
   Event event;
   int heldAtMs;
+
+  /// When this entry last *spent* an attempt. Distinct from the sweep that
+  /// merely looked at it: sweeps are as frequent as the worker's drain loop,
+  /// attempts are meant to be spaced in real time.
+  int lastAttemptAtMs;
   int attempts = 0;
 }
 
@@ -25,9 +31,23 @@ class _HeldEvent {
 ///
 /// The pen is bounded (default 256 entries, LRU eviction) so a wave
 /// of undecryptable events cannot grow memory unboundedly. Entries
-/// that exceed [maxAttempts] sweep cycles without decrypting are
-/// dropped with a diagnostic log line so operations can notice a
-/// stuck key-rotation scenario.
+/// that exceed [maxAttempts] attempts without decrypting are dropped
+/// with a diagnostic log line so operations can notice a stuck
+/// key-rotation scenario.
+///
+/// **An attempt is a unit of time, not a unit of work.** A sweep only
+/// spends one once [attemptInterval] has elapsed since the last one that
+/// counted, so the budget is `maxAttempts * attemptInterval` of real time
+/// (10 minutes by default) no matter how often the pen is swept. Without
+/// that spacing the budget is meaningless: the `InboundWorker` sweeps at
+/// the top of every drain iteration and loops straight back after a
+/// non-empty batch, so a burst draining at speed once burned all 20
+/// attempts in ~2ms — dropping ciphertext whose Megolm key was still in
+/// flight, on exactly the slow links where keys take longest to arrive.
+///
+/// The spacing costs nothing in recovery latency: every sweep still asks
+/// the room for a decrypted copy and enqueues it the moment one exists.
+/// Only the countdown to giving up is rate-limited.
 ///
 /// The pen does not schedule its own timer in production — the
 /// `InboundWorker` ticks it on every drain iteration. Tests may call
@@ -38,12 +58,19 @@ class PendingDecryptionPen {
     required this._logging,
     this.capacity = 256,
     this.maxAttempts = 20,
+    this.attemptInterval = const Duration(seconds: 30),
     this.sweepInterval,
   });
 
   final DomainLogger _logging;
   final int capacity;
   final int maxAttempts;
+
+  /// Minimum real time between two attempts against the same entry. Set to
+  /// [Duration.zero] to make every sweep count, which is only useful for
+  /// tests that model the budget directly.
+  final Duration attemptInterval;
+
   final Duration? sweepInterval;
 
   final LinkedHashMap<String, _HeldEvent> _held =
@@ -161,6 +188,15 @@ class PendingDecryptionPen {
         continue;
       }
 
+      // Sweeps are unbounded in frequency; attempts are not. Looking again
+      // costs nothing, so an entry only pays when `attemptInterval` has
+      // elapsed since it last paid.
+      final nowMs = clock.now().millisecondsSinceEpoch;
+      if (nowMs - held.lastAttemptAtMs < attemptInterval.inMilliseconds) {
+        stillEncrypted++;
+        continue;
+      }
+      held.lastAttemptAtMs = nowMs;
       held.attempts++;
       if (held.attempts >= maxAttempts) {
         _held.remove(id);
