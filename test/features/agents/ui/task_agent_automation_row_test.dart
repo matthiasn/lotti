@@ -176,12 +176,24 @@ void main() {
       expect(changedTo, isTrue);
 
       final tokens = tokensOf(tester);
-      expect(
-        tester.getSize(
-          find.byKey(const ValueKey('taskAgentAutomaticUpdatesTarget')),
-        ),
-        Size.square(tokens.spacing.step9),
+      final target = find.byKey(
+        const ValueKey('taskAgentAutomaticUpdatesTarget'),
       );
+      // The row is the target, not a box beside the switch. An earlier
+      // revision reserved a step9 square around a 24px-tall track and left it
+      // inert: it cost the column 48px of height while the only tappable part
+      // stayed the track. Now the whole row height is real, and it is one
+      // step8 box like every other row in the band.
+      expect(tester.getSize(target).height, tokens.spacing.step8);
+      expect(
+        tester.getSize(target).width,
+        greaterThan(tokens.spacing.step9 * 2),
+      );
+
+      // Tapping the label, not the switch, must toggle it too.
+      changedTo = null;
+      await tester.tap(find.text('Automatic updates'));
+      expect(changedTo, isTrue);
     });
 
     testWidgets('is disabled while an automation write is in flight', (

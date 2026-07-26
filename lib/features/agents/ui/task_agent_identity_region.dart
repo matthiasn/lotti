@@ -176,35 +176,47 @@ class _ReportIdentityRow extends StatelessWidget {
         // The full attribution lives in the tooltip; on screen it truncates
         // rather than wrapping, so a long route cannot spill a stray fragment
         // onto a second line under the row it belongs to.
-        child: Tooltip(
-          message: '$label ${tiers.first}',
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.description_outlined,
-                size: tokens.spacing.step5,
-                color: ai.metaText,
+        //
+        // One announcement, carrying the *untruncated* route. The visible text
+        // sheds whole segments as space runs out, so leaving the children
+        // audible would read the shortened route and then the tooltip would
+        // read the full one — the same doubling `DesignSystemInlineAction`
+        // avoids one row above, and with a different string each time.
+        child: Semantics(
+          label: '$label ${tiers.first}',
+          child: Tooltip(
+            message: '$label ${tiers.first}',
+            excludeFromSemantics: true,
+            child: ExcludeSemantics(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.description_outlined,
+                    size: tokens.spacing.step5,
+                    color: ai.metaText,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  // Not flexible: the label is short fixed vocabulary, and
+                  // "This rep…" tells the reader strictly less than nothing. It
+                  // costs a bounded ~60px, so only the route below can be squeezed.
+                  Text(
+                    label,
+                    maxLines: 1,
+                    style: caption.copyWith(color: ai.faintMeta),
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  // The route sheds whole segments rather than characters; the
+                  // label above it never gives ground.
+                  Flexible(
+                    child: _TieredIdentityText(
+                      tiers: tiers,
+                      style: caption.copyWith(color: ai.metaText),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: tokens.spacing.step2),
-              // Not flexible: the label is short fixed vocabulary, and
-              // "This rep…" tells the reader strictly less than nothing. It
-              // costs a bounded ~60px, so only the route below can be squeezed.
-              Text(
-                label,
-                maxLines: 1,
-                style: caption.copyWith(color: ai.faintMeta),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              // The route sheds whole segments rather than characters; the
-              // label above it never gives ground.
-              Flexible(
-                child: _TieredIdentityText(
-                  tiers: tiers,
-                  style: caption.copyWith(color: ai.metaText),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
