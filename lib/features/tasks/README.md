@@ -14,7 +14,9 @@ project, and relationships to other tasks.
   celebration when a list or a task is finished.
 - **Relates tasks to each other.** Beyond "relates to", a task can block another,
   follow up on it, duplicate it, fix it, or supersede it — chosen as one plain
-  sentence ("This task… Blocks") rather than a type plus a direction.
+  sentence ("This task… Blocks") rather than a type plus a direction. The same
+  relationships can be spoken to the task agent ("this task is blocked by X"),
+  which proposes the link for confirmation.
 - **Knows when work is blocked.** A task with an open blocker is shown as blocked,
   and closing the blocker releases it automatically — no unlock step, on any
   device.

@@ -1853,57 +1853,61 @@ void main() {
         ),
       );
 
-      test('queues a valid proposal with the target title in the summary',
-          () async {
-        final bench = _createStrategy(
-          executor: mockExecutor,
-          syncService: mockSyncService,
-          resolveLinkableTaskTitle: (id) async =>
-              id == 'target-1' ? 'Ship the migration' : null,
-          resolveExistingTaskRelations: () async => {},
-        );
+      test(
+        'queues a valid proposal with the target title in the summary',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveLinkableTaskTitle: (id) async =>
+                id == 'target-1' ? 'Ship the migration' : null,
+            resolveExistingTaskRelations: () async => {},
+          );
 
-        await bench.strategy.processToolCalls(
-          toolCalls: [
-            call({'relation': 'is_blocked_by', 'targetTaskId': 'target-1'}),
-          ],
-          manager: mockManager,
-        );
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call({'relation': 'is_blocked_by', 'targetTaskId': 'target-1'}),
+            ],
+            manager: mockManager,
+          );
 
-        expect(bench.builder.items, hasLength(1));
-        final item = bench.builder.items.single;
-        expect(item.toolName, 'link_task');
-        expect(item.args, {
-          'relation': 'is_blocked_by',
-          'targetTaskId': 'target-1',
-        });
-        expect(
-          item.humanSummary,
-          'Link: this task is blocked by "Ship the migration"',
-        );
-      });
+          expect(bench.builder.items, hasLength(1));
+          final item = bench.builder.items.single;
+          expect(item.toolName, 'link_task');
+          expect(item.args, {
+            'relation': 'is_blocked_by',
+            'targetTaskId': 'target-1',
+          });
+          expect(
+            item.humanSummary,
+            'Link: this task is blocked by "Ship the migration"',
+          );
+        },
+      );
 
-      test('canonicalizes relation case and id padding into the args',
-          () async {
-        final bench = _createStrategy(
-          executor: mockExecutor,
-          syncService: mockSyncService,
-          resolveLinkableTaskTitle: (_) async => 'Target',
-        );
+      test(
+        'canonicalizes relation case and id padding into the args',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveLinkableTaskTitle: (_) async => 'Target',
+          );
 
-        await bench.strategy.processToolCalls(
-          toolCalls: [
-            call({'relation': ' BLOCKS ', 'targetTaskId': ' target-1 '}),
-          ],
-          manager: mockManager,
-        );
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call({'relation': ' BLOCKS ', 'targetTaskId': ' target-1 '}),
+            ],
+            manager: mockManager,
+          );
 
-        expect(bench.builder.items, hasLength(1));
-        expect(bench.builder.items.single.args, {
-          'relation': 'blocks',
-          'targetTaskId': 'target-1',
-        });
-      });
+          expect(bench.builder.items, hasLength(1));
+          expect(bench.builder.items.single.args, {
+            'relation': 'blocks',
+            'targetTaskId': 'target-1',
+          });
+        },
+      );
 
       test('rejects an unknown relation and names the vocabulary', () async {
         final bench = _createStrategy(

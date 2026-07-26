@@ -672,29 +672,31 @@ void main() {
         );
       });
 
-      test('"blocks" stores the source task as the blocker of the new task',
-          () async {
-        stubSourceTaskLookup(makeSourceTask());
-        stubCreateTask(makeNewTask('new-task-b1'));
-        stubTypedLinkCreation();
+      test(
+        '"blocks" stores the source task as the blocker of the new task',
+        () async {
+          stubSourceTaskLookup(makeSourceTask());
+          stubCreateTask(makeNewTask('new-task-b1'));
+          stubTypedLinkCreation();
 
-        await withClock(Clock.fixed(testDate), () async {
-          final result = await handler.handle(sourceTaskId, {
-            'title': 'Downstream Task',
-            'relation': 'blocks',
+          await withClock(Clock.fixed(testDate), () async {
+            final result = await handler.handle(sourceTaskId, {
+              'title': 'Downstream Task',
+              'relation': 'blocks',
+            });
+
+            expect(result.success, isTrue);
+            expect(result.output, contains('this task blocks it'));
+            verify(
+              () => mockPersistenceLogic.createLink(
+                fromId: sourceTaskId,
+                toId: 'new-task-b1',
+                linkType: EntryLinkType.blocks,
+              ),
+            ).called(1);
           });
-
-          expect(result.success, isTrue);
-          expect(result.output, contains('this task blocks it'));
-          verify(
-            () => mockPersistenceLogic.createLink(
-              fromId: sourceTaskId,
-              toId: 'new-task-b1',
-              linkType: EntryLinkType.blocks,
-            ),
-          ).called(1);
-        });
-      });
+        },
+      );
 
       test('"is_blocked_by" stores the NEW task as the blocker', () async {
         stubSourceTaskLookup(makeSourceTask());
@@ -719,28 +721,30 @@ void main() {
         });
       });
 
-      test('"is_superseded_by" stores the NEW task as the superseder',
-          () async {
-        stubSourceTaskLookup(makeSourceTask());
-        stubCreateTask(makeNewTask('new-task-s1'));
-        stubTypedLinkCreation();
+      test(
+        '"is_superseded_by" stores the NEW task as the superseder',
+        () async {
+          stubSourceTaskLookup(makeSourceTask());
+          stubCreateTask(makeNewTask('new-task-s1'));
+          stubTypedLinkCreation();
 
-        await withClock(Clock.fixed(testDate), () async {
-          final result = await handler.handle(sourceTaskId, {
-            'title': 'Replacement Task',
-            'relation': 'is_superseded_by',
+          await withClock(Clock.fixed(testDate), () async {
+            final result = await handler.handle(sourceTaskId, {
+              'title': 'Replacement Task',
+              'relation': 'is_superseded_by',
+            });
+
+            expect(result.success, isTrue);
+            verify(
+              () => mockPersistenceLogic.createLink(
+                fromId: 'new-task-s1',
+                toId: sourceTaskId,
+                linkType: EntryLinkType.supersedes,
+              ),
+            ).called(1);
           });
-
-          expect(result.success, isTrue);
-          verify(
-            () => mockPersistenceLogic.createLink(
-              fromId: 'new-task-s1',
-              toId: sourceTaskId,
-              linkType: EntryLinkType.supersedes,
-            ),
-          ).called(1);
-        });
-      });
+        },
+      );
 
       test('a typed link failure stays a warning, not a failure', () async {
         stubSourceTaskLookup(makeSourceTask());

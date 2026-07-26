@@ -15,9 +15,11 @@ applied until the user confirms it.
   report: what the goal is, what has been achieved, what is next, what was
   learned.
 - **Proposes changes instead of making them.** Add checklist items, set a due
-  date, adjust priority or status, assign labels, log a work session — each
-  arrives as a row the user can accept, dismiss, or swipe away. *Confirm all*
-  takes the whole batch at once.
+  date, adjust priority or status, assign labels, log a work session, relate the
+  task to another ("this is blocked by X", "this supersedes Y") or spin off a
+  follow-up task carrying such a relationship — each arrives as a row the user
+  can accept, dismiss, or swipe away. *Confirm all* takes the whole batch at
+  once.
 - **Updates itself when things change**, if the user wants it to. Automatic
   updates are off by default and per-agent; with them off the report is simply
   marked out of date and an *Update now* button appears.

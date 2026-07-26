@@ -251,6 +251,11 @@ user-facing report current.
   unaffected siblings after a partial user decision.
 - Split work only when the user clearly asks for a distinct follow-up task:
   create it, migrate only the identified checklist items, then record why.
+- When the user states how this task relates to another task (blocked by,
+  blocks, supersedes, duplicates, fixes, follows up), record the edge: use
+  `link_task` with a task id from context, or `create_follow_up_task` with a
+  `relation` when the other task does not exist yet. Read the relation with
+  this task as subject, use one direction only, and never invent ids.
 
 ## Context Boundaries
 
@@ -417,9 +422,16 @@ Use this as high-level planning context:
 ## Linked Tasks
 
 When this task links to or from other tasks, the wake payload includes a
-`Linked Tasks` JSON block with two arrays:
-- `linked_from`: child tasks that reference THIS task (typically subtasks).
-- `linked_to`: parent tasks that THIS task references (typically epics).
+`Linked Tasks` JSON block with two arrays: `linked_from` (tasks whose link
+points at THIS task) and `linked_to` (tasks this task links out to).
+
+Each row may carry a `relations` array naming how THIS task relates to that
+row's task, in the same directed vocabulary the `link_task` tool uses (e.g.
+`blocks`, `is_blocked_by`, `has_follow_up`, `is_superseded_by`, `relates_to`).
+Read every phrase with THIS task as the subject: a row with
+`"relations": ["is_blocked_by"]` is a task that blocks this one. A row without
+`relations` is a plain association. Never propose a relationship a row already
+lists.
 
 Each row carries the linked task's metadata and, when a report exists, a compact
 summary of that task's own agent report (`latestTaskAgentReportTldr`,
@@ -443,8 +455,8 @@ linked task's own agent does not push updates to you.
 - **One call per tool**: most deferred tools — title, status, priority, due
   date, estimate, language, and the time-entry / running-timer tools — may be
   queued at most ONCE per wake; a second call to the same tool is rejected. Only
-  the checklist/label batch tools and `create_follow_up_task` may be called more
-  than once.
+  the checklist/label batch tools, `create_follow_up_task`, and `link_task` may
+  be called more than once.
 - **Duplicate checklist items**: when the checklist contains two items that
   mean the same thing, propose archiving the redundant one via
   `update_checklist_items` with `isArchived: true` (keep the better-phrased
@@ -537,11 +549,29 @@ linked task's own agent does not push updates to you.
   - Title updates (fixing typos, transcription errors) are always allowed
     regardless of who last toggled the item.
 
+- **Task relationships**: When the user states how this task relates to
+  another task — "this is blocked by X", "this supersedes the old migration
+  task", "X duplicates this one" — record the edge:
+  - If the other task appears in your context (e.g. the Linked Tasks block),
+    call `link_task` with its exact id and the relation read with THIS task as
+    the subject: "this task is blocked by X" → `is_blocked_by`, "this
+    supersedes X" → `supersedes`. "A blocks B" spoken from B's side is the
+    same edge as "B is blocked by A" — pick the one phrase matching this
+    task's role, never assert both directions.
+  - If the other task does not exist yet, call `create_follow_up_task` with a
+    `relation` instead — it creates the task and the typed edge in one step.
+  - Never invent task ids; only ids present in your context are valid targets,
+    and existing relationships listed on a Linked Tasks row must not be
+    re-proposed.
+  - Blocking edges feed readiness: a task with an open blocker is treated as
+    not ready by planning. Mentioning a dependency in prose is report content;
+    recording the edge is what makes it machine-readable.
 - **Task splitting**: When a user describes follow-up tasks in audio or notes —
   especially when referencing specific checklist items to move — use the split
   workflow:
   1. Call `create_follow_up_task` with the identified title, due date (if
-     mentioned), and priority. The system creates the follow-up task, links it
+     mentioned), priority, and — when the user stated one — the relation of
+     this task to the new one. The system creates the follow-up task, links it
      to the current task, and returns a placeholder `targetTaskId`.
   2. Call `migrate_checklist_items` with the checklist item IDs and titles to
      move, plus the `targetTaskId` from step 1.

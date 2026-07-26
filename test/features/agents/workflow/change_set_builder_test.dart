@@ -2426,8 +2426,7 @@ void main() {
       expect(args['priority'], 'HIGH');
     });
 
-    test('canonicalizes the relation and keys the placeholder on it',
-        () async {
+    test('canonicalizes the relation and keys the placeholder on it', () async {
       await builder.addFollowUpTask(
         args: {'title': 'Follow-Up R', 'relation': '  IS_BLOCKED_BY '},
         humanSummary: 'Create follow-up task R',
@@ -2445,21 +2444,26 @@ void main() {
       );
     });
 
-    test('a relation-less proposal keeps its pre-relation placeholder',
-        () async {
-      // …so proposals queued before the parameter existed still dedup
-      // against identical relation-less ones across the upgrade.
-      final placeholder = await builder.addFollowUpTask(
-        args: {'title': 'Follow-Up R2'},
-        humanSummary: 'Create follow-up task R2',
-      );
+    test(
+      'a relation-less proposal keeps its pre-relation placeholder',
+      () async {
+        // …so proposals queued before the parameter existed still dedup
+        // against identical relation-less ones across the upgrade.
+        final placeholder = await builder.addFollowUpTask(
+          args: {'title': 'Follow-Up R2'},
+          humanSummary: 'Create follow-up task R2',
+        );
 
-      expect(
-        placeholder,
-        ChangeSetBuilder.deterministicPlaceholder('task-001', 'Follow-Up R2||'),
-      );
-      expect(builder.items.single.args.containsKey('relation'), isFalse);
-    });
+        expect(
+          placeholder,
+          ChangeSetBuilder.deterministicPlaceholder(
+            'task-001',
+            'Follow-Up R2||',
+          ),
+        );
+        expect(builder.items.single.args.containsKey('relation'), isFalse);
+      },
+    );
 
     test('strips a whitespace-only relation from enriched args', () async {
       await builder.addFollowUpTask(

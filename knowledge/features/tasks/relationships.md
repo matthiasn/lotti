@@ -5,13 +5,13 @@ description: Five typed link semantics stored as one row each, presented as one 
 resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
 tags: [tasks, links, dependencies, adr-0042]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-07-26T21:00:00Z }
 stale_after: 2027-01-25
 sources:
   - id: entry-link
     resource: ../../../lib/classes/entry_link.dart
     title: EntryLink union
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: resolver
     resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
     title: TaskDependencyResolver
@@ -120,6 +120,22 @@ no per-task fan-out.
 single-task controller and a model-facing batch resolver have different call
 shapes and failure-representation needs. See
 [dependency-aware planning](../daily_os_next/dependency-aware-planning.md).
+
+## The voice surface shares the same directed vocabulary
+
+`DirectedRelation` lives in
+`../../../lib/features/tasks/model/directed_relation.dart` (pure Dart, no
+Flutter import) and is re-exported by the picker file, so the UI and the task
+agent cannot drift apart on what a phrase means. Beyond the localized picker
+labels, each relation carries a stable `wireName`
+(`blocks` / `is_blocked_by` / … / `relates_to`) that the task agent's
+`link_task` and `create_follow_up_task` tool schemas enumerate, plus
+`canonicalEndpoints`, which performs the same inverse swap the picker does
+before persisting.
+
+Spoken relationships ("this task is blocked by X", "this supersedes Y") become
+**user-confirmable proposals**, never direct writes — see
+[task agents](../agents/task-agents.md) for the validation and apply pipeline.
 
 ## Where it surfaces
 

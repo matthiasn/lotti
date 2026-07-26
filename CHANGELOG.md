@@ -14,6 +14,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of a raw error dump.
 
 ### Added
+- **Tell the task assistant how tasks relate — in either direction.** Saying
+  "this task is blocked by X", "this supersedes the old migration task", or
+  "this duplicates Y" now becomes a reviewable suggestion that records the
+  actual relationship — blocks, follows up, duplicates, fixes, supersedes, or
+  a plain link — between this task and an existing one. Both phrasings of a
+  relationship work ("A blocks B" and "B is blocked by A" store the same
+  edge), the blocked side shows up as blocked exactly as if the link were made
+  by hand, and nothing is written until the suggestion is confirmed.
+- **A spoken follow-up task can carry its relationship.** "Create a follow-up
+  task X that blocks this one" creates X and the blocking link in one
+  confirmable suggestion, instead of a plain link that loses the "blocks"
+  part. The assistant also sees how already-linked tasks relate to the current
+  one, so it stops guessing parent/child roles from link direction and won't
+  re-suggest a relationship that already exists.
 - **Decide per area whether assistants keep themselves up to date.** New tasks
   in an area got an assistant that only ever updated when you asked it to, and
   turning that on was a per-task chore. Areas with an agent template now carry

@@ -147,24 +147,29 @@ void main() {
   group('canonicalEndpoints', () {
     test('primary phrase keeps the anchor as fromId', () {
       expect(
-        const DirectedRelation(EntryLinkType.blocks)
-            .canonicalEndpoints(anchorId: 'me', otherId: 'other'),
+        const DirectedRelation(
+          EntryLinkType.blocks,
+        ).canonicalEndpoints(anchorId: 'me', otherId: 'other'),
         (fromId: 'me', toId: 'other'),
       );
     });
 
     test('inverse phrase swaps, so the blocker is always fromId', () {
       expect(
-        const DirectedRelation(EntryLinkType.blocks, inverse: true)
-            .canonicalEndpoints(anchorId: 'me', otherId: 'other'),
+        const DirectedRelation(
+          EntryLinkType.blocks,
+          inverse: true,
+        ).canonicalEndpoints(anchorId: 'me', otherId: 'other'),
         (fromId: 'other', toId: 'me'),
       );
     });
 
     test('the symmetric link never swaps, even with a stray inverse flag', () {
       expect(
-        const DirectedRelation(EntryLinkType.basic, inverse: true)
-            .canonicalEndpoints(anchorId: 'me', otherId: 'other'),
+        const DirectedRelation(
+          EntryLinkType.basic,
+          inverse: true,
+        ).canonicalEndpoints(anchorId: 'me', otherId: 'other'),
         (fromId: 'me', toId: 'other'),
       );
     });

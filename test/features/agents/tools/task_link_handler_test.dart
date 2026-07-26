@@ -347,33 +347,35 @@ void main() {
   });
 
   group('TaskLinkHandler existing-link precheck', () {
-    test('reports success without writing when the edge already exists',
-        () async {
-      when(
-        () => mockJournalDb.typedLinksForTaskIds(
-          any(),
-          types: any(named: 'types'),
-        ),
-      ).thenAnswer(
-        (_) async => [
-          makeLink(
-            fromId: sourceTaskId,
-            toId: targetTaskId,
-            type: EntryLinkType.blocks,
+    test(
+      'reports success without writing when the edge already exists',
+      () async {
+        when(
+          () => mockJournalDb.typedLinksForTaskIds(
+            any(),
+            types: any(named: 'types'),
           ),
-        ],
-      );
+        ).thenAnswer(
+          (_) async => [
+            makeLink(
+              fromId: sourceTaskId,
+              toId: targetTaskId,
+              type: EntryLinkType.blocks,
+            ),
+          ],
+        );
 
-      final result = await handler.handle(sourceTaskId, {
-        'relation': 'blocks',
-        'targetTaskId': targetTaskId,
-      });
+        final result = await handler.handle(sourceTaskId, {
+          'relation': 'blocks',
+          'targetTaskId': targetTaskId,
+        });
 
-      expect(result.success, isTrue);
-      expect(result.output, contains('Already linked'));
-      expect(result.mutatedEntityId, isNull);
-      verifyNoLinkWritten();
-    });
+        expect(result.success, isTrue);
+        expect(result.output, contains('Already linked'));
+        expect(result.mutatedEntityId, isNull);
+        verifyNoLinkWritten();
+      },
+    );
 
     test('a tombstoned or hidden duplicate does not block creation', () async {
       when(
@@ -414,38 +416,40 @@ void main() {
       ).called(1);
     });
 
-    test('the reverse direction of an existing edge is not a duplicate',
-        () async {
-      when(
-        () => mockJournalDb.typedLinksForTaskIds(
-          any(),
-          types: any(named: 'types'),
-        ),
-      ).thenAnswer(
-        (_) async => [
-          // target blocks source — the OPPOSITE of what we are asserting.
-          makeLink(
-            fromId: targetTaskId,
-            toId: sourceTaskId,
-            type: EntryLinkType.blocks,
+    test(
+      'the reverse direction of an existing edge is not a duplicate',
+      () async {
+        when(
+          () => mockJournalDb.typedLinksForTaskIds(
+            any(),
+            types: any(named: 'types'),
           ),
-        ],
-      );
+        ).thenAnswer(
+          (_) async => [
+            // target blocks source — the OPPOSITE of what we are asserting.
+            makeLink(
+              fromId: targetTaskId,
+              toId: sourceTaskId,
+              type: EntryLinkType.blocks,
+            ),
+          ],
+        );
 
-      final result = await handler.handle(sourceTaskId, {
-        'relation': 'blocks',
-        'targetTaskId': targetTaskId,
-      });
+        final result = await handler.handle(sourceTaskId, {
+          'relation': 'blocks',
+          'targetTaskId': targetTaskId,
+        });
 
-      expect(result.success, isTrue);
-      verify(
-        () => mockPersistenceLogic.createLink(
-          fromId: sourceTaskId,
-          toId: targetTaskId,
-          linkType: EntryLinkType.blocks,
-        ),
-      ).called(1);
-    });
+        expect(result.success, isTrue);
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: sourceTaskId,
+            toId: targetTaskId,
+            linkType: EntryLinkType.blocks,
+          ),
+        ).called(1);
+      },
+    );
 
     test('a failing precheck falls through to createLink', () async {
       when(

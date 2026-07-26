@@ -5,17 +5,17 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T17:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-07-26T21:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: workflow
     resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
     title: TaskAgentWorkflow
-    last_modified: 2026-07-24
+    last_modified: 2026-07-26
   - id: strategy
     resource: ../../../lib/features/agents/workflow/task_agent_strategy.dart
     title: TaskAgentStrategy
-    last_modified: 2026-07-12
+    last_modified: 2026-07-26
   - id: confirmation
     resource: ../../../lib/features/agents/service/change_set_confirmation_service.dart
     title: ChangeSetConfirmationService
@@ -367,8 +367,36 @@ Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatche
 `update_task_estimate`, `update_task_due_date`, `update_task_priority`,
 `set_task_status`, `set_task_language`, `add_multiple_checklist_items`,
 `update_checklist_items`, `assign_task_labels`, `create_follow_up_task`,
-`migrate_checklist_items`, `create_time_entry`, `update_time_entry`,
-`update_running_timer`.
+`link_task`, `migrate_checklist_items`, `create_time_entry`,
+`update_time_entry`, `update_running_timer`.
+
+## Typed-relationship tools (ADR 0042)
+
+`link_task {relation, targetTaskId}` records one typed edge between the wake's
+task and an existing task; `create_follow_up_task` accepts the same optional
+`relation` so a spoken "this task is blocked by a new task X" creates X and
+the canonical `blocks` edge in one confirmable proposal. The `relation` values
+are `DirectedRelation.wireNames`
+(`lib/features/tasks/model/directed_relation.dart`) — eleven directed phrases
+read with the current task as subject; inverse phrases swap `fromId`/`toId`
+before persisting, so the stored direction always matches the picker's (see
+[typed relationships](../tasks/relationships.md)).
+
+Both are deferred and multi-use per wake (they join the batch tools in the
+single-use carve-out). `link_task` proposals are validated **fail-closed at
+queue time** in the strategy: an unparseable relation, a self-link, or a
+`targetTaskId` that does not resolve to a live task is rejected with
+model-facing feedback, and a relationship the pair already holds (canonical
+`fromId|toId|type` triple) is suppressed rather than queued. On apply,
+`TaskLinkHandler` re-validates, treats an already-existing edge as a no-op
+success, and surfaces the `blocks` cycle-guard refusal from
+`PersistenceLogic.createLink` as an explicit error.
+
+The wake's `## Linked Tasks` rows carry a `relations` array — the directed
+phrases from the current task's perspective, produced by one
+`linksForEntryIdsBidirectional` query — so the model reads existing
+relationships in exactly the vocabulary it would use to propose new ones, and
+the prompt forbids re-proposing a listed relation.
 
 There are no other immediate task-mutating tools. Non-local writes go through
 `AgentToolExecutor`, which enforces the agent's allowed category set, captures

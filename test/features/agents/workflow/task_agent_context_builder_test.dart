@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -290,6 +291,145 @@ void main() {
       expect(row['latestTaskAgentReportOneLiner'], 'On track.');
       expect(row['latestTaskAgentReportTldr'], 'Done with phase 1.');
       expect(row.containsKey('latestTaskAgentReportCreatedAt'), isFalse);
+    });
+
+    group('relations annotation', () {
+      EntryLink link({
+        required String fromId,
+        required String toId,
+        EntryLinkType type = EntryLinkType.basic,
+        bool? hidden,
+        DateTime? deletedAt,
+      }) => type.buildLink(
+        id: 'link-$fromId-$toId-${type.name}',
+        fromId: fromId,
+        toId: toId,
+        createdAt: DateTime(2024, 3),
+        updatedAt: DateTime(2024, 3),
+        vectorClock: null,
+        hidden: hidden,
+        deletedAt: deletedAt,
+      );
+
+      setUp(() {
+        when(
+          () => aiInputRepository.buildLinkedFromContext('task-001'),
+        ).thenAnswer((_) async => [linkedContext(id: 'blocker-1')]);
+        when(
+          () => aiInputRepository.buildLinkedToContext('task-001'),
+        ).thenAnswer((_) async => [linkedContext(id: 'obsolete-1')]);
+        when(
+          () => agentRepository.getLinksToMultiple(
+            any(),
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => const {});
+      });
+
+      test(
+        'annotates each row with the directed phrase read from this task',
+        () async {
+          when(
+            () => journalDb.linksForEntryIdsBidirectional({'task-001'}),
+          ).thenAnswer(
+            (_) async => [
+              // blocker-1 blocks task-001: incoming, reads as the inverse.
+              link(
+                fromId: 'blocker-1',
+                toId: 'task-001',
+                type: EntryLinkType.blocks,
+              ),
+              // task-001 supersedes obsolete-1: outgoing primary phrase,
+              // plus a coexisting plain link on the same pair.
+              link(
+                fromId: 'task-001',
+                toId: 'obsolete-1',
+                type: EntryLinkType.supersedes,
+              ),
+              link(fromId: 'task-001', toId: 'obsolete-1'),
+            ],
+          );
+
+          final json = await builder.buildLinkedTasksContextJson('task-001');
+          final decoded = jsonDecode(json) as Map<String, dynamic>;
+          final blockerRow =
+              (decoded['linked_from'] as List<dynamic>).first
+                  as Map<String, dynamic>;
+          final obsoleteRow =
+              (decoded['linked_to'] as List<dynamic>).first
+                  as Map<String, dynamic>;
+
+          expect(blockerRow['relations'], ['is_blocked_by']);
+          expect(
+            obsoleteRow['relations'],
+            containsAll(['supersedes', 'relates_to']),
+          );
+          expect(loggedErrors, isEmpty);
+        },
+      );
+
+      test(
+        'skips tombstoned, hidden, and non-relationship links',
+        () async {
+          when(
+            () => journalDb.linksForEntryIdsBidirectional({'task-001'}),
+          ).thenAnswer(
+            (_) async => [
+              link(
+                fromId: 'blocker-1',
+                toId: 'task-001',
+                type: EntryLinkType.blocks,
+                deletedAt: DateTime(2024, 3, 2),
+              ),
+              link(
+                fromId: 'task-001',
+                toId: 'obsolete-1',
+                type: EntryLinkType.supersedes,
+                hidden: true,
+              ),
+              link(
+                fromId: 'task-001',
+                toId: 'obsolete-1',
+                type: EntryLinkType.project,
+              ),
+            ],
+          );
+
+          final json = await builder.buildLinkedTasksContextJson('task-001');
+          final decoded = jsonDecode(json) as Map<String, dynamic>;
+          final blockerRow =
+              (decoded['linked_from'] as List<dynamic>).first
+                  as Map<String, dynamic>;
+          final obsoleteRow =
+              (decoded['linked_to'] as List<dynamic>).first
+                  as Map<String, dynamic>;
+
+          expect(blockerRow.containsKey('relations'), isFalse);
+          expect(obsoleteRow.containsKey('relations'), isFalse);
+        },
+      );
+
+      test(
+        'a failing link query leaves rows unannotated without failing the '
+        'context',
+        () async {
+          when(
+            () => journalDb.linksForEntryIdsBidirectional({'task-001'}),
+          ).thenThrow(Exception('db down'));
+
+          final json = await builder.buildLinkedTasksContextJson('task-001');
+          final decoded = jsonDecode(json) as Map<String, dynamic>;
+          final blockerRow =
+              (decoded['linked_from'] as List<dynamic>).first
+                  as Map<String, dynamic>;
+
+          expect(blockerRow.containsKey('relations'), isFalse);
+          expect(
+            loggedErrors.map((e) => e.message),
+            contains('failed to annotate linked-task relations'),
+          );
+        },
+      );
     });
   });
 

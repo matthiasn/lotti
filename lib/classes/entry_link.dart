@@ -261,6 +261,21 @@ String entryLinkTypeDbName(EntryLinkType type) => switch (type) {
   EntryLinkType.supersedes => 'SupersedesLink',
 };
 
+/// The [EntryLinkType] of [link]'s union variant — the inverse of
+/// [EntryLinkTypeFactory.buildLink], for callers that need to reason about a
+/// loaded link's semantics (e.g. rendering its directed phrase) without
+/// switching over the union themselves.
+EntryLinkType entryLinkTypeOf(EntryLink link) => link.map(
+  basic: (_) => EntryLinkType.basic,
+  rating: (_) => EntryLinkType.rating,
+  project: (_) => EntryLinkType.project,
+  blocks: (_) => EntryLinkType.blocks,
+  followsUp: (_) => EntryLinkType.followsUp,
+  duplicates: (_) => EntryLinkType.duplicates,
+  fixes: (_) => EntryLinkType.fixes,
+  supersedes: (_) => EntryLinkType.supersedes,
+);
+
 /// The `linked_entries.type` column value for [link]'s union variant. Shared
 /// by `linkedDbEntity` (the write path) and `JournalRepository`'s
 /// `updateLink` change-detection so a variant change is never missed.
