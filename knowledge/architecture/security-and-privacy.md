@@ -102,8 +102,8 @@ governed by explicit configuration rather than a default:
   which is nullable and treated as *off* when absent. Selecting an inference
   profile is deliberately **not** sufficient to start spending tokens.
 
-See [the AI feature](../features/ai.md) for how requests are routed and
-[categories](../features/categories.md) for where that consent flag is set.
+See [the AI feature](../features/ai/) for how requests are routed and
+[categories](../features/categories/) for where that consent flag is set.
 
 # Error handling as a privacy surface
 

@@ -1,349 +1,54 @@
-# Speech Feature
+# Speech
 
-The `speech` feature owns audio capture, audio playback, waveform extraction,
-and transcript-adjacent tools for `JournalAudio` entries.
+Speech is how Lotti listens. It records voice notes, plays them back, and keeps
+the transcript and language information attached to each recording.
 
-In the current implementation it does three concrete jobs:
+Talking is often the fastest way to capture something, so this feature sits
+behind the record button in the journal, on task pages, and in the Daily OS
+check-in.
 
-1. capture audio and persist it as `JournalAudio`
-2. play back `JournalAudio` entries with progress, speed, and waveform scrubbing
-3. maintain speech-specific metadata around audio entries, including language,
-   transcripts, and category speech dictionaries
+## What it does for the user
 
-It does not own provider configuration or the general AI inference stack.
-Transcription and linked-task automation call into AI-side services after the
-recording is on disk; there is no streaming/realtime transcription path.
+- **Records a voice note anywhere.** From the journal, from a task, or as part of
+  a day check-in — with a live level meter (a classic VU meter or an energy orb,
+  whichever the user picked in settings) so it is obvious the mic is working.
+- **Never keeps a recording the user threw away.** Discarding during a recording
+  deletes the partial file and creates nothing — nothing is transcribed and no
+  agent is woken.
+- **Plays recordings back properly.** Progress, playback speed, and a waveform to
+  scrub through — with one player for the whole app, so a recording never plays
+  over another.
+- **Turns speech into text.** Transcription runs after the recording is saved,
+  using whichever model the user configured, including local ones. There is no
+  live "watch the words appear" mode — the recording is always saved first.
+- **Learns the user's vocabulary.** Names, jargon and product terms can be added
+  to a per-area speech dictionary that guides recognition, editable straight from
+  the editor.
+- **Keeps the language straight.** Each recording carries its language, so
+  transcription and later AI work use the right one.
 
-## Directory Shape
+## What it owns
+
+Audio capture and the recorder state machine; the app-wide playback controller;
+waveform extraction and caching; the transcript-maintenance UI; and the
+category speech-dictionary helper used from the editor.
+
+It does **not** own provider configuration or the inference stack — transcription
+calls into [ai](../ai/README.md) after the recording is on disk.
+
+## Where the code lives
 
 ```text
 lib/features/speech/
-├── helpers/
-├── model/
-├── repository/
-├── services/
-├── state/
-├── ui/
-└── README.md
+├── helpers/ · model/ · repository/
+├── services/ · state/
+└── ui/
 ```
 
-## Runtime Architecture
+## How it works
 
-```mermaid
-flowchart LR
-  User["User"] --> RecordingUI["AudioRecordingModal / sidebar + mobile indicators"]
-  User --> PlaybackUI["AudioPlayerWidget"]
-  User --> TranscriptUI["SpeechModalContent"]
-  User --> EditorUI["Editor context menu"]
+The recorder state machine, the save-versus-discard split, the app-wide player
+and waveform cache, and why navigation is kept out of the modal's teardown are
+documented in the knowledge bundle:
 
-  RecordingUI --> RecorderCtl["AudioRecorderController"]
-  RecorderCtl --> RecorderRepo["AudioRecorderRepository"]
-  RecorderCtl --> SpeechRepo["SpeechRepository"]
-  RecorderCtl --> AutoPrompt["AutomaticPromptTrigger"]
-  RecorderCtl --> Attribution["TranscriptAttributionCoordinator"]
-  Attribution --> Consumption["AI consumption event"]
-
-  PlaybackUI --> PlayerCtl["AudioPlayerController"]
-  PlaybackUI --> WaveformProvider["audioWaveformProvider"]
-  WaveformProvider --> WaveformSvc["AudioWaveformService"]
-
-  TranscriptUI --> EntryCtl["EntryController.setLanguage()"]
-  TranscriptUI --> SpeechRepo
-  EditorUI --> DictSvc["SpeechDictionaryService"]
-
-  SpeechRepo --> Persist["PersistenceLogic + JournalDb"]
-  DictSvc --> CategoryRepo["CategoryRepository + JournalRepository"]
-  Persist --> JournalAudio["JournalAudio"]
-  Attribution --> JournalAudio
-```
-
-The feature is not only a recorder. It also owns the app-wide playback
-controller, waveform cache, transcript maintenance UI, and the category speech
-dictionary helper used from the editor.
-
-## Recording
-
-### Recording path
-
-Recording goes through `AudioRecorderRepository`, which wraps the
-`record` package and is responsible for:
-
-- permission checks
-- starting file-backed recording at `48kHz`
-- pause and resume
-- stop and dispose
-- amplitude sampling every `20ms`
-
-`AudioRecorderController` sits above that repository and adds:
-
-- Riverpod state for recording UI
-- VU calculation from dBFS samples via the standalone
-  [`VuMeter`](./state/vu_meter.dart) (a self-contained sliding-window RMS→VU
-  unit, unit-tested directly in `vu_meter_test.dart`)
-- live dBFS exposure for the modal's level visualizer and the mobile recording
-  pill (the desktop sidebar row no longer visualizes dBFS — see below). The
-  modal itself renders the skeuomorphic VU meter or the energy orb depending
-  on `recordingStyleProvider` (`lib/features/onboarding/state/recording_style.dart`,
-  settable in Settings › Recording Style) — same dBFS feed either way.
-- linked-entry and category context
-- coordination with app-wide playback
-- persistence through `SpeechRepository`
-- optional hand-off to profile-driven transcription automation
-
-`record()` is a toggle-style entry point:
-
-- if the repository is paused, it resumes
-- if the repository is already recording, it stops and saves
-- otherwise it starts a new recording
-
-The current recording modal exposes `record`, `stop`, and `cancel`. `stop()`
-keeps the recording (creates a `JournalAudio` entry and fires automatic
-prompts); `cancel()` discards it (stops the recorder, deletes the partial
-audio file, and creates no entry — nothing is transcribed and no task agent is
-woken). The controller also has `pause()` and `resume()`, but that branch is
-not surfaced by the current modal UI.
-
-`AudioRecordingModal.show()` hosts the Wolt sheet on the root navigator by
-default; callers can explicitly opt into their local navigator. Its content
-inset comes from the shared modal design-system spacing, with the bottom inset
-reduced for the recording controls. Finishing a recording returns the created
-entry ID through that modal route. The content pops the route exactly once, and
-an unlinked recording navigates to its new journal entry only after the Wolt
-route has completed. Keeping navigation out of the sheet's teardown prevents
-nested task navigators from trying to reactivate an element that has already
-been removed.
-
-### Recorder state
-
-`AudioRecorderState` currently carries:
-
-- `status`
-- `progress`
-- `vu`
-- `dBFS`
-- `modalVisible`
-- `linkedId`
-- `enableSpeechRecognition`
-
-The enum still includes `AudioRecorderStatus.initializing`, but
-`AudioRecorderController.build()` returns `stopped` immediately and uses the
-asynchronous initialization step only for permission probing and logging.
-
-```mermaid
-stateDiagram-v2
-  [*] --> Stopped
-  Stopped --> Recording: record() starts a file recording
-  Recording --> Paused: pause()
-  Paused --> Recording: resume()
-  Recording --> Stopped: record() or stop()
-  Recording --> Stopped: cancel() discards (no entry)
-  Paused --> Stopped: stop()
-  Paused --> Stopped: cancel() discards (no entry)
-```
-
-Both `stop()` and `cancel()` land in `Stopped`, but only `stop()` persists a
-`JournalAudio` and triggers downstream transcription/automatic prompts.
-`cancel()` deletes the partial file via `AudioRecorderRepository.deleteRecording`
-and resets the state as if the recording never happened.
-
-One implementation detail worth calling out: the state object still has
-`showIndicator`, but the current desktop `SidebarAudioRecordingSection` and
-mobile `AudioRecordingIndicator` derive visibility from
-`status == recording && !modalVisible` rather than that field.
-
-### Recording flow
-
-```mermaid
-sequenceDiagram
-  participant User as "User"
-  participant Presenter as "AudioRecordingModal.show"
-  participant Modal as "AudioRecordingModalContent"
-  participant Navigator as "selected Navigator"
-  participant Sidebar as "SidebarAudioRecordingSection"
-  participant Ctl as "AudioRecorderController"
-  participant Repo as "AudioRecorderRepository"
-  participant Speech as "SpeechRepository"
-  participant Persist as "PersistenceLogic"
-  participant AppNav as "NavService"
-
-  Presenter->>Navigator: show Wolt sheet (root by default)
-  User->>Modal: tap record
-  Modal->>Ctl: record(linkedId)
-  Ctl->>Ctl: pause active AudioPlayerController if needed
-  Ctl->>Repo: hasPermission()
-  Ctl->>Repo: startRecording()
-  Repo-->>Ctl: AudioNote + amplitude stream
-  Ctl->>Ctl: update dBFS, RMS-based VU, progress
-  Ctl-->>Modal: level (VU meter or energy orb, per recordingStyleProvider) + elapsed time
-  Ctl-->>Sidebar: red accent card + pulsing record dot + elapsed time (no dBFS reaction)
-  User->>Modal: tap stop
-  Modal->>Ctl: stop()
-  Ctl->>Repo: stopRecording()
-  Ctl->>Speech: createAudioEntry(audioNote, linkedId, categoryId)
-  Speech->>Persist: createDbEntity(JournalAudio)
-  Ctl->>Ctl: reset recorder state
-  Ctl-->>Modal: created entry ID
-  Modal->>Navigator: pop(created entry ID) once
-  Navigator-->>Presenter: Wolt route completed
-  opt recording is not linked to an existing entry
-    Presenter->>AppNav: open /journal/created-entry-ID
-  end
-```
-
-The persisted `JournalAudio` is created from `AudioData` and stored through
-`PersistenceLogic`. The audio file lives under `/audio/YYYY-MM-DD/`.
-
-The modal also offers a discard (✕) control next to Stop while recording. It
-asks for confirmation before discarding, then calls `cancel()`, which stops
-the recorder, deletes the partially-written `/audio/YYYY-MM-DD/` file, and
-resets state without creating a `JournalAudio` — so the page returns to
-exactly how it looked before recording.
-
-There is no realtime/streaming transcription path: transcription is always a
-batch pass over the finished file, with dictionary/context biasing, triggered
-via profile-driven automation or manual transcript actions.
-
-## Playback And Waveforms
-
-`AudioPlayerController` is a keep-alive Riverpod notifier backed by
-`media_kit.Player`.
-
-It owns:
-
-- the active `JournalAudio`
-- playback progress
-- buffered progress
-- playback speed
-- pause position
-- native player setup and cleanup
-
-The controller subscribes to `media_kit` position, buffer, and completion
-streams. It also exposes `disposeActivePlayer()` so `WindowService` can shut
-the native player down before process exit.
-
-Audio entry-level actions are assembled by the journal Actions sheet. The
-desktop file-manager reveal action resolves persisted `/audio/YYYY-MM-DD/...`
-asset paths through `AudioUtils.getFullAudioPath()`.
-
-### Actual player state transitions
-
-The player state is simpler than the README used to claim. In the current
-implementation:
-
-- `build()` returns `AudioPlayerStatus.initializing`
-- `setAudioNote()` moves the state to `stopped`
-- `play()` moves it to `playing`
-- `pause()` moves it to `paused`
-- completion updates `progress` to the clip duration and flips `status` back to
-  `stopped` after a short delay, then tears down the live `Player` (state such
-  as `audioNote`/`totalDuration` is preserved so the next `play()` transparently
-  reopens the file)
-
-```mermaid
-stateDiagram-v2
-  [*] --> Initializing
-  Initializing --> Stopped: setAudioNote(audio)
-  Stopped --> Playing: play()
-  Playing --> Paused: pause()
-  Paused --> Playing: play()
-  Playing --> Stopped: setAudioNote(new audio)
-  Paused --> Stopped: setAudioNote(new audio)
-  Playing --> Stopped: completion sets progress = duration, status = stopped
-```
-
-This diagram reflects the code as written, not an idealized player state
-machine.
-
-### Waveform extraction
-
-`AudioPlayerWidget` uses `audioWaveformProvider`, which delegates to
-`AudioWaveformService`.
-
-`AudioWaveformService`:
-
-- resolves the local audio file path
-- extracts waveform data with `just_waveform`
-- downsamples it into UI bucket counts
-- caches normalized waveform payloads on disk
-- prunes the cache when it grows beyond the configured limit
-
-The cache key includes the audio entry ID and requested bucket count, and the
-cache payload is validated against file path, file size, and modified time.
-
-## Transcript Tools
-
-The feature also owns the small speech-specific tools around an existing audio
-entry.
-
-### Speech modal
-
-`SpeechModalContent` is a thin composition of:
-
-- `LanguageDropdown`
-- `TranscriptsList`
-
-`LanguageDropdown` does not talk to `SpeechRepository` directly. It calls
-`EntryController.setLanguage()`, which delegates to
-`SpeechRepository.updateLanguage()`.
-
-`TranscriptsList` renders existing `AudioTranscript` entries from
-`JournalAudio.data.transcripts`. Each `TranscriptListItem` can remove one
-transcript through `SpeechRepository.removeAudioTranscript()`.
-
-Today the language dropdown is hard-coded to:
-
-- `auto`
-- `en`
-- `de`
-
-That is worth documenting because it is a product constraint in the current UI,
-not just a placeholder detail.
-
-### Speech dictionary service
-
-`SpeechDictionaryService` is a separate path from recording and playback.
-
-It supports adding a selected term to a category speech dictionary by:
-
-- looking up the entry from `JournalRepository`
-- resolving the category from the task itself or from a task linked to a
-  `JournalAudio` or `JournalImage`
-- updating the category through `CategoryRepository`
-
-This is why the `speech` feature is wider than "audio recording". It also owns
-the category-level speech vocabulary helper used from the editor.
-
-## Automatic Transcription Hand-Off
-
-The helper is still named `AutomaticPromptTrigger`, but the current behavior is
-more specific than that name suggests.
-
-What it actually does today:
-
-- only runs when a recording is linked to a task
-- asks `profileAutomationServiceProvider` whether that task has an automated
-  transcription skill
-- optionally forwards the saved audio entry to `SkillInferenceRunner`
-- leaves the failed inference status and detailed provider error attached to
-  both the audio entry and linked task; their AI activity surfaces replace the
-  disappearing animation with an error toast containing the diagnostic detail
-
-What it does not do:
-
-- it does not run for unlinked recordings
-- it does not expose a general menu of prompt automations in the modal
-
-The checkbox UI in `AudioRecordingModal` is consistent with that behavior:
-`checkboxVisibilityProvider` only exposes a speech-recognition checkbox when
-the linked task has profile-driven transcription available.
-
-## Boundaries
-
-- `journal` owns entry detail surfaces and supplies `JournalAudio`
-- `ai_chat` owns batch transcription orchestration
-  (`AudioTranscriptionService`)
-- `ai` owns the MLX-audio backend (`MlxAudioChannel`), profile automation,
-  and skill execution
-- `categories` owns the speech dictionary persistence target
-- `speech` owns the audio-specific runtime, playback, waveform cache, and
-  transcript maintenance layer that connects those systems
+**→ [knowledge/features/speech/](../../../knowledge/features/speech/)**

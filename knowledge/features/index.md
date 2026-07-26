@@ -12,6 +12,8 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 # Work and entries
 
 * [Journal](journal/) - the shared entry substrate: detail, browse, search, linking.
+* [Speech](speech/) - audio capture, playback, waveforms, transcripts.
+* [Categories](categories/) - the app's primary scoping unit and its stored defaults.
 * [Tasks](tasks/) - the task layer on the journal substrate: checklists, relationships, filters.
 
 # Infrastructure
