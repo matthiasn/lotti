@@ -5,25 +5,25 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T14:00:00Z }
 stale_after: 2027-01-31
 sources:
   - id: ui
     resource: ../../../lib/features/agents/ui
     title: Agent UI widgets
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: motion
     resource: ../../../lib/features/design_system/theme/motion_tokens.dart
     title: Motion tokens
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: sidebar
     resource: ../../../lib/features/agents/ui/sidebar_wake_queue.dart
     title: SidebarWakeQueue
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 None of these widgets owns business logic. They read from the providers in

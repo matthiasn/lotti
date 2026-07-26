@@ -5,17 +5,17 @@ description: The repeating patterns that are contract rather than coincidence �
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T02:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T14:00:00Z }
 stale_after: 2027-01-31
 sources:
   - id: components
     resource: ../../../lib/features/design_system/components
     title: Design-system components
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 # Token-first sizing and styling
@@ -50,7 +50,15 @@ open-coded `Material`/`InkWell` per call site:
 - **The ink hugs its content.** It wraps *itself* in an `Align`, because a
   stretching parent hands children a *tight* width under which
   `MainAxisSize.min` is silently a no-op — and the hover layer then runs the
-  width of whatever column it happens to sit in.
+  width of whatever column it happens to sit in. **Everything that describes
+  the control lives on the shrink-wrapped side of that `Align`**: the `Align`
+  itself still occupies the full offered width, so a `Tooltip` or `Semantics`
+  wrapped *around* it fires over blank space and puts the focus rectangle
+  where taps do nothing.
+- **The tooltip never enters semantics.** `semanticsLabel` is the whole
+  announcement; a tooltip publishes its message on the same node, so keeping
+  both makes a screen reader read the action twice — literally so wherever a
+  caller passes one string as both.
 - **The inset lives inside the ink**, so the rounded corners cannot clip the
   leading glyph.
 - **`ExcludeSemantics` sits *below* the `InkWell`, never above it.** Excluding

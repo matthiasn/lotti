@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -31,6 +32,12 @@ void main() {
   DsTokens tokensOf(WidgetTester tester) =>
       tester.element(find.byType(DesignSystemInlineAction)).designTokens;
 
+  /// The node the component annotates. Addressed through the ink rather than
+  /// through the component root, which is an `Align` that owns no semantics —
+  /// walking up from it lands on the test harness root instead.
+  SemanticsNode actionSemantics(WidgetTester tester) =>
+      tester.getSemantics(find.byType(InkWell));
+
   testWidgets('fires its callback and announces itself as a button', (
     tester,
   ) async {
@@ -50,7 +57,7 @@ void main() {
     await tester.tap(find.text('Skip once'));
     expect(taps, 1);
     expect(
-      tester.getSemantics(find.byType(DesignSystemInlineAction)),
+      actionSemantics(tester),
       matchesSemantics(
         label: 'Cancel pending automatic update',
         isButton: true,
@@ -98,6 +105,61 @@ void main() {
     expect(ink.height, greaterThanOrEqualTo(tokens.spacing.step8));
   });
 
+  testWidgets('tooltip and semantics bounds stop at the ink, not the slot', (
+    tester,
+  ) async {
+    // Asserting on the InkWell alone was not enough: an earlier revision
+    // wrapped the Tooltip and Semantics *around* the Align, so both inherited
+    // the full stretched width. The tooltip then fired over blank space and
+    // the focus rectangle covered places where a tap does nothing.
+    const width = 700.0;
+    final semantics = tester.ensureSemantics();
+    await pumpAction(
+      tester,
+      const DesignSystemInlineAction(
+        label: 'Change AI setup',
+        semanticsLabel: 'Current setup: Qwen 3.5 Plus. Activate to change.',
+        tooltip: 'Change AI setup',
+        leadingIcon: Icons.psychology_outlined,
+        onTap: null,
+      ),
+      width: width,
+    );
+
+    final ink = tester.getRect(find.byType(InkWell));
+    expect(tester.getRect(find.byType(Tooltip)).width, ink.width);
+    expect(
+      tester
+          .getRect(
+            find
+                .ancestor(
+                  of: find.byType(Tooltip),
+                  matching: find.byType(Semantics),
+                )
+                .first,
+          )
+          .width,
+      ink.width,
+    );
+    expect(ink.width, lessThan(width));
+
+    // The tooltip must not also announce itself: the semantics label already
+    // carries the action, so publishing both reads it out twice.
+    expect(
+      tester.widget<Tooltip>(find.byType(Tooltip)).excludeFromSemantics,
+      isTrue,
+    );
+    expect(
+      actionSemantics(tester),
+      matchesSemantics(
+        label: 'Current setup: Qwen 3.5 Plus. Activate to change.',
+        isButton: true,
+        hasEnabledState: true,
+      ),
+    );
+    semantics.dispose();
+  });
+
   testWidgets('a disabled action still renders, and reports itself disabled', (
     tester,
   ) async {
@@ -115,7 +177,7 @@ void main() {
     // footer redesign started from.
     expect(find.text('Skip once'), findsOneWidget);
     expect(
-      tester.getSemantics(find.byType(DesignSystemInlineAction)),
+      actionSemantics(tester),
       matchesSemantics(
         label: 'Cancel pending automatic update',
         isButton: true,

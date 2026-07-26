@@ -105,41 +105,57 @@ class DesignSystemInlineAction extends StatelessWidget {
       ],
     );
 
-    // `Align` is what makes the shrink-wrap real. A stretching parent hands
-    // its children a *tight* width, under which `MainAxisSize.min` is a no-op
-    // and the ink spans the whole column — the exact defect this component
-    // was extracted to stop each call site from re-introducing.
-    final target = Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(tokens.radii.s),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: tokens.spacing.step8),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
-              // The visible label may be truncated or a live value, so the
-              // children stay silent and [semanticsLabel] speaks for the whole
-              // control. Excluding *here* rather than above the InkWell keeps
-              // its tap and focus actions, which a button must publish.
-              child: ExcludeSemantics(
-                child: DefaultTextStyle.merge(style: style, child: row),
-              ),
+    Widget target = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
+            // The visible label may be truncated or a live value, so the
+            // children stay silent and [semanticsLabel] speaks for the whole
+            // control. Excluding *here* rather than above the InkWell keeps
+            // its tap and focus actions, which a button must publish.
+            child: ExcludeSemantics(
+              child: DefaultTextStyle.merge(style: style, child: row),
             ),
           ),
         ),
       ),
     );
 
-    return Semantics(
-      button: true,
-      enabled: onTap != null,
-      label: semanticsLabel,
-      child: tooltip == null
-          ? target
-          : Tooltip(message: tooltip, child: target),
+    if (tooltip != null) {
+      target = Tooltip(
+        message: tooltip,
+        // [semanticsLabel] is the whole announcement. A tooltip publishes its
+        // message on the same node, so leaving it in makes a screen reader
+        // read the action twice — literally so where a caller passes one
+        // string as both, and near enough where the label already ends in
+        // "Activate to change setup".
+        excludeFromSemantics: true,
+        child: target,
+      );
+    }
+
+    // Everything that describes the control — its ink, its tooltip and its
+    // accessibility bounds — sits on the shrink-wrapped side of this `Align`.
+    //
+    // The `Align` itself takes the full width a stretching parent offers, and
+    // that is the point: it converts the tight constraint into a loose one, so
+    // the `Material` below can honour `MainAxisSize.min` instead of spanning
+    // the column. But anything wrapped *around* the `Align` inherits the full
+    // width instead of the ink's — which would leave the tooltip firing over
+    // blank space and the focus rectangle covering places a tap does nothing.
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Semantics(
+        button: true,
+        enabled: onTap != null,
+        label: semanticsLabel,
+        child: target,
+      ),
     );
   }
 }
