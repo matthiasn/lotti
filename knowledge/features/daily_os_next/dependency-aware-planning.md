@@ -142,12 +142,22 @@ resolver produces a **byte-identical** prompt to pre-ADR-0043, preserving the
 prefix cache:
 
 - **Blocked-work rules**, appended after the Refine rules for any drafting or
-  refine wake. A task is "blocked for planning" when its corpus row shows
-  `"status": "BLOCKED"` (self-declared, ADR 0042 §4) **or** carries a non-empty
-  `blockedBy` (computed). Place it only if the same plan schedules its blocker
-  earlier the same day, or the block's `reason` explicitly names the blocker and
-  why the work can proceed anyway. Prefer placing the blocker itself when a
-  decided or committed task turns out to be blocked.
+  refine wake. A task is "blocked for planning" when *this wake shows it* with
+  `"status": "BLOCKED"` (self-declared, ADR 0042 §4) **or** a non-empty
+  `blockedBy` (computed) — wherever that appears: a corpus row, a
+  `drafting.decidedTasks` entry, or a `drafting.baselinePlan` block. The rule
+  names all three carriers deliberately; phrased against corpus rows alone it
+  described nothing on a capture-less wake, which is the wake it most needed to
+  govern. Place it only if the same plan schedules its blocker earlier the same
+  day, or the block's `reason` explicitly names the blocker and why the work can
+  proceed anyway.
+- **The no-exception case**, stated rather than left to inference: when a task
+  is shown as blocked but *what it is waiting on* was not shown, neither
+  exception is reachable — one-hop resolution never renders the `blockedBy` of a
+  task reached only as somebody else's blocker. The rule tells the model to
+  leave such a task out rather than schedule work that cannot start. Preferring
+  to place the blocker of a decided task still holds, unless that blocker is
+  itself shown as blocked, in which case the same rule applies to it.
 - **A digest-rule bullet**, appended to the digest rules on coordinator wakes
   only, and only when `directiveService` is also configured: a directive
   commitment on blocked-for-planning work should target the blocker instead, or
