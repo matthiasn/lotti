@@ -5,7 +5,7 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T14:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T13:20:00Z }
 stale_after: 2027-01-31
 sources:
   - id: ui
@@ -111,6 +111,22 @@ The band pays `spacing.step4` horizontally and each row adds `spacing.step2`, so
 every glyph lands on `spacing.cardPadding`, sharing one leading edge with the
 summary prose and proposal rows, while interactive rows still get ink that
 breathes around their content.
+
+**Vertically the band declares no gaps at all, and that is the contract.** Every
+row here is a touch-target box taller than the ink inside it — all of them on
+one `spacing.step8` minimum — so each already contributes ~10 logical px of air
+above and below the text a reader can see. Declared gaps stack on top of that
+and the band pays twice: `step5` between two stacked rows rendered as ~34px of
+visible space, and the settings zone grew to a third of the card on a phone.
+Space the row boxes, not the text inside them.
+
+The switch row earns its height rather than reserving it. An earlier revision
+wrapped the 40×24 switch in a `step9` box "for a full-size interaction target",
+but `DesignSystemToggle` owns its own `InkWell`, so that outer box was inert: it
+cost 48px of column while the only thing a finger could hit stayed the 24px
+track. The whole row is the gesture now — tapping the label toggles the setting
+— and it publishes `excludeFromSemantics`, because the switch inside is already
+the accessible control and a second unlabelled button node beside it is noise.
 
 ## The manual trigger is never absent
 

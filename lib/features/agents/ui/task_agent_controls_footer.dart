@@ -119,7 +119,12 @@ class TaskAgentControlsFooter extends StatelessWidget {
                   onCountdownExpired: onCountdownExpired,
                 ),
               ),
-              SizedBox(height: tokens.spacing.step4),
+              // No declared gap: the automation row's last box and the
+              // identity row below it are both `step8` minimums with smaller
+              // ink inside, so ~20 logical px of air already exists between
+              // the two baselines. Adding `step4` on top of that is what made
+              // the band read as three widely-spaced peers rather than one
+              // settings block.
               TaskAgentIdentityRegion(
                 data: identityData,
                 onSetupTap: onSetupTap,

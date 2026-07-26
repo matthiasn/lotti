@@ -5,7 +5,7 @@ description: The repeating patterns that are contract rather than coincidence â€
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T14:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T13:20:00Z }
 stale_after: 2027-01-31
 sources:
   - id: components
