@@ -4039,7 +4039,15 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Die Synchronisierung pausiert, bis jedes Gerät entfernt oder verifiziert wurde.",
+  "syncDevicesPausedBanner": "{count, plural, one{1 nicht verifiziertes Gerät pausiert die Synchronisierung — verifiziere oder entferne es unten.} other{{count} nicht verifizierte Geräte pausieren die Synchronisierung — verifiziere oder entferne sie unten.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Geräte",
   "syncDevicesStaleHint": "Wahrscheinlich nicht mehr in Gebrauch",
   "syncDevicesSyncResumed": "Die Synchronisierung läuft wieder.",

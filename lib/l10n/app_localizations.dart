@@ -17010,11 +17010,11 @@ abstract class AppLocalizations {
   /// **'Paired {date}'**
   String syncDevicesPaired(String date);
 
-  /// No description provided for @syncDevicesPausedBanner.
+  /// Warning banner while unverified devices block outbound sync; count is the number of blocking devices.
   ///
   /// In en, this message translates to:
-  /// **'Sync is paused until every device is removed or verified.'**
-  String get syncDevicesPausedBanner;
+  /// **'{count, plural, one{1 unverified device is pausing sync — verify or remove it below.} other{{count} unverified devices are pausing sync — verify or remove them below.}}'**
+  String syncDevicesPausedBanner(int count);
 
   /// No description provided for @syncDevicesSectionTitle.
   ///

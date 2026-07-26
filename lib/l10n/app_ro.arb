@@ -4039,7 +4039,15 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Sincronizarea este întreruptă până când fiecare dispozitiv este eliminat sau verificat.",
+  "syncDevicesPausedBanner": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — verificați-l sau eliminați-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — verificați-le sau eliminați-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — verificați-le sau eliminați-le mai jos.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Dispozitive",
   "syncDevicesStaleHint": "Probabil nu mai este folosit",
   "syncDevicesSyncResumed": "Sincronizarea funcționează din nou.",

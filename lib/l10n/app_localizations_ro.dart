@@ -10038,8 +10038,19 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesPausedBanner =>
-      'Sincronizarea este întreruptă până când fiecare dispozitiv este eliminat sau verificat.';
+  String syncDevicesPausedBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de dispozitive neverificate întrerup sincronizarea — verificați-le sau eliminați-le mai jos.',
+      few:
+          '$count dispozitive neverificate întrerup sincronizarea — verificați-le sau eliminați-le mai jos.',
+      one:
+          'Un dispozitiv neverificat întrerupe sincronizarea — verificați-l sau eliminați-l mai jos.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get syncDevicesSectionTitle => 'Dispozitive';

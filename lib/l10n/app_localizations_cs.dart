@@ -9986,8 +9986,19 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesPausedBanner =>
-      'Synchronizace je pozastavena, dokud nebude každé zařízení odebráno nebo ověřeno.';
+  String syncDevicesPausedBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count neověřených zařízení pozastavuje synchronizaci — ověř je nebo odeber níže.',
+      few:
+          '$count neověřená zařízení pozastavují synchronizaci — ověř je nebo odeber níže.',
+      one:
+          '1 neověřené zařízení pozastavuje synchronizaci — ověř ho nebo odeber níže.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get syncDevicesSectionTitle => 'Zařízení';

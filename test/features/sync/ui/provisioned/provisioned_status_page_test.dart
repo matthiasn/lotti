@@ -265,7 +265,7 @@ void main() {
       expect(find.text('No other devices are signed in.'), findsOneWidget);
       final context = tester.element(find.byType(ProvisionedStatusWidget));
       expect(
-        find.text(context.messages.syncDevicesPausedBanner),
+        find.text(context.messages.syncDevicesPausedBanner(1)),
         findsNothing,
       );
     });
@@ -312,7 +312,7 @@ void main() {
       expect(find.text('Pixel 7'), findsWidgets);
       final context = tester.element(find.byType(ProvisionedStatusWidget));
       expect(
-        find.text(context.messages.syncDevicesPausedBanner),
+        find.text(context.messages.syncDevicesPausedBanner(1)),
         findsOneWidget,
       );
     });

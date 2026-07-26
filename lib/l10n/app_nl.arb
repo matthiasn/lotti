@@ -4594,7 +4594,15 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Synchronisatie is gepauzeerd totdat elk apparaat is verwijderd of geverifieerd.",
+  "syncDevicesPausedBanner": "{count, plural, one{1 niet-geverifieerd apparaat pauzeert de synchronisatie — verifieer of verwijder het hieronder.} other{{count} niet-geverifieerde apparaten pauzeren de synchronisatie — verifieer of verwijder ze hieronder.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Apparaten",
   "syncDevicesStaleHint": "Waarschijnlijk niet meer in gebruik",
   "syncDevicesSyncResumed": "Synchronisatie werkt weer.",

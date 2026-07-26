@@ -4046,7 +4046,15 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Synchronizace je pozastavena, dokud nebude každé zařízení odebráno nebo ověřeno.",
+  "syncDevicesPausedBanner": "{count, plural, one{1 neověřené zařízení pozastavuje synchronizaci — ověř ho nebo odeber níže.} few{{count} neověřená zařízení pozastavují synchronizaci — ověř je nebo odeber níže.} other{{count} neověřených zařízení pozastavuje synchronizaci — ověř je nebo odeber níže.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Zařízení",
   "syncDevicesStaleHint": "Pravděpodobně se už nepoužívá",
   "syncDevicesSyncResumed": "Synchronizace opět běží.",

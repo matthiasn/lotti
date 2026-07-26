@@ -112,7 +112,9 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('Sync is paused until every device is removed or verified.'),
+      find.text(
+        '1 unverified device is pausing sync — verify or remove it below.',
+      ),
       findsOneWidget,
     );
   });

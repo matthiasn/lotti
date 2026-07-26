@@ -4816,7 +4816,15 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Sync is paused until every device is removed or verified.",
+  "syncDevicesPausedBanner": "{count, plural, one{1 unverified device is pausing sync — verify or remove it below.} other{{count} unverified devices are pausing sync — verify or remove them below.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Devices",
   "syncDevicesStaleHint": "Probably no longer in use",
   "syncDevicesSyncResumed": "Sync is running again.",

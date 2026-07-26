@@ -9887,8 +9887,17 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesPausedBanner =>
-      'Synchronisatie is gepauzeerd totdat elk apparaat is verwijderd of geverifieerd.';
+  String syncDevicesPausedBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count niet-geverifieerde apparaten pauzeren de synchronisatie — verifieer of verwijder ze hieronder.',
+      one:
+          '1 niet-geverifieerd apparaat pauzeert de synchronisatie — verifieer of verwijder het hieronder.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get syncDevicesSectionTitle => 'Apparaten';

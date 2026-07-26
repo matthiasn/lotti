@@ -219,13 +219,12 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                       ),
                     ),
                   TextSpan(
-                    // The label-and-date phrase never splits: it is the
-                    // evidence column this surface exists for.
-                    text: messages
-                        .syncDevicesLastSeen(
-                          _formatDate(context, lastSeen),
-                        )
-                        .replaceAll(' ', '\u00a0'),
+                    // The date itself is atomic (non-breaking, via
+                    // _formatDate); the localized label may wrap freely so
+                    // long translations cannot overflow narrow cards.
+                    text: messages.syncDevicesLastSeen(
+                      _formatDate(context, lastSeen),
+                    ),
                   ),
                 ],
               ),
@@ -286,6 +285,9 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                   if (canDelete)
                     DesignSystemButton(
                       key: const Key('matrix_delete_device'),
+                      // Same height as a sibling Verify; the variant alone
+                      // carries the de-emphasis.
+                      size: DesignSystemButtonSize.large,
                       variant: DesignSystemButtonVariant.dangerSecondary,
                       isLoading: _busy,
                       onPressed: () => _deleteDevice(context),

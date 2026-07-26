@@ -4595,7 +4595,15 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Synkronisering er sat på pause, indtil alle enheder er fjernet eller bekræftet.",
+  "syncDevicesPausedBanner": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — bekræft eller fjern den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — bekræft eller fjern dem nedenfor.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Enheder",
   "syncDevicesStaleHint": "Sandsynligvis ikke længere i brug",
   "syncDevicesSyncResumed": "Synkroniseringen kører igen.",

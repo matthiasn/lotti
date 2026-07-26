@@ -9987,8 +9987,17 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesPausedBanner =>
-      'La sincronizzazione è in pausa finché ogni dispositivo non è rimosso o verificato.';
+  String syncDevicesPausedBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count dispositivi non verificati stanno mettendo in pausa la sincronizzazione: verificali o rimuovili qui sotto.',
+      one:
+          '1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: verificalo o rimuovilo qui sotto.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get syncDevicesSectionTitle => 'Dispositivi';

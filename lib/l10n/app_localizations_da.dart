@@ -9857,8 +9857,17 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get syncDevicesPausedBanner =>
-      'Synkronisering er sat på pause, indtil alle enheder er fjernet eller bekræftet.';
+  String syncDevicesPausedBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count ubekræftede enheder sætter synkroniseringen på pause — bekræft eller fjern dem nedenfor.',
+      one:
+          '1 ubekræftet enhed sætter synkroniseringen på pause — bekræft eller fjern den nedenfor.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get syncDevicesSectionTitle => 'Enheder';

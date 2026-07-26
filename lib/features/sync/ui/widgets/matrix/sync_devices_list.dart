@@ -126,7 +126,8 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
       );
     }
 
-    final blocked = devices.any((device) => device.blocksSync);
+    final blockerCount = devices.where((device) => device.blocksSync).length;
+    final blocked = blockerCount > 0;
     final referenceTime = widget.now?.call() ?? DateTime.now();
 
     return Column(
@@ -160,7 +161,7 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
                   SizedBox(width: tokens.spacing.step3),
                   Expanded(
                     child: Text(
-                      messages.syncDevicesPausedBanner,
+                      messages.syncDevicesPausedBanner(blockerCount),
                       style: tokens.typography.styles.body.bodyMedium.copyWith(
                         color: tokens.colors.text.highEmphasis,
                       ),

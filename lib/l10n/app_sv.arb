@@ -4595,7 +4595,15 @@
       }
     }
   },
-  "syncDevicesPausedBanner": "Synkroniseringen är pausad tills varje enhet har tagits bort eller verifierats.",
+  "syncDevicesPausedBanner": "{count, plural, one{1 overifierad enhet pausar synkroniseringen — verifiera eller ta bort den nedan.} other{{count} overifierade enheter pausar synkroniseringen — verifiera eller ta bort dem nedan.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncDevicesSectionTitle": "Enheter",
   "syncDevicesStaleHint": "Används förmodligen inte längre",
   "syncDevicesSyncResumed": "Synkroniseringen är igång igen.",

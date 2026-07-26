@@ -23,6 +23,10 @@ class SyncFlowSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final accent = accentColor;
+    final resolvedPadding =
+        padding ?? EdgeInsets.all(tokens.spacing.cardPadding);
+
+    final content = Padding(padding: resolvedPadding, child: child);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -39,29 +43,29 @@ class SyncFlowSection extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: padding ?? EdgeInsets.all(tokens.spacing.cardPadding),
-        child: accent == null
-            ? child
-            : IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: accent,
-                        borderRadius: BorderRadius.circular(
-                          tokens.radii.badgesPills,
-                        ),
+      // The accent bar lives in the padding gutter so a flagged card keeps
+      // the exact content rail of its unflagged siblings.
+      child: accent == null
+          ? content
+          : Stack(
+              children: [
+                content,
+                Positioned(
+                  left: (tokens.spacing.cardPadding - tokens.spacing.step2) / 2,
+                  top: tokens.spacing.cardPadding,
+                  bottom: tokens.spacing.cardPadding,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: accent,
+                      borderRadius: BorderRadius.circular(
+                        tokens.radii.badgesPills,
                       ),
-                      child: SizedBox(width: tokens.spacing.step2),
                     ),
-                    SizedBox(width: tokens.spacing.step4),
-                    Expanded(child: child),
-                  ],
+                    child: SizedBox(width: tokens.spacing.step2),
+                  ),
                 ),
-              ),
-      ),
+              ],
+            ),
     );
   }
 }
