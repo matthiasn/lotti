@@ -44,26 +44,53 @@ function markdownFiles(dir) {
   });
 }
 
+// CommonMark fence forms, not just the canonical one. Matching `'```mermaid'`
+// exactly meant a `~~~mermaid` or ````` ````mermaid ````` block was skipped in
+// silence while the CI step claimed to have parsed every diagram — a false green
+// in the one check that exists to prevent false greens.
+const FENCE = /^(`{3,}|~{3,})\s*(\S*)/;
+
+/// Whether `line` closes a block opened by `opener`: same delimiter character,
+/// at least as long, and nothing else on the line.
+function closesFence(line, opener) {
+  if (line.length < opener.length) return false;
+  return [...line].every((c) => c === opener[0]);
+}
+
 const blocks = [];
 let unclosed = 0;
 for (const file of markdownFiles(root)) {
   const lines = readFileSync(file, 'utf8').split('\n');
-  let openedAt = null;
+  let opener = null;
+  let openedAt = 0;
+  let isMermaid = false;
   lines.forEach((line, index) => {
-    if (openedAt === null && line.trim() === '```mermaid') {
-      openedAt = index;
-    } else if (openedAt !== null && line.trim() === '```') {
+    const trimmed = line.trim();
+    if (opener === null) {
+      const match = FENCE.exec(trimmed);
+      if (match) {
+        opener = match[1];
+        openedAt = index;
+        // Only the *outermost* fence counts: a mermaid fence shown as an example
+        // inside a ````markdown block is documentation, not a diagram to parse.
+        isMermaid = match[2].toLowerCase() === 'mermaid';
+      }
+      return;
+    }
+    if (!closesFence(trimmed, opener)) return;
+    if (isMermaid) {
       blocks.push({
         file,
         line: openedAt + 1,
         code: lines.slice(openedAt + 1, index).join('\n'),
       });
-      openedAt = null;
     }
+    opener = null;
+    isMermaid = false;
   });
-  if (openedAt !== null) {
-    // The Dart validator reports this too; repeated here so this script is
-    // honest about a block it could not extract rather than skipping silently.
+  if (opener !== null && isMermaid) {
+    // The Dart validator reports any unclosed fence; repeated here so this
+    // script is honest about a block it could not extract rather than skipping.
     console.error(`unclosed mermaid fence: ${file}:${openedAt + 1}`);
     unclosed++;
   }

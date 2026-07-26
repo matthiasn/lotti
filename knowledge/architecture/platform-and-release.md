@@ -112,7 +112,7 @@ test-only changes and CI tweaks get none.
 | Code generation | `make build_runner` (watch: `make watch`) |
 | Localization | `make l10n`, `make sort_arb_files` |
 | Integration tests | `make integration_test` |
-| Knowledge bundle check | `make okf_check` |
+| Knowledge bundle check | `make knowledge_check` (validator + mermaid) |
 | Run the app | `fvm flutter run -d <device>` |
 
 Generated files — `*.g.dart`, `*.freezed.dart` — are checked in and must never

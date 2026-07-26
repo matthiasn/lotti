@@ -24,16 +24,27 @@ Tasks are the `Task` journal-entity variant with `TaskData`, which carries title
 status, priority, estimate, due date, checklist ids, cover-art id, language
 preference, inference profile id, and AI-suppressed label ids.
 
-# `TaskStatus` is five states with no enforced transitions
+# `TaskStatus` is seven states with no enforced transitions
 
-The sealed `TaskStatus` union in `lib/classes/task.dart` has five variants:
-`open`, `groomed`, `inProgress`, `blocked`, `onHold`.
+The sealed `TaskStatus` union in `lib/classes/task.dart` has seven variants. Five
+are live and two are terminal:
+
+| | Variants |
+|---|---|
+| Live — `openTaskStatuses` | `open`, `groomed`, `inProgress`, `blocked`, `onHold` |
+| Terminal | `done`, `rejected` |
+
+Every variant carries the same fields (`id`, `createdAt`, `utcOffset`, `timezone`,
+`geolocation`), so the status *is* the discriminator — nothing else distinguishes
+`done` from `rejected` structurally. The live/terminal split is not in the union
+either; it lives in the `openTaskStatuses` list in
+`lib/features/tasks/ui/utils.dart`, which is what filters linkable tasks.
 
 **Nothing in the code restricts which status may follow which.** There is no
 transition table, no guard, and no validation — a task can go from `onHold`
-straight to `inProgress`, or back to `open`, and the write succeeds. So there is
-deliberately no state diagram here: drawing one would invent a machine the code
-does not implement.
+straight to `inProgress`, from `done` back to `open`, and the write succeeds. So
+there is deliberately no state diagram here: drawing one would invent a machine
+the code does not implement.
 
 What *is* derived rather than stored is **blockedness**, which comes from live
 `blocks` links at read time and is independent of the `blocked` status value — the

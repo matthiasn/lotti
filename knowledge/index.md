@@ -38,7 +38,7 @@ Working on a subsystem, in order:
 Then, while you work: **verify any claim you are about to depend on against the
 source.** These concepts are agent-written maps of a moving codebase, and a map
 is not the territory. When you change behaviour, update the concept in the same
-change and run `make okf_check`.
+change and run `make knowledge_check`.
 
 # Which authority wins
 

@@ -56,6 +56,11 @@ okf_check:
 mermaid_check:
 	cd tool/okf && npm ci --silent && npm run --silent check
 
+# The one target to run after touching knowledge/. Two separate targets meant the
+# mermaid half got skipped, which is how unrenderable diagrams reached main.
+.PHONY: knowledge_check
+knowledge_check: okf_check mermaid_check
+
 .PHONY: junit_test
 junit_test:
 	$(FLUTTER_CMD) test --coverage --reporter json > TEST-report.jsonl

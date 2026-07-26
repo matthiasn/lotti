@@ -1,6 +1,16 @@
 # Knowledge Bundle Update Log
 
 ## 2026-07-26
+* **Fix**: Corrected three claims this bundle got wrong *while* fixing others:
+  `TaskStatus` has seven variants, not five (`done` and `rejected` were missed by
+  reading a truncated line range); a leak *can* cross test files on CI, because
+  very_good's optimizer bundles every test into one isolate per shard; and `:=` is
+  not a Mermaid trap — only `;` is, and its quiet failure mode is a stray node
+  rather than an error.
+* **Update**: `make knowledge_check` is now the single target for a change under
+  `knowledge/`, running the validator and the Mermaid parse together, and the
+  Mermaid checker accepts every CommonMark fence form instead of skipping
+  `~~~mermaid` in silence.
 * **Fix**: Recomputed every `sources[].last_modified` from `git log` — 162 of 229
   had been written as "about today" rather than asked of history, some off by six
   weeks. The field now records what each concept was actually written against.

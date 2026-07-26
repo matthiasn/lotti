@@ -109,7 +109,7 @@ Rules for `knowledge/`:
   invent states that are not implemented.
 - Every path a concept references must exist. `make okf_check` fails the build
   on a dangling code pointer, which is the mechanism that keeps the map honest.
-- Run `make okf_check` after touching anything under `knowledge/`.
+- Run `make knowledge_check` after touching anything under `knowledge/`. It runs the Dart validator *and* parses every Mermaid diagram — `make okf_check` alone cannot see a diagram that fails to render.
 
 ## Misc
 - Whenever touching any function, consider its docstring and if it needs updating

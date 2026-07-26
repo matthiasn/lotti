@@ -5,7 +5,7 @@ description: "The rules that keep a single-threaded CI lane green — fake time,
 resource: ../../test/README.md
 tags: [convention, testing, fake-time, glados, ci]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T12:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T15:00:00Z }
 stale_after: 2027-01-18
 sources:
   - id: test-readme
@@ -24,16 +24,29 @@ sources:
 
 # The constraint that shapes everything
 
-**Tests in one file share a process, so a leak escapes the test that caused it.**
-A timer, stream subscription or database handle left open outlives its own test
-and fails a *later* one in the same file — usually one that looks unrelated and
-passes in isolation. Almost every rule below exists because of that.
+**On CI, every test in a shard shares one isolate — so a leak can fail a test in a
+file you never touched.** A timer, stream subscription, database handle or
+unconsumed Mocktail matcher left behind outlives its own test and breaks a later,
+unrelated one. Almost every rule below exists because of that.
 
-Be precise about the blast radius, because the looser version of this claim keeps
-coming back. CI runs `very_good test` with **no `-j`, so its default concurrency
-of 4 applies**: four suites run in parallel, each in its own process, sharded ten
-ways across matrix jobs. A leak therefore *cannot* reach another file — the reach
-is within a file, which is exactly where `tearDown` discipline pays.
+The mechanism is `very_good test`'s **optimizer, which is on by default** and which
+CI does not disable: it generates a single `.test_optimizer.dart` importing every
+test file, and `package:test` then slices *that one suite* into the ten shards. So
+`--concurrency` is not what bounds the blast radius, and the isolation you get
+under a plain `fvm flutter test <file>` locally — one isolate per file — is **not**
+what CI runs.
+
+Two consequences:
+
+- **A leak's victim is not deterministic.** Which test breaks depends on the
+  bundle order inside a shard, which is why these failures show up on one
+  machine or one shard and not another.
+- **Passing locally proves less than it looks.** A file that passes alone can
+  still be the file that breaks CI.
+
+`test/flutter_test_config.dart` registers a global `tearDown(resetMocktailState)`
+for exactly this reason. [`test/README.md`](../../test/README.md) carries the full
+account of the Mocktail case; do not re-derive it here.
 
 # Fake time is mandatory
 

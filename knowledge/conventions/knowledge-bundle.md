@@ -5,7 +5,7 @@ description: The README/knowledge/ADR split, the frontmatter every concept carri
 resource: ../../knowledge
 tags: [convention, documentation, okf, process]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T09:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T15:00:00Z }
 stale_after: 2027-01-18
 sources:
   - id: okf-spec
@@ -164,7 +164,7 @@ not-yet-written knowledge is legitimate.
    the window its subject earns.
 4. Add a line to [`knowledge/log.md`](../log.md) for a structural change — a new
    concept, a removed one, a reorganisation. Not for routine edits.
-5. Run `make okf_check`.
+5. Run `make knowledge_check`.
 
 **If a concept contradicts the code, the concept is the defect.** Fix it in the
 same change — you are the last person who will hold both halves in mind at once.
@@ -253,17 +253,33 @@ A diagram earns its place by carrying what prose cannot: an ordering, a fork, a
 band of stability. A box-per-paragraph restatement does not.
 
 **The Dart validator cannot parse Mermaid** — there is no Dart parser — so
-`make mermaid_check` runs Mermaid itself under jsdom, and the `mermaid` CI job
+`make knowledge_check` runs Mermaid itself under jsdom, and the `mermaid` CI job
 does the same on every push. Before that existed, three broken diagrams shipped.
-Two traps account for all of them:
+One trap accounts for all three:
 
-- **`;` is a statement separator**, in every diagram type. A semicolon inside a
-  label ends the statement there and the remainder parses as garbage. Use a
-  comma.
-- **A second `:` breaks a `stateDiagram-v2` transition label.** `x := y` reads as
-  a new label boundary. Say "becomes" instead.
+**`;` terminates a statement, in every diagram type.** A semicolon inside a label
+ends the statement there, and everything after it is reparsed as a *new*
+statement. **Use a comma.** What happens next depends on the diagram, and the
+quiet case is the dangerous one:
 
-Run `make mermaid_check` before pushing a diagram. It lives in
+| Where | `A --> B: x; y` becomes |
+|-------|-------------------------|
+| `sequenceDiagram` | A parse error — the remainder needs an arrow. Loud, and caught. |
+| `stateDiagram-v2`, remainder is a bare word | **A stray state node named `y`**, rendered silently. The parse check passes and the diagram is wrong. |
+| `stateDiagram-v2`, remainder has a hyphen | A parse error, because `re-warms` is not a valid state id. |
+
+Do not read `:=` as a second trap — it was blamed once and is fine on its own;
+`A --> B: id := joinId` parses. It was the `;` beside it that broke the diagram.
+
+Write the canonical ```` ```mermaid ```` fence. The checker accepts every
+CommonMark form — `~~~mermaid`, longer backtick runs — because matching only the
+canonical one skipped the others *in silence*, which is the one failure a checker
+must never have.
+
+**`make knowledge_check` is the one target to run after touching `knowledge/`.**
+It runs the Dart validator and the Mermaid parse together, because two targets
+meant the second one got skipped. `make okf_check` and `make mermaid_check`
+remain for running half of it deliberately. The Mermaid half lives in
 [`tool/okf/check_mermaid.mjs`](../../tool/okf/check_mermaid.mjs) with its own
 pinned `package.json`, so it needs Node but nothing from the Flutter toolchain.
 
