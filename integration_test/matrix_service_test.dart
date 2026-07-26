@@ -271,7 +271,13 @@ Future<void> throwIfStalled({
 
   final coord = device.queueCoordinator;
   final stats = await coord.queue.stats();
-  final quiet = stats.total == 0 && !coord.isBridgeInFlight;
+  // Held ciphertext counts as outstanding. A `PendingDecryptionPen` entry has
+  // no queue row by design, so depth reads zero while the device is legitimately
+  // waiting for a Megolm key — for up to the pen's full retry window. Treating
+  // depth plus bridge state as exhaustive would turn a recoverable
+  // degraded-network run into a false failure.
+  final held = coord.heldCiphertextCount;
+  final quiet = stats.total == 0 && held == 0 && !coord.isBridgeInFlight;
 
   // Below the failing threshold, report rather than fail. Healthy degraded
   // runs have been measured going 62s without the journal count moving, so
@@ -283,6 +289,7 @@ Future<void> throwIfStalled({
       '[stall-probe] no progress for '
       '${sinceLastProgress.elapsed.inSeconds}s at $currentCount entries; '
       'quiet=$quiet queue[total=${stats.total} ready=${stats.readyNow}] '
+      'heldCiphertext=$held '
       'bridgeInFlight=${coord.isBridgeInFlight}',
     );
     return;
@@ -293,9 +300,11 @@ Future<void> throwIfStalled({
   throw _SyncStalledException(
     'no progress for ${sinceLastProgress.elapsed.inSeconds}s at '
     '$currentCount entries, with an empty inbound queue and no bridge in '
-    'flight. Nothing is outstanding, so the remaining wait cannot help. '
+    'flight, and no ciphertext awaiting a key. Nothing is outstanding, so the '
+    'remaining wait cannot help. '
     'queue[total=${stats.total} ready=${stats.readyNow} '
     'byProducer=${stats.byProducer}] '
+    'heldCiphertext=$held '
     'bridgeInFlight=${coord.isBridgeInFlight} '
     'currentRoomId=${device.syncRoomId}',
   );
@@ -765,20 +774,19 @@ void main() {
 
         // Join the existing room (the new client needs to re-join)
         await bob.joinRoom(roomId);
-        // Save room so pipeline attaches to it (triggers start + forceRescan)
-        await bob.saveRoom(roomId);
-        debugPrint('Bob re-joined room $roomId');
 
-        // Allow startup catch-up to run (sync wait is up to 30s, plus
-        // catch-up pagination time for the backlog)
-        await Future<void>.delayed(const Duration(seconds: 5));
-
-        // Count real bridge completions. The metrics block printed below is
-        // NOT a substitute: `catchupBatches`, `processed`, `skipped`,
-        // `failures`, `flushes`, `retriesScheduled` and `circuitOpens` all
-        // have zero call sites in lib/ — they are structurally zero whatever
-        // sync does, and reading one as evidence is how this failure was
-        // misdiagnosed. Only `dbApplied` is wired.
+        // Attach BEFORE saveRoom. saveRoom kicks the bootstrap asynchronously,
+        // so a probe installed afterwards can miss a bridge that has already
+        // finished — leaving a zero count that reads exactly like the "never
+        // ran" diagnosis this instrumentation exists to disprove. (It did, on
+        // the first instrumented run.)
+        //
+        // The metrics block printed later is not a substitute:
+        // `catchupBatches`, `processed`, `skipped`, `failures`, `flushes`,
+        // `retriesScheduled` and `circuitOpens` have zero call sites in lib/,
+        // so they are structurally zero whatever sync does. Only `dbApplied`
+        // is wired. Reading one of them as evidence is how this bug was first
+        // misdiagnosed.
         var bridgeCompletions = 0;
         final priorOnBridgeCompleted = bob.queueCoordinator.onBridgeCompleted;
         bob.queueCoordinator.onBridgeCompleted = () {
@@ -786,6 +794,14 @@ void main() {
           debugPrint('[probe] bridge completed #$bridgeCompletions');
           priorOnBridgeCompleted?.call();
         };
+
+        // Save room so pipeline attaches to it (triggers start + forceRescan)
+        await bob.saveRoom(roomId);
+        debugPrint('Bob re-joined room $roomId');
+
+        // Allow startup catch-up to run (sync wait is up to 30s, plus
+        // catch-up pagination time for the backlog)
+        await Future<void>.delayed(const Duration(seconds: 5));
 
         Future<String> queueSnapshot() async {
           final coord = bob.queueCoordinator;
