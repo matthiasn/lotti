@@ -1,5 +1,7 @@
+import 'dart:ui' show Tristate;
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/task_agent_automation_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -219,6 +221,41 @@ void main() {
         1,
         reason: 'only the switch itself may take keyboard focus',
       );
+    });
+
+    testWidgets('the whole row is one actionable node for assistive tech', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      bool? changedTo;
+      await pumpRow(
+        tester,
+        subject(onAutomaticUpdatesChanged: (value) => changedTo = value),
+      );
+
+      // Enlarging the pointer target is not enough on its own: with the row's
+      // semantics excluded and the label inert, the only actionable node was
+      // the switch's own 40x24 track, so touch exploration never reached the
+      // advertised full-row target.
+      final node = tester.getSemantics(
+        find.byKey(const ValueKey('taskAgentAutomationSetting')),
+      );
+      final data = node.getSemanticsData();
+      expect(data.label, 'Automatic updates');
+      // A switch that is off: applicable, and currently false.
+      expect(data.flagsCollection.isToggled, Tristate.isFalse);
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
+
+      // One node, not two: the label must not announce separately from the
+      // control it belongs to.
+      final rowRect = tester.getRect(
+        find.byKey(const ValueKey('taskAgentAutomaticUpdatesTarget')),
+      );
+      expect(node.rect.width, moreOrLessEquals(rowRect.width, epsilon: 1));
+
+      await tester.tap(find.text('Automatic updates'));
+      expect(changedTo, isTrue);
+      handle.dispose();
     });
 
     testWidgets('is disabled while an automation write is in flight', (
