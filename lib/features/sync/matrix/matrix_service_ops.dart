@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -276,7 +277,22 @@ class MatrixServiceOps {
       subDomain: 'deleteDevice',
     );
 
-    await refreshDeviceKeysAndResumeSync(subDomain: 'deleteDevice');
+    // Bounded: the deletion has already succeeded on the homeserver, so a
+    // network drop during the cache refresh must not hang the caller — the
+    // cache converges on a later sync regardless.
+    try {
+      await refreshDeviceKeysAndResumeSync(
+        subDomain: 'deleteDevice',
+      ).timeout(SyncTuning.deleteDeviceRecoveryTimeout);
+    } on TimeoutException {
+      loggingService.log(
+        LogDomain.sync,
+        'device-key refresh still running after '
+        '${SyncTuning.deleteDeviceRecoveryTimeout.inSeconds}s - deletion '
+        'already succeeded, cache converges on a later sync',
+        subDomain: 'deleteDevice.refreshTimeout',
+      );
+    }
   }
 
   /// Returns every session on the sync account, merging the homeserver's

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/features/sync/matrix/matrix_service_ops.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -454,6 +456,45 @@ void main() {
         verify(
           () => client.updateUserDeviceKeys(additionalUsers: {userId}),
         ).called(1);
+      },
+    );
+
+    test(
+      'a hanging device-key refresh cannot delay the deletion beyond the '
+      'recovery timeout',
+      () {
+        fakeAsync((async) {
+          when(
+            () => client.updateUserDeviceKeys(
+              additionalUsers: any(named: 'additionalUsers'),
+            ),
+          ).thenAnswer((_) => Completer<void>().future);
+
+          var completed = false;
+          unawaited(
+            buildDeleteOps()
+                .deleteDeviceById('DEV1')
+                .then(
+                  (_) => completed = true,
+                ),
+          );
+
+          async
+            ..elapse(
+              SyncTuning.deleteDeviceRecoveryTimeout +
+                  const Duration(milliseconds: 1),
+            )
+            ..flushMicrotasks();
+
+          expect(completed, isTrue);
+          verify(
+            () => logging.log(
+              LogDomain.sync,
+              any(),
+              subDomain: 'deleteDevice.refreshTimeout',
+            ),
+          ).called(1);
+        });
       },
     );
   });

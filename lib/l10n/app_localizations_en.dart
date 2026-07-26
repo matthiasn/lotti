@@ -9779,6 +9779,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncDevicesOnlyThisDevice => 'No other devices are signed in.';
 
   @override
+  String syncDevicesPaired(String date) {
+    return 'Paired $date';
+  }
+
+  @override
   String get syncDevicesPausedBanner =>
       'Sync is paused until every device is verified or removed.';
 
@@ -9787,6 +9792,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncDevicesStaleHint => 'Probably no longer in use';
+
+  @override
+  String get syncDevicesSyncResumed => 'Sync is running again.';
 
   @override
   String get syncDevicesThisDeviceChip => 'This device';

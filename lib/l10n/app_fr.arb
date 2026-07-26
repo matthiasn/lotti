@@ -4029,9 +4029,19 @@
   },
   "syncDevicesLoadFailed": "Impossible de charger la liste des appareils.",
   "syncDevicesOnlyThisDevice": "Aucun autre appareil n'est connecté.",
+  "syncDevicesPaired": "Appairé le {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "syncDevicesPausedBanner": "La synchronisation est en pause tant que chaque appareil n'est pas vérifié ou supprimé.",
   "syncDevicesSectionTitle": "Appareils",
   "syncDevicesStaleHint": "Probablement plus utilisé",
+  "syncDevicesSyncResumed": "La synchronisation fonctionne à nouveau.",
   "syncDevicesThisDeviceChip": "Cet appareil",
   "syncDevicesUnverifiedChip": "Non vérifié",
   "syncDevicesVerifiedChip": "Vérifié",

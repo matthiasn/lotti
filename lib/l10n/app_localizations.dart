@@ -16998,6 +16998,12 @@ abstract class AppLocalizations {
   /// **'No other devices are signed in.'**
   String get syncDevicesOnlyThisDevice;
 
+  /// Pairing-date line on a sync device card; {date} is a locale-formatted date.
+  ///
+  /// In en, this message translates to:
+  /// **'Paired {date}'**
+  String syncDevicesPaired(String date);
+
   /// No description provided for @syncDevicesPausedBanner.
   ///
   /// In en, this message translates to:
@@ -17015,6 +17021,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Probably no longer in use'**
   String get syncDevicesStaleHint;
+
+  /// No description provided for @syncDevicesSyncResumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync is running again.'**
+  String get syncDevicesSyncResumed;
 
   /// No description provided for @syncDevicesThisDeviceChip.
   ///

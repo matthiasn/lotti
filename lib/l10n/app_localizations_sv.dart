@@ -9850,6 +9850,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncDevicesOnlyThisDevice => 'Inga andra enheter är inloggade.';
 
   @override
+  String syncDevicesPaired(String date) {
+    return 'Ihopparad $date';
+  }
+
+  @override
   String get syncDevicesPausedBanner =>
       'Synkroniseringen är pausad tills varje enhet har verifierats eller tagits bort.';
 
@@ -9858,6 +9863,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncDevicesStaleHint => 'Används förmodligen inte längre';
+
+  @override
+  String get syncDevicesSyncResumed => 'Synkroniseringen är igång igen.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Den här enheten';

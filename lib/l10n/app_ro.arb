@@ -4029,9 +4029,19 @@
   },
   "syncDevicesLoadFailed": "Lista dispozitivelor nu a putut fi încărcată.",
   "syncDevicesOnlyThisDevice": "Niciun alt dispozitiv nu este autentificat.",
+  "syncDevicesPaired": "Asociat la {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "syncDevicesPausedBanner": "Sincronizarea este întreruptă până când fiecare dispozitiv este verificat sau eliminat.",
   "syncDevicesSectionTitle": "Dispozitive",
   "syncDevicesStaleHint": "Probabil nu mai este folosit",
+  "syncDevicesSyncResumed": "Sincronizarea funcționează din nou.",
   "syncDevicesThisDeviceChip": "Acest dispozitiv",
   "syncDevicesUnverifiedChip": "Neverificat",
   "syncDevicesVerifiedChip": "Verificat",

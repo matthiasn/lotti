@@ -9946,6 +9946,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhum outro dispositivo está conectado.';
 
   @override
+  String syncDevicesPaired(String date) {
+    return 'Pareado em $date';
+  }
+
+  @override
   String get syncDevicesPausedBanner =>
       'A sincronização está pausada até que cada dispositivo seja verificado ou removido.';
 
@@ -9954,6 +9959,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get syncDevicesStaleHint => 'Provavelmente não está mais em uso';
+
+  @override
+  String get syncDevicesSyncResumed =>
+      'A sincronização está funcionando novamente.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Este dispositivo';

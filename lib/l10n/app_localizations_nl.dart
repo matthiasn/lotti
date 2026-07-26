@@ -9878,6 +9878,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er zijn geen andere apparaten aangemeld.';
 
   @override
+  String syncDevicesPaired(String date) {
+    return 'Gekoppeld op $date';
+  }
+
+  @override
   String get syncDevicesPausedBanner =>
       'Synchronisatie is gepauzeerd totdat elk apparaat is geverifieerd of verwijderd.';
 
@@ -9886,6 +9891,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncDevicesStaleHint => 'Waarschijnlijk niet meer in gebruik';
+
+  @override
+  String get syncDevicesSyncResumed => 'Synchronisatie werkt weer.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Dit apparaat';

@@ -9977,6 +9977,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nejsou přihlášena žádná další zařízení.';
 
   @override
+  String syncDevicesPaired(String date) {
+    return 'Spárováno $date';
+  }
+
+  @override
   String get syncDevicesPausedBanner =>
       'Synchronizace je pozastavena, dokud nebude každé zařízení ověřeno nebo odebráno.';
 
@@ -9985,6 +9990,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncDevicesStaleHint => 'Pravděpodobně se už nepoužívá';
+
+  @override
+  String get syncDevicesSyncResumed => 'Synchronizace opět běží.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Toto zařízení';

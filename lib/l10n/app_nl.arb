@@ -4584,9 +4584,19 @@
   },
   "syncDevicesLoadFailed": "De apparatenlijst kon niet worden geladen.",
   "syncDevicesOnlyThisDevice": "Er zijn geen andere apparaten aangemeld.",
+  "syncDevicesPaired": "Gekoppeld op {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "syncDevicesPausedBanner": "Synchronisatie is gepauzeerd totdat elk apparaat is geverifieerd of verwijderd.",
   "syncDevicesSectionTitle": "Apparaten",
   "syncDevicesStaleHint": "Waarschijnlijk niet meer in gebruik",
+  "syncDevicesSyncResumed": "Synchronisatie werkt weer.",
   "syncDevicesThisDeviceChip": "Dit apparaat",
   "syncDevicesUnverifiedChip": "Niet geverifieerd",
   "syncDevicesVerifiedChip": "Geverifieerd",

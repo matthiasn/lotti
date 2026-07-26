@@ -23,14 +23,16 @@ class SyncDevicesController extends AsyncNotifier<List<SyncDeviceInfo>> {
 
   /// Re-fetches the device list while keeping the last data on screen —
   /// background refreshes must not swap an established list for a loading
-  /// shell.
-  Future<void> refresh() async {
+  /// shell. Returns whether the fetch succeeded so the UI can surface a
+  /// failed refresh instead of silently eating the tap.
+  Future<bool> refresh() async {
     final result = await AsyncValue.guard(
       () => ref.read(matrixServiceProvider).getSyncDevices(),
     );
-    if (!ref.mounted) return;
+    if (!ref.mounted) return false;
     // Keep showing the previous list rather than replacing it with an error.
-    if (result.hasError && state.hasValue) return;
+    if (result.hasError && state.hasValue) return false;
     state = result;
+    return !result.hasError;
   }
 }

@@ -88,6 +88,42 @@ concepts describe. Construction order matters and is documented in
 | `actor/` | Isolate-based sync implementation — present and tested, **not** wired by the default bootstrap |
 | `services/`, `repository/` | Node capability probe, profile broadcaster, node-profile persistence, maintenance repository, synced-audio inference listener and dispatcher |
 
+# Device management
+
+All of a user's devices are sessions on **one Matrix account**; verification
+state is per-install local trust (there is no cross-signing), and the send
+path refuses to send while any cached device key is unverified
+(`matrix/matrix_message_sender.dart`). That makes a dead session — an
+uninstalled app that never logged out — able to block all outbound sync, which
+is why device management exists as a first-class flow:
+
+- **Inventory.** `MatrixServiceOps.getSyncDevices()` merges the homeserver's
+  session inventory (`MatrixSyncGateway.getDevices()`, i.e. `GET /devices`:
+  display name, last-seen) with the E2EE key cache (verification state) into
+  `models/sync_device_info.dart`. Sessions that never published keys appear
+  with `keys == null`: they cannot be verified and never block sync — only
+  removed. Display order: current device, then blockers, then recency.
+- **Deletion recovery sequence.** `MatrixServiceOps.deleteDeviceById()` runs,
+  in order: cancel any in-flight emoji verification against the device (a
+  dead peer can never answer), delete the session on the homeserver
+  (UIA-gated with the stored account password), then a **best-effort,
+  bounded** recovery — refresh cached device keys, reconcile the lifecycle,
+  trigger a catch-up rescan — shared with post-verification recovery
+  (`refreshDeviceKeysAndResumeSync`). Recovery failures are logged and
+  swallowed, and the whole recovery is capped by
+  `SyncTuning.deleteDeviceRecoveryTimeout`: once the homeserver accepted the
+  delete, a network drop must not hang the caller; the cache converges on a
+  later sync.
+- **Guards.** The current session can never delete itself (use logout), and
+  the `DeviceKeys`-based wrapper refuses devices of another user. Deletion is
+  impossible without a stored password (SSO/token UIA is not implemented).
+- **UI.** `ui/widgets/matrix/sync_devices_list.dart` renders the inventory on
+  the provisioned-status page with a sync-paused banner while any device
+  blocks sending; `ui/widgets/matrix/device_card.dart` flips its action
+  hierarchy for stale unverified devices — removal becomes the labeled
+  primary action, verification is demoted — because for a device silent past
+  `syncDeviceStaleThreshold` removal is what resumes sync.
+
 # Concepts
 
 * [Message model](message-model.md) - what travels on the wire and which payloads are sequence-tracked.

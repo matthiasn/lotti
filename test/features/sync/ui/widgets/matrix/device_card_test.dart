@@ -255,6 +255,50 @@ void main() {
       expect(find.text('Verify'), findsNothing);
       expect(find.byIcon(MdiIcons.trashCanOutline), findsOneWidget);
     });
+
+    testWidgets('a stale unverified device promotes removal to the labeled '
+        'primary action and demotes Verify', (tester) async {
+      when(
+        () => mockMatrixService.deleteDeviceById('DEVICE1'),
+      ).thenAnswer((_) async {});
+
+      await pumpCard(
+        tester,
+        buildDevice(lastSeen: DateTime(2026, 5, 14)),
+      );
+
+      // The corner trash icon is replaced by a labeled danger button.
+      expect(find.byIcon(MdiIcons.trashCanOutline), findsNothing);
+      expect(
+        find.byKey(const Key('matrix_remove_device_primary')),
+        findsOneWidget,
+      );
+      expect(find.text('Delete device'), findsOneWidget);
+      expect(find.text('Verify'), findsOneWidget);
+
+      // The labeled button still runs through the confirmation modal.
+      await tester.tap(find.byKey(const Key('matrix_remove_device_primary')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('DELETE DEVICE'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockMatrixService.deleteDeviceById('DEVICE1')).called(1);
+    });
+
+    testWidgets('a stale but verified device keeps the corner trash icon', (
+      tester,
+    ) async {
+      await pumpCard(
+        tester,
+        buildDevice(verified: true, lastSeen: DateTime(2026, 5, 14)),
+      );
+
+      expect(find.byIcon(MdiIcons.trashCanOutline), findsOneWidget);
+      expect(
+        find.byKey(const Key('matrix_remove_device_primary')),
+        findsNothing,
+      );
+    });
   });
 
   group('identity and last-seen', () {
@@ -267,6 +311,21 @@ void main() {
         'missing', (tester) async {
       await pumpCard(tester, buildDevice(displayName: null));
       expect(find.text('DEVICE1'), findsOneWidget);
+    });
+
+    testWidgets('splits a generated name into a hostname title and a '
+        'localized pairing line', (tester) async {
+      await pumpCard(
+        tester,
+        buildDevice(displayName: 'dammy-pixel 2026-05-14T18:22 3f9c01aa'),
+      );
+
+      expect(find.text('dammy-pixel'), findsOneWidget);
+      expect(find.text('Paired May 14, 2026 · 3f9c01aa'), findsOneWidget);
+      expect(
+        find.text('dammy-pixel 2026-05-14T18:22 3f9c01aa'),
+        findsNothing,
+      );
     });
 
     testWidgets('shows a formatted last-seen date without a stale hint when '

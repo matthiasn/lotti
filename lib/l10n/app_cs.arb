@@ -4036,9 +4036,19 @@
   },
   "syncDevicesLoadFailed": "Seznam zařízení se nepodařilo načíst.",
   "syncDevicesOnlyThisDevice": "Nejsou přihlášena žádná další zařízení.",
+  "syncDevicesPaired": "Spárováno {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "syncDevicesPausedBanner": "Synchronizace je pozastavena, dokud nebude každé zařízení ověřeno nebo odebráno.",
   "syncDevicesSectionTitle": "Zařízení",
   "syncDevicesStaleHint": "Pravděpodobně se už nepoužívá",
+  "syncDevicesSyncResumed": "Synchronizace opět běží.",
   "syncDevicesThisDeviceChip": "Toto zařízení",
   "syncDevicesUnverifiedChip": "Neověřeno",
   "syncDevicesVerifiedChip": "Ověřeno",

@@ -10029,6 +10029,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun alt dispozitiv nu este autentificat.';
 
   @override
+  String syncDevicesPaired(String date) {
+    return 'Asociat la $date';
+  }
+
+  @override
   String get syncDevicesPausedBanner =>
       'Sincronizarea este întreruptă până când fiecare dispozitiv este verificat sau eliminat.';
 
@@ -10037,6 +10042,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncDevicesStaleHint => 'Probabil nu mai este folosit';
+
+  @override
+  String get syncDevicesSyncResumed => 'Sincronizarea funcționează din nou.';
 
   @override
   String get syncDevicesThisDeviceChip => 'Acest dispozitiv';

@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
@@ -10,23 +14,58 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// Every session on the sync account: a header with a refresh action, a
 /// "sync is paused" banner while any device still blocks sending, and one
 /// [DeviceCard] per session with its applicable actions.
-class SyncDevicesList extends ConsumerWidget {
+class SyncDevicesList extends ConsumerStatefulWidget {
   const SyncDevicesList({super.key, this.now});
 
   /// Test seam for the staleness computation; defaults to the wall clock.
   final DateTime Function()? now;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SyncDevicesList> createState() => _SyncDevicesListState();
+}
+
+class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
+  bool _refreshing = false;
+
+  Future<void> _refresh() async {
+    if (_refreshing) return;
+    setState(() => _refreshing = true);
+    try {
+      final succeeded = await ref
+          .read(syncDevicesControllerProvider.notifier)
+          .refresh();
+      ref.invalidate(matrixUnverifiedControllerProvider);
+      if (!succeeded && mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.syncDevicesLoadFailed,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _refreshing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+
+    // Close the loop when the last blocker disappears: the banner vanishing
+    // silently would leave the user unsure whether removing/verifying worked.
+    ref.listen(syncDevicesControllerProvider, (previous, next) {
+      final wasBlocked = previous?.value?.any((d) => d.blocksSync) ?? false;
+      final isBlocked = next.value?.any((d) => d.blocksSync) ?? false;
+      if (wasBlocked && !isBlocked && mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.success,
+          title: messages.syncDevicesSyncResumed,
+        );
+      }
+    });
+
     final devicesAsync = ref.watch(syncDevicesControllerProvider);
     final devices = devicesAsync.value;
-
-    void refresh() {
-      ref.read(syncDevicesControllerProvider.notifier).refresh();
-      ref.invalidate(matrixUnverifiedControllerProvider);
-    }
 
     final header = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -37,8 +76,14 @@ class SyncDevicesList extends ConsumerWidget {
         ),
         IconButton(
           key: const Key('sync_devices_refresh'),
-          onPressed: refresh,
-          icon: const Icon(MdiIcons.refresh),
+          visualDensity: VisualDensity.compact,
+          onPressed: _refreshing ? null : () => unawaited(_refresh()),
+          icon: _refreshing
+              ? SizedBox.square(
+                  dimension: tokens.spacing.step5,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(MdiIcons.refresh),
         ),
       ],
     );
@@ -48,7 +93,7 @@ class SyncDevicesList extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           header,
-          SizedBox(height: tokens.spacing.step2),
+          SizedBox(height: tokens.spacing.step3),
           if (devicesAsync.hasError)
             Text(
               messages.syncDevicesLoadFailed,
@@ -58,10 +103,12 @@ class SyncDevicesList extends ConsumerWidget {
               ),
             )
           else
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: CircularProgressIndicator(),
+                padding: EdgeInsets.symmetric(
+                  vertical: tokens.spacing.step6,
+                ),
+                child: const CircularProgressIndicator(),
               ),
             ),
         ],
@@ -69,52 +116,63 @@ class SyncDevicesList extends ConsumerWidget {
     }
 
     final blocked = devices.any((device) => device.blocksSync);
-    final referenceTime = now?.call() ?? DateTime.now();
+    final referenceTime = widget.now?.call() ?? DateTime.now();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         header,
         if (blocked) ...[
-          SizedBox(height: tokens.spacing.step2),
-          Row(
+          SizedBox(height: tokens.spacing.step3),
+          DecoratedBox(
             key: const Key('sync_devices_paused_banner'),
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.sync_problem_rounded,
-                size: tokens.typography.lineHeight.bodySmall,
-                color: tokens.colors.alert.warning.ink,
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Expanded(
-                child: Text(
-                  messages.syncDevicesPausedBanner,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.alert.warning.ink,
+            decoration: BoxDecoration(
+              color: tokens.colors.alert.warning.defaultColor,
+              borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.step4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    MdiIcons.syncAlert,
+                    size: tokens.spacing.step6,
+                    color: tokens.colors.text.onInteractiveAlert,
                   ),
-                ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Expanded(
+                    child: Text(
+                      messages.syncDevicesPausedBanner,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.onInteractiveAlert,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ],
-        SizedBox(height: tokens.spacing.step3),
-        for (final device in devices) ...[
+        SizedBox(height: tokens.spacing.step4),
+        for (var i = 0; i < devices.length; i++) ...[
+          if (i > 0) SizedBox(height: tokens.spacing.cardItemSpacing),
           DeviceCard(
-            device,
-            refreshListCallback: refresh,
+            devices[i],
+            refreshListCallback: () => unawaited(_refresh()),
             now: referenceTime,
-            key: Key('sync_device_${device.deviceId}'),
+            key: Key('sync_device_${devices[i].deviceId}'),
           ),
-          SizedBox(height: tokens.spacing.step2),
         ],
-        if (devices.length <= 1)
+        if (devices.length <= 1) ...[
+          SizedBox(height: tokens.spacing.step3),
           Text(
             messages.syncDevicesOnlyThisDevice,
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),
           ),
+        ],
       ],
     );
   }

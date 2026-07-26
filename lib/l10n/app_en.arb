@@ -4806,9 +4806,19 @@
   },
   "syncDevicesLoadFailed": "Couldn't load the device list.",
   "syncDevicesOnlyThisDevice": "No other devices are signed in.",
+  "syncDevicesPaired": "Paired {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "syncDevicesPausedBanner": "Sync is paused until every device is verified or removed.",
   "syncDevicesSectionTitle": "Devices",
   "syncDevicesStaleHint": "Probably no longer in use",
+  "syncDevicesSyncResumed": "Sync is running again.",
   "syncDevicesThisDeviceChip": "This device",
   "syncDevicesUnverifiedChip": "Unverified",
   "syncDevicesVerifiedChip": "Verified",

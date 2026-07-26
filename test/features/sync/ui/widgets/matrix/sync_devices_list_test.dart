@@ -174,6 +174,34 @@ void main() {
     expect(find.byType(DeviceCard), findsNothing);
   });
 
+  testWidgets('announces that sync resumed when the last blocker disappears', (
+    tester,
+  ) async {
+    when(
+      () => mockMatrixService.getSyncDevices(),
+    ).thenAnswer((_) async => [currentDevice]);
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([
+        currentDevice,
+        unverifiedDevice(),
+      ]),
+    );
+    expect(
+      find.byKey(const Key('sync_devices_paused_banner')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('sync_devices_refresh')));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byKey(const Key('sync_devices_paused_banner')), findsNothing);
+    expect(find.text('Sync is running again.'), findsOneWidget);
+  });
+
   testWidgets('the refresh button re-fetches the device list', (tester) async {
     when(() => mockMatrixService.getSyncDevices()).thenAnswer(
       (_) async => [

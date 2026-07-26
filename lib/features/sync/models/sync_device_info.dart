@@ -47,6 +47,39 @@ class SyncDeviceInfo {
     return deviceId;
   }
 
+  /// Matches the machine-generated suffix `createMatrixDeviceName()` appends:
+  /// an ISO date-to-minutes pairing timestamp plus a uuid fragment.
+  static final RegExp _generatedNameSuffix = RegExp(
+    r'\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}.*)$',
+  );
+
+  /// The human-recognizable part of [label] — the host name for generated
+  /// names, the full label otherwise.
+  String get titleLabel {
+    final match = _generatedNameSuffix.firstMatch(label);
+    return match == null ? label : label.substring(0, match.start);
+  }
+
+  /// The machine-generated remainder of a generated [label] (pairing date +
+  /// hash), or null when the label carries no such suffix.
+  String? get metaLabel => _generatedNameSuffix.firstMatch(label)?.group(1);
+
+  /// When the session was paired, parsed from a generated [label] suffix.
+  DateTime? get pairedAt {
+    final meta = metaLabel;
+    if (meta == null) return null;
+    final timestamp = meta.split(' ').first;
+    return DateTime.tryParse(timestamp);
+  }
+
+  /// The uuid fragment of a generated [label] suffix, or null.
+  String? get pairingHash {
+    final meta = metaLabel;
+    if (meta == null) return null;
+    final parts = meta.split(' ');
+    return parts.length > 1 && parts[1].isNotEmpty ? parts[1] : null;
+  }
+
   /// Whether this device blocks outbound sync: it has published keys the
   /// send path counts as an unverified peer.
   bool get blocksSync => !isCurrentDevice && !verified && keys != null;
@@ -58,19 +91,20 @@ class SyncDeviceInfo {
   }
 }
 
-/// Orders devices for display: the current device first, then devices that
-/// block sync (they need action), then the rest by recency of last-seen with
-/// unreported timestamps last.
+/// Orders devices for display: devices that block sync first — they are what
+/// the paused banner points at, so they sit directly beneath it — then the
+/// current device, then the rest by recency of last-seen with unreported
+/// timestamps last.
 List<SyncDeviceInfo> sortSyncDevicesForDisplay(List<SyncDeviceInfo> devices) {
   int recency(SyncDeviceInfo d) => d.lastSeen?.millisecondsSinceEpoch ?? -1;
 
   final sorted = [...devices]
     ..sort((a, b) {
-      if (a.isCurrentDevice != b.isCurrentDevice) {
-        return a.isCurrentDevice ? -1 : 1;
-      }
       if (a.blocksSync != b.blocksSync) {
         return a.blocksSync ? -1 : 1;
+      }
+      if (a.isCurrentDevice != b.isCurrentDevice) {
+        return a.isCurrentDevice ? -1 : 1;
       }
       return recency(b).compareTo(recency(a));
     });

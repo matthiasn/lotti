@@ -99,23 +99,49 @@ class DeviceCard extends ConsumerWidget {
     final messages = context.messages;
     final stale = device.isStaleAt(now);
     final lastSeen = device.lastSeen;
+    final canVerify =
+        !device.isCurrentDevice && !device.verified && device.keys != null;
 
-    final trustBadge = device.isCurrentDevice
-        ? DesignSystemBadge.outlined(
-            label: messages.syncDevicesThisDeviceChip,
-            tone: DesignSystemBadgeTone.secondary,
-          )
-        : device.verified
-        ? DesignSystemBadge.filled(
-            label: messages.syncDevicesVerifiedChip,
-            tone: DesignSystemBadgeTone.success,
-          )
-        : DesignSystemBadge.filled(
-            label: messages.syncDevicesUnverifiedChip,
-            tone: DesignSystemBadgeTone.warning,
-          );
+    // A stale, unverified device is almost certainly dead: removal — not
+    // verification — is what resumes sync, so removal gets the labeled
+    // primary action and the corner trash icon disappears.
+    final removalIsPrimary =
+        stale && !device.isCurrentDevice && !device.verified;
+
+    final locale = Localizations.localeOf(context).toString();
+    final pairedAt = device.pairedAt;
+    final pairingHash = device.pairingHash;
+    final metaLine = pairedAt == null
+        ? device.metaLabel
+        : [
+            messages.syncDevicesPaired(
+              DateFormat.yMMMd(locale).format(pairedAt),
+            ),
+            ?pairingHash,
+          ].join(' · ');
+
+    final trustBadges = <Widget>[
+      if (device.isCurrentDevice)
+        DesignSystemBadge.outlined(
+          label: messages.syncDevicesThisDeviceChip,
+          tone: DesignSystemBadgeTone.secondary,
+        ),
+      if (device.verified)
+        DesignSystemBadge.filled(
+          label: messages.syncDevicesVerifiedChip,
+          tone: DesignSystemBadgeTone.success,
+        )
+      else
+        DesignSystemBadge.filled(
+          label: messages.syncDevicesUnverifiedChip,
+          tone: DesignSystemBadgeTone.warning,
+        ),
+    ];
 
     return SyncFlowSection(
+      accentColor: device.blocksSync
+          ? tokens.colors.alert.warning.defaultColor
+          : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -123,16 +149,31 @@ class DeviceCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  device.label,
-                  style: tokens.typography.styles.body.bodyMedium,
-                  softWrap: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      device.titleLabel,
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                      softWrap: true,
+                    ),
+                    if (metaLine != null) ...[
+                      SizedBox(height: tokens.spacing.step1),
+                      Text(
+                        metaLine,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              if (!device.isCurrentDevice)
+              if (!device.isCurrentDevice && !removalIsPrimary)
                 IconButton(
                   key: const Key('matrix_delete_device'),
-                  padding: EdgeInsets.all(tokens.spacing.step2),
                   icon: Semantics(
                     label: messages.deleteDeviceLabel,
                     child: const Icon(MdiIcons.trashCanOutline),
@@ -141,37 +182,61 @@ class DeviceCard extends ConsumerWidget {
                 ),
             ],
           ),
-          SizedBox(height: tokens.spacing.step2),
+          SizedBox(height: tokens.spacing.step3),
           Wrap(
-            spacing: tokens.spacing.step2,
-            runSpacing: tokens.spacing.step1,
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step2,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              trustBadge,
+              ...trustBadges,
               if (lastSeen != null)
                 Text(
                   messages.syncDevicesLastSeen(
-                    DateFormat.yMMMd(
-                      Localizations.localeOf(context).toString(),
-                    ).format(lastSeen),
+                    DateFormat.yMMMd(locale).format(lastSeen),
                   ),
                   style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              if (stale)
-                Text(
-                  messages.syncDevicesStaleHint,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.alert.warning.ink,
+                    // On a stale card the date is the evidence for removal;
+                    // it carries the warning ink instead of the hint prose.
+                    color: stale
+                        ? tokens.colors.alert.warning.ink
+                        : tokens.colors.text.mediumEmphasis,
                   ),
                 ),
             ],
           ),
-          if (!device.isCurrentDevice &&
-              !device.verified &&
-              device.keys != null) ...[
-            SizedBox(height: tokens.spacing.step3),
+          if (stale) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              messages.syncDevicesStaleHint,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
+          if (removalIsPrimary) ...[
+            SizedBox(height: tokens.spacing.step4),
+            Row(
+              children: [
+                DesignSystemButton(
+                  key: const Key('matrix_remove_device_primary'),
+                  size: DesignSystemButtonSize.large,
+                  variant: DesignSystemButtonVariant.danger,
+                  onPressed: () => _deleteDevice(context, ref),
+                  label: messages.deleteDeviceLabel,
+                ),
+                if (canVerify) ...[
+                  SizedBox(width: tokens.spacing.step3),
+                  DesignSystemButton(
+                    size: DesignSystemButtonSize.large,
+                    variant: DesignSystemButtonVariant.secondary,
+                    onPressed: () => _verifyDevice(context, ref),
+                    label: messages.settingsMatrixVerifyLabel,
+                  ),
+                ],
+              ],
+            ),
+          ] else if (canVerify) ...[
+            SizedBox(height: tokens.spacing.step4),
             DesignSystemButton(
               size: DesignSystemButtonSize.large,
               onPressed: () => _verifyDevice(context, ref),

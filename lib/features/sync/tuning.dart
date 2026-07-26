@@ -122,6 +122,12 @@ class SyncTuning {
   /// reschedule with backoff and frees the pipeline for other events.
   static const Duration attachmentDownloadTimeout = Duration(seconds: 45);
 
+  /// Upper bound on the best-effort device-key refresh that runs after a
+  /// device deletion. The homeserver delete has already succeeded at that
+  /// point; if connectivity drops mid-refresh the UI must not hang on it —
+  /// the cache converges on a later sync anyway.
+  static const Duration deleteDeviceRecoveryTimeout = Duration(seconds: 15);
+
   // Historical windows
   static const int catchupMaxLookback =
       10000; // Increased from 1000 to handle larger backlogs

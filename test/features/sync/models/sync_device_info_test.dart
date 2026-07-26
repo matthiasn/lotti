@@ -30,6 +30,27 @@ void main() {
     });
   });
 
+  group('titleLabel / metaLabel', () {
+    test('splits a machine-generated name into host and pairing metadata', () {
+      final d = device(
+        displayName: 'dammy-pixel 2026-05-14T18:22 3f9c01aa',
+      );
+      expect(d.titleLabel, 'dammy-pixel');
+      expect(d.metaLabel, '2026-05-14T18:22 3f9c01aa');
+    });
+
+    test('leaves a human-friendly name intact', () {
+      final d = device(displayName: 'Pixel 7');
+      expect(d.titleLabel, 'Pixel 7');
+      expect(d.metaLabel, isNull);
+    });
+
+    test('falls back to the device id without a meta line', () {
+      expect(device().titleLabel, 'DEV');
+      expect(device().metaLabel, isNull);
+    });
+  });
+
   group('blocksSync', () {
     test('true only for another device with keys that is unverified', () {
       expect(device(withKeys: true).blocksSync, isTrue);
@@ -69,9 +90,31 @@ void main() {
     });
   });
 
+  group('pairedAt / pairingHash', () {
+    test('parses the pairing timestamp and hash from a generated name', () {
+      final d = device(
+        displayName: 'dammy-pixel 2026-05-14T18:22 3f9c01aa',
+      );
+      expect(d.pairedAt, DateTime(2026, 5, 14, 18, 22));
+      expect(d.pairingHash, '3f9c01aa');
+    });
+
+    test('handles a generated name without a hash fragment', () {
+      final d = device(displayName: 'host 2026-05-14T18:22');
+      expect(d.pairedAt, DateTime(2026, 5, 14, 18, 22));
+      expect(d.pairingHash, isNull);
+    });
+
+    test('returns null for human-friendly names', () {
+      final d = device(displayName: 'Pixel 7');
+      expect(d.pairedAt, isNull);
+      expect(d.pairingHash, isNull);
+    });
+  });
+
   group('sortSyncDevicesForDisplay', () {
-    test('orders current first, then blockers, then by last-seen recency '
-        'with unknown timestamps last', () {
+    test('orders blockers first, then the current device, then by last-seen '
+        'recency with unknown timestamps last', () {
       final current = device(deviceId: 'CURRENT', isCurrentDevice: true);
       final blocker = device(
         deviceId: 'BLOCKER',
@@ -100,7 +143,7 @@ void main() {
 
       expect(
         sorted.map((d) => d.deviceId).toList(),
-        ['CURRENT', 'BLOCKER', 'RECENT', 'OLDER', 'UNKNOWN'],
+        ['BLOCKER', 'CURRENT', 'RECENT', 'OLDER', 'UNKNOWN'],
       );
     });
 

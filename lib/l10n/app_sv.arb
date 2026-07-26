@@ -4585,9 +4585,19 @@
   },
   "syncDevicesLoadFailed": "Det gick inte att läsa in enhetslistan.",
   "syncDevicesOnlyThisDevice": "Inga andra enheter är inloggade.",
+  "syncDevicesPaired": "Ihopparad {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "syncDevicesPausedBanner": "Synkroniseringen är pausad tills varje enhet har verifierats eller tagits bort.",
   "syncDevicesSectionTitle": "Enheter",
   "syncDevicesStaleHint": "Används förmodligen inte längre",
+  "syncDevicesSyncResumed": "Synkroniseringen är igång igen.",
   "syncDevicesThisDeviceChip": "Den här enheten",
   "syncDevicesUnverifiedChip": "Overifierad",
   "syncDevicesVerifiedChip": "Verifierad",
