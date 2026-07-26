@@ -47,8 +47,22 @@ document it as one.
 
 # Secrets
 
-API keys and sync credentials never touch SQLite. They go to the OS keystore
-through `flutter_secure_storage`, wrapped by `SecureStorage`:
+**Sync credentials** go to the OS keystore through `flutter_secure_storage`,
+wrapped by `SecureStorage` — the Matrix config JSON and access tokens never touch
+SQLite.
+
+**AI-provider API keys do not.** `AiConfigDb.saveConfig()` persists a provider as
+`jsonEncode(config.toJson())`, and that serialized map includes its `apiKey`. So
+provider keys live in `ai_config.sqlite` — **one of the databases that is not
+encrypted at rest** (see the caveat above). Their on-disk protection is OS-level
+full-disk encryption, exactly like journal content.
+
+That asymmetry is worth stating plainly rather than glossing: a threat model
+derived from "keys are in the keychain" would be wrong for AI providers. Moving
+them into `SecureStorage` is a real hardening opportunity, not a documentation
+fix.
+
+`SecureStorage` itself is backed by:
 
 | Platform | Backing store |
 |----------|---------------|

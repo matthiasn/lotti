@@ -62,10 +62,11 @@ lib/features/agents/
 
 ## How it works
 
+Design decisions behind the runtime are recorded in
+[docs/adr/](../../../docs/adr).
+
 The runtime architecture — wake orchestration, the append-only memory log and its
 compaction, per-kind workflows, tool policy, the proposal lifecycle, and the UI
 choreography — is documented in the knowledge bundle:
 
 **→ [knowledge/features/agents/](../../../knowledge/features/agents/)**
-
-Design decisions behind it are recorded in [docs/adr/](../../../docs/adr).

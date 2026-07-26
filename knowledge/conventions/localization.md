@@ -23,9 +23,17 @@ sources:
 **All user-visible label text MUST be localized** through the ARB files in
 `lib/l10n/`. Never hardcode a string a user will see.
 
-New labels go into **every** catalog: `app_en.arb` (primary), plus `app_cs.arb`,
-`app_de.arb`, `app_es.arb`, `app_fr.arb`, `app_ro.arb`. `app_en_GB.arb` gets an
-entry only when the spelling differs from US English.
+There are **twelve** catalogs: `app_en.arb` (primary) plus `cs`, `da`, `de`,
+`en_GB`, `es`, `fr`, `it`, `nl`, `pt`, `ro`, `sv` — matching
+`AppLocalizations.supportedLocales`.
+
+`AGENTS.md` names a **subset** as the required edit set (`cs`, `de`, `es`, `fr`,
+`ro`), so a new label added per that instruction leaves five catalogs untouched
+and reliant on `missing_translations.txt` to surface the gap. That is the
+instruction as written, not an inference — worth knowing before assuming a new
+string reaches every locale.
+
+`app_en_GB.arb` gets an entry only when the spelling differs from US English.
 
 Access is through `context.messages.labelName`.
 

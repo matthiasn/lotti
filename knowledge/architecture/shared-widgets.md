@@ -34,18 +34,28 @@ composition and app-shell chrome.
 **Buttons are not here.** They all come from `DesignSystemButton` and its
 relatives.
 
-# Modal presentation is centralized
+# Modal presentation is mostly centralized
 
 `ModalUtils` is the **only public export** of `lib/widgets/modal/`, and it is how
-every adaptive sheet in the app is presented: a draggable bottom sheet on narrow
-layouts, a centred dialog on wide ones, from one call.
+most adaptive sheets are presented: a draggable bottom sheet on narrow layouts, a
+centred dialog on wide ones, from one call. It backs the single-page pickers and
+the multi-page settings flows.
 
-Centralizing it is what makes the responsive contract consistent — a feature that
-built its own sheet would have to re-derive the breakpoint, the insets, the barrier
-behaviour and the glass footer treatment, and would drift.
+Centralizing it is what keeps the responsive contract consistent — a feature that
+builds its own sheet has to re-derive the breakpoint, the insets, the barrier
+behaviour and the glass footer treatment, and will drift.
 
-The same helper backs the single-page pickers, the multi-page settings flows, and
-the Daily OS planning modal's side-panel variant.
+**Two flows own their own Wolt presentation** and are worth knowing about before
+assuming a single entry point:
+
+| Flow | Why |
+|------|-----|
+| [The Daily OS planning modal](../features/daily_os_next/ui-surfaces.md) | Calls `WoltModalSheet.show` directly and picks its responsive type itself, because it needs a right-anchored full-height **side panel** on wide screens rather than a centred dialog. It still borrows `ModalUtils` helpers for the barrier colour and its sliver pages |
+| [What's New](../features/whats_new/) | Invokes Wolt directly for its own presentation |
+
+So the accurate rule is: `ModalUtils` owns the shared styling and navigation
+helpers, and a flow may own its presentation when its layout genuinely differs —
+but it should still reuse those helpers rather than re-deriving them.
 
 # Selection primitives exist to stop duplication
 

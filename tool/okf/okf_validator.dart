@@ -198,7 +198,7 @@ final _markdownLinkPattern = RegExp(
 // their body is prose, not a path.
 final _referenceDefinitionPattern = RegExp(
   '^ {0,3}'
-  r'\[([^^\]][^\]]*)\]:[ \t]*<?([^\s>]+)>?'
+  r'\[([^^\]][^\]]*)\]:[ \t]*(?:<([^>]*)>|([^\s]+))'
   r'''[ \t]*(?:"[^"]*"|'[^']*'|\([^)]*\))?[ \t]*$''',
   multiLine: true,
 );
@@ -251,7 +251,7 @@ Iterable<String> linkTargets(String body) {
     for (final m in _markdownLinkPattern.allMatches(stripped))
       (m.group(1) ?? m.group(2))!.trim(),
     for (final m in _referenceDefinitionPattern.allMatches(stripped))
-      m.group(2)!,
+      (m.group(2) ?? m.group(3))!.trim(),
   ];
 }
 
@@ -1000,6 +1000,23 @@ List<OkfIssue> validateRepoReferences({
   return issues;
 }
 
+/// Whether a `sources[].resource` should be resolved as a path.
+///
+/// §5.1 lets a resource be either something a consumer can follow or a scope
+/// descriptor it cannot ("all queries in BigQuery project X"). Treating *any*
+/// spaced string as a descriptor was too permissive: a typo like
+/// `../../lib/missing file.dart` was silently exempted from the anti-drift
+/// check, and prose could stand in as a concept's only attribution.
+///
+/// So the test is path *shape*, not the absence of spaces: anything carrying a
+/// separator or a leading `.` is a path — spaces and all — while a bare phrase
+/// with neither is a descriptor.
+bool _looksLikePath(String resource) {
+  final trimmed = resource.trim();
+  if (trimmed.isEmpty) return false;
+  return trimmed.contains('/') || trimmed.startsWith('.');
+}
+
 /// Collects `resource`-shaped values out of a raw frontmatter block.
 Iterable<String> _resourceTargets(String? frontmatterYaml) sync* {
   if (frontmatterYaml == null) return;
@@ -1019,9 +1036,7 @@ Iterable<String> _resourceTargets(String? frontmatterYaml) sync* {
     for (final entry in sources) {
       if (entry is! YamlMap) continue;
       final entryResource = entry['resource'];
-      // Scope descriptors (§5.1) are prose, not paths; skip anything with a
-      // space in it rather than trying to resolve "all queries in project X".
-      if (entryResource is String && !entryResource.contains(' ')) {
+      if (entryResource is String && _looksLikePath(entryResource)) {
         yield entryResource;
       }
     }

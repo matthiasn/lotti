@@ -86,7 +86,7 @@ scoped state in Riverpod, never the reverse.
 | `lib/beamer/` | Router delegates, locations, app shell |
 | `lib/widgets/` | Shared widgets not owned by a feature |
 | `lib/themes/`, `lib/features/design_system/` | Theming and design tokens |
-| `lib/l10n/` | ARB catalogues for seven locales |
+| `lib/l10n/` | ARB catalogues — twelve locales (`en`, `en_GB`, `cs`, `da`, `de`, `es`, `fr`, `it`, `nl`, `pt`, `ro`, `sv`) |
 | `lib/utils/` | Small helpers |
 
 Generated code (`*.g.dart`, `*.freezed.dart`, `objectbox.g.dart`) is checked in

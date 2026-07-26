@@ -749,6 +749,26 @@ Implemented by [the recorder][impl].
       },
     );
 
+    test(
+      'an angle-bracket reference destination with whitespace is scanned',
+      () {
+        // The combination of the two forms: a reference definition whose
+        // destination is angle-bracketed AND contains a space.
+        final result = validateBundle(
+          _bundle(
+            _concept(
+              body: 'See [impl][i].\n\n[i]: <./missing file.md>',
+            ),
+          ),
+        );
+
+        expect(
+          result.warnings.single.message,
+          contains('does not exist in the bundle'),
+        );
+      },
+    );
+
     test('footnote definitions are not treated as paths (§5.1)', () {
       final result = validateBundle(
         _bundle(
@@ -845,6 +865,35 @@ See [outside](../../../etc/passwd).
       );
 
       expect(issues.single.message, contains('escapes the repository root'));
+    });
+
+    test('a path-shaped source with a space is still resolved', () {
+      // Exempting every spaced string as a "scope descriptor" let a typo like
+      // `../../lib/missing file.dart` skip the anti-drift check entirely.
+      final seen = <String>[];
+      final issues = validateRepoReferences(
+        files: {
+          'features/speech.md': '''
+---
+type: Feature Module
+title: Speech
+sources:
+  - id: typo
+    resource: ../../lib/features/speech/missing file.dart
+---
+
+Body.
+''',
+        },
+        bundleRoot: 'knowledge',
+        repoFileExists: (path) {
+          seen.add(path);
+          return false;
+        },
+      );
+
+      expect(seen, contains('lib/features/speech/missing file.dart'));
+      expect(issues.single.isError, isTrue);
     });
 
     test('scope-descriptor sources are not resolved as paths (§5.1)', () {

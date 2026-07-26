@@ -28,10 +28,16 @@ sources:
 
 # One store per concern
 
-Lotti is local-first: every byte the user owns lives in SQLite files in the
-documents directory, and nothing is required to leave the device. Rather than
-one monolithic schema, the app runs **eleven Drift databases**, each with its
-own file, schema version and migration history.
+Lotti is local-first: everything the user owns lives in the documents directory,
+and nothing is required to leave the device. Rather than one monolithic schema,
+the app runs **eleven Drift databases**, each with its own file, schema version
+and migration history.
+
+**Not every byte is in SQLite.** The databases hold structured data and metadata;
+**audio recordings and images are separate files** under the documents directory,
+referenced by path — the sync sender reads them through `AudioUtils.getAudioPath()`
+and `getFullImagePath()` rather than pulling bytes out of a row. Backup and
+migration work has to cover both, and embeddings are a third store again (below).
 
 | Database | File | Schema | Owns |
 |----------|------|--------|------|

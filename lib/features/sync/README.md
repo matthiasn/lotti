@@ -56,11 +56,11 @@ lib/features/sync/
 
 ## How it works
 
+For failure history, log-backed investigations and tuning context, see
+[docs/architecture/sync_current_architecture.md](../../../docs/architecture/sync_current_architecture.md).
+
 The runtime architecture — the outbox and its bundling, the inbound queue
 pipeline, vector clocks and conflict detection, the sequence log and backfill,
 and the synced-audio auto-trigger — is documented in the knowledge bundle:
 
 **→ [knowledge/features/sync/](../../../knowledge/features/sync/)**
-
-For failure history, log-backed investigations and tuning context, see
-[docs/architecture/sync_current_architecture.md](../../../docs/architecture/sync_current_architecture.md).

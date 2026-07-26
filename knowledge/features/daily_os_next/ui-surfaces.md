@@ -120,9 +120,11 @@ yet" hint card.
 
 ## Task-linked versus standalone
 
-Agenda items and Day blocks always show the distinction: task-linked rows carry a
-blue `LinkBadge` and task-linked Day blocks prefix an info-blue link icon;
-standalone rows carry the neutral `StandaloneTag`.
+**Task-linked is the marked case; standalone is the unmarked default.** A
+task-linked agenda row carries a blue `LinkBadge` and a task-linked Day block
+prefixes an info-blue link icon. Standalone items carry **no** marker — there is
+no `StandaloneTag` in the codebase, and the absence of a badge is what identifies
+them.
 
 Both projections resolve task identity through the lightweight
 `liveTaskMetadataProvider`, which subscribes to task and category database
