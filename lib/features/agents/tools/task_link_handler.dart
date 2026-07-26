@@ -1,0 +1,158 @@
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/task_link_tool_definitions.dart';
+import 'package:lotti/features/tasks/model/directed_relation.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
+
+/// Applies a confirmed `link_task` proposal: records one typed relationship
+/// between the current task and an existing target task.
+///
+/// The relation reads with the current task as its subject ("This task
+/// blocks …"); [DirectedRelation.canonicalEndpoints] resolves which side is
+/// stored as `fromId`, so a `blocks` link's `fromId` is always the blocker
+/// regardless of which phrasing the user spoke. Exactly one edge is written
+/// per relationship (ADR 0042 decision 2).
+class TaskLinkHandler {
+  TaskLinkHandler({
+    required this._persistenceLogic,
+    required this._journalDb,
+    this._domainLogger,
+  });
+
+  final PersistenceLogic _persistenceLogic;
+  final JournalDb _journalDb;
+  final DomainLogger? _domainLogger;
+
+  static const _sub = 'TaskLinkHandler';
+
+  /// Creates the typed link between [sourceTaskId] (the anchor) and the
+  /// target task named in [args].
+  ///
+  /// Returns a [ToolExecutionResult] with `mutatedEntityId` set to the target
+  /// task's id when an edge was written. An already-existing identical
+  /// relationship reports success without writing, so confirming a proposal
+  /// that raced a manual link never surfaces as a failure.
+  Future<ToolExecutionResult> handle(
+    String sourceTaskId,
+    Map<String, dynamic> args,
+  ) async {
+    final rawRelation = args['relation'];
+    final relation = rawRelation is String
+        ? DirectedRelation.fromWireName(rawRelation)
+        : null;
+    if (relation == null) {
+      return ToolExecutionResult(
+        success: false,
+        output:
+            'Error: "relation" must be one of '
+            '${taskRelationWireNames.join(', ')}',
+        errorMessage: 'Invalid relation',
+      );
+    }
+
+    final rawTargetId = args['targetTaskId'];
+    final targetTaskId = rawTargetId is String ? rawTargetId.trim() : '';
+    if (targetTaskId.isEmpty) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: "targetTaskId" must be a non-empty string',
+        errorMessage: 'Missing targetTaskId',
+      );
+    }
+    if (targetTaskId == sourceTaskId) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: a task cannot be linked to itself',
+        errorMessage: 'Self-link rejected',
+      );
+    }
+
+    final target = await _journalDb.journalEntityById(targetTaskId);
+    if (target is! Task || target.meta.deletedAt != null) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: target task $targetTaskId not found or not a Task',
+        errorMessage: 'Target task lookup failed',
+      );
+    }
+
+    final endpoints = relation.canonicalEndpoints(
+      anchorId: sourceTaskId,
+      otherId: targetTaskId,
+    );
+    final phrase = relation.englishPhrase;
+    final summary = 'this task $phrase "${target.data.title}"';
+
+    if (await _linkExists(relation, endpoints)) {
+      return ToolExecutionResult(
+        success: true,
+        output: 'Already linked: $summary — nothing to change',
+      );
+    }
+
+    final created = await _persistenceLogic.createLink(
+      fromId: endpoints.fromId,
+      toId: endpoints.toId,
+      linkType: relation.type,
+    );
+
+    if (!created) {
+      // The duplicate case was pre-checked, so a refused `blocks` edge is the
+      // creation-time cycle guard (ADR 0042 §5) speaking.
+      final reason = relation.type == EntryLinkType.blocks
+          ? 'the link would create a blocking cycle'
+          : 'the link could not be created';
+      _domainLogger?.log(
+        LogDomain.agentWorkflow,
+        'createLink refused ${relation.wireName} '
+        '${DomainLogger.sanitizeId(endpoints.fromId)} → '
+        '${DomainLogger.sanitizeId(endpoints.toId)}',
+        subDomain: _sub,
+      );
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: $reason',
+        errorMessage: reason,
+      );
+    }
+
+    return ToolExecutionResult(
+      success: true,
+      output: 'Linked: $summary',
+      mutatedEntityId: targetTaskId,
+    );
+  }
+
+  /// Whether a live link with the same canonical `(fromId, toId, type)`
+  /// triple already exists.
+  Future<bool> _linkExists(
+    DirectedRelation relation,
+    ({String fromId, String toId}) endpoints,
+  ) async {
+    try {
+      final existing = await _journalDb.typedLinksForTaskIds(
+        {endpoints.fromId},
+        types: {entryLinkTypeDbName(relation.type)},
+      );
+      return existing.any(
+        (link) =>
+            link.fromId == endpoints.fromId &&
+            link.toId == endpoints.toId &&
+            link.deletedAt == null &&
+            link.hidden != true,
+      );
+    } catch (e) {
+      _domainLogger?.error(
+        LogDomain.agentWorkflow,
+        e,
+        message: 'Existing-link precheck failed; falling through to create',
+        subDomain: _sub,
+      );
+      // Conservative: let createLink's own duplicate guard decide.
+      return false;
+    }
+  }
+}

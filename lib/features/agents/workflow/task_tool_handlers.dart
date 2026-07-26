@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
 import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
+import 'package:lotti/features/agents/tools/task_link_handler.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
 import 'package:lotti/features/agents/tools/time_entry_handler.dart';
@@ -409,6 +410,18 @@ extension TaskToolHandlers on TaskToolDispatcher {
   ) async {
     final handler = ChecklistMigrationHandler(
       checklistRepository: checklistRepository,
+      journalDb: journalDb,
+      domainLogger: domainLogger,
+    );
+    return handler.handle(sourceTaskId, args);
+  }
+
+  Future<ToolExecutionResult> handleLinkTask(
+    Map<String, dynamic> args,
+    String sourceTaskId,
+  ) async {
+    final handler = TaskLinkHandler(
+      persistenceLogic: persistenceLogic,
       journalDb: journalDb,
       domainLogger: domainLogger,
     );

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -1492,6 +1493,49 @@ void main() {
             () => mockPersistenceLogic.createLink(
               fromId: taskId,
               toId: 'new-task-001',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'link_task delegates to TaskLinkHandler and writes the canonical '
+        'edge',
+        () async {
+          final targetTask = _makeTestTask('target-task-001');
+
+          when(
+            () => mockJournalDb.journalEntityById('target-task-001'),
+          ).thenAnswer((_) async => targetTask);
+          when(
+            () => mockJournalDb.typedLinksForTaskIds(
+              any(),
+              types: any(named: 'types'),
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockPersistenceLogic.createLink(
+              fromId: any(named: 'fromId'),
+              toId: any(named: 'toId'),
+              linkType: any(named: 'linkType'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final result = await dispatcher.dispatch(
+            'link_task',
+            {'relation': 'is_blocked_by', 'targetTaskId': 'target-task-001'},
+            taskId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, contains('is blocked by'));
+          expect(result.mutatedEntityId, 'target-task-001');
+          // Inverse phrase: the target is the blocker, so it is fromId.
+          verify(
+            () => mockPersistenceLogic.createLink(
+              fromId: 'target-task-001',
+              toId: taskId,
+              linkType: EntryLinkType.blocks,
             ),
           ).called(1);
         },

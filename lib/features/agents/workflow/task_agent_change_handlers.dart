@@ -33,6 +33,13 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       return referenceError;
     }
 
+    // Route link_task through dedicated validation: the relation must parse,
+    // the target must be a real task, and the relationship must not already
+    // exist — all fail-closed before anything is queued for the user.
+    if (toolName == TaskAgentToolNames.linkTask) {
+      return _queueLinkTaskProposal(csBuilder, args);
+    }
+
     // Route create_follow_up_task to the dedicated builder method that
     // injects a placeholder ID and returns it for migrate_checklist_items.
     if (toolName == TaskAgentToolNames.createFollowUpTask) {
@@ -107,6 +114,116 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
 
     return response;
   }
+
+  /// Validates and queues a `link_task` proposal.
+  ///
+  /// Fail-closed on everything the apply path would reject anyway — an
+  /// unparseable relation, a hallucinated or self-referential target id — so
+  /// the user never reviews a proposal that cannot succeed, and redundant
+  /// re-assertions of an existing relationship are suppressed with
+  /// model-facing feedback instead of queued as no-ops.
+  Future<String> _queueLinkTaskProposal(
+    ChangeSetBuilder csBuilder,
+    Map<String, dynamic> args,
+  ) async {
+    final rawRelation = args['relation'];
+    final relation = rawRelation is String
+        ? DirectedRelation.fromWireName(rawRelation)
+        : null;
+    if (relation == null) {
+      return 'ERROR: "relation" must be one of '
+          '${taskRelationWireNames.join(', ')}. No proposal was queued.';
+    }
+
+    final rawTargetId = args['targetTaskId'];
+    final targetTaskId = rawTargetId is String ? rawTargetId.trim() : '';
+    if (targetTaskId.isEmpty) {
+      return 'ERROR: link_task requires a string "targetTaskId" naming an '
+          'existing task from your context. No proposal was queued.';
+    }
+    if (targetTaskId == taskId) {
+      return 'ERROR: a task cannot be linked to itself. '
+          'No proposal was queued.';
+    }
+
+    String? targetTitle;
+    final titleResolver = resolveLinkableTaskTitle;
+    if (titleResolver != null) {
+      var lookupSucceeded = true;
+      try {
+        targetTitle = await titleResolver(targetTaskId);
+      } catch (_) {
+        // Transient lookup failure — keep conservatively, without a title.
+        lookupSucceeded = false;
+      }
+
+      if (lookupSucceeded && targetTitle == null) {
+        return 'ERROR: task "$targetTaskId" does not exist. Only use task '
+            'ids listed in your context (e.g. the Linked Tasks section); '
+            'do not invent ids. No proposal was queued.';
+      }
+    }
+
+    final endpoints = relation.canonicalEndpoints(
+      anchorId: taskId,
+      otherId: targetTaskId,
+    );
+    final relationsResolver = resolveExistingTaskRelations;
+    if (relationsResolver != null) {
+      Set<String>? existing;
+      try {
+        existing = await relationsResolver();
+      } catch (_) {
+        // Transient lookup failure — keep the proposal.
+        existing = null;
+      }
+      final triple = canonicalRelationTriple(
+        fromId: endpoints.fromId,
+        toId: endpoints.toId,
+        type: relation.type,
+      );
+      if (existing != null && existing.contains(triple)) {
+        return 'Skipped: this task already ${relation.englishPhrase} '
+            '"${targetTitle ?? targetTaskId}" — the relationship exists. '
+            'Do NOT propose it again.';
+      }
+    }
+
+    // Canonicalized args so formatting-only repeats share a fingerprint.
+    final canonicalArgs = <String, dynamic>{
+      'relation': relation.wireName,
+      'targetTaskId': targetTaskId,
+    };
+    final humanSummary =
+        'Link: this task ${relation.englishPhrase} '
+        '"${targetTitle ?? targetTaskId}"';
+
+    final addRedundancy = await csBuilder.addItem(
+      toolName: TaskAgentToolNames.linkTask,
+      args: canonicalArgs,
+      humanSummary: humanSummary,
+    );
+    if (addRedundancy != null) {
+      return 'Skipped: $addRedundancy';
+    }
+
+    developer.log(
+      'Deferred tool ${TaskAgentToolNames.linkTask} to change set '
+      '(${csBuilder.items.length} items total)',
+      name: 'TaskAgentStrategy',
+    );
+
+    return 'OK — link_task proposal recorded successfully. Only call '
+        'link_task again for a DIFFERENT relationship.';
+  }
+
+  /// The stable identity of one stored relationship, for redundancy checks:
+  /// canonical `fromId|toId|<linked_entries.type>`.
+  static String canonicalRelationTriple({
+    required String fromId,
+    required String toId,
+    required EntryLinkType type,
+  }) => '$fromId|$toId|${entryLinkTypeDbName(type)}';
 
   /// Returns a model-facing error string when [toolName]'s arguments reference
   /// an entity by id that cannot be looked up (a hallucinated id), or `null`
@@ -362,7 +479,8 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         .where(
           (tool) =>
               !AgentToolRegistry.explodedBatchTools.containsKey(tool) &&
-              tool != TaskAgentToolNames.createFollowUpTask,
+              tool != TaskAgentToolNames.createFollowUpTask &&
+              tool != TaskAgentToolNames.linkTask,
         )
         .toSet();
 

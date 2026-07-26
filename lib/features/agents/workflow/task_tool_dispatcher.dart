@@ -145,6 +145,9 @@ class TaskToolDispatcher {
       case TaskAgentToolNames.migrateChecklistItems:
         return handleMigrateChecklistItem(args, taskId);
 
+      case TaskAgentToolNames.linkTask:
+        return handleLinkTask(args, taskId);
+
       case TaskAgentToolNames.createTimeEntry:
         return handleCreateTimeEntry(args, taskId);
 

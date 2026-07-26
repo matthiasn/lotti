@@ -529,6 +529,7 @@ class ChangeSetConfirmationService {
     'minutes',
     'priority',
     'reason',
+    'relation',
     'startTime',
     'status',
     'summary',

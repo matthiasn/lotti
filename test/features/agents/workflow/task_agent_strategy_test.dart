@@ -163,6 +163,8 @@ ChatCompletionMessageToolCall _toolCall({
   bool withChangeSetBuilder = true,
   Future<Set<String>> Function()? resolveEditableTimeEntryIds,
   Future<String?> Function()? resolveRunningTimerId,
+  Future<String?> Function(String taskId)? resolveLinkableTaskTitle,
+  Future<Set<String>> Function()? resolveExistingTaskRelations,
 }) {
   const agentId = 'agent-001';
   const taskId = 'task-001';
@@ -202,6 +204,8 @@ ChatCompletionMessageToolCall _toolCall({
     allowedRelatedTaskIds: allowedRelatedTaskIds,
     resolveEditableTimeEntryIds: resolveEditableTimeEntryIds,
     resolveRunningTimerId: resolveRunningTimerId,
+    resolveLinkableTaskTitle: resolveLinkableTaskTitle,
+    resolveExistingTaskRelations: resolveExistingTaskRelations,
   );
 
   return (strategy: strategy, builder: csBuilder);
@@ -1834,6 +1838,333 @@ void main() {
           expect(bench.builder.items.single.args['timerId'], 'timer-1');
         },
       );
+    });
+
+    group('link_task proposal validation', () {
+      ChatCompletionMessageToolCall call(
+        Map<String, dynamic> args, {
+        String id = 'call-1',
+      }) => ChatCompletionMessageToolCall(
+        id: id,
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'link_task',
+          arguments: jsonEncode(args),
+        ),
+      );
+
+      test('queues a valid proposal with the target title in the summary',
+          () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveLinkableTaskTitle: (id) async =>
+              id == 'target-1' ? 'Ship the migration' : null,
+          resolveExistingTaskRelations: () async => {},
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call({'relation': 'is_blocked_by', 'targetTaskId': 'target-1'}),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, hasLength(1));
+        final item = bench.builder.items.single;
+        expect(item.toolName, 'link_task');
+        expect(item.args, {
+          'relation': 'is_blocked_by',
+          'targetTaskId': 'target-1',
+        });
+        expect(
+          item.humanSummary,
+          'Link: this task is blocked by "Ship the migration"',
+        );
+      });
+
+      test('canonicalizes relation case and id padding into the args',
+          () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveLinkableTaskTitle: (_) async => 'Target',
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call({'relation': ' BLOCKS ', 'targetTaskId': ' target-1 '}),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, hasLength(1));
+        expect(bench.builder.items.single.args, {
+          'relation': 'blocks',
+          'targetTaskId': 'target-1',
+        });
+      });
+
+      test('rejects an unknown relation and names the vocabulary', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveLinkableTaskTitle: (_) async => 'Target',
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call({'relation': 'parent_of', 'targetTaskId': 'target-1'}),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, isEmpty);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: any(
+              named: 'response',
+              that: allOf(
+                contains('"relation" must be one of'),
+                contains('is_superseded_by'),
+              ),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('rejects a missing targetTaskId', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveLinkableTaskTitle: (_) async => 'Target',
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call({'relation': 'blocks'}),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, isEmpty);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: any(
+              named: 'response',
+              that: contains('requires a string "targetTaskId"'),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('rejects linking the task to itself', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveLinkableTaskTitle: (_) async => 'Target',
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            // 'task-001' is the strategy bench's own taskId.
+            call({'relation': 'blocks', 'targetTaskId': 'task-001'}),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, isEmpty);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: any(
+              named: 'response',
+              that: contains('cannot be linked to itself'),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('rejects a hallucinated target id fail-closed', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveLinkableTaskTitle: (_) async => null,
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call({'relation': 'blocks', 'targetTaskId': 'ghost-task'}),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, isEmpty);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: any(
+              named: 'response',
+              that: allOf(
+                contains('ghost-task'),
+                contains('do not invent ids'),
+              ),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'keeps the proposal when the title resolver throws (conservative)',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveLinkableTaskTitle: (_) async => throw Exception('db down'),
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call({'relation': 'blocks', 'targetTaskId': 'target-1'}),
+            ],
+            manager: mockManager,
+          );
+
+          // Transient failure must not punish a possibly-valid id; the
+          // summary falls back to the raw id.
+          expect(bench.builder.items, hasLength(1));
+          expect(
+            bench.builder.items.single.humanSummary,
+            'Link: this task blocks "target-1"',
+          );
+        },
+      );
+
+      test('does not validate the target without a resolver wired', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call({'relation': 'supersedes', 'targetTaskId': 'target-1'}),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, hasLength(1));
+      });
+
+      test('suppresses a relationship that already exists', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveLinkableTaskTitle: (_) async => 'Target',
+          // Canonical triple for "this task blocks target-1": the anchor
+          // 'task-001' is the blocker, so it is fromId.
+          resolveExistingTaskRelations: () async => {
+            'task-001|target-1|BlocksLink',
+          },
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call({'relation': 'blocks', 'targetTaskId': 'target-1'}),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, isEmpty);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: any(
+              named: 'response',
+              that: contains('the relationship exists'),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'an existing reverse edge does not suppress the opposite direction',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveLinkableTaskTitle: (_) async => 'Target',
+            // target-1 blocks task-001 — direction is part of identity, so
+            // asserting "this task blocks target-1" is a NEW relationship.
+            resolveExistingTaskRelations: () async => {
+              'target-1|task-001|BlocksLink',
+            },
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call({'relation': 'blocks', 'targetTaskId': 'target-1'}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(bench.builder.items, hasLength(1));
+        },
+      );
+
+      test('allows multiple different relationships in one wake', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveLinkableTaskTitle: (_) async => 'Target',
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call({'relation': 'blocks', 'targetTaskId': 'target-1'}),
+            call(
+              {'relation': 'supersedes', 'targetTaskId': 'target-2'},
+              id: 'call-2',
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        // link_task is exempt from the single-use deferred-tool rule.
+        expect(bench.builder.items, hasLength(2));
+      });
+
+      test('dedups an identical repeat within the same wake', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveLinkableTaskTitle: (_) async => 'Target',
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call({'relation': 'blocks', 'targetTaskId': 'target-1'}),
+            call(
+              {'relation': 'blocks', 'targetTaskId': 'target-1'},
+              id: 'call-2',
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, hasLength(1));
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-2',
+            response: any(
+              named: 'response',
+              that: contains('Already queued'),
+            ),
+          ),
+        ).called(1);
+      });
     });
 
     group('deferred tools with changeSetBuilder', () {

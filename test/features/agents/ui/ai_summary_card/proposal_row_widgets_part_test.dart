@@ -30,6 +30,7 @@ void main() {
     // colored chip.
     const cases = <({String tool, String expectedLabel})>[
       (tool: 'add_multiple_checklist_items', expectedLabel: 'Add'),
+      (tool: 'link_task', expectedLabel: 'Add'),
       (tool: 'update_checklist_items', expectedLabel: 'Update'),
       (tool: 'retract_suggestions', expectedLabel: 'Remove'),
       (tool: 'update_task_priority', expectedLabel: 'Priority'),

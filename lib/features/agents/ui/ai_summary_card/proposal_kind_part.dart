@@ -42,6 +42,7 @@ ProposalKind resolveKind(String toolName, Map<String, dynamic> args) {
     case TaskAgentToolNames.createTimeEntry:
     case TaskAgentToolNames.migrateChecklistItems:
     case TaskAgentToolNames.migrateChecklistItem:
+    case TaskAgentToolNames.linkTask:
       return ProposalKind.add;
     case TaskAgentToolNames.updateChecklistItems:
     case TaskAgentToolNames.updateChecklistItem:
