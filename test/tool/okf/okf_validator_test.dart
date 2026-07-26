@@ -6,18 +6,41 @@ import 'package:flutter_test/flutter_test.dart';
 // package, so it has no `package:` URI.
 import '../../../tool/okf/okf_validator.dart';
 
-/// Minimal valid frontmatter, used as the baseline every negative case mutates.
-const _validFrontmatter = '''
----
-type: Feature Module
-title: Speech
-description: Audio capture and playback.
+/// The house keys a complete concept carries.
+///
+/// Kept in one place so adding a required key is a single edit here rather than
+/// thirty edits across the fixtures.
+const _houseKeys = '''
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
----
-
-Body.
+stale_after: 2027-01-31
+sources:
+  - id: src
+    resource: https://example.com/src
 ''';
+
+/// Builds a complete concept document.
+///
+/// [house] replaces the whole house-key block for tests that vary one of those
+/// fields; [extra] appends additional frontmatter; [body] replaces the body.
+String _concept({
+  String type = 'Feature Module',
+  String house = _houseKeys,
+  String extra = '',
+  String body = 'Body.',
+}) =>
+    '''
+---
+type: $type
+title: Speech
+description: Audio capture.
+$house$extra---
+
+$body
+''';
+
+/// Minimal valid frontmatter, used as the baseline every negative case mutates.
+final String _validFrontmatter = _concept();
 
 /// Builds a one-concept bundle so a test only states what it is varying.
 Map<String, String> _bundle(
@@ -38,6 +61,9 @@ Map<String, String> _bundle(
 List<String> _messages(OkfValidationResult result) =>
     result.issues.map((i) => i.message).toList();
 
+String _joined(Iterable<OkfIssue> issues) =>
+    issues.map((i) => i.message).join(' ');
+
 void main() {
   group('conformance errors (spec §11)', () {
     test('a concept with no frontmatter is rejected', () {
@@ -50,13 +76,7 @@ void main() {
 
     test('unparseable frontmatter is reported as an error, not a crash', () {
       final result = validateBundle(
-        _bundle('''
----
-type: [unclosed
----
-
-Body.
-'''),
+        _bundle('---\ntype: [unclosed\n---\n\nBody.\n'),
       );
 
       expect(result.isConformant, isFalse);
@@ -69,9 +89,7 @@ Body.
 ---
 title: Speech
 description: Audio capture.
-status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
----
+$_houseKeys---
 
 Body.
 '''),
@@ -84,15 +102,7 @@ Body.
     });
 
     test('an empty type string is rejected as firmly as a missing one', () {
-      final result = validateBundle(
-        _bundle('''
----
-type: "   "
----
-
-Body.
-'''),
-      );
+      final result = validateBundle(_concept(type: '"   "').let(_bundle));
 
       expect(
         result.errors.single.message,
@@ -110,10 +120,7 @@ Body.
         ),
       );
 
-      expect(
-        result.errors.single.path,
-        'features/index.md',
-      );
+      expect(result.errors.single.path, 'features/index.md');
       expect(
         result.errors.single.message,
         contains('only the bundle-root index.md may carry frontmatter'),
@@ -131,6 +138,23 @@ Body.
       expect(
         result.errors.single.message,
         allOf(contains('may only declare'), contains('title')),
+      );
+    });
+
+    test('root index.md with unparseable YAML errors instead of throwing', () {
+      // Regression: an unguarded loadYaml here took the CLI down with a stack
+      // trace instead of reporting a file-scoped diagnostic.
+      final result = validateBundle(
+        _bundle(
+          _validFrontmatter,
+          index: '---\nokf_version: [unclosed\n---\n\n# Root\n',
+        ),
+      );
+
+      expect(result.isConformant, isFalse);
+      expect(
+        result.errors.single.message,
+        contains('root index.md frontmatter is not parseable YAML'),
       );
     });
 
@@ -170,14 +194,16 @@ Body.
       );
 
       expect(result.isConformant, isTrue);
-      // ... but the house rules still ask for the recommended keys.
+      // ... but the house rules still ask for every recommended key.
       expect(
-        result.warnings.map((w) => w.message).join(' '),
+        _joined(result.warnings),
         allOf(
           contains('`title`'),
           contains('`description`'),
           contains('`status`'),
           contains('`generated`'),
+          contains('`stale_after`'),
+          contains('`sources`'),
         ),
       );
     });
@@ -186,18 +212,12 @@ Body.
   group('trust and lifecycle fields (§5)', () {
     test('a bare verified mapping is accepted as a one-element list', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
-status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-verified: { by: human:matthiasn, at: 2026-07-25T09:00:00Z }
----
-
-Body.
-'''),
+        _bundle(
+          _concept(
+            extra:
+                'verified: { by: human:matthiasn, at: 2026-07-25T09:00:00Z }\n',
+          ),
+        ),
       );
 
       expect(result.issues, isEmpty);
@@ -205,20 +225,15 @@ Body.
 
     test('a verified list with several entries is accepted', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
-status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+        _bundle(
+          _concept(
+            extra: '''
 verified:
   - { by: human:matthiasn, at: 2026-07-25T09:00:00Z }
   - { by: process:nightly-audit, at: 2026-07-26T02:00:00Z }
----
-
-Body.
-'''),
+''',
+          ),
+        ),
       );
 
       expect(result.issues, isEmpty);
@@ -226,17 +241,18 @@ Body.
 
     test('an actor outside the convention is flagged', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
+        _bundle(
+          _concept(
+            house: '''
 status: stable
 generated: { by: someone, at: 2026-07-25T22:30:00Z }
----
-
-Body.
-'''),
+stale_after: 2027-01-31
+sources:
+  - id: src
+    resource: https://example.com/src
+''',
+          ),
+        ),
       );
 
       expect(result.isConformant, isTrue);
@@ -248,17 +264,18 @@ Body.
 
     test('an unknown status value is flagged', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
+        _bundle(
+          _concept(
+            house: '''
 status: provisional
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
----
-
-Body.
-'''),
+stale_after: 2027-01-31
+sources:
+  - id: src
+    resource: https://example.com/src
+''',
+          ),
+        ),
       );
 
       expect(
@@ -269,18 +286,7 @@ Body.
 
     test('stale_after must be an absolute date, not a duration', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
-status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 90d
----
-
-Body.
-'''),
+        _bundle(_concept(house: _houseWithStaleAfter('90d'))),
       );
 
       expect(
@@ -291,43 +297,39 @@ Body.
 
     test('generated.at must be a datetime, not a bare date', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
+        _bundle(
+          _concept(
+            house: '''
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25 }
----
-
-Body.
-'''),
+stale_after: 2027-01-31
+sources:
+  - id: src
+    resource: https://example.com/src
+''',
+          ),
+        ),
       );
 
-      expect(
-        result.warnings.single.message,
-        contains('ISO 8601 datetime'),
-      );
+      expect(result.warnings.single.message, contains('ISO 8601 datetime'));
     });
 
     test('duplicate source ids are flagged because footnotes join on them', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
+        _bundle(
+          _concept(
+            house: '''
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
 sources:
   - id: repo
     resource: https://example.com/a
   - id: repo
     resource: https://example.com/b
----
-
-Body.
-'''),
+''',
+          ),
+        ),
       );
 
       expect(
@@ -338,20 +340,18 @@ Body.
 
     test('a source entry without a resource is flagged', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
+        _bundle(
+          _concept(
+            house: '''
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
 sources:
   - id: repo
     title: No resource here
----
-
-Body.
-'''),
+''',
+          ),
+        ),
       );
 
       expect(
@@ -361,43 +361,134 @@ Body.
     });
   });
 
+  group('dates are real calendar values, not just the right shape', () {
+    test('an out-of-range stale_after month is rejected', () {
+      // DateTime.tryParse ROLLS OVER rather than rejecting: 2026-99-99 parses
+      // as 2034-06-07, so a shape-only check accepted it.
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-99-99'))),
+      );
+
+      expect(
+        result.warnings.single.message,
+        contains('absolute `YYYY-MM-DD` date'),
+      );
+    });
+
+    test('a non-existent calendar day is rejected', () {
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-02-30'))),
+      );
+
+      expect(
+        result.warnings.single.message,
+        contains('absolute `YYYY-MM-DD` date'),
+      );
+    });
+
+    test('a real leap day is accepted', () {
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2028-02-29'))),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('an out-of-range generated.at time is rejected', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-01-01T99:99:99Z }
+stale_after: 2027-01-31
+sources:
+  - id: src
+    resource: https://example.com/src
+''',
+          ),
+        ),
+      );
+
+      expect(result.warnings.single.message, contains('ISO 8601 datetime'));
+    });
+
+    test('an offset-bearing timestamp is accepted', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00+02:00 }
+stale_after: 2027-01-31
+sources:
+  - id: src
+    resource: https://example.com/src
+''',
+          ),
+        ),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a sources last_modified that is not a real date is flagged', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: src
+    resource: https://example.com/src
+    last_modified: 2026-13-45
+''',
+          ),
+        ),
+      );
+
+      expect(
+        result.warnings.single.message,
+        contains('`sources[].last_modified` must be `YYYY-MM-DD`'),
+      );
+    });
+
+    test('a log heading that is not a real date is an error', () {
+      final result = validateBundle(
+        _bundle(
+          _validFrontmatter,
+          extra: {'log.md': '# Log\n\n## 2026-13-01\n* **Update**: x\n'},
+        ),
+      );
+
+      expect(result.errors.single.message, contains('must use ISO 8601'));
+    });
+  });
+
   group('Attested Computation (§10)', () {
     test('missing runtime and computation are both flagged', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Attested Computation
-title: Revenue
-description: Revenue for a year.
-status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
----
-
-No computation here.
-'''),
+        _bundle(
+          _concept(type: 'Attested Computation', body: 'No computation here.'),
+        ),
       );
 
-      final messages = _messages(result).join(' ');
+      final messages = _joined(result.issues);
       expect(messages, contains('`runtime` is required'));
       expect(messages, contains('`# Computation` body section'));
     });
 
     test('a body computation section satisfies the requirement', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Attested Computation
-title: Revenue
-description: Revenue for a year.
-status: stable
-runtime: bigquery
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
----
-
-# Computation
-
-    SELECT 1
-'''),
+        _bundle(
+          _concept(
+            type: 'Attested Computation',
+            extra: 'runtime: bigquery\n',
+            body: '# Computation\n\n    SELECT 1',
+          ),
+        ),
       );
 
       expect(result.issues, isEmpty);
@@ -407,17 +498,7 @@ generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
   group('link resolution (§6)', () {
     test('a bundle-internal link with no target warns but does not fail', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
-status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
----
-
-See [the sync feature](./sync.md).
-'''),
+        _bundle(_concept(body: 'See [the sync feature](./sync.md).')),
       );
 
       expect(result.isConformant, isTrue);
@@ -430,17 +511,9 @@ See [the sync feature](./sync.md).
     test('a link to a sibling concept resolves', () {
       final result = validateBundle(
         _bundle(
-          '''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
-status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
----
-
-See [the sync feature](./sync.md) and [the root](/index.md).
-''',
+          _concept(
+            body: 'See [sync](./sync.md) and [the root](/index.md).',
+          ),
           extra: {'features/sync.md': _validFrontmatter},
         ),
       );
@@ -451,17 +524,7 @@ See [the sync feature](./sync.md) and [the root](/index.md).
     test('a link to a directory resolves through its index.md', () {
       final result = validateBundle(
         _bundle(
-          '''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
-status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
----
-
-See [the architecture](../architecture/).
-''',
+          _concept(body: 'See [the architecture](../architecture/).'),
           extra: {
             'architecture/index.md':
                 '# Architecture\n\n* [Overview](overview.md) - x\n',
@@ -475,21 +538,13 @@ See [the architecture](../architecture/).
 
     test('a link form quoted in code is not resolved as a link', () {
       final result = validateBundle(
-        _bundle('''
----
-type: Feature Module
-title: Speech
-description: Audio capture.
-status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
----
-
-Reports may link tasks as `[Title](/tasks/<taskId>)`.
-
-```markdown
-See [the missing one](./nope.md).
-```
-'''),
+        _bundle(
+          _concept(
+            body:
+                'Reports may link tasks as `[Title](/tasks/<taskId>)`.\n\n'
+                '```markdown\nSee [the missing one](./nope.md).\n```',
+          ),
+        ),
       );
 
       expect(result.issues, isEmpty);
@@ -497,17 +552,84 @@ See [the missing one](./nope.md).
 
     test('external URLs and anchors are not treated as bundle paths', () {
       final result = validateBundle(
-        _bundle('''
+        _bundle(
+          _concept(
+            body:
+                'See [the spec](https://example.com/SPEC.md) and '
+                '[above](#one-fact).',
+          ),
+        ),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+  });
+
+  group('reference-style links', () {
+    test('a reference definition with no bundle target warns', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            body: 'See [the sync feature][sync].\n\n[sync]: ./sync.md',
+          ),
+        ),
+      );
+
+      expect(
+        result.warnings.single.message,
+        contains('does not exist in the bundle'),
+      );
+    });
+
+    test(
+      'a reference definition escaping the bundle is resolved in the repo',
+      () {
+        // The anti-drift check has to see reference definitions too, or a
+        // dangling code pointer passes `make okf_check`.
+        final seen = <String>[];
+        final issues = validateRepoReferences(
+          files: {
+            'features/speech.md': '''
 ---
 type: Feature Module
 title: Speech
-description: Audio capture.
-status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
 ---
 
-See [the spec](https://example.com/SPEC.md) and [above](#one-fact).
-'''),
+Implemented by [the recorder][impl].
+
+[impl]: ../../lib/features/speech/repository/recorder.dart
+''',
+          },
+          bundleRoot: 'knowledge',
+          repoFileExists: (path) {
+            seen.add(path);
+            return false;
+          },
+        );
+
+        expect(seen, contains('lib/features/speech/repository/recorder.dart'));
+        expect(issues.single.isError, isTrue);
+        expect(issues.single.message, contains('has drifted from the code'));
+      },
+    );
+
+    test('footnote definitions are not treated as paths (§5.1)', () {
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: rev-policy
+    resource: https://example.com/policy
+''',
+            body:
+                'The claim holds.[^rev-policy]\n\n'
+                '[^rev-policy]: Revenue recognition policy',
+          ),
+        ),
       );
 
       expect(result.issues, isEmpty);
@@ -523,6 +645,7 @@ title: Speech
 description: Audio capture.
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
 resource: ../../lib/features/speech
 sources:
   - id: recorder
@@ -658,11 +781,7 @@ See [sync](./sync.md), [root](/index.md) and [spec](https://example.com).
   group('the real knowledge/ bundle', () {
     test('is conformant and every code pointer resolves', () {
       final root = Directory('knowledge');
-      expect(
-        root.existsSync(),
-        isTrue,
-        reason: 'run from the repository root',
-      );
+      expect(root.existsSync(), isTrue, reason: 'run from the repository root');
 
       final files = <String, String>{};
       for (final entity in root.listSync(recursive: true)) {
@@ -688,4 +807,19 @@ See [sync](./sync.md), [root](/index.md) and [spec](https://example.com).
       expect(result.conceptCount, greaterThan(0));
     });
   });
+}
+
+/// House keys with `stale_after` replaced, for the freshness-date cases.
+String _houseWithStaleAfter(String value) =>
+    '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: $value
+sources:
+  - id: src
+    resource: https://example.com/src
+''';
+
+extension _Let<T> on T {
+  R let<R>(R Function(T) f) => f(this);
 }

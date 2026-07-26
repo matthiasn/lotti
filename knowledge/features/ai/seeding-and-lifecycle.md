@@ -83,7 +83,31 @@ So a hard delete was undone within the same session — **deletion had no memory
 only presence was state.**
 
 Deleting an AI config therefore **soft-deletes** it: `deleteConfig` stamps
-`deletedAt` on the row and re-saves it. The row itself is the tombstone, which
+`deletedAt` on the row and re-saves it.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Absent: never seeded
+    Absent --> Active: seedDefaults() — gate type has a usable provider
+    Active --> Active: upgradeExisting() heals slots, never overwrites choices
+    Active --> Tombstoned: deleteConfig() stamps deletedAt
+    Tombstoned --> Tombstoned: seedDefaults() reads it as PRESENT and skips
+    Tombstoned --> Active: restoreConfig() clears the stamp
+    Absent --> Active: hardDeleteConfig() then a later seed
+    Active --> Absent: removeOrphanedDefaultSeeds() — untouched seed, gate lost
+    Active --> Absent: provider cascade removes its model rows
+    note right of Tombstoned
+      The row IS the tombstone, so
+      "deleted" is distinguishable from
+      "never seeded" in the same database
+      and replicates on the existing
+      sync path.
+    end note
+    note right of Absent
+      Only hard delete returns here, and
+      only where re-seeding is the intent.
+    end note
+``` The row itself is the tombstone, which
 makes "deleted" distinguishable from "never seeded" in the same database and the
 same write. Because `SyncMessage.aiConfig` already carries the whole config, the
 deletion replicates on the existing sync path and converges across devices with

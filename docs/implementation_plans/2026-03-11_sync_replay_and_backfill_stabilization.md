@@ -144,7 +144,7 @@ Required tests:
 | `test/features/sync/matrix/pipeline/catch_up_strategy_test.dart` | add missing-marker regression coverage |
 | `test/features/sync/matrix/pipeline/matrix_stream_consumer_test.dart` | verify consumer behavior if needed |
 | `lib/features/sync/README.md` | keep feature docs aligned |
-| `lib/features/sync/current_architecture.md` | keep investigation findings aligned |
+| `docs/architecture/sync_current_architecture.md` | keep investigation findings aligned |
 | `CHANGELOG.md` | document released fix |
 | `flatpak/com.matthiasn.lotti.metainfo.xml` | mirror changelog entry |
 

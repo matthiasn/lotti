@@ -94,8 +94,18 @@ const okfVersion = '0.2';
 ///
 /// `type` is the spec's only hard requirement (§4.1); the rest are `SHOULD`s
 /// that this repo treats as house style so agents always find a description to
-/// show and a freshness date to reason about.
-const _requiredHouseKeys = {'title', 'description', 'status', 'generated'};
+/// show, a freshness date to reason about, and the code the concept was derived
+/// from. `stale_after` and `sources` are in here rather than only validated
+/// when present, because a concept that omits them is exactly the one whose
+/// drift nobody can detect.
+const _requiredHouseKeys = {
+  'title',
+  'description',
+  'status',
+  'generated',
+  'stale_after',
+  'sources',
+};
 
 /// Lifecycle values allowed by §5.4.
 const _statusValues = {'draft', 'stable', 'deprecated'};
@@ -104,10 +114,66 @@ final _frontmatterPattern = RegExp(
   r'^---\r?\n(.*?)\r?\n---\s*?(\r?\n|$)',
   dotAll: true,
 );
-final _isoDatePattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+final _isoDatePattern = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$');
 final _isoDateTimePattern = RegExp(
-  r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$',
+  r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$',
 );
+
+/// Whether [value] is a real `YYYY-MM-DD` calendar day.
+///
+/// The shape regex alone is not enough: `DateTime.tryParse` **rolls over** out
+/// of range components rather than rejecting them (`2026-99-99` parses as
+/// 2034-06-07, `2026-02-30` as 2026-03-02), so an impossible date would sail
+/// through as valid metadata. Round-tripping the parsed components against what
+/// was written is what actually rejects it.
+bool _isRealIsoDate(String value) {
+  final match = _isoDatePattern.firstMatch(value);
+  if (match == null) return false;
+  return _isRealCalendarDay(
+    int.parse(match.group(1)!),
+    int.parse(match.group(2)!),
+    int.parse(match.group(3)!),
+  );
+}
+
+/// Whether [value] is a real ISO 8601 datetime, rejecting both out-of-range
+/// components and impossible calendar days.
+bool _isRealIsoDateTime(String value) {
+  final match = _isoDateTimePattern.firstMatch(value);
+  if (match == null) return false;
+  final hour = int.parse(match.group(4)!);
+  final minute = int.parse(match.group(5)!);
+  final second = int.parse(match.group(6)!);
+  // Range-check before any construction. `DateTime` rolls out-of-range
+  // components over — 99:99:99 becomes a valid instant four days later — so a
+  // round-trip comparison alone would accept it.
+  if (hour > 23 || minute > 59 || second > 59) return false;
+  final offset = match.group(8)!;
+  if (offset != 'Z') {
+    if (int.parse(offset.substring(1, 3)) > 23) return false;
+    if (int.parse(offset.substring(4, 6)) > 59) return false;
+  }
+  return _isRealCalendarDay(
+    int.parse(match.group(1)!),
+    int.parse(match.group(2)!),
+    int.parse(match.group(3)!),
+  );
+}
+
+/// Whether `year-month-day` names a day that exists.
+///
+/// Range-checks the components first, then round-trips through `DateTime` to
+/// reject a day that is out of range *for its month* — February 30 and April 31
+/// pass a naive `day <= 31` check but roll over into the next month.
+bool _isRealCalendarDay(int year, int month, int day) {
+  if (month < 1 || month > 12) return false;
+  if (day < 1 || day > 31) return false;
+  final constructed = DateTime.utc(year, month, day);
+  return constructed.year == year &&
+      constructed.month == month &&
+      constructed.day == day;
+}
+
 // §7 names `human:`, `process:` and `<producer>/<version>`; §5.1's own example
 // additionally uses a `team:` prefix for `sources[].author`, so it is accepted.
 final _actorPattern = RegExp(
@@ -118,6 +184,18 @@ final _actorPattern = RegExp(
 // `## May 22, 2026` slip through as "not a date heading at all".
 final _logDateHeadingPattern = RegExp(r'^##\s+(.+?)\s*$');
 final _markdownLinkPattern = RegExp(r'\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)');
+// Reference-style link definitions: `[label]: target "optional title"`. A
+// reference link (`[text][label]`) carries no target of its own, so scanning
+// only inline links would let `[impl]: ../../lib/gone.dart` pass while the
+// rendered document points at a missing file. Footnote definitions
+// (`[^label]: prose`) are excluded — §5.1 keys those to `sources[].id` and
+// their body is prose, not a path.
+final _referenceDefinitionPattern = RegExp(
+  '^ {0,3}'
+  r'\[([^^\]][^\]]*)\]:[ \t]*<?([^\s>]+)>?'
+  r'''[ \t]*(?:"[^"]*"|'[^']*'|\([^)]*\))?[ \t]*$''',
+  multiLine: true,
+);
 
 /// A markdown file split into its raw YAML frontmatter and its body.
 ///
@@ -155,6 +233,19 @@ String stripCodeSpans(String markdown) {
         _inlineCodePattern,
         (m) => ' ' * m.group(0)!.length,
       );
+}
+
+/// Every link target in [body]: inline `[a](b)` plus reference definitions.
+///
+/// Code spans are stripped first so a documented link *form* is not treated as
+/// a link the bundle must resolve.
+Iterable<String> linkTargets(String body) {
+  final stripped = stripCodeSpans(body);
+  return [
+    for (final m in _markdownLinkPattern.allMatches(stripped)) m.group(1)!,
+    for (final m in _referenceDefinitionPattern.allMatches(stripped))
+      m.group(2)!,
+  ];
 }
 
 /// Extracts the frontmatter block and body from a markdown [content] string.
@@ -538,7 +629,7 @@ List<OkfIssue> _validateDateTime(String path, Object? value, String label) {
     ];
   }
   if (value is DateTime) return const [];
-  if (value is String && _isoDateTimePattern.hasMatch(value)) return const [];
+  if (value is String && _isRealIsoDateTime(value)) return const [];
   return [
     OkfIssue(
       severity: Severity.warning,
@@ -571,7 +662,24 @@ List<OkfIssue> _validateIndex(
         ),
       );
     } else {
-      final parsed = loadYaml(document.frontmatterYaml!);
+      // Guarded the same way concept frontmatter is: an unguarded loadYaml here
+      // would throw past the issue list and take the CLI down with a stack
+      // trace instead of reporting a file-scoped diagnostic.
+      Object? parsed;
+      try {
+        parsed = loadYaml(document.frontmatterYaml!);
+      } on YamlException catch (e) {
+        return [
+          OkfIssue(
+            severity: Severity.error,
+            path: path,
+            line: 2,
+            message:
+                'root index.md frontmatter is not parseable YAML: '
+                '${e.message} (§8)',
+          ),
+        ];
+      }
       if (parsed is! YamlMap) {
         issues.add(
           OkfIssue(
@@ -657,7 +765,7 @@ List<OkfIssue> _validateLog(String path, String content) {
     if (match == null) continue;
     sawDateHeading = true;
     final date = match.group(1)!;
-    if (!_isoDatePattern.hasMatch(date)) {
+    if (!_isRealIsoDate(date)) {
       issues.add(
         OkfIssue(
           severity: Severity.error,
@@ -699,8 +807,7 @@ List<OkfIssue> _validateBundleLinks(
       ? path.substring(0, path.lastIndexOf('/'))
       : '';
 
-  for (final match in _markdownLinkPattern.allMatches(stripCodeSpans(body))) {
-    final target = match.group(1)!;
+  for (final target in linkTargets(body)) {
     if (target.startsWith('http://') ||
         target.startsWith('https://') ||
         target.startsWith('mailto:') ||
@@ -764,10 +871,7 @@ List<OkfIssue> validateRepoReferences({
         : '';
 
     final targets = <String>[
-      for (final match in _markdownLinkPattern.allMatches(
-        stripCodeSpans(document.body),
-      ))
-        match.group(1)!,
+      ...linkTargets(document.body),
       ..._resourceTargets(document.frontmatterYaml),
     ];
 
@@ -874,5 +978,5 @@ String _normalizeRelative(String dir, String target) {
 
 bool _isIsoDate(Object? value) {
   if (value is DateTime) return true;
-  return value is String && _isoDatePattern.hasMatch(value);
+  return value is String && _isRealIsoDate(value);
 }
