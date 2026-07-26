@@ -204,6 +204,22 @@ class EvalFixtureInputs {
   /// future-day draft, where "the past" has no meaning.
   final DateTime? now;
 
+  /// Working minutes the scenario actually leaves for planning.
+  ///
+  /// Mirrors production's `remainingWorkingMinutes`: bounded by the clock *and*
+  /// by capacity, whichever binds harder, and counted from [now] on a same-day
+  /// draft. `lateStart` advertises 480 minutes of capacity while leaving under
+  /// two hours of clock, so scoring against capacity alone would call an
+  /// impossible day satisfiable.
+  int get plannableMinutes {
+    final start = now == null || now!.hour < workingHoursStartHour
+        ? workingHoursStartHour * 60
+        : now!.hour * 60 + now!.minute;
+    final byClock = workingHoursEndHour * 60 - start;
+    if (byClock <= 0) return 0;
+    return byClock < capacityMinutes ? byClock : capacityMinutes;
+  }
+
   /// Ids the model could legitimately have used.
   ///
   /// On a capture-less wake the decided tasks are not the whole story: each

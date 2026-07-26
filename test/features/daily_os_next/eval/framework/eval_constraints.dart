@@ -467,6 +467,29 @@ EvalConstraintResult scoreRespectsEstimates(EvalRunOutcome outcome) {
     );
     titleByTask.putIfAbsent(taskId, () => block.title ?? taskId);
   }
+  // On a day that cannot hold the work, truncation is not compression — it is
+  // the only honest plan, and the prompt explicitly asks for it ("place a task
+  // for less than its estimate and say so"). Judging allocation against a full
+  // estimate there fails a model for obeying, which is what it did: every
+  // `lateStart` sample placed "Finish the database migration (partial — 60 of
+  // 180 min)" and was marked down for the label it was told to write.
+  //
+  // The premise of this constraint is a day with room. `surfacedConflict`
+  // carries the other half — whether the model *said* the day does not fit —
+  // so nothing is lost by standing down here.
+  final placedEstimate = allocatedByTask.keys.fold<int>(
+    0,
+    (sum, taskId) =>
+        sum + (outcome.inputs.taskById(taskId)?.estimateMinutes ?? 0),
+  );
+  if (placedEstimate > outcome.inputs.plannableMinutes) {
+    return EvalConstraintResult.notApplicable(
+      id,
+      'the day cannot hold this work ($placedEstimate min of estimates '
+      'against ${outcome.inputs.plannableMinutes} plannable), so a shortened '
+      'block is a partial placement rather than a compressed one',
+    );
+  }
   final compressed = <String>[];
   var checked = 0;
   for (final entry in allocatedByTask.entries) {

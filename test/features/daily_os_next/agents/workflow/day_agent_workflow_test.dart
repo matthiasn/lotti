@@ -3257,6 +3257,48 @@ void main() {
       expect(window['earliestStart'], '2026-05-25T15:05:00.000');
     });
 
+    test('states the working minutes the day actually has left', () async {
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 15)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      // 15:05 to 17:00, not the 480 of capacity the planning defaults carry.
+      // Deriving that gap is what models were getting wrong.
+      expect(window['availableMinutes'], 115);
+      expect(window['earliestStart'], '2026-05-25T15:05:00.000');
+      expect(
+        conversationRepository.lastSystemMessage,
+        contains('availableMinutes'),
+      );
+    });
+
+    test('a closed window states no budget beside it', () async {
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 23, 58)),
+        () => workflow().execute(
+          agentIdentity: identity(),
+          runKey: runKey,
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+          threadId: threadId,
+        ),
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final window =
+          sentPrompt().json('planning_window')! as Map<String, dynamic>;
+      expect(window['closed'], isTrue);
+      expect(window.containsKey('availableMinutes'), isFalse);
+    });
+
     test('reports a closed window late in the day', () async {
       final result = await withClock(
         Clock.fixed(DateTime(2026, 5, 25, 23, 58)),
@@ -3291,7 +3333,11 @@ void main() {
       expect(result.success, isTrue, reason: result.error);
       final window =
           sentPrompt().json('planning_window')! as Map<String, dynamic>;
-      expect(window, isEmpty);
+      // No floor — none of tomorrow is in the past — but it still has a
+      // budget, and the whole working day is available.
+      expect(window.containsKey('earliestStart'), isFalse);
+      expect(window.containsKey('closed'), isFalse);
+      expect(window['availableMinutes'], 480);
     });
 
     test(

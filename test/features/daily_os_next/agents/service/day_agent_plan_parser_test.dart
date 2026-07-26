@@ -628,6 +628,72 @@ void main() {
     });
   });
 
+  group('remainingWorkingMinutes', () {
+    final planDate = DateTime(2026, 7, 26);
+
+    int? minutes({
+      required DateTime now,
+      int capacityMinutes = 480,
+      String start = '09:00',
+      String end = '17:00',
+    }) => remainingWorkingMinutes(
+      planDate: planDate,
+      now: now,
+      capacityMinutes: capacityMinutes,
+      workingHoursStart: start,
+      workingHoursEnd: end,
+    );
+
+    test('an untouched future day is bounded by capacity', () {
+      // 09:00-17:00 is 480 minutes and capacity is 480, so neither binds
+      // harder than the other.
+      expect(minutes(now: DateTime(2026, 7, 25, 20)), 480);
+    });
+
+    test('the clock binds once the day is underway', () {
+      // The measured case: drafting at 15:00 leaves 115 minutes to 17:00, not
+      // the 480 of capacity the planning defaults advertise. Models were
+      // scheduling against the wrong one and running to 17:45.
+      expect(minutes(now: DateTime(2026, 7, 26, 15)), 115);
+    });
+
+    test('counts from the advertised start, not the raw instant', () {
+      // Must agree with what the model is told to build from, or the budget
+      // describes minutes it is not allowed to use.
+      expect(minutes(now: DateTime(2026, 7, 26, 15, 0, 0, 5, 877)), 115);
+    });
+
+    test('capacity binds when it is smaller than the clock', () {
+      expect(minutes(now: DateTime(2026, 7, 25, 20), capacityMinutes: 90), 90);
+    });
+
+    test('a finished working day is zero, not negative or absent', () {
+      // A real answer the model can act on: nothing more fits inside working
+      // hours today.
+      expect(minutes(now: DateTime(2026, 7, 26, 18)), 0);
+    });
+
+    test('says nothing when the window is closed', () {
+      // `closed` already carries that instruction; a second number saying the
+      // same thing invites the model to reconcile two signals.
+      expect(minutes(now: DateTime(2026, 7, 26, 23, 58)), isNull);
+    });
+
+    test('says nothing rather than guessing at malformed hours', () {
+      // These are free-text config nothing else parses. A fallback would have
+      // the model plan against a budget the user never set.
+      expect(minutes(now: DateTime(2026, 7, 26, 10), end: 'half five'), isNull);
+      expect(minutes(now: DateTime(2026, 7, 26, 10), end: '25:00'), isNull);
+      expect(minutes(now: DateTime(2026, 7, 26, 10), start: ''), isNull);
+    });
+
+    test('a start before working hours does not buy extra minutes', () {
+      // 07:00 is inside the plan day but outside working hours, so the budget
+      // still runs from 09:00.
+      expect(minutes(now: DateTime(2026, 7, 26, 7)), 480);
+    });
+  });
+
   group('selectIndices', () {
     test('returns the full range when indices are omitted', () {
       expect(selectIndices(itemIndices: null, itemCount: 3), [0, 1, 2]);

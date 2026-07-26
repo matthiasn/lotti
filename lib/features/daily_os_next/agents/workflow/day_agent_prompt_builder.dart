@@ -87,6 +87,18 @@ Drafting rules:
   not add or move blocks into it; say so and leave the plan alone.
 - An empty `<planning_window>` means the plan day has not begun, so no part of
   it is in the past and you may place work anywhere inside it.
+- `<planning_window>.availableMinutes` is how much working time the day
+  actually has left, already bounded by both the clock and the user's capacity.
+  Total the estimates of the work you intend to place and compare it against
+  that number BEFORE you lay out blocks — do not re-derive it from
+  `<current_local_time>` and the planning defaults.
+- When the work on offer exceeds `availableMinutes`, the day does not fit and
+  you must decide, visibly. Either leave work out and say which in a block
+  `reason` or a `raise_day_status` note, or place a task for less than its
+  estimate and say in that block's `reason` that it is partial and how much
+  remains. What you may not do is run past the end of the working day, or
+  quietly shrink estimates so everything appears to fit — a plan that looks
+  complete but cannot be worked is worse than one that names what was dropped.
 - A `<day_directive>` section, when present, is the coordinator's distilled
   ledger for this day and is BINDING, not a hint. Every commitment in it must
   be (a) represented in the drafted plan, (b) explicitly traded away in a

@@ -667,14 +667,22 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required DateTime planDate,
     required DateTime now,
   }) {
+    final available = remainingWorkingMinutes(
+      planDate: planDate,
+      now: now,
+      capacityMinutes: config.capacityMinutes,
+      workingHoursStart: config.workingHoursStart,
+      workingHoursEnd: config.workingHoursEnd,
+    );
+    final budget = <String, Object?>{'availableMinutes': ?available};
     final earliest = advertisedPlanningStart(planDate: planDate, now: now);
     if (earliest != null) {
-      return {'earliestStart': earliest.toIso8601String()};
+      return {'earliestStart': earliest.toIso8601String(), ...budget};
     }
     if (planningWindowClosed(planDate: planDate, now: now)) {
       return {'closed': true};
     }
-    return const {};
+    return budget;
   }
 
   Future<DraftingContext?> _draftingContext({

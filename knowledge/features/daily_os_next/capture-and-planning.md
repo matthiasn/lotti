@@ -126,6 +126,29 @@ to express; `drafted` expresses it without claiming a verdict the user never
 gave. `committed` stays in the tool schema, unlike `cal`, because its
 carry-forward use is real — removing it would force a re-draft to call approved
 work `drafted` and silently un-commit it.
+**The day's remaining budget is stated, not derived.** `<planning_window>`
+carries `availableMinutes` — working time still available, bounded by the
+clock *and* by capacity, whichever binds harder. Without it the model had to
+combine three separate facts: `capacityMinutes` and `workingHours` from the
+system prompt's planning defaults, and `earliestStart` from the user message.
+It did not, and the failures were exactly what that predicts — a plan running
+to 17:45 against a 17:00 day, and 780 minutes scheduled against 480 of
+capacity.
+
+Same move as `advertisedPlanningStart`: compute what is already known rather
+than asking the model to. It counts from the *advertised* start, so the budget
+never describes minutes the model is not allowed to use, and it is suppressed
+when the window is `closed` — that already carries the instruction, and a
+second number saying the same thing invites the model to reconcile two
+signals. Zero is a real answer, meaning the working day is over. Malformed
+working hours leave it unstated rather than guessed, since they are free-text
+config nothing else parses.
+
+The rules pair it with what to do when the work does not fit: decide visibly —
+leave work out and name it, or place a task for less than its estimate and say
+so — rather than running past the end of the day or quietly shrinking
+estimates so everything appears to fit.
+
 **A block that names a task is filed under that task's category.** The block's
 own `categoryId` and its `taskId` were each validated against the agent's
 allow-set but never against *each other*, so a block could carry a task from one

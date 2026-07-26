@@ -252,6 +252,58 @@ void main() {
     );
   });
 
+  group('respectsEstimates stands down on an impossible day', () {
+    const long = EvalCorpusTask(
+      taskId: 'task-long',
+      title: 'Finish the migration',
+      estimateMinutes: 180,
+    );
+
+    test('a shortened block is compression when the day had room', () {
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 10, taskId: 'task-long'),
+          ],
+          corpus: const [long],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('180min estimate'));
+    });
+
+    test('the same block is a partial placement when it could not fit', () {
+      // The measured case: every lateStart sample placed
+      // "Finish the database migration (partial — 60 of 180 min)", exactly what
+      // the prompt asks for on a day that cannot hold the work, and was marked
+      // down for the label it was told to write.
+      final result = scoreRespectsEstimates(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 15, endHour: 16, taskId: 'task-long'),
+          ],
+          corpus: const [long],
+          now: DateTime(2026, 7, 18, 15),
+        ),
+      );
+
+      expect(result.passed, isNull);
+      expect(result.detail, contains('cannot hold this work'));
+    });
+
+    test('plannableMinutes follows the clock, not just capacity', () {
+      // lateStart advertises 480 minutes of capacity while leaving under two
+      // hours of clock; scoring against capacity alone would call an
+      // impossible day satisfiable.
+      final lateAfternoon = outcome(now: DateTime(2026, 7, 18, 15)).inputs;
+      final freshDay = outcome(now: DateTime(2026, 7, 18, 9)).inputs;
+
+      expect(lateAfternoon.plannableMinutes, 120);
+      expect(freshDay.plannableMinutes, 480);
+    });
+  });
+
   group('blockerBeforeBlocked', () {
     const blocker = EvalCorpusTask(
       taskId: 'task-blocker',
