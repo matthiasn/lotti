@@ -15,7 +15,7 @@ sources:
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
-    last_modified: 2026-07-26
+    last_modified: 2026-07-25
   - id: motion
     resource: ../../../lib/features/design_system/theme/motion_tokens.dart
     title: Motion tokens
@@ -23,7 +23,7 @@ sources:
   - id: sidebar
     resource: ../../../lib/features/agents/ui/sidebar_wake_queue.dart
     title: SidebarWakeQueue
-    last_modified: 2026-07-26
+    last_modified: 2026-07-25
 ---
 
 None of these widgets owns business logic. They read from the providers in

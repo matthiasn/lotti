@@ -15,7 +15,7 @@ sources:
   - id: private-gate
     resource: ../../lib/database/database_config_flags.dart
     title: Config-flag cache and the private-visibility gate
-    last_modified: 2026-06-08
+    last_modified: 2026-07-26
   - id: db-common
     resource: ../../lib/database/common.dart
     title: openDbConnection, pragmas, backups

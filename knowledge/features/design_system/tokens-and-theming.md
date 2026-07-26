@@ -15,11 +15,11 @@ sources:
   - id: tokens-json
     resource: ../../../assets/design_system/tokens.json
     title: Exported token source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: theme
     resource: ../../../lib/features/design_system/theme
     title: Generated tokens, theme, access API
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: overrides
     resource: ../../../lib/themes/theme_overrides.dart
     title: App theme integration
