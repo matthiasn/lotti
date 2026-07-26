@@ -8353,9 +8353,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get provisionedSyncTitle => 'Sincronizzazione prevista';
 
   @override
-  String get provisionedSyncVerifyDevicesTitle => 'Verifica del dispositivo';
-
-  @override
   String get queueCatchUpNowButton => 'Prenditi ora';
 
   @override
@@ -9417,9 +9414,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Ultimo aggiornamento:';
 
   @override
-  String get settingsMatrixListUnverifiedLabel => 'Dispositivi non verificati';
-
-  @override
   String get settingsMatrixMaintenanceSubtitle =>
       'Eseguire Matrix compiti di manutenzione e strumenti di recupero';
 
@@ -9431,10 +9425,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsMatrixNextPage => 'Pagina successiva';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel =>
-      'Nessun dispositivo non verificato';
 
   @override
   String get settingsMatrixPreviousPage => 'Pagina precedente';
@@ -9463,10 +9453,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsMatrixTitle => 'Impostazioni di sincronizzazione';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage =>
-      'Dispositivi non verificati';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -9977,6 +9963,85 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Vuoi eliminare la configurazione di sincronizzazione?';
+
+  @override
+  String get syncDevicesKeylessHint =>
+      'L\'associazione non è mai stata completata: il dispositivo può solo essere rimosso.';
+
+  @override
+  String syncDevicesLastSeen(String date) {
+    return 'Visto l\'ultima volta il $date';
+  }
+
+  @override
+  String get syncDevicesLoadFailed =>
+      'Impossibile caricare l\'elenco dei dispositivi.';
+
+  @override
+  String get syncDevicesOnlyThisDevice =>
+      'Nessun altro dispositivo ha effettuato l\'accesso.';
+
+  @override
+  String syncDevicesPaired(String date) {
+    return 'Associato il $date';
+  }
+
+  @override
+  String syncDevicesPausedBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count dispositivi non verificati stanno mettendo in pausa la sincronizzazione: eliminali o verificali qui sotto.',
+      one:
+          '1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: eliminalo o verificalo qui sotto.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerDeleteOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count dispositivi non verificati stanno mettendo in pausa la sincronizzazione: eliminali qui sotto.',
+      one:
+          '1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: eliminalo qui sotto.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerVerifyOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count dispositivi non verificati stanno mettendo in pausa la sincronizzazione: verificali qui sotto.',
+      one:
+          '1 dispositivo non verificato sta mettendo in pausa la sincronizzazione: verificalo qui sotto.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncDevicesSectionTitle => 'Dispositivi';
+
+  @override
+  String get syncDevicesStaleHint => 'Probabilmente non più in uso';
+
+  @override
+  String get syncDevicesSyncResumed => 'La sincronizzazione è di nuovo attiva.';
+
+  @override
+  String get syncDevicesThisDeviceChip => 'Questo dispositivo';
+
+  @override
+  String get syncDevicesUnverifiedChip => 'Non verificato';
+
+  @override
+  String get syncDevicesVerifiedChip => 'Verificato';
 
   @override
   String get syncEntitiesConfirm => 'AVVIA SINCRONIZZAZIONE';

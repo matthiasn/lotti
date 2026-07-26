@@ -19,6 +19,7 @@ import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -571,6 +572,11 @@ class MatrixService {
 
   Future<void> deleteDevice(DeviceKeys deviceKeys) =>
       _ops.deleteDevice(deviceKeys);
+
+  Future<void> deleteDeviceById(String deviceId) =>
+      _ops.deleteDeviceById(deviceId);
+
+  Future<List<SyncDeviceInfo>> getSyncDevices() => _ops.getSyncDevices();
 
   Stream<KeyVerification> getIncomingKeyVerificationStream() =>
       _ops.getIncomingKeyVerificationStream();

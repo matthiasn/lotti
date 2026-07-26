@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_mo
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
+import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_emojis_row.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
@@ -266,7 +267,9 @@ class _IncomingVerificationWrapperState
                 );
               } finally {
                 if (mounted) {
-                  ref.invalidate(matrixUnverifiedControllerProvider);
+                  ref
+                    ..invalidate(matrixUnverifiedControllerProvider)
+                    ..invalidate(syncDevicesControllerProvider);
                 }
                 lock.release();
               }

@@ -3442,7 +3442,6 @@
   "provisionedSyncSummaryRoom": "Sala",
   "provisionedSyncSummaryUser": "Usuario",
   "provisionedSyncTitle": "Sincronización provisionada",
-  "provisionedSyncVerifyDevicesTitle": "Verificación de dispositivos",
   "queueCatchUpNowButton": "Sincronizar ahora",
   "queueCatchUpNowDone": "Puesta al día iniciada — la cola se está vaciando.",
   "queueCatchUpNowError": "Puesta al día fallida: {reason}",
@@ -3811,12 +3810,10 @@
   "settingsMatrixDiagnosticShowButton": "Mostrar información de diagnóstico",
   "settingsMatrixDone": "Listo",
   "settingsMatrixLastUpdated": "Última actualización:",
-  "settingsMatrixListUnverifiedLabel": "Dispositivos no verificados",
   "settingsMatrixMaintenanceSubtitle": "Ejecutar tareas de mantenimiento y herramientas de recuperación de Matrix",
   "settingsMatrixMaintenanceTitle": "Mantenimiento",
   "settingsMatrixMetrics": "Métricas de sincronización",
   "settingsMatrixNextPage": "Página siguiente",
-  "settingsMatrixNoUnverifiedLabel": "No hay dispositivos sin verificar",
   "settingsMatrixPreviousPage": "Página anterior",
   "settingsMatrixRoomInviteMessage": "Invitación a la sala {roomId} de {senderId}. ¿Aceptar?",
   "@settingsMatrixRoomInviteMessage": {
@@ -3842,7 +3839,6 @@
   "settingsMatrixStartVerificationLabel": "Iniciar verificación",
   "settingsMatrixStatsTitle": "Estadísticas de Matrix",
   "settingsMatrixTitle": "Ajustes de sincronización de Matrix",
-  "settingsMatrixUnverifiedDevicesPage": "Dispositivos no verificados",
   "settingsMatrixVerificationCancelledLabel": "Cancelado en el otro dispositivo...",
   "settingsMatrixVerificationSuccessConfirm": "Entendido",
   "settingsMatrixVerificationSuccessLabel": "Has verificado correctamente {deviceName} ({deviceID})",
@@ -4022,6 +4018,60 @@
   "syncActivityTitle": "Sincronización",
   "syncDeleteConfigConfirm": "SÍ, ESTOY SEGURO",
   "syncDeleteConfigQuestion": "¿Quieres eliminar la configuración de sincronización?",
+  "syncDevicesKeylessHint": "El emparejamiento nunca se completó: solo se puede quitar.",
+  "syncDevicesLastSeen": "Visto por última vez el {date}",
+  "@syncDevicesLastSeen": {
+    "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesLoadFailed": "No se pudo cargar la lista de dispositivos.",
+  "syncDevicesOnlyThisDevice": "No hay otros dispositivos con sesión iniciada.",
+  "syncDevicesPaired": "Emparejado el {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesPausedBanner": "{count, plural, one{1 dispositivo sin verificar está pausando la sincronización: elimínalo o verifícalo abajo.} other{{count} dispositivos sin verificar están pausando la sincronización: elimínalos o verifícalos abajo.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 dispositivo sin verificar está pausando la sincronización: elimínalo abajo.} other{{count} dispositivos sin verificar están pausando la sincronización: elimínalos abajo.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 dispositivo sin verificar está pausando la sincronización: verifícalo abajo.} other{{count} dispositivos sin verificar están pausando la sincronización: verifícalos abajo.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesSectionTitle": "Dispositivos",
+  "syncDevicesStaleHint": "Probablemente ya no se usa",
+  "syncDevicesSyncResumed": "La sincronización vuelve a funcionar.",
+  "syncDevicesThisDeviceChip": "Este dispositivo",
+  "syncDevicesUnverifiedChip": "Sin verificar",
+  "syncDevicesVerifiedChip": "Verificado",
   "syncEntitiesConfirm": "INICIAR SINCRONIZACIÓN",
   "syncEntitiesMessage": "Elige los datos que quieres sincronizar.",
   "syncEntitiesSuccessDescription": "Todo está al día.",

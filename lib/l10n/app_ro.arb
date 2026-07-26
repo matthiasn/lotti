@@ -3442,7 +3442,6 @@
   "provisionedSyncSummaryRoom": "Cameră",
   "provisionedSyncSummaryUser": "Utilizator",
   "provisionedSyncTitle": "Sincronizare provizionată",
-  "provisionedSyncVerifyDevicesTitle": "Verificarea dispozitivelor",
   "queueCatchUpNowButton": "Recuperați acum",
   "queueCatchUpNowDone": "Recuperare inițiată — coada se golește.",
   "queueCatchUpNowError": "Recuperare eșuată: {reason}",
@@ -3811,12 +3810,10 @@
   "settingsMatrixDiagnosticShowButton": "Afișați informațiile de diagnostic",
   "settingsMatrixDone": "Gata",
   "settingsMatrixLastUpdated": "Ultima actualizare:",
-  "settingsMatrixListUnverifiedLabel": "Dispozitive neverificate",
   "settingsMatrixMaintenanceSubtitle": "Rulează sarcini de întreținere Matrix și instrumente de recuperare",
   "settingsMatrixMaintenanceTitle": "Întreținere",
   "settingsMatrixMetrics": "Metrici sincronizare",
   "settingsMatrixNextPage": "Pagina următoare",
-  "settingsMatrixNoUnverifiedLabel": "Niciun dispozitiv neverificat",
   "settingsMatrixPreviousPage": "Pagina anterioară",
   "settingsMatrixRoomInviteMessage": "Invitație la camera {roomId} de la {senderId}. Acceptați?",
   "@settingsMatrixRoomInviteMessage": {
@@ -3842,7 +3839,6 @@
   "settingsMatrixStartVerificationLabel": "Începeți verificarea",
   "settingsMatrixStatsTitle": "Statistici Matrix",
   "settingsMatrixTitle": "Setări sincronizare Matrix",
-  "settingsMatrixUnverifiedDevicesPage": "Dispozitive neverificate",
   "settingsMatrixVerificationCancelledLabel": "Anulat pe celălalt dispozitiv...",
   "settingsMatrixVerificationSuccessConfirm": "Am înțeles",
   "settingsMatrixVerificationSuccessLabel": "Ați verificat cu succes {deviceName} ({deviceID})",
@@ -4022,6 +4018,60 @@
   "syncActivityTitle": "Sincronizare",
   "syncDeleteConfigConfirm": "DA, SUNT SIGUR",
   "syncDeleteConfigQuestion": "Doriți să ștergeți configurația de sincronizare?",
+  "syncDevicesKeylessHint": "Asocierea nu a fost finalizată niciodată — dispozitivul poate fi doar eliminat.",
+  "syncDevicesLastSeen": "Văzut ultima dată pe {date}",
+  "@syncDevicesLastSeen": {
+    "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesLoadFailed": "Lista dispozitivelor nu a putut fi încărcată.",
+  "syncDevicesOnlyThisDevice": "Niciun alt dispozitiv nu este autentificat.",
+  "syncDevicesPaired": "Asociat pe {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesPausedBanner": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — ștergeți-l sau verificați-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — ștergeți-le sau verificați-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — ștergeți-le sau verificați-le mai jos.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — ștergeți-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — ștergeți-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — ștergeți-le mai jos.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{Un dispozitiv neverificat întrerupe sincronizarea — verificați-l mai jos.} few{{count} dispozitive neverificate întrerup sincronizarea — verificați-le mai jos.} other{{count} de dispozitive neverificate întrerup sincronizarea — verificați-le mai jos.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesSectionTitle": "Dispozitive",
+  "syncDevicesStaleHint": "Probabil nu mai este folosit",
+  "syncDevicesSyncResumed": "Sincronizarea funcționează din nou.",
+  "syncDevicesThisDeviceChip": "Acest dispozitiv",
+  "syncDevicesUnverifiedChip": "Neverificat",
+  "syncDevicesVerifiedChip": "Verificat",
   "syncEntitiesConfirm": "ÎNCEPE SINCRONIZAREA",
   "syncEntitiesMessage": "Alegeți datele pe care doriți să le sincronizați.",
   "syncEntitiesSuccessDescription": "Totul este actualizat.",

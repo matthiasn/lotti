@@ -8254,9 +8254,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get provisionedSyncTitle => 'Provisionerad synkronisering';
 
   @override
-  String get provisionedSyncVerifyDevicesTitle => 'Enhetsverifiering';
-
-  @override
   String get queueCatchUpNowButton => 'Ta igen nu';
 
   @override
@@ -9296,9 +9293,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Senast uppdaterad:';
 
   @override
-  String get settingsMatrixListUnverifiedLabel => 'Overifierade enheter';
-
-  @override
   String get settingsMatrixMaintenanceSubtitle =>
       'Kör underhållsuppgifter och återställningsverktyg för matrisen';
 
@@ -9310,9 +9304,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMatrixNextPage => 'Nästa sida';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel => 'Inga overifierade enheter';
 
   @override
   String get settingsMatrixPreviousPage => 'Föregående sida';
@@ -9341,9 +9332,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMatrixTitle => 'Synkroniseringsinställningar';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage => 'Overifierade enheter';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -9849,6 +9837,81 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Vill du ta bort synkroniseringskonfigurationen?';
+
+  @override
+  String get syncDevicesKeylessHint =>
+      'Ihopparningen slutfördes aldrig — enheten kan bara tas bort.';
+
+  @override
+  String syncDevicesLastSeen(String date) {
+    return 'Senast sedd $date';
+  }
+
+  @override
+  String get syncDevicesLoadFailed => 'Det gick inte att läsa in enhetslistan.';
+
+  @override
+  String get syncDevicesOnlyThisDevice => 'Inga andra enheter är inloggade.';
+
+  @override
+  String syncDevicesPaired(String date) {
+    return 'Parkopplad $date';
+  }
+
+  @override
+  String syncDevicesPausedBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count overifierade enheter pausar synkroniseringen — ta bort eller verifiera dem nedan.',
+      one:
+          '1 overifierad enhet pausar synkroniseringen — ta bort eller verifiera den nedan.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerDeleteOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count overifierade enheter pausar synkroniseringen — ta bort dem nedan.',
+      one: '1 overifierad enhet pausar synkroniseringen — ta bort den nedan.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerVerifyOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count overifierade enheter pausar synkroniseringen — verifiera dem nedan.',
+      one: '1 overifierad enhet pausar synkroniseringen — verifiera den nedan.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncDevicesSectionTitle => 'Enheter';
+
+  @override
+  String get syncDevicesStaleHint => 'Används förmodligen inte längre';
+
+  @override
+  String get syncDevicesSyncResumed => 'Synkroniseringen är igång igen.';
+
+  @override
+  String get syncDevicesThisDeviceChip => 'Den här enheten';
+
+  @override
+  String get syncDevicesUnverifiedChip => 'Overifierad';
+
+  @override
+  String get syncDevicesVerifiedChip => 'Verifierad';
 
   @override
   String get syncEntitiesConfirm => 'STARTA SYNKRONISERING';

@@ -22,6 +22,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart'
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:matrix/matrix.dart' show Device;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -1364,6 +1365,9 @@ void main() {
     test('deleteDevice throws StateError when matrixConfig is null', () async {
       final deviceKeys = MockDeviceKeys();
       when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
+      when(() => deviceKeys.userId).thenReturn('@me:server');
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
       when(() => sessionManager.matrixConfig).thenReturn(null);
 
       final service = createService();
@@ -1408,6 +1412,7 @@ void main() {
         when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
         when(() => deviceKeys.userId).thenReturn('@me:server');
         when(() => client.userID).thenReturn('@me:server');
+        when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
         when(() => sessionManager.matrixConfig).thenReturn(
           const MatrixConfig(
             homeServer: 'https://hs',
@@ -1428,12 +1433,13 @@ void main() {
     // Covers lines 570-577: deleteDevice calls client.deleteDevice when
     // password is non-empty and user matches.
     test(
-      'deleteDevice calls client.deleteDevice when credentials are valid',
+      'deleteDevice deletes via the gateway when credentials are valid',
       () async {
         final deviceKeys = MockDeviceKeys();
         when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
         when(() => deviceKeys.userId).thenReturn('@me:server');
         when(() => client.userID).thenReturn('@me:server');
+        when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
         when(() => sessionManager.matrixConfig).thenReturn(
           const MatrixConfig(
             homeServer: 'https://hs',
@@ -1442,9 +1448,14 @@ void main() {
           ),
         );
         when(
-          () => client.deleteDevice(
+          () => gateway.deleteDevice(
             any(),
             auth: any(named: 'auth'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => client.updateUserDeviceKeys(
+            additionalUsers: any(named: 'additionalUsers'),
           ),
         ).thenAnswer((_) async {});
 
@@ -1452,10 +1463,59 @@ void main() {
         await service.deleteDevice(deviceKeys);
 
         verify(
-          () => client.deleteDevice('DEVICE1', auth: any(named: 'auth')),
+          () => gateway.deleteDevice('DEVICE1', auth: any(named: 'auth')),
         ).called(1);
       },
     );
+
+    test('deleteDeviceById delegates through ops to the gateway', () async {
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
+      when(() => sessionManager.matrixConfig).thenReturn(
+        const MatrixConfig(
+          homeServer: 'https://hs',
+          user: '@me:server',
+          password: 'secret',
+        ),
+      );
+      when(
+        () => gateway.deleteDevice(any(), auth: any(named: 'auth')),
+      ).thenAnswer((_) async {});
+      when(
+        () => client.updateUserDeviceKeys(
+          additionalUsers: any(named: 'additionalUsers'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final service = createService();
+      await service.deleteDeviceById('KEYLESS');
+
+      verify(
+        () => gateway.deleteDevice('KEYLESS', auth: any(named: 'auth')),
+      ).called(1);
+    });
+
+    test('getSyncDevices returns the merged, ordered inventory', () async {
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => client.userDeviceKeysLoading).thenReturn(null);
+      when(() => client.userDeviceKeys).thenReturn({});
+      when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
+      when(() => gateway.getDevices()).thenAnswer(
+        (_) async => [
+          Device(deviceId: 'OTHER', displayName: 'Old laptop'),
+          Device(deviceId: 'THIS_DEVICE', displayName: 'This desktop'),
+        ],
+      );
+
+      final service = createService();
+      final devices = await service.getSyncDevices();
+
+      expect(
+        devices.map((d) => d.deviceId).toList(),
+        ['THIS_DEVICE', 'OTHER'],
+      );
+      expect(devices.first.isCurrentDevice, isTrue);
+    });
   });
 
   group('MatrixService getSyncDiagnosticsText', () {

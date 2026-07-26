@@ -8252,9 +8252,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get provisionedSyncTitle => 'Provisioneret synkronisering';
 
   @override
-  String get provisionedSyncVerifyDevicesTitle => 'Enhedsverifikation';
-
-  @override
   String get queueCatchUpNowButton => 'Følg med nu';
 
   @override
@@ -9294,9 +9291,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Sidst opdateret:';
 
   @override
-  String get settingsMatrixListUnverifiedLabel => 'Uverificerede enheder';
-
-  @override
   String get settingsMatrixMaintenanceSubtitle =>
       'Kør Matrix-vedligeholdelsesopgaver og gendannelsesværktøjer';
 
@@ -9308,9 +9302,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsMatrixNextPage => 'Næste side';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel => 'Ingen uverificerede enheder';
 
   @override
   String get settingsMatrixPreviousPage => 'Forrige side';
@@ -9339,9 +9330,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsMatrixTitle => 'Synkroniseringsindstillinger';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage => 'Uverificerede enheder';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -9847,6 +9835,83 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Vil du slette synkroniseringskonfigurationen?';
+
+  @override
+  String get syncDevicesKeylessHint =>
+      'Parringen blev aldrig fuldført — den kan kun fjernes.';
+
+  @override
+  String syncDevicesLastSeen(String date) {
+    return 'Sidst set $date';
+  }
+
+  @override
+  String get syncDevicesLoadFailed => 'Enhedslisten kunne ikke indlæses.';
+
+  @override
+  String get syncDevicesOnlyThisDevice => 'Ingen andre enheder er logget ind.';
+
+  @override
+  String syncDevicesPaired(String date) {
+    return 'Parret $date';
+  }
+
+  @override
+  String syncDevicesPausedBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count ubekræftede enheder sætter synkroniseringen på pause — slet eller bekræft dem nedenfor.',
+      one:
+          '1 ubekræftet enhed sætter synkroniseringen på pause — slet eller bekræft den nedenfor.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerDeleteOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count ubekræftede enheder sætter synkroniseringen på pause — slet dem nedenfor.',
+      one:
+          '1 ubekræftet enhed sætter synkroniseringen på pause — slet den nedenfor.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerVerifyOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count ubekræftede enheder sætter synkroniseringen på pause — bekræft dem nedenfor.',
+      one:
+          '1 ubekræftet enhed sætter synkroniseringen på pause — bekræft den nedenfor.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncDevicesSectionTitle => 'Enheder';
+
+  @override
+  String get syncDevicesStaleHint => 'Sandsynligvis ikke længere i brug';
+
+  @override
+  String get syncDevicesSyncResumed => 'Synkroniseringen kører igen.';
+
+  @override
+  String get syncDevicesThisDeviceChip => 'Denne enhed';
+
+  @override
+  String get syncDevicesUnverifiedChip => 'Ubekræftet';
+
+  @override
+  String get syncDevicesVerifiedChip => 'Bekræftet';
 
   @override
   String get syncEntitiesConfirm => 'START SYNC';

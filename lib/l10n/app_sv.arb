@@ -3923,7 +3923,6 @@
   "provisionedSyncSummaryRoom": "Rum",
   "provisionedSyncSummaryUser": "Användare",
   "provisionedSyncTitle": "Provisionerad synkronisering",
-  "provisionedSyncVerifyDevicesTitle": "Enhetsverifiering",
   "queueCatchUpNowButton": "Ta igen nu",
   "queueCatchUpNowDone": "Uppskjutning – kön är utmattande.",
   "queueCatchUpNowError": "Att komma ikapp misslyckades: {reason}",
@@ -4354,12 +4353,10 @@
   "settingsMatrixDiagnosticShowButton": "Visa diagnostisk information",
   "settingsMatrixDone": "Klart",
   "settingsMatrixLastUpdated": "Senast uppdaterad:",
-  "settingsMatrixListUnverifiedLabel": "Overifierade enheter",
   "settingsMatrixMaintenanceSubtitle": "Kör underhållsuppgifter och återställningsverktyg för matrisen",
   "settingsMatrixMaintenanceTitle": "Underhåll",
   "settingsMatrixMetrics": "Synkroniseringsmått",
   "settingsMatrixNextPage": "Nästa sida",
-  "settingsMatrixNoUnverifiedLabel": "Inga overifierade enheter",
   "settingsMatrixPreviousPage": "Föregående sida",
   "settingsMatrixRoomInviteMessage": "Bjud in till rum {roomId} från {senderId}. Acceptera?",
   "@settingsMatrixRoomInviteMessage": {
@@ -4385,7 +4382,6 @@
   "settingsMatrixStartVerificationLabel": "Starta verifiering",
   "settingsMatrixStatsTitle": "Matrisstatistik",
   "settingsMatrixTitle": "Synkroniseringsinställningar",
-  "settingsMatrixUnverifiedDevicesPage": "Overifierade enheter",
   "settingsMatrixVerificationCancelledLabel": "Avbrutet på annan enhet...",
   "settingsMatrixVerificationSuccessConfirm": "Fattar",
   "settingsMatrixVerificationSuccessLabel": "Du har framgångsrikt verifierat {deviceName} ({deviceID})",
@@ -4578,6 +4574,60 @@
   "syncActivityTitle": "Synk",
   "syncDeleteConfigConfirm": "JA, JAG ÄR SÄKER",
   "syncDeleteConfigQuestion": "Vill du ta bort synkroniseringskonfigurationen?",
+  "syncDevicesKeylessHint": "Ihopparningen slutfördes aldrig — enheten kan bara tas bort.",
+  "syncDevicesLastSeen": "Senast sedd {date}",
+  "@syncDevicesLastSeen": {
+    "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesLoadFailed": "Det gick inte att läsa in enhetslistan.",
+  "syncDevicesOnlyThisDevice": "Inga andra enheter är inloggade.",
+  "syncDevicesPaired": "Parkopplad {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesPausedBanner": "{count, plural, one{1 overifierad enhet pausar synkroniseringen — ta bort eller verifiera den nedan.} other{{count} overifierade enheter pausar synkroniseringen — ta bort eller verifiera dem nedan.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 overifierad enhet pausar synkroniseringen — ta bort den nedan.} other{{count} overifierade enheter pausar synkroniseringen — ta bort dem nedan.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 overifierad enhet pausar synkroniseringen — verifiera den nedan.} other{{count} overifierade enheter pausar synkroniseringen — verifiera dem nedan.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesSectionTitle": "Enheter",
+  "syncDevicesStaleHint": "Används förmodligen inte längre",
+  "syncDevicesSyncResumed": "Synkroniseringen är igång igen.",
+  "syncDevicesThisDeviceChip": "Den här enheten",
+  "syncDevicesUnverifiedChip": "Overifierad",
+  "syncDevicesVerifiedChip": "Verifierad",
   "syncEntitiesConfirm": "STARTA SYNKRONISERING",
   "syncEntitiesMessage": "Välj de enheter du vill synka.",
   "syncEntitiesSuccessDescription": "Allt är uppdaterat.",

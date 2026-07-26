@@ -8203,9 +8203,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncTitle => 'Provisioned Sync';
 
   @override
-  String get provisionedSyncVerifyDevicesTitle => 'Device Verification';
-
-  @override
   String get queueCatchUpNowButton => 'Catch up now';
 
   @override
@@ -9233,9 +9230,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Last updated:';
 
   @override
-  String get settingsMatrixListUnverifiedLabel => 'Unverified devices';
-
-  @override
   String get settingsMatrixMaintenanceSubtitle =>
       'Run Matrix maintenance tasks and recovery tools';
 
@@ -9247,9 +9241,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMatrixNextPage => 'Next Page';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel => 'No unverified devices';
 
   @override
   String get settingsMatrixPreviousPage => 'Previous Page';
@@ -9278,9 +9269,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMatrixTitle => 'Sync Settings';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage => 'Unverified Devices';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -9778,6 +9766,78 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Do you want to delete the sync configuration?';
+
+  @override
+  String get syncDevicesKeylessHint =>
+      'Never finished pairing — it can only be removed.';
+
+  @override
+  String syncDevicesLastSeen(String date) {
+    return 'Last seen $date';
+  }
+
+  @override
+  String get syncDevicesLoadFailed => 'Couldn\'t load the device list.';
+
+  @override
+  String get syncDevicesOnlyThisDevice => 'No other devices are signed in.';
+
+  @override
+  String syncDevicesPaired(String date) {
+    return 'Paired $date';
+  }
+
+  @override
+  String syncDevicesPausedBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count unverified devices are pausing sync — delete or verify them below.',
+      one: '1 unverified device is pausing sync — delete or verify it below.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerDeleteOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unverified devices are pausing sync — delete them below.',
+      one: '1 unverified device is pausing sync — delete it below.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerVerifyOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unverified devices are pausing sync — verify them below.',
+      one: '1 unverified device is pausing sync — verify it below.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncDevicesSectionTitle => 'Devices';
+
+  @override
+  String get syncDevicesStaleHint => 'Probably no longer in use';
+
+  @override
+  String get syncDevicesSyncResumed => 'Sync is running again.';
+
+  @override
+  String get syncDevicesThisDeviceChip => 'This device';
+
+  @override
+  String get syncDevicesUnverifiedChip => 'Unverified';
+
+  @override
+  String get syncDevicesVerifiedChip => 'Verified';
 
   @override
   String get syncEntitiesConfirm => 'START SYNC';

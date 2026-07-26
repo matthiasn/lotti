@@ -4143,7 +4143,6 @@
   "provisionedSyncSummaryRoom": "Room",
   "provisionedSyncSummaryUser": "User",
   "provisionedSyncTitle": "Provisioned Sync",
-  "provisionedSyncVerifyDevicesTitle": "Device Verification",
   "queueCatchUpNowButton": "Catch up now",
   "queueCatchUpNowDone": "Catch-up kicked — queue is draining.",
   "queueCatchUpNowError": "Catch-up failed: {reason}",
@@ -4574,12 +4573,10 @@
   "settingsMatrixDiagnosticShowButton": "Show Diagnostic Info",
   "settingsMatrixDone": "Done",
   "settingsMatrixLastUpdated": "Last updated:",
-  "settingsMatrixListUnverifiedLabel": "Unverified devices",
   "settingsMatrixMaintenanceSubtitle": "Run Matrix maintenance tasks and recovery tools",
   "settingsMatrixMaintenanceTitle": "Maintenance",
   "settingsMatrixMetrics": "Sync Metrics",
   "settingsMatrixNextPage": "Next Page",
-  "settingsMatrixNoUnverifiedLabel": "No unverified devices",
   "settingsMatrixPreviousPage": "Previous Page",
   "settingsMatrixRoomInviteMessage": "Invite to room {roomId} from {senderId}. Accept?",
   "@settingsMatrixRoomInviteMessage": {
@@ -4605,7 +4602,6 @@
   "settingsMatrixStartVerificationLabel": "Start Verification",
   "settingsMatrixStatsTitle": "Matrix Stats",
   "settingsMatrixTitle": "Sync Settings",
-  "settingsMatrixUnverifiedDevicesPage": "Unverified Devices",
   "settingsMatrixVerificationCancelledLabel": "Cancelled on other device...",
   "settingsMatrixVerificationSuccessConfirm": "Got it",
   "settingsMatrixVerificationSuccessLabel": "You've successfully verified {deviceName} ({deviceID})",
@@ -4799,6 +4795,60 @@
   "syncActivityTitle": "Sync",
   "syncDeleteConfigConfirm": "YES, I'M SURE",
   "syncDeleteConfigQuestion": "Do you want to delete the sync configuration?",
+  "syncDevicesKeylessHint": "Never finished pairing — it can only be removed.",
+  "syncDevicesLastSeen": "Last seen {date}",
+  "@syncDevicesLastSeen": {
+    "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesLoadFailed": "Couldn't load the device list.",
+  "syncDevicesOnlyThisDevice": "No other devices are signed in.",
+  "syncDevicesPaired": "Paired {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesPausedBanner": "{count, plural, one{1 unverified device is pausing sync — delete or verify it below.} other{{count} unverified devices are pausing sync — delete or verify them below.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 unverified device is pausing sync — delete it below.} other{{count} unverified devices are pausing sync — delete them below.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 unverified device is pausing sync — verify it below.} other{{count} unverified devices are pausing sync — verify them below.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesSectionTitle": "Devices",
+  "syncDevicesStaleHint": "Probably no longer in use",
+  "syncDevicesSyncResumed": "Sync is running again.",
+  "syncDevicesThisDeviceChip": "This device",
+  "syncDevicesUnverifiedChip": "Unverified",
+  "syncDevicesVerifiedChip": "Verified",
   "syncEntitiesConfirm": "START SYNC",
   "syncEntitiesMessage": "Choose the entities you want to sync.",
   "syncEntitiesSuccessDescription": "Everything is up to date.",

@@ -3449,7 +3449,6 @@
   "provisionedSyncSummaryRoom": "Místnost",
   "provisionedSyncSummaryUser": "Uživatel",
   "provisionedSyncTitle": "Nastavení synchronizace",
-  "provisionedSyncVerifyDevicesTitle": "Ověření zařízení",
   "queueCatchUpNowButton": "Dohnat nyní",
   "queueCatchUpNowDone": "Dohánění spuštěno — fronta se vyprazdňuje.",
   "queueCatchUpNowError": "Dohánění selhalo: {reason}",
@@ -3818,12 +3817,10 @@
   "settingsMatrixDiagnosticShowButton": "Zobrazit diagnostické informace",
   "settingsMatrixDone": "Hotovo",
   "settingsMatrixLastUpdated": "Naposledy aktualizováno:",
-  "settingsMatrixListUnverifiedLabel": "Neověřená zařízení",
   "settingsMatrixMaintenanceSubtitle": "Spustit úlohy údržby Matrix a nástroje pro obnovení",
   "settingsMatrixMaintenanceTitle": "Údržba",
   "settingsMatrixMetrics": "Metriky synchronizace",
   "settingsMatrixNextPage": "Další stránka",
-  "settingsMatrixNoUnverifiedLabel": "Žádná neověřená zařízení",
   "settingsMatrixPreviousPage": "Předchozí stránka",
   "settingsMatrixRoomInviteMessage": "Pozvánka do místnosti {roomId} od {senderId}. Přijmout?",
   "@settingsMatrixRoomInviteMessage": {
@@ -3849,7 +3846,6 @@
   "settingsMatrixStartVerificationLabel": "Spustit ověření",
   "settingsMatrixStatsTitle": "Statistiky Matrix",
   "settingsMatrixTitle": "Nastavení synchronizace",
-  "settingsMatrixUnverifiedDevicesPage": "Neověřená zařízení",
   "settingsMatrixVerificationCancelledLabel": "Zrušeno na jiném zařízení...",
   "settingsMatrixVerificationSuccessConfirm": "Rozumím",
   "settingsMatrixVerificationSuccessLabel": "Úspěšně jste ověřili zařízení {deviceName} ({deviceID})",
@@ -4029,6 +4025,60 @@
   "syncActivityTitle": "Sync",
   "syncDeleteConfigConfirm": "ANO, JSEM SI JISTÝ",
   "syncDeleteConfigQuestion": "Chcete smazat konfiguraci synchronizace?",
+  "syncDevicesKeylessHint": "Párování nebylo nikdy dokončeno — zařízení lze pouze odebrat.",
+  "syncDevicesLastSeen": "Naposledy aktivní {date}",
+  "@syncDevicesLastSeen": {
+    "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesLoadFailed": "Seznam zařízení se nepodařilo načíst.",
+  "syncDevicesOnlyThisDevice": "Nejsou přihlášena žádná další zařízení.",
+  "syncDevicesPaired": "Spárováno {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesPausedBanner": "{count, plural, one{1 neověřené zařízení pozastavuje synchronizaci — odstraň ho nebo ověř níže.} few{{count} neověřená zařízení pozastavují synchronizaci — odstraň je nebo ověř níže.} other{{count} neověřených zařízení pozastavuje synchronizaci — odstraň je nebo ověř níže.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 neověřené zařízení pozastavuje synchronizaci — odstraň ho níže.} few{{count} neověřená zařízení pozastavují synchronizaci — odstraň je níže.} other{{count} neověřených zařízení pozastavuje synchronizaci — odstraň je níže.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 neověřené zařízení pozastavuje synchronizaci — ověř ho níže.} few{{count} neověřená zařízení pozastavují synchronizaci — ověř je níže.} other{{count} neověřených zařízení pozastavuje synchronizaci — ověř je níže.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesSectionTitle": "Zařízení",
+  "syncDevicesStaleHint": "Pravděpodobně se už nepoužívá",
+  "syncDevicesSyncResumed": "Synchronizace opět běží.",
+  "syncDevicesThisDeviceChip": "Toto zařízení",
+  "syncDevicesUnverifiedChip": "Neověřeno",
+  "syncDevicesVerifiedChip": "Ověřeno",
   "syncEntitiesConfirm": "SPUSTIT SYNCHRONIZACI",
   "syncEntitiesMessage": "Vyberte entity, které chcete synchronizovat.",
   "syncEntitiesSuccessDescription": "Vše je aktuální.",

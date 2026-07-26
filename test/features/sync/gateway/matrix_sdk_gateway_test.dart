@@ -378,6 +378,35 @@ void main() {
     ).called(1);
   });
 
+  test('currentDeviceId reflects the client session', () {
+    when(() => client.deviceID).thenReturn('DEVICE_A');
+    expect(gateway.currentDeviceId, 'DEVICE_A');
+  });
+
+  test('getDevices returns the server inventory, empty when the endpoint '
+      'yields null', () async {
+    final device = Device(deviceId: 'DEVICE_A', displayName: 'Laptop');
+    when(() => client.getDevices()).thenAnswer((_) async => [device]);
+    expect(await gateway.getDevices(), [device]);
+
+    when(() => client.getDevices()).thenAnswer((_) async => null);
+    expect(await gateway.getDevices(), isEmpty);
+  });
+
+  test('deleteDevice forwards the device id and auth payload', () async {
+    final auth = AuthenticationPassword(
+      password: 'secret',
+      identifier: AuthenticationUserIdentifier(user: '@user:server'),
+    );
+    when(
+      () => client.deleteDevice('DEVICE_B', auth: auth),
+    ).thenAnswer((_) async {});
+
+    await gateway.deleteDevice('DEVICE_B', auth: auth);
+
+    verify(() => client.deleteDevice('DEVICE_B', auth: auth)).called(1);
+  });
+
   test('invite stream emits only invite membership events', () async {
     final inviteStream = gateway.invites;
     final inviteFuture = expectLater(
@@ -708,25 +737,32 @@ void main() {
     expect(result, verification);
   });
 
-  test('unverifiedDevices returns only devices missing verification', () {
+  test('unverifiedDevices spans every cached user, own and foreign', () {
     final verifiedDevice = MockDeviceKeys();
     when(() => verifiedDevice.verified).thenReturn(true);
     final unverifiedDevice = MockDeviceKeys();
     when(() => unverifiedDevice.verified).thenReturn(false);
+    // Legacy pairing runs one Matrix user per device: a peer user's
+    // unverified device must keep gating sends.
+    final foreignDevice = MockDeviceKeys();
+    when(() => foreignDevice.verified).thenReturn(false);
 
     final deviceList = MockDeviceKeysList();
     when(() => deviceList.deviceKeys).thenReturn({
       'one': verifiedDevice,
       'two': unverifiedDevice,
     });
+    final foreignList = MockDeviceKeysList();
+    when(() => foreignList.deviceKeys).thenReturn({'three': foreignDevice});
 
     when(() => client.userDeviceKeys).thenReturn({
       '@user:server': deviceList,
+      '@peer:server': foreignList,
     });
 
     final devices = gateway.unverifiedDevices();
 
-    expect(devices, [unverifiedDevice]);
+    expect(devices, [unverifiedDevice, foreignDevice]);
   });
 
   test(

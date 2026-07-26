@@ -10,7 +10,9 @@ import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -205,12 +207,8 @@ class MatrixServiceOps {
     }
   }
 
-  /// Deletes [deviceKeys]' session from the homeserver, then refreshes the
-  /// local device-key cache so the removal unblocks sync immediately.
-  ///
-  /// Any in-flight emoji verification against the device is cancelled first —
-  /// a dead session can never answer, and the hung ceremony would otherwise
-  /// keep polling a device that is about to disappear.
+  /// Deletes [deviceKeys]' session from the homeserver after checking it
+  /// belongs to the logged-in account. See [deleteDeviceById].
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
 
@@ -221,18 +219,37 @@ class MatrixServiceOps {
       );
     }
 
+    if (deviceKeys.userId != _client.userID) {
+      throw StateError(
+        'Cannot delete device $deviceId: Device belongs to user '
+        '${deviceKeys.userId} but current user is ${_client.userID}',
+      );
+    }
+
+    await deleteDeviceById(deviceId);
+  }
+
+  /// Deletes the session [deviceId] from the homeserver, then refreshes the
+  /// local device-key cache so the removal unblocks sync immediately.
+  ///
+  /// Works for sessions without published encryption keys too — the id comes
+  /// from the account's own device inventory ([getSyncDevices]). Any
+  /// in-flight emoji verification against the device is cancelled first: a
+  /// dead session can never answer, and the hung ceremony would otherwise
+  /// keep polling a device that is about to disappear.
+  Future<void> deleteDeviceById(String deviceId) async {
+    if (deviceId == gateway.currentDeviceId) {
+      throw ArgumentError(
+        'Cannot delete device $deviceId: it is the session this app is '
+        'running as. Use logout instead.',
+      );
+    }
+
     final config = _matrixConfig;
     if (config == null) {
       throw StateError(
         'Cannot delete device $deviceId: No Matrix configuration available. '
         'User must be logged in to delete devices.',
-      );
-    }
-
-    if (deviceKeys.userId != _client.userID) {
-      throw StateError(
-        'Cannot delete device $deviceId: Device belongs to user '
-        '${deviceKeys.userId} but current user is ${_client.userID}',
       );
     }
 
@@ -246,13 +263,27 @@ class MatrixServiceOps {
 
     await _cancelActiveVerificationsFor(deviceId);
 
-    await _client.deleteDevice(
-      deviceId,
-      auth: AuthenticationPassword(
-        password: config.password,
-        identifier: AuthenticationUserIdentifier(user: config.user),
-      ),
-    );
+    try {
+      await gateway.deleteDevice(
+        deviceId,
+        auth: AuthenticationPassword(
+          password: config.password,
+          identifier: AuthenticationUserIdentifier(user: config.user),
+        ),
+      );
+    } on MatrixException catch (error) {
+      // A cache-only entry exists precisely because the homeserver no longer
+      // knows the session — "not found" means already deleted, and the
+      // recovery below (pruning the cached keys) is the part that actually
+      // unblocks sync. Anything else still propagates to the caller.
+      if (error.errcode != 'M_NOT_FOUND') rethrow;
+      loggingService.log(
+        LogDomain.sync,
+        'device $deviceId already absent on the homeserver - '
+        'continuing into cache recovery',
+        subDomain: 'deleteDevice.alreadyAbsent',
+      );
+    }
 
     loggingService.log(
       LogDomain.sync,
@@ -260,7 +291,118 @@ class MatrixServiceOps {
       subDomain: 'deleteDevice',
     );
 
-    await refreshDeviceKeysAndResumeSync(subDomain: 'deleteDevice');
+    // Bounded: the deletion has already succeeded on the homeserver, so a
+    // network drop during the cache refresh must not hang the caller — the
+    // cache converges on a later sync regardless.
+    try {
+      await refreshDeviceKeysAndResumeSync(
+        subDomain: 'deleteDevice',
+      ).timeout(SyncTuning.deleteDeviceRecoveryTimeout);
+    } on TimeoutException {
+      loggingService.log(
+        LogDomain.sync,
+        'device-key refresh still running after '
+        '${SyncTuning.deleteDeviceRecoveryTimeout.inSeconds}s - deletion '
+        'already succeeded, cache converges on a later sync',
+        subDomain: 'deleteDevice.refreshTimeout',
+      );
+    }
+  }
+
+  /// Returns every session on the sync account, merging the homeserver's
+  /// device inventory (names, last-seen) with the E2EE key cache
+  /// (verification state), ordered for display.
+  Future<List<SyncDeviceInfo>> getSyncDevices() async {
+    // A roster snapshotted while the SDK is still populating device keys
+    // would misclassify keyed sessions as keyless; wait (bounded) for the
+    // in-flight key load first.
+    try {
+      final keysLoading = _client.userDeviceKeysLoading;
+      if (keysLoading != null) {
+        await keysLoading.timeout(SyncTuning.deleteDeviceRecoveryTimeout);
+      }
+    } catch (error, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'getSyncDevices.userDeviceKeysLoading',
+      );
+    }
+
+    final serverDevices = await gateway.getDevices();
+    final userId = _client.userID;
+    final keysById =
+        (userId == null ? null : _client.userDeviceKeys[userId]?.deviceKeys) ??
+        <String, DeviceKeys>{};
+    final ownDeviceId = gateway.currentDeviceId;
+
+    final devices = serverDevices.map((device) {
+      final keys = keysById[device.deviceId];
+      final isCurrent = device.deviceId == ownDeviceId;
+      final lastSeenTs = device.lastSeenTs;
+      return SyncDeviceInfo(
+        deviceId: device.deviceId,
+        displayName: device.displayName,
+        lastSeen: lastSeenTs == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(lastSeenTs),
+        isCurrentDevice: isCurrent,
+        verified: isCurrent || (keys?.verified ?? false),
+        keys: keys,
+        userId: userId,
+      );
+    }).toList();
+
+    // The send path gates on the key cache, not the server inventory — an
+    // unverified cached device missing from `GET /devices` (deleted by
+    // another client, or a failed post-delete refresh) still blocks sends.
+    // Keep such blockers in the roster so the paused banner can never clear
+    // while sending is still refused.
+    final serverIds = serverDevices.map((device) => device.deviceId).toSet();
+    for (final entry in keysById.entries) {
+      if (serverIds.contains(entry.key) ||
+          entry.key == ownDeviceId ||
+          entry.value.verified) {
+        continue;
+      }
+      devices.add(
+        SyncDeviceInfo(
+          deviceId: entry.key,
+          displayName: entry.value.deviceDisplayName,
+          isCurrentDevice: false,
+          verified: false,
+          keys: entry.value,
+          onServer: false,
+          userId: userId,
+        ),
+      );
+    }
+
+    // The sender's gate spans every cached user (legacy one-user-per-device
+    // rooms), so foreign unverified devices must appear here too — otherwise
+    // the banner could clear while sends still fail. They can be verified,
+    // never deleted.
+    for (final userEntry in _client.userDeviceKeys.entries) {
+      if (userEntry.key == userId) continue;
+      for (final keyEntry in userEntry.value.deviceKeys.entries) {
+        if (keyEntry.value.verified) continue;
+        devices.add(
+          SyncDeviceInfo(
+            deviceId: keyEntry.key,
+            displayName: keyEntry.value.deviceDisplayName,
+            isCurrentDevice: false,
+            verified: false,
+            keys: keyEntry.value,
+            onServer: false,
+            ownAccount: false,
+            userId: userEntry.key,
+          ),
+        );
+      }
+    }
+
+    return sortSyncDevicesForDisplay(devices);
   }
 
   Future<void> _cancelActiveVerificationsFor(String deviceId) async {

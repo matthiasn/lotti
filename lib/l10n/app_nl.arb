@@ -3922,7 +3922,6 @@
   "provisionedSyncSummaryRoom": "Kamer",
   "provisionedSyncSummaryUser": "Gebruiker",
   "provisionedSyncTitle": "Voorzien van een synchronisatie",
-  "provisionedSyncVerifyDevicesTitle": "Apparaatverificatie",
   "queueCatchUpNowButton": "Inhalen nu",
   "queueCatchUpNowDone": "De inhaalslag is aan het draineren.",
   "queueCatchUpNowError": "Inhaalactie mislukt: {reason}",
@@ -4353,12 +4352,10 @@
   "settingsMatrixDiagnosticShowButton": "Diagnostische informatie tonen",
   "settingsMatrixDone": "Klaar",
   "settingsMatrixLastUpdated": "Laatst bijgewerkt:",
-  "settingsMatrixListUnverifiedLabel": "Niet-verifieerde apparaten",
   "settingsMatrixMaintenanceSubtitle": "Start de onderhoudstaken en hersteltools van Matrix",
   "settingsMatrixMaintenanceTitle": "Onderhoud",
   "settingsMatrixMetrics": "Synchroniseren metrics",
   "settingsMatrixNextPage": "Volgende pagina",
-  "settingsMatrixNoUnverifiedLabel": "Geen niet-geverifieerde apparaten",
   "settingsMatrixPreviousPage": "Vorige pagina",
   "settingsMatrixRoomInviteMessage": "Uitnodigen naar kamer {roomId} van {senderId}Accepteren?",
   "@settingsMatrixRoomInviteMessage": {
@@ -4384,7 +4381,6 @@
   "settingsMatrixStartVerificationLabel": "Begincontrole",
   "settingsMatrixStatsTitle": "Matrix Stats",
   "settingsMatrixTitle": "Instellingen synchroniseren",
-  "settingsMatrixUnverifiedDevicesPage": "Niet-verifieerde apparaten",
   "settingsMatrixVerificationCancelledLabel": "Geannuleerd op een ander apparaat...",
   "settingsMatrixVerificationSuccessConfirm": "Begrepen.",
   "settingsMatrixVerificationSuccessLabel": "U heeft het succesvol geverifieerd {deviceName} ({deviceID})",
@@ -4577,6 +4573,60 @@
   "syncActivityTitle": "Synchroniseren",
   "syncDeleteConfigConfirm": "Ja, ik ben zeker.",
   "syncDeleteConfigQuestion": "Wilt u de synchronisatie-configuratie verwijderen?",
+  "syncDevicesKeylessHint": "Het koppelen is nooit voltooid — het kan alleen worden verwijderd.",
+  "syncDevicesLastSeen": "Laatst gezien op {date}",
+  "@syncDevicesLastSeen": {
+    "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesLoadFailed": "De apparatenlijst kon niet worden geladen.",
+  "syncDevicesOnlyThisDevice": "Er zijn geen andere apparaten aangemeld.",
+  "syncDevicesPaired": "Gekoppeld op {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesPausedBanner": "{count, plural, one{1 niet-geverifieerd apparaat pauzeert de synchronisatie — verwijder of verifieer het hieronder.} other{{count} niet-geverifieerde apparaten pauzeren de synchronisatie — verwijder of verifieer ze hieronder.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 niet-geverifieerd apparaat pauzeert de synchronisatie — verwijder het hieronder.} other{{count} niet-geverifieerde apparaten pauzeren de synchronisatie — verwijder ze hieronder.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 niet-geverifieerd apparaat pauzeert de synchronisatie — verifieer het hieronder.} other{{count} niet-geverifieerde apparaten pauzeren de synchronisatie — verifieer ze hieronder.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesSectionTitle": "Apparaten",
+  "syncDevicesStaleHint": "Waarschijnlijk niet meer in gebruik",
+  "syncDevicesSyncResumed": "Synchronisatie werkt weer.",
+  "syncDevicesThisDeviceChip": "Dit apparaat",
+  "syncDevicesUnverifiedChip": "Niet geverifieerd",
+  "syncDevicesVerifiedChip": "Geverifieerd",
   "syncEntitiesConfirm": "START SYNC",
   "syncEntitiesMessage": "Kies de entiteiten die u wilt synchroniseren.",
   "syncEntitiesSuccessDescription": "Alles is up-to-date.",

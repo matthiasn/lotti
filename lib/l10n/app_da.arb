@@ -3923,7 +3923,6 @@
   "provisionedSyncSummaryRoom": "Værelse",
   "provisionedSyncSummaryUser": "Bruger",
   "provisionedSyncTitle": "Provisioneret synkronisering",
-  "provisionedSyncVerifyDevicesTitle": "Enhedsverifikation",
   "queueCatchUpNowButton": "Følg med nu",
   "queueCatchUpNowDone": "Indhentning er smidt i gang — køen dræner mig.",
   "queueCatchUpNowError": "Indhentning mislykkedes: {reason}",
@@ -4354,12 +4353,10 @@
   "settingsMatrixDiagnosticShowButton": "Vis diagnostisk info",
   "settingsMatrixDone": "Færdig",
   "settingsMatrixLastUpdated": "Sidst opdateret:",
-  "settingsMatrixListUnverifiedLabel": "Uverificerede enheder",
   "settingsMatrixMaintenanceSubtitle": "Kør Matrix-vedligeholdelsesopgaver og gendannelsesværktøjer",
   "settingsMatrixMaintenanceTitle": "Vedligeholdelse",
   "settingsMatrixMetrics": "Synkroniseringsmålinger",
   "settingsMatrixNextPage": "Næste side",
-  "settingsMatrixNoUnverifiedLabel": "Ingen uverificerede enheder",
   "settingsMatrixPreviousPage": "Forrige side",
   "settingsMatrixRoomInviteMessage": "Inviter til værelse {roomId} fra {senderId}. Acceptere?",
   "@settingsMatrixRoomInviteMessage": {
@@ -4385,7 +4382,6 @@
   "settingsMatrixStartVerificationLabel": "Start verifikation",
   "settingsMatrixStatsTitle": "Matrixstatistikker",
   "settingsMatrixTitle": "Synkroniseringsindstillinger",
-  "settingsMatrixUnverifiedDevicesPage": "Uverificerede enheder",
   "settingsMatrixVerificationCancelledLabel": "Annulleret på anden enhed...",
   "settingsMatrixVerificationSuccessConfirm": "Forstået",
   "settingsMatrixVerificationSuccessLabel": "Du har med succes verificeret {deviceName} ({deviceID})",
@@ -4578,6 +4574,60 @@
   "syncActivityTitle": "Sync",
   "syncDeleteConfigConfirm": "JA, JEG ER SIKKER",
   "syncDeleteConfigQuestion": "Vil du slette synkroniseringskonfigurationen?",
+  "syncDevicesKeylessHint": "Parringen blev aldrig fuldført — den kan kun fjernes.",
+  "syncDevicesLastSeen": "Sidst set {date}",
+  "@syncDevicesLastSeen": {
+    "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesLoadFailed": "Enhedslisten kunne ikke indlæses.",
+  "syncDevicesOnlyThisDevice": "Ingen andre enheder er logget ind.",
+  "syncDevicesPaired": "Parret {date}",
+  "@syncDevicesPaired": {
+    "description": "Pairing-date line on a sync device card; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesPausedBanner": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — slet eller bekræft den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — slet eller bekræft dem nedenfor.}}",
+  "@syncDevicesPausedBanner": {
+    "description": "Warning banner while unverified devices block outbound sync; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerDeleteOnly": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — slet den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — slet dem nedenfor.}}",
+  "@syncDevicesPausedBannerDeleteOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesPausedBannerVerifyOnly": "{count, plural, one{1 ubekræftet enhed sætter synkroniseringen på pause — bekræft den nedenfor.} other{{count} ubekræftede enheder sætter synkroniseringen på pause — bekræft dem nedenfor.}}",
+  "@syncDevicesPausedBannerVerifyOnly": {
+    "description": "Paused-sync banner variant; count is the number of blocking devices.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDevicesSectionTitle": "Enheder",
+  "syncDevicesStaleHint": "Sandsynligvis ikke længere i brug",
+  "syncDevicesSyncResumed": "Synkroniseringen kører igen.",
+  "syncDevicesThisDeviceChip": "Denne enhed",
+  "syncDevicesUnverifiedChip": "Ubekræftet",
+  "syncDevicesVerifiedChip": "Bekræftet",
   "syncEntitiesConfirm": "START SYNC",
   "syncEntitiesMessage": "Vælg de enheder, du vil synkronisere.",
   "syncEntitiesSuccessDescription": "Alt er opdateret.",

@@ -245,10 +245,27 @@ class MatrixSdkGateway implements MatrixSyncGateway {
 
   @override
   List<DeviceKeys> unverifiedDevices() {
+    // Deliberately spans every cached user, not just the own account: the
+    // legacy pairing model runs one Matrix user per device, and those rooms
+    // still gate sends on cross-user verification. The device roster derives
+    // its paused state from this same set.
     return _client.userDeviceKeys.values
         .expand((deviceKeysList) => deviceKeysList.deviceKeys.values)
         .where((device) => !device.verified)
         .toList();
+  }
+
+  @override
+  String? get currentDeviceId => _client.deviceID;
+
+  @override
+  Future<List<Device>> getDevices() async {
+    return await _client.getDevices() ?? const [];
+  }
+
+  @override
+  Future<void> deleteDevice(String deviceId, {AuthenticationData? auth}) {
+    return _client.deleteDevice(deviceId, auth: auth);
   }
 
   @override

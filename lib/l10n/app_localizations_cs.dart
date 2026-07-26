@@ -8362,9 +8362,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncTitle => 'Nastavení synchronizace';
 
   @override
-  String get provisionedSyncVerifyDevicesTitle => 'Ověření zařízení';
-
-  @override
   String get queueCatchUpNowButton => 'Dohnat nyní';
 
   @override
@@ -9419,9 +9416,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Naposledy aktualizováno:';
 
   @override
-  String get settingsMatrixListUnverifiedLabel => 'Neověřená zařízení';
-
-  @override
   String get settingsMatrixMaintenanceSubtitle =>
       'Spustit úlohy údržby Matrix a nástroje pro obnovení';
 
@@ -9433,9 +9427,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMatrixNextPage => 'Další stránka';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel => 'Žádná neověřená zařízení';
 
   @override
   String get settingsMatrixPreviousPage => 'Předchozí stránka';
@@ -9464,9 +9455,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMatrixTitle => 'Nastavení synchronizace';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage => 'Neověřená zařízení';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -9975,6 +9963,88 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Chcete smazat konfiguraci synchronizace?';
+
+  @override
+  String get syncDevicesKeylessHint =>
+      'Párování nebylo nikdy dokončeno — zařízení lze pouze odebrat.';
+
+  @override
+  String syncDevicesLastSeen(String date) {
+    return 'Naposledy aktivní $date';
+  }
+
+  @override
+  String get syncDevicesLoadFailed => 'Seznam zařízení se nepodařilo načíst.';
+
+  @override
+  String get syncDevicesOnlyThisDevice =>
+      'Nejsou přihlášena žádná další zařízení.';
+
+  @override
+  String syncDevicesPaired(String date) {
+    return 'Spárováno $date';
+  }
+
+  @override
+  String syncDevicesPausedBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count neověřených zařízení pozastavuje synchronizaci — odstraň je nebo ověř níže.',
+      few:
+          '$count neověřená zařízení pozastavují synchronizaci — odstraň je nebo ověř níže.',
+      one:
+          '1 neověřené zařízení pozastavuje synchronizaci — odstraň ho nebo ověř níže.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerDeleteOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count neověřených zařízení pozastavuje synchronizaci — odstraň je níže.',
+      few:
+          '$count neověřená zařízení pozastavují synchronizaci — odstraň je níže.',
+      one: '1 neověřené zařízení pozastavuje synchronizaci — odstraň ho níže.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncDevicesPausedBannerVerifyOnly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count neověřených zařízení pozastavuje synchronizaci — ověř je níže.',
+      few:
+          '$count neověřená zařízení pozastavují synchronizaci — ověř je níže.',
+      one: '1 neověřené zařízení pozastavuje synchronizaci — ověř ho níže.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncDevicesSectionTitle => 'Zařízení';
+
+  @override
+  String get syncDevicesStaleHint => 'Pravděpodobně se už nepoužívá';
+
+  @override
+  String get syncDevicesSyncResumed => 'Synchronizace opět běží.';
+
+  @override
+  String get syncDevicesThisDeviceChip => 'Toto zařízení';
+
+  @override
+  String get syncDevicesUnverifiedChip => 'Neověřeno';
+
+  @override
+  String get syncDevicesVerifiedChip => 'Ověřeno';
 
   @override
   String get syncEntitiesConfirm => 'SPUSTIT SYNCHRONIZACI';
