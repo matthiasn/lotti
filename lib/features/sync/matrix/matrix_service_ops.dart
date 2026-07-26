@@ -299,6 +299,23 @@ class MatrixServiceOps {
   /// device inventory (names, last-seen) with the E2EE key cache
   /// (verification state), ordered for display.
   Future<List<SyncDeviceInfo>> getSyncDevices() async {
+    // A roster snapshotted while the SDK is still populating device keys
+    // would misclassify keyed sessions as keyless; wait (bounded) for the
+    // in-flight key load first.
+    try {
+      final keysLoading = _client.userDeviceKeysLoading;
+      if (keysLoading != null) {
+        await keysLoading.timeout(SyncTuning.deleteDeviceRecoveryTimeout);
+      }
+    } catch (error, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'getSyncDevices.userDeviceKeysLoading',
+      );
+    }
+
     final serverDevices = await gateway.getDevices();
     final userId = _client.userID;
     final keysById =

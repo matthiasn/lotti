@@ -1497,6 +1497,7 @@ void main() {
 
     test('getSyncDevices returns the merged, ordered inventory', () async {
       when(() => client.userID).thenReturn('@me:server');
+      when(() => client.userDeviceKeysLoading).thenReturn(null);
       when(() => client.userDeviceKeys).thenReturn({});
       when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
       when(() => gateway.getDevices()).thenAnswer(

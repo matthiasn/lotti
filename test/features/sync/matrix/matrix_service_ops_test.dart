@@ -507,6 +507,7 @@ void main() {
       client = MockMatrixClient();
       when(() => sessionManager.client).thenReturn(client);
       when(() => client.userID).thenReturn(userId);
+      when(() => client.userDeviceKeysLoading).thenReturn(null);
       when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
     });
 
@@ -599,6 +600,36 @@ void main() {
 
         expect(devices.single.isCurrentDevice, isTrue);
         expect(devices.single.verified, isTrue);
+      },
+    );
+
+    test(
+      'waits for an in-flight device-key load before classifying sessions',
+      () async {
+        final keysLoaded = Completer<void>();
+        when(
+          () => client.userDeviceKeysLoading,
+        ).thenAnswer((_) => keysLoaded.future);
+        when(() => gateway.getDevices()).thenAnswer(
+          (_) async => [Device(deviceId: 'THIS_DEVICE')],
+        );
+        when(() => client.userDeviceKeys).thenReturn({});
+
+        var completed = false;
+        final pending = buildOps().getSyncDevices().then((devices) {
+          completed = true;
+          return devices;
+        });
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          completed,
+          isFalse,
+          reason: 'the roster must not snapshot a half-loaded key cache',
+        );
+
+        keysLoaded.complete();
+        final devices = await pending;
+        expect(devices.single.deviceId, 'THIS_DEVICE');
       },
     );
 
