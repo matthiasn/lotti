@@ -31,13 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   re-suggest a relationship that already exists.
 
 ### Changed
-- **The linked-tasks card is a third shorter.** The relationship headings
-  ("Follows up on", "Has follow-up", …) floated in the middle of a large empty
-  band instead of sitting with the tasks they label, and every linked task sat
-  in a row a third taller than it needed to be, so a card with two links took
-  up as much room as one with five. Each heading now sits close above its own
-  rows, the rows themselves are tighter, and nothing moves when you switch the
-  card into Manage mode.
+- **The linked-tasks card is about a quarter shorter.** The relationship
+  headings ("Follows up on", "Has follow-up", …) floated in the middle of a
+  large empty band instead of sitting with the tasks they label, and every
+  linked task sat in a row a third taller than it needed to be, so a card with
+  two links took up as much room as one with five. Each heading now sits close
+  above its own rows, the rows themselves are tighter, and nothing moves when
+  you switch the card into Manage mode.
 
 ### Fixed
 - **The planner is told how much of the day is actually left.** It knew your
