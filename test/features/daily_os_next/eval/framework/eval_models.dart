@@ -234,6 +234,29 @@ class EvalFixtureInputs {
   bool isBlockerOfVisibleTask(String taskId) =>
       visibleTaskIds != null && _blockersOfVisibleTasks.contains(taskId);
 
+  /// Whether the model was shown what [taskId] is waiting on.
+  ///
+  /// True through a rendered corpus row or a `DecidedTaskRef`. **Not** true for
+  /// a task reached only as somebody else's blocker: one-hop resolution never
+  /// renders that task's own `blockedBy`.
+  ///
+  /// Load-bearing for scoring, not just reporting. `blockerBeforeBlocked`
+  /// offers two ways to place blocked work — schedule its blocker earlier, or
+  /// name that blocker in the reason — and **both require knowing the blocker's
+  /// id**. Judging a task whose blockers were never rendered asks for something
+  /// no plan could supply, and rewards a model that placed nothing over one
+  /// that engaged. Shared with the judge bundle so the two can never disagree
+  /// about what the model saw.
+  bool blockersShownFor(String taskId) =>
+      visibleTaskIds == null || decidedTaskIds.contains(taskId);
+
+  /// Whether the model was shown [taskId]'s own status.
+  ///
+  /// Weaker than [blockersShownFor]: a task rendered as another task's blocker
+  /// carries its status but not its dependencies.
+  bool statusShownFor(String taskId) =>
+      blockersShownFor(taskId) || isBlockerOfVisibleTask(taskId);
+
   EvalCorpusTask? taskById(String id) {
     for (final task in corpus) {
       if (task.taskId == id) return task;

@@ -203,16 +203,38 @@ EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
   final noPlan = _requirePlan(outcome, id);
   if (noPlan != null) return noPlan;
   final blocked = <PlannedBlock, EvalCorpusTask>{};
+  var hiddenBlockers = 0;
   for (final block in _scheduled(outcome)) {
     final taskId = block.taskId;
     if (taskId == null) continue;
     final task = outcome.inputs.taskById(taskId);
-    if (task != null && task.isBlocked) blocked[block] = task;
+    if (task == null || !task.isBlocked) continue;
+    // Judged against what the model was shown, like fabrication is. Both ways
+    // the rule allows placing blocked work — schedule its blocker earlier, or
+    // name that blocker in the reason — need the blocker's id, and one-hop
+    // resolution never renders the `blockedBy` of a task reached only as
+    // somebody else's blocker.
+    //
+    // Measured: on `blockedWithoutCorpus`, glm-5.2 placed `task-b-middle`
+    // (the decided leaf's blocker), noted in the reason that it was itself
+    // BLOCKED, gated it behind an investigation block and sequenced the leaf
+    // after it — the best plan available from what it had — and was failed for
+    // not naming `task-a-root`, an id it was never given. Meanwhile a model
+    // that placed nothing scored 100%, which is the "laziest model looks best"
+    // inversion this eval exists to avoid.
+    if (!outcome.inputs.blockersShownFor(taskId)) {
+      hiddenBlockers++;
+      continue;
+    }
+    blocked[block] = task;
   }
   if (blocked.isEmpty) {
-    return const EvalConstraintResult.notApplicable(
+    return EvalConstraintResult.notApplicable(
       id,
-      'no blocked task was placed',
+      hiddenBlockers == 0
+          ? 'no blocked task was placed'
+          : 'no blocked task was placed whose blockers the model was shown '
+                '($hiddenBlockers placed with hidden blockers)',
     );
   }
   final violations = <String>[];

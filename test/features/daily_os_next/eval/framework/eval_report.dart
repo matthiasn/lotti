@@ -533,13 +533,8 @@ class EvalReport {
               'estimateMinutes': task.estimateMinutes,
               'blockedBy': task.blockedBy,
               'corpusRowShown': inputs.visibleTaskIds == null,
-              'statusShown':
-                  inputs.visibleTaskIds == null ||
-                  inputs.decidedTaskIds.contains(task.taskId) ||
-                  inputs.isBlockerOfVisibleTask(task.taskId),
-              'blockersShown':
-                  inputs.visibleTaskIds == null ||
-                  inputs.decidedTaskIds.contains(task.taskId),
+              'statusShown': inputs.statusShownFor(task.taskId),
+              'blockersShown': inputs.blockersShownFor(task.taskId),
               'taskIdReferenceable': inputs.referenceableTaskIds.contains(
                 task.taskId,
               ),

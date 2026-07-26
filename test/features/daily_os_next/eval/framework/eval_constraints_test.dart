@@ -264,6 +264,84 @@ void main() {
       blockedBy: ['task-blocker'],
     );
 
+    test('exempts a placed task whose own blockers were never rendered', () {
+      // The blockedWithoutCorpus shape, and the reason this exemption exists:
+      // one-hop resolution renders task-b-middle as the decided leaf's blocker
+      // (so its status is visible) but never its OWN blockedBy. Both escape
+      // branches the rule grants — schedule the blocker earlier, or name it in
+      // the reason — need an id the model was never given, so judging it asks
+      // for something no plan could supply.
+      const middle = EvalCorpusTask(
+        taskId: 'task-b-middle',
+        title: 'Get vendor credentials',
+        status: 'BLOCKED',
+        blockedBy: ['task-a-root'],
+      );
+      const leaf = EvalCorpusTask(
+        taskId: 'task-c-leaf',
+        title: 'Ship the integration',
+        status: 'BLOCKED',
+        blockedBy: ['task-b-middle'],
+      );
+      const root = EvalCorpusTask(taskId: 'task-a-root', title: 'Pick vendor');
+
+      final result = scoreBlockerBeforeBlocked(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-b-middle',
+              reason: 'Placing the blocker of task-c-leaf.',
+            ),
+          ],
+          corpus: const [root, middle, leaf],
+          decidedTaskIds: const ['task-c-leaf'],
+          visibleTaskIds: const {'task-c-leaf'},
+        ),
+      );
+
+      expect(result.passed, isNull);
+      expect(result.detail, contains('hidden blockers'));
+    });
+
+    test('still judges a placed task whose blockers WERE rendered', () {
+      // The exemption must not swallow the constraint: the decided leaf's own
+      // blockedBy IS rendered, so placing it unjustified is still a failure
+      // even on the same capture-less wake.
+      const middle = EvalCorpusTask(
+        taskId: 'task-b-middle',
+        title: 'Get vendor credentials',
+      );
+      const leaf = EvalCorpusTask(
+        taskId: 'task-c-leaf',
+        title: 'Ship the integration',
+        status: 'BLOCKED',
+        blockedBy: ['task-b-middle'],
+      );
+
+      final result = scoreBlockerBeforeBlocked(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c-leaf',
+              reason: 'Getting it done.',
+            ),
+          ],
+          corpus: const [middle, leaf],
+          decidedTaskIds: const ['task-c-leaf'],
+          visibleTaskIds: const {'task-c-leaf'},
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-b-middle'));
+    });
+
     test('passes when the blocker is scheduled earlier the same day', () {
       final result = scoreBlockerBeforeBlocked(
         outcome(
