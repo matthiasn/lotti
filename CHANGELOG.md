@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1070]
 ### Fixed
+- **The planner can no longer mark blocks as agreed on your behalf.** A fresh
+  plan could come back with blocks already marked committed — the state that
+  means *you approved this* — so work you had never seen presented itself as
+  settled, and uncommitting the day was the only way to undo it. Only you can
+  commit a block now. A re-plan still carries forward blocks you already
+  committed, unchanged.
 - **Removing a dead device now unblocks sync immediately.** Deleting a device
   from the sync device list refreshes the cached device keys and nudges the
   pipeline right away, so the remaining devices resume syncing without an app

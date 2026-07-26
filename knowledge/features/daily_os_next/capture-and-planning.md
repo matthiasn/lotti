@@ -58,7 +58,7 @@ The distinction matters for reading eval results and for trusting the model:
 
 | Enforcement | Constraints |
 |-------------|-------------|
-| **Hard — throws `DayAgentCaptureException`**, rejecting the whole `draft_day_plan` call and handing the message back to the model, which retries | Day boundaries, `end > start`, same-day past-start, allowed categories, committed-plan overwrite, `cal` blocks, unresolvable `taskId` |
+| **Hard — throws `DayAgentCaptureException`**, rejecting the whole `draft_day_plan` call and handing the message back to the model, which retries | Day boundaries, `end > start`, same-day past-start, allowed categories, committed-plan overwrite, model-authored `committed` blocks, `cal` blocks, unresolvable `taskId` |
 | **Prompt contract only** | Block overlap, capacity, decided tasks actually being placed, blocker ordering |
 
 So **the persisted plan is always *legal***, and inspecting it alone measures the
@@ -108,6 +108,24 @@ The day boundary is computed with calendar arithmetic (`DateTime(y, m, d + 1)`),
 not by adding 24 hours: on a DST transition day the latter lands on 01:00 or
 23:00 and would either advertise into tomorrow or close the window an hour
 early.
+
+**The agent cannot create a `committed` block.** `committed` asserts that *the
+user approved this block*, and exactly two things may say that: the user
+committing the day through the UI, and `acceptPlanDiff` on an already-agreed
+plan. So the only `committed` block the model may emit is a faithful repeat of
+one the plan already had — same id, same start, same state — which is what a
+re-draft over an agreed plan does. Anything else is rejected.
+
+The guard is unconditional rather than part of the past-start rule, which is why
+it was missed: guarding `committed` against *backdating* made the hole look
+covered, while a forward-dated committed block persisted and projected to the UI
+as agreed work. Observed in 4 of 9 archived eval runs, always a single 09:00
+block titled "Already scheduled" — the model depicting the directive's
+`alreadyScheduledMinutes` as existing commitments. That is a fair thing to want
+to express; `drafted` expresses it without claiming a verdict the user never
+gave. `committed` stays in the tool schema, unlike `cal`, because its
+carry-forward use is real — removing it would force a re-draft to call approved
+work `drafted` and silently un-commit it.
 
 **The agent cannot emit a `cal` block at all**, through either `draft_day_plan` or
 `propose_plan_diff`, and the type is absent from both tool schemas. `cal` means
