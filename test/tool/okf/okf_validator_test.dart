@@ -1162,6 +1162,17 @@ Body.
       expect(result.issues, isEmpty);
     });
 
+    test('a quoted fence closes even when marker spacing varies', () {
+      // The marker's trailing space is optional in CommonMark, so an exact-text
+      // prefix match stripped neither the body nor the close and reported a valid
+      // block as unclosed.
+      final result = validateBundle(
+        _bundle(_concept(body: '> ```dart\n>var x = 1;\n>```\n')),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
     test('an unclosed blockquoted fence is still caught', () {
       final result = validateBundle(
         _bundle(_concept(body: '> ```dart\n> var x = 1;\n')),

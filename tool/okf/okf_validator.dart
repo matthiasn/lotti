@@ -269,7 +269,7 @@ List<OkfIssue> validateFencedBlocks(String path, String content) {
   final lines = content.split('\n');
   String? opener;
   var openedAt = 0;
-  var prefix = '';
+  var depth = 0;
   for (var i = 0; i < lines.length; i++) {
     // Trailing whitespace and blockquote markers are noise; the *leading indent*
     // is not. CommonMark allows a fence to be indented by at most three spaces —
@@ -279,21 +279,21 @@ List<OkfIssue> validateFencedBlocks(String path, String content) {
     if (opener == null) {
       // Outside a fence a blockquote marker is a container: strip it, and
       // remember it so the close is read in the same context.
-      final candidate = _containerPrefix(trimmedEnd);
+      final candidate = _containerDepth(trimmedEnd);
       final match = _fenceOpenPattern.firstMatch(
-        _stripPrefix(trimmedEnd, candidate),
+        _stripDepth(trimmedEnd, candidate),
       );
       if (match != null) {
         opener = match.group(2);
-        prefix = candidate;
+        depth = candidate;
         openedAt = i + 1;
       }
       continue;
     }
     // Inside a fence, only the opener's own container is removed.
-    if (_closesFence(_stripPrefix(trimmedEnd, prefix), opener)) {
+    if (_closesFence(_stripDepth(trimmedEnd, depth), opener)) {
       opener = null;
-      prefix = '';
+      depth = 0;
     }
   }
   if (opener == null) return const [];
@@ -327,25 +327,43 @@ bool _closesFence(String line, String opener) {
   return run[0] == opener[0] && run.length >= opener.length;
 }
 
-final _containerPattern = RegExp('^(?: {0,3}>(?: |\t)?)+');
+// One blockquote marker: up to three spaces, `>`, and an *optional* single space
+// or tab. The trailing space being optional is why the container is tracked as a
+// depth rather than as literal prefix text — a body line may write `>flowchart TD`
+// under an opener that wrote `> `, and an exact-text match would strip neither the
+// body nor the close.
+final _markerPattern = RegExp('^ {0,3}>(?: |\t)?');
 
-/// The blockquote prefix [line] carries, or `''`.
-String _containerPrefix(String line) =>
-    _containerPattern.firstMatch(line)?.group(0) ?? '';
+/// How many blockquote markers [line] opens with.
+int _containerDepth(String line) {
+  var rest = line;
+  var depth = 0;
+  while (true) {
+    final match = _markerPattern.firstMatch(rest);
+    if (match == null) return depth;
+    rest = rest.substring(match.end);
+    depth++;
+  }
+}
 
-/// Removes exactly [prefix] from the front of [line].
+/// Removes [depth] blockquote markers from [line], whatever their spacing.
 ///
-/// Tied to the fence opener on purpose. Stripping `>` unconditionally meant a
-/// **top-level** fence whose body contained a literal `` > ``` `` had that marker
-/// removed and the line then read as the close — so an unclosed fence validated
-/// clean. CommonMark treats fence content as literal; only the container the
-/// fence was opened *under* is stripped from its body.
+/// Tied to the fence opener's depth on purpose. Stripping `>` unconditionally
+/// meant a **top-level** fence whose body contained a literal `` > ``` `` had that
+/// marker removed and the line then read as the close — so an unclosed fence
+/// validated clean. CommonMark treats fence content as literal; only the container
+/// the fence was opened *under* is stripped from its body.
 ///
 /// List-item containers are not modelled: a fence indented past three spaces
 /// inside a list item reads as an indented code block here.
-String _stripPrefix(String line, String prefix) {
-  if (prefix.isEmpty) return line;
-  return line.startsWith(prefix) ? line.substring(prefix.length) : line;
+String _stripDepth(String line, int depth) {
+  var rest = line;
+  for (var i = 0; i < depth; i++) {
+    final match = _markerPattern.firstMatch(rest);
+    if (match == null) return rest;
+    rest = rest.substring(match.end);
+  }
+  return rest;
 }
 
 /// Blanks out fenced blocks and inline code so link scanning never treats a

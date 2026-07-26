@@ -5,7 +5,7 @@ description: "A pure, deterministic fold over an event *set* — proving that pr
 resource: ../../../lib/features/agents/projection
 tags: [agents, projection, determinism, convergence]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T22:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T23:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: sync-service
@@ -104,9 +104,11 @@ Two boundaries make that precise:
 A malformed synced log (a duplicate id or a cycle from a peer) makes the fold
 throw; the wake falls back to the cached row and logs, rather than aborting.
 
-The composite's own header still says it "drives no production read" — that
-sentence predates the cutover it predicted, and `agent_sync_service.dart` is the
-authority:
+One piece of history worth knowing, because it misled this concept twice: the
+composite's header used to read *"drives no production read; B6 flips reads onto
+this fold"* — a sentence that outlived the cutover it predicted. It now describes
+the shipped state, and `agent_sync_service.dart` remains the authority for the read
+path:
 
 - It calls `project(canonicalOrder(...))` for the structural part — heads and the
   latest report — and aggregates the rest **directly off the messages and links**:

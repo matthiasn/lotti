@@ -118,6 +118,15 @@ test('a blockquoted fence is a real diagram', () => {
   assert.match(r.output, /FAIL/);
 });
 
+test('a quoted fence works when marker spacing varies', () => {
+  // `>flowchart TD` under a `> ```mermaid` opener: the marker's trailing space is
+  // optional, so matching exact prefix text stripped nothing and the block read
+  // as unclosed.
+  const r = run('> ```mermaid\n>flowchart TD\n>  A --> B\n>```\n');
+  assert.ok(r.ok, r.output);
+  assert.match(r.output, /parsed 1 block/);
+});
+
 test('a nested blockquote fence is still recognised', () => {
   const r = run('> > ```mermaid\n> > flowchart TD\n> >   A --> B\n> > ```\n');
   assert.ok(r.ok, r.output);
