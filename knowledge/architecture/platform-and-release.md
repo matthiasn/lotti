@@ -1,7 +1,7 @@
 ---
 type: Architecture
 title: Platform targets, CI and release
-description: Five platform targets from one codebase, the checks every branch runs, and the tag that triggers six release pipelines.
+description: Five platform targets from one codebase, the checks every branch runs, and the tag that triggers seven release pipelines.
 tags: [architecture, ci, release, platforms, build]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
@@ -14,7 +14,7 @@ sources:
   - id: makefile
     resource: ../../Makefile
     title: Developer and build entry points
-    last_modified: 2026-07-24
+    last_modified: 2026-07-26
   - id: pubspec
     resource: ../../pubspec.yaml
     title: Version, SDK constraints, dependencies
@@ -68,7 +68,7 @@ a test that leaks a timer, stream subscription or database handle will fail a
 # Release
 
 Release is triggered by **pushing a git tag whose name is the `pubspec.yaml`
-version**. Six workflows listen on `push: tags: ['**']` and fan out:
+version**. Seven workflows listen on `push: tags: ['**']` and fan out:
 
 ```mermaid
 flowchart TD

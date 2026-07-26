@@ -15,7 +15,7 @@ sources:
   - id: agents-md
     resource: ../../AGENTS.md
     title: Repository guidelines
-    last_modified: 2026-07-24
+    last_modified: 2026-07-26
   - id: build-yaml
     resource: ../../build.yaml
     title: Code generation config

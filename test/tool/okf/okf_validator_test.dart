@@ -158,6 +158,22 @@ Body.
       );
     });
 
+    test('a root index.md mapping without okf_version is flagged', () {
+      // The fallback warning only fires when the whole block is missing, so a
+      // `{}` frontmatter told consumers nothing and produced no issue.
+      final result = validateBundle(
+        _bundle(
+          _validFrontmatter,
+          index: '---\ntitle_placeholder_removed: ~\n---\n\n# Root\n',
+        ),
+      );
+
+      expect(
+        _joined(result.issues),
+        contains('declares no `okf_version`'),
+      );
+    });
+
     test('log.md date headings must be ISO 8601', () {
       final result = validateBundle(
         _bundle(
@@ -335,6 +351,31 @@ sources:
       expect(
         result.warnings.single.message,
         contains('duplicate `sources[].id`'),
+      );
+    });
+
+    test('a non-string source resource is flagged', () {
+      // `resource: 123` passed the presence check and was then skipped by
+      // _resourceTargets (which only yields strings), so a present entry could
+      // carry no usable code attribution.
+      final result = validateBundle(
+        _bundle(
+          _concept(
+            house: '''
+status: stable
+generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+stale_after: 2027-01-31
+sources:
+  - id: repo
+    resource: 123
+''',
+          ),
+        ),
+      );
+
+      expect(
+        result.warnings.single.message,
+        contains('`sources[].resource` must be a non-empty string'),
       );
     });
 

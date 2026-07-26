@@ -523,13 +523,19 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
       );
       continue;
     }
+    // Must be a non-empty *string*: `resource: 123` would otherwise pass here
+    // and then be skipped by `_resourceTargets`, which only yields strings —
+    // leaving a present entry with no usable code attribution.
     final resource = entry['resource'];
-    if (resource == null || (resource is String && resource.trim().isEmpty)) {
+    if (resource is! String || resource.trim().isEmpty) {
       issues.add(
         OkfIssue(
           severity: Severity.warning,
           path: path,
-          message: '`resource` is required within a `sources` entry (§5.1)',
+          message: resource == null
+              ? '`resource` is required within a `sources` entry (§5.1)'
+              : '`sources[].resource` must be a non-empty string, '
+                  'got `$resource` (§5.1)',
         ),
       );
     }
@@ -704,7 +710,20 @@ List<OkfIssue> _validateIndex(
           );
         }
         final declared = parsed['okf_version'];
-        if (declared != null && declared.toString() != okfVersion) {
+        if (declared == null) {
+          // A frontmatter block that omits the key is as uninformative as no
+          // block at all, and the fallback warning below only fires when the
+          // whole block is missing.
+          issues.add(
+            OkfIssue(
+              severity: Severity.warning,
+              path: path,
+              message:
+                  'root index.md frontmatter declares no `okf_version`, so '
+                  'consumers cannot tell which revision to expect (§12)',
+            ),
+          );
+        } else if (declared.toString() != okfVersion) {
           issues.add(
             OkfIssue(
               severity: Severity.warning,
