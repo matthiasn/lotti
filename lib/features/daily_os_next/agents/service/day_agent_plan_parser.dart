@@ -268,11 +268,23 @@ PlannedBlock parsePlannedBlock({
   // "Already scheduled" — the model depicting the directive's
   // `alreadyScheduledMinutes` as existing commitments. A fair thing to want to
   // say, and `drafted` says it without claiming the user's verdict.
-  if (blockState == PlannedBlockState.committed && !carriedForward) {
-    throw const DayAgentCaptureException(
-      'blocks may not be created as committed — committed means the user '
-      'approved this block, which only they can do. Use drafted',
-    );
+  if (blockState == PlannedBlockState.committed) {
+    if (!carriedForward) {
+      throw const DayAgentCaptureException(
+        'blocks may not be created as committed — committed means the user '
+        'approved this block, which only they can do. Use drafted',
+      );
+    }
+    // The baseline block verbatim, not the model's version of it. Matching on
+    // id, start and state proves the block *existed* and was approved; it says
+    // nothing about the end time, title, task, category, type, reason or note
+    // the model wrote around them. Rebuilding from those fields would let a
+    // re-draft rewrite approved work under the user's prior consent — the same
+    // defect as inventing a committed block, wearing a real block's id.
+    //
+    // Changing a committed block is what `propose_plan_diff` is for, where the
+    // user sees the change and accepts it.
+    return baseline;
   }
   final reason = optionalStringArg(data['reason']);
   if (blockType == PlannedBlockType.ai && reason == null) {

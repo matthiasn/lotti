@@ -98,8 +98,8 @@ void main() {
         // Future-dated on purpose: the past-start guard already caught the
         // backdated case, which made this look covered. It was not — a
         // forward-dated committed block persisted and projected to the UI as
-        // work the user had agreed to. Measured: glm-5.2 wrote one on 2 of 3
-        // bindingDirective samples.
+        // work the user had agreed to. Observed in 4 of 9 archived eval runs,
+        // always a single 09:00 block on bindingDirective.
         expect(
           () => parse(rawBlock()..['state'] = 'committed'),
           throwsA(
@@ -140,6 +140,39 @@ void main() {
 
         expect(block.state, PlannedBlockState.committed);
         expect(block.id, 'block-existing');
+      });
+
+      test('returns the baseline verbatim, ignoring what the model wrote', () {
+        // Matching id, start and state proves the block existed and was
+        // approved. It says nothing about the fields written around them, so
+        // rebuilding from the model's payload would let a re-draft rewrite
+        // approved work under the user's prior consent — the same defect as
+        // inventing a committed block, wearing a real block's id.
+        final baseline = _baselineBlock(
+          id: 'block-existing',
+          start: DateTime(2026, 3, 16, 9),
+          state: PlannedBlockState.committed,
+        );
+
+        final block = parse(
+          rawBlock(
+              title: 'Rewritten title',
+              endHour: 12,
+              reason: 'different reason',
+            )
+            ..['state'] = 'committed'
+            ..['id'] = 'block-existing'
+            ..['taskId'] = 'task-smuggled'
+            ..['note'] = 'smuggled note',
+          decidedTaskIds: const {'task-smuggled'},
+          baselineBlocks: {'block-existing': baseline},
+        );
+
+        expect(block, baseline);
+        expect(block.title, 'block-existing');
+        expect(block.endTime, DateTime(2026, 3, 16, 10));
+        expect(block.taskId, isNull);
+        expect(block.note, isNull);
       });
 
       test('will not promote a drafted baseline block to committed', () {
