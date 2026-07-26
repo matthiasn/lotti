@@ -2,9 +2,21 @@
 
 ## 2026-07-25
 * **Initialization**: Established the OKF v0.2 bundle at `knowledge/`, with the
-  conformance validator in `tool/okf/` and the maintenance rules in
+  conformance validator in `tool/okf/`, the `make okf_check` target, a CI
+  workflow, and the maintenance rules in
   [How this bundle is maintained](conventions/knowledge-bundle.md).
 * **Creation**: Mapped the cross-cutting runtime in
-  [architecture](architecture/): [overview](architecture/overview.md),
-  [bootstrap and dependency injection](architecture/bootstrap-and-di.md),
-  [persistence](architecture/persistence.md).
+  [architecture](architecture/) — overview, bootstrap and dependency injection,
+  persistence, navigation, security and privacy, logging, platform and release,
+  shared widgets.
+* **Creation**: Mapped the [domain model](domain/) — the `JournalEntity` union
+  and its `Metadata` envelope, entry links, and entity definitions.
+* **Migration**: Moved the architecture out of all 40 feature READMEs under
+  `lib/` into [feature concepts](features/), leaving each README as a product
+  description that links here. 19,269 README lines became 1,654; the
+  architecture they carried became 88 concepts.
+* **Creation**: Recorded the repository's own rules as
+  [conventions](conventions/) — testing, localization, code style.
+* **Update**: Moved `lib/features/sync/current_architecture.md` to
+  `docs/architecture/sync_current_architecture.md`; an investigation log is not
+  product documentation.

@@ -5,6 +5,7 @@ Widgetbook review surface.
 
 * [Design tokens and theming](tokens-and-theming.md) - the export-to-ThemeExtension pipeline, the two runtime theme paths, and the alert ramp's contrast contract.
 * [Component contracts](component-contracts.md) - token-first sizing, one field surface, shell-aware spacing, and accessibility enforced at construction.
+* [Completion celebration](celebration.md) - one choreography with a swappable particle painter.
 
 # Related
 

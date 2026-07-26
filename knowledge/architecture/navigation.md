@@ -152,5 +152,5 @@ allows, until everything fits and the More slot disappears.
 | Per-tab locations and path patterns | [`lib/beamer/locations/`](../../lib/beamer/locations) |
 | Index, delegate registry, flag gating | [`lib/services/nav_service.dart`](../../lib/services/nav_service.dart) |
 
-Related: [the settings feature](../features/settings.md) for the tree that
+Related: [the settings feature](../features/settings/) for the tree that
 `SettingsLocation` routes into.
