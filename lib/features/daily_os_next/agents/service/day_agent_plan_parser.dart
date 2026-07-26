@@ -15,26 +15,31 @@ const _uuid = Uuid();
 // unqualified.
 
 /// The subset of [taskIds] that resolve to a live task this agent may
-/// reference.
+/// reference, mapped to the category each task belongs to.
+///
+/// Returns the category as well as the id because the same read establishes
+/// both, and a block that references a task must be filed under *that task's*
+/// category — see [parsePlannedBlock]. Resolving them separately is how the
+/// two drifted apart.
 ///
 /// One implementation on purpose. Task references reach a plan through two
 /// doors — a fresh draft and an approved diff — and the isolation bug this
 /// replaces existed because each door had its own idea of what counted as
 /// allowed, with only one of them resolving the id at all.
-Future<Set<String>> resolveAllowedTaskIds({
+Future<Map<String, String?>> resolveAllowedTaskIds({
   required JournalDb journalDb,
   required Iterable<String> taskIds,
   required Set<String> allowedCategoryIds,
 }) async {
   final ids = taskIds.toSet();
-  if (ids.isEmpty) return const <String>{};
+  if (ids.isEmpty) return const <String, String?>{};
   final entities = await journalDb.journalEntityMapForIds(ids.toList());
   return {
     for (final entry in entities.entries)
       if (entry.value case final Task task)
         if (task.meta.deletedAt == null &&
             categoryAllowed(task.meta.categoryId, allowedCategoryIds))
-          entry.key,
+          entry.key: task.meta.categoryId,
   };
 }
 
@@ -152,8 +157,8 @@ PlannedBlock parsePlannedBlock({
   required Object? raw,
   required DateTime day,
   required Set<String> allowedCategoryIds,
-  required Set<String> decidedTaskIds,
-  required Set<String> allowedExistingTaskIds,
+  required Map<String, String?> decidedTaskIds,
+  required Map<String, String?> allowedExistingTaskIds,
   DateTime? earliestDraftStart,
   Map<String, PlannedBlock> baselineBlocks = const {},
 }) {
@@ -300,15 +305,30 @@ PlannedBlock parsePlannedBlock({
   // touch — simply by echoing the id into its own call, defeating the check
   // the sibling branch applies.
   if (taskId != null &&
-      !decidedTaskIds.contains(taskId) &&
-      !allowedExistingTaskIds.contains(taskId)) {
+      !decidedTaskIds.containsKey(taskId) &&
+      !allowedExistingTaskIds.containsKey(taskId)) {
     throw DayAgentCaptureException(
       'taskId $taskId is not an allowed task for this plan',
     );
   }
+  // A block that references a task is filed under *that task's* category, not
+  // whichever one the model wrote. The two were validated independently — the
+  // block's category had to be allowed, and the task had to be allowed — but
+  // never against each other, so a block could carry a task from one area and
+  // bill its time to another, corrupting `plannedMinutesByCategory` and every
+  // rollup built on it.
+  //
+  // Derived rather than rejected: the task's category is the only correct
+  // answer, so asking the model to guess it costs a round trip to learn
+  // something we already know. Safe by construction — `resolveAllowedTaskIds`
+  // only returns tasks whose category this agent may touch, so the derived
+  // value is always inside the allow-set the block was checked against.
+  final effectiveCategoryId = taskId == null
+      ? categoryId
+      : decidedTaskIds[taskId] ?? allowedExistingTaskIds[taskId] ?? categoryId;
   return PlannedBlock(
     id: blockId ?? 'block_${_uuid.v4()}',
-    categoryId: categoryId,
+    categoryId: effectiveCategoryId,
     startTime: start,
     endTime: end,
     note: optionalStringArg(data['note']),

@@ -126,6 +126,21 @@ to express; `drafted` expresses it without claiming a verdict the user never
 gave. `committed` stays in the tool schema, unlike `cal`, because its
 carry-forward use is real — removing it would force a re-draft to call approved
 work `drafted` and silently un-commit it.
+**A block that names a task is filed under that task's category.** The block's
+own `categoryId` and its `taskId` were each validated against the agent's
+allow-set but never against *each other*, so a block could carry a task from one
+area and bill its time to another — `plannedMinutesByCategory` and every rollup
+built on it read that field.
+
+Derived rather than rejected: the task's category is the only correct answer, so
+asking the model to guess it would cost a round trip to learn something already
+known. Safe by construction, because `resolveAllowedTaskIds` only returns tasks
+whose category this agent may touch — the derived value is always inside the
+allow-set the block was checked against. That resolver now returns
+id → category from the same read that filters, so the two facts cannot drift
+apart again. Blocks with no task (buffers, breaks, manual blocks) keep the
+category the model chose, and an uncategorised task leaves it alone rather than
+nulling it out of every rollup.
 
 **The agent cannot emit a `cal` block at all**, through either `draft_day_plan` or
 `propose_plan_diff`, and the type is absent from both tool schemas. `cal` means

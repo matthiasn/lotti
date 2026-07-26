@@ -30,8 +30,8 @@ void main() {
   PlannedBlock parse(
     Map<String, dynamic>? raw, {
     Set<String> allowedCategoryIds = const {'cat-1'},
-    Set<String> decidedTaskIds = const {},
-    Set<String> allowedExistingTaskIds = const {},
+    Map<String, String?> decidedTaskIds = const {},
+    Map<String, String?> allowedExistingTaskIds = const {},
     DateTime? earliestDraftStart,
     Map<String, PlannedBlock> baselineBlocks = const {},
   }) {
@@ -65,8 +65,8 @@ void main() {
           raw: 'nope',
           day: day,
           allowedCategoryIds: const {},
-          decidedTaskIds: const {},
-          allowedExistingTaskIds: const {},
+          decidedTaskIds: const <String, String?>{},
+          allowedExistingTaskIds: const <String, String?>{},
         ),
         throwsA(isA<DayAgentCaptureException>()),
       );
@@ -409,9 +409,57 @@ void main() {
       );
       final block = parse(
         rawBlock(taskId: 'task-x'),
-        decidedTaskIds: const {'task-x'},
+        decidedTaskIds: const {'task-x': 'cat-1'},
       );
       expect(block.taskId, 'task-x');
+    });
+
+    test(
+      "files a task-backed block under its task category, not the model's",
+      () {
+        // The two were validated independently — the block's category had to be
+        // allowed, and the task had to be allowed — but never against each
+        // other, so a block could carry a task from one area and bill its time
+        // to another. `plannedMinutesByCategory` and every rollup built on it
+        // read this field.
+        final block = parse(
+          rawBlock(taskId: 'task-ops'),
+          allowedCategoryIds: const {'cat-1', 'cat-ops'},
+          decidedTaskIds: const {'task-ops': 'cat-ops'},
+        );
+
+        expect(block.categoryId, 'cat-ops');
+      },
+    );
+
+    test('reads the category from either allow-set', () {
+      final block = parse(
+        rawBlock(taskId: 'task-existing'),
+        allowedCategoryIds: const {'cat-1', 'cat-ops'},
+        allowedExistingTaskIds: const {'task-existing': 'cat-ops'},
+      );
+
+      expect(block.categoryId, 'cat-ops');
+    });
+
+    test('leaves a block with no task on the category the model chose', () {
+      // Buffers, breaks and manual blocks have no task to inherit from, so
+      // the model's choice stands.
+      final block = parse(rawBlock(type: 'buffer', reason: null));
+
+      expect(block.categoryId, 'cat-1');
+      expect(block.taskId, isNull);
+    });
+
+    test('falls back to the model category when the task has none', () {
+      // An uncategorised task cannot dictate a category, and nulling the
+      // block's would drop it out of every per-category rollup.
+      final block = parse(
+        rawBlock(taskId: 'task-loose'),
+        decidedTaskIds: const {'task-loose': null},
+      );
+
+      expect(block.categoryId, 'cat-1');
     });
   });
 

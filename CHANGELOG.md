@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1070]
 ### Fixed
+- **Time on a task is credited to that task's area.** A planned block could
+  name a task from one area while being filed under another, so the day's
+  per-area totals — and the weekly rollups built on them — quietly credited
+  the wrong one. A block that names a task now always follows that task's area.
 - **Removing a dead device now unblocks sync immediately.** Deleting a device
   from the sync device list refreshes the cached device keys and nudges the
   pipeline right away, so the remaining devices resume syncing without an app

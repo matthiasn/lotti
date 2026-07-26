@@ -149,11 +149,11 @@ class DayAgentPlanWriter {
           planDate: plan.planDate,
           now: clock.now(),
         ),
-        allowedTaskIds: await resolveAllowedTaskIds(
+        allowedTaskIds: (await resolveAllowedTaskIds(
           journalDb: journalDb,
           taskIds: proposedTaskIds,
           allowedCategoryIds: identity.allowedCategoryIds,
-        ),
+        )).keys.toSet(),
       );
     }
 
@@ -513,7 +513,7 @@ class DayAgentPlanWriter {
     ];
   }
 
-  Future<Set<String>> _allowedExistingTaskIds(
+  Future<Map<String, String?>> _allowedExistingTaskIds(
     List<Object?> rawBlocks,
     Set<String> allowedCategoryIds,
   ) async {
@@ -523,12 +523,12 @@ class DayAgentPlanWriter {
       final taskId = optionalStringArg(raw['taskId']);
       if (taskId != null) referenced.add(taskId);
     }
-    if (referenced.isEmpty) return const <String>{};
+    if (referenced.isEmpty) return const <String, String?>{};
 
     return _resolveTaskIds(referenced, allowedCategoryIds);
   }
 
-  Future<Set<String>> _resolveTaskIds(
+  Future<Map<String, String?>> _resolveTaskIds(
     Iterable<String> taskIds,
     Set<String> allowedCategoryIds,
   ) => resolveAllowedTaskIds(
