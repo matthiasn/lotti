@@ -98,7 +98,8 @@ deliberately distinct, because collapsing any two misleads:
 | `<planning_window>` | Meaning |
 |---|---|
 | `{"earliestStart": …, "availableMinutes": …}` | today, still plannable — start here, and this is how much is left |
-| `{"closed": true}` | today, no usable slot left — add nothing |
+| `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add nothing |
+| `{"capacityMinutes": …, "scheduledMinutes": …}` | a refine wake — judge your *net* change against these |
 | `{"availableMinutes": …}` | the day has not begun — no part of it is past |
 
 `availableMinutes` is absent from the `closed` row deliberately, and absent
@@ -147,11 +148,22 @@ signals. Zero is a real answer, meaning the working day is over. Malformed
 working hours leave it unstated rather than guessed, since they are free-text
 config nothing else parses.
 
-On a **refine** wake the budget is the baseline plan's own capacity minus the
-minutes it already commits, not the workflow config's full day: `propose_plan_diff`
-applies changes incrementally, so advertising a fresh day there told the model
-another 300 minutes would fit into a 360-minute plan that already held 300. A
-drafting baseline is replaced wholesale, so full capacity is correct for it.
+A **refine** wake gets a different shape: `capacityMinutes` and
+`scheduledMinutes` rather than a single `availableMinutes`. A diff edits an
+existing plan, so what matters is the *net* change — dropping a 180-minute block
+to add another is net zero, and judging the addition against the unused
+remainder alone would report a conflict that does not exist. Occupancy is
+recomputed from the blocks rather than read from the denormalized
+`scheduledMinutes`, which can drift; the projection and the agenda view
+recompute for the same reason. A drafting baseline is replaced wholesale, so the
+whole-day budget is correct there.
+
+A day with **no working minutes left** reports `closed` rather than a start
+paired with a budget of zero. Those are the same instruction, and the pair left
+a fresh draft no coherent move: the rules forbid running past working hours,
+and there is no time left inside them. (`closed` still collides with the
+mandatory `draft_day_plan` call on a drafting wake — a pre-existing conflict
+tracked in lotti3-ddp, not introduced here.)
 
 The rules pair it with what to do when the work does not fit: decide visibly —
 leave work out and name it, or place a task for less than its estimate and say

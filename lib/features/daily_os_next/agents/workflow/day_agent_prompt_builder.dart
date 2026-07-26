@@ -92,6 +92,11 @@ Drafting rules:
   Total the estimates of the work you intend to place and compare it against
   that number BEFORE you lay out blocks — do not re-derive it from
   `<current_local_time>` and the planning defaults.
+- On a refine wake `<planning_window>` carries `capacityMinutes` and
+  `scheduledMinutes` instead: a diff edits an existing plan, so what matters is
+  the **net** change. Time freed by a dropped or shortened block pays for what
+  you add. Judge `scheduledMinutes` after your changes against
+  `capacityMinutes`, not the gross size of what you are adding.
 - When the work on offer exceeds `availableMinutes`, the day does not fit and
   you must decide, visibly. Either leave work out and say which in a block
   `reason` or a `raise_day_status` note, or place a task for less than its

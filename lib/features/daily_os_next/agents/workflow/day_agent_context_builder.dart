@@ -677,21 +677,38 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   }) {
     // A refine wake proposes changes *on top of* a plan that already spends
     // part of the day, and `propose_plan_diff` applies them incrementally. Its
-    // own capacity governs, not the workflow config's, and the minutes it has
-    // already committed are gone. Advertising a fresh day's budget there told
-    // the model another 300 minutes would fit into a 360-minute plan that
-    // already held 300.
-    final capacity = refineBaseline == null
-        ? config.capacityMinutes
-        : (refineBaseline.capacityMinutes - refineBaseline.scheduledMinutes)
-              .clamp(0, refineBaseline.capacityMinutes);
+    // own capacity governs, not the workflow config's.
+    //
+    // But a single "available" number cannot describe an incremental edit:
+    // dropping a 180-minute block and adding another is net zero, and reading
+    // it against the unused remainder alone would report a conflict that does
+    // not exist. So refine gets the two facts it needs — the plan's capacity
+    // and what it currently spends — and judges its own net change against
+    // them.
+    //
+    // Occupancy is recomputed from the blocks rather than read from the
+    // denormalized `scheduledMinutes`, which can drift; the projection and the
+    // agenda view both recompute for the same reason.
+    if (refineBaseline != null) {
+      final spent = scheduledMinutesFor(refineBaseline.data.plannedBlocks);
+      return {
+        'capacityMinutes': refineBaseline.capacityMinutes,
+        'scheduledMinutes': spent,
+      };
+    }
     final available = remainingWorkingMinutes(
       planDate: planDate,
       now: now,
-      capacityMinutes: capacity,
+      capacityMinutes: config.capacityMinutes,
       workingHoursStart: config.workingHoursStart,
       workingHoursEnd: config.workingHoursEnd,
     );
+    // Zero working minutes is the same instruction as a closed window, so it
+    // says so rather than pairing a start with a budget of nothing. Emitting
+    // `earliestStart: 18:05` beside `availableMinutes: 0` gave a fresh draft no
+    // coherent move: the rules forbid running past working hours, and there is
+    // no time left inside them.
+    if (available == 0) return const {'closed': true};
     final budget = <String, Object?>{'availableMinutes': ?available};
     final earliest = advertisedPlanningStart(planDate: planDate, now: now);
     if (earliest != null) {

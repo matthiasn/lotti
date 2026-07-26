@@ -222,6 +222,14 @@ class EvalFixtureInputs {
     final advertised = now == null
         ? null
         : advertisedPlanningStart(planDate: planDate, now: now!);
+    // A same-day run late enough to close the window has no plannable time at
+    // all. Falling back to the working-day start there would report a full day
+    // and let a late-night impossible plan be graded as though it had one.
+    if (advertised == null &&
+        now != null &&
+        planningWindowClosed(planDate: planDate, now: now!)) {
+      return 0;
+    }
     final startMinutes = advertised == null
         ? dayStartMinutes
         : (advertised.hour * 60 + advertised.minute) > dayStartMinutes
