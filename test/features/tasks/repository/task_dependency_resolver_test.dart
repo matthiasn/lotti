@@ -233,6 +233,53 @@ void main() {
         expect(result, isEmpty);
       },
     );
+
+    test('a blocker outside the allowed categories still blocks, but says '
+        'nothing about itself', () async {
+      final blocker = TestTaskFactory.create(
+        id: 'blocker',
+        title: 'Secret finance work',
+        categoryId: 'finance',
+      );
+      stubLinks(
+        {'blocked'},
+        [
+          blocksLink(id: 'l1', fromId: 'blocker', toId: 'blocked'),
+        ],
+      );
+      stubResolved([blocker]);
+
+      final result = await resolver.resolveBlockedStatus(
+        {'blocked'},
+        allowedCategoryIds: const {'work'},
+      );
+
+      // Degrades to the bare marker: the caller was never granted 'finance',
+      // so the title, status and category do not belong in what it renders.
+      // The entry survives, so the task stays observably blocked.
+      expect(result['blocked'], [const ResolvedBlocker(taskId: 'blocker')]);
+      expect(result['blocked']!.single.toJson(), {'taskId': 'blocker'});
+    });
+
+    test('an empty allow-set leaves every blocker fully described', () async {
+      final blocker = TestTaskFactory.create(
+        id: 'blocker',
+        title: 'Blocker',
+        categoryId: 'finance',
+      );
+      stubLinks(
+        {'blocked'},
+        [
+          blocksLink(id: 'l1', fromId: 'blocker', toId: 'blocked'),
+        ],
+      );
+      stubResolved([blocker]);
+
+      final result = await resolver.resolveBlockedStatus({'blocked'});
+
+      expect(result['blocked']!.single.title, 'Blocker');
+      expect(result['blocked']!.single.categoryId, 'finance');
+    });
   });
 
   group('ResolvedBlocker', () {

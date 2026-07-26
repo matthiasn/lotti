@@ -245,7 +245,7 @@ class DayAgentPlanEditor {
     }
     final blockedBy = await resolver.resolveBlockedStatus({
       for (final task in tasks) task.id,
-    });
+    }, allowedCategoryIds: allowedCategoryIds);
     return [
       for (final task in tasks)
         DecidedTaskRef(

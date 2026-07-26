@@ -71,9 +71,24 @@ class TaskDependencyResolver {
   /// Returns a map from blocked task id to its open/unresolved blockers.
   /// Keys are present only for tasks with at least one entry — absence means
   /// link-ready, mirroring the corpus's own "absence = ready" contract.
+  ///
+  /// [allowedCategoryIds] scopes what a blocker may *say about itself*, not
+  /// whether it blocks. A blocker outside the caller's categories degrades to
+  /// a bare `{taskId}` — the same shape as an unloadable one — so the blocked
+  /// task stays observably blocked while its blocker's title, status and
+  /// category stay inside the scope the caller was granted. An empty set means
+  /// unrestricted, matching `categoryAllowed` elsewhere.
+  ///
+  /// This is not only about disclosure: the blocked-work rule tells the model
+  /// to schedule the blocker, and the plan writer rejects a task id outside
+  /// the agent's categories. Describing an unschedulable blocker in full
+  /// invites a tool call that is guaranteed to be refused, while the bare
+  /// marker steers the model to the rule's other branch — naming the blocker
+  /// in the block's `reason`.
   Future<Map<String, List<ResolvedBlocker>>> resolveBlockedStatus(
-    Set<String> taskIds,
-  ) async {
+    Set<String> taskIds, {
+    Set<String> allowedCategoryIds = const {},
+  }) async {
     if (taskIds.isEmpty) return const {};
 
     final links = await journalRepository.getTypedLinksForTaskIds(
@@ -107,6 +122,13 @@ class TaskDependencyResolver {
         }
         if (entity.meta.deletedAt != null) continue;
         if (isClosedTask(entity)) continue;
+        // Still blocks, but says nothing about itself: the caller was never
+        // granted this category, so its title, status and category do not
+        // belong in whatever the caller is about to render.
+        if (!categoryAllowed(entity.meta.categoryId, allowedCategoryIds)) {
+          blockers.add(ResolvedBlocker(taskId: entity.id));
+          continue;
+        }
         blockers.add(
           ResolvedBlocker(
             taskId: entity.id,

@@ -534,7 +534,9 @@ void main() {
 
         final resolver = MockTaskDependencyResolver();
         when(
-          () => resolver.resolveBlockedStatus({'task-1'}),
+          () => resolver.resolveBlockedStatus({
+            'task-1',
+          }, allowedCategoryIds: any(named: 'allowedCategoryIds')),
         ).thenAnswer(
           (_) async => {
             'task-1': [

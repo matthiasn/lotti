@@ -70,7 +70,10 @@ class DayAgentCorpusService {
 
     final blockedBy = dependencyResolver == null
         ? const <String, List<ResolvedBlocker>>{}
-        : await dependencyResolver.resolveBlockedStatus(byId.keys.toSet());
+        : await dependencyResolver.resolveBlockedStatus(
+            byId.keys.toSet(),
+            allowedCategoryIds: allowedCategoryIds,
+          );
 
     return [
       for (final task in byId.values)

@@ -5482,7 +5482,12 @@ void main() {
           );
           stubDraftingPlanContext(planService, baselinePlan: baselinePlan);
           stubSuccessfulDraftToolCall(planService);
-          when(() => resolver.resolveBlockedStatus(any())).thenAnswer(
+          when(
+            () => resolver.resolveBlockedStatus(
+              any(),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer(
             (_) async => {
               'task-since-blocked': const [
                 ResolvedBlocker(
@@ -5516,12 +5521,13 @@ void main() {
           );
           // Only the ids the baseline actually schedules, and only those not
           // already resolved as decided tasks.
-          final asked =
-              verify(
-                    () => resolver.resolveBlockedStatus(captureAny()),
-                  ).captured.last
-                  as Set<String>;
-          expect(asked, {'task-since-blocked'});
+          final asked = verify(
+            () => resolver.resolveBlockedStatus(
+              captureAny(),
+              allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
+            ),
+          ).captured;
+          expect(asked[0], {'task-since-blocked'});
         },
       );
 
@@ -5556,7 +5562,10 @@ void main() {
           stubDraftingPlanContext(planService, baselinePlan: baselinePlan);
           stubSuccessfulDraftToolCall(planService);
           when(
-            () => resolver.resolveBlockedStatus(any()),
+            () => resolver.resolveBlockedStatus(
+              any(),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
           ).thenAnswer((_) async => const {});
 
           final result = await execute(

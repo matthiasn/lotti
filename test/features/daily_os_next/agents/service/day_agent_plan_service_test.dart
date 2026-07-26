@@ -1511,7 +1511,12 @@ void main() {
               'task-1': _task(id: 'task-1', title: 'Prep demo'),
             },
           );
-          when(() => resolver.resolveBlockedStatus(any())).thenAnswer(
+          when(
+            () => resolver.resolveBlockedStatus(
+              any(),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer(
             (_) async => {
               'task-c-leaf': const [
                 ResolvedBlocker(
@@ -1536,12 +1541,16 @@ void main() {
           expect(result.last.blockedBy, isEmpty);
           // One call for the whole set: this runs on every drafting wake, and a
           // per-task round trip would put the resolver's cost on the hot path.
-          final asked =
-              verify(
-                    () => resolver.resolveBlockedStatus(captureAny()),
-                  ).captured.single
-                  as Set<String>;
-          expect(asked, {'task-c-leaf', 'task-1'});
+          // The agent's categories travel with it, so a blocker outside them
+          // degrades to a bare id rather than describing itself in the prompt.
+          final asked = verify(
+            () => resolver.resolveBlockedStatus(
+              captureAny(),
+              allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
+            ),
+          ).captured;
+          expect(asked[0], {'task-c-leaf', 'task-1'});
+          expect(asked[1], {'work', 'life'});
         },
       );
 
@@ -1566,7 +1575,12 @@ void main() {
           );
 
           expect(result, isEmpty);
-          verifyNever(() => resolver.resolveBlockedStatus(any()));
+          verifyNever(
+            () => resolver.resolveBlockedStatus(
+              any(),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          );
         },
       );
     });

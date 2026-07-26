@@ -96,7 +96,7 @@ That one field drives the annotation on both paths and the prompt gates below, s
 they **can never drift out of sync** — there is no separate "is this feature on"
 flag.
 
-## Why two carriers
+## Why three carriers
 
 The corpus alone was not enough, and the eval proved it. `<capture>` is absent on
 a drafting wake with no capture — a scheduled pre-warm, or a plan-my-day trigger
@@ -107,7 +107,7 @@ passed every one; after `DecidedTaskRef` gained the fields, both models stopped
 placing the blocked leaf. See [evaluation](evaluation.md).
 
 `DecidedTaskRef` serializes `status` (`toDbString`, e.g. `OPEN`, `BLOCKED`) and
-`blockedBy` in exactly the spelling `DayAgentCorpusService.n` uses, so the rule
+`blockedBy` in exactly the spelling `DayAgentCorpusService.buildTaskCorpusSnapshot` uses, so the rule
 reads the same against either carrier. Resolution is one batched
 `resolveBlockedStatus` call per wake, keyed by the ids that survive category
 filtering, and skipped entirely when none do.

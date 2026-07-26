@@ -688,6 +688,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       baselineBlockedBy: await _baselineBlockedBy(
         baselinePlan: baselinePlan,
         decidedTasks: decidedTasks,
+        allowedCategoryIds: agentIdentity.allowedCategoryIds,
       ),
     );
   }
@@ -710,6 +711,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   Future<Map<String, List<ResolvedBlocker>>> _baselineBlockedBy({
     required DayPlanEntity? baselinePlan,
     required List<DecidedTaskRef> decidedTasks,
+    required Set<String> allowedCategoryIds,
   }) async {
     final resolver = dependencyResolver;
     if (resolver == null || baselinePlan == null) return const {};
@@ -720,7 +722,10 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
           if (!alreadyResolved.contains(taskId)) taskId,
     };
     if (pending.isEmpty) return const {};
-    return resolver.resolveBlockedStatus(pending);
+    return resolver.resolveBlockedStatus(
+      pending,
+      allowedCategoryIds: allowedCategoryIds,
+    );
   }
 
   Future<List<ParsedItemEntity>> _parsedItemsForCapture(

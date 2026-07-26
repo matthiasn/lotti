@@ -318,10 +318,25 @@ class EvalFixtureDependencyResolver implements TaskDependencyResolver {
 
   @override
   Future<Map<String, List<ResolvedBlocker>>> resolveBlockedStatus(
-    Set<String> taskIds,
-  ) async => {
+    Set<String> taskIds, {
+    Set<String> allowedCategoryIds = const {},
+  }) async => {
     for (final entry in blockedStatus.entries)
-      if (taskIds.contains(entry.key)) entry.key: entry.value,
+      if (taskIds.contains(entry.key))
+        entry.key: [
+          for (final blocker in entry.value)
+            // Mirrors production: a blocker outside the agent's categories
+            // still blocks but describes nothing about itself. Scenarios stay
+            // in-scope today, so this is a guard against a future scenario
+            // that crosses categories being measured against a prompt the app
+            // would never have sent.
+            if (blocker.categoryId == null ||
+                allowedCategoryIds.isEmpty ||
+                allowedCategoryIds.contains(blocker.categoryId))
+              blocker
+            else
+              ResolvedBlocker(taskId: blocker.taskId),
+        ],
   };
 
   @override

@@ -435,7 +435,7 @@ void _expectDecidedTaskRef() {
       );
 
       // ADR 0043's rule is phrased against `"status": "BLOCKED"` and a
-      // non-empty `blockedBy`, and `DayAgentCorpusService.n` spells both this
+      // non-empty `blockedBy`, and `DayAgentCorpusService.buildTaskCorpusSnapshot` spells both this
       // way. A drafting wake that renders decided tasks instead of the corpus
       // has to speak the same dialect or the rule describes nothing.
       expect(ref.toJson(), <String, Object?>{
