@@ -196,6 +196,31 @@ void main() {
       expect(changedTo, isTrue);
     });
 
+    testWidgets('the enlarged row target adds no second focus stop', (
+      tester,
+    ) async {
+      await pumpRow(tester, subject());
+
+      // Excluding semantics does nothing to focus traversal. Without an
+      // explicit opt-out the pointer-only wrapper is its own focusable node,
+      // so Tab stops twice on one setting and both stops toggle it.
+      final focusables = tester
+          .widgetList<InkWell>(
+            find.descendant(
+              of: find.byKey(const ValueKey('taskAgentAutomationSetting')),
+              matching: find.byType(InkWell),
+            ),
+          )
+          .where((ink) => ink.canRequestFocus)
+          .length;
+
+      expect(
+        focusables,
+        1,
+        reason: 'only the switch itself may take keyboard focus',
+      );
+    });
+
     testWidgets('is disabled while an automation write is in flight', (
       tester,
     ) async {

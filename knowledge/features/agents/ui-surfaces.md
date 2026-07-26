@@ -5,7 +5,7 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T13:56:33Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T14:08:25Z }
 stale_after: 2026-10-12
 sources:
   - id: ui
@@ -182,7 +182,7 @@ flowchart TD
   T1 -->|yes| W1["one line, short sentence"]
   T1 -->|no| T2{"...with '1:30'?"}
   T2 -->|yes| W2["one line, value only"]
-  T2 -->|no| S["stack: state / schedule / switch<br/>(schedule tight to the switch,<br/>larger gap above it)"]
+  T2 -->|no| S["stack: state / schedule / switch<br/>(no declared gaps; each row is<br/>a step8 box that spaces itself)"]
   S --> S1{"freshness + trigger<br/>fit one line?"}
   S1 -->|no| S2["freshness above the trigger"]
   S --> S3{"countdown + 'Skip once'<br/>fit one line?"}
@@ -205,9 +205,11 @@ measuring without them clips the payload.
 Freshness is a glyph **and** a word, never colour alone; the full sentence lives
 in the tooltip. With automation on and nothing pending the line reads "Updates
 when this task changes", so flipping the switch never leaves a hole that resizes
-the card. The toggle keeps a full `spacing.step9` interaction slot around its
-40×24 track. When setup is missing, the disabled toggle explains itself via an
-info tooltip and the trigger is disabled rather than hidden.
+the card. The whole switch row is the interaction target — tapping the label
+toggles the setting — on the band's shared `spacing.step8` minimum; the switch's
+own 40×24 track is too short in one dimension to be the target by itself. When
+setup is missing, the disabled toggle explains itself via an info tooltip and
+the trigger is disabled rather than hidden.
 
 ## The setup region
 

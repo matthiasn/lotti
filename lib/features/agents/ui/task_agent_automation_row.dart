@@ -663,6 +663,17 @@ class _AutomationSetting extends StatelessWidget {
         // label — so this row must not add a second, unlabelled button node
         // beside it.
         excludeFromSemantics: true,
+        // ...and it must not add a second *focus* stop either. Excluding
+        // semantics does nothing to focus traversal, so without this Tab lands
+        // twice on one setting — once on this wrapper, once on the switch —
+        // and both stops toggle it. The switch keeps the keyboard; the row is
+        // pointer-only.
+        canRequestFocus: false,
+        // ...and it must not add a second *focus* stop either. Excluding
+        // semantics does nothing to focus traversal, so without this Tab lands
+        // twice on one setting — once on this wrapper, once on the switch —
+        // and both stops toggle it. The switch keeps the keyboard; the row is
+        // pointer-only.
         // One row box, on the same `step8` minimum as every other row in this
         // band. It is 8px shorter than the slot it replaces and, unlike that
         // slot, all of it is tappable.
