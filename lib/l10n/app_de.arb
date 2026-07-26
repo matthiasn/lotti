@@ -2332,6 +2332,16 @@
       }
     }
   },
+  "deviceDeleteFailedForbidden": "Der Homeserver hat das gespeicherte Passwort abgelehnt, daher konnte das Gerät nicht entfernt werden. Kopple dieses Gerät mit einem neuen QR-Code neu und versuche es erneut.",
+  "deviceDeleteQuestion": "{deviceName} aus deinem Sync-Konto entfernen? Das Gerät wird abgemeldet und muss neu gekoppelt werden, bevor es wieder synchronisieren kann.",
+  "@deviceDeleteQuestion": {
+    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
   "doneButton": "Fertig",
   "editLinkTypeCounterpartLabel": "Verknüpfte Aufgabe",
   "editLinkTypeFailedMessage": "Die Beziehung konnte nicht aktualisiert werden. Bitte versuch es erneut.",

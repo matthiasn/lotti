@@ -5268,6 +5268,15 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get deviceDeleteFailedForbidden =>
+      'De homeserver heeft het opgeslagen wachtwoord geweigerd, dus het apparaat kon niet worden verwijderd. Koppel dit apparaat opnieuw met een nieuwe QR-code en probeer het nog eens.';
+
+  @override
+  String deviceDeleteQuestion(String deviceName) {
+    return '$deviceName uit je synchronisatieaccount verwijderen? Het apparaat wordt afgemeld en moet opnieuw worden gekoppeld voordat het kan synchroniseren.';
+  }
+
+  @override
   String get doneButton => 'Klaar';
 
   @override

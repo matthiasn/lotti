@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -33,7 +34,19 @@ void main() {
     when(() => mockDeviceKeys.userId).thenReturn('@user:server');
   });
 
-  testWidgets('deletes device and shows success feedback', (tester) async {
+  /// Taps the trash icon and confirms the deletion in the modal that opens.
+  Future<void> tapDeleteAndConfirm(WidgetTester tester) async {
+    await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+    await tester.pumpAndSettle();
+
+    // The confirm button renders the upper-cased delete label.
+    await tester.tap(find.text('DELETE DEVICE'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('deletes device after confirmation and shows success feedback', (
+    tester,
+  ) async {
     when(
       () => mockMatrixService.deleteDevice(mockDeviceKeys),
     ).thenAnswer((_) async {});
@@ -59,8 +72,20 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    // Nothing is deleted while the confirmation is open.
+    verifyNever(() => mockMatrixService.deleteDevice(mockDeviceKeys));
+    expect(
+      find.text(
+        'Remove Pixel 7 from your sync account? It will be signed out and '
+        'will need to be paired again before it can sync.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('DELETE DEVICE'));
+    await tester.pumpAndSettle();
 
     verify(() => mockMatrixService.deleteDevice(mockDeviceKeys)).called(1);
     expect(refreshed, isTrue);
@@ -68,6 +93,39 @@ void main() {
       find.text('Device Pixel 7 deleted successfully'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('cancelling the confirmation leaves the device alone', (
+    tester,
+  ) async {
+    var refreshed = false;
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        DeviceCard(
+          mockDeviceKeys,
+          refreshListCallback: () {
+            refreshed = true;
+          },
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+
+    await tester.pump();
+
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => mockMatrixService.deleteDevice(mockDeviceKeys));
+    expect(refreshed, isFalse);
   });
 
   testWidgets('shows error feedback when deletion fails', (tester) async {
@@ -95,9 +153,7 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 300));
 
-    await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tapDeleteAndConfirm(tester);
 
     verify(() => mockMatrixService.deleteDevice(mockDeviceKeys)).called(1);
     expect(refreshed, isFalse);
@@ -106,6 +162,81 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'explains a rejected password instead of dumping the raw error',
+    (tester) async {
+      when(() => mockMatrixService.deleteDevice(mockDeviceKeys)).thenThrow(
+        MatrixException.fromJson(
+          const {'errcode': 'M_FORBIDDEN', 'error': 'Invalid password'},
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DeviceCard(
+            mockDeviceKeys,
+            refreshListCallback: () {},
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tapDeleteAndConfirm(tester);
+
+      verify(() => mockMatrixService.deleteDevice(mockDeviceKeys)).called(1);
+      expect(
+        find.text(
+          'The homeserver rejected the stored password, so the device '
+          "couldn't be removed. Re-pair this device with a fresh QR code "
+          'and try again.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'a non-forbidden MatrixException falls back to the generic error toast',
+    (tester) async {
+      when(() => mockMatrixService.deleteDevice(mockDeviceKeys)).thenThrow(
+        MatrixException.fromJson(
+          const {'errcode': 'M_LIMIT_EXCEEDED', 'error': 'Too many requests'},
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DeviceCard(
+            mockDeviceKeys,
+            refreshListCallback: () {},
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tapDeleteAndConfirm(tester);
+
+      expect(
+        find.text(
+          'Failed to delete device: M_LIMIT_EXCEEDED: Too many requests',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('renders device name and user ID', (tester) async {
     await tester.pumpWidget(
@@ -187,10 +318,20 @@ void main() {
       expect(find.text('Pixel 7'), findsNothing);
       expect(find.text('DEVICE1'), findsNothing);
 
-      // Tapping delete with null name/id falls back to 'unknown' in the toast.
+      // With null name/id the confirmation and toast fall back to 'unknown'.
       await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Remove unknown from your sync account? It will be signed out and '
+          'will need to be paired again before it can sync.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('DELETE DEVICE'));
+      await tester.pumpAndSettle();
 
       verify(() => mockMatrixService.deleteDevice(mockDeviceKeys)).called(1);
       expect(refreshed, isTrue);

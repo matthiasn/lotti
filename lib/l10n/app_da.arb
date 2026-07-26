@@ -2572,6 +2572,16 @@
       }
     }
   },
+  "deviceDeleteFailedForbidden": "Hjemmeserveren afviste den gemte adgangskode, så enheden kunne ikke fjernes. Par denne enhed igen med en ny QR-kode, og prøv igen.",
+  "deviceDeleteQuestion": "Vil du fjerne {deviceName} fra din synkroniseringskonto? Enheden logges ud og skal parres igen, før den kan synkronisere.",
+  "@deviceDeleteQuestion": {
+    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
   "doneButton": "Færdig",
   "editMenuTitle": "Redigering",
   "editorDiscardChanges": "Smid ændringer",

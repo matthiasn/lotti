@@ -2571,6 +2571,16 @@
       }
     }
   },
+  "deviceDeleteFailedForbidden": "De homeserver heeft het opgeslagen wachtwoord geweigerd, dus het apparaat kon niet worden verwijderd. Koppel dit apparaat opnieuw met een nieuwe QR-code en probeer het nog eens.",
+  "deviceDeleteQuestion": "{deviceName} uit je synchronisatieaccount verwijderen? Het apparaat wordt afgemeld en moet opnieuw worden gekoppeld voordat het kan synchroniseren.",
+  "@deviceDeleteQuestion": {
+    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
   "doneButton": "Klaar",
   "editMenuTitle": "Bewerken",
   "editorDiscardChanges": "Wijzigingen verwerpen",

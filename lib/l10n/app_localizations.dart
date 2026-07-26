@@ -9113,6 +9113,18 @@ abstract class AppLocalizations {
   /// **'Failed to delete device: {error}'**
   String deviceDeleteFailed(String error);
 
+  /// No description provided for @deviceDeleteFailedForbidden.
+  ///
+  /// In en, this message translates to:
+  /// **'The homeserver rejected the stored password, so the device couldn\'t be removed. Re-pair this device with a fresh QR code and try again.'**
+  String get deviceDeleteFailedForbidden;
+
+  /// Confirmation question shown before deleting a device from the Matrix sync account.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {deviceName} from your sync account? It will be signed out and will need to be paired again before it can sync.'**
+  String deviceDeleteQuestion(String deviceName);
+
   /// No description provided for @doneButton.
   ///
   /// In en, this message translates to:

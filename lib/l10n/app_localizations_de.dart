@@ -5285,6 +5285,15 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get deviceDeleteFailedForbidden =>
+      'Der Homeserver hat das gespeicherte Passwort abgelehnt, daher konnte das Gerät nicht entfernt werden. Kopple dieses Gerät mit einem neuen QR-Code neu und versuche es erneut.';
+
+  @override
+  String deviceDeleteQuestion(String deviceName) {
+    return '$deviceName aus deinem Sync-Konto entfernen? Das Gerät wird abgemeldet und muss neu gekoppelt werden, bevor es wieder synchronisieren kann.';
+  }
+
+  @override
   String get doneButton => 'Fertig';
 
   @override

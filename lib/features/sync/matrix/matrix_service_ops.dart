@@ -162,6 +162,20 @@ class MatrixServiceOps {
 
     if (!isLoggedIn()) return;
 
+    await refreshDeviceKeysAndResumeSync(subDomain: 'verification');
+  }
+
+  /// Refreshes cached device keys and nudges the pipeline so sync reflects a
+  /// changed device set without an app restart.
+  ///
+  /// The send path consults the cached key list on every message, so a stale
+  /// cache after a verification or a device deletion keeps blocking outbound
+  /// sync even though the homeserver state already changed. Failures are
+  /// logged and swallowed: the triggering operation already succeeded and the
+  /// cache converges on a later sync anyway.
+  Future<void> refreshDeviceKeysAndResumeSync({
+    required String subDomain,
+  }) async {
     try {
       final userId = _client.userID;
       if (userId != null) {
@@ -174,7 +188,7 @@ class MatrixServiceOps {
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
-        subDomain: 'verification.updateUserDeviceKeys',
+        subDomain: '$subDomain.updateUserDeviceKeys',
       );
     }
 
@@ -186,11 +200,17 @@ class MatrixServiceOps {
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
-        subDomain: 'verification.forceRescan',
+        subDomain: '$subDomain.forceRescan',
       );
     }
   }
 
+  /// Deletes [deviceKeys]' session from the homeserver, then refreshes the
+  /// local device-key cache so the removal unblocks sync immediately.
+  ///
+  /// Any in-flight emoji verification against the device is cancelled first —
+  /// a dead session can never answer, and the hung ceremony would otherwise
+  /// keep polling a device that is about to disappear.
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
 
@@ -216,20 +236,52 @@ class MatrixServiceOps {
       );
     }
 
-    if (config.password.isNotEmpty) {
-      await _client.deleteDevice(
-        deviceId,
-        auth: AuthenticationPassword(
-          password: config.password,
-          identifier: AuthenticationUserIdentifier(user: config.user),
-        ),
-      );
-    } else {
+    if (config.password.isEmpty) {
       throw UnsupportedError(
         'Cannot delete device $deviceId: Password authentication required '
         'but no password is available. SSO/token authentication not yet '
         'implemented.',
       );
+    }
+
+    await _cancelActiveVerificationsFor(deviceId);
+
+    await _client.deleteDevice(
+      deviceId,
+      auth: AuthenticationPassword(
+        password: config.password,
+        identifier: AuthenticationUserIdentifier(user: config.user),
+      ),
+    );
+
+    loggingService.log(
+      LogDomain.sync,
+      'device deleted deviceId=$deviceId',
+      subDomain: 'deleteDevice',
+    );
+
+    await refreshDeviceKeysAndResumeSync(subDomain: 'deleteDevice');
+  }
+
+  Future<void> _cancelActiveVerificationsFor(String deviceId) async {
+    final svc = service();
+    for (final runner in <KeyVerificationRunner?>[
+      svc.keyVerificationRunner,
+      svc.incomingKeyVerificationRunner,
+    ]) {
+      if (runner == null || runner.keyVerification.deviceId != deviceId) {
+        continue;
+      }
+      try {
+        await runner.cancelVerification();
+      } catch (error, stackTrace) {
+        loggingService.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'deleteDevice.cancelVerification',
+        );
+      }
     }
   }
 
