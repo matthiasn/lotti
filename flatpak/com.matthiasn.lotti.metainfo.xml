@@ -35,10 +35,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1070" date="2026-07-25">
+    <release version="0.9.1071" date="2026-07-26">
       <description>
         <p>Added: tell the task assistant how tasks relate — in either direction. Saying "this task is blocked by X", "this supersedes the old migration task", or "this duplicates Y" now becomes a reviewable suggestion that records the actual relationship — blocks, follows up, duplicates, fixes, supersedes, or a plain link — between this task and an existing one. Both phrasings of a relationship work ("A blocks B" and "B is blocked by A" store the same edge), the blocked side shows up as blocked exactly as if the link were made by hand, and nothing is written until the suggestion is confirmed.</p>
         <p>Added: a spoken follow-up task can carry its relationship. "Create a follow-up task X that blocks this one" creates X and the blocking link in one confirmable suggestion, instead of a plain link that loses the "blocks" part. The assistant also sees how already-linked tasks relate to the current one, so it stops guessing parent/child roles from link direction and won't re-suggest a relationship that already exists.</p>
+      </description>
+    </release>
+    <release version="0.9.1070" date="2026-07-25">
+      <description>
         <p>Fixed: removing a dead device now unblocks sync immediately. Deleting a device from the sync device list refreshes the cached device keys and nudges the pipeline right away, so the remaining devices resume syncing without an app restart. Deleting also asks for confirmation first — it signs the device out of the sync account — and a rejected password now gets a clear explanation instead of a raw error dump.</p>
         <p>Fixed: sync no longer loses messages that arrive before their decryption key. When a lot of entries arrived at once over a slow connection, some could be discarded while the app was still waiting for the key to decrypt them, leaving that device permanently short of entries the other device had.</p>
         <p>Fixed: a screen reader can now activate the whole "Automatic updates" row. Tapping the wording flipped the switch for everyone else, but assistive technology could only reach the switch itself.</p>

@@ -4,15 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1070]
-### Fixed
-- **Removing a dead device now unblocks sync immediately.** Deleting a device
-  from the sync device list refreshes the cached device keys and nudges the
-  pipeline right away, so the remaining devices resume syncing without an app
-  restart. Deleting also asks for confirmation first — it signs the device out
-  of the sync account — and a rejected password now gets a clear explanation
-  instead of a raw error dump.
-
+## [0.9.1071]
 ### Added
 - **Tell the task assistant how tasks relate — in either direction.** Saying
   "this task is blocked by X", "this supersedes the old migration task", or
@@ -28,6 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   part. The assistant also sees how already-linked tasks relate to the current
   one, so it stops guessing parent/child roles from link direction and won't
   re-suggest a relationship that already exists.
+
+## [0.9.1070]
+### Fixed
+- **Removing a dead device now unblocks sync immediately.** Deleting a device
+  from the sync device list refreshes the cached device keys and nudges the
+  pipeline right away, so the remaining devices resume syncing without an app
+  restart. Deleting also asks for confirmation first — it signs the device out
+  of the sync account — and a rejected password now gets a clear explanation
+  instead of a raw error dump.
+
+### Added
 - **Decide per area whether assistants keep themselves up to date.** New tasks
   in an area got an assistant that only ever updated when you asked it to, and
   turning that on was a per-task chore. Areas with an agent template now carry
