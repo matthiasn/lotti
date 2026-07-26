@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
+import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
-import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -32,6 +33,7 @@ void main() {
     when(() => mockMatrixService.syncRoomId).thenReturn('!room123:example.com');
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+    when(() => mockMatrixService.getSyncDevices()).thenAnswer((_) async => []);
     when(
       () => mockMatrixService.keyVerificationStream,
     ).thenAnswer((_) => const Stream.empty());
@@ -211,8 +213,8 @@ void main() {
     });
   });
 
-  group('device verification section', () {
-    testWidgets('displays verification section title', (tester) async {
+  group('devices section', () {
+    testWidgets('displays the devices section title', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ProvisionedStatusWidget(),
@@ -224,18 +226,17 @@ void main() {
           ],
         ),
       );
+      await tester.pump();
       await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
       expect(
-        find.text(context.messages.provisionedSyncVerifyDevicesTitle),
+        find.text(context.messages.syncDevicesSectionTitle),
         findsOneWidget,
       );
     });
 
-    testWidgets('shows no-unverified-devices indicator when list is empty', (
-      tester,
-    ) async {
+    testWidgets('notes when only this device is signed in', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ProvisionedStatusWidget(),
@@ -244,27 +245,37 @@ void main() {
             matrixUnverifiedControllerProvider.overrideWith(
               () => FakeMatrixUnverifiedController(const []),
             ),
+            syncDevicesControllerProvider.overrideWith(
+              () => FakeSyncDevicesController(const [
+                SyncDeviceInfo(
+                  deviceId: 'THIS',
+                  displayName: 'This desktop',
+                  isCurrentDevice: true,
+                  verified: true,
+                ),
+              ]),
+            ),
           ],
         ),
       );
       await tester.pump();
+      await tester.pump();
 
-      expect(find.byType(UnverifiedDevices), findsOneWidget);
+      expect(find.byType(DeviceCard), findsOneWidget);
+      expect(find.text('No other devices are signed in.'), findsOneWidget);
+      final context = tester.element(find.byType(ProvisionedStatusWidget));
+      expect(
+        find.text(context.messages.syncDevicesPausedBanner),
+        findsNothing,
+      );
     });
 
-    testWidgets('shows device cards when unverified devices exist', (
-      tester,
-    ) async {
-      final device = MockDeviceKeys();
-      final keyVerification = MockKeyVerification();
-      final runner = MockKeyVerificationRunner();
-      when(() => device.deviceDisplayName).thenReturn('Pixel 7');
-      when(() => device.deviceId).thenReturn('DEVICE1');
-      when(() => device.userId).thenReturn('@alice:example.com');
-      when(() => keyVerification.isDone).thenReturn(false);
-      when(() => runner.lastStep).thenReturn('');
-      when(() => runner.keyVerification).thenReturn(keyVerification);
-      when(() => mockMatrixService.keyVerificationRunner).thenReturn(runner);
+    testWidgets('shows device cards and the paused banner when an unverified '
+        'device blocks sync', (tester) async {
+      final keys = MockDeviceKeys();
+      when(() => keys.deviceDisplayName).thenReturn('Pixel 7');
+      when(() => keys.deviceId).thenReturn('DEVICE1');
+      when(() => keys.userId).thenReturn('@alice:example.com');
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -272,15 +283,38 @@ void main() {
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
             matrixUnverifiedControllerProvider.overrideWith(
-              () => FakeMatrixUnverifiedController([device]),
+              () => FakeMatrixUnverifiedController(const []),
+            ),
+            syncDevicesControllerProvider.overrideWith(
+              () => FakeSyncDevicesController([
+                const SyncDeviceInfo(
+                  deviceId: 'THIS',
+                  displayName: 'This desktop',
+                  isCurrentDevice: true,
+                  verified: true,
+                ),
+                SyncDeviceInfo(
+                  deviceId: 'DEVICE1',
+                  displayName: 'Pixel 7',
+                  isCurrentDevice: false,
+                  verified: false,
+                  keys: keys,
+                ),
+              ]),
             ),
           ],
         ),
       );
       await tester.pump();
+      await tester.pump();
 
-      expect(find.byType(DeviceCard), findsOneWidget);
+      expect(find.byType(DeviceCard), findsNWidgets(2));
       expect(find.text('Pixel 7'), findsWidgets);
+      final context = tester.element(find.byType(ProvisionedStatusWidget));
+      expect(
+        find.text(context.messages.syncDevicesPausedBanner),
+        findsOneWidget,
+      );
     });
   });
 }

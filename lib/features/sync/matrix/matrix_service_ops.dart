@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
@@ -205,12 +206,8 @@ class MatrixServiceOps {
     }
   }
 
-  /// Deletes [deviceKeys]' session from the homeserver, then refreshes the
-  /// local device-key cache so the removal unblocks sync immediately.
-  ///
-  /// Any in-flight emoji verification against the device is cancelled first —
-  /// a dead session can never answer, and the hung ceremony would otherwise
-  /// keep polling a device that is about to disappear.
+  /// Deletes [deviceKeys]' session from the homeserver after checking it
+  /// belongs to the logged-in account. See [deleteDeviceById].
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
 
@@ -221,18 +218,37 @@ class MatrixServiceOps {
       );
     }
 
+    if (deviceKeys.userId != _client.userID) {
+      throw StateError(
+        'Cannot delete device $deviceId: Device belongs to user '
+        '${deviceKeys.userId} but current user is ${_client.userID}',
+      );
+    }
+
+    await deleteDeviceById(deviceId);
+  }
+
+  /// Deletes the session [deviceId] from the homeserver, then refreshes the
+  /// local device-key cache so the removal unblocks sync immediately.
+  ///
+  /// Works for sessions without published encryption keys too — the id comes
+  /// from the account's own device inventory ([getSyncDevices]). Any
+  /// in-flight emoji verification against the device is cancelled first: a
+  /// dead session can never answer, and the hung ceremony would otherwise
+  /// keep polling a device that is about to disappear.
+  Future<void> deleteDeviceById(String deviceId) async {
+    if (deviceId == gateway.currentDeviceId) {
+      throw ArgumentError(
+        'Cannot delete device $deviceId: it is the session this app is '
+        'running as. Use logout instead.',
+      );
+    }
+
     final config = _matrixConfig;
     if (config == null) {
       throw StateError(
         'Cannot delete device $deviceId: No Matrix configuration available. '
         'User must be logged in to delete devices.',
-      );
-    }
-
-    if (deviceKeys.userId != _client.userID) {
-      throw StateError(
-        'Cannot delete device $deviceId: Device belongs to user '
-        '${deviceKeys.userId} but current user is ${_client.userID}',
       );
     }
 
@@ -246,7 +262,7 @@ class MatrixServiceOps {
 
     await _cancelActiveVerificationsFor(deviceId);
 
-    await _client.deleteDevice(
+    await gateway.deleteDevice(
       deviceId,
       auth: AuthenticationPassword(
         password: config.password,
@@ -261,6 +277,36 @@ class MatrixServiceOps {
     );
 
     await refreshDeviceKeysAndResumeSync(subDomain: 'deleteDevice');
+  }
+
+  /// Returns every session on the sync account, merging the homeserver's
+  /// device inventory (names, last-seen) with the E2EE key cache
+  /// (verification state), ordered for display.
+  Future<List<SyncDeviceInfo>> getSyncDevices() async {
+    final serverDevices = await gateway.getDevices();
+    final userId = _client.userID;
+    final keysById =
+        (userId == null ? null : _client.userDeviceKeys[userId]?.deviceKeys) ??
+        <String, DeviceKeys>{};
+    final ownDeviceId = gateway.currentDeviceId;
+
+    final devices = serverDevices.map((device) {
+      final keys = keysById[device.deviceId];
+      final isCurrent = device.deviceId == ownDeviceId;
+      final lastSeenTs = device.lastSeenTs;
+      return SyncDeviceInfo(
+        deviceId: device.deviceId,
+        displayName: device.displayName,
+        lastSeen: lastSeenTs == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(lastSeenTs),
+        isCurrentDevice: isCurrent,
+        verified: isCurrent || (keys?.verified ?? false),
+        keys: keys,
+      );
+    }).toList();
+
+    return sortSyncDevicesForDisplay(devices);
   }
 
   Future<void> _cancelActiveVerificationsFor(String deviceId) async {

@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
+import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:matrix/matrix.dart';
 
 class FakeDeviceKeys extends Fake implements DeviceKeys {}
@@ -11,6 +13,15 @@ class FakeMatrixUnverifiedController extends MatrixUnverifiedController {
 
   @override
   Future<List<DeviceKeys>> build() async => devices;
+}
+
+class FakeSyncDevicesController extends SyncDevicesController {
+  FakeSyncDevicesController(this.devices);
+
+  final List<SyncDeviceInfo> devices;
+
+  @override
+  Future<List<SyncDeviceInfo>> build() async => devices;
 }
 
 /// Counts how many times [build] runs so tests can assert that the provider

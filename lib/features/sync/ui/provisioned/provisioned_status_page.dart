@@ -7,8 +7,8 @@ import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
-import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_devices_list.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
@@ -91,19 +91,7 @@ class ProvisionedStatusWidget extends ConsumerWidget {
           const _AutoVerificationLauncher(),
           const DiagnosticInfoButton(),
           const SizedBox(height: 16),
-          SyncFlowSection(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  messages.provisionedSyncVerifyDevicesTitle,
-                  style: context.textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                const UnverifiedDevices(),
-              ],
-            ),
-          ),
+          const SyncDevicesList(),
           if (isDesktop) ...[
             const SizedBox(height: 16),
             const _HandoverQrSection(),

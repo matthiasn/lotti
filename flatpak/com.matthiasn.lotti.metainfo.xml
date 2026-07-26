@@ -44,6 +44,7 @@
     </release>
     <release version="0.9.1070" date="2026-07-25">
       <description>
+        <p>Added: see and manage every device in your sync account. The sync status page now lists all sessions — not just unverified ones — with a "This device" marker, Verified/Unverified chips, when the server last saw each device, and a hint when a device has been silent long enough to be presumed dead. Any device except the one you're on can be removed, including previously verified ones. While any device still blocks sync, the list says so in plain words instead of sync failing silently.</p>
         <p>Fixed: removing a dead device now unblocks sync immediately. Deleting a device from the sync device list refreshes the cached device keys and nudges the pipeline right away, so the remaining devices resume syncing without an app restart. Deleting also asks for confirmation first — it signs the device out of the sync account — and a rejected password now gets a clear explanation instead of a raw error dump.</p>
         <p>Fixed: sync no longer loses messages that arrive before their decryption key. When a lot of entries arrived at once over a slow connection, some could be discarded while the app was still waiting for the key to decrypt them, leaving that device permanently short of entries the other device had.</p>
         <p>Fixed: a screen reader can now activate the whole "Automatic updates" row. Tapping the wording flipped the switch for everyone else, but assistive technology could only reach the switch itself.</p>

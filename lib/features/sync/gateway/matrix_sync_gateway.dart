@@ -71,6 +71,19 @@ abstract class MatrixSyncGateway {
   /// Returns a list of unverified devices across joined rooms.
   List<DeviceKeys> unverifiedDevices();
 
+  /// The device/session id this client is logged in as, or null when logged
+  /// out.
+  String? get currentDeviceId;
+
+  /// Returns the account's device inventory from the homeserver
+  /// (`GET /_matrix/client/v3/devices`) — every session including ones that
+  /// never published encryption keys.
+  Future<List<Device>> getDevices();
+
+  /// Deletes a device/session on the homeserver. The endpoint is guarded by
+  /// user-interactive auth, supplied via [auth].
+  Future<void> deleteDevice(String deviceId, {AuthenticationData? auth});
+
   /// Changes the password for the currently logged-in user.
   Future<void> changePassword({
     required String oldPassword,

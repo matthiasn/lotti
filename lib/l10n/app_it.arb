@@ -3923,7 +3923,6 @@
   "provisionedSyncSummaryRoom": "Camera",
   "provisionedSyncSummaryUser": "Utente",
   "provisionedSyncTitle": "Sincronizzazione prevista",
-  "provisionedSyncVerifyDevicesTitle": "Verifica del dispositivo",
   "queueCatchUpNowButton": "Prenditi ora",
   "queueCatchUpNowDone": "Prendere a calci — la coda sta drenando.",
   "queueCatchUpNowError": "Il catch-up non è riuscito: {reason}",
@@ -4354,12 +4353,10 @@
   "settingsMatrixDiagnosticShowButton": "Mostra informazioni diagnostiche",
   "settingsMatrixDone": "Fatto",
   "settingsMatrixLastUpdated": "Ultimo aggiornamento:",
-  "settingsMatrixListUnverifiedLabel": "Dispositivi non verificati",
   "settingsMatrixMaintenanceSubtitle": "Eseguire Matrix compiti di manutenzione e strumenti di recupero",
   "settingsMatrixMaintenanceTitle": "Manutenzione",
   "settingsMatrixMetrics": "Sincronizzazioni",
   "settingsMatrixNextPage": "Pagina successiva",
-  "settingsMatrixNoUnverifiedLabel": "Nessun dispositivo non verificato",
   "settingsMatrixPreviousPage": "Pagina precedente",
   "settingsMatrixRoomInviteMessage": "Invita la stanza {roomId} da {senderId}. Accettare?",
   "@settingsMatrixRoomInviteMessage": {
@@ -4385,7 +4382,6 @@
   "settingsMatrixStartVerificationLabel": "Avviare la verifica",
   "settingsMatrixStatsTitle": "Statistiche Matrix",
   "settingsMatrixTitle": "Impostazioni di sincronizzazione",
-  "settingsMatrixUnverifiedDevicesPage": "Dispositivi non verificati",
   "settingsMatrixVerificationCancelledLabel": "Cancellato su altro dispositivo...",
   "settingsMatrixVerificationSuccessConfirm": "Capito.",
   "settingsMatrixVerificationSuccessLabel": "Hai verificato con successo {deviceName} ({deviceID})",
@@ -4578,6 +4574,23 @@
   "syncActivityTitle": "Traduzione:",
   "syncDeleteConfigConfirm": "Si', sono sicuro.",
   "syncDeleteConfigQuestion": "Vuoi eliminare la configurazione di sincronizzazione?",
+  "syncDevicesLastSeen": "Ultimo accesso il {date}",
+  "@syncDevicesLastSeen": {
+    "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesLoadFailed": "Impossibile caricare l'elenco dei dispositivi.",
+  "syncDevicesOnlyThisDevice": "Nessun altro dispositivo ha effettuato l'accesso.",
+  "syncDevicesPausedBanner": "La sincronizzazione è in pausa finché ogni dispositivo non è verificato o rimosso.",
+  "syncDevicesSectionTitle": "Dispositivi",
+  "syncDevicesStaleHint": "Probabilmente non più in uso",
+  "syncDevicesThisDeviceChip": "Questo dispositivo",
+  "syncDevicesUnverifiedChip": "Non verificato",
+  "syncDevicesVerifiedChip": "Verificato",
   "syncEntitiesConfirm": "AVVIA SINCRONIZZAZIONE",
   "syncEntitiesMessage": "Scegli le entità che vuoi sincronizzare.",
   "syncEntitiesSuccessDescription": "Tutto e' aggiornato.",

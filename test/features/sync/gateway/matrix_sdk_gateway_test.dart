@@ -378,6 +378,35 @@ void main() {
     ).called(1);
   });
 
+  test('currentDeviceId reflects the client session', () {
+    when(() => client.deviceID).thenReturn('DEVICE_A');
+    expect(gateway.currentDeviceId, 'DEVICE_A');
+  });
+
+  test('getDevices returns the server inventory, empty when the endpoint '
+      'yields null', () async {
+    final device = Device(deviceId: 'DEVICE_A', displayName: 'Laptop');
+    when(() => client.getDevices()).thenAnswer((_) async => [device]);
+    expect(await gateway.getDevices(), [device]);
+
+    when(() => client.getDevices()).thenAnswer((_) async => null);
+    expect(await gateway.getDevices(), isEmpty);
+  });
+
+  test('deleteDevice forwards the device id and auth payload', () async {
+    final auth = AuthenticationPassword(
+      password: 'secret',
+      identifier: AuthenticationUserIdentifier(user: '@user:server'),
+    );
+    when(
+      () => client.deleteDevice('DEVICE_B', auth: auth),
+    ).thenAnswer((_) async {});
+
+    await gateway.deleteDevice('DEVICE_B', auth: auth);
+
+    verify(() => client.deleteDevice('DEVICE_B', auth: auth)).called(1);
+  });
+
   test('invite stream emits only invite membership events', () async {
     final inviteStream = gateway.invites;
     final inviteFuture = expectLater(

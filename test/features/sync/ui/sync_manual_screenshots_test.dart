@@ -567,6 +567,7 @@ void main() {
       () => matrixService.verifyDevice(unverifiedDevice),
     ).thenAnswer((_) async {});
     when(() => matrixService.getUnverifiedDevices()).thenReturn([]);
+    when(() => matrixService.getSyncDevices()).thenAnswer((_) async => []);
     when(() => matrixService.deleteConfig()).thenAnswer((_) async {});
     when(() => matrixService.loadConfig()).thenAnswer(
       (_) async => const MatrixConfig(

@@ -8203,9 +8203,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncTitle => 'Provisioned Sync';
 
   @override
-  String get provisionedSyncVerifyDevicesTitle => 'Device Verification';
-
-  @override
   String get queueCatchUpNowButton => 'Catch up now';
 
   @override
@@ -9233,9 +9230,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Last updated:';
 
   @override
-  String get settingsMatrixListUnverifiedLabel => 'Unverified devices';
-
-  @override
   String get settingsMatrixMaintenanceSubtitle =>
       'Run Matrix maintenance tasks and recovery tools';
 
@@ -9247,9 +9241,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMatrixNextPage => 'Next Page';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel => 'No unverified devices';
 
   @override
   String get settingsMatrixPreviousPage => 'Previous Page';
@@ -9278,9 +9269,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMatrixTitle => 'Sync Settings';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage => 'Unverified Devices';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -9778,6 +9766,36 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Do you want to delete the sync configuration?';
+
+  @override
+  String syncDevicesLastSeen(String date) {
+    return 'Last seen $date';
+  }
+
+  @override
+  String get syncDevicesLoadFailed => 'Couldn\'t load the device list.';
+
+  @override
+  String get syncDevicesOnlyThisDevice => 'No other devices are signed in.';
+
+  @override
+  String get syncDevicesPausedBanner =>
+      'Sync is paused until every device is verified or removed.';
+
+  @override
+  String get syncDevicesSectionTitle => 'Devices';
+
+  @override
+  String get syncDevicesStaleHint => 'Probably no longer in use';
+
+  @override
+  String get syncDevicesThisDeviceChip => 'This device';
+
+  @override
+  String get syncDevicesUnverifiedChip => 'Unverified';
+
+  @override
+  String get syncDevicesVerifiedChip => 'Verified';
 
   @override
   String get syncEntitiesConfirm => 'START SYNC';

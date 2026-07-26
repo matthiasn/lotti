@@ -252,6 +252,19 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   }
 
   @override
+  String? get currentDeviceId => _client.deviceID;
+
+  @override
+  Future<List<Device>> getDevices() async {
+    return await _client.getDevices() ?? const [];
+  }
+
+  @override
+  Future<void> deleteDevice(String deviceId, {AuthenticationData? auth}) {
+    return _client.deleteDevice(deviceId, auth: auth);
+  }
+
+  @override
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,

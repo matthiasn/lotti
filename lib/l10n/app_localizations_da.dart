@@ -8252,9 +8252,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get provisionedSyncTitle => 'Provisioneret synkronisering';
 
   @override
-  String get provisionedSyncVerifyDevicesTitle => 'Enhedsverifikation';
-
-  @override
   String get queueCatchUpNowButton => 'Følg med nu';
 
   @override
@@ -9294,9 +9291,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Sidst opdateret:';
 
   @override
-  String get settingsMatrixListUnverifiedLabel => 'Uverificerede enheder';
-
-  @override
   String get settingsMatrixMaintenanceSubtitle =>
       'Kør Matrix-vedligeholdelsesopgaver og gendannelsesværktøjer';
 
@@ -9308,9 +9302,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsMatrixNextPage => 'Næste side';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel => 'Ingen uverificerede enheder';
 
   @override
   String get settingsMatrixPreviousPage => 'Forrige side';
@@ -9339,9 +9330,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsMatrixTitle => 'Synkroniseringsindstillinger';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage => 'Uverificerede enheder';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -9847,6 +9835,36 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Vil du slette synkroniseringskonfigurationen?';
+
+  @override
+  String syncDevicesLastSeen(String date) {
+    return 'Sidst set $date';
+  }
+
+  @override
+  String get syncDevicesLoadFailed => 'Enhedslisten kunne ikke indlæses.';
+
+  @override
+  String get syncDevicesOnlyThisDevice => 'Ingen andre enheder er logget ind.';
+
+  @override
+  String get syncDevicesPausedBanner =>
+      'Synkronisering er sat på pause, indtil alle enheder er bekræftet eller fjernet.';
+
+  @override
+  String get syncDevicesSectionTitle => 'Enheder';
+
+  @override
+  String get syncDevicesStaleHint => 'Sandsynligvis ikke længere i brug';
+
+  @override
+  String get syncDevicesThisDeviceChip => 'Denne enhed';
+
+  @override
+  String get syncDevicesUnverifiedChip => 'Ubekræftet';
+
+  @override
+  String get syncDevicesVerifiedChip => 'Bekræftet';
 
   @override
   String get syncEntitiesConfirm => 'START SYNC';

@@ -37,6 +37,7 @@ void main() {
     when(() => mockMatrixService.syncRoomId).thenReturn('!room123:example.com');
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+    when(() => mockMatrixService.getSyncDevices()).thenAnswer((_) async => []);
     when(
       () => mockMatrixService.keyVerificationStream,
     ).thenAnswer((_) => const Stream.empty());
@@ -246,6 +247,8 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The auto-verification launcher should trigger a verification modal
       expect(find.text('Other Device'), findsWidgets);

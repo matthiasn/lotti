@@ -1,0 +1,36 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/providers/service_providers.dart';
+
+/// Exposes every session on the sync account for the device-management UI,
+/// sourced from `MatrixService.getSyncDevices`. Refresh by invalidating —
+/// after a verification, a deletion, or on user request.
+final AsyncNotifierProvider<SyncDevicesController, List<SyncDeviceInfo>>
+syncDevicesControllerProvider =
+    AsyncNotifierProvider.autoDispose<
+      SyncDevicesController,
+      List<SyncDeviceInfo>
+    >(
+      SyncDevicesController.new,
+      name: 'syncDevicesControllerProvider',
+    );
+
+class SyncDevicesController extends AsyncNotifier<List<SyncDeviceInfo>> {
+  @override
+  Future<List<SyncDeviceInfo>> build() async {
+    return ref.watch(matrixServiceProvider).getSyncDevices();
+  }
+
+  /// Re-fetches the device list while keeping the last data on screen —
+  /// background refreshes must not swap an established list for a loading
+  /// shell.
+  Future<void> refresh() async {
+    final result = await AsyncValue.guard(
+      () => ref.read(matrixServiceProvider).getSyncDevices(),
+    );
+    if (!ref.mounted) return;
+    // Keep showing the previous list rather than replacing it with an error.
+    if (result.hasError && state.hasValue) return;
+    state = result;
+  }
+}

@@ -263,8 +263,9 @@ void main() {
         ),
       );
       when(() => client.userID).thenReturn(userId);
+      when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
       when(
-        () => client.deleteDevice(any(), auth: any(named: 'auth')),
+        () => gateway.deleteDevice(any(), auth: any(named: 'auth')),
       ).thenAnswer((_) async {});
       when(
         () => client.updateUserDeviceKeys(
@@ -288,7 +289,7 @@ void main() {
         await buildDeleteOps().deleteDevice(deviceKeys);
 
         final captured = verify(
-          () => client.deleteDevice('DEV1', auth: captureAny(named: 'auth')),
+          () => gateway.deleteDevice('DEV1', auth: captureAny(named: 'auth')),
         ).captured;
         final auth = captured.single as AuthenticationPassword;
         expect(auth.password, 'secret');
@@ -329,7 +330,7 @@ void main() {
 
         verifyInOrder([
           matchingRunner.cancelVerification,
-          () => client.deleteDevice('DEV1', auth: any(named: 'auth')),
+          () => gateway.deleteDevice('DEV1', auth: any(named: 'auth')),
         ]);
         verifyNever(otherRunner.cancelVerification);
       },
@@ -357,7 +358,7 @@ void main() {
           ),
         ).called(1);
         verify(
-          () => client.deleteDevice('DEV1', auth: any(named: 'auth')),
+          () => gateway.deleteDevice('DEV1', auth: any(named: 'auth')),
         ).called(1);
       },
     );
@@ -394,7 +395,7 @@ void main() {
         () => buildDeleteOps().deleteDevice(deviceKeys),
         throwsArgumentError,
       );
-      verifyNever(() => client.deleteDevice(any(), auth: any(named: 'auth')));
+      verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
     });
 
     test('throws StateError when no Matrix configuration is stored', () {
@@ -404,7 +405,7 @@ void main() {
         () => buildDeleteOps().deleteDevice(deviceKeys),
         throwsStateError,
       );
-      verifyNever(() => client.deleteDevice(any(), auth: any(named: 'auth')));
+      verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
     });
 
     test('throws StateError when the device belongs to another user', () {
@@ -414,7 +415,7 @@ void main() {
         () => buildDeleteOps().deleteDevice(deviceKeys),
         throwsStateError,
       );
-      verifyNever(() => client.deleteDevice(any(), auth: any(named: 'auth')));
+      verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
     });
 
     test('throws UnsupportedError when the stored password is empty', () {
@@ -430,8 +431,134 @@ void main() {
         () => buildDeleteOps().deleteDevice(deviceKeys),
         throwsUnsupportedError,
       );
-      verifyNever(() => client.deleteDevice(any(), auth: any(named: 'auth')));
+      verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
     });
+
+    test('refuses to delete the session the app itself runs as', () {
+      expect(
+        () => buildDeleteOps().deleteDeviceById('THIS_DEVICE'),
+        throwsArgumentError,
+      );
+      verifyNever(() => gateway.deleteDevice(any(), auth: any(named: 'auth')));
+    });
+
+    test(
+      'deleteDeviceById works for keyless sessions straight from the '
+      'server inventory',
+      () async {
+        await buildDeleteOps().deleteDeviceById('KEYLESS');
+
+        verify(
+          () => gateway.deleteDevice('KEYLESS', auth: any(named: 'auth')),
+        ).called(1);
+        verify(
+          () => client.updateUserDeviceKeys(additionalUsers: {userId}),
+        ).called(1);
+      },
+    );
+  });
+
+  group('getSyncDevices', () {
+    const userId = '@user:server';
+    late MockMatrixClient client;
+
+    setUp(() {
+      client = MockMatrixClient();
+      when(() => sessionManager.client).thenReturn(client);
+      when(() => client.userID).thenReturn(userId);
+      when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
+    });
+
+    DeviceKeys keysFor(String deviceId, {required bool verified}) {
+      final keys = MockDeviceKeys();
+      when(() => keys.deviceId).thenReturn(deviceId);
+      when(() => keys.verified).thenReturn(verified);
+      return keys;
+    }
+
+    void stubKeys(Map<String, DeviceKeys> byId) {
+      final list = MockDeviceKeysList();
+      when(() => list.deviceKeys).thenReturn(byId);
+      when(() => client.userDeviceKeys).thenReturn({userId: list});
+    }
+
+    test(
+      'merges the server inventory with the key cache and orders devices '
+      'current-first, then blockers, then by recency',
+      () async {
+        when(() => gateway.getDevices()).thenAnswer(
+          (_) async => [
+            Device(
+              deviceId: 'OLD_VERIFIED',
+              displayName: 'Old laptop',
+              lastSeenTs: DateTime(2026, 7, 20).millisecondsSinceEpoch,
+            ),
+            Device(deviceId: 'KEYLESS', displayName: 'Dead install'),
+            Device(
+              deviceId: 'GHOST',
+              displayName: 'Uninstalled phone',
+              lastSeenTs: DateTime(2026, 5).millisecondsSinceEpoch,
+            ),
+            Device(
+              deviceId: 'THIS_DEVICE',
+              displayName: 'This desktop',
+              lastSeenTs: DateTime(2026, 7, 26).millisecondsSinceEpoch,
+            ),
+          ],
+        );
+        stubKeys({
+          'GHOST': keysFor('GHOST', verified: false),
+          'OLD_VERIFIED': keysFor('OLD_VERIFIED', verified: true),
+        });
+
+        final devices = await buildOps().getSyncDevices();
+
+        expect(
+          devices.map((d) => d.deviceId).toList(),
+          ['THIS_DEVICE', 'GHOST', 'OLD_VERIFIED', 'KEYLESS'],
+        );
+
+        final current = devices[0];
+        expect(current.isCurrentDevice, isTrue);
+        expect(current.verified, isTrue);
+        expect(current.blocksSync, isFalse);
+
+        final ghost = devices[1];
+        expect(ghost.verified, isFalse);
+        expect(ghost.blocksSync, isTrue);
+        expect(ghost.lastSeen, DateTime(2026, 5));
+        expect(ghost.keys, isNotNull);
+
+        final oldVerified = devices[2];
+        expect(oldVerified.verified, isTrue);
+        expect(oldVerified.blocksSync, isFalse);
+
+        final keyless = devices[3];
+        expect(keyless.verified, isFalse);
+        expect(keyless.keys, isNull);
+        expect(
+          keyless.blocksSync,
+          isFalse,
+          reason: 'keyless sessions never gate the send path',
+        );
+        expect(keyless.lastSeen, isNull);
+      },
+    );
+
+    test(
+      'marks the current device verified even without cached keys',
+      () async {
+        when(() => gateway.getDevices()).thenAnswer(
+          (_) async => [Device(deviceId: 'THIS_DEVICE')],
+        );
+        when(() => client.userDeviceKeys).thenReturn({});
+
+        final devices = await buildOps().getSyncDevices();
+
+        expect(devices.single.isCurrentDevice, isTrue);
+        expect(devices.single.verified, isTrue);
+      },
+    );
   });
 
   group('diagnostics', () {

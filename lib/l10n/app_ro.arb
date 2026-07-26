@@ -3442,7 +3442,6 @@
   "provisionedSyncSummaryRoom": "Cameră",
   "provisionedSyncSummaryUser": "Utilizator",
   "provisionedSyncTitle": "Sincronizare provizionată",
-  "provisionedSyncVerifyDevicesTitle": "Verificarea dispozitivelor",
   "queueCatchUpNowButton": "Recuperați acum",
   "queueCatchUpNowDone": "Recuperare inițiată — coada se golește.",
   "queueCatchUpNowError": "Recuperare eșuată: {reason}",
@@ -3811,12 +3810,10 @@
   "settingsMatrixDiagnosticShowButton": "Afișați informațiile de diagnostic",
   "settingsMatrixDone": "Gata",
   "settingsMatrixLastUpdated": "Ultima actualizare:",
-  "settingsMatrixListUnverifiedLabel": "Dispozitive neverificate",
   "settingsMatrixMaintenanceSubtitle": "Rulează sarcini de întreținere Matrix și instrumente de recuperare",
   "settingsMatrixMaintenanceTitle": "Întreținere",
   "settingsMatrixMetrics": "Metrici sincronizare",
   "settingsMatrixNextPage": "Pagina următoare",
-  "settingsMatrixNoUnverifiedLabel": "Niciun dispozitiv neverificat",
   "settingsMatrixPreviousPage": "Pagina anterioară",
   "settingsMatrixRoomInviteMessage": "Invitație la camera {roomId} de la {senderId}. Acceptați?",
   "@settingsMatrixRoomInviteMessage": {
@@ -3842,7 +3839,6 @@
   "settingsMatrixStartVerificationLabel": "Începeți verificarea",
   "settingsMatrixStatsTitle": "Statistici Matrix",
   "settingsMatrixTitle": "Setări sincronizare Matrix",
-  "settingsMatrixUnverifiedDevicesPage": "Dispozitive neverificate",
   "settingsMatrixVerificationCancelledLabel": "Anulat pe celălalt dispozitiv...",
   "settingsMatrixVerificationSuccessConfirm": "Am înțeles",
   "settingsMatrixVerificationSuccessLabel": "Ați verificat cu succes {deviceName} ({deviceID})",
@@ -4022,6 +4018,23 @@
   "syncActivityTitle": "Sincronizare",
   "syncDeleteConfigConfirm": "DA, SUNT SIGUR",
   "syncDeleteConfigQuestion": "Doriți să ștergeți configurația de sincronizare?",
+  "syncDevicesLastSeen": "Văzut ultima dată la {date}",
+  "@syncDevicesLastSeen": {
+    "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesLoadFailed": "Lista dispozitivelor nu a putut fi încărcată.",
+  "syncDevicesOnlyThisDevice": "Niciun alt dispozitiv nu este autentificat.",
+  "syncDevicesPausedBanner": "Sincronizarea este întreruptă până când fiecare dispozitiv este verificat sau eliminat.",
+  "syncDevicesSectionTitle": "Dispozitive",
+  "syncDevicesStaleHint": "Probabil nu mai este folosit",
+  "syncDevicesThisDeviceChip": "Acest dispozitiv",
+  "syncDevicesUnverifiedChip": "Neverificat",
+  "syncDevicesVerifiedChip": "Verificat",
   "syncEntitiesConfirm": "ÎNCEPE SINCRONIZAREA",
   "syncEntitiesMessage": "Alegeți datele pe care doriți să le sincronizați.",
   "syncEntitiesSuccessDescription": "Totul este actualizat.",

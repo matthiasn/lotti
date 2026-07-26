@@ -114,6 +114,23 @@ class FakeMatrixGateway implements MatrixSyncGateway {
       List<DeviceKeys>.from(_unverifiedDevices);
 
   @override
+  String? get currentDeviceId => currentDeviceIdOverride;
+
+  String? currentDeviceIdOverride;
+
+  @override
+  Future<List<Device>> getDevices() async => List<Device>.from(serverDevices);
+
+  final List<Device> serverDevices = <Device>[];
+
+  @override
+  Future<void> deleteDevice(String deviceId, {AuthenticationData? auth}) async {
+    deletedDeviceIds.add(deviceId);
+  }
+
+  final List<String> deletedDeviceIds = <String>[];
+
+  @override
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,

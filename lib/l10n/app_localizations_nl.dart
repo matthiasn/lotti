@@ -8270,9 +8270,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get provisionedSyncTitle => 'Voorzien van een synchronisatie';
 
   @override
-  String get provisionedSyncVerifyDevicesTitle => 'Apparaatverificatie';
-
-  @override
   String get queueCatchUpNowButton => 'Inhalen nu';
 
   @override
@@ -9318,9 +9315,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Laatst bijgewerkt:';
 
   @override
-  String get settingsMatrixListUnverifiedLabel => 'Niet-verifieerde apparaten';
-
-  @override
   String get settingsMatrixMaintenanceSubtitle =>
       'Start de onderhoudstaken en hersteltools van Matrix';
 
@@ -9332,10 +9326,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsMatrixNextPage => 'Volgende pagina';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel =>
-      'Geen niet-geverifieerde apparaten';
 
   @override
   String get settingsMatrixPreviousPage => 'Vorige pagina';
@@ -9364,10 +9354,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsMatrixTitle => 'Instellingen synchroniseren';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage =>
-      'Niet-verifieerde apparaten';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -9877,6 +9863,38 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Wilt u de synchronisatie-configuratie verwijderen?';
+
+  @override
+  String syncDevicesLastSeen(String date) {
+    return 'Laatst gezien op $date';
+  }
+
+  @override
+  String get syncDevicesLoadFailed =>
+      'De apparatenlijst kon niet worden geladen.';
+
+  @override
+  String get syncDevicesOnlyThisDevice =>
+      'Er zijn geen andere apparaten aangemeld.';
+
+  @override
+  String get syncDevicesPausedBanner =>
+      'Synchronisatie is gepauzeerd totdat elk apparaat is geverifieerd of verwijderd.';
+
+  @override
+  String get syncDevicesSectionTitle => 'Apparaten';
+
+  @override
+  String get syncDevicesStaleHint => 'Waarschijnlijk niet meer in gebruik';
+
+  @override
+  String get syncDevicesThisDeviceChip => 'Dit apparaat';
+
+  @override
+  String get syncDevicesUnverifiedChip => 'Niet geverifieerd';
+
+  @override
+  String get syncDevicesVerifiedChip => 'Geverifieerd';
 
   @override
   String get syncEntitiesConfirm => 'START SYNC';

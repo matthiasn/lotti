@@ -8399,9 +8399,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get provisionedSyncTitle => 'Sincronizare provizionată';
 
   @override
-  String get provisionedSyncVerifyDevicesTitle => 'Verificarea dispozitivelor';
-
-  @override
   String get queueCatchUpNowButton => 'Recuperați acum';
 
   @override
@@ -9463,9 +9460,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Ultima actualizare:';
 
   @override
-  String get settingsMatrixListUnverifiedLabel => 'Dispozitive neverificate';
-
-  @override
   String get settingsMatrixMaintenanceSubtitle =>
       'Rulează sarcini de întreținere Matrix și instrumente de recuperare';
 
@@ -9477,9 +9471,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMatrixNextPage => 'Pagina următoare';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel => 'Niciun dispozitiv neverificat';
 
   @override
   String get settingsMatrixPreviousPage => 'Pagina anterioară';
@@ -9508,9 +9499,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMatrixTitle => 'Setări sincronizare Matrix';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage => 'Dispozitive neverificate';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -10026,6 +10014,38 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Doriți să ștergeți configurația de sincronizare?';
+
+  @override
+  String syncDevicesLastSeen(String date) {
+    return 'Văzut ultima dată la $date';
+  }
+
+  @override
+  String get syncDevicesLoadFailed =>
+      'Lista dispozitivelor nu a putut fi încărcată.';
+
+  @override
+  String get syncDevicesOnlyThisDevice =>
+      'Niciun alt dispozitiv nu este autentificat.';
+
+  @override
+  String get syncDevicesPausedBanner =>
+      'Sincronizarea este întreruptă până când fiecare dispozitiv este verificat sau eliminat.';
+
+  @override
+  String get syncDevicesSectionTitle => 'Dispozitive';
+
+  @override
+  String get syncDevicesStaleHint => 'Probabil nu mai este folosit';
+
+  @override
+  String get syncDevicesThisDeviceChip => 'Acest dispozitiv';
+
+  @override
+  String get syncDevicesUnverifiedChip => 'Neverificat';
+
+  @override
+  String get syncDevicesVerifiedChip => 'Verificat';
 
   @override
   String get syncEntitiesConfirm => 'ÎNCEPE SINCRONIZAREA';

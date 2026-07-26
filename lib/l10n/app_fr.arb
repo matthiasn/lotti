@@ -3442,7 +3442,6 @@
   "provisionedSyncSummaryRoom": "Salle",
   "provisionedSyncSummaryUser": "Utilisateur",
   "provisionedSyncTitle": "Synchronisation provisionnée",
-  "provisionedSyncVerifyDevicesTitle": "Vérification des appareils",
   "queueCatchUpNowButton": "Rattraper maintenant",
   "queueCatchUpNowDone": "Rattrapage lancé — la file se vide.",
   "queueCatchUpNowError": "Rattrapage échoué : {reason}",
@@ -3811,12 +3810,10 @@
   "settingsMatrixDiagnosticShowButton": "Afficher les informations de diagnostic",
   "settingsMatrixDone": "Terminé",
   "settingsMatrixLastUpdated": "Dernière mise à jour :",
-  "settingsMatrixListUnverifiedLabel": "Appareils non vérifiés",
   "settingsMatrixMaintenanceSubtitle": "Exécuter les tâches de maintenance Matrix et les outils de récupération",
   "settingsMatrixMaintenanceTitle": "Maintenance",
   "settingsMatrixMetrics": "Métriques de synchronisation",
   "settingsMatrixNextPage": "Page suivante",
-  "settingsMatrixNoUnverifiedLabel": "Aucun appareil non vérifié",
   "settingsMatrixPreviousPage": "Page précédente",
   "settingsMatrixRoomInviteMessage": "Invitation au salon {roomId} de {senderId}. Accepter ?",
   "@settingsMatrixRoomInviteMessage": {
@@ -3842,7 +3839,6 @@
   "settingsMatrixStartVerificationLabel": "Démarrer la vérification",
   "settingsMatrixStatsTitle": "Statistiques Matrix",
   "settingsMatrixTitle": "Paramètres de synchronisation Matrix",
-  "settingsMatrixUnverifiedDevicesPage": "Appareils non vérifiés",
   "settingsMatrixVerificationCancelledLabel": "Annulé sur un autre appareil…",
   "settingsMatrixVerificationSuccessConfirm": "OK",
   "settingsMatrixVerificationSuccessLabel": "Tu as vérifié avec succès {deviceName} ({deviceID})",
@@ -4022,6 +4018,23 @@
   "syncActivityTitle": "Synchronisation",
   "syncDeleteConfigConfirm": "OUI, JE SUIS SÛR",
   "syncDeleteConfigQuestion": "Veux-tu supprimer la configuration de synchronisation ?",
+  "syncDevicesLastSeen": "Vu pour la dernière fois le {date}",
+  "@syncDevicesLastSeen": {
+    "description": "Shown per device in the sync device list; {date} is a locale-formatted date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncDevicesLoadFailed": "Impossible de charger la liste des appareils.",
+  "syncDevicesOnlyThisDevice": "Aucun autre appareil n'est connecté.",
+  "syncDevicesPausedBanner": "La synchronisation est en pause tant que chaque appareil n'est pas vérifié ou supprimé.",
+  "syncDevicesSectionTitle": "Appareils",
+  "syncDevicesStaleHint": "Probablement plus utilisé",
+  "syncDevicesThisDeviceChip": "Cet appareil",
+  "syncDevicesUnverifiedChip": "Non vérifié",
+  "syncDevicesVerifiedChip": "Vérifié",
   "syncEntitiesConfirm": "DÉMARRER LA SYNCHRONISATION",
   "syncEntitiesMessage": "Choisis les données à synchroniser.",
   "syncEntitiesSuccessDescription": "Tout est à jour.",

@@ -14283,12 +14283,6 @@ abstract class AppLocalizations {
   /// **'Provisioned Sync'**
   String get provisionedSyncTitle;
 
-  /// No description provided for @provisionedSyncVerifyDevicesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Device Verification'**
-  String get provisionedSyncVerifyDevicesTitle;
-
   /// No description provided for @queueCatchUpNowButton.
   ///
   /// In en, this message translates to:
@@ -16041,12 +16035,6 @@ abstract class AppLocalizations {
   /// **'Last updated:'**
   String get settingsMatrixLastUpdated;
 
-  /// No description provided for @settingsMatrixListUnverifiedLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Unverified devices'**
-  String get settingsMatrixListUnverifiedLabel;
-
   /// No description provided for @settingsMatrixMaintenanceSubtitle.
   ///
   /// In en, this message translates to:
@@ -16070,12 +16058,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next Page'**
   String get settingsMatrixNextPage;
-
-  /// No description provided for @settingsMatrixNoUnverifiedLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'No unverified devices'**
-  String get settingsMatrixNoUnverifiedLabel;
 
   /// No description provided for @settingsMatrixPreviousPage.
   ///
@@ -16124,12 +16106,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync Settings'**
   String get settingsMatrixTitle;
-
-  /// No description provided for @settingsMatrixUnverifiedDevicesPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Unverified Devices'**
-  String get settingsMatrixUnverifiedDevicesPage;
 
   /// No description provided for @settingsMatrixVerificationCancelledLabel.
   ///
@@ -17003,6 +16979,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Do you want to delete the sync configuration?'**
   String get syncDeleteConfigQuestion;
+
+  /// Shown per device in the sync device list; {date} is a locale-formatted date.
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen {date}'**
+  String syncDevicesLastSeen(String date);
+
+  /// No description provided for @syncDevicesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the device list.'**
+  String get syncDevicesLoadFailed;
+
+  /// No description provided for @syncDevicesOnlyThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'No other devices are signed in.'**
+  String get syncDevicesOnlyThisDevice;
+
+  /// No description provided for @syncDevicesPausedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync is paused until every device is verified or removed.'**
+  String get syncDevicesPausedBanner;
+
+  /// No description provided for @syncDevicesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get syncDevicesSectionTitle;
+
+  /// No description provided for @syncDevicesStaleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Probably no longer in use'**
+  String get syncDevicesStaleHint;
+
+  /// No description provided for @syncDevicesThisDeviceChip.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get syncDevicesThisDeviceChip;
+
+  /// No description provided for @syncDevicesUnverifiedChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get syncDevicesUnverifiedChip;
+
+  /// No description provided for @syncDevicesVerifiedChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get syncDevicesVerifiedChip;
 
   /// No description provided for @syncEntitiesConfirm.
   ///

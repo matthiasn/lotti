@@ -8362,9 +8362,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncTitle => 'Nastavení synchronizace';
 
   @override
-  String get provisionedSyncVerifyDevicesTitle => 'Ověření zařízení';
-
-  @override
   String get queueCatchUpNowButton => 'Dohnat nyní';
 
   @override
@@ -9419,9 +9416,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixLastUpdated => 'Naposledy aktualizováno:';
 
   @override
-  String get settingsMatrixListUnverifiedLabel => 'Neověřená zařízení';
-
-  @override
   String get settingsMatrixMaintenanceSubtitle =>
       'Spustit úlohy údržby Matrix a nástroje pro obnovení';
 
@@ -9433,9 +9427,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMatrixNextPage => 'Další stránka';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel => 'Žádná neověřená zařízení';
 
   @override
   String get settingsMatrixPreviousPage => 'Předchozí stránka';
@@ -9464,9 +9455,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMatrixTitle => 'Nastavení synchronizace';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage => 'Neověřená zařízení';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -9975,6 +9963,37 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get syncDeleteConfigQuestion =>
       'Chcete smazat konfiguraci synchronizace?';
+
+  @override
+  String syncDevicesLastSeen(String date) {
+    return 'Naposledy aktivní $date';
+  }
+
+  @override
+  String get syncDevicesLoadFailed => 'Seznam zařízení se nepodařilo načíst.';
+
+  @override
+  String get syncDevicesOnlyThisDevice =>
+      'Nejsou přihlášena žádná další zařízení.';
+
+  @override
+  String get syncDevicesPausedBanner =>
+      'Synchronizace je pozastavena, dokud nebude každé zařízení ověřeno nebo odebráno.';
+
+  @override
+  String get syncDevicesSectionTitle => 'Zařízení';
+
+  @override
+  String get syncDevicesStaleHint => 'Pravděpodobně se už nepoužívá';
+
+  @override
+  String get syncDevicesThisDeviceChip => 'Toto zařízení';
+
+  @override
+  String get syncDevicesUnverifiedChip => 'Neověřeno';
+
+  @override
+  String get syncDevicesVerifiedChip => 'Ověřeno';
 
   @override
   String get syncEntitiesConfirm => 'SPUSTIT SYNCHRONIZACI';

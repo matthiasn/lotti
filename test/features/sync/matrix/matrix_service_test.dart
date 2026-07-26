@@ -1364,6 +1364,9 @@ void main() {
     test('deleteDevice throws StateError when matrixConfig is null', () async {
       final deviceKeys = MockDeviceKeys();
       when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
+      when(() => deviceKeys.userId).thenReturn('@me:server');
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
       when(() => sessionManager.matrixConfig).thenReturn(null);
 
       final service = createService();
@@ -1408,6 +1411,7 @@ void main() {
         when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
         when(() => deviceKeys.userId).thenReturn('@me:server');
         when(() => client.userID).thenReturn('@me:server');
+        when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
         when(() => sessionManager.matrixConfig).thenReturn(
           const MatrixConfig(
             homeServer: 'https://hs',
@@ -1428,12 +1432,13 @@ void main() {
     // Covers lines 570-577: deleteDevice calls client.deleteDevice when
     // password is non-empty and user matches.
     test(
-      'deleteDevice calls client.deleteDevice when credentials are valid',
+      'deleteDevice deletes via the gateway when credentials are valid',
       () async {
         final deviceKeys = MockDeviceKeys();
         when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
         when(() => deviceKeys.userId).thenReturn('@me:server');
         when(() => client.userID).thenReturn('@me:server');
+        when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
         when(() => sessionManager.matrixConfig).thenReturn(
           const MatrixConfig(
             homeServer: 'https://hs',
@@ -1442,9 +1447,14 @@ void main() {
           ),
         );
         when(
-          () => client.deleteDevice(
+          () => gateway.deleteDevice(
             any(),
             auth: any(named: 'auth'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => client.updateUserDeviceKeys(
+            additionalUsers: any(named: 'additionalUsers'),
           ),
         ).thenAnswer((_) async {});
 
@@ -1452,7 +1462,7 @@ void main() {
         await service.deleteDevice(deviceKeys);
 
         verify(
-          () => client.deleteDevice('DEVICE1', auth: any(named: 'auth')),
+          () => gateway.deleteDevice('DEVICE1', auth: any(named: 'auth')),
         ).called(1);
       },
     );
