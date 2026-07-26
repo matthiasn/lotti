@@ -408,6 +408,7 @@ List<PlannedBlock> applyPlanDiffItem(
   ChangeItem item,
   List<PlannedBlock> blocks, {
   required PlannedBlockState addedBlockState,
+  Map<String, String?> taskCategoryIds = const {},
 }) {
   // Defensive: `validateApplicablePlanDiffBatch` runs immediately before this
   // and rejects every malformed item, so the assertions below should be
@@ -431,14 +432,21 @@ List<PlannedBlock> applyPlanDiffItem(
       // `args['blockReason']` per `PlanDiffChange.toArgs()`. Mixing them
       // would overwrite the block's placement reason with the diff
       // motivation.
+      final movedTaskId = args.containsKey('taskId')
+          ? args['taskId'] as String?
+          : block.taskId;
       out[index] = block.copyWith(
         startTime: _argDate(args, 'toStart') ?? block.startTime,
         endTime: _argDate(args, 'toEnd') ?? block.endTime,
         title: (args['title'] as String?) ?? block.title,
-        categoryId: (args['categoryId'] as String?) ?? block.categoryId,
-        taskId: args.containsKey('taskId')
-            ? args['taskId'] as String?
-            : block.taskId,
+        // Applied at acceptance, not only at proposal, so a change set written
+        // before this rule existed is filed correctly when the user accepts it.
+        categoryId: categoryForPlannedBlock(
+          taskId: movedTaskId,
+          fallback: (args['categoryId'] as String?) ?? block.categoryId,
+          taskCategoryIds: taskCategoryIds,
+        ),
+        taskId: movedTaskId,
         type: _argType(args) ?? block.type,
         reason: args.containsKey('blockReason')
             ? args['blockReason'] as String?
@@ -448,7 +456,11 @@ List<PlannedBlock> applyPlanDiffItem(
       out.add(
         PlannedBlock(
           id: 'block_${_uuid.v4()}',
-          categoryId: args['categoryId'] as String,
+          categoryId: categoryForPlannedBlock(
+            taskId: args['taskId'] as String?,
+            fallback: args['categoryId'] as String,
+            taskCategoryIds: taskCategoryIds,
+          ),
           startTime: _argDate(args, 'toStart')!,
           endTime: _argDate(args, 'toEnd')!,
           title: args['title'] as String?,

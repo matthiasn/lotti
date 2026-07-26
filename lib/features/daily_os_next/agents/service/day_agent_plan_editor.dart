@@ -412,7 +412,8 @@ class DayAgentPlanEditor {
         taskIds: proposedTaskIds,
         allowedCategoryIds: identity.allowedCategoryIds,
       );
-      final refused = proposedTaskIds.difference(allowed).toList()..sort();
+      final refused = proposedTaskIds.difference(allowed.keys.toSet()).toList()
+        ..sort();
       if (refused.isNotEmpty) {
         throw DayAgentCaptureException(
           'taskId(s) ${refused.join(', ')} are not allowed tasks for this plan',
