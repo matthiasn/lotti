@@ -219,15 +219,18 @@ Body.
       expect(_messages(result), isEmpty);
     });
 
-    test('a minimal concept carrying only type is conformant (§4.1)', () {
+    test('a concept carrying only type fails every house rule', () {
+      // §4.1 asks for nothing but `type`, so this document is spec-conformant.
+      // This repo requires the rest, because a concept with no description, no
+      // freshness date and no sources is precisely the one whose drift nobody
+      // can detect — so each missing key is an error here, not a suggestion.
       final result = validateBundle(
         _bundle('---\ntype: Reference\n---\n\nx\n'),
       );
 
-      expect(result.isConformant, isTrue);
-      // ... but the house rules still ask for every recommended key.
+      expect(result.isConformant, isFalse);
       expect(
-        _joined(result.warnings),
+        _joined(result.errors),
         allOf(
           contains('`title`'),
           contains('`description`'),
@@ -237,6 +240,7 @@ Body.
           contains('`sources`'),
         ),
       );
+      expect(result.warnings, isEmpty);
     });
   });
 
@@ -346,9 +350,9 @@ sources:
         ),
       );
 
-      expect(result.isConformant, isTrue);
+      expect(result.isConformant, isFalse);
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('does not follow the actor convention'),
       );
     });
@@ -370,7 +374,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('draft, stable, deprecated'),
       );
     });
@@ -381,9 +385,53 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('absolute `YYYY-MM-DD` date'),
       );
+    });
+
+    test('an expired stale_after warns without failing the build', () {
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-01-31'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+
+      // A warning, not an error: the calendar caused this, not the change under
+      // review, and failing an unrelated PR would only teach people to push the
+      // date out without re-reading the code.
+      expect(result.isConformant, isTrue);
+      expect(
+        result.warnings.single.message,
+        contains('`stale_after` passed on 2026-01-31'),
+      );
+    });
+
+    test('the day stale_after names is still fresh', () {
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2026-07-26'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('a future stale_after is silent', () {
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2027-01-31'))),
+        today: DateTime.utc(2026, 7, 26),
+      );
+
+      expect(result.issues, isEmpty);
+    });
+
+    test('expiry is not checked when the caller names no day', () {
+      // Callers that omit `today` — every test fixture above — must not pick up
+      // a clock-dependent result, or the suite would start failing on a date.
+      final result = validateBundle(
+        _bundle(_concept(house: _houseWithStaleAfter('2020-01-01'))),
+      );
+
+      expect(result.issues, isEmpty);
     });
 
     test('generated.at must be a datetime, not a bare date', () {
@@ -402,7 +450,7 @@ sources:
         ),
       );
 
-      expect(result.warnings.single.message, contains('ISO 8601 datetime'));
+      expect(result.errors.single.message, contains('ISO 8601 datetime'));
     });
 
     test('duplicate source ids are flagged because footnotes join on them', () {
@@ -424,7 +472,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('duplicate `sources[].id`'),
       );
     });
@@ -444,7 +492,7 @@ sources:
       );
 
       expect(
-        _joined(result.warnings),
+        _joined(result.errors),
         contains('present but null'),
       );
     });
@@ -463,7 +511,7 @@ sources: []
         ),
       );
 
-      expect(result.warnings.single.message, contains('`sources` is empty'));
+      expect(result.errors.single.message, contains('`sources` is empty'));
     });
 
     test('a bundle-absolute source resource is resolved in the bundle', () {
@@ -488,7 +536,7 @@ sources:
       // Not `.single`: a source set that is entirely bundle-internal also trips
       // the provenance rule, which is correct for this fixture.
       expect(
-        _joined(result.warnings),
+        _joined(result.issues),
         allOf(
           contains('`sources[].resource`'),
           contains('does not exist in the bundle'),
@@ -516,7 +564,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('`sources[].resource` must be a non-empty string'),
       );
     });
@@ -538,7 +586,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('`resource` is required'),
       );
     });
@@ -553,7 +601,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('absolute `YYYY-MM-DD` date'),
       );
     });
@@ -564,7 +612,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('absolute `YYYY-MM-DD` date'),
       );
     });
@@ -593,7 +641,7 @@ sources:
         ),
       );
 
-      expect(result.warnings.single.message, contains('ISO 8601 datetime'));
+      expect(result.errors.single.message, contains('ISO 8601 datetime'));
     });
 
     test('an offset-bearing timestamp is accepted', () {
@@ -633,7 +681,7 @@ sources:
       );
 
       expect(
-        result.warnings.single.message,
+        result.errors.single.message,
         contains('`sources[].last_modified` must be `YYYY-MM-DD`'),
       );
     });

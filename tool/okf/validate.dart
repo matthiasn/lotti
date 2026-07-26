@@ -50,7 +50,7 @@ void main(List<String> args) {
         : '';
   }
 
-  final result = validateBundle(files);
+  final result = validateBundle(files, today: DateTime.now());
   final repoIssues = validateRepoReferences(
     files: files,
     bundleRoot: bundleRoot,

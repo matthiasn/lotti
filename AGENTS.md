@@ -112,15 +112,21 @@ Documentation is split by audience. **No fact is written twice.**
   machines, invariants, key classes, gotchas. This is the durable, agent-readable
   map of how the app actually works. Read the relevant concept *before* changing
   a subsystem, and update it in the same change.
+  [knowledge/index.md](knowledge/index.md) is the entry point: it carries the
+  reading order and the code-to-concept map.
 - **`docs/adr/` — decisions.** An ADR records a choice at a point in time and is
   not rewritten; concepts cite ADRs rather than restating them.
 
+**These concepts are derived maps, not authority.** The source code outranks
+them: if a concept contradicts the code, the concept is the defect, and fixing it
+is part of your change. Verify a claim before you depend on it.
+
 Rules for `knowledge/`:
 
-- Every concept carries OKF frontmatter: `type`, `title`, `description`,
-  `status`, `generated`, `stale_after`, and `sources` pointing at the code it
-  was derived from. See
-  [knowledge/conventions/knowledge-bundle.md](knowledge/conventions/knowledge-bundle.md).
+- Every concept carries required OKF frontmatter, and `make okf_check` fails on a
+  missing or malformed field. The field-by-field contract is in
+  [knowledge/conventions/knowledge-bundle.md](knowledge/conventions/knowledge-bundle.md)
+  — follow it there rather than from memory.
 - Do **not** set `verified` on a concept you wrote. That field records
   independent confirmation by someone other than the author.
 - Use Mermaid diagrams generously for flows, architecture, data movement and
@@ -142,13 +148,16 @@ Rules for `knowledge/`:
 ## Localization (l10n)
 - All user-visible label texts MUST be localized using arb files in `lib/l10n/`.
 - Never hardcode strings that users will see — add them to the arb files instead.
-- Add new labels to all arb files: `app_en.arb` (primary), `app_cs.arb`, `app_de.arb`, `app_es.arb`, `app_fr.arb`, `app_ro.arb`.
-- Only add to `app_en_GB.arb` if the spelling differs from US English.
+- **Add every new label to all twelve catalogs**, translated. The full list, the
+  `app_en_GB.arb` exception and the informal-register rules live in
+  [knowledge/conventions/localization.md](knowledge/conventions/localization.md)
+  — that concept is the single source of truth, so read it rather than trusting a
+  list pasted anywhere else.
 - Access localized strings via `context.messages.labelName` (import `app_localizations_context.dart`).
 - After adding labels, run `make l10n` to generate the Dart files.
 - Run `make sort_arb_files` to keep arb files consistently sorted.
 - **NEVER edit the generated `lib/l10n/app_localizations_*.dart` files directly** — always edit the `.arb` source files and regenerate.
-- **Use informal tone** in all translations. The app addresses users informally: German uses "du/deine" (not "Sie/Ihre"), French uses "tu/tes" (not "vous/vos"), Spanish uses "tú/tus" (not "usted/sus"). Romanian is an exception — it uses the formal "dvs." register consistently.
+- **Use informal tone** in all translations: German "du/deine" (not "Sie/Ihre"), French "tu/tes" (not "vous/vos"), Spanish "tú/tus" (not "usted/sus"). Romanian is the exception — it uses the formal "dvs." register consistently.
 
 ## Implementation discipline
 

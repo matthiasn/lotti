@@ -27,13 +27,15 @@ There are **twelve** catalogs: `app_en.arb` (primary) plus `cs`, `da`, `de`,
 `en_GB`, `es`, `fr`, `it`, `nl`, `pt`, `ro`, `sv` — matching
 `AppLocalizations.supportedLocales`.
 
-`AGENTS.md` names a **subset** as the required edit set (`cs`, `de`, `es`, `fr`,
-`ro`), so a new label added per that instruction leaves five catalogs untouched
-and reliant on `missing_translations.txt` to surface the gap. That is the
-instruction as written, not an inference — worth knowing before assuming a new
-string reaches every locale.
+**A new label goes into every one of them.** All twelve are shipped locales, so a
+label added to a subset is a visible English island for the users of the rest.
+Translate as you add; do not leave the gap for someone else to find later.
 
-`app_en_GB.arb` gets an entry only when the spelling differs from US English.
+`app_en_GB.arb` is the one exception, and only in one direction: it gets an entry
+when the spelling differs from US English, and nothing when it does not.
+
+`missing_translations.txt` is the backstop that reports what slipped through, not
+the plan.
 
 Access is through `context.messages.labelName`.
 

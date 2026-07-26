@@ -1,5 +1,15 @@
 # Knowledge Bundle Update Log
 
+## 2026-07-26
+* **Update**: Raised the house-rule metadata checks from warnings to errors, so
+  a concept missing a description, a freshness date or code provenance now fails
+  CI rather than being reported and ignored. What stays a warning is what OKF is
+  deliberately permissive about — a link to knowledge not written yet — plus a
+  concept whose `stale_after` has passed, which is now reported.
+* **Update**: Gave [the root index](index.md) a reading order, an authority
+  hierarchy and a code-to-concept map for the shared trees under `lib/` that have
+  no README of their own.
+
 ## 2026-07-25
 * **Initialization**: Established the OKF v0.2 bundle at `knowledge/`, with the
   conformance validator in `tool/okf/`, the `make okf_check` target, a CI

@@ -4,9 +4,10 @@
 /// The spec is at
 /// https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md.
 /// This validator enforces the three normative conformance rules of §11 as
-/// [Severity.error], and reports the SHOULD-level guidance of §4, §5, §7 and
-/// §9 as [Severity.warning] so the bundle stays useful without the checker
-/// rejecting documents the spec says must be tolerated.
+/// [Severity.error], and — because this repository treats the metadata that
+/// makes drift detectable as mandatory rather than advisory — raises the
+/// SHOULD-level guidance of §4, §5 and §7 to an error too. See [_houseRule] for
+/// what that covers and [Severity.warning] for the narrow set left advisory.
 ///
 /// The validator is deliberately dependency-light and filesystem-agnostic:
 /// [validateBundle] takes an in-memory map of relative path to file contents so
@@ -20,12 +21,26 @@ import 'package:yaml/yaml.dart';
 
 /// How badly a [OkfIssue] breaks the spec.
 enum Severity {
-  /// Violates a normative MUST in §11. The bundle is not conformant.
+  /// Violates a normative MUST in §11, or a house rule this repo requires.
+  /// The bundle is not conformant and CI fails.
   error,
 
-  /// Violates a SHOULD, or a repo-local convention layered on top of OKF.
+  /// Advisory. Either OKF is deliberately permissive here — a link to knowledge
+  /// that has not been written yet is legitimate (§6.1) — or the signal is not
+  /// something the change under review caused, like a concept whose
+  /// `stale_after` has passed.
   warning,
 }
+
+/// Severity for metadata this repository requires but OKF only recommends.
+///
+/// The spec grades a missing `description`, freshness date or source list as a
+/// SHOULD. This bundle fails the build on them, because a concept without them
+/// is exactly the one whose drift nobody can detect: no description to show in
+/// an index, no date to reason about, and nothing for the anti-drift check to
+/// resolve. Treating them as warnings meant the rules that keep the map honest
+/// were the only ones CI did not enforce.
+const Severity _houseRule = Severity.error;
 
 /// A single problem found in a bundle.
 class OkfIssue {
@@ -90,14 +105,14 @@ const reservedFilenames = {'index.md', 'log.md'};
 /// The OKF version this validator understands.
 const okfVersion = '0.2';
 
-/// Frontmatter keys the repo asks every concept to carry.
+/// Frontmatter keys every concept must carry.
 ///
 /// `type` is the spec's only hard requirement (§4.1); the rest are `SHOULD`s
-/// that this repo treats as house style so agents always find a description to
-/// show, a freshness date to reason about, and the code the concept was derived
-/// from. `stale_after` and `sources` are in here rather than only validated
-/// when present, because a concept that omits them is exactly the one whose
-/// drift nobody can detect.
+/// that this repo raises to a [_houseRule] error, so agents always find a
+/// description to show, a freshness date to reason about, and the code the
+/// concept was derived from. `stale_after` and `sources` are in here rather than
+/// only validated when present, because a concept that omits them is exactly the
+/// one whose drift nobody can detect.
 const _requiredHouseKeys = {
   'title',
   'description',
@@ -306,7 +321,15 @@ OkfDocument splitDocument(String content) {
 /// [files] maps bundle-relative POSIX paths (`features/sync.md`) to file
 /// contents. Only `.md` files are inspected; other paths are still used to
 /// resolve links, so pass the full file listing when link checking matters.
-OkfValidationResult validateBundle(Map<String, String> files) {
+///
+/// [today] is the day expiry is measured against: a concept whose `stale_after`
+/// has passed is reported as a warning. It is a parameter rather than a
+/// `DateTime.now()` call so the check is deterministic under test; when omitted,
+/// expiry is not checked at all.
+OkfValidationResult validateBundle(
+  Map<String, String> files, {
+  DateTime? today,
+}) {
   final issues = <OkfIssue>[];
   final markdownPaths = files.keys.where((p) => p.endsWith('.md')).toList()
     ..sort();
@@ -339,7 +362,7 @@ OkfValidationResult validateBundle(Map<String, String> files) {
     }
 
     conceptCount++;
-    issues.addAll(_validateConcept(path, content, knownPaths));
+    issues.addAll(_validateConcept(path, content, knownPaths, today));
   }
 
   return OkfValidationResult(issues: issues, conceptCount: conceptCount);
@@ -349,6 +372,7 @@ List<OkfIssue> _validateConcept(
   String path,
   String content,
   Set<String> knownPaths,
+  DateTime? today,
 ) {
   final issues = <OkfIssue>[];
   final document = splitDocument(content);
@@ -416,7 +440,7 @@ List<OkfIssue> _validateConcept(
     if (!frontmatter.containsKey(key)) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message:
               'frontmatter is missing `$key`, which this bundle asks every '
@@ -432,7 +456,7 @@ List<OkfIssue> _validateConcept(
     if (frontmatter[key] == null) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message:
               '`$key` is empty; this bundle asks every concept to carry a '
@@ -448,7 +472,7 @@ List<OkfIssue> _validateConcept(
     if (value is! String || value.trim().isEmpty) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message: '`$key` must be a non-empty string, got `$value`',
         ),
@@ -460,7 +484,7 @@ List<OkfIssue> _validateConcept(
     ..addAll(_validateStatus(path, frontmatter))
     ..addAll(_validateGenerated(path, frontmatter))
     ..addAll(_validateVerified(path, frontmatter))
-    ..addAll(_validateStaleAfter(path, frontmatter))
+    ..addAll(_validateStaleAfter(path, frontmatter, today))
     ..addAll(_validateSources(path, frontmatter))
     ..addAll(_validateAttestedComputation(path, frontmatter, document.body))
     ..addAll(_validateBundleLinks(path, document.body, knownPaths))
@@ -530,7 +554,7 @@ List<OkfIssue> _validateProvenanceLeavesBundle(
 
   return [
     OkfIssue(
-      severity: Severity.warning,
+      severity: _houseRule,
       path: path,
       message:
           'every `sources[].resource` stays inside the bundle, so the concept '
@@ -546,7 +570,7 @@ List<OkfIssue> _validateStatus(String path, YamlMap frontmatter) {
   if (status is! String || !_statusValues.contains(status)) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             '`status` must be one of ${_statusValues.join(', ')}, '
@@ -563,7 +587,7 @@ List<OkfIssue> _validateGenerated(String path, YamlMap frontmatter) {
   if (generated is! YamlMap) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message: '`generated` must be a mapping with `by` and `at` (§5.2)',
       ),
@@ -575,7 +599,7 @@ List<OkfIssue> _validateGenerated(String path, YamlMap frontmatter) {
   if (by == null) {
     issues.add(
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message: '`generated.by` is required within `generated` (§5.2)',
       ),
@@ -598,7 +622,7 @@ List<OkfIssue> _validateVerified(String path, YamlMap frontmatter) {
     if (entry is! YamlMap) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message:
               'each `verified` entry must be a `{ by, at }` mapping (§5.2)',
@@ -610,7 +634,7 @@ List<OkfIssue> _validateVerified(String path, YamlMap frontmatter) {
     if (by == null) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message: 'a `verified` entry is missing `by` (§5.2)',
         ),
@@ -623,13 +647,23 @@ List<OkfIssue> _validateVerified(String path, YamlMap frontmatter) {
   return issues;
 }
 
-List<OkfIssue> _validateStaleAfter(String path, YamlMap frontmatter) {
+/// Checks `stale_after` for shape, and — when [today] is given — for expiry.
+///
+/// Expiry is a warning rather than an error on purpose. A malformed date is
+/// something the author did; an expired one is something the calendar did, and
+/// failing an unrelated PR for it would only teach people to push the date out
+/// without re-reading the code, which is the opposite of what the field is for.
+List<OkfIssue> _validateStaleAfter(
+  String path,
+  YamlMap frontmatter,
+  DateTime? today,
+) {
   final staleAfter = frontmatter['stale_after'];
   if (staleAfter == null) return const [];
   if (!_isIsoDate(staleAfter)) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             '`stale_after` must be an absolute `YYYY-MM-DD` date, '
@@ -637,7 +671,34 @@ List<OkfIssue> _validateStaleAfter(String path, YamlMap frontmatter) {
       ),
     ];
   }
-  return const [];
+  if (today == null) return const [];
+  final deadline = _parseIsoDate(staleAfter);
+  if (deadline == null) return const [];
+  final day = DateTime.utc(today.year, today.month, today.day);
+  if (!day.isAfter(deadline)) return const [];
+  return [
+    OkfIssue(
+      severity: Severity.warning,
+      path: path,
+      message:
+          '`stale_after` passed on $staleAfter; re-read this concept against '
+          'the code and either confirm it or rewrite it (§5.5)',
+    ),
+  ];
+}
+
+/// Parses an already shape-checked `YYYY-MM-DD` value into a UTC day.
+DateTime? _parseIsoDate(Object? value) {
+  if (value is DateTime) {
+    return DateTime.utc(value.year, value.month, value.day);
+  }
+  final match = _isoDatePattern.firstMatch(value.toString());
+  if (match == null) return null;
+  return DateTime.utc(
+    int.parse(match.group(1)!),
+    int.parse(match.group(2)!),
+    int.parse(match.group(3)!),
+  );
 }
 
 List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
@@ -649,7 +710,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
     return frontmatter.containsKey('sources')
         ? [
             OkfIssue(
-              severity: Severity.warning,
+              severity: _houseRule,
               path: path,
               message:
                   '`sources` is present but null; a concept needs at '
@@ -661,7 +722,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
   if (sources is! YamlList) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message: '`sources` must be a list of entries (§5.1)',
       ),
@@ -670,7 +731,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
   if (sources.isEmpty) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             '`sources` is empty; a concept needs at least one source to '
@@ -685,7 +746,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
     if (entry is! YamlMap) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message: 'each `sources` entry must be a mapping (§5.1)',
         ),
@@ -699,7 +760,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
     if (resource is! String || resource.trim().isEmpty) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message: resource == null
               ? '`resource` is required within a `sources` entry (§5.1)'
@@ -712,7 +773,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
     if (id is String && !seenIds.add(id)) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message:
               'duplicate `sources[].id` `$id`; footnote attribution joins '
@@ -724,7 +785,7 @@ List<OkfIssue> _validateSources(String path, YamlMap frontmatter) {
     if (lastModified != null && !_isIsoDate(lastModified)) {
       issues.add(
         OkfIssue(
-          severity: Severity.warning,
+          severity: _houseRule,
           path: path,
           message:
               '`sources[].last_modified` must be `YYYY-MM-DD`, '
@@ -796,7 +857,7 @@ List<OkfIssue> _validateActor(String path, Object? actor, String label) {
   if (actor is! String || !_actorPattern.hasMatch(actor)) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             '$label `$actor` does not follow the actor convention '
@@ -811,7 +872,7 @@ List<OkfIssue> _validateDateTime(String path, Object? value, String label) {
   if (value == null) {
     return [
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             '$label is missing; consumers use it to tell a recent edit '
@@ -823,7 +884,7 @@ List<OkfIssue> _validateDateTime(String path, Object? value, String label) {
   if (value is String && _isRealIsoDateTime(value)) return const [];
   return [
     OkfIssue(
-      severity: Severity.warning,
+      severity: _houseRule,
       path: path,
       message:
           '$label must be an ISO 8601 datetime such as '
@@ -901,7 +962,7 @@ List<OkfIssue> _validateIndex(
           // whole block is missing.
           issues.add(
             OkfIssue(
-              severity: Severity.warning,
+              severity: _houseRule,
               path: path,
               message:
                   'root index.md frontmatter declares no `okf_version`, so '
@@ -911,7 +972,7 @@ List<OkfIssue> _validateIndex(
         } else if (declared.toString() != okfVersion) {
           issues.add(
             OkfIssue(
-              severity: Severity.warning,
+              severity: _houseRule,
               path: path,
               message:
                   'bundle declares okf_version `$declared` but this '
@@ -924,7 +985,7 @@ List<OkfIssue> _validateIndex(
   } else if (path == 'index.md') {
     issues.add(
       OkfIssue(
-        severity: Severity.warning,
+        severity: _houseRule,
         path: path,
         message:
             'root index.md should declare `okf_version: "$okfVersion"` so '
