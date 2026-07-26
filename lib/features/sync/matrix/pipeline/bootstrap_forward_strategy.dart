@@ -110,6 +110,34 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   }
   final anchorTs = TimelineEventOrdering.timestamp(anchor);
 
+  // What the context actually returned. A forward walk that emits nothing is
+  // indistinguishable from a healthy "already at the tip" unless we can see
+  // whether the server gave us events after the anchor at all, and whether it
+  // handed back a forward token. `anchorTs == newestTs` is the signature of a
+  // genuinely caught-up device; a missing forward window is not.
+  //
+  // Unguarded on purpose. Dart builds the message eagerly, so this scan runs
+  // even when the sync domain is disabled — but the list is one `/context`
+  // window (`Room.defaultHistoryCount` is 30) and we have just paid for the
+  // network round trip that produced it, so the cost is noise. Guarding on
+  // `DomainLogger.enabledDomains` would couple this to logger internals and
+  // trade real cost for none.
+  num? newestTs;
+  for (final event in timeline.events) {
+    final ts = TimelineEventOrdering.timestamp(event);
+    if (newestTs == null || ts > newestTs) newestTs = ts;
+  }
+  logging.log(
+    LogDomain.sync,
+    'bootstrap.forward.context '
+    'anchor=$anchorEventId '
+    'events=${timeline.events.length} '
+    'canRequestFuture=${timeline.canRequestFuture} '
+    'anchorTs=$anchorTs '
+    'newestTs=$newestTs',
+    subDomain: 'bootstrap.forward',
+  );
+
   var pageIndex = 0;
   var totalEventsSoFar = 0;
   num? newestTsSoFar;

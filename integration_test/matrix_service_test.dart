@@ -10,6 +10,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
@@ -163,6 +164,143 @@ Future<MatrixService> _createMatrixService({
   );
 }
 
+/// Domain logger that echoes sync-pipeline lines to test stdout.
+///
+/// The pipeline is silent under test for two independent reasons, and both
+/// have to be defeated to see anything:
+///
+///  * `DomainLogger.enabledDomains` starts empty, so every
+///    `log(LogDomain.sync, ...)` is a no-op unless a domain is added;
+///  * `LoggingService._enableLogging` is `!isTestEnv`, so `captureEvent`
+///    returns early under `FLUTTER_TEST` even when a domain is enabled.
+///
+/// The consequence is that the catch-up bridge — its mode, its page counts,
+/// its give-up ladder, and the exceptions `saveRoom.bootstrap` swallows —
+/// leaves no trace in an integration run. A failing test then shows only that
+/// nothing arrived, with no way to tell "never ran" from "ran and found
+/// nothing" from "threw". This class closes that gap without touching
+/// production logging.
+class _EchoDomainLogger extends DomainLogger {
+  _EchoDomainLogger({required super.loggingService}) {
+    enabledDomains.add(LogDomain.sync);
+  }
+
+  /// Sub-domains worth echoing. Everything in the sync domain would drown the
+  /// per-message traffic of a 250-event burst.
+  static const _interesting = <String>[
+    'queue.bridge',
+    'queue.bootstrap',
+    'queue.coordinator',
+    'bootstrap',
+    'saveRoom',
+  ];
+
+  bool _wanted(String? subDomain) =>
+      subDomain != null && _interesting.any(subDomain.startsWith);
+
+  @override
+  void log(
+    LogDomain domain,
+    String message, {
+    String? subDomain,
+    InsightLevel level = InsightLevel.info,
+  }) {
+    if (domain == LogDomain.sync && _wanted(subDomain)) {
+      debugPrint('[sync] $subDomain :: $message');
+    }
+    super.log(domain, message, subDomain: subDomain, level: level);
+  }
+
+  @override
+  void error(
+    LogDomain domain,
+    Object error, {
+    StackTrace? stackTrace,
+    String? subDomain,
+    String? message,
+  }) {
+    // Errors always echo. `saveRoom.bootstrap` and `queue.bridge.*` swallow
+    // exceptions into this method, so a silenced logger turns a thrown
+    // bootstrap into an indistinguishable no-op.
+    debugPrint('[sync][ERROR] ${subDomain ?? '-'} :: $error');
+    super.error(
+      domain,
+      error,
+      stackTrace: stackTrace,
+      subDomain: subDomain,
+      message: message,
+    );
+  }
+}
+
+/// Thrown when a convergence wait detects that nothing can still be in
+/// progress, so waiting out the full timeout would only burn CI time.
+class _SyncStalledException implements Exception {
+  _SyncStalledException(this.message);
+  final String message;
+  @override
+  String toString() => 'SyncStalled: $message';
+}
+
+/// Fails fast when sync has demonstrably stopped rather than merely being slow.
+///
+/// A device that is catching up always has *something* outstanding: rows in
+/// the inbound queue, or a bridge walk in flight. When the journal count has
+/// not moved for [stallWindow] AND the queue is empty AND no bridge is
+/// running, nothing is going to arrive — the remaining wait is dead time.
+///
+/// The degraded-network job used to spend the full 15-minute convergence
+/// timeout in exactly that state, on every branch, turning a ~6 minute suite
+/// into a ~21 minute one. Detecting the stall keeps the failure (it is a real
+/// bug) while returning the diagnosis in seconds.
+Future<void> throwIfStalled({
+  required MatrixService device,
+  required int currentCount,
+  required int lastCount,
+  required Stopwatch sinceLastProgress,
+  Duration stallWindow = const Duration(seconds: 90),
+  Duration warnWindow = const Duration(seconds: 20),
+}) async {
+  if (currentCount != lastCount) {
+    sinceLastProgress
+      ..reset()
+      ..start();
+    return;
+  }
+  if (sinceLastProgress.elapsed < warnWindow) return;
+
+  final coord = device.queueCoordinator;
+  final stats = await coord.queue.stats();
+  final quiet = stats.total == 0 && !coord.isBridgeInFlight;
+
+  // Below the failing threshold, report rather than fail. Healthy degraded
+  // runs have been measured going 62s without the journal count moving, so
+  // the window cannot be tightened on elapsed time alone — what decides it is
+  // whether the queue is also empty during those gaps. These lines answer
+  // that from real runs, so the threshold can be lowered on evidence.
+  if (sinceLastProgress.elapsed < stallWindow) {
+    debugPrint(
+      '[stall-probe] no progress for '
+      '${sinceLastProgress.elapsed.inSeconds}s at $currentCount entries; '
+      'quiet=$quiet queue[total=${stats.total} ready=${stats.readyNow}] '
+      'bridgeInFlight=${coord.isBridgeInFlight}',
+    );
+    return;
+  }
+
+  if (!quiet) return;
+
+  throw _SyncStalledException(
+    'no progress for ${sinceLastProgress.elapsed.inSeconds}s at '
+    '$currentCount entries, with an empty inbound queue and no bridge in '
+    'flight. Nothing is outstanding, so the remaining wait cannot help. '
+    'queue[total=${stats.total} ready=${stats.readyNow} '
+    'byProducer=${stats.byProducer}] '
+    'bridgeInFlight=${coord.isBridgeInFlight} '
+    'currentRoomId=${device.syncRoomId}',
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -286,7 +424,7 @@ void main() {
         ..registerSingleton<Directory>(sharedDocumentsDirectory)
         ..registerSingleton<LoggingService>(sharedLoggingService)
         ..registerSingleton<DomainLogger>(
-          DomainLogger(loggingService: sharedLoggingService),
+          _EchoDomainLogger(loggingService: sharedLoggingService),
         )
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<UserActivityService>(sharedUserActivityService)
@@ -635,6 +773,20 @@ void main() {
         // catch-up pagination time for the backlog)
         await Future<void>.delayed(const Duration(seconds: 5));
 
+        // Count real bridge completions. The metrics block printed below is
+        // NOT a substitute: `catchupBatches`, `processed`, `skipped`,
+        // `failures`, `flushes`, `retriesScheduled` and `circuitOpens` all
+        // have zero call sites in lib/ — they are structurally zero whatever
+        // sync does, and reading one as evidence is how this failure was
+        // misdiagnosed. Only `dbApplied` is wired.
+        var bridgeCompletions = 0;
+        final priorOnBridgeCompleted = bob.queueCoordinator.onBridgeCompleted;
+        bob.queueCoordinator.onBridgeCompleted = () {
+          bridgeCompletions++;
+          debugPrint('[probe] bridge completed #$bridgeCompletions');
+          priorOnBridgeCompleted?.call();
+        };
+
         Future<String> queueSnapshot() async {
           final coord = bob.queueCoordinator;
           final stats = await coord.queue.stats();
@@ -642,6 +794,8 @@ void main() {
               'byProducer=${stats.byProducer} '
               'oldestEnqueuedAt=${stats.oldestEnqueuedAt}] '
               'coord.running=${coord.isRunning} '
+              'bridgeInFlight=${coord.isBridgeInFlight} '
+              'bridgeCompletions=$bridgeCompletions '
               'currentRoomId=${bob.syncRoomId} '
               'syncRoom=${bob.syncRoom != null}';
         }
@@ -653,6 +807,8 @@ void main() {
         debugPrint('Bob ${await queueSnapshot()}');
 
         var lastBobCount = -1;
+        var stallProbeLastCount = -1;
+        final sinceLastProgress = Stopwatch()..start();
         await waitUntilAsync(
           () async {
             final currentCount = await bobDb.getJournalCount();
@@ -667,6 +823,13 @@ void main() {
             }
             // No manual forceRescan/retryNow — the pipeline must
             // self-drive catch-up through its signal-driven architecture.
+            await throwIfStalled(
+              device: bob,
+              currentCount: currentCount,
+              lastCount: stallProbeLastCount,
+              sinceLastProgress: sinceLastProgress,
+            );
+            stallProbeLastCount = currentCount;
             if (currentCount < expectedTotal) {
               // Log metrics every ~30s to diagnose stalls
               final elapsed = catchupStopwatch.elapsed.inSeconds;
@@ -907,6 +1070,8 @@ void main() {
         debugPrint('\n--- Phase 6: waiting for Bob to converge to $n new');
         final expectedTotal = bobCountBefore + n;
         var lastBobCount = -1;
+        var stallProbeLastCount = -1;
+        final sinceLastProgress = Stopwatch()..start();
         await waitUntilAsync(
           () async {
             final currentCount = await bobDb.getJournalCount();
@@ -918,6 +1083,13 @@ void main() {
               );
               lastBobCount = currentCount;
             }
+            await throwIfStalled(
+              device: bob,
+              currentCount: currentCount,
+              lastCount: stallProbeLastCount,
+              sinceLastProgress: sinceLastProgress,
+            );
+            stallProbeLastCount = currentCount;
             if (currentCount < expectedTotal) {
               final elapsed = catchupStopwatch.elapsed.inSeconds;
               if (elapsed > 0 && elapsed % 30 == 0) {
