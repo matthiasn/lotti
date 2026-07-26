@@ -11,7 +11,7 @@ sources:
   - id: sections
     resource: ../../../lib/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart
     title: Prompt section tags
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: week-context
     resource: ../../../lib/features/daily_os_next/agents/domain/week_context.dart
     title: Week-context renderer
@@ -19,15 +19,15 @@ sources:
   - id: memory-links
     resource: ../../../lib/features/agents/memory/memory_links.dart
     title: Author-time memory links
-    last_modified: 2026-07-25
+    last_modified: 2026-06-09
   - id: adr-0028
     resource: ../../../docs/adr/0028-tagged-plaintext-payload-and-day-summaries.md
     title: ADR 0028 — Tagged plaintext payload and day summaries
-    last_modified: 2026-07-24
+    last_modified: 2026-06-11
   - id: adr-0026
     resource: ../../../docs/adr/0026-author-time-memory-links.md
     title: ADR 0026 — Author-time memory links
-    last_modified: 2026-07-24
+    last_modified: 2026-06-09
 ---
 
 # The payload is tagged plaintext, not JSON

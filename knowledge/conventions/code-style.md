@@ -11,7 +11,7 @@ sources:
   - id: analysis
     resource: ../../analysis_options.yaml
     title: Analyzer configuration
-    last_modified: 2026-06-21
+    last_modified: 2026-06-20
   - id: agents-md
     resource: ../../AGENTS.md
     title: Repository guidelines

@@ -11,11 +11,11 @@ sources:
   - id: task
     resource: ../../../lib/classes/task.dart
     title: Task and TaskData
-    last_modified: 2026-07-22
+    last_modified: 2026-06-20
   - id: progress
     resource: ../../../lib/features/tasks/repository/task_progress_repository.dart
     title: TaskProgressRepository
-    last_modified: 2026-07-25
+    last_modified: 2026-07-12
 ---
 
 # `TaskData`

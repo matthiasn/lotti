@@ -5,13 +5,13 @@ description: The single declarative settings tree and its two renderings, with r
 resource: ../../lib/features/settings_v2
 tags: [settings, navigation, tree, declarative]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T10:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-26T12:30:00Z }
 stale_after: 2027-03-08
 sources:
   - id: src
     resource: ../../lib/features/settings_v2
     title: Settings v2 source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 `settings_v2` is **the single declarative source of truth for the settings menu
@@ -21,11 +21,27 @@ lists: the entire menu is declared once as a flag-gated tree
 
 The name is not a migration in progress. `settings_v2` **defines** the tree and
 renders the desktop tree-nav; [`settings`](settings.md) is the **shell** that
-turns a URL into pages and hosts the editor kit. Both are current. Adding a
-settings page touches three places: a node in `buildSettingsTree`, its canonical
-URL in `settingsNodeUrls` — both here — and a matching entry in
-`SettingsLocation.pathPatterns`, which lives with
-[the router](../architecture/navigation.md).
+turns a URL into pages and hosts the editor kit. Both are current.
+
+# Adding a page touches five places
+
+Each one fails differently, and three of the five fail *silently* — which is why
+the count is worth stating:
+
+| Place | If you skip it |
+|-------|----------------|
+| A node in `buildSettingsTree` | The entry does not exist |
+| A `(title, desc)` case in `settingsTreeLabelsFor` | The row renders its **raw node id** as its title — deliberate, so authoring mistakes surface instead of crashing |
+| A spec in `kSettingsPanels` | The desktop pane silently renders `DefaultPanel` |
+| A path in `settingsNodeUrls` | Tapping the node cannot resolve a URL to beam to |
+| A pattern in `SettingsLocation.pathPatterns` ([the router](../architecture/navigation.md)) | The URL does not route |
+
+**`settingsNodeUrls` is not universal.** It carries every node that
+`pathPatterns` exposes as a navigable destination — `whats-new` is deliberately
+absent, because it opens as an in-pane panel and never changes the URL. And a
+node id must stay a single tree segment: `sync/matrix-maintenance` keeps a hyphen
+where its URL uses a slash, because `sync/matrix/maintenance` would imply a
+`sync/matrix` parent that does not exist.
 
 | Surface | Rendering |
 |---------|-----------|

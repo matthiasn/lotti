@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../../lib/features/ai/ui/settings
     title: AI settings UI source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 The AI settings page renders as **one `CustomScrollView`** in which **nothing is

@@ -24,9 +24,16 @@ Working on a subsystem, in order:
 3. **The concept here** — how it actually works: flows, state machines,
    invariants, the classes that matter, the gotchas. Start at the feature's
    `index.md` when it has one and read only the parts you need.
-4. **[`docs/adr/`](../docs/adr)** — why it was decided this way, when a concept
+4. **The [convention](conventions/) that governs what you are about to do** —
+   before writing a test, adding a user-visible string, or touching visual code.
+   [Testing](conventions/testing.md) for the test harness and the vacuous-pass
+   traps (with [`test/README.md`](../test/README.md) for fake time),
+   [localization](conventions/localization.md) for ARB catalogues and register,
+   [code style](conventions/code-style.md) and
+   [the design system](features/design_system/) for tokens instead of literals.
+   These are rules, not descriptions: skipping them means rework.
+5. **[`docs/adr/`](../docs/adr)** — why it was decided this way, when a concept
    cites an ADR and you need the reasoning rather than the mechanism.
-5. **[`test/README.md`](../test/README.md)** — before writing a test, always.
 
 Then, while you work: **verify any claim you are about to depend on against the
 source.** These concepts are agent-written maps of a moving codebase, and a map

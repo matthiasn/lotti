@@ -15,7 +15,7 @@ sources:
   - id: db
     resource: ../../lib/database/database.dart
     title: JournalDb — the storage side
-    last_modified: 2026-07-25
+    last_modified: 2026-07-22
 ---
 
 # One union, sixteen variants
@@ -122,6 +122,12 @@ Two consequences worth stating:
 - **Deletion is a stamp, not a row removal.** That is what makes "deleted"
   distinguishable from "never existed" on a peer, and it is the same pattern the
   [AI config lifecycle](../features/ai/seeding-and-lifecycle.md) adopted later.
+- **But the tombstone is not permanent.** `JournalDb.purgeDeleted` — reachable
+  from *Settings → Advanced → Maintenance*, and irreversible by its own
+  confirmation copy — hard-deletes every row flagged `deleted`, along with their
+  files. After a purge this device can no longer tell "deleted" from "never
+  existed", so do not build a sync or backup invariant on the tombstone always
+  being there.
 
 # Where variant data lives
 

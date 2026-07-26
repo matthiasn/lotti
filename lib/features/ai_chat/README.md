@@ -39,7 +39,7 @@ persistence.
 
 ```text
 lib/features/ai_chat/
-├── model/ · repository/ · state/
+├── models/ · repository/ · services/ · ui/
 └── ui/
 ```
 

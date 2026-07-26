@@ -11,11 +11,11 @@ sources:
   - id: src
     resource: ../../lib/features/categories
     title: Categories feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: CategoryDefinition
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 Categories are persisted `CategoryDefinition` entities. The feature does three

@@ -11,15 +11,15 @@ sources:
   - id: controller
     resource: ../../../lib/features/journal/state/entry_controller.dart
     title: EntryController
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: datetime
     resource: ../../../lib/features/journal/ui/widgets/entry_details/entry_datetime_range.dart
     title: EntryDateTimeRange
-    last_modified: 2026-07-25
+    last_modified: 2026-07-15
   - id: editor-service
     resource: ../../../lib/services/editor_state_service.dart
     title: EditorStateService
-    last_modified: 2026-07-20
+    last_modified: 2026-06-21
 ---
 
 `EntryController` is the detail-side brain for **one** entry. It loads the

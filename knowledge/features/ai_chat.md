@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/ai_chat
     title: AI chat feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 AI chat is Lotti's interactive question-and-answer surface **over task history**.

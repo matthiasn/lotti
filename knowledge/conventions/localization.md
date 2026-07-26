@@ -11,11 +11,11 @@ sources:
   - id: l10n
     resource: ../../lib/l10n
     title: ARB catalogs and generated localizations
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: config
     resource: ../../l10n.yaml
     title: Localization generation config
-    last_modified: 2026-07-25
+    last_modified: 2025-08-16
 ---
 
 # The rule

@@ -15,7 +15,7 @@ sources:
   - id: typography
     resource: ../../../lib/features/design_system/theme/typography_helpers.dart
     title: Calm typography helpers
-    last_modified: 2026-07-25
+    last_modified: 2026-07-17
   - id: onboarding-state
     resource: ../../../lib/features/daily_os_next/state
     title: Onboarding session and trigger services

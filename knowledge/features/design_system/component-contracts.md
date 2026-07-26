@@ -15,7 +15,7 @@ sources:
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
-    last_modified: 2026-07-26
+    last_modified: 2026-06-12
 ---
 
 # Token-first sizing and styling

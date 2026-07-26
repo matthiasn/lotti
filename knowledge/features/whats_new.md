@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/whats_new
     title: What's New source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 What's New turns release notes into an in-app editorial surface instead of a

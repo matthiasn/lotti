@@ -11,15 +11,15 @@ sources:
   - id: src
     resource: ../../lib/features/insights
     title: Insights feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: queries
     resource: ../../lib/database/database_insights_queries.dart
     title: insightsTimeRows
-    last_modified: 2026-07-25
+    last_modified: 2026-07-09
   - id: adr-0025
     resource: ../../docs/adr/0025-insights-time-analysis-data-layer.md
     title: ADR 0025 — Insights time-analysis data layer
-    last_modified: 2026-07-24
+    last_modified: 2026-06-07
 ---
 
 A full-screen time-analysis dashboard at `/calendar/time`, answering three

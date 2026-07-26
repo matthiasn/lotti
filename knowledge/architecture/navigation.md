@@ -15,7 +15,7 @@ sources:
   - id: beamer-delegates
     resource: ../../lib/beamer/beamer_delegates.dart
     title: Per-tab BeamerDelegate definitions
-    last_modified: 2026-07-24
+    last_modified: 2026-06-21
   - id: nav-service
     resource: ../../lib/services/nav_service.dart
     title: NavService — tab index and delegate registry

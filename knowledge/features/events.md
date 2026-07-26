@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/events
     title: Events feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 Events are the meaningful moments — a birthday, a trip, a wedding, an upcoming

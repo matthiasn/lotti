@@ -11,19 +11,19 @@ sources:
   - id: node-profile
     resource: ../../../lib/features/sync/model/sync_node_profile.dart
     title: SyncNodeProfile
-    last_modified: 2026-07-25
+    last_modified: 2026-06-22
   - id: probe
     resource: ../../../lib/features/sync/services/sync_node_capability_probe.dart
     title: Capability probe
-    last_modified: 2026-07-25
+    last_modified: 2026-06-20
   - id: dispatcher
     resource: ../../../lib/features/sync/services/synced_audio_inference_dispatcher.dart
     title: SyncedAudioInferenceDispatcher
-    last_modified: 2026-07-25
+    last_modified: 2026-07-18
   - id: broadcaster
     resource: ../../../lib/features/sync/services/sync_node_profile_broadcaster.dart
     title: SyncNodeProfileBroadcaster
-    last_modified: 2026-07-25
+    last_modified: 2026-05-31
 ---
 
 # The goal

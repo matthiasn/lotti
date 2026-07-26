@@ -15,7 +15,7 @@ sources:
   - id: processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
   - id: tuning
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning

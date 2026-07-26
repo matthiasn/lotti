@@ -2,32 +2,40 @@
 type: Feature Module
 title: Agent memory and log compaction
 description: The append-only input event log, LLM-distilled summary checkpoints, the byte-stable prompt prefix invariant, state-as-projection, and fork healing.
-resource: ../../../lib/features/agents/memory
+resource: ../../../lib/features/agents/projection
 tags: [agents, memory, compaction, event-log, prefix-cache]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
 stale_after: 2026-10-12
 sources:
+  - id: projection
+    resource: ../../../lib/features/agents/projection
+    title: Event log, input capture, checkpoint selection, the pure fold
+    last_modified: 2026-07-26
+  - id: summarizer
+    resource: ../../../lib/features/agents/service/agent_log_llm_summarizer.dart
+    title: Summary checkpoint writer
+    last_modified: 2026-07-21
   - id: agents-src
     resource: ../../../lib/features/agents
     title: Agents feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: adr-0017
     resource: ../../../docs/adr/0017-deterministic-log-compaction.md
     title: ADR 0017 — Deterministic log compaction
-    last_modified: 2026-07-24
+    last_modified: 2026-06-09
   - id: adr-0020
     resource: ../../../docs/adr/0020-agent-input-capture.md
     title: ADR 0020 — Agent input capture
-    last_modified: 2026-07-24
+    last_modified: 2026-06-05
   - id: adr-0016
     resource: ../../../docs/adr/0016-agent-state-as-log-projection.md
     title: ADR 0016 — Agent state as log projection
-    last_modified: 2026-07-24
+    last_modified: 2026-06-05
   - id: adr-0018
     resource: ../../../docs/adr/0018-convergent-multi-device-execution.md
     title: ADR 0018 — Convergent multi-device execution
-    last_modified: 2026-07-24
+    last_modified: 2026-06-05
 ---
 
 # There is no memory blob

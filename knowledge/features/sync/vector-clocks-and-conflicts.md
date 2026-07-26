@@ -15,15 +15,15 @@ sources:
   - id: vc-service
     resource: ../../../lib/services/vector_clock_service.dart
     title: VectorClockService
-    last_modified: 2026-07-20
+    last_modified: 2026-05-31
   - id: conflict-resolution
     resource: ../../../lib/features/sync/state/conflict_resolution_service.dart
     title: ConflictResolutionService
-    last_modified: 2026-07-25
+    last_modified: 2026-06-20
   - id: entry-diff
     resource: ../../../lib/features/sync/ui/widgets/conflicts/entry_field_diff.dart
     title: computeEntryDiff
-    last_modified: 2026-07-25
+    last_modified: 2026-06-20
 ---
 
 # What a vector clock is here

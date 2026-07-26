@@ -6,12 +6,12 @@ resource: ../../lib/features/character
 tags: [character, animation, skeletal, deterministic]
 status: draft
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:15:00Z }
-stale_after: 2027-07-19
+stale_after: 2027-03-15
 sources:
   - id: src
     resource: ../../lib/features/character
     title: Character animation source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 Programmatic 2D skeletal animation: a rigged character — skeleton plus face —

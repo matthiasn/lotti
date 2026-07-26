@@ -11,11 +11,11 @@ sources:
   - id: consumption
     resource: ../../../lib/features/ai_consumption
     title: AI consumption feature — audit model and ledger
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner attribution sessions
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
 ---
 
 # The boundary

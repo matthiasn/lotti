@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/checklist
     title: Checklist corrections source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 This feature is small and focused, and **it does not own the checklist UI** — the

@@ -11,11 +11,11 @@ sources:
   - id: resolver
     resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
     title: TaskDependencyResolver
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Prompt gates
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: adr-0042
     resource: ../../../docs/adr/0042-typed-task-relationship-links.md
     title: ADR 0042 — Typed task relationship links

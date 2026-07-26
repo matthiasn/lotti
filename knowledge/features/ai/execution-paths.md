@@ -11,7 +11,7 @@ sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: automation
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
     title: ProfileAutomationService
@@ -19,11 +19,11 @@ sources:
   - id: prompt-builder
     resource: ../../../lib/features/ai/helpers/skill_prompt_builder.dart
     title: SkillPromptBuilder
-    last_modified: 2026-07-25
+    last_modified: 2026-06-27
   - id: unified
     resource: ../../../lib/features/ai/repository/unified_ai_inference_repository.dart
     title: UnifiedAiInferenceRepository (legacy prompt path)
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
 ---
 
 # Two systems coexist

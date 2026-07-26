@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/widgets
     title: Shared widgets source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 `lib/widgets/` holds the reusable widgets that belong to no single feature.

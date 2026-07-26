@@ -11,11 +11,11 @@ sources:
   - id: src
     resource: ../../lib/features/labels
     title: Labels feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: repo
     resource: ../../lib/features/labels/repository/labels_repository.dart
     title: LabelsRepository — the write boundary
-    last_modified: 2026-07-25
+    last_modified: 2026-06-16
 ---
 
 Labels are the app's lightweight taxonomy: more flexible than a single status,

@@ -11,23 +11,23 @@ sources:
   - id: workflow
     resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
     title: TaskAgentWorkflow
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: strategy
     resource: ../../../lib/features/agents/workflow/task_agent_strategy.dart
     title: TaskAgentStrategy
-    last_modified: 2026-07-25
+    last_modified: 2026-07-12
   - id: confirmation
     resource: ../../../lib/features/agents/service/change_set_confirmation_service.dart
     title: ChangeSetConfirmationService
-    last_modified: 2026-07-25
+    last_modified: 2026-06-13
   - id: adr-0004
     resource: ../../../docs/adr/0004-task-agent-tool-execution-policy.md
     title: ADR 0004 — Task agent tool execution policy
-    last_modified: 2026-07-24
+    last_modified: 2026-04-19
   - id: adr-0006
     resource: ../../../docs/adr/0006-change-set-deferred-tool-confirmation.md
     title: ADR 0006 — Change set deferred tool confirmation
-    last_modified: 2026-07-24
+    last_modified: 2026-02-28
 ---
 
 # Creation

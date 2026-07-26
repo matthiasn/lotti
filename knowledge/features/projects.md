@@ -11,11 +11,11 @@ sources:
   - id: src
     resource: ../../lib/features/projects
     title: Projects feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: queries
     resource: ../../lib/database/database_project_queries.dart
     title: Project queries and the coalescing wave
-    last_modified: 2026-07-25
+    last_modified: 2026-06-08
 ---
 
 Projects group related tasks, power the projects tab, and integrate with the

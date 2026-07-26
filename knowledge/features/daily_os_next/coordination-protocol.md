@@ -11,7 +11,7 @@ sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Directive, status and digest services
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination
@@ -19,7 +19,7 @@ sources:
   - id: adr-0019
     resource: ../../../docs/adr/0019-attention-negotiation-protocol.md
     title: ADR 0019 — Attention negotiation protocol
-    last_modified: 2026-07-24
+    last_modified: 2026-06-06
 ---
 
 The coordinator and per-day agents coordinate through **two durable, synced

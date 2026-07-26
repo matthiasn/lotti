@@ -11,15 +11,15 @@ sources:
   - id: saved-filters
     resource: ../../../lib/features/tasks/state/saved_filters
     title: Saved-filter model, persistence, controller
-    last_modified: 2026-07-25
+    last_modified: 2026-07-17
   - id: ui
     resource: ../../../lib/features/tasks/ui/saved_filters
     title: Saved-filter surfaces
-    last_modified: 2026-07-25
+    last_modified: 2026-07-17
   - id: adr-0030
     resource: ../../../docs/adr/0030-desktop-keyboard-command-system.md
     title: ADR 0030 — Desktop keyboard command system
-    last_modified: 2026-07-24
+    last_modified: 2026-07-15
 ---
 
 # The query stack is shared

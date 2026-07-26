@@ -11,15 +11,15 @@ sources:
   - id: log-domains
     resource: ../../lib/services/logging_domains.dart
     title: LogDomain enum
-    last_modified: 2026-07-20
+    last_modified: 2026-06-22
   - id: logging-service
     resource: ../../lib/services/logging_service.dart
     title: LoggingService
-    last_modified: 2026-07-20
+    last_modified: 2026-07-12
   - id: domain-logging
     resource: ../../lib/services/domain_logging.dart
     title: DomainLogger
-    last_modified: 2026-07-20
+    last_modified: 2026-05-31
 ---
 
 # A closed set of domains

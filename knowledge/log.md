@@ -1,6 +1,14 @@
 # Knowledge Bundle Update Log
 
 ## 2026-07-26
+* **Fix**: Recomputed every `sources[].last_modified` from `git log` — 162 of 229
+  had been written as "about today" rather than asked of history, some off by six
+  weeks. The field now records what each concept was actually written against.
+* **Fix**: Corrected fourteen claims that contradicted the code, across habits,
+  the knowledge-graph PoC, settings, sync, persistence, the journal entity, task
+  relationships, the CI story and the build-runner trap. Four `lib/` READMEs were
+  wrong too, and `memory-and-compaction`'s subject pointed at a directory holding
+  one unrelated file.
 * **Update**: Added diagrams to the seven concepts whose subject has a shape
   prose cannot carry — the `JournalEntity` union, the `linked_entries` row, the
   projection kernel's permutation invariance, the idle gate's state machine, the

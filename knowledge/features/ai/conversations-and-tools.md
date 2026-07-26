@@ -11,7 +11,7 @@ sources:
   - id: conversation
     resource: ../../../lib/features/ai/conversation
     title: ConversationRepository and ConversationManager
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
 ---
 
 `ConversationRepository` and `ConversationManager` provide the reusable

@@ -11,11 +11,11 @@ sources:
   - id: generator
     resource: ../../../tool/design_system/generate_tokens.dart
     title: Token generator
-    last_modified: 2026-07-25
+    last_modified: 2026-05-12
   - id: tokens-json
     resource: ../../../assets/design_system/tokens.json
     title: Exported token source
-    last_modified: 2026-07-04
+    last_modified: 2026-07-25
   - id: theme
     resource: ../../../lib/features/design_system/theme
     title: Generated tokens, theme, access API
@@ -23,7 +23,7 @@ sources:
   - id: overrides
     resource: ../../../lib/themes/theme_overrides.dart
     title: App theme integration
-    last_modified: 2026-07-25
+    last_modified: 2026-07-15
 ---
 
 # The pipeline

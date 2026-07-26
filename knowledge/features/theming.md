@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/theming
     title: Theming source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 The theming feature turns stored user preferences into actual `ThemeData` for the

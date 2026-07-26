@@ -11,15 +11,15 @@ sources:
   - id: embedding-service
     resource: ../../../lib/features/ai/service/embedding_service.dart
     title: EmbeddingService
-    last_modified: 2026-07-25
+    last_modified: 2026-03-07
   - id: store
     resource: ../../../lib/features/ai/database/objectbox_embedding_store.dart
     title: ObjectBox-backed embedding store
-    last_modified: 2026-07-25
+    last_modified: 2026-03-08
   - id: search
     resource: ../../../lib/features/ai/repository/vector_search_repository.dart
     title: VectorSearchRepository
-    last_modified: 2026-07-25
+    last_modified: 2026-06-07
 ---
 
 The AI feature owns local embeddings and vector search — the one place where the

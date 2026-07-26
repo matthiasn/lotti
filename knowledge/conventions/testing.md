@@ -123,16 +123,20 @@ and position. Examples of this discipline in practice:
 
 # Running them
 
-**Locally, run the tests your change touches** — `fvm flutter test <path>`, or a
-directory while iterating. `make coverage` builds the HTML report when you
-genuinely need it.
+**Locally, run the test files for the source files you actually touched.**
+`fvm flutter test <path/to/one_test.dart>` — that is the unit of work, not the
+directory it sits in.
 
-**Do not run the whole suite locally as a habit.** It is slow enough to stall the
-work it is meant to protect, and CI runs it far faster anyway: the Linux lane
-shards `very_good test` **ten ways** across parallel matrix jobs, so the full
-result arrives on the push without blocking anyone's machine. Push, keep working,
+**Not the whole suite, and not a whole feature either.** A single feature's suite
+— `agents` is the clearest case — runs for many minutes locally, and worse inside
+a Linux VM, which is long enough to stall the work the tests exist to protect.
+CI is both faster and free of your machine: the Linux lane shards
+`very_good test` **ten ways** across parallel matrix jobs. Push, keep working,
 read the result when it lands.
 
-The exception is a change whose blast radius you cannot bound — a shared
-helper, a `getIt` registration, a design-system token — where the whole suite is
-the only honest check. Even then, prefer letting CI do it.
+Two exceptions, and only two: when someone asks for a broader run, and when a
+change's blast radius genuinely cannot be bounded to the files you touched — a
+shared test helper, a `getIt` registration, a design-system token. Even then,
+prefer letting CI do the sweep.
+
+`make coverage` builds the HTML report when you genuinely need it.

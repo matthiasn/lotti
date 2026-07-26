@@ -19,7 +19,7 @@ sources:
   - id: tokens
     resource: ../../../assets/design_system/tokens.json
     title: aiCard and proposalKind tokens
-    last_modified: 2026-07-04
+    last_modified: 2026-07-25
 ---
 
 # Band order

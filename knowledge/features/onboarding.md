@@ -11,11 +11,11 @@ sources:
   - id: src
     resource: ../../lib/features/onboarding
     title: Onboarding feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: metrics-db
     resource: ../../lib/database/onboarding_metrics_db.dart
     title: OnboardingMetricsDb
-    last_modified: 2026-07-25
+    last_modified: 2026-06-22
 ---
 
 Onboarding guides a brand-new user to the core moment — **speak a thought, watch

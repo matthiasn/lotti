@@ -11,7 +11,7 @@ sources:
   - id: barrel
     resource: ../../../lib/features/ai/ui/animation/ai_state_shader_animation.dart
     title: Shader barrel, program cache, uniform helper
-    last_modified: 2026-07-25
+    last_modified: 2026-07-13
   - id: shaders
     resource: ../../../shaders
     title: Fragment shader assets

@@ -11,19 +11,19 @@ sources:
   - id: settings
     resource: ../../lib/features/settings
     title: Settings feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: tree
     resource: ../../lib/features/settings_v2/domain/settings_tree_data.dart
     title: buildSettingsTree — the single source of truth
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
   - id: location
     resource: ../../lib/beamer/locations/settings_location.dart
     title: SettingsLocation route assembly
-    last_modified: 2026-07-24
+    last_modified: 2026-07-21
   - id: detail-kit
     resource: ../../lib/widgets/settings/settings_detail_scaffold.dart
     title: Shared settings detail scaffold
-    last_modified: 2026-07-25
+    last_modified: 2026-07-15
 ---
 
 # From one tree to two page stacks
@@ -71,45 +71,58 @@ everything else beams to its canonical URL from `settingsNodeUrls`, and
 
 ```mermaid
 flowchart LR
-  Landing["/settings (tree root)"] --> WhatsNew["What's New (if enableWhatsNew)"]
+  Landing["/settings (tree root)"] --> WhatsNew["What's New — if enableWhatsNew"]
+  Landing --> Onboarding["Onboarding"]
   Landing --> AI["AI"]
   Landing --> Agents["Agents"]
-  Landing --> Sync["Sync (if enableMatrix)"]
+  Landing --> DailyOs["Daily OS"]
+  Landing --> Sync["Sync — if enableMatrix"]
   Landing --> Definitions["Definitions"]
+  Landing --> RecordingStyle["Recording style"]
   Landing --> Theming["Theming"]
+  Landing --> Keyboard["Keyboard shortcuts"]
+  Landing --> Speech["Speech"]
   Landing --> Advanced["Advanced"]
-  Landing --> Manual["Manual (opens browser)"]
+  Landing --> Manual["Manual — opens the browser"]
 
-  AI --> Providers["Providers"]
-  AI --> Models["Models"]
-  AI --> Profiles["Profiles"]
+  AI --> AiProviders["Providers"]
+  AI --> AiModels["Models"]
+  AI --> AiProfiles["Profiles"]
+  AI --> AiUsage["Usage"]
 
-  Agents --> AgentsStats["Stats"]
-  Agents --> Templates["Templates"]
-  Agents --> Instances["Instances"]
-  Agents --> Souls["Souls"]
-  Agents --> Pending["Pending wakes"]
+  Agents --> AgentTemplates["Templates"]
+  Agents --> AgentInstances["Instances"]
+  Agents --> AgentSouls["Souls"]
+  Agents --> AgentWakes["Pending wakes"]
+
+  Sync --> Provisioned["Provisioned sync"]
+  Sync --> NodeProfile["This device"]
+  Sync --> Backfill["Backfill"]
+  Sync --> SyncStats["Stats"]
+  Sync --> Outbox["Outbox"]
+  Sync --> Conflicts["Conflicts — URL /settings/advanced/conflicts"]
+  Sync --> MatrixMaint["Matrix maintenance"]
 
   Definitions --> Categories["Categories"]
   Definitions --> Labels["Labels"]
-  Definitions --> Habits["Habits (if enableHabits)"]
-  Definitions --> Dashboards["Dashboards (if enableDashboards)"]
+  Definitions --> Habits["Habits — if enableHabits"]
+  Definitions --> Dashboards["Dashboards — if enableDashboards"]
   Definitions --> Measurables["Measurables"]
+  Categories --> Projects["Project detail — /settings/projects/:projectId"]
 
-  Categories --> Projects["Project detail (/settings/projects/:projectId)"]
-  Sync --> Provisioned["Provisioned Sync"]
-  Sync --> NodeProfile["This device (node profile)"]
-  Sync --> Backfill["Backfill settings"]
-  Sync --> Stats["Sync stats"]
-  Sync --> Outbox["Outbox monitor"]
-  Sync --> Conflicts["Conflicts (URL /settings/advanced/conflicts)"]
-  Sync --> MatrixMaint["Matrix maintenance"]
-  Advanced --> Flags["Config flags (/settings/flags)"]
-  Advanced --> ManualLanguage["Language"]
+  Advanced --> Flags["Config flags"]
+  Advanced --> Animations["Animations"]
+  Advanced --> ManualLanguage["Manual language"]
   Advanced --> Logging["Logging domains"]
-  Advanced --> Maint["Maintenance"]
+  Advanced --> HealthImport["Health import"]
+  Advanced --> Maintenance["Maintenance"]
+  Advanced --> OnboardingMetrics["Onboarding metrics"]
   Advanced --> About["About"]
 ```
+
+The agents children mirror the tab order inside `AgentSettingsBody`, so the tree
+shape matches what the right pane shows. `Manual` is not a panel at all — it
+carries `SettingsNodeAction.openManual` and leaves the app.
 
 **One code-accurate wrinkle:** Conflicts is a child of the Sync branch in the
 tree, but its Beamer URL is still `/settings/advanced/conflicts`.

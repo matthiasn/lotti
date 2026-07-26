@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../../lib/features/tasks
     title: Tasks feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: nav
     resource: ../../../lib/services/nav_service.dart
     title: desktopTaskDetailStack

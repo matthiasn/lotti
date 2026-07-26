@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/tts
     title: Text-to-speech source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 On-device text-to-speech that reads a task's AI **TL;DR** aloud. It runs the

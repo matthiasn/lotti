@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../../lib/features/speech/ui/widgets/recording
     title: Recording UI source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 The recording UI offers **a selectable analog VU meter or an energy orb**, plus

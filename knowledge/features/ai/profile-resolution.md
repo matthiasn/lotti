@@ -11,19 +11,19 @@ sources:
   - id: resolver
     resource: ../../../lib/features/ai/util/profile_resolver.dart
     title: ProfileResolver
-    last_modified: 2026-07-25
+    last_modified: 2026-07-13
   - id: locality
     resource: ../../../lib/features/ai/helpers/profile_locality.dart
     title: profileIsLocal
-    last_modified: 2026-07-25
+    last_modified: 2026-06-20
   - id: pinning-ui
     resource: ../../../lib/features/ai/ui/widgets/profile_pinning_selector.dart
     title: Profile pinning selector
-    last_modified: 2026-07-25
+    last_modified: 2026-06-26
   - id: adr-0008
     resource: ../../../docs/adr/0008-inference-profiles-agent-provider-mapping.md
     title: ADR 0008 — Inference profiles and agent/provider mapping
-    last_modified: 2026-07-24
+    last_modified: 2026-02-28
 ---
 
 # Three entry points

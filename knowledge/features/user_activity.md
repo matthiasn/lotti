@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/user_activity
     title: User activity gate source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 The user-activity feature tracks whether the user was active recently and exposes

@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/keyboard
     title: Desktop keyboard commands source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 The keyboard feature is Lotti's **desktop command layer**. It turns platform key

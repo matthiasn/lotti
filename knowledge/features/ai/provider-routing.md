@@ -11,11 +11,11 @@ sources:
   - id: router
     resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
     title: CloudInferenceRepository facade
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
   - id: usage-parser
     resource: ../../../lib/features/ai/repository/completion_usage_parser.dart
     title: Usage normalization
-    last_modified: 2026-07-25
+    last_modified: 2026-07-07
   - id: pubspec
     resource: ../../../pubspec.yaml
     title: Shader and native dependency registration

@@ -15,11 +15,11 @@ sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Day-agent services and workflow
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: adr-0022
     resource: ../../../docs/adr/0022-long-lived-daily-os-planner.md
     title: ADR 0022 — Long-lived Daily OS planner
-    last_modified: 2026-07-24
+    last_modified: 2026-06-09
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination

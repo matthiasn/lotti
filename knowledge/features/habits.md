@@ -11,11 +11,11 @@ sources:
   - id: src
     resource: ../../lib/features/habits
     title: Habits feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 Habits sit on top of **two different records**: `HabitDefinition`, describing the

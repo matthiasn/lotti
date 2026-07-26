@@ -126,7 +126,10 @@ sources:                      # must be a non-empty list; one entry must leave t
   |---------|--------|
   | `agents`, `ai`, `daily_os_next`, `sync` — under active development | ~3 months |
   | Other features, architecture, conventions | ~6 months |
-  | Domain models and settled exploratory work | ~12 months |
+  | Domain models, and exploratory work that has settled | ~12 months |
+
+  A concept whose `status` is `draft` is **not** settled by definition, whatever
+  its subject — it takes the ~6-month window until it earns `stable`.
 
   Then **use the date its siblings already carry.** One date per subsystem is
   deliberate: re-reading all of `sync/` in one sitting is far cheaper than seven

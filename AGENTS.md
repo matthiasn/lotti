@@ -26,7 +26,7 @@
 
 ## Testing Guidelines
 - Framework: `flutter_test`, helpers in `test/`. Name tests `*_test.dart` and co-locate by feature. **One test file per source file**, mirroring the path.
-- Run targeted tests via the dart-mcp server. **Do not run the whole suite locally unless asked** — it is slow, and CI runs it ten-way sharded on every push, so let CI do it rather than blocking local work.
+- Run tests via the dart-mcp server, **only for the files you actually touched**. Do not run the whole suite locally, and do not run a whole feature's suite either — `agents` alone takes minutes, worse in a Linux VM. CI runs everything ten-way sharded on every push, so let it. Broader local runs only when asked, or when a change genuinely cannot be scoped to the files you touched.
 - **Never `Future.delayed`, `sleep()` or a real `Timer` in a test.** Use `fakeAsync` or `tester.pump(duration)`, and deterministic dates rather than `DateTime.now()`.
 - **Reuse the shared harness**: mocks from `test/mocks/mocks.dart`, fallbacks from `test/helpers/fallbacks.dart`, `setUpTestGetIt()` / `tearDownTestGetIt()`, `makeTestableWidget()`. Never improvise a per-file equivalent.
 - **Every test must assert something meaningful.** `findsOneWidget` alone proves only that the tree built; a constructor smoke test proves nothing at all.

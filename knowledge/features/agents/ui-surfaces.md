@@ -19,7 +19,7 @@ sources:
   - id: motion
     resource: ../../../lib/features/design_system/theme/motion_tokens.dart
     title: Motion tokens
-    last_modified: 2026-07-26
+    last_modified: 2026-06-20
   - id: sidebar
     resource: ../../../lib/features/agents/ui/sidebar_wake_queue.dart
     title: SidebarWakeQueue

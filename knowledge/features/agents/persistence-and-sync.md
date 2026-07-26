@@ -15,15 +15,15 @@ sources:
   - id: constants
     resource: ../../../lib/features/agents/model/agent_constants.dart
     title: AgentLinkTypes
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: sync-service
     resource: ../../../lib/features/agents/sync/agent_sync_service.dart
     title: AgentSyncService
-    last_modified: 2026-07-25
+    last_modified: 2026-06-13
   - id: adr-0007
     resource: ../../../docs/adr/0007-token-usage-wake-run-log-storage.md
     title: ADR 0007 — Token usage and wake run log storage
-    last_modified: 2026-07-24
+    last_modified: 2026-02-28
 ---
 
 # One database, two shapes

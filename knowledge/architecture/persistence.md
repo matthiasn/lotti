@@ -11,19 +11,19 @@ sources:
   - id: db-common
     resource: ../../lib/database/common.dart
     title: openDbConnection, pragmas, backups
-    last_modified: 2026-07-25
+    last_modified: 2026-06-05
   - id: journal-db
     resource: ../../lib/database/database.dart
     title: JournalDb
-    last_modified: 2026-07-25
+    last_modified: 2026-07-22
   - id: journal-migration
     resource: ../../lib/database/database_migration.dart
     title: JournalDb migration strategy
-    last_modified: 2026-07-25
+    last_modified: 2026-07-09
   - id: update-notifications
     resource: ../../lib/services/db_notification.dart
     title: UpdateNotifications
-    last_modified: 2026-07-20
+    last_modified: 2026-07-05
 ---
 
 # One store per concern
@@ -168,10 +168,15 @@ thousands.
 
 `createDbBackup(fileName)` copies a database to
 `backup/db.<yyyy-MM-dd_HH-mm-ss-S>.sqlite`. It runs automatically before a
-`JournalDb` migration and on demand from the maintenance surfaces in
-`lib/database/maintenance.dart`, which can also re-run FTS indexing, purge
-deleted entries and recreate derived state. Timestamps come from
-`package:clock`'s `clock.now()`, so tests can drive them with `withClock`.
+`JournalDb` migration and on demand from *Settings → Advanced → Maintenance*.
+Timestamps come from `package:clock`'s `clock.now()`, so tests can drive them
+with `withClock`.
+
+`lib/database/maintenance.dart` holds re-sync and whole-database deletion
+(`reSyncInterval`, `deleteAgentDb`, `deleteEditorDb`, `deleteSyncDb`, and the
+`sent`-outbox purge). **The deleted-entry purge is not there** — `purgeDeleted`
+lives in `lib/database/database_entity_ops.dart` alongside the rest of `JournalDb`'s
+entity operations, which is where to look for it.
 
 # Where to look
 

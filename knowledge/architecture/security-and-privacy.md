@@ -11,11 +11,11 @@ sources:
   - id: secure-storage
     resource: ../../lib/features/sync/secure_storage.dart
     title: SecureStorage
-    last_modified: 2026-07-20
+    last_modified: 2026-06-16
   - id: privacy-policy
     resource: ../../PRIVACY.md
     title: Lotti privacy policy
-    last_modified: 2026-04-30
+    last_modified: 2026-04-29
   - id: pubspec
     resource: ../../pubspec.yaml
     title: Dependency manifest — evidence of what is absent

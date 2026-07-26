@@ -19,7 +19,7 @@ sources:
   - id: get-it-helpers
     resource: ../../lib/get_it_helpers.dart
     title: Late and optional service registration
-    last_modified: 2026-07-25
+    last_modified: 2026-06-13
 ---
 
 # Two containers, one boundary

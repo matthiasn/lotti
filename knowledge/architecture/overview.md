@@ -11,7 +11,7 @@ sources:
   - id: lib
     resource: ../../lib
     title: Application source tree
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: pubspec
     resource: ../../pubspec.yaml
     title: Dependency manifest

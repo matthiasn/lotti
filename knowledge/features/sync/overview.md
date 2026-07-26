@@ -11,7 +11,7 @@ sources:
   - id: sync-src
     resource: ../../../lib/features/sync
     title: Sync feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: get-it
     resource: ../../../lib/get_it.dart
     title: Default bootstrap wiring
@@ -23,7 +23,7 @@ sources:
   - id: current-architecture
     resource: ../../../docs/architecture/sync_current_architecture.md
     title: Failure history, log-backed investigations, tuning context
-    last_modified: 2026-05-30
+    last_modified: 2026-07-26
 ---
 
 Sync replicates **one user's data across that user's own devices** over Matrix.

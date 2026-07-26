@@ -11,11 +11,11 @@ sources:
   - id: project-workflow
     resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
     title: ProjectAgentWorkflow
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
   - id: event-workflow
     resource: ../../../lib/features/agents/workflow/event_agent_workflow.dart
     title: EventAgentWorkflow
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
   - id: project-service
     resource: ../../../lib/features/agents/service/project_agent_service.dart
     title: ProjectAgentService (creation and announcement)

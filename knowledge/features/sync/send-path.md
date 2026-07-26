@@ -15,7 +15,7 @@ sources:
   - id: payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding
-    last_modified: 2026-07-25
+    last_modified: 2026-06-16
   - id: tuning
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning

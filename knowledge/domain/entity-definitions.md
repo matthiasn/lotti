@@ -11,7 +11,7 @@ sources:
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: EntityDefinition union
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 `EntityDefinition` is a union of five configuration entities:

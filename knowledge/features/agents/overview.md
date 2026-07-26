@@ -11,19 +11,19 @@ sources:
   - id: agents-src
     resource: ../../../lib/features/agents
     title: Agents feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: constants
     resource: ../../../lib/features/agents/model/agent_constants.dart
     title: AgentKinds and AgentLinkTypes
-    last_modified: 2026-07-25
+    last_modified: 2026-07-24
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason and AgentLifecycle
-    last_modified: 2026-07-25
+    last_modified: 2026-07-13
   - id: adr-0001
     resource: ../../../docs/adr/0001-agent-capabilities-runtime-model.md
     title: ADR 0001 — Agent capabilities runtime model
-    last_modified: 2026-07-24
+    last_modified: 2026-02-27
 ---
 
 The agents feature owns Lotti's **persisted agent runtime**. It does not

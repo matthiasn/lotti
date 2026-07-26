@@ -15,7 +15,7 @@ sources:
   - id: checklist-feature
     resource: ../../../lib/features/checklist
     title: Correction capture and undo
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: motion
     resource: ../../../lib/features/design_system/components/motion
     title: SizeFadeCollapse and SizeFadeEntrance

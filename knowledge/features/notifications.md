@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/notifications
     title: Synced notifications source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 Synced notifications are durable app-level alerts stored **outside the journal

@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../../lib/features/journal
     title: Journal feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: repo
     resource: ../../../lib/features/journal/repository/journal_repository.dart
     title: JournalRepository facade

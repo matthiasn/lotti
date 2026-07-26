@@ -52,7 +52,8 @@ lib/features/agents/
 ├── wake/         # orchestrator, queue, runner, scheduling
 ├── workflow/     # one per agent kind, plus evolution and improver
 ├── service/      # creation, change-set confirmation, souls, templates
-├── memory/       # input capture, event log, compaction
+├── memory/       # author-time memory links
+├── projection/   # the event log's pure fold, capture and checkpoint selection
 ├── database/     # agent.sqlite
 ├── sync/         # vector-clock stamping and outbox buffering
 ├── model/        # entities, links, enums

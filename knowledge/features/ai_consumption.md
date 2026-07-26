@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/ai_consumption
     title: AI consumption and attribution source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 This feature records two related facts: **which creator initiated a logical piece

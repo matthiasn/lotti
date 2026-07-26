@@ -11,23 +11,23 @@ sources:
   - id: seeding
     resource: ../../../lib/features/agents/service/agent_template_seeding.dart
     title: Seeded default templates
-    last_modified: 2026-07-25
+    last_modified: 2026-06-22
   - id: evolution
     resource: ../../../lib/features/agents/workflow/template_evolution_workflow.dart
     title: TemplateEvolutionWorkflow
-    last_modified: 2026-07-25
+    last_modified: 2026-07-21
   - id: improver
     resource: ../../../lib/features/agents/workflow/improver_agent_workflow.dart
     title: ImproverAgentWorkflow
-    last_modified: 2026-07-25
+    last_modified: 2026-06-01
   - id: soul-ops
     resource: ../../../lib/features/agents/service/soul_template_ops.dart
     title: Soul document service operations
-    last_modified: 2026-07-25
+    last_modified: 2026-06-13
   - id: adr-0012
     resource: ../../../docs/adr/0012-recursive-self-improvement-depth-policy.md
     title: ADR 0012 — Recursive self-improvement depth policy
-    last_modified: 2026-07-24
+    last_modified: 2026-03-01
 ---
 
 # Two axes: skills and personality

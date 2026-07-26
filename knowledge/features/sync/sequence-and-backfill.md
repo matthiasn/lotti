@@ -15,7 +15,7 @@ sources:
   - id: status
     resource: ../../../lib/database/sync_sequence_status.dart
     title: SyncSequenceStatus
-    last_modified: 2026-07-25
+    last_modified: 2026-06-06
   - id: backfill
     resource: ../../../lib/features/sync/backfill
     title: Backfill request and response services

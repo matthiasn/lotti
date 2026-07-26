@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/surveys
     title: Surveys source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 The surveys feature executes a small set of **predefined** questionnaires,

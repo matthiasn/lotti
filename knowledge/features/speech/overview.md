@@ -11,11 +11,11 @@ sources:
   - id: src
     resource: ../../../lib/features/speech
     title: Speech feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: vu
     resource: ../../../lib/features/speech/state/vu_meter.dart
     title: VuMeter — sliding-window RMS→VU
-    last_modified: 2026-07-25
+    last_modified: 2026-06-13
 ---
 
 The speech feature owns audio capture, playback, waveform extraction and

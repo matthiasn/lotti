@@ -11,11 +11,11 @@ sources:
   - id: src
     resource: ../../lib/features/ratings
     title: Ratings feature source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
   - id: rating-data
     resource: ../../lib/classes/rating_data.dart
     title: RatingData and RatingDimension
-    last_modified: 2026-07-25
+    last_modified: 2026-05-12
 ---
 
 Ratings attach a structured judgment to another entry **without baking the

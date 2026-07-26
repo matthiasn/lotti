@@ -23,7 +23,7 @@ sources:
   - id: adr-0044
     resource: ../../../docs/adr/0044-day-processing-outbox-storage.md
     title: ADR 0044 — Day processing outbox storage
-    last_modified: 2026-07-24
+    last_modified: 2026-07-25
 ---
 
 # A table, not a file per job

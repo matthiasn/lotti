@@ -6,12 +6,12 @@ resource: ../../lib/features/knowledge_graph_poc
 tags: [knowledge-graph, visualization, poc]
 status: draft
 generated: { by: claude-code/opus-5, at: 2026-07-26T04:15:00Z }
-stale_after: 2027-07-19
+stale_after: 2027-03-15
 sources:
   - id: src
     resource: ../../lib/features/knowledge_graph_poc
     title: Knowledge-graph explorer (PoC) source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 A phase-0 spike for the knowledge-graph explorer described in ADR 0029.

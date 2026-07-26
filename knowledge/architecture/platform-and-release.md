@@ -11,7 +11,7 @@ sources:
   - id: workflows
     resource: ../../.github/workflows
     title: GitHub Actions workflows
-    last_modified: 2026-07-24
+    last_modified: 2026-07-26
   - id: makefile
     resource: ../../Makefile
     title: Developer and build entry points

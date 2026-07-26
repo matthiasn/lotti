@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../../lib/features/agents/projection
     title: Projection kernel source
-    last_modified: 2026-07-25
+    last_modified: 2026-07-26
 ---
 
 A **pure, deterministic** projection over an event-set view of the agent log:
