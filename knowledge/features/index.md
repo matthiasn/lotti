@@ -19,6 +19,10 @@ rather than a single file once its knowledge outgrows a couple of hundred lines.
 * [Habits](habits/) - recurring definitions reconciled with completion entries.
 * [Insights](insights/) - time analysis over the journal.
 * [AI chat](ai_chat/) - a session-scoped Q&A surface over task history.
+* [Dashboards](dashboards/) - user-built chart views over journal data.
+* [Events](events/) - a first-class destination for meaningful moments.
+* [Ratings](ratings/) - catalog-driven structured judgments.
+* [Onboarding](onboarding/) - the first-run path and its measurement substrate.
 * [Tasks](tasks/) - the task layer on the journal substrate: checklists, relationships, filters.
 
 # Infrastructure

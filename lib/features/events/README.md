@@ -1,243 +1,46 @@
 # Events
 
-A first-class home for **events** — the meaningful moments (a birthday, a trip, a
-wedding, an upcoming race) you want to remember and revisit, not just another
-row in the logbook. The feature promotes events from a bare journal entry type
-to their own destination with a memory-forward overview and a photographic
-detail page.
+Events are the moments worth remembering — a trip, a birthday, a wedding, a race
+coming up — with their own destination rather than a row in the logbook.
 
-Gated behind the `enableEventsFlag` config flag (Settings → Advanced → Flags →
-"Enable Events"). When on, an **Events** destination appears in navigation
-(under *More* on mobile, as a sidebar item on desktop) alongside the existing
-event entry-type creation.
+Behind the **Enable Events** flag. With it off, events are hidden everywhere.
 
-## Why an entity, not a Task subtype
+## What it does for the user
 
-An event stays its own `JournalEntity.event` (`EventData`) — it is *not* a Task
-subtype. It reuses the generic infrastructure that tasks happen to use rather
-than inheriting task semantics:
+- **Gives a moment its own page.** A photographic detail page with a cover image,
+  a title, when it happened, its status and its rating.
+- **Collects everything about it.** Photos, notes and voice memos added to the
+  event link straight back to it and appear on its timeline.
+- **Turns into work when needed.** A task can be created from an event and stays
+  linked to it.
+- **Rates a memory, but only once it is a memory.** Stars appear once the event
+  has happened, so a plan is not asked to rate itself.
+- **Picks its own cover.** The first linked photo becomes the cover; after that
+  the user can choose any linked photo.
+- **Reads in the user's language.** Statuses and relative dates are rendered in
+  the active language, so switching language changes the wording immediately.
 
-- **Timeline** → the event's outgoing `EntryLink`s (photos, notes, audio),
-  resolved via `resolvedOutgoingLinkedEntriesProvider`.
-- **Associated tasks** → linked `Task` entries (prep / follow-up), surfaced in
-  their own section instead of subtyping.
-- **Cover art** → `EventData.coverArtId` / `coverArtCropX`, mirroring the
-  Task/Project cover-art pattern.
-- **Summary** → the latest linked AI response, falling back to the event's own
-  note.
+## What it owns
 
-This keeps the agent, knowledge-graph, and task-list code free of "tasks that
-are really events" special cases.
+The events overview and its grouping; the event detail page and its hero
+interactions; the pure view models and mapping logic behind both; and the linked
+event card other surfaces render.
 
-## Architecture
+An event is its own entity, not a task variant — it reuses the shared entry
+infrastructure without inheriting task behaviour.
 
-The visual layer is pure and deterministic: presentational widgets render plain
-view models (`event_view_data.dart`). Pages own the glue — they watch providers,
-apply the locale-dependent labelling/grouping the view models can't, and feed
-the result to the widgets. The pure mapping/grouping logic lives in
-`state/event_view_mapping.dart` and is unit-tested in isolation.
+## Where the code lives
 
-Event status and relative/date labels are resolved at the presentation boundary
-from the active `AppLocalizations` and locale-aware date formatter. Persistence
-continues to store only stable status enum values and timestamps, never rendered
-copy, so changing the app language immediately updates both overview and detail
-surfaces without migrating an event.
-
-```mermaid
-flowchart TD
-    DB[(JournalDb + EntitiesCacheService)]
-
-    subgraph Overview
-      ESP[eventsOverviewControllerProvider<br/>loadResolvedEventsPage paged] -->|ResolvedEvent page| OP[EventsOverviewPage]
-      OP -->|eventCardDataFromEvent<br/>+ groupEventsIntoSections| OV[EventsOverviewView]
-      OV --> CARD[EventCard / EventFeatureCard]
-    end
-
-    subgraph Detail
-      EC[entryControllerProvider] --> DP[EventDetailPage]
-      RLE[resolvedOutgoingLinkedEntriesProvider] --> DP
-      DP -->|eventTimelineEntryFor<br/>eventTaskRefFor| DV[EventDetailView]
-    end
-
-    DB --> ESP
-    DB --> EC
-    OV -->|tap card → /events/:id| DP
-    OP -->|New event → createEvent → /events/:id| DP
-    DP -->|edit / add → /journal/:id| LEGACY[Entry detail surface]
+```text
+lib/features/events/
+├── model/ · state/
+└── ui/{pages,widgets}
 ```
 
-### Overview
+## How it works
 
-`EventsOverviewView` is a photo-led wall: a width-filling responsive grid of
-`EventCard`s, with the *Upcoming* section promoted to a full-bleed
-`EventFeatureCard` hero (which degrades to a vertical card on phones). A search
-bar and category-filter chips sit in the header; the primary "New event" action
-is a header button on wide layouts and a FAB on phones.
+Why events are their own entity, the pure view layer with locale resolved at the
+presentation boundary, and the hero interaction surface are documented in the
+knowledge bundle:
 
-`groupEventsIntoSections` splits resolved cards into a featured **Upcoming**
-section (events dated after now, soonest first) followed by past events grouped
-by year, newest first.
-
-The grid renders **lazily**: each section is a builder-driven `SliverList` of
-row chunks (`columns` derived once from the viewport width), so only the rows
-near the viewport are built. This matters because the overview can hold hundreds
-of events — eager rendering would mount every card and decode every cover photo
-at once, spiking memory enough for the OS to kill the app on phones. Cover
-decoding is bounded too: `EventCoverImage` decodes each photo no wider than it is
-displayed (the screen width, or an explicit `decodeWidth` for small thumbnails)
-via `ResizeImage`, never at full camera resolution.
-
-The data load is paged as well. `eventsOverviewControllerProvider` (an
-`AsyncNotifier`) loads `eventsPageSize` events at a time via
-`loadResolvedEventsPage(limit:, offset:, categoryId:)` — resolving covers only
-for that page — and appends the next page when the view's scroll listener nears
-the bottom. The category filter is applied **server-side** (re-querying from the
-first page) and the filter chips come from `EntitiesCacheService.sortedCategories`
-(all active categories), so filtering stays correct and complete regardless of
-how far the archive has been scrolled. An `eventNotification` re-fetches just the
-currently-loaded window, so new/edited events appear without resetting scroll
-depth.
-
-### Detail
-
-`EventDetailView` leads with a capped photographic hero (cover, title,
-when/where, category, rating over a strong scrim), then an AI summary card (the
-newest linked `AiResponseEntry` by `meta.dateFrom`, else the event note), a
-**Photos** gallery, a vertical timeline of linked entries (lead photo +
-supporting cluster + caption, notes, voice notes, and time recordings), and a
-linked-tasks section. A linked note whose `dateTo` is more than a minute after
-its `dateFrom` is a *time recording*: the mapping emits an
-`EventTimelineKind.timeRecording` beat that renders as a `TimeSpanBar`
-(start → end · elapsed, via `isTimeRecordingSpan`/`formatRangeDuration`) so it
-reads as a tracked interval rather than a point-in-time observation. The same
-`TimeSpanBar` surfaces in a task's linked-entries timeline (`journal_card.dart`,
-gated on `showLinkedDuration`).
-On wide screens the body splits into a main column (summary + photos + timeline)
-and a tasks rail; on phones it stacks.
-
-#### Photos gallery
-
-`EventPhotoGrid` (in `event_photo_gallery.dart`) renders every linked image as a
-flat, scannable wall of uniform cover-cropped squares — distinct from the
-narrative timeline. The column count is width-derived; thumbnails are downsampled
-via `ResizeImage`. Beyond a 3-row preview the grid caps and the last tile shows a
-"+N" overflow badge. Tapping any tile opens `EventPhotoGalleryViewer`, a
-full-screen, swipeable, pinch-zoom `PhotoViewGallery` with a page indicator and a
-close button (mirroring the journal entry image viewer). A uniform grid is used
-deliberately: `ImageData` carries no intrinsic dimensions, so an
-aspect-preserving/masonry layout would require decoding every image to measure
-it — and the full, uncropped photo is always one tap away in the viewer.
-
-Each timeline row carries the source entry's id and is tappable when the page
-wires `onOpenTimelineEntry` (it beams to `/journal/<entryId>`); the trailing
-"open" chevron renders only when that handler is present, so the affordance
-always matches the behavior. Linked **task** rows follow the same pattern: each
-`EventTaskRef` carries its task id, and when the page wires `onOpenTask` the row
-gains the "open" chevron and beams to `/tasks/<id>` (the same cross-location
-navigation a task card uses, which surfaces correctly from the Events
-destination).
-
-#### Inline editing
-
-The detail page is a full editor, not a viewer — nothing bounces to the old
-entry form. `EventDetailView` is presentational and surfaces every mutation as a
-callback; `EventDetailPage` wires them to `EntryController` and the shared
-pickers/create flows.
-
-The title/status/rating/cover writes go through `EntryController`'s direct
-event-data setters (`updateEventTitle` / `updateEventStatus` / `updateRating` /
-`updateEventCover`, all built on the private `_updateEventData` helper: optimistic
-local state → `updateEvent` → haptic). The legacy FormBuilder-based `EventForm`
-has been removed; an event is only ever shown through this surface now. (One dead
-tail remains: `EntryController.save()`'s `JournalEvent` branch, which nothing
-mounts a `FormBuilder` for anymore — safe to drop in a follow-up; don't "fix" it.)
-
-### Routing & linked rendering
-
-There is one way to open an event: the detail page at `/events/<id>`. Every entry
-point routes there — the Events overview, a logbook card tap (`journal_card`), a
-freshly-created event (`create_entry_items`), and a linked event inside a task's
-timeline. A linked event renders as a `LinkedEventCard` (a compact
-`EventSummaryCard` resolved the same way the detail page resolves its cover) via
-`EntryDetailsWidget`, not the generic entry editor.
-
-This is all gated on the `enableEventsFlag`: when **off**, events are hidden
-everywhere — the logbook query drops the `JournalEvent` type
-(`computeAllowedEntryTypes`), `EntryDetailsWidget` renders a linked event as
-nothing, and the tab / create-event / type-filter affordances are absent.
-
-- **Title** — tap to swap in a borderless field; commit on submit/blur →
-  `updateEventTitle`.
-- **Category / Status** — the hero pills open `showCategoryPicker` /
-  `showEventStatusPicker` → `updateCategoryId` / `updateEventStatus`. The
-  category pill shows an additive "+ Category" placeholder when none is assigned.
-- **Date / time** — the hero date line opens the shared
-  `EntryDateTimeMultiPageModal` → `updateFromTo`; it is the single source of the
-  event's when (the body no longer repeats it).
-- **Rating** — the hero stars are interactive → `updateRating`, and only appear
-  once the event has happened (`status == completed`) or already carries a
-  rating, so a fresh/tentative event isn't pushed gold stars.
-- **Cover** — while the event has no cover, an "add cover photo" action opens the
-  create-entry menu; the first linked photo then becomes the cover automatically.
-  Once a cover exists, the hero overflow menu offers **Change cover** →
-  `EventCoverPicker` (a sheet of the event's linked photos), and picking one calls
-  `EntryController.updateEventCover(imageId)` to set `EventData.coverArtId`; the
-  sheet's "add photo" tile falls back to the create-entry menu for a new shot.
-- **Add to timeline** — opens the shared `CreateEntryModal` scoped to the event
-  (`linkedFromId`), so new notes, photos and audio link straight back.
-- **Add task** — mirrors the linked-tasks flow: `createTask(linkedId: eventId)`
-  (which writes the `event → task` link, so the event surfaces under the task's
-  "Linked from"), then `autoAssignCategoryAgent` assigns the category's default
-  agent, then it beams to `/tasks/<id>` to open the new task.
-- **Delete** — the overflow menu confirms via the standard delete sheet →
-  `delete(beamBack: true)`.
-
-When a callback is null the corresponding control is read-only (or hidden), so
-the same widget renders cleanly in screenshots and tests. Empty events still
-render the Timeline and Tasks section scaffolding with tappable "add" hints
-rather than a blank void.
-
-## Files
-
-| Path | Role |
-| --- | --- |
-| `ui/model/event_view_data.dart` | Pure presentation view models. |
-| `ui/widgets/event_cover_image.dart` | Cover image: crop + scrim variants + category-tinted fallback. |
-| `ui/widgets/event_overlay_pill.dart` | Translucent pill for chrome over a cover. |
-| `ui/widgets/event_card.dart` | Overview card + cover overlay + meta/footer. |
-| `ui/widgets/event_feature_card.dart` | Full-bleed featured hero (→ vertical card when narrow). |
-| `ui/widgets/events_overview_view.dart` | Overview layout: header, search, chips, sections, grid. |
-| `ui/widgets/event_detail_view.dart` | Detail layout: inline-editable hero, summary, timeline, tasks. |
-| `ui/widgets/event_status_picker.dart` | `showEventStatusPicker` modal + `eventStatusLabel` helper. |
-| `ui/widgets/event_summary_card.dart` | Dense list-context summary card (cover + meta + metrics) for the logbook / task timeline. |
-| `ui/widgets/event_photo_gallery.dart` | `EventPhotoGrid` (photo wall + "+N" overflow) + full-screen `EventPhotoGalleryViewer`. |
-| `state/event_view_mapping.dart` | Pure entity→view-model mapping, date labels, grouping. |
-| `state/events_controller.dart` | `loadResolvedEventsPage` / `loadResolvedEvents` (DB → resolved events, paged). |
-| `state/events_overview_controller.dart` | `eventsOverviewControllerProvider`: paged, category-filterable overview state. |
-| `ui/pages/events_overview_page.dart` | Route page: provider → localized sections → view. |
-| `ui/pages/event_detail_page.dart` | Route page: event + links → `EventDetailData` → view. |
-
-Navigation is registered in `lib/beamer/locations/events_location.dart`
-(`/events`, `/events/:eventId`), `lib/beamer/beamer_delegates.dart`,
-`lib/services/nav_service.dart`, and `lib/beamer/beamer_app.dart`.
-
-## Localization
-
-User-visible strings are localized via `context.messages`: `navTabTitleEvents`,
-`eventsPageTitle`, `eventsSearchHint`, `eventsNewEvent`, `eventsFilterAll`,
-`eventsSectionUpcoming`, `eventsSummaryTitle`, `eventsTimelineSection`,
-`eventsTasksSection`, `eventsAddLabel`, `eventsRegenerateSummary`,
-`eventsVoiceNote`, `eventsTitleHint`, `eventsAddCoverPhoto`, `eventsDeleteEvent`,
-`eventsTimelineEmpty`, `eventsTasksEmpty`, `eventsPhotosSection`,
-`eventsMetricPhotos`, `eventsMetricTasks` (the last two pluralized count words
-for the summary card's contents line). (The event status picker reuses
-`EventStatus.label`; the category picker reuses `habitCategoryLabel`.)
-
-## Testing
-
-The pure layers carry the bulk of coverage: `event_view_mapping_test`
-(grouping, date labels, entity→view-model mapping for every timeline/task kind)
-and the widget tests for each presentational widget. `events_controller_test`
-covers DB query + cover/category resolution; the page tests cover the
-provider-driven glue (sections, filtering, loading/error states). Screenshots
-of the surfaces are produced on demand with the `app-screenshots` workflow.
+**→ [knowledge/features/events/](../../../knowledge/features/events/)**
