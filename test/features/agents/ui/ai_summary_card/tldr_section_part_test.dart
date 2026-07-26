@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
@@ -147,6 +148,49 @@ void main() {
         TextOverflow.ellipsis,
       );
       expect(tester.widget<Text>(find.text('AI summary')).maxLines, 2);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a compound title truncates rather than breaking mid-word', (
+      tester,
+    ) async {
+      // German compounds the title into one unbreakable token,
+      // "KI-Zusammenfassung". Given two lines and a slot narrower than that
+      // token, Flutter breaks *inside* the word — "KI-Zusammenf / assung" —
+      // which reads as a typo, not as shortening. One line and an ellipsis at
+      // least tells the reader something was left out.
+      Future<void> pumpAt(double width) {
+        tester.view
+          ..physicalSize = Size(width, 400)
+          ..devicePixelRatio = 1;
+        return tester.pumpWidget(
+          makeTestableWidget(
+            TldrHeader(agentName: 'Task Laura', onAgentTap: () {}),
+            locale: const Locale('de'),
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              textScaler: const TextScaler.linear(1.3),
+            ),
+          ),
+        );
+      }
+
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await pumpAt(320);
+      final title = find.text('KI-Zusammenfassung');
+      expect(title, findsOneWidget);
+      expect(tester.widget<Text>(title).maxLines, 1);
+      expect(
+        tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
+        isTrue,
+        reason: 'the ellipsis is what marks the title as shortened',
+      );
+
+      // The fallback is measured, not a narrow-width rule: give the same
+      // string a slot its longest run fits in and the second line comes back.
+      await pumpAt(730);
+      expect(tester.widget<Text>(title).maxLines, 2);
       expect(tester.takeException(), isNull);
     });
   });

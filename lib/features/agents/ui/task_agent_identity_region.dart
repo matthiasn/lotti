@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -123,65 +124,21 @@ class _SetupIdentityRow extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final color = isError ? tokens.colors.alert.error.ink : ai.metaText;
-    final iconColor = isError
-        ? tokens.colors.alert.error.defaultColor
-        : ai.metaText;
-    return Semantics(
-      button: true,
-      label: semanticsLabel,
-      excludeSemantics: true,
-      child: Tooltip(
-        // Names the action rather than repeating a route that is usually
-        // fully visible; the full route lives in the semantics label.
-        message: tooltip,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
-              // The inset lives INSIDE the ink so the highlight has room
-              // around the glyph and the chevron; painted flush, the rounded
-              // ink corners cut into the glyph itself.
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step2,
-                ),
-                // Shrink-wrapped so the ink, the tooltip and the tap target
-                // all stop at the chevron instead of running the full width
-                // of the footer.
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isError
-                          ? Icons.error_outline_rounded
-                          : Icons.psychology_outlined,
-                      size: tokens.spacing.step5,
-                      color: iconColor,
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Flexible(
-                      child: _TieredIdentityText(
-                        tiers: tiers,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: color,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: tokens.spacing.step5,
-                      color: iconColor,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+    return DesignSystemInlineAction(
+      onTap: onTap,
+      semanticsLabel: semanticsLabel,
+      // Names the action rather than repeating a route that is usually fully
+      // visible; the full route lives in the semantics label.
+      tooltip: tooltip,
+      leadingIcon: isError
+          ? Icons.error_outline_rounded
+          : Icons.psychology_outlined,
+      trailingIcon: Icons.chevron_right_rounded,
+      ink: color,
+      iconInk: isError ? tokens.colors.alert.error.defaultColor : ai.metaText,
+      labelWidget: _TieredIdentityText(
+        tiers: tiers,
+        style: tokens.typography.styles.others.caption.copyWith(color: color),
       ),
     );
   }
@@ -200,47 +157,55 @@ class _ReportIdentityRow extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final caption = tokens.typography.styles.others.caption;
-    // Matches the tappable row's inset so both glyphs share a leading edge.
-    // Top-only vertical space: a symmetric inset made the card's bottom
-    // margin depend on whether the attribution happened to be present.
+    // The same row box as the tappable row above: identical horizontal inset,
+    // so both glyphs share a leading edge, and the identical `step8` minimum
+    // height, so the air below the last line is the same whether or not this
+    // row is present.
+    //
+    // Padding alone could not do that. An earlier revision paid top-only
+    // vertical space to keep the *declared* geometry constant, but the
+    // tappable row's ink box centres a ~`step5` glyph in `step8` and so
+    // contributes optical air below its text that a bare `Row` does not —
+    // making the card's bottom margin visibly depend on whether the
+    // attribution happened to exist. Spacing row boxes rather than text is
+    // what actually holds.
     return Padding(
-      padding: EdgeInsets.only(
-        left: tokens.spacing.step2,
-        right: tokens.spacing.step2,
-        top: tokens.spacing.step2,
-      ),
-      // The full attribution lives in the tooltip; on screen it truncates
-      // rather than wrapping, so a long route cannot spill a stray fragment
-      // onto a second line under the row it belongs to.
-      child: Tooltip(
-        message: '$label ${tiers.first}',
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.description_outlined,
-              size: tokens.spacing.step5,
-              color: ai.metaText,
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            // Not flexible: the label is short fixed vocabulary, and
-            // "This rep…" tells the reader strictly less than nothing. It
-            // costs a bounded ~60px, so only the route below can be squeezed.
-            Text(
-              label,
-              maxLines: 1,
-              style: caption.copyWith(color: ai.faintMeta),
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            // The route sheds whole segments rather than characters; the
-            // label above it never gives ground.
-            Flexible(
-              child: _TieredIdentityText(
-                tiers: tiers,
-                style: caption.copyWith(color: ai.metaText),
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+        // The full attribution lives in the tooltip; on screen it truncates
+        // rather than wrapping, so a long route cannot spill a stray fragment
+        // onto a second line under the row it belongs to.
+        child: Tooltip(
+          message: '$label ${tiers.first}',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.description_outlined,
+                size: tokens.spacing.step5,
+                color: ai.metaText,
               ),
-            ),
-          ],
+              SizedBox(width: tokens.spacing.step2),
+              // Not flexible: the label is short fixed vocabulary, and
+              // "This rep…" tells the reader strictly less than nothing. It
+              // costs a bounded ~60px, so only the route below can be squeezed.
+              Text(
+                label,
+                maxLines: 1,
+                style: caption.copyWith(color: ai.faintMeta),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              // The route sheds whole segments rather than characters; the
+              // label above it never gives ground.
+              Flexible(
+                child: _TieredIdentityText(
+                  tiers: tiers,
+                  style: caption.copyWith(color: ai.metaText),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

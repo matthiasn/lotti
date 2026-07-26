@@ -242,6 +242,54 @@ void main() {
       }
     });
 
+    testWidgets('spends the alert tint on the glyph, never on the word', (
+      tester,
+    ) async {
+      // The band is a settings zone; it must not out-chroma the content it
+      // sits under. Tinting the word as well made the footer the loudest
+      // thing on the card and, in dark, lowered the word's own contrast.
+      for (final (stale, label) in [
+        (true, 'Out of date'),
+        (false, 'Up to date'),
+      ]) {
+        await pumpRow(
+          tester,
+          subject(hasReportContent: true, isStale: stale, onRunNow: () {}),
+        );
+        final tokens = tokensOf(tester);
+
+        expect(
+          tester.widget<Text>(find.text(label)).style?.color,
+          tokens.colors.aiCard.bodyText,
+          reason: 'the freshness word reads as state, not as an alert',
+        );
+      }
+
+      // The distinction still has to be visible somewhere, so the glyph — and
+      // only the glyph — changes ink between the two states.
+      for (final (stale, glyphKey, tint) in [
+        (
+          true,
+          'taskAgentStaleGlyph',
+          (DsTokens t) => t.colors.alert.warning.defaultColor,
+        ),
+        (
+          false,
+          'taskAgentFreshGlyph',
+          (DsTokens t) => t.colors.aiCard.metaText,
+        ),
+      ]) {
+        await pumpRow(
+          tester,
+          subject(hasReportContent: true, isStale: stale, onRunNow: () {}),
+        );
+        expect(
+          tester.widget<Icon>(find.byKey(ValueKey(glyphKey))).color,
+          tint(tokensOf(tester)),
+        );
+      }
+    });
+
     testWidgets('shares the trigger baseline when they fit one line', (
       tester,
     ) async {
@@ -282,6 +330,34 @@ void main() {
           find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
         );
         expect(skips, 1);
+      });
+    });
+
+    testWidgets('inks Skip no quieter than the value it cancels', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpRow(
+          tester,
+          subject(
+            automaticUpdatesEnabled: true,
+            showCountdown: true,
+            nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
+            onRunNow: () {},
+          ),
+        );
+        final tokens = tokensOf(tester);
+        final skip = tester.widget<Text>(find.text('Skip once')).style;
+
+        // An action rendered fainter than the static text beside it inverts
+        // the two, so Skip shares the countdown's register rather than
+        // dropping to metadata ink.
+        expect(skip?.color, tokens.colors.aiCard.bodyText);
+        // ...and the affordance is the shared hover fill, not a third
+        // "this is tappable" dialect in a band that already has two.
+        expect(skip?.decoration, anyOf(isNull, TextDecoration.none));
+        // Accent still means "this starts work" — and Skip stops it.
+        expect(skip?.color, isNot(tokens.colors.aiCard.accent));
       });
     });
 

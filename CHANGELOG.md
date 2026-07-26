@@ -37,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or a project with an assistant left its card empty for several seconds
   before the assistant appeared — the same delay tasks had, from the same
   cause. It now appears as the page opens.
+- **The update section at the bottom of the AI summary card now reads as its
+  own band in dark mode.** Its tint was mixed the wrong way for a dark
+  background, so it was all but invisible against the card; it now separates
+  the way it always did in light mode.
 - **The bottom of the card lines up.** Every row in the update section now
   starts on the same edge, including on a phone and in longer languages, and
   the card keeps the same bottom margin whether or not the "This report …"
