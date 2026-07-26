@@ -274,6 +274,183 @@ void main() {
     },
   );
 
+  test(
+    'a full pen stops pagination instead of evicting the oldest ciphertext',
+    () async {
+      // A forward walk emits up to 50 pages of 200 and manual history
+      // collection is unbounded, while the pen is a fixed LRU. Ciphertext
+      // creates no queue rows, so the depth-based back-pressure never fires —
+      // the walk would run the pen's oldest entries straight off the end,
+      // recreating the loss this sink exists to prevent. Stopping is safe:
+      // held events clamp the sync marker, so the next run resumes from the
+      // right anchor rather than skipping the gap.
+      final pen = PendingDecryptionPen(logging: logging, capacity: 2);
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        pen: pen,
+      );
+
+      final page = [
+        for (var i = 0; i < 2; i++)
+          _buildEvent(
+            eventId: '\$sealed$i',
+            originTsMs: i + 1,
+            type: EventTypes.Encrypted,
+          ),
+      ];
+      final cont = await sink.onPage(page, info(0, page.length));
+
+      expect(pen.size, 2);
+      expect(
+        cont,
+        isTrue,
+        reason:
+            'a page that fits exactly is admitted whole; the stop comes '
+            'when the next page has nowhere to go',
+      );
+      expect(
+        sink.lastAcceptedCount,
+        2,
+        reason:
+            'retained ciphertext counts as accepted, so the caller does '
+            'not read this page as a stale-cache miss',
+      );
+    },
+  );
+
+  test(
+    'admission is checked before holding, so nothing is evicted',
+    () async {
+      // `hold` enforces capacity itself by evicting the oldest entry, so a
+      // guard that runs after the page has been held has already destroyed
+      // something: a nearly-full pen taking two new events evicts one, then
+      // reports a size that looks like it stopped in time.
+      final pen = PendingDecryptionPen(logging: logging, capacity: 2);
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        pen: pen,
+      );
+
+      // Fill one slot, leaving exactly one free.
+      await sink.onPage([
+        _buildEvent(
+          eventId: r'$first',
+          originTsMs: 1,
+          type: EventTypes.Encrypted,
+        ),
+      ], info(0, 1));
+      expect(pen.size, 1);
+
+      // Two more new events against one free slot.
+      final cont = await sink.onPage([
+        _buildEvent(
+          eventId: r'$second',
+          originTsMs: 2,
+          type: EventTypes.Encrypted,
+        ),
+        _buildEvent(
+          eventId: r'$third',
+          originTsMs: 3,
+          type: EventTypes.Encrypted,
+        ),
+      ], info(1, 2));
+
+      expect(cont, isFalse, reason: 'pagination stops at the boundary');
+      expect(pen.size, 2, reason: 'filled exactly, never overflowed');
+      expect(
+        pen.holds(r'$first'),
+        isTrue,
+        reason: 'the oldest entry must not have been evicted to make room',
+      );
+    },
+  );
+
+  test(
+    'a full pen stops the page at the gap rather than queueing past it',
+    () async {
+      // Breaking out of the scan throws away work that has already crossed
+      // the network — later plaintext and already-held events included — and
+      // the manual "Fetch all history" path has no automatic retry to pick
+      // them up afterwards.
+      final pen = PendingDecryptionPen(logging: logging, capacity: 1);
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        pen: pen,
+      );
+
+      final cont = await sink.onPage([
+        _buildEvent(
+          eventId: r'$sealedA',
+          originTsMs: 1,
+          type: EventTypes.Encrypted,
+        ),
+        // No slot left for this one...
+        _buildEvent(
+          eventId: r'$sealedB',
+          originTsMs: 2,
+          type: EventTypes.Encrypted,
+        ),
+        // ...but this one needs no slot and must still be queued.
+        _buildEvent(eventId: r'$plain', originTsMs: 3),
+      ], info(0, 3));
+
+      expect(cont, isFalse, reason: 'pagination still stops');
+      expect(pen.size, 1, reason: 'capacity respected, nothing evicted');
+      expect(pen.holds(r'$sealedA'), isTrue);
+      final stats = await queue.stats();
+      expect(
+        stats.total,
+        0,
+        reason:
+            'nothing past the gap may be queued: the overflow event has '
+            'no row and no pen entry, so it has no marker clamp, and a later '
+            'event from the same page would advance the marker past it',
+      );
+    },
+  );
+
+  test(
+    'capacity is budgeted per room, not across the whole pen',
+    () async {
+      // The pen's capacity and LRU are global. Ciphertext left over from a
+      // room the user switched away from would otherwise consume the entire
+      // budget and stop the active room's bootstrap dead — `onRoomChanged`
+      // prunes queue rows but not the pen.
+      final pen = PendingDecryptionPen(logging: logging, capacity: 1)
+        ..hold(
+          _buildEvent(
+            eventId: r'$stale',
+            originTsMs: 1,
+            roomId: '!oldRoom:example.org',
+            type: EventTypes.Encrypted,
+          ),
+        );
+
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        pen: pen,
+      );
+      final cont = await sink.onPage([
+        _buildEvent(
+          eventId: r'$fresh',
+          originTsMs: 2,
+          type: EventTypes.Encrypted,
+        ),
+      ], info(0, 1));
+
+      expect(
+        cont,
+        isTrue,
+        reason: 'the active room has its own budget and is not blocked',
+      );
+      expect(pen.holds(r'$fresh'), isTrue);
+    },
+  );
+
   test('cancelSignal stops pagination between pages', () async {
     // Make the pre-cancel queue contain >highWater entries so the sink
     // awaits drain when the next onPage fires.

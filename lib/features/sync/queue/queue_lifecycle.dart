@@ -168,11 +168,13 @@ extension QueueLifecycle on QueuePipelineCoordinator {
     );
   }
 
-  /// How many consecutive pen flushes may produce nothing before
-  /// [drainUntilEmptyImpl] stops waiting on it. At the loop's 200ms back-off
-  /// this is ~1s — long enough for the SDK to finish a decryption already in
-  /// progress, short enough that ciphertext whose key has not arrived does not
-  /// hold teardown open for the whole timeout.
+  /// How many consecutive pen flushes that actually re-queried the room may
+  /// produce nothing before [drainUntilEmptyImpl] stops waiting on it.
+  ///
+  /// Counted in *eligible* sweeps, not wall-clock ticks: the pen throttles
+  /// lookups on its own cadence and this loop polls faster than that, so
+  /// counting throttled sweeps would burn the whole allowance inside a single
+  /// lookup interval and tear down without ever having looked.
   static const int _penStallFlushes = 5;
 
   /// Implementation of [QueuePipelineCoordinator.drainUntilEmpty]; see [QueueLifecycle].
@@ -200,10 +202,18 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       //    while held events are waiting to enter it.
       final room = await _resolveRoom();
       var penEnqueued = 0;
+      var penLookups = 0;
+      // No room means no lookup is possible at all — after logout or room
+      // removal the pen can never drain, so a pass with no room counts as
+      // stalled. Without this the eligible-lookup rule below never fires and
+      // teardown polls the whole 30s deadline, blocking the user-visible
+      // flag-off and logout paths.
+      final penCanProgress = room != null;
       if (room != null) {
         try {
           final outcome = await _pen.flushInto(queue: _queue, room: room);
           penEnqueued = outcome.enqueued;
+          penLookups = outcome.lookups;
         } catch (error, stackTrace) {
           _logging.error(
             LogDomain.sync,
@@ -228,7 +238,12 @@ extension QueueLifecycle on QueuePipelineCoordinator {
 
       if (penEnqueued > 0) {
         unproductivePenFlushes = 0;
-      } else if (_pen.size > 0) {
+      } else if (_pen.size > 0 && (penLookups > 0 || !penCanProgress)) {
+        // Only a sweep that actually re-queried the room counts. The pen
+        // throttles its own lookups, and this loop polls faster than that
+        // interval — counting throttled sweeps would let shutdown exhaust its
+        // allowance without ever having looked once, discarding a key that
+        // landed in the gap.
         unproductivePenFlushes++;
       }
 

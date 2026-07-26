@@ -116,7 +116,9 @@ void main() {
       final pen = PendingDecryptionPen(
         logging: logging,
         maxAttempts: 2,
+        // Models per-sweep semantics, so both cadences are disabled.
         attemptInterval: Duration.zero,
+        lookupInterval: Duration.zero,
       );
       final encrypted = buildEvent(
         eventId: r'$doomed',
@@ -278,6 +280,97 @@ void main() {
     expect(pen.oldestHeldOriginTs('!other:example.org'), 100);
     expect(pen.oldestHeldOriginTs('!empty:example.org'), isNull);
   });
+
+  test(
+    'a fast drain loop does not re-query the room for every sweep',
+    () async {
+      // The lookup is the expensive half of a sweep, and the worker flushes
+      // the whole pen before every batch with `inboundWorkerBatchSize == 1`.
+      // Draining 10k rows against a full pen would issue millions of
+      // sequential `getEventById` calls. That was self-limiting only while
+      // entries were dropped after 20 sweeps; holding them for ten real
+      // minutes makes the load persist, so the lookup needs its own cadence.
+      final pen = PendingDecryptionPen(logging: logging);
+      final encrypted = buildEvent(
+        eventId: r'$sealed',
+        roomId: roomId,
+        originTsMs: 1,
+        type: EventTypes.Encrypted,
+      );
+      final held = DateTime.utc(2026, 7, 26, 12);
+      await withClock(Clock.fixed(held), () async => pen.hold(encrypted));
+
+      var lookups = 0;
+      when(() => room.getEventById(r'$sealed')).thenAnswer((_) async {
+        lookups++;
+        return encrypted;
+      });
+
+      // 100 sweeps inside one instant — what a burst drain does.
+      await withClock(
+        Clock.fixed(held.add(const Duration(seconds: 5))),
+        () async {
+          for (var i = 0; i < 100; i++) {
+            await pen.flushInto(queue: queue, room: room);
+          }
+        },
+      );
+      expect(
+        lookups,
+        1,
+        reason: 'one lookup per entry per lookupInterval, not per sweep',
+      );
+
+      // A later sweep, past the interval, looks again — so a key that lands
+      // is still noticed promptly.
+      await withClock(
+        Clock.fixed(held.add(const Duration(seconds: 7))),
+        () async {
+          await pen.flushInto(queue: queue, room: room);
+        },
+      );
+      expect(lookups, 2);
+      expect(pen.size, 1, reason: 'still held, still encrypted');
+    },
+  );
+
+  test(
+    'eviction prefers an inactive room over the room being held for',
+    () async {
+      // Plain LRU is wrong once admission is budgeted per room. Switching
+      // A -> B -> A can leave an A entry as the global oldest while a B entry
+      // is newer; evicting the A entry would cost the active room both the
+      // ciphertext and the marker clamp that protects it, so later A commits
+      // would advance straight past it.
+      final pen = PendingDecryptionPen(logging: logging, capacity: 2);
+      Event sealed(String id, String room, int ts) => buildEvent(
+        eventId: id,
+        roomId: room,
+        originTsMs: ts,
+        type: EventTypes.Encrypted,
+      );
+
+      pen
+        ..hold(sealed(r'$oldestA', roomId, 1))
+        ..hold(sealed(r'$newerB', '!roomB:example.org', 2))
+        // Room A again, over capacity: the B entry is the right victim even
+        // though the A entry is older.
+        ..hold(sealed(r'$freshA', roomId, 3));
+
+      expect(pen.size, 2);
+      expect(
+        pen.holds(r'$oldestA'),
+        isTrue,
+        reason: 'the active room keeps its ciphertext and its marker clamp',
+      );
+      expect(pen.holds(r'$freshA'), isTrue);
+      expect(
+        pen.holds(r'$newerB'),
+        isFalse,
+        reason: 'nothing is sweeping the inactive room, so it yields first',
+      );
+    },
+  );
 
   test('capacity eviction drops the oldest entry', () async {
     final pen = PendingDecryptionPen(logging: logging, capacity: 2);
@@ -452,9 +545,10 @@ void main() {
           logging: localLogging,
           capacity: scenario.capacity,
           maxAttempts: scenario.maxAttempts,
-          // The model counts one attempt per flush, so this scenario opts
-          // out of the real-time spacing production uses.
+          // The model counts one attempt per flush and one lookup per sweep,
+          // so this scenario opts out of both real-time cadences.
           attemptInterval: Duration.zero,
+          lookupInterval: Duration.zero,
         );
         final expected = ExpectedPenModel(
           capacity: scenario.capacity,

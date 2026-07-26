@@ -74,17 +74,76 @@ class QueueBootstrapSink implements BootstrapSink {
     // Pen first, enqueue second — the same order the live producer uses.
     // `hold` returns false for anything already decrypted, so this only
     // diverts the events the queue would otherwise refuse.
+    //
+    // Admission is checked per event and *before* holding, never after.
+    // `hold` enforces capacity itself by evicting the oldest entry, so a
+    // page that overshoots has already destroyed something by the time any
+    // after-the-fact size check runs: a 255-entry pen taking two new events
+    // evicts one, then reports 256 to a guard that thinks it stopped in time.
     final heldIn = pen;
-    final forQueue = heldIn == null
-        ? events
-        : [
-            for (final event in events)
-              if (!heldIn.hold(event)) event,
-          ];
-    final penned = events.length - forQueue.length;
+    final forQueue = <Event>[];
+    var penned = 0;
+    var newlyPenned = 0;
+    var penExhausted = false;
+
+    if (heldIn == null) {
+      forQueue.addAll(events);
+    } else {
+      for (final event in events) {
+        if (event.type != EventTypes.Encrypted) {
+          forQueue.add(event);
+          continue;
+        }
+        // Budget per room, not globally. The pen's capacity and LRU are
+        // global, so ciphertext left over from a room the user switched away
+        // from would otherwise eat the whole budget and stop the active
+        // room's bootstrap without admitting a single event.
+        final roomId = event.roomId ?? '';
+        // A re-hold of something already held costs no slot.
+        if (!heldIn.holds(event.eventId) &&
+            heldIn.sizeForRoom(roomId) >= heldIn.capacity) {
+          // Stop the page here. Nothing after this point may be queued:
+          // this event has no row, no pen entry and therefore no marker
+          // clamp, so a later plaintext event from the same page would
+          // advance the marker straight past it and the incomplete-bootstrap
+          // retry would then anchor after the gap.
+          //
+          // This does discard the remainder of a page that has already been
+          // fetched, which is a real cost on the manual "Fetch all history"
+          // path since nothing retries it automatically. That is the better
+          // side of the trade: re-fetching is free, and losing an event
+          // behind an advanced marker is permanent. Admitting past the gap
+          // safely needs the persisted resume floor tracked as lotti3-0i2.
+          penExhausted = true;
+          break;
+        }
+        final sizeBefore = heldIn.size;
+        heldIn.hold(event);
+        penned++;
+        if (heldIn.size > sizeBefore) newlyPenned++;
+      }
+    }
 
     final enqueue = await _queue.appendBootstrapPage(forQueue);
-    _lastAcceptedCount = enqueue.accepted;
+
+    // Retained ciphertext counts as accepted. `collectHistoryForBootstrapImpl`
+    // reads `lastAcceptedCount == 0` as a stale-cache signal and pulls up to
+    // five more pages past the boundary; on an all-encrypted page that would
+    // be a lie, and those extra pages are exactly what pushes the pen over
+    // capacity and evicts the boundary events we were trying to keep.
+    _lastAcceptedCount = enqueue.accepted + newlyPenned;
+
+    if (newlyPenned > 0 || penExhausted) {
+      // No rows means no depth signal, so an idle worker would not look at
+      // the pen until its 60s empty-queue tick.
+      //
+      // Exhaustion signals too, and that case matters more: a page that adds
+      // nothing new is exactly the one where the pen is stuck, and
+      // `BridgeCoordinator` gives up after ~10s of retries — well inside that
+      // idle tick. Without a nudge every retry meets the same full pen and
+      // the bridge abandons the walk even if a key landed seconds earlier.
+      _queue.signalPendingWork();
+    }
 
     _logging.log(
       LogDomain.sync,
@@ -95,6 +154,7 @@ class QueueBootstrapSink implements BootstrapSink {
       'dupes=${enqueue.duplicatesDropped} '
       'filteredOutByType=${enqueue.filteredOutByType} '
       'penned=$penned '
+      'newlyPenned=$newlyPenned '
       'deferredPendingDecryption=${enqueue.deferredPendingDecryption} '
       'totalEventsSoFar=${info.totalEventsSoFar} '
       'oldestTs=${info.oldestTimestampSoFar} '
@@ -102,6 +162,29 @@ class QueueBootstrapSink implements BootstrapSink {
       'elapsedMs=${info.elapsed.inMilliseconds}',
       subDomain: _logSub,
     );
+
+    // Ciphertext creates no queue rows, so `_waitForDrain` — which watches
+    // queue depth — applies no back-pressure to an all-encrypted run at all.
+    // A forward walk emits up to 50 pages of 200, and manual history
+    // collection is unbounded, against a 256-entry LRU pen: without this the
+    // walk silently evicts the oldest ciphertext long before it finishes,
+    // recreating exactly the loss this sink was changed to prevent.
+    //
+    // Stopping is safe now that held events clamp the sync marker: the marker
+    // cannot advance past what the pen is holding, so the next run resumes
+    // from the right anchor instead of skipping the gap. Evicting is not
+    // safe, so prefer the bounded stop.
+    if (penExhausted) {
+      _logging.log(
+        LogDomain.sync,
+        'queue.bootstrap.penFull '
+        'page=${info.pageIndex} '
+        'penSize=${heldIn?.size} '
+        'capacity=${heldIn?.capacity}',
+        subDomain: _logSub,
+      );
+      return false;
+    }
 
     try {
       await _waitForDrain();
