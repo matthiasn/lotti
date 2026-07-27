@@ -187,21 +187,24 @@ void main() {
       );
     });
 
-    test('applies custom text theme with correct font sizes', () {
+    test('leaves the base text theme untouched', () {
+      // The base theme is the design system's; re-copying its most-used
+      // slots with legacy size constants silently replaced the token
+      // typography the standalone theme validates.
       final baseTheme = ThemeData.light();
       final themedData = withOverrides(baseTheme);
 
       expect(
-        themedData.textTheme.titleMedium?.fontSize,
-        equals(fontSizeMedium),
+        themedData.textTheme.titleMedium,
+        equals(baseTheme.textTheme.titleMedium),
       );
       expect(
-        themedData.textTheme.bodyLarge?.fontSize,
-        equals(fontSizeMedium),
+        themedData.textTheme.bodyLarge,
+        equals(baseTheme.textTheme.bodyLarge),
       );
       expect(
-        themedData.textTheme.bodyMedium?.fontSize,
-        equals(fontSizeMedium),
+        themedData.textTheme.bodyMedium,
+        equals(baseTheme.textTheme.bodyMedium),
       );
     });
 
