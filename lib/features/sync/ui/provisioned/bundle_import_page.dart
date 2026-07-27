@@ -442,7 +442,13 @@ class _ScannerViewState extends State<_ScannerView> {
     super.initState();
     // Nothing to start when the preview is a stand-in.
     if (scannerPreviewOverride == null) {
-      unawaited(_startCamera());
+      // After the first frame, not during initState: `MobileScanner` is a
+      // child, so it has not mounted or called `attach()` yet. Starting here
+      // would leave the controller waiting on its attachment timeout instead
+      // of a completed attach.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_startCamera());
+      });
     }
   }
 

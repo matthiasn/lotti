@@ -383,6 +383,10 @@ void main() {
       );
       await tester.pump();
       expect(find.byType(MobileScanner), findsOneWidget);
+      // The camera really is mid-startup, so what follows is the race and not
+      // a page that never tried.
+      expect(gated.started, isTrue);
+      expect(gated.gate.isCompleted, isFalse);
 
       // The user moves on before the camera has finished coming up.
       await tester.pumpWidget(const SizedBox.shrink());
@@ -725,8 +729,13 @@ class _FailingStartScanner extends FakeMethodChannelMobileScanner {
 class _GatedStartScanner extends FakeMethodChannelMobileScanner {
   final Completer<void> gate = Completer<void>();
 
+  /// Whether the page ever asked for the camera. Without this the test would
+  /// pass just as happily if startup never began at all.
+  bool started = false;
+
   @override
   Future<MobileScannerViewAttributes> start(StartOptions startOptions) async {
+    started = true;
     await gate.future;
     return super.start(startOptions);
   }
