@@ -303,9 +303,14 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
+      // The legacy profiles leaf keeps the AI Settings list beneath it on
+      // the shared `settings-ai` key, so a back tap reveals the list that
+      // is already mounted instead of swapping this page for a fresh one.
+      expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<InferenceProfilePage>());
+      expect(pages[1].child, isA<AiSettingsPage>());
+      expect(pages[1].key, const ValueKey('settings-ai'));
+      expect(pages[2].child, isA<InferenceProfilePage>());
     });
 
     /// AI Settings v4 — per-kind detail BeamPages. Each test mounts the
@@ -440,6 +445,250 @@ void main() {
         expect(profilePage.profileId, 'p-1');
       },
     );
+
+    /// The AI Settings list — the destination every AI detail page returns
+    /// to, and the URL its `popToNamed` must name.
+    const aiListUrl = '/settings/ai';
+
+    /// Every AI-settings detail surface, as
+    /// `(label, url, path-parameter key, path-parameter value)`. Shared by
+    /// the `buildPages`-level group and the real-navigator group below so
+    /// a new detail kind is added in exactly one place and both levels
+    /// provably cover the same set.
+    const aiDetailRoutes = <(String, String, String, String)>[
+      ('provider', '/settings/ai/provider/gemini-1', 'providerId', 'gemini-1'),
+      ('model', '/settings/ai/model/m-1', 'modelId', 'm-1'),
+      ('profile', '/settings/ai/profile/p-1', 'profileId', 'p-1'),
+    ];
+
+    /// Back navigation out of the AI-settings detail pages.
+    ///
+    /// Beamer's default pop (`BeamPage.pathSegmentPop`) strips exactly ONE
+    /// URI segment. Every AI detail URL is two segments deep under the list
+    /// (`/settings/ai/<kind>/<id>`), so without an explicit `popToNamed` the
+    /// first back tap strands the route on `/settings/ai/<kind>` — a URL
+    /// that carries no id and therefore rebuilds the AI Settings list. The
+    /// next back tap pops that dead URI to `/settings/ai`, which builds the
+    /// very same list page again: the user taps back, watches the list slide
+    /// out and an identical list slide back in, and is still on the page
+    /// they were trying to leave. `popToNamed` skips the dead intermediate
+    /// URI so one back tap is one level, with a real pop transition.
+    group('AI settings detail pages pop back to the list in one tap', () {
+      Future<List<BeamPage>> buildFor(
+        WidgetTester tester,
+        String url, {
+        Map<String, String> pathParameters = const {},
+      }) {
+        final routeInformation = RouteInformation(uri: Uri.parse(url));
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: pathParameters);
+        return pumpAndBuildPages(tester, beamState, routeInformation);
+      }
+
+      for (final (label, url, paramKey, paramValue) in aiDetailRoutes) {
+        testWidgets(
+          'the $label detail page declares popToNamed $aiListUrl so its '
+          'back tap skips the dead /settings/ai/$label URI',
+          (tester) async {
+            final pages = await buildFor(
+              tester,
+              url,
+              pathParameters: {paramKey: paramValue},
+            );
+
+            expect(pages.last.popToNamed, aiListUrl);
+          },
+        );
+      }
+
+      testWidgets(
+        'the Fix-flow URL (?focusApiKey=true) pops to the bare list URL, '
+        'so re-entering the detail page does not silently re-focus the key',
+        (tester) async {
+          final pages = await buildFor(
+            tester,
+            '/settings/ai/provider/gemini-1?focusApiKey=true',
+            pathParameters: {'providerId': 'gemini-1'},
+          );
+
+          expect(pages.last.popToNamed, aiListUrl);
+        },
+      );
+
+      testWidgets(
+        'the AI Settings list itself sets no popToNamed — it is one segment '
+        'deep, so Beamer default single-segment pop already lands on '
+        '/settings',
+        (tester) async {
+          final pages = await buildFor(tester, aiListUrl);
+
+          expect(pages.last.child, isA<AiSettingsPage>());
+          expect(pages.last.popToNamed, isNull);
+        },
+      );
+
+      testWidgets(
+        'the legacy /settings/ai/profiles leaf sets no popToNamed either — '
+        'it is one segment deep, and it now keeps the list beneath it so '
+        'the default pop reveals that page rather than swapping it',
+        (tester) async {
+          final pages = await buildFor(tester, '/settings/ai/profiles');
+
+          expect(pages.last.child, isA<InferenceProfilePage>());
+          expect(pages.last.popToNamed, isNull);
+          expect(pages[1].key, const ValueKey('settings-ai'));
+        },
+      );
+    });
+
+    /// The same contract, but exercised end to end through a real
+    /// [BeamerDelegate] and a real [Navigator] — the layer that actually
+    /// consumes `popToNamed` (`BeamerDelegate._onPopPage`). Page *children*
+    /// are swapped for placeholders by [_RoutingOnlySettingsLocation] so the
+    /// stack mounts without standing up the whole AI settings dependency
+    /// graph; every routing input Beamer reads — path patterns, page keys,
+    /// `popToNamed` — still comes from the production location.
+    group('AI settings back navigation through a real Beamer navigator', () {
+      late BeamerDelegate delegate;
+      late _RouteRecordingObserver observer;
+
+      /// Mounts the settings page stack at `/settings`, then walks the same
+      /// route sequence a user does: Settings → AI Settings → detail. Going
+      /// through `beamToNamed` (rather than deep-linking straight to the
+      /// detail URL) is what gives Beamer the real beaming history its pop
+      /// machinery consults.
+      Future<void> openDetail(WidgetTester tester, String detailUrl) async {
+        observer = _RouteRecordingObserver();
+        delegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/settings',
+          navigatorObservers: [observer],
+          locationBuilder: (routeInformation, _) =>
+              _RoutingOnlySettingsLocation(routeInformation),
+        );
+        await delegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/settings')),
+        );
+        await tester.pumpWidget(
+          MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routeInformationParser: BeamerParser(),
+            routerDelegate: delegate,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        for (final url in ['/settings/ai', detailUrl]) {
+          delegate.beamToNamed(url);
+          await tester.pumpAndSettle();
+        }
+      }
+
+      /// The system back gesture and the header chevron both end up here:
+      /// `SettingsHeaderBar` pops the visible page stack, and Beamer turns
+      /// that into a route update via `BeamerDelegate._onPopPage`.
+      Future<void> tapBack(WidgetTester tester) async {
+        delegate.navigator.pop();
+        await tester.pumpAndSettle();
+      }
+
+      List<Object?> pageKeys() =>
+          delegate.currentPages.map((page) => page.key).toList();
+
+      tearDown(() => delegate.dispose());
+
+      for (final (label, url, _, _) in aiDetailRoutes) {
+        testWidgets(
+          'one back tap from the $label detail page lands on the AI Settings '
+          'list, not on the dead /settings/ai/$label URI',
+          (tester) async {
+            await openDetail(tester, url);
+            expect(delegate.currentPages, hasLength(3));
+
+            await tapBack(tester);
+
+            expect(delegate.configuration.uri.path, aiListUrl);
+            expect(pageKeys(), const [
+              ValueKey('settings'),
+              ValueKey('settings-ai'),
+            ]);
+          },
+        );
+      }
+
+      testWidgets(
+        'the legacy profiles leaf reveals the AI Settings list beneath it '
+        'instead of swapping itself for a fresh copy of that list',
+        (tester) async {
+          await openDetail(tester, '/settings/ai/profiles');
+          expect(delegate.currentPages, hasLength(3));
+
+          observer.reset();
+          await tapBack(tester);
+
+          expect(delegate.configuration.uri.path, aiListUrl);
+          expect(pageKeys(), const [
+            ValueKey('settings'),
+            ValueKey('settings-ai'),
+          ]);
+          // The list was already mounted underneath, so the pop uncovers
+          // it. A pushed `settings-ai` here would mean the leaf had been
+          // swapped for a new list — the wrong-transition symptom.
+          expect(observer.pushedKeys, isEmpty);
+          expect(observer.goneKeys, const [ValueKey('settings-ai-profiles')]);
+        },
+      );
+
+      testWidgets(
+        'two back taps from a detail page reach the Settings root — the '
+        'user never lands on the AI Settings list twice',
+        (tester) async {
+          await openDetail(tester, '/settings/ai/provider/gemini-1');
+
+          await tapBack(tester);
+          await tapBack(tester);
+
+          expect(delegate.configuration.uri.path, '/settings');
+          expect(pageKeys(), const [ValueKey('settings')]);
+        },
+      );
+
+      testWidgets(
+        'backing out of the AI Settings list removes it instead of pushing '
+        'a second copy on top of itself',
+        (tester) async {
+          await openDetail(tester, '/settings/ai/provider/gemini-1');
+          await tapBack(tester);
+
+          observer.reset();
+          await tapBack(tester);
+
+          // The wrong-transition symptom is Navigator swapping one AI
+          // Settings page for an identical one, so the list slides out and
+          // an identical list slides straight back in. Leaving the list
+          // must only remove it.
+          expect(observer.pushedKeys, isEmpty);
+          expect(observer.goneKeys, const [ValueKey('settings-ai')]);
+        },
+      );
+
+      testWidgets(
+        'the Fix-flow URL pops back to the list with its query dropped, so '
+        'the API-key field is not re-focused on the way out',
+        (tester) async {
+          await openDetail(
+            tester,
+            '/settings/ai/provider/gemini-1?focusApiKey=true',
+          );
+
+          await tapBack(tester);
+
+          expect(delegate.configuration.uri.toString(), '/settings/ai');
+        },
+      );
+    });
 
     test('buildPages builds the sync branch hub from the shared tree', () {
       final routeInformation = RouteInformation(
@@ -1608,4 +1857,68 @@ void main() {
       });
     });
   });
+}
+
+/// The production [SettingsLocation] with every page's *child* replaced by a
+/// cheap placeholder.
+///
+/// Beamer's pop machinery only reads a page's routing metadata — the key and
+/// `popToNamed` — so keeping those verbatim from the real location is enough
+/// to exercise back navigation faithfully, while dropping the children lets
+/// the stack mount without the AI settings dependency graph (Riverpod
+/// controllers, `SettingsDb`, design tokens) behind it.
+class _RoutingOnlySettingsLocation extends SettingsLocation {
+  _RoutingOnlySettingsLocation(super.routeInformation);
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) {
+    return super.buildPages(context, state).map((page) {
+      return BeamPage(
+        key: page.key,
+        title: page.title,
+        popToNamed: page.popToNamed,
+        child: const SizedBox.shrink(),
+      );
+    }).toList();
+  }
+}
+
+/// Records which page keys the [Navigator] pushed and which it got rid of.
+///
+/// Distinguishing "the list was removed" from "the list was removed and an
+/// identical one pushed in its place" is the whole point: the second is the
+/// wrong-transition bug, and it is invisible to a URL assertion because both
+/// end up on `/settings/ai`.
+class _RouteRecordingObserver extends NavigatorObserver {
+  final List<Object?> pushedKeys = [];
+
+  /// Keys of routes that left the stack, whether they animated out (`didPop`)
+  /// or were dropped outright (`didRemove`) — which of the two the transition
+  /// delegate picks is not what these tests are pinning down.
+  final List<Object?> goneKeys = [];
+
+  void reset() {
+    pushedKeys.clear();
+    goneKeys.clear();
+  }
+
+  Object? _keyOf(Route<dynamic> route) {
+    final settings = route.settings;
+    return settings is Page ? settings.key : null;
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    pushedKeys.add(_keyOf(route));
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    goneKeys.add(_keyOf(route));
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    goneKeys.add(_keyOf(route));
+  }
 }

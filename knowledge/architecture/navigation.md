@@ -5,13 +5,17 @@ description: Eight independent Beamer stacks behind one IndexedStack, and the ru
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
-stale_after: 2027-01-11
+generated: { by: claude-code/opus-5, at: 2026-07-27T12:00:00Z }
+stale_after: 2027-01-27
 sources:
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
     title: MyBeamerApp and AppScreen
     last_modified: 2026-07-24
+  - id: settings-location
+    resource: ../../lib/beamer/locations/settings_location.dart
+    title: SettingsLocation — the settings page stack and its pop targets
+    last_modified: 2026-07-27
   - id: beamer-delegates
     resource: ../../lib/beamer/beamer_delegates.dart
     title: Per-tab BeamerDelegate definitions
@@ -104,6 +108,46 @@ Matching is per-delegate and mostly substring-based, which is a trap the
 `path == '/events' || path.startsWith('/events/')` so that `/settings/events`
 and `/prevents` do not get routed into the events tab. New delegates should
 follow that root-path form rather than `contains`.
+
+# A pop walks one URI segment
+
+Beamer's default pop (`BeamPage.pathSegmentPop`) strips exactly **one** path
+segment. Any page sitting two or more segments below the page it should return
+to therefore pops onto an intermediate URL that no page was written for — and
+since `canBeamLocationHandleUri` matches a prefix of a pattern, `SettingsLocation`
+still claims it and rebuilds the parent list from it. The back tap looks like it
+worked, but the route is stranded: the *next* back tap pops that dead URL to the
+real parent, builds the same parent page again, and the user watches the list
+slide out and an identical list slide straight back in without going anywhere.
+
+Such a page must name its destination with `BeamPage.popToNamed`, so one tap is
+one level and the pop plays as a pop:
+
+| Page | URL | `popToNamed` |
+|------|-----|--------------|
+| Habit editor | `/settings/habits/by_id/:habitId` | `/settings/habits` |
+| Habit search | `/settings/habits/search/:searchTerm` | `/settings/habits` |
+| AI provider detail | `/settings/ai/provider/:providerId` | `/settings/ai` |
+| AI model edit | `/settings/ai/model/:modelId` | `/settings/ai` |
+| AI profile edit | `/settings/ai/profile/:profileId` | `/settings/ai` |
+
+The AI rows all use `aiSettingsParentRoute`, the same constant the detail pages'
+own back affordance beams to (`popAiSettingsDetail`), so the gesture and the
+chevron cannot drift apart.
+
+A one-segment leaf like `/settings/theming` needs no `popToNamed`: the default
+pop already lands on its parent.
+
+But landing on the right URL is only half of it. The page the leaf pops *onto*
+must already be in the stack beneath it, on a stable key, or Navigator swaps
+the leaf for a freshly built parent instead of uncovering the one that was
+there — a push animation on a back gesture, the same thing the reader sees in
+the two-segment case. That is why `SettingsLocation` emits the AI Settings list
+under every `/settings/ai/*` URL and the Sync hub under every
+`/settings/sync/*` URL, each always on one key (`settings-ai`,
+`settings-sync`). A child URL that opts out of its parent page gets the wrong
+transition even when its URL is correct — which is what the legacy
+`/settings/ai/profiles` leaf used to do.
 
 # Chrome rules are pure functions of router state
 

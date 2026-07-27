@@ -21,7 +21,7 @@ import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 /// hyphen to a slash.
 const Map<String, String> settingsNodeUrls = {
   'onboarding': '/settings/onboarding',
-  'ai': '/settings/ai',
+  'ai': aiSettingsParentRoute,
   'ai/profiles': '/settings/ai/profiles',
   'agents': '/settings/agents',
   'agents/templates': '/settings/agents/templates',
@@ -86,6 +86,17 @@ final List<MapEntry<String, String>> _settingsNodeUrlsLongestFirst =
 
 /// Root path when nothing is selected.
 const String settingsRootUrl = '/settings';
+
+/// The AI Settings list — where the tree's `ai` node lands, and where every
+/// AI detail surface returns to.
+///
+/// Three things have to agree on this string: the tree tap that opens AI
+/// Settings ([settingsNodeUrls]), the `popToNamed` on each AI detail
+/// `BeamPage` in `settings_location.dart`, and the per-page back affordance
+/// (`popAiSettingsDetail`). It lives here — a UI-free module the routing
+/// layer, the tree, and the AI pages can all reach — so the back gesture and
+/// the header chevron cannot drift onto different destinations.
+const String aiSettingsParentRoute = '/settings/ai';
 
 /// Turns a tree path into a Beamer URL. The deepest node in the
 /// path wins — any ancestors are implicit in the URL structure.

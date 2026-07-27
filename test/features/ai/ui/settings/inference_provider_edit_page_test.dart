@@ -32,7 +32,6 @@ import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
         mistralInferenceRepositoryProvider,
         omlxInferenceRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
-import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
@@ -42,6 +41,7 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';

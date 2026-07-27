@@ -1,13 +1,7 @@
 import 'package:flutter/widgets.dart';
+import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
-
-/// Parent URL the AI-settings detail pages return to. Centralised so
-/// the per-page back affordance and any deep-link "back" intent agree
-/// on the same destination — `/settings/ai` lands on the AI Settings
-/// list (Providers tab by default) regardless of mobile vs desktop
-/// surface.
-const String aiSettingsParentRoute = '/settings/ai';
 
 /// Back affordance shared by the AI-settings detail pages
 /// (`AiProviderDetailPage`, `InferenceModelEditPage`,
