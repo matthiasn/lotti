@@ -168,8 +168,10 @@ void main() {
                   isDark: true,
                   context: context,
                 );
-                expect(color.a, closeTo(180 / 255.0, 0.01));
-                final expectedColor = context.colorScheme.surfaceContainerLow;
+                // A neutral scrim: a tinted surface here read as haze over
+                // the page instead of dimming it.
+                expect(color.a, closeTo(170 / 255.0, 0.01));
+                final expectedColor = context.colorScheme.scrim;
                 expect(color.r, expectedColor.r);
                 expect(color.g, expectedColor.g);
                 expect(color.b, expectedColor.b);
@@ -190,8 +192,8 @@ void main() {
                   isDark: false,
                   context: context,
                 );
-                expect(color.a, closeTo(128 / 255.0, 0.01));
-                final expectedColor = context.colorScheme.outline;
+                expect(color.a, closeTo(110 / 255.0, 0.01));
+                final expectedColor = context.colorScheme.scrim;
                 expect(color.r, expectedColor.r);
                 expect(color.g, expectedColor.g);
                 expect(color.b, expectedColor.b);

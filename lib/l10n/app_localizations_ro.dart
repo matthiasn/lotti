@@ -9811,12 +9811,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Ce este nou';
 
   @override
-  String get settingThemingDark => 'Temă întunecată';
-
-  @override
-  String get settingThemingLight => 'Temă luminoasă';
-
-  @override
   String get sidebarActiveSectionTitle => 'Activitate';
 
   @override

@@ -1,5 +1,27 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+
+/// Platform-aware emoji font fallback chain for the app's text themes.
+///
+/// Skia does not auto-fall-back to a system color emoji font on Linux, so
+/// without this list any glyph that `Inter` cannot render shows as tofu.
+/// macOS/iOS pick up `Apple Color Emoji`, Windows uses `Segoe UI Emoji`,
+/// and Linux/Android use `Noto Color Emoji`. Listing all three is harmless
+/// on platforms that ignore the missing entries — fontconfig (or the
+/// equivalent on each OS) resolves the first family that exists locally.
+const List<String> _emojiFontFallback = <String>[
+  'Apple Color Emoji',
+  'Segoe UI Emoji',
+  'Noto Color Emoji',
+];
+
+List<String>? _getEmojiFontFallback() {
+  // kIsWeb is a compile-time constant, so the web branch cannot be exercised
+  // from VM-run unit tests; it is a known untested (trivial) branch.
+  if (kIsWeb) return null;
+  return _emojiFontFallback;
+}
 
 /// Builds the app's Material [ThemeData] from the design-system tokens.
 ///
@@ -21,8 +43,12 @@ class DesignSystemTheme {
       brightness: brightness,
       primary: tokens.colors.interactive.enabled,
       onPrimary: tokens.colors.text.onInteractiveAlert,
-      secondary: tokens.colors.surface.active,
-      onSecondary: tokens.colors.text.highEmphasis,
+      // Solid accents, not overlays: Material consumers treat secondary and
+      // tertiary as paintable semantic colors (slider thumbs, status
+      // indicators, watch states). The 24%-alpha `surface.active` and the
+      // near-page `alternative01` background rendered them all but invisible.
+      secondary: tokens.colors.interactive.hover,
+      onSecondary: tokens.colors.text.onInteractiveAlert,
       error: tokens.colors.alert.error.defaultColor,
       onError: tokens.colors.text.onInteractiveAlert,
       surface: tokens.colors.background.level01,
@@ -31,12 +57,27 @@ class DesignSystemTheme {
       onPrimaryContainer: tokens.colors.text.highEmphasis,
       secondaryContainer: tokens.colors.background.level03,
       onSecondaryContainer: tokens.colors.text.highEmphasis,
-      tertiary: tokens.colors.background.alternative01,
-      onTertiary: tokens.colors.text.highEmphasis,
+      tertiary: tokens.colors.alert.info.defaultColor,
+      onTertiary: tokens.colors.text.onInteractiveAlert,
       tertiaryContainer: tokens.colors.background.level03,
       onTertiaryContainer: tokens.colors.text.highEmphasis,
-      errorContainer: tokens.colors.alert.error.hover,
-      onErrorContainer: tokens.colors.text.onInteractiveAlert,
+      // A subtle wash, not a solid fill: consumers paint errorContainer as
+      // banner and badge backgrounds (often with further alpha), and its
+      // foreground must survive over what is effectively the page surface.
+      // 0x2E is the token set's own surface-wash alpha (see the generated
+      // proposalKind surfaces); `ink` is the error foreground designed for
+      // exactly such barely-tinted surfaces.
+      errorContainer: tokens.colors.alert.error.defaultColor.withAlpha(0x2E),
+      onErrorContainer: tokens.colors.alert.error.ink,
+      // The full Material container ramp. Left unset, the low/mid/high slots
+      // fall back to `surface`, so every legacy consumer of them — chat
+      // inputs, agent cards, selection surfaces — collapsed onto the page
+      // background. `level03` is a divider gray, not a surface, so the ramp
+      // tops out at `level02` rather than borrowing it.
+      surfaceContainerLowest: tokens.colors.background.level01,
+      surfaceContainerLow: tokens.colors.background.level02,
+      surfaceContainer: tokens.colors.background.level02,
+      surfaceContainerHigh: tokens.colors.background.level02,
       surfaceContainerHighest: tokens.colors.background.level02,
       onSurfaceVariant: tokens.colors.text.mediumEmphasis,
       outline: tokens.colors.decorative.level01,
@@ -59,6 +100,10 @@ class DesignSystemTheme {
           headlineSmall: tokens.typography.styles.heading.heading3,
           titleLarge: tokens.typography.styles.subtitle.subtitle1,
           titleMedium: tokens.typography.styles.subtitle.subtitle2,
+          // Mapped rather than left to the Material default: an unmapped slot
+          // would render in Flutter's fallback font and scale, off the token
+          // ramp, for every legacy `textTheme.titleSmall` consumer.
+          titleSmall: tokens.typography.styles.subtitle.subtitle2,
           bodyLarge: tokens.typography.styles.body.bodyLarge,
           bodyMedium: tokens.typography.styles.body.bodyMedium,
           bodySmall: tokens.typography.styles.body.bodySmall,
@@ -68,12 +113,23 @@ class DesignSystemTheme {
         ).apply(
           bodyColor: tokens.colors.text.highEmphasis,
           displayColor: tokens.colors.text.highEmphasis,
+          // Applied at the theme level so the ambient DefaultTextStyle carries
+          // the emoji fallback: token styles pin `Inter` without a fallback of
+          // their own, and TextStyle.merge inherits the fallback from the
+          // ambient style — which is how emoji (e.g. the sync verification
+          // row) render on Linux instead of as tofu.
+          fontFamilyFallback: _getEmojiFontFallback(),
         );
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
+      // The legacy accent slot. Unset, a dark ThemeData resolves it to
+      // `colorScheme.surface`, turning every `Theme.of(context).primaryColor`
+      // consumer — app-bar titles, focused input borders — page-colored on a
+      // page-colored background.
+      primaryColor: tokens.colors.interactive.enabled,
       scaffoldBackgroundColor: tokens.colors.background.level01,
       canvasColor: tokens.colors.background.level01,
       disabledColor: tokens.colors.text.lowEmphasis,

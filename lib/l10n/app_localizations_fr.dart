@@ -9824,12 +9824,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Quoi de neuf';
 
   @override
-  String get settingThemingDark => 'Thème sombre';
-
-  @override
-  String get settingThemingLight => 'Thème clair';
-
-  @override
   String get sidebarActiveSectionTitle => 'Activité';
 
   @override

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -20,8 +21,8 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
-/// Elapses past the controller's initial `_loadSelectedSchemes` load and
-/// settles microtasks — the shared init-wait for every fakeAsync test here.
+/// Elapses past the controller's initial `_loadThemeMode` load and settles
+/// microtasks — the shared init-wait for every fakeAsync test here.
 void waitForInit(FakeAsync async) {
   async
     ..elapse(const Duration(milliseconds: 100))
@@ -40,9 +41,7 @@ void main() {
     late StreamController<bool> tooltipController;
     late StreamController<Set<String>> notificationsController;
     late ProviderContainer container;
-    late Map<String, String?> storedThemeSettings;
-    late Future<Map<String, String?>> Function(Iterable<String> keys)
-    settingsBatchLoader;
+    late Future<String?> Function() themeModeLoader;
 
     setUpAll(() {
       registerFallbackValue(
@@ -63,14 +62,7 @@ void main() {
 
       tooltipController = StreamController<bool>.broadcast();
       notificationsController = StreamController<Set<String>>.broadcast();
-      storedThemeSettings = <String, String?>{
-        darkSchemeNameKey: 'Grey Law',
-        lightSchemeNameKey: 'Grey Law',
-        themeModeKey: 'system',
-      };
-      settingsBatchLoader = (keys) async => <String, String?>{
-        for (final key in keys) key: storedThemeSettings[key],
-      };
+      themeModeLoader = () async => 'system';
 
       final mocks = await setUpTestGetIt(
         additionalSetup: () {
@@ -91,11 +83,13 @@ void main() {
         () => mockUpdateNotifications.updateStream,
       ).thenAnswer((_) => notificationsController.stream);
       when(
+        () => settingsDb.itemByKey(themeModeKey),
+      ).thenAnswer((_) => themeModeLoader());
+      // The outbound sync message round-trips the scheme names a legacy
+      // device last stored; nothing stored by default.
+      when(
         () => settingsDb.itemsByKeys(any()),
-      ).thenAnswer((invocation) async {
-        final keys = invocation.positionalArguments.first as Iterable<String>;
-        return settingsBatchLoader(keys);
-      });
+      ).thenAnswer((_) async => <String, String?>{});
       when(
         () => journalDb.watchConfigFlag(enableTooltipFlag),
       ).thenAnswer((_) => tooltipController.stream);
@@ -123,53 +117,38 @@ void main() {
     });
 
     group('themingControllerProvider', () {
-      test('initial state has default Grey Law theme', () {
+      test('initial state carries the design-system theme pair', () {
         final state = container.read(themingControllerProvider);
-        expect(state.darkThemeName, equals('Grey Law'));
-        expect(state.lightThemeName, equals('Grey Law'));
         expect(state.themeMode, equals(ThemeMode.system));
         expect(state.darkTheme!.brightness, Brightness.dark);
         expect(state.lightTheme!.brightness, Brightness.light);
+        // The one theme is the design system's: the scaffold background must
+        // be the token surface, not a scheme-derived Material color — this is
+        // the regression the FlexColorScheme removal exists to prevent.
+        expect(
+          state.darkTheme!.scaffoldBackgroundColor,
+          dsTokensDark.colors.background.level01,
+        );
+        expect(
+          state.lightTheme!.extension<DsTokens>(),
+          isNotNull,
+          reason: 'token components resolve context.designTokens from here',
+        );
       });
 
-      test(
-        'setLightTheme and setDarkTheme rebuild each slot with the right '
-        'brightness',
-        () {
-          fakeAsync((async) {
-            final controller = container.read(
-              themingControllerProvider.notifier,
-            );
-            waitForInit(async);
+      test('dark theme text carries the emoji font fallback', () {
+        // Skia has no automatic color-emoji fallback on Linux; without this
+        // chain the sync verification emoji row renders as tofu.
+        final state = container.read(themingControllerProvider);
+        expect(
+          state.darkTheme!.textTheme.bodyMedium!.fontFamilyFallback,
+          contains('Noto Color Emoji'),
+        );
+      });
 
-            controller
-              ..setLightTheme('Indigo')
-              ..setDarkTheme('Shark');
-            async.elapse(const Duration(milliseconds: 400));
-            async.flushMicrotasks();
-
-            final state = container.read(themingControllerProvider);
-            expect(state.lightThemeName, 'Indigo');
-            expect(state.darkThemeName, 'Shark');
-            // _buildTheme must route the light slot through
-            // FlexThemeData.light and the dark slot through
-            // FlexThemeData.dark.
-            expect(state.lightTheme!.brightness, Brightness.light);
-            expect(state.darkTheme!.brightness, Brightness.dark);
-            // The selected schemes actually drive the palettes.
-            expect(
-              state.lightTheme!.colorScheme.primary,
-              isNot(state.darkTheme!.colorScheme.primary),
-            );
-          });
-        },
-      );
-
-      test('loads saved theme preferences on init', () {
+      test('loads saved theme mode on init', () {
         fakeAsync((async) {
-          storedThemeSettings[lightSchemeNameKey] = 'Indigo';
-          storedThemeSettings[darkSchemeNameKey] = 'Shark';
-          storedThemeSettings[themeModeKey] = 'dark';
+          themeModeLoader = () async => 'dark';
 
           final states = <ThemingState>[];
           container.listen(
@@ -180,70 +159,7 @@ void main() {
 
           waitForInit(async);
 
-          expect(states.last.lightThemeName, equals('Indigo'));
-          expect(states.last.darkThemeName, equals('Shark'));
           expect(states.last.themeMode, equals(ThemeMode.dark));
-        });
-      });
-
-      test('setLightTheme updates light theme and enqueues sync', () {
-        fakeAsync((async) {
-          final controller = container.read(themingControllerProvider.notifier);
-
-          waitForInit(async);
-          clearInteractions(outboxService);
-
-          controller.setLightTheme('Indigo');
-
-          // Wait for debounce
-          async.elapse(const Duration(milliseconds: 400));
-          async.flushMicrotasks();
-
-          final state = container.read(themingControllerProvider);
-          expect(state.lightThemeName, equals('Indigo'));
-
-          verify(
-            () => settingsDb.saveSettingsItem(lightSchemeNameKey, 'Indigo'),
-          ).called(1);
-
-          final captured = verify(
-            () => outboxService.enqueueMessage(captureAny()),
-          ).captured;
-          expect(captured.length, 1);
-
-          final message = captured.first as SyncThemingSelection;
-          expect(message.lightThemeName, 'Indigo');
-          expect(message.status, SyncEntryStatus.update);
-        });
-      });
-
-      test('setDarkTheme updates dark theme and enqueues sync', () {
-        fakeAsync((async) {
-          final controller = container.read(themingControllerProvider.notifier);
-
-          waitForInit(async);
-          clearInteractions(outboxService);
-
-          controller.setDarkTheme('Shark');
-
-          // Wait for debounce
-          async.elapse(const Duration(milliseconds: 400));
-          async.flushMicrotasks();
-
-          final state = container.read(themingControllerProvider);
-          expect(state.darkThemeName, equals('Shark'));
-
-          verify(
-            () => settingsDb.saveSettingsItem(darkSchemeNameKey, 'Shark'),
-          ).called(1);
-
-          final captured = verify(
-            () => outboxService.enqueueMessage(captureAny()),
-          ).captured;
-          expect(captured.length, 1);
-
-          final message = captured.first as SyncThemingSelection;
-          expect(message.darkThemeName, 'Shark');
         });
       });
 
@@ -274,6 +190,48 @@ void main() {
 
           final message = captured.first as SyncThemingSelection;
           expect(message.themeMode, 'dark');
+          // The scheme-name fields survive for wire compatibility with app
+          // versions that still selected FlexColorScheme themes; with
+          // nothing stored, the legacy default goes out so an old receiver
+          // is told nothing new.
+          expect(message.lightThemeName, kLegacyDefaultThemeName);
+          expect(message.darkThemeName, kLegacyDefaultThemeName);
+          expect(message.status, SyncEntryStatus.update);
+        });
+      });
+
+      test('round-trips stored legacy scheme names in outbound sync', () {
+        fakeAsync((async) {
+          // A legacy device synced its custom schemes here earlier. A
+          // mode-only change from this version must echo those names back —
+          // sending a constant reset the older device's picks to its
+          // fallback scheme.
+          when(
+            () => settingsDb.itemsByKeys(any()),
+          ).thenAnswer(
+            (_) async => <String, String?>{
+              lightSchemeNameKey: 'Sakura',
+              darkSchemeNameKey: 'Shark',
+            },
+          );
+
+          final controller = container.read(themingControllerProvider.notifier);
+
+          waitForInit(async);
+          clearInteractions(outboxService);
+
+          controller.onThemeSelectionChanged({ThemeMode.light});
+
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+
+          final captured = verify(
+            () => outboxService.enqueueMessage(captureAny()),
+          ).captured;
+          final message = captured.first as SyncThemingSelection;
+          expect(message.lightThemeName, 'Sakura');
+          expect(message.darkThemeName, 'Shark');
+          expect(message.themeMode, 'light');
         });
       });
 
@@ -314,8 +272,7 @@ void main() {
           clearInteractions(outboxService);
 
           controller
-            ..setLightTheme('Indigo')
-            ..setDarkTheme('Shark')
+            ..onThemeSelectionChanged({ThemeMode.light})
             ..onThemeSelectionChanged({ThemeMode.dark});
 
           // Wait for debounce
@@ -328,29 +285,18 @@ void main() {
           ).captured;
           expect(captured.length, 1);
 
-          // Verify message contains all three changes
+          // Verify message contains the final mode
           final message = captured.first as SyncThemingSelection;
-          expect(message.lightThemeName, 'Indigo');
-          expect(message.darkThemeName, 'Shark');
           expect(message.themeMode, 'dark');
         });
       });
 
-      test('reloads themes when sync updates arrive', () {
+      test('reloads theme mode when sync updates arrive', () {
         fakeAsync((async) {
           var callCount = 0;
-          settingsBatchLoader = (keys) async {
+          themeModeLoader = () async {
             callCount++;
-            final lightThemeName = callCount == 1 ? 'Grey Law' : 'Indigo';
-            return <String, String?>{
-              for (final key in keys)
-                key: switch (key) {
-                  lightSchemeNameKey => lightThemeName,
-                  darkSchemeNameKey => 'Grey Law',
-                  themeModeKey => 'system',
-                  _ => null,
-                },
-            };
+            return callCount == 1 ? 'system' : 'dark';
           };
 
           final states = <ThemingState>[];
@@ -361,6 +307,7 @@ void main() {
           );
 
           waitForInit(async);
+          expect(states.last.themeMode, ThemeMode.system);
 
           clearInteractions(settingsDb);
           clearInteractions(outboxService);
@@ -371,26 +318,12 @@ void main() {
           async.elapse(const Duration(milliseconds: 200));
           async.flushMicrotasks();
 
-          // Verify theme settings were reloaded
-          verify(() => settingsDb.itemsByKeys(any())).called(1);
+          // Verify the synced mode was applied…
+          verify(() => settingsDb.itemByKey(themeModeKey)).called(1);
+          expect(states.last.themeMode, ThemeMode.dark);
 
-          // Verify NO sync message was enqueued (synced changes don't re-sync)
+          // …and NO sync message was enqueued (synced changes don't re-sync)
           verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
-        });
-      });
-
-      test('invalid theme name is ignored', () {
-        fakeAsync((async) {
-          final controller = container.read(themingControllerProvider.notifier);
-
-          waitForInit(async);
-
-          final originalState = container.read(themingControllerProvider);
-
-          controller.setLightTheme('NonExistentTheme');
-
-          final newState = container.read(themingControllerProvider);
-          expect(newState.lightThemeName, equals(originalState.lightThemeName));
         });
       });
     });
@@ -465,9 +398,9 @@ void main() {
     });
 
     group('error handling', () {
-      test('handles error in _loadSelectedSchemes and logs it', () {
+      test('handles error in _loadThemeMode and logs it', () {
         fakeAsync((async) {
-          settingsBatchLoader = (_) => Future<Map<String, String?>>.error(
+          themeModeLoader = () => Future<String?>.error(
             Exception('Database error'),
           );
 
@@ -483,8 +416,8 @@ void main() {
 
           // Controller should still be in valid state (with default values)
           final state = container.read(themingControllerProvider);
-          expect(state, isNotNull);
-          expect(state.darkThemeName, equals('Grey Law'));
+          expect(state.themeMode, equals(ThemeMode.system));
+          expect(state.darkTheme, isNotNull);
 
           // Verify error was captured
           verify(
@@ -506,7 +439,7 @@ void main() {
 
           waitForInit(async);
 
-          controller.setLightTheme('Indigo');
+          controller.onThemeSelectionChanged({ThemeMode.dark});
 
           async.elapse(const Duration(milliseconds: 400));
           async.flushMicrotasks();
@@ -514,9 +447,9 @@ void main() {
           // The missing OutboxService only skips sync enqueueing — the
           // local state change and persistence still happen.
           final state = container.read(themingControllerProvider);
-          expect(state.lightThemeName, 'Indigo');
+          expect(state.themeMode, ThemeMode.dark);
           verify(
-            () => settingsDb.saveSettingsItem(lightSchemeNameKey, 'Indigo'),
+            () => settingsDb.saveSettingsItem(themeModeKey, 'dark'),
           ).called(1);
         });
       });
@@ -540,29 +473,19 @@ void main() {
           waitForInit(async);
 
           // Verify settings were NOT reloaded
-          verifyNever(() => settingsDb.itemsByKeys(any()));
+          verifyNever(() => settingsDb.itemByKey(themeModeKey));
         });
       });
 
       test('handles error during theme reload from sync and logs it', () {
         fakeAsync((async) {
           var callCount = 0;
-          settingsBatchLoader = (keys) {
+          themeModeLoader = () {
             callCount++;
             if (callCount > 1) {
-              return Future<Map<String, String?>>.error(
-                Exception('Reload error'),
-              );
+              return Future<String?>.error(Exception('Reload error'));
             }
-            return Future<Map<String, String?>>.value(<String, String?>{
-              for (final key in keys)
-                key: switch (key) {
-                  darkSchemeNameKey => 'Grey Law',
-                  lightSchemeNameKey => 'Grey Law',
-                  themeModeKey => 'system',
-                  _ => null,
-                },
-            });
+            return Future<String?>.value('system');
           };
 
           final states = <ThemingState>[];
@@ -606,7 +529,7 @@ void main() {
 
           waitForInit(async);
 
-          controller.setLightTheme('Indigo');
+          controller.onThemeSelectionChanged({ThemeMode.dark});
 
           // Wait for debounce
           async.elapse(const Duration(milliseconds: 400));
@@ -650,7 +573,7 @@ void main() {
 
       test('handles null theme mode string gracefully', () {
         fakeAsync((async) {
-          storedThemeSettings[themeModeKey] = null;
+          themeModeLoader = () async => null;
 
           final states = <ThemingState>[];
           container.listen(
@@ -668,7 +591,7 @@ void main() {
 
       test('handles invalid theme mode string gracefully', () {
         fakeAsync((async) {
-          storedThemeSettings[themeModeKey] = 'invalid_mode';
+          themeModeLoader = () async => 'invalid_mode';
 
           final states = <ThemingState>[];
           container.listen(
@@ -684,41 +607,6 @@ void main() {
         });
       });
 
-      test('handles null theme names gracefully', () {
-        fakeAsync((async) {
-          storedThemeSettings[lightSchemeNameKey] = null;
-          storedThemeSettings[darkSchemeNameKey] = null;
-
-          final states = <ThemingState>[];
-          container.listen(
-            themingControllerProvider,
-            (_, next) => states.add(next),
-            fireImmediately: true,
-          );
-
-          waitForInit(async);
-
-          // Should default to Grey Law
-          expect(states.last.lightThemeName, equals('Grey Law'));
-          expect(states.last.darkThemeName, equals('Grey Law'));
-        });
-      });
-
-      test('invalid dark theme name is ignored', () {
-        fakeAsync((async) {
-          final controller = container.read(themingControllerProvider.notifier);
-
-          waitForInit(async);
-
-          final originalState = container.read(themingControllerProvider);
-
-          controller.setDarkTheme('NonExistentTheme');
-
-          final newState = container.read(themingControllerProvider);
-          expect(newState.darkThemeName, equals(originalState.darkThemeName));
-        });
-      });
-
       test('unrelated notification does not trigger theme reload', () {
         fakeAsync((async) {
           final states = <ThemingState>[];
@@ -731,7 +619,7 @@ void main() {
           waitForInit(async);
 
           // Initial load completed
-          verify(() => settingsDb.itemsByKeys(any())).called(1);
+          verify(() => settingsDb.itemByKey(themeModeKey)).called(1);
 
           // Emit unrelated notification (should be ignored)
           notificationsController.add({'some_other_notification'});
@@ -740,7 +628,7 @@ void main() {
           async.flushMicrotasks();
 
           // No additional load triggered
-          verifyNever(() => settingsDb.itemsByKeys(any()));
+          verifyNever(() => settingsDb.itemByKey(themeModeKey));
         });
       });
     });
@@ -750,15 +638,13 @@ void main() {
         final original = ThemingState(
           darkTheme: ThemeData.dark(),
           lightTheme: ThemeData.light(),
-          darkThemeName: 'Shark',
-          lightThemeName: 'Indigo',
           themeMode: ThemeMode.dark,
         );
 
         final copy = original.copyWith();
 
-        expect(copy.darkThemeName, equals('Shark'));
-        expect(copy.lightThemeName, equals('Indigo'));
+        expect(copy.darkTheme, same(original.darkTheme));
+        expect(copy.lightTheme, same(original.lightTheme));
         expect(copy.themeMode, equals(ThemeMode.dark));
       });
 
@@ -766,8 +652,6 @@ void main() {
         final original = ThemingState(
           darkTheme: ThemeData.dark(),
           lightTheme: ThemeData.light(),
-          darkThemeName: 'Grey Law',
-          lightThemeName: 'Grey Law',
         );
 
         final newDarkTheme = ThemeData.dark();
@@ -780,13 +664,12 @@ void main() {
 
         expect(copy.darkTheme, equals(newDarkTheme));
         expect(copy.lightTheme, equals(newLightTheme));
-        expect(copy.darkThemeName, equals('Grey Law'));
-        expect(copy.lightThemeName, equals('Grey Law'));
+        expect(copy.themeMode, equals(ThemeMode.system));
       });
 
       test('copyWith updates only themeMode and leaves null fields null', () {
-        // Original carries no themes/names — verifies the null-coalescing
-        // path keeps nulls null while a single non-null override applies.
+        // Original carries no themes — verifies the null-coalescing path
+        // keeps nulls null while a single non-null override applies.
         const original = ThemingState();
 
         final copy = original.copyWith(themeMode: ThemeMode.light);
@@ -794,8 +677,6 @@ void main() {
         expect(copy.themeMode, equals(ThemeMode.light));
         expect(copy.darkTheme, isNull);
         expect(copy.lightTheme, isNull);
-        expect(copy.darkThemeName, isNull);
-        expect(copy.lightThemeName, isNull);
       });
     });
   });

@@ -27,8 +27,11 @@ void main() {
         final slots = <(String, Color, Color)>[
           ('primary', scheme.primary, colors.interactive.enabled),
           ('onPrimary', scheme.onPrimary, colors.text.onInteractiveAlert),
-          ('secondary', scheme.secondary, colors.surface.active),
-          ('onSecondary', scheme.onSecondary, colors.text.highEmphasis),
+          // Solid accents: Material consumers paint secondary/tertiary
+          // directly (slider thumbs, status indicators), so an overlay or a
+          // near-page background here renders them invisible.
+          ('secondary', scheme.secondary, colors.interactive.hover),
+          ('onSecondary', scheme.onSecondary, colors.text.onInteractiveAlert),
           ('error', scheme.error, colors.alert.error.defaultColor),
           ('onError', scheme.onError, colors.text.onInteractiveAlert),
           ('surface', scheme.surface, colors.background.level01),
@@ -43,11 +46,41 @@ void main() {
             scheme.secondaryContainer,
             colors.background.level03,
           ),
-          ('tertiary', scheme.tertiary, colors.background.alternative01),
+          ('tertiary', scheme.tertiary, colors.alert.info.defaultColor),
+          ('onTertiary', scheme.onTertiary, colors.text.onInteractiveAlert),
+          // A subtle wash with the ink foreground designed for it: consumers
+          // paint errorContainer as banner backgrounds, often with further
+          // alpha, so a solid fill with a polarity-matched foreground turned
+          // unreadable the moment any transparency was applied.
           (
             'errorContainer',
             scheme.errorContainer,
-            colors.alert.error.hover,
+            colors.alert.error.defaultColor.withAlpha(0x2E),
+          ),
+          ('onErrorContainer', scheme.onErrorContainer, colors.alert.error.ink),
+          // The full container ramp: unset slots fall back to `surface`,
+          // collapsing every legacy surfaceContainer* consumer onto the page
+          // background. level03 is a divider gray, so the ramp deliberately
+          // tops out at level02.
+          (
+            'surfaceContainerLowest',
+            scheme.surfaceContainerLowest,
+            colors.background.level01,
+          ),
+          (
+            'surfaceContainerLow',
+            scheme.surfaceContainerLow,
+            colors.background.level02,
+          ),
+          (
+            'surfaceContainer',
+            scheme.surfaceContainer,
+            colors.background.level02,
+          ),
+          (
+            'surfaceContainerHigh',
+            scheme.surfaceContainerHigh,
+            colors.background.level02,
           ),
           (
             'surfaceContainerHighest',
@@ -88,6 +121,14 @@ void main() {
           colors.text.lowEmphasis,
           reason: '$name disabledColor',
         );
+        // The legacy accent slot: unset it resolves to `surface` in dark
+        // mode, painting `Theme.of(context).primaryColor` consumers
+        // page-on-page invisible.
+        expect(
+          theme.primaryColor,
+          colors.interactive.enabled,
+          reason: '$name primaryColor',
+        );
       });
 
       test('$name theme maps the full textTheme from typography tokens', () {
@@ -102,6 +143,9 @@ void main() {
           ('headlineSmall', textTheme.headlineSmall, styles.heading.heading3),
           ('titleLarge', textTheme.titleLarge, styles.subtitle.subtitle1),
           ('titleMedium', textTheme.titleMedium, styles.subtitle.subtitle2),
+          // Mapped so legacy titleSmall consumers stay on the token ramp
+          // instead of Flutter's fallback font and scale.
+          ('titleSmall', textTheme.titleSmall, styles.subtitle.subtitle2),
           ('bodyLarge', textTheme.bodyLarge, styles.body.bodyLarge),
           ('bodyMedium', textTheme.bodyMedium, styles.body.bodyMedium),
           ('bodySmall', textTheme.bodySmall, styles.body.bodySmall),
@@ -156,6 +200,28 @@ void main() {
           theme.textTheme.labelSmall?.letterSpacing,
           closeTo(12 * 0.08, 1e-9),
         );
+      });
+
+      test('$name text theme carries the color-emoji font fallback', () {
+        // Skia has no automatic color-emoji fallback on Linux: without this
+        // chain on the ambient DefaultTextStyle, any emoji inside token-styled
+        // text (the sync verification row, habit celebration copy) renders as
+        // tofu. Token styles pin `Inter` without a fallback of their own and
+        // inherit this one through TextStyle.merge.
+        for (final style in [
+          theme.textTheme.bodyMedium,
+          theme.textTheme.titleLarge,
+          theme.textTheme.labelSmall,
+        ]) {
+          expect(
+            style?.fontFamilyFallback,
+            containsAll(<String>[
+              'Apple Color Emoji',
+              'Segoe UI Emoji',
+              'Noto Color Emoji',
+            ]),
+          );
+        }
       });
     }
 

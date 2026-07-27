@@ -16620,18 +16620,6 @@ abstract class AppLocalizations {
   /// **'What\'s New'**
   String get settingsWhatsNewTitle;
 
-  /// No description provided for @settingThemingDark.
-  ///
-  /// In en, this message translates to:
-  /// **'Dark Theme'**
-  String get settingThemingDark;
-
-  /// No description provided for @settingThemingLight.
-  ///
-  /// In en, this message translates to:
-  /// **'Light Theme'**
-  String get settingThemingLight;
-
   /// No description provided for @sidebarActiveSectionTitle.
   ///
   /// In en, this message translates to:

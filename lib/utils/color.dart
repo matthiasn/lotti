@@ -36,3 +36,21 @@ String colorHexChannel(double channel) {
 
 /// Default CSS hex colour used when a category has no colour assigned.
 const defaultCategoryColorHex = '#4AB6E8';
+
+/// Brightens a color by shifting every RGB channel toward white.
+extension BrightenColor on Color {
+  /// Shifts each RGB channel up by [amount] percent of the full channel
+  /// range, clamped to white. Alpha is preserved — except for amounts above
+  /// 100, which return opaque [Colors.white].
+  ///
+  /// Bit-identical replacement for `flex_color_scheme`'s `Color.brighten`
+  /// (including the opaque-white edge case), kept so the editor surfaces did
+  /// not change when that dependency was removed.
+  Color brighten([int amount = 10]) {
+    if (amount <= 0) return this;
+    if (amount > 100) return Colors.white;
+    final shift = (255 * amount / 100).round();
+    int up(double channel) => ((channel * 255).round() + shift).clamp(0, 255);
+    return Color.fromARGB((a * 255).round(), up(r), up(g), up(b));
+  }
+}

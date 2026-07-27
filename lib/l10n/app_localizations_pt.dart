@@ -9728,12 +9728,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Novidades';
 
   @override
-  String get settingThemingDark => 'Tema escuro';
-
-  @override
-  String get settingThemingLight => 'Tema claro';
-
-  @override
   String get sidebarActiveSectionTitle => 'Atividade';
 
   @override

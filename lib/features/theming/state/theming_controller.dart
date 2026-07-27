@@ -2,70 +2,49 @@ import 'dart:async';
 
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:enum_to_string/enum_to_string.dart';
-import 'package:flex_color_scheme/flex_color_scheme.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 
-/// Platform-aware emoji font fallback chain for the global ThemeData.
+/// Scheme name sent in [SyncMessage.themingSelection] when none is stored.
 ///
-/// Skia does not auto-fall-back to a system color emoji font on Linux, so
-/// without this list any glyph that `Inter` cannot render shows as tofu.
-/// macOS/iOS pick up `Apple Color Emoji`, Windows uses `Segoe UI Emoji`,
-/// and Linux/Android use `Noto Color Emoji`. Listing all three is harmless
-/// on platforms that ignore the missing entries — fontconfig (or the
-/// equivalent on each OS) resolves the first family that exists locally.
-const List<String> _emojiFontFallback = <String>[
-  'Apple Color Emoji',
-  'Segoe UI Emoji',
-  'Noto Color Emoji',
-];
-
-List<String>? _getEmojiFontFallback() {
-  // kIsWeb is a compile-time constant, so the web branch cannot be exercised
-  // from VM-run unit tests; it is a known untested (trivial) branch.
-  if (kIsWeb) return null;
-  return _emojiFontFallback;
-}
+/// The message's name fields exist for wire compatibility with app versions
+/// that still offered selectable FlexColorScheme themes. Older receivers
+/// *persist and apply* whatever names arrive, so a mode-only change from this
+/// version must round-trip the names they last chose — inventing a constant
+/// here reset a legacy device's custom schemes to its fallback. This default
+/// matches the legacy versions' own default scheme, so a device that never
+/// stored a name is told nothing new.
+const String kLegacyDefaultThemeName = 'Grey Law';
 
 /// Immutable snapshot of the current theming configuration.
 ///
-/// Holds both the pre-built [ThemeData] handed to `MaterialApp` and the
-/// selected scheme names persisted in settings. The names and the [ThemeData]
-/// are kept in sync by [ThemingController]: whenever a name changes the
-/// matching theme is rebuilt via `_buildTheme`.
+/// Holds the pre-built design-system [ThemeData] pair handed to `MaterialApp`
+/// plus the selected [ThemeMode]. There is exactly one theme — the design
+/// system's — so the only user preference left is light/dark/system.
 @immutable
 class ThemingState {
   const ThemingState({
     this.darkTheme,
     this.lightTheme,
-    this.darkThemeName,
-    this.lightThemeName,
     this.themeMode = ThemeMode.system,
   });
 
-  /// Built dark [ThemeData] for [darkThemeName]; passed to `MaterialApp.darkTheme`.
+  /// Built dark [ThemeData]; passed to `MaterialApp.darkTheme`.
   final ThemeData? darkTheme;
 
-  /// Built light [ThemeData] for [lightThemeName]; passed to `MaterialApp.theme`.
+  /// Built light [ThemeData]; passed to `MaterialApp.theme`.
   final ThemeData? lightTheme;
-
-  /// Selected dark scheme name; a key in `themes` (defaults to `defaultThemeName`).
-  final String? darkThemeName;
-
-  /// Selected light scheme name; a key in `themes` (defaults to `defaultThemeName`).
-  final String? lightThemeName;
 
   /// Whether to use the light, dark, or system-driven theme.
   final ThemeMode themeMode;
@@ -73,15 +52,11 @@ class ThemingState {
   ThemingState copyWith({
     ThemeData? darkTheme,
     ThemeData? lightTheme,
-    String? darkThemeName,
-    String? lightThemeName,
     ThemeMode? themeMode,
   }) {
     return ThemingState(
       darkTheme: darkTheme ?? this.darkTheme,
       lightTheme: lightTheme ?? this.lightTheme,
-      darkThemeName: darkThemeName ?? this.darkThemeName,
-      lightThemeName: lightThemeName ?? this.lightThemeName,
       themeMode: themeMode ?? this.themeMode,
     );
   }
@@ -123,10 +98,8 @@ class ThemingController extends Notifier<ThemingState> {
 
     // Return default state - will be updated once preferences are loaded
     return ThemingState(
-      darkTheme: _buildTheme(defaultThemeName, isDark: true),
-      lightTheme: _buildTheme(defaultThemeName, isDark: false),
-      darkThemeName: defaultThemeName,
-      lightThemeName: defaultThemeName,
+      darkTheme: _buildTheme(isDark: true),
+      lightTheme: _buildTheme(isDark: false),
     );
   }
 
@@ -136,7 +109,7 @@ class ThemingController extends Notifier<ThemingState> {
     _watchThemePrefsUpdates();
 
     try {
-      await _loadSelectedSchemes();
+      await _loadThemeMode();
     } catch (e, st) {
       getIt<DomainLogger>().error(
         LogDomain.theming,
@@ -154,7 +127,7 @@ class ThemingController extends Notifier<ThemingState> {
         if (ids.contains(settingsNotification) && !_isApplyingSyncedChanges) {
           _isApplyingSyncedChanges = true;
           try {
-            await _loadSelectedSchemes();
+            await _loadThemeMode();
           } catch (e, st) {
             getIt<DomainLogger>().error(
               LogDomain.theming,
@@ -170,51 +143,25 @@ class ThemingController extends Notifier<ThemingState> {
     );
   }
 
-  Future<void> _loadSelectedSchemes() async {
+  Future<void> _loadThemeMode() async {
     final settingsDb = getIt<SettingsDb>();
-    final storedSettings = await settingsDb.itemsByKeys({
-      darkSchemeNameKey,
-      lightSchemeNameKey,
-      themeModeKey,
-    });
-
-    final darkThemeName = storedSettings[darkSchemeNameKey];
-    final lightThemeName = storedSettings[lightSchemeNameKey];
-    final themeModeStr = storedSettings[themeModeKey];
+    final themeModeStr = await settingsDb.itemByKey(themeModeKey);
 
     final themeMode = themeModeStr != null
         ? EnumToString.fromString(ThemeMode.values, themeModeStr) ??
               ThemeMode.system
         : ThemeMode.system;
 
-    final effectiveDarkThemeName = darkThemeName ?? defaultThemeName;
-    final effectiveLightThemeName = lightThemeName ?? defaultThemeName;
-
-    state = ThemingState(
-      darkTheme: _buildTheme(effectiveDarkThemeName, isDark: true),
-      lightTheme: _buildTheme(effectiveLightThemeName, isDark: false),
-      darkThemeName: effectiveDarkThemeName,
-      lightThemeName: effectiveLightThemeName,
-      themeMode: themeMode,
-    );
+    state = state.copyWith(themeMode: themeMode);
   }
 
-  ThemeData _buildTheme(String? themeName, {required bool isDark}) {
-    final scheme = themes[themeName] ?? FlexScheme.greyLaw;
-
-    final themeData = isDark
-        ? FlexThemeData.dark(
-            scheme: scheme,
-            fontFamily: 'Inter',
-            fontFamilyFallback: _getEmojiFontFallback(),
-          )
-        : FlexThemeData.light(
-            scheme: scheme,
-            fontFamily: 'Inter',
-            fontFamilyFallback: _getEmojiFontFallback(),
-          );
-
-    return withOverrides(themeData);
+  /// The one theme the app has: the design-system theme, composed with the
+  /// Material-level overrides (wolt sheet motion, markdown theme, inputs…)
+  /// that `MaterialApp` needs beyond the token-derived basics.
+  ThemeData _buildTheme({required bool isDark}) {
+    return withOverrides(
+      isDark ? DesignSystemTheme.dark() : DesignSystemTheme.light(),
+    );
   }
 
   void _enqueueSyncMessage() {
@@ -231,10 +178,20 @@ class ThemingController extends Notifier<ThemingState> {
           return;
         }
         try {
+          // Round-trip whatever scheme names a legacy device last synced —
+          // this version never writes these keys, so the stored values are
+          // exactly what the wire owes older receivers back.
+          final settingsDb = getIt<SettingsDb>();
+          final storedNames = await settingsDb.itemsByKeys({
+            lightSchemeNameKey,
+            darkSchemeNameKey,
+          });
           await getIt<OutboxService>().enqueueMessage(
             SyncMessage.themingSelection(
-              lightThemeName: state.lightThemeName ?? defaultThemeName,
-              darkThemeName: state.darkThemeName ?? defaultThemeName,
+              lightThemeName:
+                  storedNames[lightSchemeNameKey] ?? kLegacyDefaultThemeName,
+              darkThemeName:
+                  storedNames[darkSchemeNameKey] ?? kLegacyDefaultThemeName,
               themeMode: state.themeMode.name,
               updatedAt: DateTime.now().millisecondsSinceEpoch,
               status: SyncEntryStatus.update,
@@ -250,40 +207,6 @@ class ThemingController extends Notifier<ThemingState> {
         }
       },
     );
-  }
-
-  /// Selects `themeName` as the light theme.
-  ///
-  /// Rebuilds [ThemingState.lightTheme], persists the name to settings, and
-  /// enqueues a debounced sync message so other devices pick it up. Unknown
-  /// names (not in `themes`) are ignored.
-  void setLightTheme(String themeName) {
-    if (!isValidThemeName(themeName)) return;
-
-    state = state.copyWith(
-      lightTheme: _buildTheme(themeName, isDark: false),
-      lightThemeName: themeName,
-    );
-
-    getIt<SettingsDb>().saveSettingsItem(lightSchemeNameKey, themeName);
-    _enqueueSyncMessage();
-  }
-
-  /// Selects `themeName` as the dark theme.
-  ///
-  /// Rebuilds [ThemingState.darkTheme], persists the name to settings, and
-  /// enqueues a debounced sync message so other devices pick it up. Unknown
-  /// names (not in `themes`) are ignored.
-  void setDarkTheme(String themeName) {
-    if (!isValidThemeName(themeName)) return;
-
-    state = state.copyWith(
-      darkTheme: _buildTheme(themeName, isDark: true),
-      darkThemeName: themeName,
-    );
-
-    getIt<SettingsDb>().saveSettingsItem(darkSchemeNameKey, themeName);
-    _enqueueSyncMessage();
   }
 
   /// Updates [ThemingState.themeMode] from a segmented-button selection.

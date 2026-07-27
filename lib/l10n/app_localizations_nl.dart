@@ -9662,12 +9662,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Wat is er nieuw?';
 
   @override
-  String get settingThemingDark => 'Donker thema';
-
-  @override
-  String get settingThemingLight => 'Lichtthema';
-
-  @override
   String get sidebarActiveSectionTitle => 'Activiteit';
 
   @override
