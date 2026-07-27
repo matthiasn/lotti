@@ -157,6 +157,28 @@ void main() {
           closeTo(12 * 0.08, 1e-9),
         );
       });
+
+      test('$name text theme carries the color-emoji font fallback', () {
+        // Skia has no automatic color-emoji fallback on Linux: without this
+        // chain on the ambient DefaultTextStyle, any emoji inside token-styled
+        // text (the sync verification row, habit celebration copy) renders as
+        // tofu. Token styles pin `Inter` without a fallback of their own and
+        // inherit this one through TextStyle.merge.
+        for (final style in [
+          theme.textTheme.bodyMedium,
+          theme.textTheme.titleLarge,
+          theme.textTheme.labelSmall,
+        ]) {
+          expect(
+            style?.fontFamilyFallback,
+            containsAll(<String>[
+              'Apple Color Emoji',
+              'Segoe UI Emoji',
+              'Noto Color Emoji',
+            ]),
+          );
+        }
+      });
     }
 
     testWidgets('designTokens getter returns the active extension', (

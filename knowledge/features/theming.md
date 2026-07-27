@@ -5,18 +5,21 @@ description: Stored preferences turned into ThemeData, and the one selection tha
 resource: ../../lib/features/theming
 tags: [theming, themes, sync]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T04:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-07-28T00:30:00Z }
 stale_after: 2027-03-08
 sources:
   - id: src
     resource: ../../lib/features/theming
     title: Theming source
-    last_modified: 2026-07-26
+    last_modified: 2026-07-28
 ---
 
-The theming feature turns stored user preferences into actual `ThemeData` for the
-light theme, the dark theme and the theme mode — and **syncs the selection across
-devices**.
+The theming feature builds the app's one theme — `withOverrides(DesignSystemTheme)`
+for each brightness — and turns the stored theme-mode preference (light / dark /
+system) into what `MaterialApp` renders, **syncing that selection across
+devices**. The FlexColorScheme scheme picker is gone; the `themingSelection` sync
+message keeps its scheme-name fields for wire compatibility and always carries a
+constant name.
 
 # The sync boundary
 
@@ -25,17 +28,17 @@ enqueues a debounced `SyncMessage.themingSelection`, and an inbound change is
 applied unless it is **older than the last inbound one**.
 
 That is arrival-based, not last-write-wins. The comparison reads
-`THEME_PREFS_UPDATED_AT` out of `SettingsDb`, but the local setters
-(`setLightTheme`, `setDarkTheme`, `onThemeSelectionChanged`) write only the value
-key and enqueue — they never advance that timestamp. So the stored value reflects
-the last message *received*, and any inbound message not older than it wins over a
-local pick made a second ago. Two devices changing theme concurrently converge on
+`THEME_PREFS_UPDATED_AT` out of `SettingsDb`, but the local setter
+(`onThemeSelectionChanged`) writes only the value key and enqueues — it never
+advances that timestamp. So the stored value reflects the last message
+*received*, and any inbound message not older than it wins over a local pick
+made a second ago. Two devices changing the mode concurrently converge on
 whichever message lands last, not on whichever choice was made last.
 
 ```mermaid
 flowchart TD
   subgraph Local["Local pick"]
-    Pick["setLightTheme / setDarkTheme /<br/>onThemeSelectionChanged"]
+    Pick["onThemeSelectionChanged"]
     Pick --> SaveVal["SettingsDb: write the value key only"]
     SaveVal --> Deb["debounce 250 ms"]
     Deb --> Enq["enqueue SyncMessage.themingSelection<br/>updatedAt = now"]
@@ -69,16 +72,21 @@ newer one, which is the failure that would actually be noticed.
 last-write-wins — see [Daily OS](daily_os_next/overview.md). Theming is the
 outlier, so do not read one as documentation of the other.
 
-That is deliberate — a user who picks a theme on their laptop expects their phone
+That is deliberate — a user who picks a mode on their laptop expects their phone
 to match, unlike device-local concerns such as pane widths, agent-wake concurrency
 or Daily OS category exclusions, which stay put.
 
-# Where the tokens come from
+# Where the theme comes from
 
-The theming feature builds the app's `ThemeData`; the
-[design system](design_system/) injects its token tree into that theme's
-extensions, so `context.designTokens` resolves inside production widgets without
-the app adopting the standalone design-system theme wholesale.
+`ThemingController._buildTheme` composes
+`withOverrides(DesignSystemTheme.dark()/light())`: the
+[design system](design_system/) supplies the token-derived `ColorScheme`,
+`TextTheme` (including the platform-aware color-emoji font fallback) and the
+`DsTokens` extension behind `context.designTokens`; `withOverrides` layers the
+Material-level extras on top — wolt sheet motion, markdown theme, input/card
+shapes, and the forced-white light-mode surfaces. The screenshot harness's
+`screenshotTheme` builds the identical composition, which is what keeps design
+verdicts made on captures transferable to the running app.
 
 The theming **UI** lives under [settings](settings.md); the state machine lives
 here.

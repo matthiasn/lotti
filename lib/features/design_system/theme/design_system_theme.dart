@@ -1,5 +1,27 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+
+/// Platform-aware emoji font fallback chain for the app's text themes.
+///
+/// Skia does not auto-fall-back to a system color emoji font on Linux, so
+/// without this list any glyph that `Inter` cannot render shows as tofu.
+/// macOS/iOS pick up `Apple Color Emoji`, Windows uses `Segoe UI Emoji`,
+/// and Linux/Android use `Noto Color Emoji`. Listing all three is harmless
+/// on platforms that ignore the missing entries — fontconfig (or the
+/// equivalent on each OS) resolves the first family that exists locally.
+const List<String> _emojiFontFallback = <String>[
+  'Apple Color Emoji',
+  'Segoe UI Emoji',
+  'Noto Color Emoji',
+];
+
+List<String>? _getEmojiFontFallback() {
+  // kIsWeb is a compile-time constant, so the web branch cannot be exercised
+  // from VM-run unit tests; it is a known untested (trivial) branch.
+  if (kIsWeb) return null;
+  return _emojiFontFallback;
+}
 
 /// Builds the app's Material [ThemeData] from the design-system tokens.
 ///
@@ -68,6 +90,12 @@ class DesignSystemTheme {
         ).apply(
           bodyColor: tokens.colors.text.highEmphasis,
           displayColor: tokens.colors.text.highEmphasis,
+          // Applied at the theme level so the ambient DefaultTextStyle carries
+          // the emoji fallback: token styles pin `Inter` without a fallback of
+          // their own, and TextStyle.merge inherits the fallback from the
+          // ambient style — which is how emoji (e.g. the sync verification
+          // row) render on Linux instead of as tofu.
+          fontFamilyFallback: _getEmojiFontFallback(),
         );
 
     return ThemeData(

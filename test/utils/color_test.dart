@@ -112,4 +112,38 @@ void main() {
       tags: 'glados',
     );
   });
+
+  group('BrightenColor.brighten', () {
+    test('shifts each channel toward white by the given percentage', () {
+      // 10% of 255 rounds to 26 per channel.
+      expect(
+        const Color(0xFF102030).brighten(),
+        const Color(0xFF2A3A4A),
+      );
+    });
+
+    test('clamps channels at white instead of overflowing', () {
+      expect(
+        const Color(0xFFF0F8FF).brighten(20),
+        const Color(0xFFFFFFFF),
+      );
+    });
+
+    test('preserves the alpha channel', () {
+      expect(
+        const Color(0x80102030).brighten().toARGB32() >>> 24,
+        0x80,
+      );
+    });
+
+    test('returns the color unchanged for a non-positive amount', () {
+      const color = Color(0xFF102030);
+      expect(color.brighten(0), color);
+      expect(color.brighten(-5), color);
+    });
+
+    test('returns pure white for amounts above 100', () {
+      expect(const Color(0xFF102030).brighten(101), Colors.white);
+    });
+  });
 }

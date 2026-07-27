@@ -1,12 +1,12 @@
 # Theming
 
-Theming decides how Lotti looks: light or dark, and which theme within that.
+Theming decides how Lotti looks: light, dark, or following the system. There is
+exactly one theme — the design system's — built for each brightness.
 
 ## What it does for the user
 
 - **Light, dark, or follow the system.**
-- **Choice of themes** within each mode.
-- **Follows the user across devices.** Picking a theme on the laptop changes it on
+- **Follows the user across devices.** Picking a mode on the laptop changes it on
   the phone too.
 
 Device-local preferences — pane widths, AI concurrency, day-planning exclusions —
@@ -15,8 +15,8 @@ preference rather than a machine setting.
 
 ## What it owns
 
-Theme selection state and construction of the light and dark `ThemeData`, plus the
-sync of the selection.
+The theme-mode state and construction of the light and dark `ThemeData` — both
+`withOverrides(DesignSystemTheme…)` — plus the sync of the mode selection.
 
 The theming settings **page** lives under [settings](../settings/README.md); the
 design tokens it builds on come from

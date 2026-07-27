@@ -29,6 +29,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
@@ -1299,11 +1300,11 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
     final languagePreference = ref.watch(manualLanguageControllerProvider);
 
     if (themingState.darkTheme == null || languagePreference.isLoading) {
+      // The design-system dark theme, so the loading frame's background
+      // matches the first real frame instead of flashing near-black.
       return MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData.dark().copyWith(
-          scaffoldBackgroundColor: Colors.black87,
-        ),
+        theme: DesignSystemTheme.dark(),
         home: const EmptyScaffoldWithTitle(
           'Loading...',
         ),

@@ -9634,12 +9634,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Vad är nytt';
 
   @override
-  String get settingThemingDark => 'Mörkt tema';
-
-  @override
-  String get settingThemingLight => 'Ljustema';
-
-  @override
   String get sidebarActiveSectionTitle => 'Verksamhet';
 
   @override
