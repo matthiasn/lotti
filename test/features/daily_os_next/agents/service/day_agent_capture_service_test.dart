@@ -76,6 +76,25 @@ TaskStatus _doneStatus() => TaskStatus.done(
   utcOffset: 120,
 );
 
+CaptureEntity _capture({
+  required String id,
+  DateTime? parseCompletedAt,
+  DateTime? deletedAt,
+}) {
+  return AgentDomainEntity.capture(
+        id: id,
+        agentId: _agentId,
+        transcript: 'Nothing much on today.',
+        capturedAt: DateTime(2026, 5, 25, 8, 45),
+        createdAt: _now,
+        vectorClock: null,
+        dayId: 'dayplan-2026-05-25',
+        parseCompletedAt: parseCompletedAt,
+        deletedAt: deletedAt,
+      )
+      as CaptureEntity;
+}
+
 /// Shape of a single `taskFactory` invocation captured by the test bench.
 typedef _CreatedTaskRequest = ({
   String title,
@@ -435,6 +454,118 @@ void main() {
         ),
       );
       expect(nudgeCount, 0);
+    });
+
+    group('hasCompletedCaptureParse', () {
+      test('returns false when the capture does not exist', () async {
+        final service = createService();
+
+        expect(
+          await service.hasCompletedCaptureParse('capture-missing'),
+          false,
+        );
+        verifyNever(
+          () => agentRepository.getLinksFrom(
+            any(),
+            type: any(named: 'type'),
+          ),
+        );
+      });
+
+      test(
+        'returns false for a deleted capture without reading links',
+        () async {
+          final capture = _capture(
+            id: 'capture-deleted',
+            parseCompletedAt: DateTime(2026, 5, 25, 8, 46),
+            deletedAt: DateTime(2026, 5, 25, 8, 47),
+          );
+          agentEntities[capture.id] = capture;
+
+          expect(
+            await createService().hasCompletedCaptureParse(capture.id),
+            false,
+          );
+          verifyNever(
+            () => agentRepository.getLinksFrom(
+              any(),
+              type: any(named: 'type'),
+            ),
+          );
+        },
+      );
+
+      test('accepts the durable explicit-empty completion marker', () async {
+        final capture = _capture(
+          id: 'capture-empty-complete',
+          parseCompletedAt: DateTime(2026, 5, 25, 8, 46),
+        );
+        agentEntities[capture.id] = capture;
+
+        expect(
+          await createService().hasCompletedCaptureParse(capture.id),
+          true,
+        );
+        verifyNever(
+          () => agentRepository.getLinksFrom(
+            any(),
+            type: any(named: 'type'),
+          ),
+        );
+      });
+
+      test('returns false for a live capture with no parse artifact', () async {
+        final capture = _capture(id: 'capture-unparsed');
+        agentEntities[capture.id] = capture;
+
+        expect(
+          await createService().hasCompletedCaptureParse(capture.id),
+          false,
+        );
+        verify(
+          () => agentRepository.getLinksFrom(
+            capture.id,
+            type: AgentLinkTypes.captureToParsedItem,
+          ),
+        ).called(1);
+      });
+
+      test('accepts a legacy capture with a linked parsed item', () async {
+        final capture = _capture(id: 'capture-legacy-complete');
+        final parsedItem =
+            AgentDomainEntity.parsedItem(
+                  id: 'parsed-legacy',
+                  agentId: _agentId,
+                  captureId: capture.id,
+                  kind: ParsedItemKind.newTask,
+                  title: 'Buy milk',
+                  categoryId: 'work',
+                  confidence: ParsedItemConfidence.high,
+                  confidenceScore: 0.9,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as ParsedItemEntity;
+        agentEntities
+          ..[capture.id] = capture
+          ..[parsedItem.id] = parsedItem;
+        linksByFromAndType['${capture.id}:${AgentLinkTypes.captureToParsedItem}'] =
+            [
+              AgentLink.captureToParsedItem(
+                id: 'link-legacy',
+                fromId: capture.id,
+                toId: parsedItem.id,
+                createdAt: _now,
+                updatedAt: _now,
+                vectorClock: null,
+              ),
+            ];
+
+        expect(
+          await createService().hasCompletedCaptureParse(capture.id),
+          true,
+        );
+      });
     });
 
     test(
