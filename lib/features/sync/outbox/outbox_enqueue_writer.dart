@@ -7,6 +7,7 @@ import 'package:drift/drift.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/model/sync_attachment_policy.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:path/path.dart' as p;
@@ -301,38 +303,21 @@ class OutboxEnqueueWriter {
     final fullPath = '${_documentsDirectory.path}${msg.jsonPath}';
     final journalEntity = await readEntityFromJson(fullPath);
 
-    File? attachment;
     final localCounter = journalEntity.meta.vectorClock?.vclock[host];
 
-    journalEntity.maybeMap(
-      journalAudio: (JournalAudio journalAudio) {
-        if (msg.status == SyncEntryStatus.initial) {
-          attachment = File(
-            AudioUtils.getAudioPath(journalAudio, _documentsDirectory),
-          );
-        }
-      },
-      journalImage: (JournalImage journalImage) {
-        if (msg.status == SyncEntryStatus.initial) {
-          attachment = File(
-            getFullImagePath(
-              journalImage,
-              documentsDirectory: _documentsDirectory.path,
-            ),
-          );
-        }
-      },
-      orElse: () {},
+    // Resolved here, not just at send time: stamping `filePath` on the row is
+    // what keeps a media-bearing row out of the dequeue-time bundler, which
+    // ships JSON manifests only. Leave it null and the blob is dropped no
+    // matter what the sender would have done with it.
+    final mediaFile = _mediaFileFor(journalEntity);
+    final sendAttachments = shouldSendJournalAttachments(
+      status: msg.status,
+      includeAttachments: msg.includeAttachments,
+      resendAttachmentsFlag: await _journalDb.getConfigFlag(resendAttachments),
     );
 
-    var fileLength = 0;
-    if (attachment != null) {
-      try {
-        fileLength = await attachment!.length();
-      } catch (_) {
-        fileLength = 0;
-      }
-    }
+    final attachment = sendAttachments ? mediaFile : null;
+    final fileLength = await _attachmentLength(attachment);
     final embeddedLinksCount = msg.entryLinks?.length ?? 0;
 
     // Check for existing pending outbox item for this entry (merge logic)
@@ -360,10 +345,17 @@ class OutboxEnqueueWriter {
             latestVc,
           ]);
 
-          // Create merged message with updated VC and covered clocks
+          // Create merged message with updated VC and covered clocks. The
+          // attachment opt-in is the union of both payloads: one Matrix event
+          // now stands in for both enqueues, so if either wanted the media
+          // sent, the survivor must send it.
+          final mergedIncludesAttachments =
+              (msg.includeAttachments ?? false) ||
+              (oldMessage.includeAttachments ?? false);
           final mergedMessage = msg.copyWith(
             vectorClock: latestVc,
             coveredVectorClocks: coveredClocks,
+            includeAttachments: mergedIncludesAttachments ? true : null,
           );
           logVectorClockAssignment(
             _loggingService,
@@ -379,8 +371,22 @@ class OutboxEnqueueWriter {
             extras: {'oldVc': oldMessage.vectorClock?.vclock},
           );
 
+          // The merged message may want media even when this enqueue did not
+          // (an ordinary edit landing on a pending re-sync row), so resolve
+          // the attachment against the union decision rather than reusing the
+          // per-message one.
+          final mergedAttachment =
+              (sendAttachments || mergedIncludesAttachments) ? mediaFile : null;
+          final mergedFileLength = mergedAttachment == attachment
+              ? fileLength
+              : await _attachmentLength(mergedAttachment);
+          final mergedFilePath = (mergedFileLength > 0)
+              ? getRelativeAssetPath(mergedAttachment!.path)
+              : null;
+
           final mergedJson = json.encode(mergedMessage.toJson());
-          final mergedPayloadSize = utf8.encode(mergedJson).length + fileLength;
+          final mergedPayloadSize =
+              utf8.encode(mergedJson).length + mergedFileLength;
           final mergedPriority = math.min(
             existingItem.priority,
             commonFields.priority.value,
@@ -391,6 +397,7 @@ class OutboxEnqueueWriter {
             newSubject: '$hostHash:$localCounter',
             payloadSize: mergedPayloadSize,
             priority: mergedPriority,
+            filePath: mergedFilePath,
           );
 
           if (affectedRows == 0) {
@@ -408,6 +415,10 @@ class OutboxEnqueueWriter {
                 payloadSize: Value(mergedPayloadSize),
                 outboxEntryId: Value(msg.id),
                 priority: Value(mergedPriority),
+                // Without this the fresh row is text-only and the bundler
+                // would pack it, dropping the blob the merged message asks
+                // the sender to upload.
+                filePath: Value(mergedFilePath),
               ),
             );
           }
@@ -507,6 +518,34 @@ class OutboxEnqueueWriter {
     }
 
     return false; // No merge - caller should schedule the next send request
+  }
+
+  /// The on-disk media file [entity] references, or null for entity types that
+  /// carry no media. Pure path resolution — it does not check existence and
+  /// does not consult the attachment policy, so callers can resolve the
+  /// candidate once and decide separately whether to send it.
+  File? _mediaFileFor(JournalEntity entity) => entity.maybeMap(
+    journalAudio: (JournalAudio journalAudio) =>
+        File(AudioUtils.getAudioPath(journalAudio, _documentsDirectory)),
+    journalImage: (JournalImage journalImage) => File(
+      getFullImagePath(
+        journalImage,
+        documentsDirectory: _documentsDirectory.path,
+      ),
+    ),
+    orElse: () => null,
+  );
+
+  /// Byte length of [attachment], or 0 when it is null or unreadable. A zero
+  /// length is the signal used throughout the enqueue paths for "no attachment
+  /// on this row" — a missing blob must not block the JSON from syncing.
+  Future<int> _attachmentLength(File? attachment) async {
+    if (attachment == null) return 0;
+    try {
+      return await attachment.length();
+    } catch (_) {
+      return 0;
+    }
   }
 
   /// Looks up the last sent vector clock for [entryId] from the sequence log

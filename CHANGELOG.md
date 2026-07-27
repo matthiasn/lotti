@@ -96,6 +96,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **Photos and audio now reach a device you sync your history to.** Sending
+  your existing entries to a newly set up device — from sync maintenance, or
+  automatically when a device noticed it was missing entries — transferred the
+  text of every entry but none of the images or recordings, leaving the new
+  device with photo and audio entries it could not open. Only entries created
+  *after* the device joined arrived complete. History transfers now carry the
+  media with the entry.
 - **A cancelled device verification no longer claims to have succeeded.** When
   the other device refused or cancelled the emoji check, this one showed the
   green shield and "You've successfully verified…" anyway — on the outgoing

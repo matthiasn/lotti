@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/matrix/matrix_message_sender.dart'
     show MatrixMessageSender;
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
+import 'package:lotti/features/sync/model/sync_attachment_policy.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -190,8 +191,10 @@ class MatrixPayloadSender {
       return null;
     }
 
-    final shouldResendAttachments = await journalDb.getConfigFlag(
-      resendAttachments,
+    final sendAttachments = shouldSendJournalAttachments(
+      status: message.status,
+      includeAttachments: message.includeAttachments,
+      resendAttachmentsFlag: await journalDb.getConfigFlag(resendAttachments),
     );
 
     var attachmentsOk = true;
@@ -274,8 +277,7 @@ class MatrixPayloadSender {
 
     await journalEntity.maybeMap(
       journalAudio: (JournalAudio journalAudio) async {
-        if (shouldResendAttachments ||
-            message.status == SyncEntryStatus.initial) {
+        if (sendAttachments) {
           final audioPath = AudioUtils.getAudioPath(
             journalAudio,
             documentsDirectory,
@@ -289,8 +291,7 @@ class MatrixPayloadSender {
         }
       },
       journalImage: (JournalImage journalImage) async {
-        if (shouldResendAttachments ||
-            message.status == SyncEntryStatus.initial) {
+        if (sendAttachments) {
           final imagePath = getFullImagePath(
             journalImage,
             documentsDirectory: documentsDirectory.path,
@@ -397,6 +398,7 @@ class MatrixPayloadSender {
     final missingJournalEntityIds = <String>[];
 
     final entries = <Map<String, dynamic>>[];
+    final journalChildren = <SyncJournalEntity>[];
     for (final child in message.children) {
       final reconciled = _reconcileBundleChildEnvelope(
         child,
@@ -413,6 +415,7 @@ class MatrixPayloadSender {
           continue;
         }
         record['payload'] = entity.toJson();
+        journalChildren.add(reconciled);
       }
       entries.add(record);
     }
@@ -429,6 +432,21 @@ class MatrixPayloadSender {
         'dropping it from the manifest',
         subDomain: 'sendMatrixMsg.outboxBundle.missingEntity',
       );
+      return null;
+    }
+
+    // Defence in depth for the bundling boundary. Rows carrying media are
+    // supposed to be excluded from bundles at claim time (`filePath != null`
+    // makes a row travel alone), so this loop is normally a no-op. Should a
+    // media-bearing child slip through anyway — a row enqueued by an older
+    // build before the attachment decision moved to enqueue time, say — the
+    // manifest alone would leave the peer with an unrenderable entry. Upload
+    // the blobs rather than silently dropping them.
+    if (!await _sendBundleChildAttachments(
+      room: room,
+      children: journalChildren,
+      journalEntityById: journalEntityById,
+    )) {
       return null;
     }
 
@@ -518,6 +536,67 @@ class MatrixPayloadSender {
       jsonPath: relativePath,
       children: const [],
     );
+  }
+
+  /// Uploads the media blob of any bundle child whose payload asks for it,
+  /// returning false when an upload fails so the caller can fail the whole
+  /// bundle into the standard retry path.
+  ///
+  /// Children that carry no media, or whose payload sends JSON only (the
+  /// overwhelmingly common case — an ordinary edit), cost one policy check and
+  /// no I/O. A missing file on disk is not a failure: [sendFile] logs and
+  /// reports success, so a rotten local blob cannot wedge the bundle in a
+  /// retry loop.
+  Future<bool> _sendBundleChildAttachments({
+    required Room room,
+    required List<SyncJournalEntity> children,
+    required Map<String, JournalEntity> journalEntityById,
+  }) async {
+    if (children.isEmpty) return true;
+
+    bool? resendFlag;
+    for (final child in children) {
+      final entity = journalEntityById[child.id];
+      if (entity is! JournalImage && entity is! JournalAudio) continue;
+      final mediaEntity = entity!;
+
+      // Read the flag lazily: bundles are text-only in the normal case, so
+      // most sends never need it.
+      resendFlag ??= await journalDb.getConfigFlag(resendAttachments);
+      if (!shouldSendJournalAttachments(
+        status: child.status,
+        includeAttachments: child.includeAttachments,
+        resendAttachmentsFlag: resendFlag,
+      )) {
+        continue;
+      }
+
+      loggingService.log(
+        LogDomain.sync,
+        'outboxBundle child carries media id=${child.id} — uploading the '
+        'blob alongside the manifest',
+        subDomain: 'sendMatrixMsg.outboxBundle.attachment',
+      );
+
+      final sent = await mediaEntity.maybeMap(
+        journalImage: (JournalImage image) => sendFile(
+          room: room,
+          fullPath: getFullImagePath(
+            image,
+            documentsDirectory: documentsDirectory.path,
+          ),
+          relativePath: getRelativeImagePath(image),
+        ),
+        journalAudio: (JournalAudio audio) => sendFile(
+          room: room,
+          fullPath: AudioUtils.getAudioPath(audio, documentsDirectory),
+          relativePath: AudioUtils.getRelativeAudioPath(audio),
+        ),
+        orElse: () async => true,
+      );
+      if (!sent) return false;
+    }
+    return true;
   }
 
   /// Returns true when [relativePath] is a well-formed

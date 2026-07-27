@@ -15,7 +15,9 @@ part 'sync_message.g.dart';
 
 /// Whether a journal entity sync payload is the entry's first appearance
 /// ([initial]) or a later revision ([update]). [initial] forces attachments to
-/// be (re)sent; [update] sends them only when the resend flag is set.
+/// be sent; [update] sends them only when the payload opts in via
+/// [SyncJournalEntity.includeAttachments] or the resend flag is set — see
+/// `shouldSendJournalAttachments`.
 enum SyncEntryStatus { initial, update }
 
 /// A single entry in a batched backfill request.
@@ -62,6 +64,21 @@ sealed class SyncMessage with _$SyncMessage {
     /// superseded counters as covered/received to prevent false gap detection;
     /// the current vector clock is ignored for pre-marking.
     List<VectorClock>? coveredVectorClocks,
+
+    /// Forces the entry's media file (image/audio) to ride along with this
+    /// payload even though `status` is [SyncEntryStatus.update].
+    ///
+    /// Set by the flows that re-send existing history to a peer holding none —
+    /// the sync-setup re-send (`maintenance.dart`) and backfill responses.
+    /// Those necessarily use `update` status (the entry is not new *here*),
+    /// but the receiving device has no blob, so JSON alone leaves it with an
+    /// entry it can never render. Absent (`null`) on payloads from 0.9.1103
+    /// and earlier, and on ordinary edits, which send JSON only.
+    ///
+    /// Consumed via `shouldSendJournalAttachments` in
+    /// `sync_attachment_policy.dart` — never read directly, so the enqueue
+    /// writer and the sender cannot drift apart.
+    bool? includeAttachments,
   }) = SyncJournalEntity;
 
   const factory SyncMessage.entityDefinition({

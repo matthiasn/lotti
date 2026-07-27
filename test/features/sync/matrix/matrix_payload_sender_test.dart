@@ -1,11 +1,16 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_payload_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -194,6 +199,98 @@ void main() {
           subDomain: 'sendMatrixMsg',
         ),
       ).called(1);
+    });
+  });
+
+  group('sendJournalEntityPayload attachments', () {
+    /// Writes an image entry's JSON payload and its 12-byte blob under the
+    /// documents directory, and returns the relative paths of every file event
+    /// the sender uploads for [message].
+    Future<List<String>> uploadedPathsFor(SyncJournalEntity message) async {
+      final sampleDate = DateTime.utc(2024);
+      final entity = JournalEntity.journalImage(
+        meta: Metadata(
+          id: message.id,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: message.vectorClock,
+        ),
+        data: ImageData(
+          capturedAt: sampleDate,
+          imageId: 'img-${message.id}',
+          imageFile: '${message.id}.jpg',
+          imageDirectory: '/images/',
+        ),
+      );
+
+      File('${documentsDirectory.path}${message.jsonPath}')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
+      File('${documentsDirectory.path}/images/${message.id}.jpg')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(12, 7));
+
+      final uploaded = <String>[];
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((invocation) async {
+        final extra =
+            invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
+        uploaded.add(extra?['relativePath'] as String? ?? '');
+        return 'event-${uploaded.length}';
+      });
+
+      final result = await payloadSender.sendJournalEntityPayload(
+        room: room,
+        message: message,
+      );
+      expect(result, isNotNull, reason: 'the send must succeed');
+      return uploaded;
+    }
+
+    // Regression: the sender used to derive the attachment decision from the
+    // status alone, so a re-sync or backfill re-send (necessarily `update`)
+    // uploaded the JSON and left the blob behind.
+    test('an update opting in uploads the blob alongside the JSON', () async {
+      when(
+        () => journalDb.getConfigFlag(resendAttachments),
+      ).thenAnswer((_) async => false);
+
+      final uploaded = await uploadedPathsFor(
+        const SyncMessage.journalEntity(
+              id: 'resend',
+              jsonPath: '/entries/resend.json',
+              vectorClock: VectorClock({'hostA': 1}),
+              status: SyncEntryStatus.update,
+              includeAttachments: true,
+            )
+            as SyncJournalEntity,
+      );
+
+      expect(uploaded, ['/entries/resend.json', '/images/resend.jpg']);
+    });
+
+    test('an ordinary update uploads the JSON only', () async {
+      when(
+        () => journalDb.getConfigFlag(resendAttachments),
+      ).thenAnswer((_) async => false);
+
+      final uploaded = await uploadedPathsFor(
+        const SyncMessage.journalEntity(
+              id: 'edit',
+              jsonPath: '/entries/edit.json',
+              vectorClock: VectorClock({'hostA': 1}),
+              status: SyncEntryStatus.update,
+            )
+            as SyncJournalEntity,
+      );
+
+      expect(uploaded, ['/entries/edit.json']);
     });
   });
 

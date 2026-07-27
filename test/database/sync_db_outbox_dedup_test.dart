@@ -642,6 +642,49 @@ void main() {
       expect(items.first.updatedAt.isAfter(now), isTrue);
     });
 
+    test('updateOutboxMessage promotes a text row to media-bearing', () async {
+      final database = db!;
+      final now = DateTime(2024, 1, 1);
+
+      final id = await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          message: const Value('{"original": true}'),
+          subject: const Value('original-subject'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          outboxEntryId: const Value('entry-media'),
+        ),
+      );
+
+      // A re-sync merging onto a pending edit must carry the blob. The row's
+      // filePath is also what keeps it out of the dequeue-time bundler, which
+      // ships JSON manifests only.
+      final rowsAffected = await database.updateOutboxMessage(
+        itemId: id,
+        newMessage: '{"updated": true}',
+        newSubject: 'updated-subject',
+        filePath: '/images/photo.jpg',
+      );
+      expect(rowsAffected, 1);
+      expect(
+        (await database.allOutboxItems).single.filePath,
+        '/images/photo.jpg',
+      );
+
+      // A later merge that passes no path leaves the attachment in place
+      // rather than silently clearing it.
+      await database.updateOutboxMessage(
+        itemId: id,
+        newMessage: '{"updated": 2}',
+        newSubject: 'updated-subject-2',
+      );
+      expect(
+        (await database.allOutboxItems).single.filePath,
+        '/images/photo.jpg',
+      );
+    });
+
     test('updateOutboxMessage returns 0 when item not found', () async {
       final database = db!;
 
