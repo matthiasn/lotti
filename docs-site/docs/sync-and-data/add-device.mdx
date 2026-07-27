@@ -11,11 +11,12 @@ short **check code** you compare before connecting, and an **emoji
 verification** afterwards.
 
 They do different jobs. The check code tells you the two screens are talking
-about the same account — it catches a stale or wrong code, which is the
-mistake people actually make. It is derived from public identifiers, so it is a
-recognition aid, not proof of who is on the other end. The emoji verification
-that follows is the step that authenticates the device, and until it completes
-the new device cannot read anything.
+about the same account, room and server — it catches a code from somewhere
+else, which is the mistake people actually make. It is derived from those
+identifiers only, not from the password, so it says nothing about whether the
+credentials inside are still current, and nothing about who is on the other
+end. The emoji verification that follows is the step that authenticates the
+device, and until it completes the new device cannot read anything.
 
 You need both devices in front of you. Start on one that is already connected —
 any of them, phone or desktop. There is no "main" device.
@@ -98,10 +99,9 @@ Leave both apps open until the first synchronization finishes.
 
 ## If something goes wrong
 
-- **The check codes differ.** Do not connect. You are not looking at your own
-  device's code. Note that reopening the sheet does not help by itself: the
-  same account, room and server always produce the same code, so a mismatch
-  means the two screens do not describe the same pairing.
+- **The check codes differ.** Do not connect. Reopening the sheet does not help
+  by itself: the same account, room and server always produce the same code, so
+  a mismatch means the two screens do not describe the same pairing.
 - **The code will not decode.** Copy it again on the first device rather than
   editing what you pasted; the encoded value is not meant to be hand-corrected.
   If the app reports a version mismatch, the two devices are on different Lotti

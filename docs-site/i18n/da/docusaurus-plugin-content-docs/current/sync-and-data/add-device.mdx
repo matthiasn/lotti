@@ -11,9 +11,10 @@ give den loginoplysningerne til den konto, så forløbet har to kontroller: en k
 bagefter.
 
 De gør hver sit. Kontrolkoden fortæller, at de to skærme taler om den samme
-konto — den fanger en forældet eller forkert kode, altså den fejl man faktisk
-begår. Den udledes af offentlige identifikatorer og er derfor en genkendelseshjælp,
-ikke et bevis for, hvem der er i den anden ende. Emoji-verifikationen bagefter er
+konto — den fanger en kode fra et andet sted, altså den fejl man faktisk
+begår. Den udledes kun af de identifikatorer, ikke af adgangskoden — den siger
+derfor intet om, hvorvidt de indeholdte loginoplysninger stadig gælder, og
+intet om, hvem der er i den anden ende. Emoji-verifikationen bagefter er
 det trin, der autentificerer enheden, og indtil den er færdig kan den nye enhed
 ikke læse noget.
 
@@ -64,7 +65,7 @@ det, du er ved at tilslutte dig, anført af kontrolkoden.
 />
 
 Se på kontrolkoden her og den på den første enhed. **De skal være identiske.**
-Er de forskellige, så stop: du ser ikke din egen enheds kode. Kassér den: de to skærme beskriver ikke den samme konto, det samme rum og den
+Er de forskellige, så stop. Kassér den: de to skærme beskriver ikke den samme konto, det samme rum og den
 samme server, og at åbne skærmen igen ændrer ikke det.
 
 Kontoen og serveren under koden er kontekst, ikke noget at sammenligne — de vises

@@ -11,9 +11,10 @@ tiene dos comprobaciones: un **código de verificación** corto que comparas ant
 de conectar y una **verificación con emoji** después.
 
 Hacen cosas distintas. El código de verificación indica que ambas pantallas
-hablan de la misma cuenta: detecta un código caducado o equivocado, que es el
-error que de verdad se comete. Se deriva de identificadores públicos, así que es
-una ayuda de reconocimiento, no una prueba de quién está al otro lado. La
+hablan de la misma cuenta: detecta un código venido de otro sitio, que es el
+error que de verdad se comete. Se deriva solo de esos identificadores, no de la
+contraseña: no dice nada sobre si las credenciales que lleva siguen siendo
+válidas, ni sobre quién está al otro lado. La
 verificación con emoji posterior es el paso que autentica el dispositivo, y hasta
 que termina el dispositivo nuevo no puede leer nada.
 
@@ -66,8 +67,7 @@ verificación.
 />
 
 Mira el código de verificación aquí y el del primer dispositivo. **Deben ser
-idénticos.** Si difieren, para: no estás viendo el código de tu propio
-dispositivo. Descártalo: las dos pantallas no describen la misma cuenta, sala y servidor, y
+idénticos.** Si difieren, para y descártalo: las dos pantallas no describen la misma cuenta, sala y servidor, y
 reabrir la pantalla no cambiará eso.
 
 La cuenta y el servidor bajo el código son contexto, no cosas que comparar: no

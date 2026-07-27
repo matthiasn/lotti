@@ -11,9 +11,10 @@ perciò il percorso prevede due controlli: un breve **codice di controllo** da
 confrontare prima di connettere e una **verifica con emoji** subito dopo.
 
 Fanno cose diverse. Il codice di controllo dice che i due schermi parlano dello
-stesso account — intercetta un codice vecchio o sbagliato, cioè l'errore che si
-commette davvero. Deriva da identificatori pubblici: è un aiuto al
-riconoscimento, non una prova di chi sta dall'altra parte. La verifica con emoji
+stesso account — intercetta un codice che viene da altrove, cioè l'errore che si
+commette davvero. Deriva solo da quegli identificatori, non dalla password:
+non dice nulla su quanto siano ancora valide le credenziali che contiene, né su
+chi sta dall'altra parte. La verifica con emoji
 che segue è il passaggio che autentica il dispositivo, e finché non è completata
 il nuovo dispositivo non può leggere nulla.
 
@@ -68,8 +69,7 @@ cui stai per unirti, guidato dal codice di controllo.
 />
 
 Guarda il codice di controllo qui e quello sul primo dispositivo. **Devono
-essere identici.** Se differiscono, fermati: non stai guardando il codice del tuo
-dispositivo. Scartalo: i due schermi non descrivono lo stesso account, la stessa stanza e lo
+essere identici.** Se differiscono, fermati e scartalo: i due schermi non descrivono lo stesso account, la stessa stanza e lo
 stesso server, e riaprire la schermata non cambia nulla.
 
 Account e server sotto il codice sono contesto, non elementi da confrontare: non
@@ -102,8 +102,7 @@ Lascia aperte entrambe le app finché la prima sincronizzazione non è finita.
 
 ## Se qualcosa va storto
 
-- **I codici di controllo differiscono.** Non connettere. Non stai guardando il
-  codice del tuo dispositivo. Riaprire la schermata non serve: lo stesso account
+- **I codici di controllo differiscono.** Non connettere. Riaprire la schermata non serve: lo stesso account
   produce sempre lo stesso codice, quindi una differenza significa che i due schermi non
   descrivono lo stesso abbinamento.
 - **Il codice non si decodifica.** Copialo di nuovo sul primo dispositivo invece
