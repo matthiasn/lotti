@@ -122,6 +122,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   settled, and uncommitting the day was the only way to undo it. Only you can
   commit a block now. A re-plan still carries forward blocks you already
   committed, unchanged.
+- **An entry's time follows your device's clock.** If your device is set to a
+  24-hour clock, an entry recorded at 21:54 said "9:54 PM" at the top of the
+  entry — while the editor that opens when you tap it correctly said 21:54.
+  The header only ever asked the app's language what a time looks like, never
+  the device, so an English-language app was locked to AM/PM whatever the
+  device was set to. Both now agree, in every language.
+- **The entry header no longer has a hole in the middle of it.** The category
+  button sat between the date and the rest of the buttons but belonged to
+  neither, so the leftover width in the row collected on one side of it —
+  a gap that grew with the window and, on a wide screen, left the category
+  stranded in open space. Date on the left, every button together on the
+  right, evenly spaced.
+- **The date at the top of an entry is no longer shouting.** It sat at the same
+  size as the app's own title text, and heavier than the body text beneath it,
+  which made the timestamp the loudest thing on a card whose actual content
+  sits underneath. It now sits one step down, on every screen — including the
+  narrow phone layout that splits the date over two lines.
 
 ## [0.9.1070]
 ### Fixed
