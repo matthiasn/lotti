@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
@@ -11,6 +13,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/categories/ui/widgets/category_selection_icon_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
@@ -694,9 +697,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       final local = testTextEntry.meta.dateFrom.toLocal();
+      // The time half goes through the platform-aware TimeOfDay formatting the
+      // widget uses; which clock it picks is asserted in
+      // entry_datetime_widget_test.dart, this only needs the stamp present.
       final entryDateFromFinder = find.text(
         '${DateFormat.yMMMd('en_US').format(local)} '
-        '${DateFormat.jm('en_US').format(local)}',
+        '${TimeOfDay.fromDateTime(local).format(tester.element(find.byType(EntryDetailHeader)))}',
       );
       expect(entryDateFromFinder, findsOneWidget);
     });
@@ -1602,6 +1608,289 @@ void main() {
         expect(thumbnail, isNotEmpty);
         expect(find.byType(ClipRRect), findsOneWidget);
         expect(find.byType(EntryDatetimeWidget), findsOneWidget);
+      });
+    });
+  });
+
+  // The header is one leading timestamp plus one trailing rail of controls.
+  // The category picker joined that rail in this change; while it sat in the
+  // leading cluster instead, the row's leftover width collected *after* it,
+  // opening a gap between the category and the first action that grew with the
+  // window and left the category stranded between the two clusters.
+  group('EntryDetailHeader — control rail', () {
+    final mockJournalDb = MockJournalDb();
+    final mockEntitiesCacheService = MockEntitiesCacheService();
+    final mockEditorStateService = MockEditorStateService();
+
+    final event = JournalEvent(
+      meta: Metadata(
+        id: 'rail-event',
+        createdAt: DateTime(2026, 5, 12),
+        updatedAt: DateTime(2026, 5, 12),
+        dateFrom: DateTime(2026, 5, 12),
+        dateTo: DateTime(2026, 5, 12),
+      ),
+      data: const EventData(
+        title: 'Launch Party',
+        stars: 0,
+        status: EventStatus.completed,
+      ),
+    );
+
+    final skill =
+        AiConfig.skill(
+              id: 'skill-rail',
+              name: 'Rail Skill',
+              createdAt: DateTime(2024, 3, 15),
+              skillType: SkillType.promptGeneration,
+              requiredInputModalities: const [Modality.text],
+              systemInstructions: 'sys',
+              userInstructions: 'usr',
+            )
+            as AiConfigSkill;
+
+    setUpAll(() async {
+      await getIt.reset();
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
+      );
+      getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+        ..registerSingleton<EditorDb>(MockEditorDb())
+        ..registerSingleton<EditorStateService>(mockEditorStateService);
+
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(event.meta.id),
+      ).thenAnswer((_) async => event);
+      when(
+        () => mockEditorStateService.getUnsavedStream(any(), any()),
+      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
+    });
+
+    tearDownAll(() async => getIt.reset());
+
+    /// Pumps a header anchored at x = 0 so a control's global x maps directly
+    /// onto [width].
+    ///
+    /// [inColumn] hands the header an unbounded height, the way the entry
+    /// card's own Column does, as opposed to the bounded height the test
+    /// surface otherwise imposes.
+    Future<void> pumpHeader(
+      WidgetTester tester, {
+      double width = 800,
+      String? entryId,
+      bool inLinkedEntries = false,
+      bool withSkill = true,
+      bool inColumn = false,
+    }) async {
+      Widget header = EntryDetailHeader(
+        entryId: entryId ?? testTextEntry.meta.id,
+        inLinkedEntries: inLinkedEntries,
+      );
+      if (inColumn) {
+        header = Column(mainAxisSize: MainAxisSize.min, children: [header]);
+      }
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(width: width, child: header),
+          ),
+          overrides: [
+            skillRegistryProvider.overrideWithValue(
+              withSkill ? [skill] : const <AiConfigSkill>[],
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    Finder buttonFor(IconData icon) =>
+        find.ancestor(of: find.byIcon(icon), matching: find.byType(IconButton));
+
+    group('category slot', () {
+      testWidgets('a standalone entry header offers the category picker', (
+        tester,
+      ) async {
+        await pumpHeader(tester);
+
+        expect(find.byType(CategorySelectionIconButton), findsOneWidget);
+      });
+
+      testWidgets('a header inside a linked-entries list does not', (
+        tester,
+      ) async {
+        // The parent entry already establishes the category there.
+        await pumpHeader(tester, inLinkedEntries: true);
+
+        expect(find.byType(CategorySelectionIconButton), findsNothing);
+      });
+
+      testWidgets('a task header does not', (tester) async {
+        // Tasks carry their category in the task header instead.
+        await pumpHeader(tester, entryId: testTask.meta.id);
+
+        expect(find.byType(CategorySelectionIconButton), findsNothing);
+      });
+
+      testWidgets('an event header does not', (tester) async {
+        await pumpHeader(tester, entryId: event.meta.id);
+
+        expect(find.byType(CategorySelectionIconButton), findsNothing);
+      });
+    });
+
+    group('gaps', () {
+      /// The measured distance from the category control's right edge to the
+      /// next control's left edge.
+      ///
+      /// Deliberately geometric rather than structural: the defect was slack
+      /// distributed by the Row, which no assertion about spacer widgets can
+      /// see.
+      double categoryToNextGap(WidgetTester tester) =>
+          tester.getTopLeft(buttonFor(Icons.assistant_outlined)).dx -
+          tester.getTopRight(find.byType(CategorySelectionIconButton)).dx;
+
+      testWidgets('the category sits one uniform gap from the AI menu', (
+        tester,
+      ) async {
+        await pumpHeader(tester);
+
+        expect(
+          categoryToNextGap(tester),
+          moreOrLessEquals(_headerSpacing(tester).step2),
+        );
+      });
+
+      testWidgets('that gap is the same at every header width', (tester) async {
+        // The reported symptom was width-dependent: the wider the window, the
+        // wider the hole between the category and the AI menu.
+        final gaps = <double>[];
+        for (final width in [320.0, 500.0, 800.0]) {
+          await pumpHeader(tester, width: width);
+          gaps.add(categoryToNextGap(tester));
+        }
+
+        final step2 = _headerSpacing(tester).step2;
+        expect(gaps, everyElement(moreOrLessEquals(step2)));
+      });
+
+      testWidgets('every gap in the rail is the same one step', (tester) async {
+        await pumpHeader(tester);
+
+        // Category + AI + star + overflow: three gaps, all step2.
+        expect(
+          _trailingGapWidths(tester),
+          List.filled(3, _headerSpacing(tester).step2),
+        );
+      });
+
+      testWidgets('the rail is flush right and the timestamp takes the rest', (
+        tester,
+      ) async {
+        const width = 500.0;
+        await pumpHeader(tester, width: width);
+
+        final spacing = _headerSpacing(tester);
+        final rail = 4 * AppTheme.headerActionWidth + 3 * spacing.step2;
+        // The category is now the innermost rail slot, so its left edge marks
+        // where the rail begins — and everything to its left belongs to the
+        // timestamp.
+        expect(
+          tester.getTopLeft(find.byType(CategorySelectionIconButton)).dx,
+          moreOrLessEquals(width - rail),
+        );
+        expect(
+          tester.getTopRight(buttonFor(Icons.more_horiz)).dx,
+          moreOrLessEquals(width),
+        );
+      });
+    });
+
+    group('row geometry', () {
+      testWidgets('a bounded parent height does not stretch the header', (
+        tester,
+      ) async {
+        // The timestamp is wrapped in an Align to keep its tap target tight;
+        // an Align handed a bounded maxHeight fills it unless it is told to
+        // shrink-wrap, which silently gave the header the height of whatever
+        // box enclosed the card.
+        await pumpHeader(tester, inColumn: true);
+        final unbounded = tester.getSize(find.byType(EntryDetailHeader)).height;
+
+        await pumpHeader(tester);
+        final bounded = tester.getSize(find.byType(EntryDetailHeader)).height;
+
+        expect(bounded, unbounded);
+      });
+
+      testWidgets('the timestamp opens the date/time editor', (tester) async {
+        await pumpHeader(tester);
+
+        await tester.tap(find.byType(EntryDatetimeWidget));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Date & Time'), findsOneWidget);
+      });
+
+      testWidgets('the timestamp tap target stops at the text, not the rail', (
+        tester,
+      ) async {
+        await pumpHeader(tester);
+
+        // The Expanded hands the leading slot everything up to the rail. The
+        // Align keeps the GestureDetector at the text's own width; without it
+        // the Expanded's tight constraints stretch the tap target across the
+        // whole region and dead whitespace opens the picker.
+        //
+        // Asserted on the extent rather than by tapping the midpoint: with the
+        // target stretched, the midpoint lands in the rail's own step2 control
+        // gap and hits nothing either way, so a tap alone cannot tell the two
+        // layouts apart.
+        final tapTarget = tester
+            .getSize(find.byType(EntryDatetimeWidget))
+            .width;
+        final leadingRegion = tester
+            .getTopLeft(find.byType(CategorySelectionIconButton))
+            .dx;
+        expect(tapTarget, lessThan(leadingRegion));
+      });
+
+      testWidgets('the empty space beside the timestamp opens nothing', (
+        tester,
+      ) async {
+        await pumpHeader(tester);
+
+        // Midway between the end of the timestamp text and the rail.
+        final textRight = tester
+            .getTopRight(find.byType(EntryDatetimeWidget))
+            .dx;
+        final railLeft = tester
+            .getTopLeft(find.byType(CategorySelectionIconButton))
+            .dx;
+        final box = tester.getRect(find.byType(EntryDetailHeader));
+        await tester.tapAt(
+          Offset((textRight + railLeft) / 2, box.center.dy),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Date & Time'), findsNothing);
       });
     });
   });

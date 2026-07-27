@@ -19,6 +19,7 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -49,10 +50,15 @@ import '../../../../widget_test_utils.dart';
 
 /// The humanized detail-header timestamp as EntryDatetimeWidget renders it
 /// (en_US under the test harness).
-String entryDetailDateLabel(DateTime date) {
+///
+/// The time half goes through the same platform-aware [TimeOfDay] formatting
+/// the widget uses, so it follows the device clock; which clock it picks for a
+/// given locale is asserted in entry_datetime_widget_test.dart.
+String entryDetailDateLabel(WidgetTester tester, DateTime date) {
   final local = date.toLocal();
+  final context = tester.element(find.byType(EntryDatetimeWidget));
   return '${DateFormat.yMMMd('en_US').format(local)} '
-      '${DateFormat.jm('en_US').format(local)}';
+      '${TimeOfDay.fromDateTime(local).format(context)}';
 }
 
 void main() {
@@ -186,7 +192,7 @@ void main() {
 
       // test entry displays expected date
       expect(
-        find.text(entryDetailDateLabel(testTextEntry.meta.dateFrom)),
+        find.text(entryDetailDateLabel(tester, testTextEntry.meta.dateFrom)),
         findsOneWidget,
       );
 
@@ -309,7 +315,9 @@ void main() {
 
       // test entry displays expected date
       expect(
-        find.text(entryDetailDateLabel(testWeightEntry.meta.dateFrom)),
+        find.text(
+          entryDetailDateLabel(tester, testWeightEntry.meta.dateFrom),
+        ),
         findsOneWidget,
       );
 

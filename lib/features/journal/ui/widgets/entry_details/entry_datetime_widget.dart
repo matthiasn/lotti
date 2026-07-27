@@ -9,15 +9,13 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 class EntryDatetimeWidget extends ConsumerWidget {
   const EntryDatetimeWidget({
     required this.entryId,
-    this.padding = EdgeInsets.zero,
     this.prominent = false,
     super.key,
   });
 
   final String entryId;
-  final EdgeInsets padding;
 
-  /// Renders the timestamp at title tier (subtitle1, high emphasis) instead of
+  /// Renders the timestamp at title tier (subtitle2, high emphasis) instead of
   /// the quiet caption.
   ///
   /// True only in the standalone detail header, where a journal entry has no
@@ -47,9 +45,20 @@ class EntryDatetimeWidget extends ConsumerWidget {
     // everything bigger use OS text scaling rather than this one element being
     // inflated. Shared numeric badge features (tabular + open four/six/nine +
     // slashed zero) keep the date digits steady and legible at this small size.
+    //
+    // The prominent tier is subtitle2, not subtitle1: subtitle1 is the theme's
+    // titleLarge, so the date sat at the app's top title tier — the same size
+    // as the body text below it but heavier — which made the timestamp the
+    // loudest thing on a card whose actual content sits underneath. One step
+    // down keeps the anchor and stops it shouting.
+    //
+    // subtitle2 was already the rung the old ladder fell back to at
+    // intermediate widths, so those widths render exactly as before. Promoting
+    // it to primary also shrinks the two-line stack a narrow phone ends up
+    // with, which was previously still laid out at subtitle1.
     final tokens = context.designTokens;
     final style = prominent
-        ? tokens.typography.styles.subtitle.subtitle1.copyWith(
+        ? tokens.typography.styles.subtitle.subtitle2.copyWith(
             color: tokens.colors.text.highEmphasis,
             fontFeatures: numericBadgeFontFeatures,
           )
@@ -62,32 +71,26 @@ class EntryDatetimeWidget extends ConsumerWidget {
     // ("Mar 15, 2024" / "9:12 AM") — the machine-formatted ISO stamp this used
     // to show read as log output and clashed with the row the user just
     // tapped.
+    //
+    // The time goes through TimeOfDay.format rather than DateFormat.jm: only
+    // the former honours the *device's* 24-hour setting on top of the locale's
+    // own default. `DateFormat.jm('en_US')` is hard-wired to 12-hour, so a
+    // 21:54 recording read back as "9:54 PM" for every user running an English
+    // app locale on a 24-hour device — including in the header that opens a
+    // picker already showing 21:54. This is the same call the range summary in
+    // entry_datetime_status_bar.dart makes.
     final locale = Localizations.localeOf(context).toString();
     final date = entry.meta.dateFrom.toLocal();
     final dateText = DateFormat.yMMMd(locale).format(date);
-    final timeText = DateFormat.jm(locale).format(date);
-
-    // One type step down from the prominent title tier: tried before the
-    // two-line stack so a phone-width header keeps a single-line timestamp
-    // whenever a slightly smaller line fits.
-    final fallbackStyle = prominent
-        ? tokens.typography.styles.subtitle.subtitle2.copyWith(
-            color: tokens.colors.text.highEmphasis,
-            fontFeatures: numericBadgeFontFeatures,
-          )
-        : null;
+    final timeText = TimeOfDay.fromDateTime(date).format(context);
 
     return GestureDetector(
       onTap: () =>
           EntryDateTimeMultiPageModal.show(entry: entry, context: context),
-      child: Padding(
-        padding: padding,
-        child: _AdaptiveDateTime(
-          dateText: dateText,
-          timeText: timeText,
-          style: style,
-          fallbackStyle: fallbackStyle,
-        ),
+      child: _AdaptiveDateTime(
+        dateText: dateText,
+        timeText: timeText,
+        style: style,
       ),
     );
   }
@@ -98,22 +101,21 @@ class EntryDatetimeWidget extends ConsumerWidget {
 ///
 /// On narrow phones the trailing action cluster (star, flag, AI, overflow …)
 /// eats the horizontal space, which previously ellipsized the timestamp to
-/// something like `2026-07-08 14…`. When a [fallbackStyle] is provided (the
-/// prominent detail header), a one-type-step-down single line is tried before
-/// stacking, so a phone header keeps its single-line height whenever the
-/// smaller line fits. Two short lines remain the last resort.
+/// something like `2026-07-08 14…`. Two short lines are the fallback.
+///
+/// There is deliberately no intermediate type-step-down: the prominent tier is
+/// itself the step this used to fall back to, so a second ladder rung would
+/// only shrink the timestamp below the caption tier used everywhere else.
 class _AdaptiveDateTime extends StatelessWidget {
   const _AdaptiveDateTime({
     required this.dateText,
     required this.timeText,
     required this.style,
-    this.fallbackStyle,
   });
 
   final String dateText;
   final String timeText;
   final TextStyle style;
-  final TextStyle? fallbackStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -131,31 +133,19 @@ class _AdaptiveDateTime extends StatelessWidget {
         // scroll (a pure paint translation) or during the collapse
         // SizeTransition (height only), and the timestamp is static (no timer).
         // Laying out a ~16-character line on those rare width changes is cheap.
-        bool fitsAt(TextStyle candidate) {
-          final painter = TextPainter(
-            text: TextSpan(text: oneLine, style: candidate),
-            textDirection: Directionality.of(context),
-            textScaler: MediaQuery.textScalerOf(context),
-            maxLines: 1,
-          )..layout();
-          final fits = painter.width <= constraints.maxWidth;
-          painter.dispose();
-          return fits;
-        }
+        final painter = TextPainter(
+          text: TextSpan(text: oneLine, style: style),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          maxLines: 1,
+        )..layout();
+        final fitsOnOneLine = painter.width <= constraints.maxWidth;
+        painter.dispose();
 
-        if (fitsAt(style)) {
+        if (fitsOnOneLine) {
           return Text(
             oneLine,
             style: style,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          );
-        }
-
-        if (fallbackStyle != null && fitsAt(fallbackStyle!)) {
-          return Text(
-            oneLine,
-            style: fallbackStyle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           );

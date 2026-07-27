@@ -36,7 +36,13 @@ class EntryDetailHeader extends ConsumerStatefulWidget {
     this.isCollapsible = false,
     this.isCollapsed = false,
     this.onToggleCollapse,
-  });
+  }) : assert(
+         !isCollapsible || inLinkedEntries,
+         'A collapsible header only exists inside a parent entry, so it is '
+         'always in linked entries. _headerRow derives the timestamp type '
+         'tier from inLinkedEntries, and would render a collapsible row at '
+         'the prominent tier if the two ever disagreed.',
+       );
 
   final bool inLinkedEntries;
   final String entryId;
@@ -65,7 +71,16 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
 
     final header = widget.isCollapsible
         ? _buildCollapsibleHeader(context, entry, id, notifier)
-        : _buildDefaultHeader(context, entry, id, notifier);
+        : _headerRow(
+            context,
+            _trailingActions(
+              context,
+              entry,
+              id,
+              notifier,
+              context.designTokens,
+            ),
+          );
 
     // Slim the action-button tap targets to a shorter oval (48 wide × 40 tall,
     // down from the default 48 × 48 square). The square hit areas made the
@@ -88,45 +103,43 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     );
   }
 
-  Widget _buildDefaultHeader(
-    BuildContext context,
-    JournalEntity? entry,
-    String id,
-    EntryController notifier,
-  ) {
-    final tokens = context.designTokens;
-    final showCategory =
-        entry != null &&
-        entry is! Task &&
-        entry is! JournalEvent &&
-        !widget.inLinkedEntries;
-    final actions = _trailingActions(context, entry, id, notifier, tokens);
+  /// The header row shared by both layouts: the timestamp leads and absorbs
+  /// all the slack, the control rail is pinned to the trailing edge.
+  ///
+  /// The timestamp is [Expanded] (not a fixed widget plus a `Spacer`) so it
+  /// *yields* space to the rail on narrow phones — stacking the date over the
+  /// time rather than letting the row overflow and the card's rounded clip cut
+  /// off the overflow `…`. The [Align] keeps the datetime widget's tap target
+  /// at its intrinsic text width; without it the Expanded would stretch the
+  /// underlying GestureDetector across the empty gap and make that whitespace
+  /// open the date/time picker.
+  ///
+  /// Every control — including the category — lives in [actions], so the slack
+  /// can only ever land in one place: between the timestamp and the rail. When
+  /// the category sat inside the leading cluster instead, the leftover width
+  /// collected *after* it, opening a gap between the category and the first
+  /// action that grew with the window and left the category orphaned between
+  /// two clusters.
+  Widget _headerRow(BuildContext context, List<Widget> actions) {
     return Row(
       children: [
-        // The date/category cluster takes the slack the old Spacer held, but
-        // as an Expanded it also *yields* it: on narrow phones the trailing
-        // action buttons (ending in the overflow `…`) keep their full width
-        // and the timestamp stacks the date over the time (see
-        // EntryDatetimeWidget) instead of the row overflowing and the `…`
-        // being clipped by the card's rounded clip.
         Expanded(
-          child: Row(
-            children: [
-              Flexible(
-                child: EntryDatetimeWidget(
-                  entryId: widget.entryId,
-                  // A journal entry has no title; in the standalone detail
-                  // header the date is the page's identity, so it anchors the
-                  // pane at title tier. Inside a parent's linked-entries list
-                  // the date stays quiet caption metadata.
-                  prominent: !widget.inLinkedEntries,
-                ),
-              ),
-              if (showCategory) ...[
-                SizedBox(width: tokens.spacing.step3),
-                CategorySelectionIconButton(entry: entry),
-              ],
-            ],
+          child: Align(
+            alignment: Alignment.centerLeft,
+            // Width is left to expand (that is the point — the timestamp holds
+            // the slack), but the height must shrink-wrap. Without the factor
+            // an Align given a bounded maxHeight stretches to fill it, and the
+            // header row silently takes the height of whatever box encloses
+            // the card.
+            heightFactor: 1,
+            child: EntryDatetimeWidget(
+              entryId: widget.entryId,
+              // A journal entry has no title; in the standalone detail header
+              // the date is the page's identity, so it anchors the pane at
+              // title tier. Inside a parent's linked-entries list the date
+              // stays quiet caption metadata.
+              prominent: !widget.inLinkedEntries,
+            ),
           ),
         ),
         ..._spacedTrailing(context, actions),
@@ -156,9 +169,9 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
   /// The two universal controls — favorite, then overflow — are pinned as the
   /// rightmost two slots so they sit at an identical x on every card type and a
   /// user can build muscle memory for them. The type-specific affordances
-  /// ([collapseChevron], AI when skills are available, flag) grow *inward*
-  /// from that fixed anchor, so the star/overflow pair never shifts and the
-  /// collapse chevron is kept well clear of the overflow `…` (the
+  /// (category, [collapseChevron], AI when skills are available, flag) grow
+  /// *inward* from that fixed anchor, so the star/overflow pair never shifts
+  /// and the collapse chevron is kept well clear of the overflow `…` (the
   /// near-identical grey pair was a mis-tap hazard).
   List<Widget> _trailingActions(
     BuildContext context,
@@ -169,7 +182,18 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     Widget? collapseChevron,
   }) {
     return <Widget>[
-      // --- type-specific slot, grows inward (left) from the fixed anchor ---
+      // --- type-specific slots, grow inward (left) from the fixed anchor ---
+      // The category picker is a control like any other, so it belongs in the
+      // rail rather than trailing the timestamp: that keeps one uniform gap
+      // between every adjacent control and stops the header's leftover width
+      // from pooling between the category and the AI menu. Tasks and events
+      // carry their category elsewhere, and inside a parent's linked-entries
+      // list the parent already establishes it.
+      if (entry != null &&
+          entry is! Task &&
+          entry is! JournalEvent &&
+          !widget.inLinkedEntries)
+        CategorySelectionIconButton(entry: entry),
       ?collapseChevron,
       if (entry != null &&
           (entry is Task ||
@@ -337,31 +361,16 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     // header — favorite + overflow pinned right, the collapse chevron folded
     // into the inward type-specific slot so the star/overflow anchor stays at
     // the same x as every other card type.
-    final actions = _trailingActions(
+    return _headerRow(
       context,
-      entry,
-      id,
-      notifier,
-      tokens,
-      collapseChevron: chevron,
-    );
-    return Row(
-      children: [
-        // Expanded (not a fixed widget + Spacer) so the timestamp yields
-        // space to the trailing rail on narrow phones (stacking date over
-        // time) instead of the row overflowing and clipping the overflow
-        // `…`. The Align keeps the datetime widget's tap target at its
-        // intrinsic text width — without it the Expanded would stretch the
-        // underlying GestureDetector across the empty gap and make that
-        // whitespace open the date/time picker.
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: EntryDatetimeWidget(entryId: widget.entryId),
-          ),
-        ),
-        ..._spacedTrailing(context, actions),
-      ],
+      _trailingActions(
+        context,
+        entry,
+        id,
+        notifier,
+        tokens,
+        collapseChevron: chevron,
+      ),
     );
   }
 
