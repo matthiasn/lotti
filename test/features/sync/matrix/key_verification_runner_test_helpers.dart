@@ -21,13 +21,48 @@ enum GeneratedVerificationStepKind {
 class GeneratedVerificationTransition {
   const GeneratedVerificationTransition({
     required this.kind,
-    required this.isDone,
+    required this.canceled,
+    required this.stateDone,
     required this.slot,
   });
 
   final GeneratedVerificationStepKind kind;
-  final bool isDone;
+
+  /// The SDK's `canceled` flag. Generated rather than derived from [kind]
+  /// because a *remote* cancel sets it without this device ever seeing a
+  /// cancel step of its own.
+  final bool canceled;
+
+  /// Whether the SDK reached `KeyVerificationState.done`.
+  final bool stateDone;
+
   final int slot;
+
+  /// Mirrors the SDK exactly: `canceled || state in {error, done}`. Deriving
+  /// it rather than generating it freely keeps the fake honest — a free
+  /// boolean could produce `isDone` with neither a cancel nor a done state,
+  /// which the SDK cannot do.
+  bool get isDone => canceled || stateDone;
+
+  /// Cancellation wins, because every SDK path that sets `error` also sets
+  /// `canceled` (matrix 8.1.0).
+  KeyVerificationState get state {
+    if (canceled) return KeyVerificationState.error;
+    return stateDone
+        ? KeyVerificationState.done
+        : KeyVerificationState.waitingAccept;
+  }
+
+  /// What the runner should report for this transition.
+  KeyVerificationOutcome get outcome {
+    if (canceled || sdkStep == EventTypes.KeyVerificationCancel) {
+      return KeyVerificationOutcome.cancelled;
+    }
+    if (sdkStep == EventTypes.KeyVerificationDone || stateDone) {
+      return KeyVerificationOutcome.success;
+    }
+    return KeyVerificationOutcome.pending;
+  }
 
   String? get sdkStep {
     switch (kind) {
@@ -57,7 +92,8 @@ class GeneratedVerificationTransition {
   String toString() {
     return 'GeneratedVerificationTransition('
         'kind: $kind, '
-        'isDone: $isDone, '
+        'canceled: $canceled, '
+        'stateDone: $stateDone, '
         'slot: $slot'
         ')';
   }
@@ -77,17 +113,20 @@ extension AnyGeneratedVerificationScenario on glados.Any {
       glados.AnyUtils(this).choose(GeneratedVerificationStepKind.values);
 
   glados.Generator<GeneratedVerificationTransition>
-  get verificationTransition => glados.CombinableAny(this).combine3(
+  get verificationTransition => glados.CombinableAny(this).combine4(
     verificationStepKind,
+    glados.BoolAny(this).bool,
     glados.BoolAny(this).bool,
     glados.IntAnys(this).intInRange(0, 24),
     (
       GeneratedVerificationStepKind kind,
-      bool isDone,
+      bool canceled,
+      bool stateDone,
       int slot,
     ) => GeneratedVerificationTransition(
       kind: kind,
-      isDone: isDone,
+      canceled: canceled,
+      stateDone: stateDone,
       slot: slot,
     ),
   );

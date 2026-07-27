@@ -314,9 +314,29 @@ class MockSyncEngine extends Mock implements SyncEngine {}
 class MockSyncLifecycleCoordinator extends Mock
     implements SyncLifecycleCoordinator {}
 
-class MockKeyVerification extends Mock implements KeyVerification {}
+class MockKeyVerification extends Mock implements KeyVerification {
+  // Default stubs, not fields: `canceled` and `state` are now read by
+  // `keyVerificationOutcome`, so every test that builds a verification would
+  // otherwise have to stub them even when it only cares about `lastStep`.
+  // Registered as stubs rather than overridden as real fields so a test that
+  // needs a cancellation can still `when(() => v.canceled).thenReturn(true)`.
+  MockKeyVerification() {
+    when(() => canceled).thenReturn(false);
+    when(() => state).thenReturn(KeyVerificationState.waitingAccept);
+  }
+}
 
-class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
+class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {
+  // Derived from the production rule rather than stubbed per test: `outcome`
+  // is what the verification UI branches on, and a hand-stubbed value could
+  // disagree with the `lastStep`/`keyVerification` the same test sets up —
+  // hiding exactly the success-vs-cancelled confusion these widgets had.
+  @override
+  KeyVerificationOutcome get outcome => keyVerificationOutcome(
+    lastStep: lastStep,
+    keyVerification: keyVerification,
+  );
+}
 
 class MockUserActivityGate extends Mock implements UserActivityGate {}
 

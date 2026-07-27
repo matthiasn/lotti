@@ -6,14 +6,60 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
+/// How a verification ceremony ended, as far as this device is concerned.
+///
+/// The SDK's `KeyVerification.isDone` cannot answer this: it is
+/// `canceled || state in {error, done}`, so it reports true for a ceremony
+/// that was cancelled or failed just as loudly as for one that succeeded.
+enum KeyVerificationOutcome {
+  /// Still running, or not started.
+  pending,
+
+  /// The devices verified each other.
+  success,
+
+  /// Ended without verifying — either side cancelled, or the SDK failed the
+  /// ceremony. Every SDK path that sets `KeyVerificationState.error` also sets
+  /// `canceled`, so failure is not separable from cancellation here (matrix
+  /// 8.1.0, `encryption/utils/key_verification.dart`).
+  cancelled,
+}
+
+/// Classifies a ceremony from the SDK state the runner tracks.
+///
+/// A free function so that test doubles standing in for a runner can derive
+/// the outcome from one definition rather than copying the rules and drifting
+/// from them.
+///
+/// Cancellation is checked first and deliberately wins: a remote cancel sets
+/// `canceled` while leaving any earlier state in place, and claiming success
+/// for a ceremony that did not verify is the worse failure of the two.
+KeyVerificationOutcome keyVerificationOutcome({
+  required String lastStep,
+  required KeyVerification keyVerification,
+}) {
+  if (keyVerification.canceled ||
+      lastStep == EventTypes.KeyVerificationCancel) {
+    return KeyVerificationOutcome.cancelled;
+  }
+  if (lastStep == EventTypes.KeyVerificationDone ||
+      keyVerification.state == KeyVerificationState.done) {
+    return KeyVerificationOutcome.success;
+  }
+  return KeyVerificationOutcome.pending;
+}
+
 /// Drives one interactive (SAS/emoji) device-verification session and pushes
 /// its evolving state onto [controller] for the verification UI to render.
 ///
 /// Wraps a single SDK [KeyVerification]: it hooks the SDK's `onUpdate`
 /// callback and, because that callback is not always fired, also polls every
 /// 100 ms for step/`isDone` changes. On each change it republishes itself and,
-/// once verification reports done, invokes [onCompleted] exactly once and stops
+/// once verification **succeeds**, invokes [onCompleted] exactly once and stops
 /// the timer. Restores the SDK's previous `onUpdate` handler when it tears down.
+///
+/// Read [outcome] rather than the SDK's `isDone`, which is also true for a
+/// cancelled or failed ceremony.
 class KeyVerificationRunner {
   KeyVerificationRunner(
     this.keyVerification, {
@@ -79,15 +125,25 @@ class KeyVerificationRunner {
 
     _notifyCompletionIfNeeded();
 
-    if (lastStep == EventTypes.KeyVerificationDone ||
-        lastStep == 'm.key.verification.cancel' ||
-        isDone) {
+    if (outcome != KeyVerificationOutcome.pending || isDone) {
       stopTimer();
     }
   }
 
+  /// How this ceremony ended. See [keyVerificationOutcome].
+  KeyVerificationOutcome get outcome => keyVerificationOutcome(
+    lastStep: lastStep,
+    keyVerification: keyVerification,
+  );
+
   void _notifyCompletionIfNeeded() {
-    if (_completionNotified || !_lastIsDone) return;
+    // Gated on success, not on the SDK's `isDone`: that is true for a cancel
+    // too, so every cancelled ceremony used to trigger the completion work
+    // (`updateUserDeviceKeys` + `forceRescan`) as if a device had just been
+    // verified.
+    if (_completionNotified || outcome != KeyVerificationOutcome.success) {
+      return;
+    }
     _completionNotified = true;
     if (onCompleted != null) {
       unawaited(onCompleted!(name));

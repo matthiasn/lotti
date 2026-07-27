@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -18,6 +19,17 @@ import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
 class _FakeDeviceKeys extends Fake implements DeviceKeys {}
+
+/// Counts pops so a test can tell one auto-dismiss from several.
+class _PopCountingObserver extends NavigatorObserver {
+  int pops = 0;
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    pops++;
+    super.didPop(route, previousRoute);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -579,4 +591,129 @@ void main() {
       await tester.pump(const Duration(seconds: 30));
     },
   );
+
+  testWidgets('a remote cancel shows the notice, not the success shield', (
+    tester,
+  ) async {
+    // The SDK reports isDone == true for a cancel — `canceled || state in
+    // {error, done}` — so the modal rendered the cancellation notice and the
+    // green shield together, telling the user a device had been verified when
+    // it had not. The cancel test above sets isDone false, which is why this
+    // went unnoticed.
+    final runner = MockKeyVerificationRunner();
+    final keyVerification = MockKeyVerification();
+    when(() => keyVerification.canceled).thenReturn(true);
+    when(() => keyVerification.state).thenReturn(KeyVerificationState.error);
+
+    when(() => runner.lastStep).thenReturn('m.key.verification.cancel');
+    when(() => runner.emojis).thenReturn(null);
+    when(() => runner.keyVerification).thenReturn(keyVerification);
+    when(() => keyVerification.isDone).thenReturn(true);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        VerificationModal(mockDeviceKeys),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+
+    controller.add(runner);
+    await tester.pump();
+
+    expect(find.text('Cancelled on other device...'), findsOneWidget);
+    expect(find.byIcon(MdiIcons.shieldCheck), findsNothing);
+    expect(
+      find.textContaining("You've successfully verified"),
+      findsNothing,
+    );
+
+    await tester.pump(const Duration(seconds: 30));
+  });
+
+  testWidgets('does not refresh the device list for a cancelled ceremony', (
+    tester,
+  ) async {
+    final runner = MockKeyVerificationRunner();
+    final keyVerification = MockKeyVerification();
+    when(() => keyVerification.canceled).thenReturn(true);
+    when(() => keyVerification.state).thenReturn(KeyVerificationState.error);
+
+    when(() => runner.lastStep).thenReturn('m.key.verification.cancel');
+    when(() => runner.emojis).thenReturn(null);
+    when(() => runner.keyVerification).thenReturn(keyVerification);
+    when(() => keyVerification.isDone).thenReturn(true);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        VerificationModal(mockDeviceKeys),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+
+    controller.add(runner);
+    await tester.pump();
+
+    // The refresh polls getUnverifiedDevices twelve times over ~5s; nothing
+    // was verified, so it should never start.
+    verifyNever(() => mockMatrixService.getUnverifiedDevices());
+
+    await tester.pump(const Duration(seconds: 30));
+  });
+
+  testWidgets('arms one auto-dismiss however often the stream rebuilds', (
+    tester,
+  ) async {
+    // The dismiss timers were created in build(), which a StreamBuilder re-runs
+    // for every emission while the terminal state holds — so each rebuild armed
+    // another 30-second pop, and the later ones fired at a route that may by
+    // then belong to something else.
+    final runner = MockKeyVerificationRunner();
+    final keyVerification = MockKeyVerification();
+    when(() => keyVerification.canceled).thenReturn(true);
+    when(() => keyVerification.state).thenReturn(KeyVerificationState.error);
+
+    when(() => runner.lastStep).thenReturn('m.key.verification.cancel');
+    when(() => runner.emojis).thenReturn(null);
+    when(() => runner.keyVerification).thenReturn(keyVerification);
+    when(() => keyVerification.isDone).thenReturn(true);
+
+    final observer = _PopCountingObserver();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => VerificationModal(mockDeviceKeys),
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+        navigatorObservers: [observer],
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    for (var i = 0; i < 5; i++) {
+      controller.add(runner);
+      await tester.pump();
+    }
+
+    await tester.pump(const Duration(seconds: 31));
+    await tester.pumpAndSettle();
+
+    expect(observer.pops, 1);
+  });
 }
