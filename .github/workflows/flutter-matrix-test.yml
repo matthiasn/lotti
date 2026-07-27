@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
@@ -77,7 +77,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
@@ -127,7 +127,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
