@@ -20,6 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
@@ -44,6 +49,7 @@ jobs:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
           cache: true
+          pub-cache: false
       - name: Get Flutter dependencies
         run: flutter pub get --offline --enforce-lockfile || flutter pub get --enforce-lockfile
       - uses: hoverkraft-tech/compose-action@v2.0.0
@@ -67,6 +73,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
@@ -91,6 +102,7 @@ jobs:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
           cache: true
+          pub-cache: false
       - name: Get Flutter dependencies
         run: flutter pub get --offline --enforce-lockfile || flutter pub get --enforce-lockfile
       - uses: hoverkraft-tech/compose-action@v2.0.0
@@ -111,6 +123,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
@@ -135,6 +152,7 @@ jobs:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
           cache: true
+          pub-cache: false
       - name: Get Flutter dependencies
         run: flutter pub get --offline --enforce-lockfile || flutter pub get --enforce-lockfile
       - uses: hoverkraft-tech/compose-action@v2.0.0
