@@ -104,10 +104,9 @@ void main() {
     test(
       'the resume floor only ever moves down, and survives a reopen',
       () async {
-        // The floor records how far back a resume must reach. The pen
-        // forgetting an entry — evicted, or its attempts exhausted — does not
-        // make that ground safe to skip; if anything the event is more lost.
-        // So the floor never rises on its own: only a completed walk clears
+        // The floor records how far back a resume must reach. Observing a
+        // newer unresolved event does not make older ground safe to skip, so
+        // the floor never rises on its own: only a completed walk reconciles
         // it.
         await advancer.lowerResumeFloor(roomId: _roomA, originTs: 5000);
         expect(await advancer.resumeFloorTs(_roomA), 5000);
@@ -167,83 +166,6 @@ void main() {
         expect(marker?.lastAppliedTs, 5000);
         expect(marker?.lastAppliedEventId, r'$a');
         expect(marker?.resumeFloorTs, 1000);
-      },
-    );
-
-    test(
-      'older unqueued work clamps the marker exactly like an active row',
-      () async {
-        // Ciphertext in the pen is received-but-not-applied, but it has no
-        // row — that is the whole point of the pen. Invisible to the clamp, a
-        // newer event applying would step the marker past it, and the next
-        // startup's strictly-forward bridge ("only events that sort strictly
-        // after the anchor") would never fetch it again: gone, with no row,
-        // no ledger entry and no counter to notice.
-        final penned = QueueMarkerAdvancer(
-          db,
-          unqueuedFloorTs: (roomId) => roomId == _roomA ? 6000 : null,
-        );
-        final committingId = await insertRow(eventId: r'$c', originTs: 8000);
-
-        final advanced = await penned.advanceIfNewer(
-          _entry(queueId: committingId, eventId: r'$c', originTs: 8000),
-        );
-
-        expect(advanced, isTrue);
-        final marker = await readMarker();
-        expect(
-          marker?.lastAppliedTs,
-          5999,
-          reason: 'the marker stops just below the held event',
-        );
-        expect(
-          marker?.lastAppliedEventId,
-          isNull,
-          reason: 'a clamped marker names no specific event',
-        );
-      },
-    );
-
-    test(
-      'the floor only applies to its own room',
-      () async {
-        final penned = QueueMarkerAdvancer(
-          db,
-          unqueuedFloorTs: (roomId) =>
-              roomId == '!other:example.org' ? 1000 : null,
-        );
-        final committingId = await insertRow(eventId: r'$c', originTs: 8000);
-
-        await penned.advanceIfNewer(
-          _entry(queueId: committingId, eventId: r'$c', originTs: 8000),
-        );
-
-        final marker = await readMarker();
-        expect(marker?.lastAppliedTs, 8000);
-        expect(marker?.lastAppliedEventId, r'$c');
-      },
-    );
-
-    test(
-      'the older of a queue row and held ciphertext wins the clamp',
-      () async {
-        final penned = QueueMarkerAdvancer(
-          db,
-          unqueuedFloorTs: (_) => 7000,
-        );
-        await insertRow(eventId: r'$older-active', originTs: 6000);
-        final committingId = await insertRow(eventId: r'$c', originTs: 8000);
-
-        await penned.advanceIfNewer(
-          _entry(queueId: committingId, eventId: r'$c', originTs: 8000),
-        );
-
-        final marker = await readMarker();
-        expect(
-          marker?.lastAppliedTs,
-          5999,
-          reason: 'the row at 6000 is older than the held event at 7000',
-        );
       },
     );
 

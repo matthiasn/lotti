@@ -265,8 +265,8 @@ class HostActivity extends Table {
 ///   again. Exactly-once is guaranteed by the idempotent apply path
 ///   (vector-clock comparison), not by the lease itself.
 /// - `raw_json` stores `Event.toJson()` from a *fully decrypted*
-///   Event. The `PendingDecryptionPen` prevents pre-decryption
-///   events from being enqueued.
+///   Event. Producers skip ciphertext after lowering the durable
+///   resume floor, so pre-decryption events are never enqueued.
 @DataClassName('InboundEventQueueItem')
 // Drain-path index. Partial on active statuses so the applied ledger
 // (which can grow unbounded over time) is excluded from the index and
@@ -499,22 +499,22 @@ class QueueMarkers extends Table {
       .withDefault(const Constant(0))();
 
   /// `originServerTs` of the oldest event this device has *received* but not
-  /// resolved — today, ciphertext parked in `PendingDecryptionPen` waiting
-  /// for its Megolm key. Null when nothing is outstanding.
+  /// resolved because its Megolm key was unavailable. Null when nothing is
+  /// outstanding.
   ///
   /// **No bootstrap may anchor after this.** The applied marker records what
   /// has been written; this records what is known to be missing, and the two
   /// are not the same. Held ciphertext has no queue row by design — writing
   /// pre-decryption ciphertext into `raw_json` would lose the payload on the
   /// next `Event.fromJson` round-trip — so before this column existed the
-  /// only trace of it was an in-memory map. A teardown erased that trace, and
-  /// the next forward walk, anchored strictly after `last_applied_event_id`,
+  /// only trace of it was in memory. A teardown erased that trace, and the
+  /// next forward walk, anchored strictly after `last_applied_event_id`,
   /// skipped straight over the gap: the event was gone with no row, no ledger
   /// entry and no counter.
   ///
   /// Kept deliberately as a timestamp rather than an event id. It is a
   /// *floor*, not a cursor — it answers "how far back must a resume reach",
-  /// which survives the event itself being evicted from the pen.
+  /// which survives teardown of the process that first saw the ciphertext.
   IntColumn get resumeFloorTs =>
       integer().named('resume_floor_ts').nullable()();
 

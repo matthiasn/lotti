@@ -50,6 +50,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -385,13 +386,15 @@ Future<void> throwIfStalled({
 
   final coord = device.queueCoordinator;
   final stats = await coord.queue.stats();
-  // Held ciphertext counts as outstanding. A `PendingDecryptionPen` entry has
-  // no queue row by design, so depth reads zero while the device is legitimately
-  // waiting for a Megolm key — for up to the pen's full retry window. Treating
-  // depth plus bridge state as exhaustive would turn a recoverable
-  // degraded-network run into a false failure.
-  final held = coord.heldCiphertextCount;
-  final quiet = stats.total == 0 && held == 0 && !coord.isBridgeInFlight;
+  // Still-encrypted events have no queue row. Their durable resume floor is
+  // therefore part of "outstanding work": a later room key or cold-start
+  // bridge can still revisit them even while queue depth is zero.
+  final roomId = device.syncRoomId;
+  final resumeFloorTs = roomId == null
+      ? null
+      : await coord.queue.resumeFloorTs(roomId);
+  final quiet =
+      stats.total == 0 && resumeFloorTs == null && !coord.isBridgeInFlight;
 
   // Below the failing threshold, report rather than fail. Healthy degraded
   // runs have been measured going 62s without the journal count moving, so
@@ -403,7 +406,7 @@ Future<void> throwIfStalled({
       '[stall-probe] no progress for '
       '${sinceLastProgress.elapsed.inSeconds}s at $currentCount entries; '
       'quiet=$quiet queue[total=${stats.total} ready=${stats.readyNow}] '
-      'heldCiphertext=$held '
+      'resumeFloorTs=$resumeFloorTs '
       'bridgeInFlight=${coord.isBridgeInFlight}',
     );
     return;
@@ -418,7 +421,7 @@ Future<void> throwIfStalled({
     'remaining wait cannot help. '
     'queue[total=${stats.total} ready=${stats.readyNow} '
     'byProducer=${stats.byProducer}] '
-    'heldCiphertext=$held '
+    'resumeFloorTs=$resumeFloorTs '
     'bridgeInFlight=${coord.isBridgeInFlight} '
     'currentRoomId=${device.syncRoomId}',
   );
@@ -828,6 +831,178 @@ void main() {
         debugPrint('Bob persisted $bobEntriesCount entries');
       },
       timeout: const Timeout(Duration(minutes: 15)),
+      skip: skipReason ?? false,
+    );
+
+    test(
+      'Late Megolm key survives Bob restart and clears the durable floor',
+      () async {
+        const lateKeyTimeout = Duration(minutes: 3);
+        final bobCountBefore = await bobDb.getJournalCount();
+        final bobDeviceId = bob.client.deviceID;
+        expect(bobDeviceId, isNotNull);
+
+        final bobDevice =
+            alice.client.userDeviceKeys[bobUserName]?.deviceKeys[bobDeviceId];
+        expect(
+          bobDevice,
+          isNotNull,
+          reason: 'Alice must know Bob’s verified device after SAS setup',
+        );
+        expect(bobDevice!.directVerified, isTrue);
+
+        try {
+          // Exclude Bob from a freshly-created outbound Megolm session. Bob
+          // still receives the room event, but Alice does not send its session
+          // key until this test makes Bob eligible again.
+          await bobDevice.setVerified(false, false);
+          await alice.client.encryption!.keyManager
+              .clearOrUseOutboundGroupSession(roomId, wipe: true);
+
+          await _sendTestMessages(
+            1,
+            device: aliceOutbox,
+            timeout: lateKeyTimeout,
+          );
+
+          int? floorBeforeRestart;
+          await waitUntilAsync(
+            () async {
+              floorBeforeRestart = await bob.queueCoordinator.queue
+                  .resumeFloorTs(roomId);
+              return floorBeforeRestart != null;
+            },
+            timeout: lateKeyTimeout,
+          );
+          expect(await bobDb.getJournalCount(), bobCountBefore);
+
+          // Tear down the whole receiving app while the ciphertext has no
+          // queue row. The resume floor is the only Lotti-owned recovery
+          // state that survives this point.
+          await bobOutbox.service.dispose();
+          bobOutboxInitialized = false;
+          await bob.dispose();
+          bobInitialized = false;
+          final persistedMarker = await (bobSyncDb.select(
+            bobSyncDb.queueMarkers,
+          )..where((table) => table.roomId.equals(roomId))).getSingle();
+          expect(persistedMarker.resumeFloorTs, floorBeforeRestart);
+
+          bob = await _createBobService(
+            documentsDirectory: sharedDocumentsDirectory,
+            config: config2,
+            loggingService: getIt<DomainLogger>(),
+            journalDb: bobDb,
+            settingsDb: bobSettingsDb,
+            secureStorage: secureStorageMock,
+            activityService: sharedUserActivityService,
+            updateNotifications: mockUpdateNotifications,
+            aiConfigRepository: sharedAiConfigRepository,
+            singleInstance: false,
+            syncDb: bobSyncDb,
+            vectorClockService: bobVectorClockService,
+          );
+          bobInitialized = true;
+          await bob.init();
+          expect(bob.debugPipeline, isNotNull);
+
+          // Prove that restart alone cannot silently discard the unresolved
+          // boundary: a real production bridge still sees ciphertext and must
+          // leave the persisted floor in place.
+          await bob.queueCoordinator.triggerBridge();
+          expect(await bobDb.getJournalCount(), bobCountBefore);
+          expect(
+            await bob.queueCoordinator.queue.resumeFloorTs(roomId),
+            floorBeforeRestart,
+          );
+
+          await bobDevice.setVerified(true, false);
+          final outboundSession = alice.client.encryption!.keyManager
+              .getOutboundGroupSession(roomId)
+              ?.outboundGroupSession;
+          expect(outboundSession, isNotNull);
+          final aliceInboundSession = await alice.client.encryption!.keyManager
+              .loadInboundGroupSession(roomId, outboundSession!.sessionId);
+          final originalSessionKey =
+              aliceInboundSession?.content['session_key'];
+          expect(originalSessionKey, isA<String>());
+          final roomKeyReceived = Completer<void>();
+          final roomKeySub = bob.client.onToDeviceEvent.stream.listen((event) {
+            if (!roomKeyReceived.isCompleted &&
+                event.type == EventTypes.RoomKey &&
+                event.content['session_id'] == outboundSession.sessionId) {
+              roomKeyReceived.complete();
+            }
+          });
+          // Send the exact current Megolm session through the SDK's real
+          // encrypted to-device transport. Its next sync must store the key
+          try {
+            await alice.client.sendToDeviceEncrypted(
+              [bobDevice],
+              EventTypes.RoomKey,
+              <String, Object?>{
+                'algorithm': AlgorithmTypes.megolmV1AesSha2,
+                'room_id': roomId,
+                'session_id': outboundSession.sessionId,
+                'session_key': originalSessionKey,
+              },
+            );
+            // Make the restarted test client poll deterministically instead of
+            // waiting for its background long-poll cadence.
+            await bob.client.abortSync();
+            await bob.client.oneShotSync(timeout: Duration.zero);
+            await roomKeyReceived.future.timeout(lateKeyTimeout);
+          } finally {
+            await roomKeySub.cancel();
+            bob.client.backgroundSync = true;
+          }
+          expect(
+            await bob.client.encryption!.keyManager.loadInboundGroupSession(
+              roomId,
+              outboundSession.sessionId,
+            ),
+            isNotNull,
+            reason: 'the restarted SDK must persist the real room key',
+          );
+          await bob.queueCoordinator.triggerBridge();
+
+          await waitUntilAsync(
+            () async =>
+                await bobDb.getJournalCount() == bobCountBefore + 1 &&
+                await bob.queueCoordinator.queue.resumeFloorTs(roomId) == null,
+            timeout: lateKeyTimeout,
+          );
+          expect(
+            await bob.queueCoordinator.queue.resumeFloorTs(roomId),
+            isNull,
+            reason: 'a completed post-key walk must clear the covered floor',
+          );
+
+          // Rewalking the same server history must dedupe by event id/vector
+          // clock rather than apply the recovered bundle twice.
+          await bob.queueCoordinator.triggerBridge();
+          expect(await bobDb.getJournalCount(), bobCountBefore + 1);
+
+          bobOutbox = await _DeviceOutbox.create(
+            matrixService: bob,
+            journalDb: bobDb,
+            syncDb: bobSyncDb,
+            documentsDirectory: sharedDocumentsDirectory,
+            userActivityService: sharedUserActivityService,
+            loggingService: getIt<DomainLogger>(),
+            vectorClockService: bobVectorClockService,
+            deviceName: 'bobDeviceV2',
+          );
+          bobOutboxInitialized = true;
+        } finally {
+          if (!bobDevice.directVerified) {
+            await bobDevice.setVerified(true, false);
+          }
+          await alice.client.encryption!.keyManager
+              .clearOrUseOutboundGroupSession(roomId, wipe: true);
+        }
+      },
+      timeout: const Timeout(Duration(minutes: 5)),
       skip: skipReason ?? false,
     );
 

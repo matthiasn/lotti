@@ -45,34 +45,12 @@ class InboundQueue {
     loadStats: _depthStats,
   );
 
-  /// Reports the oldest received-but-unapplied event for a room that has no
-  /// queue row — ciphertext held in `PendingDecryptionPen`. Set by
-  /// `QueuePipelineCoordinator` once both collaborators exist; the queue
-  /// cannot own the pen, because the pen enqueues *into* the queue.
-  ///
-  /// Without it the marker can advance past held ciphertext, which the next
-  /// startup's strictly-forward bridge then never re-fetches.
-  int? Function(String roomId)? unqueuedFloorTs;
-
-  late final QueueMarkerAdvancer _markerAdvancer = QueueMarkerAdvancer(
-    _db,
-    unqueuedFloorTs: (roomId) => unqueuedFloorTs?.call(roomId),
-  );
+  late final QueueMarkerAdvancer _markerAdvancer = QueueMarkerAdvancer(_db);
   late final InboundQueueResurrection _resurrection = InboundQueueResurrection(
     db: _db,
     logging: _logging,
     onDepthChanged: _depthEmitter.schedule,
   );
-
-  /// Nudges [depthChanges] without an enqueue.
-  ///
-  /// Work can become available to the worker without any row appearing —
-  /// ciphertext landing in `PendingDecryptionPen` is the case that matters,
-  /// since the worker sweeps the pen at the top of each drain iteration but
-  /// only wakes on a depth signal or its idle tick. With an empty queue that
-  /// tick is `_idleTick * 12` (60s), so without this a key arriving right
-  /// after a penned page would sit unused for up to a minute.
-  void signalPendingWork() => _depthEmitter.schedule();
 
   /// Records that ciphertext for [roomId] at [originTs] is outstanding, so a
   /// later bootstrap cannot anchor past it. See
@@ -83,7 +61,7 @@ class InboundQueue {
   }) => _markerAdvancer.lowerResumeFloor(roomId: roomId, originTs: originTs);
 
   /// Replaces the durable floor after a completed bootstrap with the oldest
-  /// ciphertext that is still unresolved, or clears it when none remains.
+  /// ciphertext observed during that walk, or clears it when none remains.
   Future<void> completeResumeWalk({
     required String roomId,
     required int? unresolvedFloorTs,
@@ -148,9 +126,9 @@ class InboundQueue {
       // F3 must run before F4. A real `m.room.encrypted` event has
       // ciphertext-only content with no visible `msgtype`, so the
       // classifier would report it as a non-payload event and drop it
-      // as `filteredOutByType` before it ever reaches the pen.
-      // Deferring encrypted events first keeps them in the pen and
-      // lets decryption turn them into a proper payload later.
+      // as `filteredOutByType`. Deferring it preserves an explicit diagnostic
+      // if a producer violates the contract: producers lower the durable
+      // resume floor and skip ciphertext before calling the queue.
       if (event.type == EventTypes.Encrypted) {
         deferred++;
         continue;

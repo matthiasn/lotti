@@ -7,7 +7,6 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/queue/bootstrap_sink.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -234,22 +233,39 @@ void main() {
   );
 
   test(
-    'still-encrypted backfill goes to the pen instead of the floor',
+    'encrypted backfill is re-decrypted once before floor fallback',
     () async {
-      // `enqueueBatch` refuses ciphertext — writing it into `raw_json` would
-      // lose the payload on the next `Event.fromJson` round-trip — and
-      // reports it as `deferredPendingDecryption`, whose contract is that the
-      // *caller* retains the event and re-submits after decryption. The live
-      // producer honours that. Backfill did not: it handed pages straight to
-      // the queue and ignored the count, so every event the startup bridge
-      // replayed while still encrypted was discarded outright — no row, no
-      // pen entry, no ledger row, nothing to retry and nothing to notice.
-      final pen = PendingDecryptionPen(logging: logging);
+      final encrypted = _buildEvent(
+        eventId: r'$sealed',
+        originTsMs: 2,
+        type: EventTypes.Encrypted,
+      );
+      final decrypted = _buildEvent(eventId: r'$sealed', originTsMs: 2);
+      final seen = <Event>[];
       final sink = QueueBootstrapSink(
         queue: queue,
         logging: logging,
-        pen: pen,
+        decryptEvent: (event) async {
+          seen.add(event);
+          return decrypted;
+        },
       );
+
+      final cont = await sink.onPage([encrypted], info(0, 1));
+
+      expect(cont, isTrue);
+      expect(seen, [same(encrypted)]);
+      expect((await queue.stats()).total, 1);
+      expect(await queue.resumeFloorTs('!roomA:example.org'), isNull);
+      expect(sink.oldestUnresolvedTs, isNull);
+      expect(sink.lastAcceptedCount, 1);
+    },
+  );
+
+  test(
+    'still-encrypted backfill lowers the durable floor and is not queued',
+    () async {
+      final sink = QueueBootstrapSink(queue: queue, logging: logging);
 
       final events = [
         _buildEvent(eventId: r'$plain', originTsMs: 1),
@@ -265,192 +281,116 @@ void main() {
       final stats = await queue.stats();
       expect(stats.total, 1, reason: 'only the decrypted event is a row');
       expect(
-        pen.size,
-        1,
+        await queue.resumeFloorTs('!roomA:example.org'),
+        2,
         reason:
-            'the ciphertext is held, not dropped, so it can be '
-            're-submitted once its key arrives',
+            'the bridge must revisit the skipped event after its key arrives',
       );
+      expect(sink.oldestUnresolvedTs, 2);
+      expect(sink.lastAcceptedCount, 2);
     },
   );
 
   test(
-    'a full pen stops pagination instead of evicting the oldest ciphertext',
+    'all-encrypted pages count every observed event as pagination progress',
     () async {
-      // A forward walk emits up to 50 pages of 200 and manual history
-      // collection is unbounded, while the pen is a fixed LRU. Ciphertext
-      // creates no queue rows, so the depth-based back-pressure never fires —
-      // the walk would run the pen's oldest entries straight off the end,
-      // recreating the loss this sink exists to prevent. Stopping is safe:
-      // held events clamp the sync marker, so the next run resumes from the
-      // right anchor rather than skipping the gap.
-      final pen = PendingDecryptionPen(logging: logging, capacity: 2);
-      final sink = QueueBootstrapSink(
-        queue: queue,
-        logging: logging,
-        pen: pen,
-      );
+      final sink = QueueBootstrapSink(queue: queue, logging: logging);
 
       final page = [
-        for (var i = 0; i < 2; i++)
+        for (var i = 0; i < 3; i++)
           _buildEvent(
             eventId: '\$sealed$i',
-            originTsMs: i + 1,
+            originTsMs: 30 - i * 10,
             type: EventTypes.Encrypted,
           ),
       ];
       final cont = await sink.onPage(page, info(0, page.length));
 
-      expect(pen.size, 2);
-      expect(
-        cont,
-        isTrue,
-        reason:
-            'a page that fits exactly is admitted whole; the stop comes '
-            'when the next page has nowhere to go',
-      );
+      expect(cont, isTrue);
       expect(
         sink.lastAcceptedCount,
-        2,
+        3,
         reason:
-            'retained ciphertext counts as accepted, so the caller does '
-            'not read this page as a stale-cache miss',
+            'the catch-up strategy must not mistake ciphertext for a stale '
+            'cache page and overrun its boundary',
       );
+      expect(sink.oldestUnresolvedTs, 10);
+      expect(await queue.resumeFloorTs('!roomA:example.org'), 10);
+      expect((await queue.stats()).total, 0);
     },
   );
 
   test(
-    'admission is checked before holding, so nothing is evicted',
+    'ciphertext floors are tracked independently per room',
     () async {
-      // `hold` enforces capacity itself by evicting the oldest entry, so a
-      // guard that runs after the page has been held has already destroyed
-      // something: a nearly-full pen taking two new events evicts one, then
-      // reports a size that looks like it stopped in time.
-      final pen = PendingDecryptionPen(logging: logging, capacity: 2);
-      final sink = QueueBootstrapSink(
-        queue: queue,
-        logging: logging,
-        pen: pen,
-      );
-
-      // Fill one slot, leaving exactly one free.
-      await sink.onPage([
-        _buildEvent(
-          eventId: r'$first',
-          originTsMs: 1,
-          type: EventTypes.Encrypted,
-        ),
-      ], info(0, 1));
-      expect(pen.size, 1);
-
-      // Two more new events against one free slot.
+      final sink = QueueBootstrapSink(queue: queue, logging: logging);
       final cont = await sink.onPage([
         _buildEvent(
-          eventId: r'$second',
-          originTsMs: 2,
+          eventId: r'$room-a',
+          originTsMs: 20,
           type: EventTypes.Encrypted,
         ),
         _buildEvent(
-          eventId: r'$third',
-          originTsMs: 3,
+          eventId: r'$room-b',
+          originTsMs: 10,
+          roomId: '!roomB:example.org',
           type: EventTypes.Encrypted,
         ),
-      ], info(1, 2));
+      ], info(0, 2));
 
-      expect(cont, isFalse, reason: 'pagination stops at the boundary');
-      expect(pen.size, 2, reason: 'filled exactly, never overflowed');
-      expect(
-        pen.holds(r'$first'),
-        isTrue,
-        reason: 'the oldest entry must not have been evicted to make room',
-      );
+      expect(cont, isTrue);
+      expect(await queue.resumeFloorTs('!roomA:example.org'), 20);
+      expect(await queue.resumeFloorTs('!roomB:example.org'), 10);
+      expect(sink.oldestUnresolvedTs, 10);
     },
   );
 
   test(
-    'an overflow event is recorded as a resume floor, not discarded',
+    'the durable floor is written before later plaintext is appended',
     () async {
-      // Breaking out of the scan throws away work that has already crossed
-      // the network — later plaintext and already-held events included — and
-      // the manual "Fetch all history" path has no automatic retry to pick
-      // them up afterwards.
-      final pen = PendingDecryptionPen(logging: logging, capacity: 1);
-      final sink = QueueBootstrapSink(
-        queue: queue,
-        logging: logging,
-        pen: pen,
-      );
-
-      final cont = await sink.onPage([
-        _buildEvent(
-          eventId: r'$sealedA',
-          originTsMs: 1,
-          type: EventTypes.Encrypted,
+      final orderedQueue = MockInboundQueue();
+      final calls = <String>[];
+      when(
+        () => orderedQueue.lowerResumeFloor(
+          roomId: any<String>(named: 'roomId'),
+          originTs: any<int>(named: 'originTs'),
         ),
-        // No slot left for this one...
-        _buildEvent(
-          eventId: r'$sealedB',
-          originTsMs: 2,
-          type: EventTypes.Encrypted,
-        ),
-        // ...but this one needs no slot and must still be queued.
-        _buildEvent(eventId: r'$plain', originTsMs: 3),
-      ], info(0, 3));
-
-      expect(cont, isFalse, reason: 'pagination still stops');
-      expect(pen.size, 1, reason: 'capacity respected, nothing evicted');
-      expect(pen.holds(r'$sealedA'), isTrue);
-      // The overflow event has no row and no pen entry, so nothing in memory
-      // protects it. The durable floor does: it says a resume must reach back
-      // to it, and the bridge refuses a forward anchor ahead of the floor.
-      expect(
-        await queue.resumeFloorTs('!roomA:example.org'),
-        2,
-        reason: 'the omitted event is recorded as outstanding',
-      );
-      // With that recorded, the rest of an already-fetched page is safe to
-      // queue — which is exactly what the floor bought.
-      final stats = await queue.stats();
-      expect(stats.total, 1, reason: 'the plaintext after the gap is kept');
-    },
-  );
-
-  test(
-    'capacity is budgeted per room, not across the whole pen',
-    () async {
-      // The pen's capacity and LRU are global. Ciphertext left over from a
-      // room the user switched away from would otherwise consume the entire
-      // budget and stop the active room's bootstrap dead — `onRoomChanged`
-      // prunes queue rows but not the pen.
-      final pen = PendingDecryptionPen(logging: logging, capacity: 1)
-        ..hold(
-          _buildEvent(
-            eventId: r'$stale',
-            originTsMs: 1,
-            roomId: '!oldRoom:example.org',
-            type: EventTypes.Encrypted,
-          ),
+      ).thenAnswer((_) async => calls.add('floor'));
+      when(
+        () => orderedQueue.appendBootstrapPage(any()),
+      ).thenAnswer((_) async {
+        calls.add('append');
+        return const EnqueueResult(
+          accepted: 1,
+          duplicatesDropped: 0,
+          filteredOutByType: 0,
+          deferredPendingDecryption: 0,
+          oldestTsAccepted: 30,
+          newestTsAccepted: 30,
         );
-
+      });
+      when(
+        () => orderedQueue.waitForDrainAtMostTo(
+          any<int>(),
+          timeout: any<Duration>(named: 'timeout'),
+        ),
+      ).thenAnswer((_) async {});
       final sink = QueueBootstrapSink(
-        queue: queue,
+        queue: orderedQueue,
         logging: logging,
-        pen: pen,
       );
+
       final cont = await sink.onPage([
         _buildEvent(
-          eventId: r'$fresh',
-          originTsMs: 2,
+          eventId: r'$sealed',
+          originTsMs: 20,
           type: EventTypes.Encrypted,
         ),
-      ], info(0, 1));
+        _buildEvent(eventId: r'$plain', originTsMs: 30),
+      ], info(0, 2));
 
-      expect(
-        cont,
-        isTrue,
-        reason: 'the active room has its own budget and is not blocked',
-      );
-      expect(pen.holds(r'$fresh'), isTrue);
+      expect(cont, isTrue);
+      expect(calls, <String>['floor', 'append']);
     },
   );
 
