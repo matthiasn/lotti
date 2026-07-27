@@ -1,7 +1,6 @@
 @Tags(['eval-live'])
 library;
 
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,15 +9,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
@@ -26,6 +22,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repo
 import '../../../helpers/fallbacks.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
+import '../integration/day_agent_journey_support.dart';
 import '../integration/day_agent_pipeline_harness.dart';
 import '../integration/realistic_day_planning_scenarios.dart';
 import 'framework/eval_models.dart';
@@ -83,6 +80,28 @@ void main() {
           'DAY_PLANNING_EVAL_SCENARIOS names unknown scenario(s): '
           '${unknownScenarioIds.join(', ')}.',
         );
+      }
+      final validatedScenarios =
+          <({EvalScenario scenario, int startHour, String transcript})>[];
+      for (final scenario in scenarios) {
+        final startHour = scenario.startHour;
+        if (startHour == null) {
+          fail(
+            'Full-journey scenario "${scenario.id}" must define startHour.',
+          );
+        }
+        final transcript = scenario.captureTranscript;
+        if (transcript == null || transcript.trim().isEmpty) {
+          fail(
+            'Full-journey scenario "${scenario.id}" must define a non-empty '
+            'captureTranscript.',
+          );
+        }
+        validatedScenarios.add((
+          scenario: scenario,
+          startHour: startHour,
+          transcript: transcript,
+        ));
       }
       final apiKey = environment['MELIOUS_API_KEY'];
       if (apiKey == null || apiKey.isEmpty) {
@@ -147,19 +166,21 @@ void main() {
                 )
                 as AiConfigModel;
 
-        for (final scenario in scenarios) {
+        for (final journey in validatedScenarios) {
+          final scenario = journey.scenario;
           final realNow = DateTime.now();
           final anchoredAt = DateTime(
             realNow.year,
             realNow.month,
             realNow.day,
-            scenario.startHour!,
+            journey.startHour,
           );
           final runningClock = Stopwatch()..start();
           final report = await withClock(
             Clock(() => anchoredAt.add(runningClock.elapsed)),
             () => _runJourney(
               scenario: scenario,
+              captureTranscript: journey.transcript,
               modelId: modelId,
               conversationRepository: container.read(
                 conversationRepositoryProvider.notifier,
@@ -215,6 +236,7 @@ void main() {
 
 Future<Map<String, Object?>> _runJourney({
   required EvalScenario scenario,
+  required String captureTranscript,
   required String modelId,
   required ConversationRepository conversationRepository,
   required CloudInferenceRepository cloudInferenceRepository,
@@ -268,11 +290,11 @@ Future<Map<String, Object?>> _runJourney({
 
     parse.start();
     final captureId = await harness.realDayAgent.submitCapture(
-      transcript: scenario.captureTranscript!,
+      transcript: captureTranscript,
       capturedAt: clock.now(),
       dayDate: planDate,
     );
-    parseJob = await _waitForTerminalJob(
+    parseJob = await waitForTerminalDayProcessingJob(
       harness.outbox,
       DayProcessingOutboxRepository.parseJobId(captureId.value),
     );
@@ -298,7 +320,7 @@ Future<Map<String, Object?>> _runJourney({
 
     final coordinator = await harness.dayAgentService.getOrCreatePlannerAgent();
     digest.start();
-    await _runDigest(
+    await runPlannerDigest(
       harness: harness,
       coordinator: coordinator,
       dayId: dayId,
@@ -313,9 +335,7 @@ Future<Map<String, Object?>> _runJourney({
     total.stop();
   }
 
-  final expectedIds = scenario.id == denseRestOfDayScenario.id
-      ? denseRestOfDaySelectedTaskIds
-      : overcommittedRestOfDaySelectedTaskIds;
+  final expectedIds = scenario.decidedTaskIds;
   final matchedIds = {
     for (final item in parsedItems) ?item.matchedTaskId,
   };
@@ -406,57 +426,6 @@ Future<Map<String, Object?>> _runJourney({
     result['disposeError'] = disposeError.toString();
   }
   return result;
-}
-
-Future<void> _runDigest({
-  required DayAgentPipelineHarness harness,
-  required AgentIdentityEntity coordinator,
-  required String dayId,
-}) async {
-  final completions = StreamIterator<WakeRunCompletion>(
-    harness.orchestrator.runCompletions,
-  );
-  try {
-    final runKey = harness.orchestrator.enqueueManualWake(
-      agentId: coordinator.agentId,
-      reason: dayAgentDigestReason,
-      triggerTokens: {dayAgentDigestToken(dayId)},
-      workspaceKey: coordinatorDigestWorkspaceKey,
-    );
-    while (await completions.moveNext()) {
-      final completion = completions.current;
-      if (completion.runKey != runKey) continue;
-      if (completion.status != WakeRunStatus.completed) {
-        throw StateError(
-          'Planner digest $runKey ended as ${completion.status.name}: '
-          '${completion.error}',
-        );
-      }
-      return;
-    }
-    throw StateError('Planner completion stream closed before $runKey.');
-  } finally {
-    await completions.cancel();
-  }
-}
-
-Future<DayProcessingJob> _waitForTerminalJob(
-  DayProcessingOutboxRepository outbox,
-  String jobId,
-) async {
-  final changes = StreamIterator<void>(outbox.changes);
-  try {
-    while (true) {
-      final changed = changes.moveNext();
-      final job = await outbox.getById(jobId);
-      if (job != null && job.isTerminal) return job;
-      if (!await changed) {
-        throw StateError('Outbox closed before $jobId became terminal.');
-      }
-    }
-  } finally {
-    await changes.cancel();
-  }
 }
 
 String _messageRole(String message) {

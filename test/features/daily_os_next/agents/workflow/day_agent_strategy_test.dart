@@ -53,6 +53,7 @@ void main() {
 
   DayAgentStrategy strategy({
     DayAgentToolHandler? handler,
+    Set<String> terminalToolNames = const {},
   }) {
     return DayAgentStrategy(
       syncService: syncService,
@@ -60,6 +61,7 @@ void main() {
       threadId: _threadId,
       runKey: _runKey,
       domainLogger: domainLogger,
+      terminalToolNames: terminalToolNames,
       executeToolHandler:
           handler ??
           (_, _, _) async => const DayAgentToolResult(
@@ -320,6 +322,7 @@ void main() {
         'completes the conversation after accepted $terminalTool',
         () async {
           final sut = strategy(
+            terminalToolNames: {terminalTool},
             handler: (toolName, _, _) async => DayAgentToolResult(
               success: true,
               output: toolName == DayAgentToolNames.parseCaptureToItems
@@ -343,6 +346,7 @@ void main() {
         'continues after rejected $terminalTool so the model can repair it',
         () async {
           final sut = strategy(
+            terminalToolNames: {terminalTool},
             handler: (_, _, _) async => const DayAgentToolResult(
               success: false,
               output: 'invalid tool payload',
@@ -360,6 +364,70 @@ void main() {
         },
       );
     }
+
+    test(
+      'a successful artifact is non-terminal outside its wake mode',
+      () async {
+        final sut = strategy(
+          handler: (_, _, _) async => const DayAgentToolResult(
+            success: true,
+            output: '{"planId":"plan-1"}',
+          ),
+        );
+
+        final action = await sut.processToolCalls(
+          toolCalls: [
+            _toolCall(name: DayAgentToolNames.draftDayPlan, args: const {}),
+          ],
+          manager: manager,
+        );
+
+        expect(sut.didPersistDraftDayPlan, isTrue);
+        expect(action, ConversationAction.continueConversation);
+      },
+    );
+
+    test(
+      'does not execute calls after a terminal artifact in one batch',
+      () async {
+        final handledTools = <String>[];
+        final sut = strategy(
+          terminalToolNames: const {DayAgentToolNames.draftDayPlan},
+          handler: (toolName, _, _) async {
+            handledTools.add(toolName);
+            return const DayAgentToolResult(
+              success: true,
+              output: '{"planId":"plan-1"}',
+            );
+          },
+        );
+
+        final action = await sut.processToolCalls(
+          toolCalls: [
+            _toolCall(
+              name: DayAgentToolNames.draftDayPlan,
+              args: const {},
+              id: 'draft-call',
+            ),
+            _toolCall(
+              name: DayAgentToolNames.raiseDayStatus,
+              args: const {},
+              id: 'status-call',
+            ),
+          ],
+          manager: manager,
+        );
+
+        expect(action, ConversationAction.complete);
+        expect(handledTools, [DayAgentToolNames.draftDayPlan]);
+        verifyNever(
+          () => manager.addToolResponse(
+            toolCallId: 'status-call',
+            response: any(named: 'response'),
+          ),
+        );
+      },
+    );
 
     test('unknown tools receive an error response', () async {
       final sut = strategy();

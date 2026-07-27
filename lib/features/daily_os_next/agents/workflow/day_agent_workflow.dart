@@ -408,6 +408,15 @@ class DayAgentWorkflow {
         threadId: threadId,
         runKey: runKey,
         domainLogger: domainLogger,
+        terminalToolNames: {
+          if (_requiresCaptureParse(
+            wakeContext: wakeContext,
+            captureContext: captureContext,
+          ))
+            DayAgentToolNames.parseCaptureToItems,
+          if (_requiresDraftDayPlan(wakeContext: wakeContext))
+            DayAgentToolNames.draftDayPlan,
+        },
         executeToolHandler: (toolName, args, manager) => _executeToolHandler(
           agentId: agentId,
           threadId: threadId,

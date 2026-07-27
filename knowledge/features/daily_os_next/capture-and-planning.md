@@ -80,22 +80,41 @@ Each user-facing wake now has a narrow tool surface:
 |---|---|
 | Capture submitted | `parse_capture_to_items` only |
 | Drafting | `create_task_from_phrase`, `raise_day_status`, `draft_day_plan` |
+| Refine | Normal day-agent tools except `parse_capture_to_items` and `draft_day_plan`; the plan mutation is `propose_plan_diff` |
 
-The parser and drafter tools are **terminal artifacts**. Once either one is
-accepted, `DayAgentStrategy` completes that conversation immediately rather
-than asking the provider for a prose wrap-up. Rejected calls still continue so
-the model can repair them. This matters twice: an unrestricted drafting wake
-can re-parse, triage, search and summarize before it plans, and continuing after
-the final write adds another provider call after the requested artifact already
-exists.
+The parser and drafter tools are **terminal artifacts only in their owning wake
+mode**. Once either one is accepted there, `DayAgentStrategy` completes that
+conversation immediately rather than asking the provider for a prose wrap-up.
+It also stops processing the current tool-call batch, so nothing can mutate
+state after the terminal artifact. Rejected calls still continue so the model
+can repair them. This matters twice: an unrestricted drafting wake can re-parse,
+triage, search and summarize before it plans, and continuing after the final
+write adds another provider call after the requested artifact already exists.
+Refine never exposes the full-draft writer, so it cannot overwrite its baseline
+instead of producing a reviewable diff.
 
 Durable scheduling has a matching no-lost-signal invariant. When an outbox
 change arrives while `DayProcessingRuntime` is already draining, the runtime
-records that fact and performs one immediate follow-up drain after the active
-one. It must not rely on another database notification or the later due-work
-timer: a capture submitted during the small window between the active drain's
-query and completion would otherwise remain pending even though its nudge was
-coalesced into the drain that had already missed it.
+must distinguish its own claim/status writes from genuinely new work. It pauses
+the outbox subscription during the mutation phase, resumes it before the
+due-work query, and lets that query schedule anything that arrived while
+paused. A later change sets `_followUpNudgeRequested`, ensuring one immediate
+follow-up after `_nudgeFuture` clears. This avoids both a lost capture and the
+redundant drain chain that would result from treating every processor status
+write as a new enqueue.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Draining: nudge sets _nudgeFuture
+    Draining --> Draining: owned outbox writes while listener paused
+    Draining --> Inspecting: drain returns, listener resumes
+    Inspecting --> FollowUpRequested: external change sets _followUpNudgeRequested
+    Inspecting --> Idle: query schedules due work or finds none
+    FollowUpRequested --> Draining: active future clears, immediate nudge
+    Idle --> Draining: due-work timer or external change
+    Idle --> [*]: dispose
+```
 
 # What the write path enforces
 

@@ -361,6 +361,13 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
         DayAgentToolNames.draftDayPlan,
       }.contains(toolName);
     }
+    if (wakeContext.isRefineWake &&
+        toolName == DayAgentToolNames.draftDayPlan) {
+      // Refine wakes edit an existing plan through `propose_plan_diff`.
+      // Re-exposing the full-draft writer lets a model overwrite the baseline
+      // before it proposes the reviewable diff the user requested.
+      return false;
+    }
     if (toolName == DayAgentToolNames.parseCaptureToItems) {
       return false;
     }

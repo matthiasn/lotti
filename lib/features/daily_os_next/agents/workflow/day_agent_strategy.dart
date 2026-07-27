@@ -50,6 +50,7 @@ class DayAgentStrategy extends ConversationStrategy {
     required this.runKey,
     required this.executeToolHandler,
     required this.domainLogger,
+    this.terminalToolNames = const {},
   });
 
   /// Sync-aware write service for persisted conversation messages.
@@ -69,6 +70,13 @@ class DayAgentStrategy extends ConversationStrategy {
 
   /// Structured logger.
   final DomainLogger domainLogger;
+
+  /// Successful tools that complete this particular wake immediately.
+  ///
+  /// The workflow derives this from the wake mode. The same tool name can be
+  /// valid but non-terminal in another mode, so terminal behavior must not be
+  /// inferred globally from the tool itself.
+  final Set<String> terminalToolNames;
 
   final _observations = <ObservationRecord>[];
   var _didPersistCaptureParse = false;
@@ -130,18 +138,27 @@ class DayAgentStrategy extends ConversationStrategy {
 
       if (DayAgentToolNames.isWorkflowHandlerTool(toolName)) {
         final result = await executeToolHandler(toolName, args, manager);
+        var persistedArtifact = false;
         if (toolName == DayAgentToolNames.parseCaptureToItems &&
             _didPersistCaptureParseResult(result)) {
           _didPersistCaptureParse = true;
+          persistedArtifact = true;
         }
         if (toolName == DayAgentToolNames.draftDayPlan && result.success) {
           _didPersistDraftDayPlan = true;
+          persistedArtifact = true;
         }
         manager.addToolResponse(toolCallId: call.id, response: result.output);
         await _recordToolResultMessage(
           toolName: toolName,
           errorMessage: result.success ? null : result.output,
         );
+        if (persistedArtifact && terminalToolNames.contains(toolName)) {
+          // A provider may batch multiple tool calls in one response. Once
+          // this wake's terminal artifact is durable, later calls must not
+          // mutate state after the artifact that ends the conversation.
+          return ConversationAction.complete;
+        }
         continue;
       }
 
@@ -153,14 +170,6 @@ class DayAgentStrategy extends ConversationStrategy {
       );
     }
 
-    // These are terminal artifacts for their respective wakes. The workflow
-    // already verifies that the required artifact landed after sendMessage
-    // returns, so asking the provider for another turn after success adds no
-    // correctness and doubles the happy-path inference count. Rejections must
-    // still continue so the model can repair the payload in the same wake.
-    if (_didPersistCaptureParse || _didPersistDraftDayPlan) {
-      return ConversationAction.complete;
-    }
     return ConversationAction.continueConversation;
   }
 

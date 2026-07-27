@@ -324,8 +324,9 @@ more than a minute with a minimal tool surface and no forced follow-up, so that
 remainder is provider/model-route latency, not local outbox scheduling.
 
 **It always passes when it runs.** Violations are reported, never asserted. The
-report and its judge bundle are the deliverable. **Missing credentials are the one
-hard failure**, because that is a setup error rather than anything a model did.
+report and its judge bundle are the deliverable. **Only setup errors fail hard:
+missing credentials or an unknown scenario id**, because neither is something
+the model did.
 
 There are two live eval paths on purpose: the quality matrix isolates drafting
 behavior for comparable scoring, while the full journey measures latency and

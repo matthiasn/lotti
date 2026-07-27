@@ -1,14 +1,5 @@
 import '../eval/framework/eval_scenario.dart';
 
-const denseRestOfDaySelectedTaskIds = [
-  'task-migration',
-  'task-invoice',
-  'task-client-call',
-  'task-reset',
-  'task-walk',
-  'task-dentist',
-];
-
 const denseRestOfDayScenario = EvalScenario(
   id: 'dense-rest-of-day',
   intent: 'Retain every mentioned constraint while ignoring unrelated work.',
@@ -19,6 +10,14 @@ const denseRestOfDayScenario = EvalScenario(
       'dentist at 16:30 is fixed.',
   capacityMinutes: 300,
   startHour: 8,
+  decidedTaskIds: [
+    'task-migration',
+    'task-invoice',
+    'task-client-call',
+    'task-reset',
+    'task-walk',
+    'task-dentist',
+  ],
   tasks: [
     EvalTaskSpec(
       id: 'task-migration',
@@ -101,14 +100,6 @@ const denseRestOfDayScenario = EvalScenario(
   ],
 );
 
-const overcommittedRestOfDaySelectedTaskIds = [
-  'task-board-deck',
-  'task-interviews',
-  'task-release',
-  'task-inbox',
-  'task-afternoon-walk',
-];
-
 const overcommittedRestOfDayScenario = EvalScenario(
   id: 'overcommitted-rest-of-day',
   intent: 'Name what cannot fit and escalate it back to the planner.',
@@ -117,6 +108,13 @@ const overcommittedRestOfDayScenario = EvalScenario(
       'support inbox, and a walk. I know the afternoon is tight.',
   capacityMinutes: 180,
   startHour: 12,
+  decidedTaskIds: [
+    'task-board-deck',
+    'task-interviews',
+    'task-release',
+    'task-inbox',
+    'task-afternoon-walk',
+  ],
   tasks: [
     EvalTaskSpec(
       id: 'task-board-deck',

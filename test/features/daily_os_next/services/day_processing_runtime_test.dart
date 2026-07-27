@@ -75,36 +75,83 @@ void main() {
       final firstDrainStarted = Completer<void>();
       final releaseFirstDrain = Completer<void>();
       final secondDrainCompleted = Completer<void>();
+      void Function()? scheduledCallback;
       var drains = 0;
       final runtime = DayProcessingRuntime(
         repository: repository,
+        now: () => now,
         connectivityChanges: const Stream.empty(),
         drain: () async {
           drains += 1;
           if (drains == 1) {
+            final claim = await repository.claimNext();
+            await repository.markSucceeded(
+              jobId: claim!.job.id,
+              claimToken: claim.token,
+            );
             firstDrainStarted.complete();
             await releaseFirstDrain.future;
           } else if (drains == 2) {
+            final claim = await repository.claimNext();
+            await repository.markSucceeded(
+              jobId: claim!.job.id,
+              claimToken: claim.token,
+            );
             secondDrainCompleted.complete();
           }
           return 0;
         },
-        schedule: (_, _) {},
+        schedule: (_, callback) => scheduledCallback = callback,
       );
       addTearDown(runtime.dispose);
 
       runtime.start();
+      final firstNudge = runtime.nudge();
       await firstDrainStarted.future;
       await repository.enqueueParseCapture(
         dayId: 'dayplan-2026-07-18',
         captureId: 'capture-arrived-during-drain',
       );
       releaseFirstDrain.complete();
+      await firstNudge;
+      scheduledCallback!();
       await secondDrainCompleted.future;
 
       expect(drains, 2);
     },
   );
+
+  test('drain-owned outbox mutations do not request another drain', () async {
+    var drains = 0;
+    final runtime = DayProcessingRuntime(
+      repository: repository,
+      now: () => now,
+      connectivityChanges: const Stream.empty(),
+      drain: () async {
+        drains += 1;
+        final claim = await repository.claimNext();
+        if (claim != null) {
+          await repository.markSucceeded(
+            jobId: claim.job.id,
+            claimToken: claim.token,
+          );
+        }
+        return claim == null ? 0 : 1;
+      },
+      schedule: (_, _) {},
+    );
+    addTearDown(runtime.dispose);
+
+    runtime.start();
+    await runtime.nudge();
+    await Future<void>.value();
+
+    expect(drains, 1);
+    expect(
+      (await repository.getById('transcribe_session-1'))!.status,
+      DayProcessingJobStatus.succeeded,
+    );
+  });
 
   test(
     'connectivity restoration advances offline work and drains it',

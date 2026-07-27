@@ -37,20 +37,14 @@ class DayProcessingRuntime {
   Future<void>? _nudgeFuture;
   bool _followUpNudgeRequested = false;
   int _scheduleGeneration = 0;
+  bool _started = false;
   bool _disposed = false;
   bool _repairComplete = false;
 
   void start() {
-    if (_disposed || _outboxSubscription != null) return;
-    _outboxSubscription = repository.changes.listen((_) {
-      if (_nudgeFuture != null) {
-        // A write can land after the active drain has already inspected the
-        // due queue. Merely returning that older future loses the new signal
-        // and leaves fresh interactive work waiting for an unrelated timer.
-        _followUpNudgeRequested = true;
-      }
-      unawaited(nudge());
-    });
+    if (_disposed || _started) return;
+    _started = true;
+    _subscribeToOutboxChanges();
     final connectivity =
         connectivityChanges ?? Connectivity().onConnectivityChanged;
     _connectivitySubscription = connectivity.listen((results) {
@@ -58,6 +52,19 @@ class DayProcessingRuntime {
       if (connected) unawaited(handleConnectivityRestored());
     });
     unawaited(nudge());
+  }
+
+  void _subscribeToOutboxChanges() {
+    if (_disposed || !_started || _outboxSubscription != null) return;
+    _outboxSubscription = repository.changes.listen((_) {
+      if (_nudgeFuture != null) {
+        // The subscription is paused while the drain owns repository
+        // mutations, so a signal observed here came after that mutation phase
+        // and may have landed after its due-queue read.
+        _followUpNudgeRequested = true;
+      }
+      unawaited(nudge());
+    });
   }
 
   Future<void> handleConnectivityRestored() async {
@@ -85,12 +92,23 @@ class DayProcessingRuntime {
   }
 
   Future<void> drainAndSchedule() async {
+    final wasListening = _outboxSubscription != null;
     try {
+      // Claiming and terminalizing jobs publish repository changes of their
+      // own. They cannot represent new work, and treating them as external
+      // nudges causes a redundant full drain after every successful pass.
+      // Pause only for the runtime-owned mutation phase, then resubscribe
+      // before inspecting due work so external writes cannot be lost.
+      if (wasListening) {
+        await _outboxSubscription?.cancel();
+        _outboxSubscription = null;
+      }
       if (!_repairComplete) {
         await repair?.call();
         _repairComplete = true;
       }
       await drain();
+      if (wasListening) _subscribeToOutboxChanges();
       final now = _now();
       // Only rows that can still be scheduled, bounded by outstanding work
       // rather than install age (ADR 0044). The effective-due ordering stays
@@ -110,6 +128,7 @@ class DayProcessingRuntime {
         probeNetwork: next.status == DayProcessingJobStatus.waitingForNetwork,
       );
     } catch (_) {
+      if (wasListening) _subscribeToOutboxChanges();
       // A startup repair, filesystem read, or processor failure must not escape
       // an unawaited app-start nudge and permanently stop the runtime.
       _scheduleNext(failureRetryDelay);
@@ -143,6 +162,7 @@ class DayProcessingRuntime {
 
   Future<void> dispose() async {
     _disposed = true;
+    _started = false;
     _followUpNudgeRequested = false;
     _scheduleGeneration += 1;
     await _outboxSubscription?.cancel();

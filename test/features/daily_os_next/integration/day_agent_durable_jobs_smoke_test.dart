@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -19,6 +17,7 @@ import '../../../mocks/mocks.dart';
 import '../../agents/test_data/ai_config_factories.dart';
 import '../eval/framework/eval_scenario.dart';
 import '../services/day_processing_test_db.dart';
+import 'day_agent_journey_support.dart';
 import 'day_agent_pipeline_harness.dart';
 import 'realistic_day_planning_scenarios.dart';
 import 'scripted_conversation_repository.dart';
@@ -208,7 +207,7 @@ void main() {
           },
         ),
       ]);
-      await _runDigest(
+      await runPlannerDigest(
         harness: harness,
         coordinator: coordinator,
         dayId: dayId,
@@ -218,7 +217,7 @@ void main() {
         (message) => _matchedParseCalls(
           message: message,
           scenario: denseRestOfDayScenario,
-          selectedTaskIds: denseRestOfDaySelectedTaskIds,
+          selectedTaskIds: denseRestOfDayScenario.decidedTaskIds,
         ),
       );
       final captureId = await harness.realDayAgent.submitCapture(
@@ -226,17 +225,17 @@ void main() {
         capturedAt: dayDate.add(const Duration(hours: 8)),
         dayDate: dayDate,
       );
-      final parseJob = await _waitForTerminalJob(
+      final parseJob = await waitForTerminalDayProcessingJob(
         harness.outbox,
         DayProcessingOutboxRepository.parseJobId(captureId.value),
       );
       expect(parseJob.status, DayProcessingJobStatus.succeeded);
 
       final parsed = await harness.realDayAgent.parseCaptureToItems(captureId);
-      expect(parsed, hasLength(denseRestOfDaySelectedTaskIds.length));
+      expect(parsed, hasLength(denseRestOfDayScenario.decidedTaskIds.length));
       expect(
         parsed.map((item) => item.matchedTaskId),
-        unorderedEquals(denseRestOfDaySelectedTaskIds),
+        unorderedEquals(denseRestOfDayScenario.decidedTaskIds),
       );
       expect(
         parsed.map((item) => item.spokenPhrase),
@@ -250,7 +249,7 @@ void main() {
           args: {
             'dayId': dayId,
             'captureId': captureId.value,
-            'decidedTaskIds': denseRestOfDaySelectedTaskIds,
+            'decidedTaskIds': denseRestOfDayScenario.decidedTaskIds,
             'blocks': [
               _block(
                 dayDate,
@@ -320,13 +319,13 @@ void main() {
       ]);
       final draft = await harness.realDayAgent.draftDayPlan(
         captureId: captureId,
-        decidedTaskIds: denseRestOfDaySelectedTaskIds,
+        decidedTaskIds: denseRestOfDayScenario.decidedTaskIds,
         dayDate: dayDate,
       );
 
       expect(
         draft.blocks.map((block) => block.taskId),
-        orderedEquals(denseRestOfDaySelectedTaskIds),
+        orderedEquals(denseRestOfDayScenario.decidedTaskIds),
       );
       for (final unrelatedId in [
         'task-security-review',
@@ -353,7 +352,7 @@ void main() {
       expect(parsePrompt, contains('cat-health'));
       expect(parsePrompt, contains('cat-finance'));
       final draftPrompt = conversationRepository.userMessages[2];
-      for (final id in denseRestOfDaySelectedTaskIds) {
+      for (final id in denseRestOfDayScenario.decidedTaskIds) {
         expect(draftPrompt, contains(id), reason: '$id must reach drafting');
       }
       expect(draftPrompt, contains('fixed-dentist'));
@@ -422,7 +421,7 @@ void main() {
           },
         ),
       ]);
-      await _runDigest(
+      await runPlannerDigest(
         harness: harness,
         coordinator: coordinator,
         dayId: dayId,
@@ -432,7 +431,7 @@ void main() {
         (message) => _matchedParseCalls(
           message: message,
           scenario: overcommittedRestOfDayScenario,
-          selectedTaskIds: overcommittedRestOfDaySelectedTaskIds,
+          selectedTaskIds: overcommittedRestOfDayScenario.decidedTaskIds,
         ),
       );
       final captureId = await harness.realDayAgent.submitCapture(
@@ -440,7 +439,7 @@ void main() {
         capturedAt: dayDate.add(const Duration(hours: 12)),
         dayDate: dayDate,
       );
-      final parseJob = await _waitForTerminalJob(
+      final parseJob = await waitForTerminalDayProcessingJob(
         harness.outbox,
         DayProcessingOutboxRepository.parseJobId(captureId.value),
       );
@@ -465,7 +464,7 @@ void main() {
           args: {
             'dayId': dayId,
             'captureId': captureId.value,
-            'decidedTaskIds': overcommittedRestOfDaySelectedTaskIds,
+            'decidedTaskIds': overcommittedRestOfDayScenario.decidedTaskIds,
             'blocks': [
               _block(
                 dayDate,
@@ -508,7 +507,7 @@ void main() {
       ]);
       final draft = await harness.realDayAgent.draftDayPlan(
         captureId: captureId,
-        decidedTaskIds: overcommittedRestOfDaySelectedTaskIds,
+        decidedTaskIds: overcommittedRestOfDayScenario.decidedTaskIds,
         dayDate: dayDate,
       );
       expect(
@@ -565,7 +564,7 @@ void main() {
           },
         ),
       ]);
-      await _runDigest(
+      await runPlannerDigest(
         harness: harness,
         coordinator: coordinator,
         dayId: dayId,
@@ -719,42 +718,6 @@ void main() {
       expect(events.single.agentId, perDayAgentId(dayId));
     },
   );
-}
-
-Future<void> _runDigest({
-  required DayAgentPipelineHarness harness,
-  required AgentIdentityEntity coordinator,
-  required String dayId,
-}) async {
-  final runKey = harness.orchestrator.enqueueManualWake(
-    agentId: coordinator.agentId,
-    reason: dayAgentDigestReason,
-    triggerTokens: {dayAgentDigestToken(dayId)},
-    workspaceKey: coordinatorDigestWorkspaceKey,
-  );
-  final completion = await harness.orchestrator.runCompletions.firstWhere(
-    (candidate) => candidate.runKey == runKey,
-  );
-  expect(completion.status, WakeRunStatus.completed);
-}
-
-Future<DayProcessingJob> _waitForTerminalJob(
-  DayProcessingOutboxRepository outbox,
-  String jobId,
-) async {
-  final changes = StreamIterator<void>(outbox.changes);
-  try {
-    while (true) {
-      final changed = changes.moveNext();
-      final job = await outbox.getById(jobId);
-      if (job != null && job.isTerminal) return job;
-      if (!await changed) {
-        throw StateError('Outbox closed before $jobId became terminal.');
-      }
-    }
-  } finally {
-    await changes.cancel();
-  }
 }
 
 List<ChatCompletionMessageToolCall> _matchedParseCalls({
