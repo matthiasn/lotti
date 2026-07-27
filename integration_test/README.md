@@ -19,8 +19,10 @@ This suite contains three tests:
 **`Large-volume convergence: Bob catches up 1000 messages after cold restart`**
 (250 in slow network mode, 30-minute test timeout with a 15-minute internal
 convergence-wait budget) — Alice sends a large burst while Bob's
-client is closed; Bob then reopens with a fresh client/pipeline but the same persisted DB
-(sync token + journal) and must bootstrap catch-up from scratch.
+client is closed; Bob then reopens with a fresh client/pipeline but the same
+persisted Matrix SDK database, journal, settings, and queue database. The
+surviving queue marker makes this a production-faithful reconnect rather than
+an artificial fresh-client bootstrap.
 
 **`Mid-burst rejoin`** — Alice pauses 40% into a 600-message burst while Bob comes online
 (150 in slow network mode, 30-minute test timeout with a 15-minute internal
@@ -176,10 +178,14 @@ The run scripts create dedicated test users on the Dendrite server. Each resilie
 
 ### Performance Expectations
 
-The figures below are for the baseline `Create room & join` test (which itself carries a
-15-minute timeout). The `Large-volume convergence` (1000-message cold restart) and
-`Mid-burst rejoin` (600-message) tests each carry a 30-minute test timeout (with a 15-minute
-internal per-wait convergence budget) and run considerably longer.
+The individual figures below describe the baseline `Create room & join` test
+(which itself carries a 15-minute timeout). The complete degraded Matrix suite,
+including its Linux rebuild, is expected to stay below five minutes; the
+production-faithful persisted-marker run measured 4m40s locally. The
+`Large-volume convergence` (1000-message cold restart) and `Mid-burst rejoin`
+(600-message) tests each retain a 30-minute test timeout with a 15-minute
+internal per-wait convergence budget so a real regression still has room to
+produce useful diagnostics.
 
 | Mode | Matrix Sync Test (baseline) | Resilience Tests |
 |------|-----------------------------|------------------|

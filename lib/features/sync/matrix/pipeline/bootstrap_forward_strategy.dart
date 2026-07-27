@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
@@ -26,13 +27,27 @@ import 'package:matrix/matrix.dart';
 /// - `timeline.requestFuture(historyCount: pageSize)` walks
 ///   forward via `/messages?dir=f`, one page at a time, emitting
 ///   each page through the sink until the server reports no more
-///   future (`!canRequestFuture`) or the [forwardPageCap] safety
-///   cap trips. Some homeservers can return a non-empty context
+///   future (`!canRequestFuture`) or a safety budget trips. Some
+///   homeservers can return a non-empty context
 ///   window without a usable `next_batch` token, or a stale empty
 ///   `/messages` page after advertising a forward token. In either
 ///   case the walk probes another context window from the newest
 ///   emitted event; an empty probe is the authoritative
 ///   end-of-timeline signal.
+///
+/// The budget has two dimensions, and both are load-bearing:
+/// [forwardRoundTripCap] bounds `/messages` requests and
+/// [forwardEventCap] bounds events emitted. Counting only emitted
+/// *pages* — as this did until a walk that had caught up to a live
+/// burst was observed spending 50 round trips on 51 events — is
+/// wrong in both directions. A page can hold a single event, so a
+/// walk that reaches the tip while the peer is still sending gets
+/// one event per round trip and burns a page budget sized for
+/// [pageSize]-event pages; conversely a page that filters down to
+/// empty never increments the page counter at all, so a server
+/// returning nothing but already-emitted overlap could spin
+/// indefinitely. Requests are the honest unit for the network
+/// bound and events for the work bound.
 ///
 /// Only events that sort strictly after the anchor under the
 /// `(timestamp, eventId)` ordering are emitted, so the anchor itself
@@ -40,10 +55,16 @@ import 'package:matrix/matrix.dart';
 /// events retain deterministic ordering.
 ///
 /// Returns `BootstrapStopReason.serverExhausted` when the walk
-/// reaches the tip, `boundaryReached` when the cap trips (so
-/// callers treat the pass as "completed" and don't schedule a
-/// bounded retry), `sinkCancelled` on sink return=false, and
-/// `error` on throw / timeout.
+/// reaches the tip, `boundaryReached` when a budget trips,
+/// `sinkCancelled` on sink return=false, and `error` on throw /
+/// timeout.
+///
+/// `boundaryReached` from this walk always means "budget exhausted
+/// while the server still had more" — a device that is genuinely
+/// caught up stops with `serverExhausted`. Callers must therefore
+/// treat it as an incomplete pass and schedule a retry; reporting
+/// it as completed strands whatever is left of the gap until some
+/// unrelated trigger happens along.
 ///
 /// When `getEventContext` returns null (anchor no longer resolvable
 /// — rare, requires server-side compaction), the method returns a
@@ -56,7 +77,8 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   required DomainLogger logging,
   required String anchorEventId,
   int pageSize = 200,
-  int forwardPageCap = 50,
+  int forwardRoundTripCap = SyncTuning.forwardWalkRoundTripCap,
+  int forwardEventCap = SyncTuning.forwardWalkEventCap,
   Duration? overallTimeout,
   DateTime Function()? now,
 }) async {
@@ -165,10 +187,23 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
 
   var pageIndex = 0;
   var totalEventsSoFar = 0;
+  // Every `/messages` and `/context` call the walk makes, starting at 1 for
+  // the anchor context fetch above. Distinct from `pageIndex`, which only
+  // counts pages that survived the strictly-after filter and reached the sink
+  // — a request whose events all filter out costs the same network round trip
+  // but no page.
+  var roundTrips = 1;
   num? newestTsSoFar;
   String? newestEventIdSoFar;
   var contextAnchorEventId = anchorEventId;
   var stopReason = BootstrapStopReason.serverExhausted;
+
+  String budgetLog() =>
+      'roundTrips=$roundTrips cap=$forwardRoundTripCap '
+      'events=$totalEventsSoFar eventCap=$forwardEventCap '
+      'pages=$pageIndex';
+  bool budgetExhausted() =>
+      roundTrips >= forwardRoundTripCap || totalEventsSoFar >= forwardEventCap;
 
   try {
     while (true) {
@@ -209,17 +244,15 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
         page.add(event);
       }
 
-      // The cap limits emitted pages, but a capped context response
+      // The budget bounds fetching, but a budget-capped context response
       // without a forward token gets one final, un-emitted context
       // probe. That distinguishes a genuine server tip from a
       // homeserver's silently truncated context window.
-      if (pageIndex >= forwardPageCap) {
+      if (budgetExhausted()) {
         if (page.isNotEmpty) {
           logging.log(
             LogDomain.sync,
-            'bootstrap.forward.capReached '
-            'pages=$pageIndex cap=$forwardPageCap '
-            'events=$totalEventsSoFar',
+            'bootstrap.forward.capReached ${budgetLog()}',
             subDomain: 'bootstrap.forward',
           );
           stopReason = BootstrapStopReason.boundaryReached;
@@ -282,6 +315,7 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
         try {
           timeline.cancelSubscriptions();
           final nextContextAnchorEventId = newestEventIdSoFar;
+          roundTrips++;
           timeline = await room.getTimeline(
             eventContextId: nextContextAnchorEventId,
             limit: 0,
@@ -300,24 +334,21 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
         continue;
       }
 
-      if (pageIndex >= forwardPageCap) {
+      if (budgetExhausted()) {
         logging.log(
           LogDomain.sync,
-          'bootstrap.forward.capReached '
-          'pages=$pageIndex cap=$forwardPageCap '
-          'events=$totalEventsSoFar',
+          'bootstrap.forward.capReached ${budgetLog()}',
           subDomain: 'bootstrap.forward',
         );
-        // Treat as completed rather than error — the cap is a
-        // safety net against runaway walks, not a bug. The bridge
-        // coordinator's retry-on-incomplete path would only thrash
-        // here; instead we stop and let the next organic reconnect
-        // trigger pick up any remaining tail.
+        // The server still has more (`canRequestFuture` is true here),
+        // so this is an incomplete pass, not a finished one. The caller
+        // schedules a bounded retry that resumes from the new anchor.
         stopReason = BootstrapStopReason.boundaryReached;
         break;
       }
 
       try {
+        roundTrips++;
         await timeline.requestFuture(historyCount: pageSize);
       } catch (error, stackTrace) {
         logging.error(

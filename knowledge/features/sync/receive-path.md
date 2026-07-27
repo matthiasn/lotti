@@ -219,8 +219,9 @@ oldest active row and the pen's oldest held event for that room.
 
 **Backfill stops at pen capacity rather than evicting.** Ciphertext produces no
 queue rows, so the depth-based back-pressure in `QueueBootstrapSink` applies
-nothing to an all-encrypted run, while a forward walk emits up to 50 pages of
-200 and manual history collection is unbounded against a fixed 256-entry LRU.
+nothing to an all-encrypted run, while a forward walk may stream up to
+`SyncTuning.forwardWalkEventCap` events and manual history collection is
+unbounded against a fixed 256-entry LRU.
 The sink admits only what fits — checked *before* holding, because `hold`
 enforces capacity by evicting — and returns false once a page needs more room
 than remains.

@@ -66,6 +66,7 @@ Future<MatrixService> _createMatrixService({
   required UpdateNotifications updateNotifications,
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
+  required SyncDatabase syncDb,
   AttachmentIndex? attachmentIndex,
   QueuePipelineCoordinator Function(QueuePipelineCoordinator coord)?
   onCoordinatorBuilt,
@@ -105,10 +106,6 @@ Future<MatrixService> _createMatrixService({
     verboseLogging: false,
   );
 
-  final syncDb = SyncDatabase(
-    overriddenFilename: 'sync_${_uuid.v1()}.sqlite',
-    inMemoryDatabase: true,
-  );
   final vectorClockService = VectorClockService();
   final sequenceLogService = SyncSequenceLogService(
     syncDatabase: syncDb,
@@ -361,6 +358,14 @@ void main() {
       overriddenFilename: 'bob_db.sqlite',
       inMemoryDatabase: true,
     );
+    final aliceSyncDb = SyncDatabase(
+      overriddenFilename: 'alice_sync.sqlite',
+      inMemoryDatabase: true,
+    );
+    final bobSyncDb = SyncDatabase(
+      overriddenFilename: 'bob_sync.sqlite',
+      inMemoryDatabase: true,
+    );
     late AiConfigDb aiConfigDb;
 
     const testSlowNetwork = bool.fromEnvironment(testSlowNetworkEnv);
@@ -410,8 +415,11 @@ void main() {
     var aliceInitialized = false;
     var bobInitialized = false;
     late String roomId;
-    // Bob's SettingsDb must persist across tests so the pipeline's
-    // last-processed marker survives the cold restart in test 2.
+    // Bob's settings and queue databases must persist across service
+    // reconstruction so test 2 models a real app restart. Production keeps
+    // both on disk; creating a random in-memory SyncDatabase per service
+    // silently discarded the queue marker and turned the cold restart into a
+    // fresh-client bootstrap against the SDK's sparse cached timeline.
     late SettingsDb bobSettingsDb;
 
     setUpAll(() async {
@@ -469,6 +477,8 @@ void main() {
       try {
         await aliceDb.close();
         await bobDb.close();
+        await aliceSyncDb.close();
+        await bobSyncDb.close();
         await bobSettingsDb.close();
         await aiConfigDb.close();
       } catch (e) {
@@ -512,6 +522,7 @@ void main() {
           updateNotifications: mockUpdateNotifications,
           aiConfigRepository: sharedAiConfigRepository,
           sentEventRegistry: aliceRegistry,
+          syncDb: aliceSyncDb,
         );
         aliceInitialized = true;
 
@@ -547,6 +558,7 @@ void main() {
           activityService: sharedUserActivityService,
           updateNotifications: mockUpdateNotifications,
           aiConfigRepository: sharedAiConfigRepository,
+          syncDb: bobSyncDb,
         );
         bobInitialized = true;
 
@@ -582,26 +594,22 @@ void main() {
         const expectedEntriesPerDb = 2 * n;
 
         debugPrint('\n--- Alice sends $n message');
-        for (var i = 0; i < n; i++) {
-          await _sendTestMessage(
-            i,
-            device: alice,
-            deviceName: 'aliceDeviceV2',
-            roomId: roomId,
-            journalDb: aliceDb,
-          );
-        }
+        await _sendTestMessages(
+          n,
+          device: alice,
+          deviceName: 'aliceDeviceV2',
+          roomId: roomId,
+          journalDb: aliceDb,
+        );
 
         debugPrint('\n--- Bob sends $n message');
-        for (var i = 0; i < n; i++) {
-          await _sendTestMessage(
-            i,
-            device: bob,
-            deviceName: 'bobDeviceV2',
-            roomId: roomId,
-            journalDb: bobDb,
-          );
-        }
+        await _sendTestMessages(
+          n,
+          device: bob,
+          deviceName: 'bobDeviceV2',
+          roomId: roomId,
+          journalDb: bobDb,
+        );
 
         await alice.forceRescan();
         debugPrint(
@@ -700,18 +708,18 @@ void main() {
         // Phase 2: Alice sends n messages while Bob is offline
         debugPrint('\n--- Phase 2: Alice sends $n messages (Bob offline)');
         final sendStopwatch = Stopwatch()..start();
-        for (var i = 0; i < n; i++) {
-          await _sendTestMessage(
-            i,
-            device: alice,
-            deviceName: 'aliceConvergence',
-            roomId: roomId,
-            journalDb: aliceDb,
-          );
-          if ((i + 1) % 100 == 0) {
-            debugPrint('  Sent ${i + 1}/$n messages');
-          }
-        }
+        await _sendTestMessages(
+          n,
+          device: alice,
+          deviceName: 'aliceConvergence',
+          roomId: roomId,
+          journalDb: aliceDb,
+          onSent: (sent) {
+            if (sent % 100 == 0) {
+              debugPrint('  Sent $sent/$n messages');
+            }
+          },
+        );
         sendStopwatch.stop();
         debugPrint(
           'Alice finished sending $n messages '
@@ -758,6 +766,7 @@ void main() {
           updateNotifications: mockUpdateNotifications,
           aiConfigRepository: sharedAiConfigRepository,
           singleInstance: false,
+          syncDb: bobSyncDb,
         );
         bobInitialized = true;
 
@@ -959,26 +968,29 @@ void main() {
         );
         final aliceStopwatch = Stopwatch()..start();
         var aliceSent = 0;
-        final burstFuture = () async {
-          for (var i = 0; i < n; i++) {
-            await _sendTestMessage(
-              i,
-              device: alice,
-              deviceName: 'aliceMidBurst',
-              roomId: roomId,
-              journalDb: aliceDb,
-            );
-            aliceSent = i + 1;
-            if (aliceSent == rejoinThreshold) {
+        final burstFuture = _sendTestMessages(
+          n,
+          device: alice,
+          deviceName: 'aliceMidBurst',
+          roomId: roomId,
+          journalDb: aliceDb,
+          // Indices are claimed in order, so every worker parks here once the
+          // burst reaches the threshold — Alice stops at exactly
+          // `rejoinThreshold` sent until Bob's startup bridge is in flight.
+          beforeSend: (index) async {
+            if (index >= rejoinThreshold) {
               await resumeBurst.future;
             }
-            if (aliceSent % 100 == 0) {
+          },
+          onSent: (sent) {
+            aliceSent = sent;
+            if (sent % 100 == 0) {
               debugPrint(
-                '  Alice sent $aliceSent/$n (${aliceStopwatch.elapsed.inSeconds}s)',
+                '  Alice sent $sent/$n (${aliceStopwatch.elapsed.inSeconds}s)',
               );
             }
-          }
-        }();
+          },
+        );
         addTearDown(() async {
           if (!resumeBurst.isCompleted) {
             resumeBurst.complete();
@@ -1016,6 +1028,7 @@ void main() {
           updateNotifications: mockUpdateNotifications,
           aiConfigRepository: sharedAiConfigRepository,
           singleInstance: false,
+          syncDb: bobSyncDb,
         );
         bobInitialized = true;
 
@@ -1158,6 +1171,7 @@ Future<MatrixService> _createBobService({
   required UserActivityService activityService,
   required MockUpdateNotifications updateNotifications,
   required AiConfigRepository aiConfigRepository,
+  required SyncDatabase syncDb,
   bool? singleInstance,
 }) async {
   final client = await createMatrixClient(
@@ -1183,6 +1197,7 @@ Future<MatrixService> _createBobService({
     updateNotifications: updateNotifications,
     aiConfigRepository: aiConfigRepository,
     sentEventRegistry: registry,
+    syncDb: syncDb,
   );
 }
 
@@ -1230,6 +1245,69 @@ Future<void> _sendTestMessage(
     ),
     myRoomId: roomId,
   );
+}
+
+/// How many [_sendTestMessage] calls a burst keeps in flight at once.
+///
+/// Sending was the dominant cost of this suite, not receiving. Awaiting each
+/// send before starting the next made a 250-entry burst take 192s over the
+/// degraded link (768ms per message — a full round trip each) while the
+/// catch-up those 250 entries exist to exercise took 15s. Two burst loops
+/// alone accounted for over five minutes of a nine-minute run.
+///
+/// Serialising bought no fidelity: production does not send this way at all.
+/// Entries go through the outbox, which packs up to
+/// `SyncTuning.outboxBundleMaxSize` (50) rows into a single bundle event, so a
+/// 250-entry backlog ships as ~5 events rather than 250. This helper keeps one
+/// event per entry deliberately — the pagination and forward-walk assertions
+/// need N discrete timeline events — and recovers the wall clock by
+/// overlapping the round trips instead of by sending less.
+const _burstConcurrency = 8;
+
+/// Sends [n] test messages through [device], keeping [_burstConcurrency] of
+/// them in flight.
+///
+/// Indices are claimed in order, so [beforeSend] gates the burst at a known
+/// point: every worker blocks on it, which is what lets the mid-burst test
+/// pause Alice at a precise count and resume her once Bob is online. [onSent]
+/// receives the running completed count.
+Future<void> _sendTestMessages(
+  int n, {
+  required MatrixService device,
+  required String deviceName,
+  required String roomId,
+  JournalDb? journalDb,
+  Future<void> Function(int index)? beforeSend,
+  void Function(int sent)? onSent,
+}) async {
+  var nextIndex = 0;
+  var sent = 0;
+
+  Future<void> worker() async {
+    while (true) {
+      // Claim without an intervening await so two workers cannot take the
+      // same index.
+      final index = nextIndex;
+      if (index >= n) return;
+      nextIndex = index + 1;
+
+      if (beforeSend != null) {
+        await beforeSend(index);
+      }
+      await _sendTestMessage(
+        index,
+        device: device,
+        deviceName: deviceName,
+        roomId: roomId,
+        journalDb: journalDb,
+      );
+      sent++;
+      onSent?.call(sent);
+    }
+  }
+
+  final workers = n < _burstConcurrency ? n : _burstConcurrency;
+  await Future.wait(List.generate(workers, (_) => worker()));
 }
 
 /// Performs SAS emoji verification between Alice (initiator) and Bob (responder).

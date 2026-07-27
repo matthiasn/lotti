@@ -22,6 +22,7 @@ import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
@@ -4078,6 +4079,103 @@ void main() {
         verify(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).called(1);
+      },
+    );
+
+    test(
+      'forward walk that exhausts its round-trip budget while the server '
+      'still has more reports INCOMPLETE, so the bridge retries — mapping '
+      'boundaryReached to completed is what let a walk cover 51 events of a '
+      '150-message burst and report success, stranding the rest',
+      () async {
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+        addTearDown(() async => coordinator.stop());
+
+        // Non-payload events, so every page is `filteredOutByType` and
+        // nothing reaches the queue. That is the shape observed in the
+        // failing run: 50 round trips, accepted=0, server still advertising
+        // more. It also keeps the walk clear of queue back-pressure, so the
+        // only thing that can stop it is the budget.
+        Event buildEvent(int index) {
+          final event = MockEvent();
+          when(() => event.eventId).thenReturn('\$e$index');
+          when(
+            () => event.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100 + index));
+          when(() => event.roomId).thenReturn(roomId);
+          when(() => event.type).thenReturn(EventTypes.Message);
+          when(() => event.content).thenReturn(<String, dynamic>{});
+          when(event.toJson).thenReturn(<String, dynamic>{
+            'event_id': '\$e$index',
+            'room_id': roomId,
+            'origin_server_ts': 100 + index,
+            'type': EventTypes.Message,
+            'content': <String, dynamic>{},
+          });
+          return event;
+        }
+
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        final timeline = MockTimeline();
+        final anchor = MockEvent();
+        when(() => anchor.eventId).thenReturn(r'$anchor');
+        when(
+          () => anchor.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
+        final events = <Event>[anchor, buildEvent(0)];
+        var futureCalls = 0;
+        when(() => timeline.events).thenAnswer((_) => events);
+        // The server never runs out — exactly the live-burst case, where the
+        // walk keeps trailing the tip one event per round trip.
+        when(() => timeline.canRequestFuture).thenReturn(true);
+        when(
+          () =>
+              timeline.requestFuture(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          futureCalls++;
+          events.add(buildEvent(futureCalls));
+        });
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => timeline);
+        when(() => roomManager.currentRoom).thenReturn(room);
+
+        final completed = await coordinator.runBootstrapForTest(
+          room: room,
+          anchorEventId: r'$anchor',
+        );
+
+        expect(completed, isFalse);
+        // The budget is spent on requests, so a server handing back one event
+        // per call still gets the full allowance: the anchor context fetch
+        // plus `cap - 1` pagination calls.
+        expect(futureCalls, SyncTuning.forwardWalkRoundTripCap - 1);
+        // No backward-walk fallback: that path is reserved for an
+        // unresolvable anchor, and this anchor resolved fine.
+        verifyNever(() => room.getTimeline(limit: any(named: 'limit')));
       },
     );
 
