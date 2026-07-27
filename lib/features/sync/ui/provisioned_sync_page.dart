@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
-import 'package:lotti/features/sync/state/provisioning_controller.dart';
+import 'package:lotti/features/sync/state/sync_configured_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
 
 /// Mobile / Beamer wrapper for the provisioned-sync (QR-pairing) entry.
 ///
@@ -27,11 +26,10 @@ class ProvisionedSyncPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watched so completing setup (or disconnecting) swaps the body without
-    // needing a re-navigation.
-    ref.watch(provisioningControllerProvider);
-    final service = ref.watch(matrixServiceProvider);
-    final configured = service.isLoggedIn() && service.syncRoomId != null;
+    // Reactive: watching the service alone hands back one stable object, so
+    // it never rebuilds when login and room hydration complete during an
+    // unawaited startup — leaving the setup card up on a configured device.
+    final configured = ref.watch(syncConfiguredProvider);
 
     return SyncFeatureGate(
       child: SliverBoxAdapterPage(

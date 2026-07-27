@@ -123,7 +123,8 @@ stateDiagram-v2
     Scanning --> Scanning: invalid code, error beside the viewfinder
     Decoded --> Manual: Use a different code
     Decoded --> Configuring: Connect this device
-    Configuring --> Paired: login, join room, optional rotate
+    Configuring --> FirstDevice: provisioned bundle, password rotated
+    Configuring --> Paired: handover bundle, joined a peer's account
     Configuring --> Failed: login or configuration error
     Failed --> Configuring: Retry
     Paired --> Verifying: AutoVerificationLauncher opens the SAS ceremony
@@ -195,11 +196,22 @@ Four properties are deliberate:
   check code is a pure function of account, room and server, so regenerating a
   handover produces a byte-identical one and cannot resolve a mismatch.
 
+**Configuring has two endings, and they are not interchangeable.**
+`ProvisioningState.ready` follows a CLI-minted `provisioned` bundle: the
+password has just been rotated and this is normally the *only* device on the
+account, so `_FirstDeviceView` says the account is set up and stops. There is
+no peer to run a SAS ceremony against and none to push settings from, so the
+diagram's `Verifying` transition does not apply to it.
+`ProvisioningState.done` follows a `handover` bundle minted by a peer, so a
+peer demonstrably exists; that is the state `_PairedView` serves, with its two
+outstanding steps. Collapsing them told a first device to wait on a device that
+did not exist.
+
 Pairing does **not** bring data across. Config entities (categories, habits,
 dashboards, measurables, AI settings) only arrive when an existing device runs
 the entity push (`ui/sync_modal.dart`), which is why *Send settings* lives in
 the add-device sheet's sticky action bar — pinned there because the QR pushes
-everything else below the fold — and why the paired screen names it as an
+everything else below the fold — and why `_PairedView` names it as an
 outstanding step. Entries that predate the join are not gap-detected either — a
 counter from a never-seen host is recorded without becoming a gap (see
 [sequence and backfill](sequence-and-backfill.md)).
@@ -241,6 +253,28 @@ screen and the status page. It reacts to `matrixUnverifiedControllerProvider`
 rather than waiting a fixed delay for device keys to arrive, and takes the
 app-wide modal lock so two surfaces watching the same provider cannot both
 open a ceremony.
+
+Three details there are load-bearing, each fixing a way the ceremony could
+reach the wrong device or none at all:
+
+- It offers the first device **not already shown**, keyed on
+  `(userId, deviceId)` — not simply `devices.first`. A stale or legacy
+  unverified peer can sort ahead of the device actually being paired.
+- That record lives in `matrixVerificationHandledProvider`, not in the widget's
+  `State`, because two launchers can be mounted at once — the settings pane
+  embeds the roster while the setup modal is open. Per-widget, the one that
+  lost the lock knew nothing about what the winner had shown and reopened the
+  sheet the user had just dismissed.
+- A device is recorded only when its ceremony is **shown**. Recording on a
+  failed lock acquisition looks equivalent and is not: a manual or incoming
+  ceremony holding the lock invalidates the unverified provider repeatedly
+  while its sheet is open, so every rebuild would consume another peer and
+  leave a newly paired device with nothing once the lock freed.
+
+`matrixVerificationRelaunchProvider` is what "show the emoji again" bumps. It
+releases only the identity that launcher last showed, deliberately rather than
+clearing the set: a reset restarts selection at the head of the list and
+reopens the stale peer instead of the ceremony just dismissed.
 
 # Device management
 

@@ -37,7 +37,7 @@ import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.d
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/ui/detail/ai_panel_dispatch.dart';
 import 'package:lotti/features/settings_v2/ui/detail/detail_id_dispatch.dart';
-import 'package:lotti/features/sync/state/provisioning_controller.dart';
+import 'package:lotti/features/sync/state/sync_configured_provider.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
@@ -48,7 +48,6 @@ import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart'
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/tts/ui/speech_settings_body.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 
 export 'package:lotti/features/settings_v2/ui/detail/ai_panel_dispatch.dart';
@@ -277,11 +276,10 @@ Widget _syncProvisionedPanel(BuildContext context) {
           ref.watch(configFlagProvider(enableMatrixFlag)).value ?? false;
       if (!enabled) return const SizedBox.shrink();
 
-      // Watched so completing setup (or disconnecting) swaps this pane
-      // without needing a re-navigation.
-      ref.watch(provisioningControllerProvider);
-      final service = ref.watch(matrixServiceProvider);
-      final configured = service.isLoggedIn() && service.syncRoomId != null;
+      // Reactive: watching the service alone hands back one stable object, so
+      // it never rebuilds when login and room hydration complete during an
+      // unawaited startup — leaving the setup card up on a configured device.
+      final configured = ref.watch(syncConfiguredProvider);
 
       return Padding(
         padding: EdgeInsets.symmetric(
