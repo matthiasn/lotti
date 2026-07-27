@@ -284,7 +284,6 @@ void main() {
           errorCode: MobileScannerErrorCode.permissionDenied,
         ),
       );
-      // ignore: avoid_dynamic_calls
       ((denied as dynamic).onRetry as VoidCallback)();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
