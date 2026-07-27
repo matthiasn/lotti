@@ -101,6 +101,7 @@ class SyncEventProcessor {
     required this._settingsDb,
     this._domainLogger,
     SyncJournalEntityLoader? journalEntityLoader,
+    Directory? documentsDirectory,
     this._sequenceLogService,
     this._attachmentIndex,
     this._journalDb,
@@ -108,8 +109,12 @@ class SyncEventProcessor {
     this._notificationsDb,
     this._notificationScheduler,
     this._syncNodeProfileRepository,
-  }) : _journalEntityLoader =
-           journalEntityLoader ?? const FileSyncJournalEntityLoader();
+  }) : _documentsDirectory = documentsDirectory,
+       _journalEntityLoader =
+           journalEntityLoader ??
+           FileSyncJournalEntityLoader(
+             documentsDirectory: documentsDirectory,
+           );
 
   final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
@@ -117,6 +122,7 @@ class SyncEventProcessor {
   final AiConfigRepository _aiConfigRepository;
   final SavedTaskFiltersRepository _savedTaskFiltersRepository;
   final SettingsDb _settingsDb;
+  final Directory? _documentsDirectory;
   final SyncJournalEntityLoader _journalEntityLoader;
   final SyncSequenceLogService? _sequenceLogService;
   final AttachmentIndex? _attachmentIndex;
@@ -158,6 +164,16 @@ class SyncEventProcessor {
   // path still gets its own fetch.
   final Map<String, Future<String?>> _inFlightDescriptorFetches =
       <String, Future<String?>>{};
+
+  File _resolveJsonCandidateFile(String jsonPath) {
+    final documentsDirectory = _documentsDirectory;
+    return documentsDirectory == null
+        ? resolveJsonCandidateFile(jsonPath)
+        : resolveJsonCandidateFileInDirectory(
+            jsonPath,
+            documentsDirectory,
+          );
+  }
 
   /// Backfill response handler. Set exactly once during DI boot via the
   /// public setter (declared `late final` so reads before assignment throw

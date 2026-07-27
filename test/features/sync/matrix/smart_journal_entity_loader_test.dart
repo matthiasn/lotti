@@ -80,6 +80,9 @@ void main() {
       'fetches JSON when no VC and file missing via AttachmentIndex',
       () async {
         const relJson = '/text_entries/2024-01-01/abc.text.json';
+        final explicitDir = Directory(
+          path.join(rootTempDir.path, 'explicit_$caseIndex'),
+        )..createSync();
         final index = AttachmentIndex();
         final ev = MockEvent();
         when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -106,6 +109,7 @@ void main() {
         final loader = SmartJournalEntityLoader(
           attachmentIndex: index,
           loggingService: loggingService,
+          documentsDirectory: explicitDir,
         );
 
         final loaded = await loader.load(jsonPath: relJson);
@@ -117,11 +121,14 @@ void main() {
           'hello',
         );
 
-        final docDir = getIt<Directory>().path;
         final normalized = stripLeadingSlashes(relJson);
-        final f = File(path.join(docDir, normalized));
+        final f = File(path.join(explicitDir.path, normalized));
         expect(f.existsSync(), isTrue);
         expect(f.lengthSync(), greaterThan(0));
+        expect(
+          File(path.join(getIt<Directory>().path, normalized)).existsSync(),
+          isFalse,
+        );
       },
     );
 
