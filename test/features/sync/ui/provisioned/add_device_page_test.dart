@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -843,6 +844,64 @@ void main() {
       expect(AddDeviceActionBar.hasPeer(const []), isFalse);
       expect(AddDeviceActionBar.hasPeer(existing), isFalse);
       expect(AddDeviceActionBar.hasPeer([...existing, newPhone]), isTrue);
+    });
+  });
+
+  group('AddDeviceModal viewport fit', () {
+    testWidgets('QR and check code clear the pinned bar at 1280x700', (
+      tester,
+    ) async {
+      // The user-reported defect: at a short desktop window the sticky
+      // "Send settings" bar sliced the QR mid-symbol — unscannable, and
+      // with no cue that scrolling would reveal the rest. The QR is the one
+      // artifact this sheet exists to show; it must render whole at rest.
+      tester.view
+        ..physicalSize = const Size(2560, 1400)
+        ..devicePixelRatio = 2.0; // logical 1280×700
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final calls = _Calls();
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => Center(
+              child: DesignSystemButton(
+                label: 'open',
+                onPressed: () => AddDeviceModal.show(context),
+              ),
+            ),
+          ),
+          overrides: overrides(calls: calls),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      // Bounded pumps, not pumpAndSettle: the bar's waiting spinner animates
+      // indefinitely, so the tree never settles.
+      for (var i = 0; i < 24; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final qr = tester.getRect(find.byKey(const Key('addDeviceQrImage')));
+      final bar = tester.getRect(find.byType(SyncStickyBar));
+      expect(
+        qr.bottom,
+        lessThanOrEqualTo(bar.top),
+        reason: 'the QR must render whole above the pinned bar at rest',
+      );
+      final check = tester.getRect(
+        find.byKey(const Key('add_device_check_code')),
+      );
+      expect(
+        check.bottom,
+        lessThanOrEqualTo(bar.top),
+        reason: 'the check code is part of the comparison the sheet asks for',
+      );
+
+      // Tear the sheet down so the roster poll timer cancels before the
+      // test ends.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
   });
 }

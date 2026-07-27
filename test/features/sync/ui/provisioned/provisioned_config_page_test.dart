@@ -47,16 +47,23 @@ class _FakeProvisioningController extends ProvisioningController {
   /// Stands in for the bundle kind the real controller derives this from.
   final bool rotates;
 
+  /// How often the bar's Retry invoked the controller.
+  int retryCalls = 0;
+
   @override
   ProvisioningState build() => initialState;
 
   @override
   bool get rotatesPassword => rotates;
+
+  @override
+  Future<void> retry() async {
+    retryCalls++;
+  }
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
 
   late MockMatrixService mockMatrixService;
   late ValueNotifier<int> pageIndexNotifier;
@@ -323,7 +330,7 @@ void main() {
       },
     );
 
-    testWidgets('shows error and retry button in error state', (tester) async {
+    testWidgets('shows the error card without its own button', (tester) async {
       await pumpConfigWidget(
         tester,
         const ProvisioningState.error(ProvisioningError.loginFailed),
@@ -338,11 +345,14 @@ void main() {
         find.text(context.messages.provisionedSyncErrorLoginFailed),
         findsOneWidget,
       );
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      // The remedy lives in the sticky bar's accent slot — the position the
+      // rest of the wizard trained the user on — not as a grey pill inside
+      // the card.
       expect(
         find.text(context.messages.provisionedSyncRetry),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
     });
 
     testWidgets(
@@ -363,21 +373,26 @@ void main() {
       },
     );
 
-    testWidgets('retry button invokes controller retry in error state', (
+    testWidgets('the bar retry invokes the controller in error state', (
       tester,
     ) async {
-      await pumpConfigWidget(
-        tester,
+      final controller = _FakeProvisioningController(
         const ProvisioningState.error(ProvisioningError.loginFailed),
       );
-
-      final context = tester.element(find.byType(ProvisionedConfigWidget));
-      final retryFinder = find.text(context.messages.provisionedSyncRetry);
-      expect(retryFinder, findsOneWidget);
-
-      // Tap retry — should not throw
-      await tester.tap(retryFinder);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          _ConfigActionBarTestWrapper(pageIndexNotifier: pageIndexNotifier),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(() => controller),
+          ],
+        ),
+      );
       await tester.pump();
+
+      await tester.tap(find.byKey(const Key('provisioned_config_retry')));
+      await tester.pump();
+      expect(controller.retryCalls, 1);
     });
 
     void expectNextSteps(WidgetTester tester) {
@@ -851,7 +866,7 @@ void main() {
     );
 
     testWidgets(
-      'next button is disabled in error state',
+      'error state promotes Retry into the accent slot',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -876,13 +891,17 @@ void main() {
           find.byType(_ConfigActionBarTestWrapper),
         );
 
-        final nextButton = tester.widget<DesignSystemButton>(
-          find.widgetWithText(
-            DesignSystemButton,
-            context.messages.syncPairGoToDevices,
-          ),
+        // One accent slot, filled by whatever the user should press next:
+        // in the error state that is Retry, not a disabled destination going
+        // nowhere.
+        expect(
+          find.text(context.messages.syncPairGoToDevices),
+          findsNothing,
         );
-        expect(nextButton.onPressed, isNull);
+        final retry = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('provisioned_config_retry')),
+        );
+        expect(retry.onPressed, isNotNull);
       },
     );
 
@@ -1040,7 +1059,6 @@ void main() {
       ('loggingIn', const ProvisioningState.loggingIn()),
       ('joiningRoom', const ProvisioningState.joiningRoom()),
       ('rotatingPassword', const ProvisioningState.rotatingPassword()),
-      ('error', const ProvisioningState.error(ProvisioningError.loginFailed)),
       ('bundleDecoded', const ProvisioningState.bundleDecoded(testBundle)),
     ]) {
       testWidgets(
@@ -1063,6 +1081,29 @@ void main() {
         },
       );
     }
+
+    testWidgets(
+      'the error state fills the accent slot with a live Retry',
+      (tester) async {
+        // Not a disabled destination: the one accent slot carries whatever
+        // the user should press next, and after a failure that is Retry.
+        await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.error(ProvisioningError.loginFailed),
+        );
+
+        final context = tester.element(find.byType(ProvisionedConfigWidget));
+        expect(
+          find.text(context.messages.syncPairGoToDevices),
+          findsNothing,
+        );
+        final retry = tester.widget<DesignSystemButton>(
+          find.byKey(const Key('provisioned_config_retry')),
+        );
+        expect(retry.onPressed, isNotNull);
+        expect(retry.variant, DesignSystemButtonVariant.primary);
+      },
+    );
 
     testWidgets(
       'next button is enabled and navigates to page 2 when state is ready',
@@ -1130,8 +1171,8 @@ void main() {
 }
 
 /// Test wrapper that replicates the _ConfigActionBar logic since it's private.
-/// Uses the same provisioningControllerProvider to exercise the isComplete
-/// state.when() logic.
+/// Uses the same provisioningControllerProvider to exercise the isComplete /
+/// isError state.when() logic, including the error slot's accent Retry.
 class _ConfigActionBarTestWrapper extends ConsumerWidget {
   const _ConfigActionBarTestWrapper({required this.pageIndexNotifier});
 
@@ -1150,6 +1191,16 @@ class _ConfigActionBarTestWrapper extends ConsumerWidget {
       done: () => true,
       error: (_) => false,
     );
+    final isError = state.when(
+      initial: () => false,
+      bundleDecoded: (_) => false,
+      loggingIn: () => false,
+      joiningRoom: () => false,
+      rotatingPassword: () => false,
+      ready: (_) => false,
+      done: () => false,
+      error: (_) => true,
+    );
 
     return Column(
       children: [
@@ -1161,10 +1212,20 @@ class _ConfigActionBarTestWrapper extends ConsumerWidget {
               child: Text(context.messages.settingsMatrixPreviousPage),
             ),
             const SizedBox(width: 8),
-            DesignSystemButton(
-              onPressed: isComplete ? () => pageIndexNotifier.value = 2 : null,
-              label: context.messages.syncPairGoToDevices,
-            ),
+            if (isError)
+              DesignSystemButton(
+                key: const Key('provisioned_config_retry'),
+                onPressed: () =>
+                    ref.read(provisioningControllerProvider.notifier).retry(),
+                label: context.messages.provisionedSyncRetry,
+              )
+            else
+              DesignSystemButton(
+                onPressed: isComplete
+                    ? () => pageIndexNotifier.value = 2
+                    : null,
+                label: context.messages.syncPairGoToDevices,
+              ),
           ],
         ),
       ],

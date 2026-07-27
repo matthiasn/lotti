@@ -163,9 +163,7 @@ class VerificationSuccessStage extends StatelessWidget {
           children: [
             DesignSystemButton(
               onPressed: onConfirm,
-              label: context
-                  .messages
-                  .settingsMatrixVerificationSuccessConfirm,
+              label: context.messages.settingsMatrixVerificationSuccessConfirm,
               size: DesignSystemButtonSize.large,
             ),
           ],
@@ -204,9 +202,7 @@ class VerificationCancelledStage extends StatelessWidget {
             DesignSystemButton(
               key: confirmKey,
               onPressed: onConfirm,
-              label: context
-                  .messages
-                  .settingsMatrixVerificationSuccessConfirm,
+              label: context.messages.settingsMatrixVerificationSuccessConfirm,
               size: DesignSystemButtonSize.large,
             ),
           ],

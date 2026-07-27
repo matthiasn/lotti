@@ -548,115 +548,146 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
 
     final checkCode = _checkCode;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SyncPairStepIndicator(label: messages.syncAddDeviceStepScan),
-        _StepHeading(
-          label: messages.syncAddDeviceStepScanTitle,
-          done: _joined,
-        ),
-        SizedBox(height: tokens.spacing.step3),
-        Text(
-          messages.syncAddDeviceIntro,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        // Before the credential, not after it. As the last child it was below
-        // the fold on both viewports — a caveat about a secret that the reader
-        // never reaches is not a caveat. Neutral ink so it does not out-shout
-        // the live status inside the card.
-        // The callout's default warning tone, deliberately: this is a live
-        // credential on screen, and de-toned to grey the caveat about it was
-        // quieter than the buttons offering to copy it.
-        SyncCallout(
+    return LayoutBuilder(
+      builder: (context, bodyConstraints) {
+        // Mirrors the card's own wide/stacked split (its LayoutBuilder sees
+        // the body width minus the card padding), so the callout placement
+        // and the card layout can never disagree.
+        final wide =
+            bodyConstraints.maxWidth - tokens.spacing.cardPadding * 2 >=
+            kAddDeviceWideCard;
+        // The credential caveat, at warning tone: this is a live credential
+        // on screen, and de-toned to grey it was quieter than the buttons
+        // offering to copy it.
+        //
+        // Its position differs by layout, and both positions are deliberate.
+        // Stacked (phone), it stays above the card: the card's own content
+        // runs well below the fold, so a trailing caveat would never be
+        // reached. Wide (desktop), it follows the card: the QR is the one
+        // artifact this sheet exists to show and must render whole above the
+        // pinned bar even on a short window — the caveat directly under it
+        // is still on-screen at normal heights and one small scroll away on
+        // the shortest.
+        final callout = SyncCallout(
           icon: Icons.lock_outline_rounded,
           text: messages.syncAddDeviceSecurityNote,
           calloutKey: const Key('add_device_security_note'),
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        // One block: the code, the value to compare it by, whether the other
-        // device has arrived, and the no-camera fallback for the same code.
-        // Separating them read as four peers, and on desktop it put the
-        // fallback control below the fold while naming it above.
-        SyncFlowSection(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final details = Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (checkCode != null) ...[
-                    PairingCheckCodeView(
-                      code: checkCode,
-                      label: messages.syncPairCheckCodeLabel,
-                      caption: messages.syncPairCheckCode,
-                      codeKey: const Key('add_device_check_code'),
-                    ),
-                    SizedBox(height: tokens.spacing.step4),
-                  ],
-                  _CodeRow(
-                    data: handover,
-                    revealed: _revealed,
-                    onToggle: () => setState(() => _revealed = !_revealed),
-                  ),
-                ],
-              );
+        );
 
-              // Side by side once the card is wide enough. That is what pays
-              // for the larger code a desktop needs: stacked, a code sized for
-              // a camera across a desk pushed the no-camera fallback — the
-              // only route this screen offers a device without one — under
-              // the pinned bar.
-              if (constraints.maxWidth >= kAddDeviceWideCard) {
-                // Budget the detail column first and give the code what is
-                // left: sizing the code by a share and clamping it let the
-                // floor win at the dialog's actual width, starving the column
-                // and ellipsising the very control the joining device names.
-                //
-                // The quiet zone counts. `side` is the image; _QrCard pads it
-                // by step3 on each side, so the card occupies `side + 2·step3`
-                // and budgeting as though it were `side` overspent by exactly
-                // that much.
-                final widthBudget =
-                    (constraints.maxWidth -
-                            kAddDeviceDetailsMin -
-                            tokens.spacing.step5 -
-                            tokens.spacing.step3 * 2)
-                        .clamp(180.0, 300.0);
-                // The height budget is what stops the pinned bar slicing the
-                // code on a short window: the width formula alone sized the
-                // QR for the dialog's width and let a 1280×700 screen cut it
-                // mid-symbol. The floor keeps it scannable; below that the
-                // page scrolls rather than shrinking the code further.
-                final heightBudget =
-                    (MediaQuery.sizeOf(context).height -
-                            kAddDeviceQrViewportOverhead)
-                        .clamp(160.0, 300.0);
-                final side = math.min(widthBudget, heightBudget);
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _QrCard(data: handover, side: side),
-                    SizedBox(width: tokens.spacing.step5),
-                    Expanded(child: details),
-                  ],
-                );
-              }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SyncPairStepIndicator(label: messages.syncAddDeviceStepScan),
+            _StepHeading(
+              label: messages.syncAddDeviceStepScanTitle,
+              done: _joined,
+            ),
+            SizedBox(height: tokens.spacing.step3),
+            Text(
+              messages.syncAddDeviceIntro,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+            SizedBox(height: tokens.spacing.step4),
+            if (!wide) ...[
+              callout,
+              SizedBox(height: tokens.spacing.step4),
+            ],
+            _codeCard(checkCode),
+            if (wide) ...[
+              SizedBox(height: tokens.spacing.step4),
+              callout,
+            ],
+          ],
+        );
+      },
+    );
+  }
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _QrCard(data: handover),
-                  SizedBox(height: tokens.spacing.step3),
-                  details,
-                ],
-              );
-            },
-          ),
-        ),
-      ],
+  /// One block: the code, the value to compare it by, whether the other
+  /// device has arrived, and the no-camera fallback for the same code.
+  /// Separating them read as four peers, and on desktop it put the
+  /// fallback control below the fold while naming it above.
+  Widget _codeCard(String? checkCode) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final handover = _handover!;
+
+    return SyncFlowSection(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final details = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (checkCode != null) ...[
+                PairingCheckCodeView(
+                  code: checkCode,
+                  label: messages.syncPairCheckCodeLabel,
+                  caption: messages.syncPairCheckCode,
+                  codeKey: const Key('add_device_check_code'),
+                ),
+                SizedBox(height: tokens.spacing.step4),
+              ],
+              _CodeRow(
+                data: handover,
+                revealed: _revealed,
+                onToggle: () => setState(() => _revealed = !_revealed),
+              ),
+            ],
+          );
+
+          // Side by side once the card is wide enough. That is what pays
+          // for the larger code a desktop needs: stacked, a code sized for
+          // a camera across a desk pushed the no-camera fallback — the
+          // only route this screen offers a device without one — under
+          // the pinned bar.
+          if (constraints.maxWidth >= kAddDeviceWideCard) {
+            // Budget the detail column first and give the code what is
+            // left: sizing the code by a share and clamping it let the
+            // floor win at the dialog's actual width, starving the column
+            // and ellipsising the very control the joining device names.
+            //
+            // The quiet zone counts. `side` is the image; _QrCard pads it
+            // by step3 on each side, so the card occupies `side + 2·step3`
+            // and budgeting as though it were `side` overspent by exactly
+            // that much.
+            final widthBudget =
+                (constraints.maxWidth -
+                        kAddDeviceDetailsMin -
+                        tokens.spacing.step5 -
+                        tokens.spacing.step3 * 2)
+                    .clamp(180.0, 300.0);
+            // The height budget is what stops the pinned bar slicing the
+            // code on a short window: the width formula alone sized the
+            // QR for the dialog's width and let a 1280×700 screen cut it
+            // mid-symbol. The floor keeps it scannable; below that the
+            // page scrolls rather than shrinking the code further.
+            final heightBudget =
+                (MediaQuery.sizeOf(context).height -
+                        kAddDeviceQrViewportOverhead)
+                    .clamp(160.0, 300.0);
+            final side = math.min(widthBudget, heightBudget);
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _QrCard(data: handover, side: side),
+                SizedBox(width: tokens.spacing.step5),
+                Expanded(child: details),
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _QrCard(data: handover),
+              SizedBox(height: tokens.spacing.step3),
+              details,
+            ],
+          );
+        },
+      ),
     );
   }
 }
