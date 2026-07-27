@@ -1443,6 +1443,12 @@ void main() {
             'Partial: 90 minutes of the 120-minute task are scheduled; '
             '30 minutes remain.',
       ),
+      (
+        name: 'matching split with a contradictory remainder',
+        reason:
+            'Partial: 60 minutes of the 120-minute task are scheduled; '
+            '30 minutes remain.',
+      ),
     ]) {
       test('charges ${badDisclosure.name} at the full estimate', () {
         final result = scoreWithinCapacityByEstimate(
@@ -1667,6 +1673,66 @@ void main() {
       );
 
       expect(result.isApplicable, isFalse);
+    });
+
+    test('counts an audited partial remainder as deferred work', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-deck',
+              reason:
+                  'Partial: 60 minutes of the 120-minute Prepare the board '
+                  'deck estimate fit; 60 minutes remain for tomorrow.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-deck',
+              title: 'Prepare the board deck',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-deck'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-deck'));
+    });
+
+    test('an unnamed audited partial remainder does not surface the trade', () {
+      final result = scoreSurfacedConflict(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-deck',
+              reason:
+                  'Partial: 60 of 120 estimated minutes fit; '
+                  '60 minutes remain.',
+            ),
+          ],
+          corpus: const [
+            EvalCorpusTask(
+              taskId: 'task-deck',
+              title: 'Prepare the board deck',
+              estimateMinutes: 120,
+            ),
+          ],
+          decidedTaskIds: const ['task-deck'],
+          requiresConflictSurfaced: true,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('without naming a casualty'));
     });
 
     test('passes when the escalation actually names the conflict', () {

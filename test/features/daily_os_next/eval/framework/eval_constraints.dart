@@ -639,36 +639,18 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.withinCapacityByEstimate;
   final noPlan = _requirePlan(outcome, id);
   if (noPlan != null) return noPlan;
-  final allocatedByTask = <String, int>{};
-  final reasonsByTask = <String, List<String>>{};
-  for (final block in _scheduled(outcome)) {
-    final taskId = block.taskId;
-    if (taskId == null) continue;
-    allocatedByTask.update(
-      taskId,
-      (minutes) =>
-          minutes + block.endTime.difference(block.startTime).inMinutes,
-      ifAbsent: () => block.endTime.difference(block.startTime).inMinutes,
-    );
-    final reason = block.reason?.trim();
-    if (reason != null && reason.isNotEmpty) {
-      reasonsByTask.putIfAbsent(taskId, () => []).add(reason);
-    }
-  }
+  final placements = _estimatedTaskPlacements(outcome);
   var chargedMinutes = 0;
-  var counted = 0;
   final partials = <String>[];
   final undisclosedShortenings = <String>[];
-  for (final entry in allocatedByTask.entries) {
+  for (final entry in placements.entries) {
     final taskId = entry.key;
-    final estimate = outcome.inputs.taskById(taskId)?.estimateMinutes;
-    if (estimate == null || estimate <= 0) continue;
-    counted++;
-    final allocated = entry.value;
+    final allocated = entry.value.allocatedMinutes;
+    final estimate = entry.value.estimateMinutes;
     if (allocated > 0 &&
         allocated < estimate &&
         _hasAuditablePartialDisclosure(
-          reasons: reasonsByTask[taskId] ?? const [],
+          reasons: entry.value.reasons,
           allocatedMinutes: allocated,
           estimateMinutes: estimate,
         )) {
@@ -686,7 +668,7 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
       }
     }
   }
-  if (counted == 0) {
+  if (placements.isEmpty) {
     return const EvalConstraintResult.notApplicable(
       id,
       'no placed task carries an estimate',
@@ -702,7 +684,7 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
     id: id,
     passed: chargedMinutes <= capacity,
     detail:
-        '$counted placed task(s) charged at ${chargedMinutes}min against '
+        '${placements.length} placed task(s) charged at ${chargedMinutes}min against '
         '${capacity}min capacity'
         '${chargedMinutes > capacity ? ' (over by ${chargedMinutes - capacity})' : ''}'
         '${evidence.isEmpty ? '' : '; ${evidence.join('; ')}'}',
@@ -721,37 +703,84 @@ final _partialRemainingPattern = RegExp(
   caseSensitive: false,
 );
 
+typedef _EstimatedTaskPlacement = ({
+  int allocatedMinutes,
+  int estimateMinutes,
+  List<String> reasons,
+});
+
+/// Estimated scheduled work grouped by task, with all disclosure prose.
+///
+/// Both capacity accounting and conflict surfacing use this view so a partial
+/// cannot be credited by one constraint while its deferred remainder is
+/// invisible to the other.
+Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
+  EvalRunOutcome outcome,
+) {
+  final allocatedByTask = <String, int>{};
+  final reasonsByTask = <String, List<String>>{};
+  for (final block in _scheduled(outcome)) {
+    final taskId = block.taskId;
+    if (taskId == null) continue;
+    allocatedByTask.update(
+      taskId,
+      (minutes) =>
+          minutes + block.endTime.difference(block.startTime).inMinutes,
+      ifAbsent: () => block.endTime.difference(block.startTime).inMinutes,
+    );
+    final reason = block.reason?.trim();
+    if (reason != null && reason.isNotEmpty) {
+      reasonsByTask.putIfAbsent(taskId, () => []).add(reason);
+    }
+  }
+  return {
+    for (final entry in allocatedByTask.entries)
+      if (outcome.inputs.taskById(entry.key)?.estimateMinutes
+          case final int estimate when estimate > 0)
+        entry.key: (
+          allocatedMinutes: entry.value,
+          estimateMinutes: estimate,
+          reasons: reasonsByTask[entry.key] ?? const [],
+        ),
+  };
+}
+
 /// Whether prose makes a shortened placement safe to charge as partial.
 ///
 /// Block duration remains the authority. A reason earns partial accounting
 /// only when its concrete minute arithmetic agrees with both that duration and
 /// the corpus estimate. This accepts either an explicit `60m of 120m` split or
 /// the prompt's `partial` plus `60m remain` form; vague prose and contradictory
-/// numbers keep the conservative full-estimate charge.
+/// numbers anywhere in the task's disclosure keep the conservative
+/// full-estimate charge.
 bool _hasAuditablePartialDisclosure({
   required List<String> reasons,
   required int allocatedMinutes,
   required int estimateMinutes,
 }) {
   final remainingMinutes = estimateMinutes - allocatedMinutes;
+  final mentionsPartial = reasons.any(
+    (reason) => reason.toLowerCase().contains('partial'),
+  );
+  var hasMatchingSplit = false;
+  var hasMatchingRemainder = false;
   for (final reason in reasons) {
     for (final match in _partialOfEstimatePattern.allMatches(reason)) {
       final declaredAllocated = int.tryParse(match.group(1) ?? '');
       final declaredEstimate = int.tryParse(match.group(2) ?? '');
-      if (declaredAllocated == allocatedMinutes &&
-          declaredEstimate == estimateMinutes) {
-        return true;
+      if (declaredAllocated != allocatedMinutes ||
+          declaredEstimate != estimateMinutes) {
+        return false;
       }
+      hasMatchingSplit = true;
     }
-    if (!reason.toLowerCase().contains('partial')) continue;
     for (final match in _partialRemainingPattern.allMatches(reason)) {
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
-      if (declaredRemaining == remainingMinutes) {
-        return true;
-      }
+      if (declaredRemaining != remainingMinutes) return false;
+      hasMatchingRemainder = true;
     }
   }
-  return false;
+  return hasMatchingSplit || (mentionsPartial && hasMatchingRemainder);
 }
 
 /// Work the scenario says any competent plan must include.
@@ -823,16 +852,28 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
   // The prompt asks for "which commitments collide and what trade would make
   // it fit", so a bare "Deferred" is not surfacing anything — it names no
   // casualty and gives the user nothing to act on. Require the text to
-  // identify at least one piece of work that was actually left out.
+  // identify at least one piece of work that was actually left out or only
+  // partially represented.
   final placed = _placedTaskIds(outcome);
-  final omitted = [
+  final auditedPartials = {
+    for (final entry in _estimatedTaskPlacements(outcome).entries)
+      if (entry.value.allocatedMinutes > 0 &&
+          entry.value.allocatedMinutes < entry.value.estimateMinutes &&
+          _hasAuditablePartialDisclosure(
+            reasons: entry.value.reasons,
+            allocatedMinutes: entry.value.allocatedMinutes,
+            estimateMinutes: entry.value.estimateMinutes,
+          ))
+        entry.key,
+  };
+  final deferred = [
     for (final taskId in outcome.inputs.decidedTaskIds)
-      if (!placed.contains(taskId)) taskId,
+      if (!placed.contains(taskId) || auditedPartials.contains(taskId)) taskId,
   ];
-  if (omitted.isEmpty) {
+  if (deferred.isEmpty) {
     return const EvalConstraintResult.notApplicable(
       id,
-      'nothing was left out, so there is no trade to name',
+      'nothing was left out or partially deferred, so there is no trade to name',
     );
   }
   final prose = [
@@ -840,7 +881,7 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
       '${block.reason ?? ''} ${block.note ?? ''}',
   ].join(' ').toLowerCase();
   final namedCasualties = [
-    for (final taskId in omitted)
+    for (final taskId in deferred)
       if (prose.contains(taskId.toLowerCase()) ||
           _titleNamed(outcome, taskId, prose))
         taskId,
@@ -849,9 +890,10 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
     id: id,
     passed: namedCasualties.isNotEmpty,
     detail: namedCasualties.isNotEmpty
-        ? 'named what it left out: ${namedCasualties.join(', ')}'
+        ? 'named deferred work: ${namedCasualties.join(', ')}'
         : 'absorbed an impossible day without naming a casualty — '
-              '${omitted.length} decided task(s) dropped in silence',
+              '${deferred.length} decided task(s) dropped or partially '
+              'deferred in silence',
   );
 }
 

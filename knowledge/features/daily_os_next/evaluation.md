@@ -76,10 +76,15 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   duration may replace the full estimate only when its reason gives concrete
   minute arithmetic (`60m of 120m`, or `partial` plus `60m remain`) that agrees
   with both the summed duration of that task's blocks and the corpus estimate.
-  Vague “partial” prose, silence, or contradictory numbers are charged at the
-  full estimate. The constraint detail records every credited partial and every
-  shortening denied credit, so the judge bundle preserves the accounting
-  evidence rather than only the final pass/fail.
+  Every concrete split and remainder in the task's disclosure must agree; one
+  matching fragment cannot override a contradictory remainder elsewhere in the
+  same disclosure. Vague “partial” prose, silence, or contradictory numbers are
+  charged at the full estimate. An audited partial remainder also counts as
+  deferred work for `surfacedConflict`, so a plan that represents every task
+  only partially must still name the trade or escalate it. The constraint
+  detail records every credited partial and every shortening denied credit, so
+  the judge bundle preserves the accounting evidence rather than only the
+  final pass/fail.
 - **Weak semantic outcomes are not ranking evidence.** `surfacedConflict`
   passes either when an accepted `attentionNeeded`
   escalation uses an allowed typed conflict reason or when block prose names
