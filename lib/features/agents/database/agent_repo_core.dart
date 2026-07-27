@@ -41,7 +41,28 @@ class AgentRepoCore {
 
   /// Insert or update an [AgentDomainEntity] using the `id` as the conflict
   /// target (ON CONFLICT DO UPDATE — updates supplied columns in place).
+  ///
+  /// Capture parse completion is monotonic across whole-row writes. Older
+  /// peers do not serialize `parseCompletedAt`, so an otherwise newer legacy
+  /// rewrite must not erase a locally observed successful parse.
   Future<void> upsertEntity(AgentDomainEntity entity) async {
+    if (entity is CaptureEntity) {
+      await _db.transaction(() async {
+        final existing = await getEntity(entity.id);
+        final entityToWrite =
+            existing is CaptureEntity &&
+                existing.parseCompletedAt != null &&
+                entity.parseCompletedAt == null
+            ? entity.copyWith(parseCompletedAt: existing.parseCompletedAt)
+            : entity;
+        await _upsertEntity(entityToWrite);
+      });
+      return;
+    }
+    await _upsertEntity(entity);
+  }
+
+  Future<void> _upsertEntity(AgentDomainEntity entity) async {
     final companion = AgentDbConversions.toEntityCompanion(entity);
     final affectsAttentionClaims = affectsAttentionClaimProjection(entity);
     final affectsStandingAgreements = affectsStandingAgreementProjection(

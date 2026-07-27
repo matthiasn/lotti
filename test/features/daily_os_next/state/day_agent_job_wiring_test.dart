@@ -269,34 +269,16 @@ void main() {
     );
 
     test(
-      'hasParsedItems delegates to captureService.parsedItemsForCapture and '
-      'reports whether any items exist',
+      'hasCompletedCaptureParse delegates to the capture service',
       () async {
         when(
-          () => captureService.parsedItemsForCapture('cap-empty'),
-        ).thenAnswer((_) async => const []);
-        when(
-          () => captureService.parsedItemsForCapture('cap-full'),
-        ).thenAnswer(
-          (_) async => [
-            AgentDomainEntity.parsedItem(
-                  id: 'parsed-1',
-                  agentId: 'agent-1',
-                  captureId: 'cap-full',
-                  kind: ParsedItemKind.newTask,
-                  title: 'Buy milk',
-                  categoryId: 'errands',
-                  confidence: ParsedItemConfidence.high,
-                  confidenceScore: 0.9,
-                  createdAt: DateTime.utc(2026, 7, 22),
-                  vectorClock: null,
-                )
-                as ParsedItemEntity,
-          ],
-        );
+          () => captureService.hasCompletedCaptureParse('cap-empty'),
+        ).thenAnswer((_) async => true);
 
-        expect(await executor.hasParsedItems('cap-empty'), isFalse);
-        expect(await executor.hasParsedItems('cap-full'), isTrue);
+        expect(await executor.hasCompletedCaptureParse('cap-empty'), isTrue);
+        verify(
+          () => captureService.hasCompletedCaptureParse('cap-empty'),
+        ).called(1);
       },
     );
 

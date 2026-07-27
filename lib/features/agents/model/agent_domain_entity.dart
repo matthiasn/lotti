@@ -189,6 +189,16 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// capture synced from an older peer carries no `dayId`, and a required,
   /// non-defaulted field would throw on `fromJson`. Read it through
   /// `captureDayId`, which falls back to the capture date for legacy rows.
+  ///
+  /// [parseCompletedAt] records a successful `parse_capture_to_items` call,
+  /// including the explicit-empty result. Once non-null it is preserved
+  /// monotonically at the repository write boundary because older peers omit
+  /// it from whole-row rewrites. Successful parses also write an independent
+  /// basic-link artifact that peers predating this field preserve, so
+  /// completion converges even when a fresh device receives a causally newer
+  /// marker-less rewrite first. Existing parsed-item links remain the
+  /// compatibility signal for captures that completed before either artifact
+  /// existed.
   const factory AgentDomainEntity.capture({
     required String id,
     required String agentId,
@@ -198,6 +208,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required VectorClock? vectorClock,
     @Default('') String dayId,
     String? audioRef,
+    DateTime? parseCompletedAt,
     DateTime? deletedAt,
   }) = CaptureEntity;
 

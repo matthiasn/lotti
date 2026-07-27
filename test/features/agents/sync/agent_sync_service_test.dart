@@ -100,6 +100,53 @@ class _GeneratedTransactionAwareAgentRepository extends MockAgentRepository {
   }
 }
 
+/// Simulates a parse completion trying to commit after a legacy rewrite reads
+/// the capture. A repository transaction serializes that completion after the
+/// rewrite; without one it lands between the read and write and is overwritten.
+class _InterleavingCaptureRepository extends MockAgentRepository {
+  _InterleavingCaptureRepository({
+    required CaptureEntity initial,
+    required this.completedAt,
+  }) : stored = initial;
+
+  final DateTime completedAt;
+  CaptureEntity stored;
+  bool _insideTransaction = false;
+  bool _completeAfterTransaction = false;
+  int transactionCount = 0;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    transactionCount++;
+    _insideTransaction = true;
+    try {
+      return await action();
+    } finally {
+      _insideTransaction = false;
+      if (_completeAfterTransaction) {
+        stored = stored.copyWith(parseCompletedAt: completedAt);
+        _completeAfterTransaction = false;
+      }
+    }
+  }
+
+  @override
+  Future<AgentDomainEntity?> getEntity(String id) async {
+    final snapshot = stored;
+    if (_insideTransaction) {
+      _completeAfterTransaction = true;
+    } else {
+      stored = stored.copyWith(parseCompletedAt: completedAt);
+    }
+    return snapshot;
+  }
+
+  @override
+  Future<void> upsertEntity(AgentDomainEntity entity) async {
+    stored = entity as CaptureEntity;
+  }
+}
+
 class _GeneratedSyncTransactionOperation {
   const _GeneratedSyncTransactionOperation({
     required this.kind,
@@ -612,6 +659,84 @@ void main() {
           ),
         );
       });
+
+      test(
+        'propagates a preserved capture completion marker in the sync envelope',
+        () async {
+          final completedAt = DateTime(2026, 3, 15, 10);
+          final completed =
+              AgentDomainEntity.capture(
+                    id: 'capture-1',
+                    agentId: 'agent-1',
+                    transcript: 'Original',
+                    capturedAt: testDate,
+                    createdAt: testDate,
+                    vectorClock: const VectorClock({'local': 1}),
+                    parseCompletedAt: completedAt,
+                  )
+                  as CaptureEntity;
+          final legacyRewrite = completed.copyWith(
+            transcript: 'Legacy rewrite',
+            vectorClock: const VectorClock({'legacy': 2}),
+            parseCompletedAt: null,
+          );
+          when(
+            () => mockRepository.getEntity(completed.id),
+          ).thenAnswer((_) async => completed);
+
+          await syncService.upsertEntity(legacyRewrite);
+
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as CaptureEntity;
+          expect(persisted.transcript, legacyRewrite.transcript);
+          expect(persisted.parseCompletedAt, completedAt);
+          expect(persisted.vectorClock, testClock);
+
+          final message =
+              verify(
+                    () => mockOutboxService.enqueueMessage(captureAny()),
+                  ).captured.single
+                  as SyncAgentEntity;
+          final syncedCapture = message.agentEntity! as CaptureEntity;
+          expect(syncedCapture.parseCompletedAt, completedAt);
+          expect(syncedCapture.vectorClock, testClock);
+        },
+      );
+
+      test(
+        'serializes an interleaved capture completion after a legacy rewrite',
+        () async {
+          final completedAt = DateTime(2026, 3, 15, 10);
+          final legacyRewrite =
+              AgentDomainEntity.capture(
+                    id: 'capture-1',
+                    agentId: 'agent-1',
+                    transcript: 'Legacy rewrite',
+                    capturedAt: testDate,
+                    createdAt: testDate,
+                    vectorClock: const VectorClock({'legacy': 2}),
+                  )
+                  as CaptureEntity;
+          final repository = _InterleavingCaptureRepository(
+            initial: legacyRewrite,
+            completedAt: completedAt,
+          );
+          final service = AgentSyncService(
+            repository: repository,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVectorClockService,
+          );
+
+          await service.upsertEntity(legacyRewrite);
+
+          expect(repository.transactionCount, 1);
+          expect(repository.stored.transcript, legacyRewrite.transcript);
+          expect(repository.stored.parseCompletedAt, completedAt);
+        },
+      );
 
       test('works with agentState variant', () async {
         await syncService.upsertEntity(testStateEntity);

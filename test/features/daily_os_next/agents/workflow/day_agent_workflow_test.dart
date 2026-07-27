@@ -3146,7 +3146,7 @@ void main() {
       );
 
       test(
-        'fails the wake when parsing persists zero items',
+        'accepts an explicit empty parse without forcing a retry',
         () async {
           final captureService = MockDayAgentCaptureService();
           stubCaptureContext(captureService);
@@ -3164,21 +3164,13 @@ void main() {
             ),
           );
           conversationRepository.toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
             [
               _toolCall(
                 id: 'parse-call',
                 name: DayAgentToolNames.parseCaptureToItems,
                 args: const {
                   'captureId': 'capture-1',
-                  'items': [
-                    {
-                      'kind': 'newTask',
-                      'title': 'Home-only item',
-                      'categoryId': 'home',
-                      'confidenceScore': 0.4,
-                    },
-                  ],
+                  'items': <Object?>[],
                 },
               ),
             ],
@@ -3192,9 +3184,8 @@ void main() {
             },
           );
 
-          expect(result.success, isFalse);
-          expect(result.error, contains('parse_capture_to_items'));
-          expect(conversationRepository.sendMessageCalls, hasLength(2));
+          expect(result.success, isTrue);
+          expect(conversationRepository.sendMessageCalls, hasLength(1));
           verify(
             () => captureService.executeTool(
               agentId: agentId,

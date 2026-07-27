@@ -121,10 +121,7 @@ DayAgentJobExecutor buildDayAgentJobExecutor({
     recordRunKey: (jobId, runKey) async {
       await outbox.recordRunKey(jobId: jobId, runKey: runKey);
     },
-    hasParsedItems: (captureId) async {
-      final items = await captureService.parsedItemsForCapture(captureId);
-      return items.isNotEmpty;
-    },
+    hasCompletedCaptureParse: captureService.hasCompletedCaptureParse,
     hasPendingDraftWork: (dayId) async {
       final draftJob = await outbox.getById(
         DayProcessingOutboxRepository.draftJobId(dayId),

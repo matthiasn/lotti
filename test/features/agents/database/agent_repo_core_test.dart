@@ -70,6 +70,38 @@ void main() {
     });
 
     test(
+      'capture parse completion survives a legacy whole-row rewrite',
+      () async {
+        final completedAt = DateTime(2026, 3, 15, 10);
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: 'agent-1',
+                  transcript: 'Original transcript',
+                  capturedAt: testDate,
+                  createdAt: testDate,
+                  vectorClock: const VectorClock({'modern': 1}),
+                  parseCompletedAt: completedAt,
+                )
+                as CaptureEntity;
+        await core.upsertEntity(capture);
+
+        await core.upsertEntity(
+          capture.copyWith(
+            transcript: 'Rewritten by a legacy peer',
+            vectorClock: const VectorClock({'legacy': 2}),
+            parseCompletedAt: null,
+          ),
+        );
+
+        final persisted = await core.getEntity(capture.id) as CaptureEntity?;
+        expect(persisted!.transcript, 'Rewritten by a legacy peer');
+        expect(persisted.parseCompletedAt, completedAt);
+        expect(persisted.vectorClock, const VectorClock({'legacy': 2}));
+      },
+    );
+
+    test(
       'upsertEntity of an attention request populates the claim projection',
       () async {
         final claim =

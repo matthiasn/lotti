@@ -42,7 +42,8 @@ through the workflow handler:
 identity's category allow-list** — the planner cannot close, re-date, or create
 tasks outside its configured categories.
 
-`submit_capture` persists a `CaptureEntity` and enqueues a manual wake with a
+`submit_capture` persists a `CaptureEntity` and enqueues a durable
+`parseCapture` outbox job. Its executor later starts the agent wake with a
 `capture_submitted:<captureId>` trigger token. **The caller supplies the selected
 planning day independently of the recording timestamp**, so reusing a retained
 check-in from a past or future Day Activity view cannot enqueue work into the
@@ -75,7 +76,30 @@ and six of seven were that same capture.
 An empty parse is not a no-op. `persistParsedItems` replaces a capture's items
 wholesale, so it clears an earlier parse rather than leaving a stale queue in
 the reconcile panel — which is what makes "nothing here" a correction the model
-can actually make.
+can actually make. It also writes `CaptureEntity.parseCompletedAt`, the durable
+completion signal shared by the workflow, the outbox executor, and Activity's
+retry path. Without that marker a successful empty result is indistinguishable
+from an unparsed capture after restart and reopening Activity spends another
+inference run. Legacy captures with parsed-item links still count as complete.
+The marker is monotonic at both the local sync-envelope and repository write
+boundaries, so a whole-row rewrite cannot erase locally observed completion;
+the sync-envelope merge reads and writes inside one repository transaction.
+Every successful parse also writes a deterministic basic self-link
+(`capture_parse_completion:<captureId>`). That oldest link variant is readable
+by peers predating the marker and syncs independently of the capture row, so a
+fresh device still learns completion when it receives a causally newer
+marker-less legacy rewrite before the original completion update. The link is
+not a `capture_to_parsed_item` edge, so it never appears in the reconcile item
+list. A recovered outbox job treats a deleted capture as terminal instead of
+retrying removed user intent. Parse finalization also revalidates access against
+the transaction-local capture before it replaces any artifacts.
+
+Only an explicitly empty model `items` array means "nothing to act on." A
+non-empty response whose entries are all invalid or outside the planner's
+category scope is rejected, preserving the previous parse and giving the model
+a chance to correct its output. Before replacing parsed items, the service
+re-reads the capture inside the write transaction so concurrent edits survive
+and a concurrent tombstone is never revived.
 
 ## Three guards worth stating precisely
 

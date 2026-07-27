@@ -131,7 +131,7 @@ class DayAgentStrategy extends ConversationStrategy {
       if (DayAgentToolNames.isWorkflowHandlerTool(toolName)) {
         final result = await executeToolHandler(toolName, args, manager);
         if (toolName == DayAgentToolNames.parseCaptureToItems &&
-            _didPersistParsedItems(result)) {
+            _didPersistCaptureParseResult(result)) {
           _didPersistCaptureParse = true;
         }
         if (toolName == DayAgentToolNames.draftDayPlan && result.success) {
@@ -156,13 +156,13 @@ class DayAgentStrategy extends ConversationStrategy {
     return ConversationAction.continueConversation;
   }
 
-  bool _didPersistParsedItems(DayAgentToolResult result) {
+  bool _didPersistCaptureParseResult(DayAgentToolResult result) {
     if (!result.success) return false;
     try {
       final decoded = jsonDecode(result.output);
       if (decoded is Map) {
         final items = decoded['items'];
-        return items is List && items.isNotEmpty;
+        return items is List;
       }
       return false;
     } catch (_) {
