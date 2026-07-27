@@ -5,6 +5,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
+import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
@@ -202,6 +203,70 @@ void main() {
                 ),
               )
               .dx,
+        ),
+      );
+    });
+  });
+
+  group('disconnect failure', () {
+    testWidgets('a failed teardown says so and leaves the state alone', (
+      tester,
+    ) async {
+      // Silently swallowing it left the pane showing a "configured" view of a
+      // config that had not been torn down.
+      ensureDomainLoggerRegistered();
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => mockMatrixService.deleteConfig(),
+      ).thenThrow(Exception('homeserver unreachable'));
+
+      late ProviderContainer container;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => FakeMatrixUnverifiedController(const []),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: resolveTestTheme(),
+            home: Consumer(
+              builder: (ctx, ref, _) {
+                container = ProviderScope.containerOf(ctx);
+                return const Scaffold(body: ProvisionedStatusWidget());
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final context = tester.element(find.byType(ProvisionedStatusWidget));
+      final messages = context.messages;
+
+      await tester.tap(
+        find.widgetWithText(
+          DesignSystemButton,
+          messages.provisionedSyncDisconnect,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(messages.syncDeleteConfigConfirm));
+      await tester.pumpAndSettle();
+
+      verify(() => mockMatrixService.deleteConfig()).called(1);
+      expect(find.text(messages.syncDisconnectFailed), findsOneWidget);
+      // The provisioning state must not claim a teardown that did not happen.
+      expect(
+        container.read(provisioningControllerProvider),
+        isA<ProvisioningState>().having(
+          (s) => s,
+          'stays initial',
+          const ProvisioningState.initial(),
         ),
       );
     });

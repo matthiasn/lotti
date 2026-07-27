@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -211,6 +212,89 @@ void main() {
   });
 
   group('mobile scanner barcode handling', () {
+    testWidgets('a denied camera explains itself and offers a way back', (
+      tester,
+    ) async {
+      // The copy names a remedy the user performs in system settings, so the
+      // flow has to offer a route back without closing the sheet — and the
+      // retry has to reach the live state, not a rebuilt one.
+      setUpMobileScanner();
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      final scannerBefore = find.byKey(const ValueKey('scanner_0'));
+      expect(scannerBefore, findsOneWidget);
+
+      // Drive the scanner's own error path rather than faking the widget, so
+      // the callback under test is the one production wires up.
+      final scanner = tester.widget<MobileScanner>(find.byType(MobileScanner));
+      final denied = scanner.errorBuilder!(
+        tester.element(find.byType(MobileScanner)),
+        const MobileScannerException(
+          errorCode: MobileScannerErrorCode.permissionDenied,
+        ),
+      );
+
+      // Same override count — Riverpod forbids changing it between pumps.
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(denied, overrides: defaultOverrides()),
+      );
+      await tester.pump();
+
+      final context = tester.element(
+        find.byKey(const Key('bundle_import_camera_denied')),
+      );
+      expect(
+        find.text(context.messages.syncPairCameraDenied),
+        findsOneWidget,
+      );
+      final retry = tester.widget<DesignSystemButton>(
+        find.byKey(const Key('bundle_import_camera_retry')),
+      );
+      expect(retry.label, context.messages.syncPairCameraRetry);
+      expect(retry.onPressed, isNotNull);
+    });
+
+    testWidgets('retrying the camera recreates the scanner subtree', (
+      tester,
+    ) async {
+      setUpMobileScanner();
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+      expect(find.byKey(const ValueKey('scanner_0')), findsOneWidget);
+
+      // Invoke the retry the live scanner would hand to its error view. The
+      // widget stays mounted, so this runs against the real State.
+      final scanner = tester.widget<MobileScanner>(find.byType(MobileScanner));
+      final denied = scanner.errorBuilder!(
+        tester.element(find.byType(MobileScanner)),
+        const MobileScannerException(
+          errorCode: MobileScannerErrorCode.permissionDenied,
+        ),
+      );
+      // ignore: avoid_dynamic_calls
+      ((denied as dynamic).onRetry as VoidCallback)();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      // A new generation key means the MobileScanner subtree is rebuilt from
+      // scratch, so it cannot cache the failed start.
+      expect(find.byKey(const ValueKey('scanner_0')), findsNothing);
+      expect(find.byKey(const ValueKey('scanner_1')), findsOneWidget);
+    });
+
     testWidgets('declining a scanned code lands on the field and stays there', (
       tester,
     ) async {

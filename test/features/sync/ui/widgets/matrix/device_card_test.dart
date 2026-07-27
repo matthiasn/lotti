@@ -373,6 +373,84 @@ void main() {
     });
   });
 
+  group('responsive layout', () {
+    Future<void> pumpAtWidth(WidgetTester tester, double width) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: width,
+            child: DeviceCard(
+              buildDevice(verified: true),
+              refreshListCallback: () {},
+              now: now,
+            ),
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('stacks the name above its badges on a phone card', (
+      tester,
+    ) async {
+      await pumpAtWidth(tester, kDeviceCardWideBreakpoint - 60);
+
+      final name = tester.getRect(find.text('Pixel 7'));
+      final badge = tester.getRect(find.text('Verified'));
+      expect(badge.top, greaterThanOrEqualTo(name.bottom));
+    });
+
+    testWidgets('puts the name and its badges on one row when wide', (
+      tester,
+    ) async {
+      await pumpAtWidth(tester, kDeviceCardWideBreakpoint + 120);
+
+      final name = tester.getRect(find.text('Pixel 7'));
+      final badge = tester.getRect(find.text('Verified'));
+      // Same row: the badge starts to the right of the name, not below it.
+      expect(badge.left, greaterThan(name.right));
+      expect(badge.top, lessThan(name.bottom));
+    });
+
+    testWidgets('wraps badges rather than overflowing at large text', (
+      tester,
+    ) async {
+      // As a plain Row child the badge Wrap got unbounded constraints and laid
+      // every badge out in one run, overflowing instead of wrapping.
+      tester.view.physicalSize = const Size(2000, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2.5)),
+            child: SizedBox(
+              width: kDeviceCardWideBreakpoint + 10,
+              child: DeviceCard(
+                buildDevice(isCurrentDevice: true, verified: true),
+                refreshListCallback: () {},
+                now: now,
+              ),
+            ),
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('identity and last-seen', () {
     testWidgets('renders the display name', (tester) async {
       await pumpCard(tester, buildDevice());

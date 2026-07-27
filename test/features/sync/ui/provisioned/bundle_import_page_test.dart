@@ -625,6 +625,83 @@ void main() {
     });
   });
 
+  group('decode errors name a remedy', () {
+    Future<void> pumpAndEnter(WidgetTester tester, String code) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), code);
+      await tester.pump();
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(
+        find.text(context.messages.provisionedSyncImportButton),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+    }
+
+    testWidgets('a code from another Lotti version says to update', (
+      tester,
+    ) async {
+      // The code is fine and the two apps disagree — "invalid code" would send
+      // the user hunting for a new one that fails identically.
+      const oldVersion =
+          'eyJ2IjogMSwgImtpbmQiOiAiaGFuZG92ZXIiLCAiaG9tZVNlcnZlciI6ICJodHRwc'
+          'zovL21hdHJpeC5leGFtcGxlLmNvbSIsICJ1c2VyIjogIkBhbGljZTpleGFtcGxlLm'
+          'NvbSIsICJwYXNzd29yZCI6ICJwIiwgInJvb21JZCI6ICIhcjpleGFtcGxlLmNvbSJ9';
+      await pumpAndEnter(tester, oldVersion);
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.text(context.messages.syncPairErrorVersion),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.syncPairErrorMalformed),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a code that fails validation says to copy it again', (
+      tester,
+    ) async {
+      // Decodes cleanly but carries a malformed MXID, so it reaches the
+      // typed `malformedPayload` branch rather than the raw FormatException
+      // fallback that unparseable input takes.
+      const badMxid =
+          'eyJ2IjogMiwgImtpbmQiOiAiaGFuZG92ZXIiLCAiaG9tZVNlcnZlciI6ICJodHRwc'
+          'zovL21hdHJpeC5leGFtcGxlLmNvbSIsICJ1c2VyIjogImFsaWNlOmV4YW1wbGUuY2'
+          '9tIiwgInBhc3N3b3JkIjogInAiLCAicm9vbUlkIjogIiFyOmV4YW1wbGUuY29tIn0';
+      await pumpAndEnter(tester, badMxid);
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.text(context.messages.syncPairErrorMalformed),
+        findsOneWidget,
+      );
+      expect(find.text(context.messages.syncPairErrorVersion), findsNothing);
+    });
+
+    testWidgets('unparseable input falls back to the same guidance', (
+      tester,
+    ) async {
+      // Invalid Base64 throws a raw FormatException out of `base64Decode`,
+      // which `decodeBundle` rethrows untyped — a separate branch that has to
+      // land on the same message rather than a bare "invalid code".
+      await pumpAndEnter(tester, 'not-a-bundle');
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.text(context.messages.syncPairErrorMalformed),
+        findsOneWidget,
+      );
+    });
+  });
+
   group('wayfinding and step scent', () {
     Future<void> pumpImport(WidgetTester tester) async {
       await tester.pumpWidget(

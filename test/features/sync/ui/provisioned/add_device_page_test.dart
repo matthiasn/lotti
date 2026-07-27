@@ -597,6 +597,50 @@ void main() {
     });
   });
 
+  group('AddDeviceView layout', () {
+    testWidgets('stacks the code above its details on a phone', (tester) async {
+      // The wide branch splits them into two columns; a phone has to keep the
+      // single column, and every other test here runs on a wide surface.
+      tester.view
+        ..physicalSize = const Size(390, 2400)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SingleChildScrollView(
+            child: AddDeviceView(pollInterval: Duration(days: 1)),
+          ),
+          overrides: overrides(calls: _Calls()),
+        ),
+      );
+      await tester.pump();
+
+      final qr = tester.getRect(find.byKey(const Key('addDeviceQrImage')));
+      final code = tester.getRect(
+        find.byKey(const Key('add_device_check_code')),
+      );
+      // Stacked: the check code sits below the image, not beside it.
+      expect(code.top, greaterThan(qr.bottom));
+      // And the code sizes itself rather than taking a parent-set width.
+      expect(qr.width, lessThanOrEqualTo(390));
+      expect(qr.width, greaterThanOrEqualTo(200));
+    });
+
+    testWidgets('puts the code beside its details on a wide card', (
+      tester,
+    ) async {
+      await pumpAddDevice(tester);
+
+      final qr = tester.getRect(find.byKey(const Key('addDeviceQrImage')));
+      final code = tester.getRect(
+        find.byKey(const Key('add_device_check_code')),
+      );
+      expect(code.left, greaterThan(qr.right));
+    });
+  });
+
   group('AddDeviceActionBar', () {
     Future<void> pumpBar(
       WidgetTester tester, {

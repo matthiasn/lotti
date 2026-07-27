@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/config.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
@@ -34,17 +36,24 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.da
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/ui/detail/panel_registry.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
+import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
+import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -350,6 +359,89 @@ void main() {
         expect(build('sync-provisioned'), isA<Consumer>());
       },
     );
+  });
+
+  group('sync-provisioned panel body', () {
+    Future<void> pumpPanel(
+      WidgetTester tester, {
+      required bool configured,
+      bool matrixEnabled = true,
+    }) async {
+      final matrixService = MockMatrixService();
+      when(matrixService.isLoggedIn).thenReturn(configured);
+      when(
+        () => matrixService.syncRoomId,
+      ).thenReturn(configured ? '!room:example.com' : null);
+      when(matrixService.getUnverifiedDevices).thenReturn([]);
+      when(
+        matrixService.getSyncDevices,
+      ).thenAnswer((_) async => const <SyncDeviceInfo>[]);
+      when(
+        () => matrixService.keyVerificationStream,
+      ).thenAnswer((_) => const Stream.empty());
+      when(matrixService.loadConfig).thenAnswer(
+        (_) async => const MatrixConfig(
+          homeServer: 'https://matrix.example.com',
+          user: '@alice:example.com',
+          password: 'pw',
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) =>
+                kSettingsPanels['sync-provisioned']!.build(context),
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(matrixService),
+            configFlagProvider(
+              enableMatrixFlag,
+            ).overrideWith((ref) => Stream.value(matrixEnabled)),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('renders the roster inline once sync is configured', (
+      tester,
+    ) async {
+      // Hiding the roster behind a card that opens a modal added a tap and a
+      // second surface with the same name, and made every "open Settings → …
+      // → Devices" instruction in the pairing flow one step short.
+      await pumpPanel(tester, configured: true);
+
+      expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
+      expect(
+        tester
+            .widget<ProvisionedStatusWidget>(
+              find.byType(ProvisionedStatusWidget),
+            )
+            .embedded,
+        isTrue,
+      );
+      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+    });
+
+    testWidgets('offers the setup card when sync is not configured yet', (
+      tester,
+    ) async {
+      await pumpPanel(tester, configured: false);
+
+      expect(find.byType(ProvisionedSyncSettingsCard), findsOneWidget);
+      expect(find.byType(ProvisionedStatusWidget), findsNothing);
+    });
+
+    testWidgets('renders nothing at all while the sync flag is off', (
+      tester,
+    ) async {
+      await pumpPanel(tester, configured: true, matrixEnabled: false);
+
+      expect(find.byType(ProvisionedStatusWidget), findsNothing);
+      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+    });
   });
 
   group('DetailIdDispatch — list/detail/create dispatch', () {
