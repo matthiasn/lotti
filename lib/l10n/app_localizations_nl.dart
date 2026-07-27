@@ -4741,7 +4741,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get deleteButton => 'Verwijderen';
 
   @override
-  String get deleteDeviceLabel => 'Apparaat verwijderen';
+  String get deleteDeviceLabel => 'Uit synchronisatie verwijderen';
 
   @override
   String get designSystemActionVariantTitle => 'Met actie';
@@ -5259,17 +5259,16 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String deviceDeletedSuccess(String deviceName) {
-    return 'Apparaat $deviceName verwijderd met succes';
-  }
-
-  @override
-  String deviceDeleteFailed(String error) {
-    return 'Verwijderen van apparaat is mislukt: $error';
+    return '$deviceName uit synchronisatie verwijderd';
   }
 
   @override
   String get deviceDeleteFailedForbidden =>
-      'De homeserver heeft het opgeslagen wachtwoord geweigerd, dus het apparaat kon niet worden verwijderd. Koppel dit apparaat opnieuw met een nieuwe QR-code en probeer het nog eens.';
+      'De synchronisatieserver weigerde deze wijziging. Verwijder dit apparaat op het apparaat zelf uit de synchronisatie, of koppel het opnieuw met een nieuwe koppelcode.';
+
+  @override
+  String get deviceDeleteFailedGeneric =>
+      'Het apparaat kon niet worden verwijderd. Controleer je verbinding en probeer het opnieuw.';
 
   @override
   String deviceDeleteQuestion(String deviceName) {
@@ -8191,83 +8190,63 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voorgeconfigureerde prompt selecteren';
 
   @override
-  String get provisionedSyncBundleImported => 'Invoercode';
-
-  @override
-  String get provisionedSyncConfigureButton => 'Instellen';
-
-  @override
   String get provisionedSyncCopiedToClipboard => 'Naar klembord gekopieerd';
 
   @override
-  String get provisionedSyncDisconnect => 'Verbinding verbreken';
+  String get provisionedSyncDisconnect =>
+      'Synchroniseren op dit apparaat stoppen';
 
   @override
-  String get provisionedSyncDone => 'Synchronisatie succesvol ingesteld';
+  String get provisionedSyncDone => 'Dit apparaat is verbonden';
 
   @override
-  String get provisionedSyncError => 'Configuratie mislukt';
+  String get provisionedSyncError =>
+      'Kon geen verbinding maken met je sync-account';
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
-      'Er is een fout opgetreden tijdens de configuratie. Probeer het opnieuw.';
+      'Er ging iets mis tijdens het verbinden. Probeer het opnieuw; blijft het misgaan, controleer dan of het andere apparaat nog synchroniseert.';
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Aanmelden mislukt. Controleer uw referenties en probeer het opnieuw.';
+      'Inloggen met die code is mislukt. Controleer of het andere apparaat nog synchroniseert, open daar opnieuw Apparaat toevoegen en gebruik de code die verschijnt.';
 
   @override
-  String get provisionedSyncImportButton => 'Importeren';
+  String get provisionedSyncImportButton => 'Doorgaan';
 
   @override
-  String get provisionedSyncImportHint => 'Plakken van de code hier';
+  String get provisionedSyncImportHint => 'Plak hier de koppelcode';
 
   @override
   String get provisionedSyncImportTitle => 'Instellingen synchroniseren';
 
   @override
-  String get provisionedSyncInvalidBundle => 'Ongeldige voorzieningscode';
+  String get provisionedSyncJoiningRoom => 'Gedeelde opslag instellen…';
 
   @override
-  String get provisionedSyncJoiningRoom =>
-      'Synchronisatieruimte wordt binnengehaald...';
-
-  @override
-  String get provisionedSyncLoggingIn => 'Inloggen...';
+  String get provisionedSyncLoggingIn => 'Verbinden met je sync-account…';
 
   @override
   String get provisionedSyncPasteClipboard => 'Plakken vanaf klembord';
 
   @override
-  String get provisionedSyncReady => 'Scan deze QR-code op uw mobiele apparaat';
-
-  @override
   String get provisionedSyncRetry => 'Opnieuw proberen';
 
   @override
-  String get provisionedSyncRotatingPassword => 'Account beveiligen...';
-
-  @override
-  String get provisionedSyncScanButton => 'Scan QR-code';
-
-  @override
-  String get provisionedSyncShowQr => 'Voorziening QR tonen';
+  String get provisionedSyncRotatingPassword => 'Dit apparaat beveiligen…';
 
   @override
   String get provisionedSyncSubtitle =>
-      'Synchronisatie instellen uit een voorzieningbundel';
+      'Koppel nog een apparaat aan dit sync-account';
 
   @override
-  String get provisionedSyncSummaryHomeserver => 'Homeserver';
+  String get provisionedSyncSummaryHomeserver => 'Synchronisatieserver';
 
   @override
-  String get provisionedSyncSummaryRoom => 'Kamer';
+  String get provisionedSyncSummaryUser => 'Sync-account';
 
   @override
-  String get provisionedSyncSummaryUser => 'Gebruiker';
-
-  @override
-  String get provisionedSyncTitle => 'Voorzien van een synchronisatie';
+  String get provisionedSyncTitle => 'Apparaten';
 
   @override
   String get queueCatchUpNowButton => 'Inhalen nu';
@@ -9305,8 +9284,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Diagnostische informatie synchroniseren';
 
   @override
-  String get settingsMatrixDiagnosticShowButton =>
-      'Diagnostische informatie tonen';
+  String get settingsMatrixDiagnosticShowButton => 'Technische details';
 
   @override
   String get settingsMatrixDone => 'Klaar';
@@ -9858,11 +9836,73 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncActivityTitle => 'Synchroniseren';
 
   @override
-  String get syncDeleteConfigConfirm => 'Ja, ik ben zeker.';
+  String get syncAddDeviceAction => 'Apparaat toevoegen';
+
+  @override
+  String get syncAddDeviceCodeHint =>
+      'Heeft het nieuwe apparaat geen camera? Kopieer de koppelcode en plak hem daar.';
+
+  @override
+  String get syncAddDeviceConnected => 'Er is een nieuw apparaat toegevoegd';
+
+  @override
+  String get syncAddDeviceCopyCode => 'Koppelcode kopiëren';
+
+  @override
+  String get syncAddDeviceHideCode => 'Koppelcode verbergen';
+
+  @override
+  String get syncAddDeviceIntro =>
+      'Installeer Lotti op het nieuwe apparaat, open daar Instellingen → Instellingen synchroniseren → Apparaten en scan deze code.';
+
+  @override
+  String get syncAddDeviceNextLeadIn => 'Daarna · zodra het is toegevoegd';
+
+  @override
+  String get syncAddDeviceRevealCode => 'Koppelcode als tekst tonen';
+
+  @override
+  String get syncAddDeviceRosterError =>
+      'Kon niet controleren of het nieuwe apparaat is toegevoegd.';
+
+  @override
+  String get syncAddDeviceSecurityNote =>
+      'Deze koppelcode ontgrendelt je sync-account – laat alleen je eigen nieuwe apparaat hem scannen, en maak er nooit een schermafbeelding van of verstuur hem.';
+
+  @override
+  String get syncAddDeviceSendSettings => 'Instellingen versturen';
+
+  @override
+  String get syncAddDeviceSendSettingsHint =>
+      'Zodra het nieuwe apparaat verbonden is, stuur je categorieën, gewoontes, dashboards en AI-instellingen ernaartoe.';
+
+  @override
+  String get syncAddDeviceSendSettingsPending =>
+      'Beschikbaar zodra het nieuwe apparaat is toegevoegd.';
+
+  @override
+  String get syncAddDeviceSendSettingsReady =>
+      'Verstuur nu, of wacht tot het nieuwe apparaat is toegevoegd.';
+
+  @override
+  String get syncAddDeviceStepScan => 'Nu · Toon de code';
+
+  @override
+  String get syncAddDeviceStepScanTitle => 'Scan dit op het nieuwe apparaat';
+
+  @override
+  String get syncAddDeviceUnavailable =>
+      'Stel sync in op dit apparaat voordat je er een toevoegt.';
+
+  @override
+  String get syncAddDeviceWaiting => 'Wachten op het nieuwe apparaat…';
+
+  @override
+  String get syncDeleteConfigConfirm => 'Stoppen met synchroniseren';
 
   @override
   String get syncDeleteConfigQuestion =>
-      'Wilt u de synchronisatie-configuratie verwijderen?';
+      'Synchroniseren op dit apparaat stoppen?';
 
   @override
   String get syncDevicesKeylessHint =>
@@ -9945,6 +9985,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncDevicesVerifiedChip => 'Geverifieerd';
 
   @override
+  String get syncDisconnectExplanation =>
+      'Je notities blijven op dit apparaat staan. Het wordt afgemeld bij het sync-account en heeft een nieuwe koppelcode nodig om weer te synchroniseren. Je andere apparaten worden niet beïnvloed.';
+
+  @override
   String get syncEntitiesConfirm => 'START SYNC';
 
   @override
@@ -9977,6 +10021,143 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncNotLoggedInToast => 'Synchronisatie is niet aangemeld';
+
+  @override
+  String get syncPairBack => 'Terug';
+
+  @override
+  String get syncPairCameraDenied =>
+      'Lotti heeft cameratoegang nodig om te scannen. Sta het toe in de systeeminstellingen of voer de code handmatig in.';
+
+  @override
+  String get syncPairCameraRetry => 'Camera opnieuw proberen';
+
+  @override
+  String get syncPairCheckAgain => 'Opnieuw controleren';
+
+  @override
+  String get syncPairCheckCode =>
+      'Controleer of dit klopt op het andere apparaat';
+
+  @override
+  String get syncPairCheckCodeLabel => 'Controlecode';
+
+  @override
+  String get syncPairClipboardEmpty =>
+      'Er is niets om te plakken. Kopieer eerst de koppelcode op je andere apparaat.';
+
+  @override
+  String get syncPairClipboardUnavailable =>
+      'Het klembord kon niet worden gelezen. Plak de code rechtstreeks in het veld.';
+
+  @override
+  String get syncPairConnectButton => 'Dit apparaat verbinden';
+
+  @override
+  String get syncPairCopyCodeHint =>
+      'Heeft dit apparaat geen camera? Gebruik op het andere apparaat Koppelcode kopiëren en breng hem hierheen via een wachtwoordmanager, een versleutelde notitie of door hem over te typen – niet via chat of e-mail.';
+
+  @override
+  String get syncPairDiscardCode => 'Een andere koppelcode invoeren';
+
+  @override
+  String get syncPairedNextTitle => 'Nog twee stappen';
+
+  @override
+  String get syncPairedNextTitleOne => 'Nog één ding';
+
+  @override
+  String get syncPairedSettingsStep =>
+      'Kies op je andere apparaat in het scherm Apparaat toevoegen dat nog openstaat Instellingen versturen. Je categorieën, gewoontes, dashboards en AI-instellingen komen dan hierheen.';
+
+  @override
+  String get syncPairedSettingsStepFallback =>
+      'Of open opnieuw Instellingen → Instellingen synchroniseren → Apparaten → Apparaat toevoegen.';
+
+  @override
+  String get syncPairedVerifyDone =>
+      'Beide apparaten geverifieerd – dit apparaat kan je notities lezen';
+
+  @override
+  String get syncPairedVerifyFallback =>
+      'Nog geen emoji? Controleer opnieuw – of open Apparaten en start het daar.';
+
+  @override
+  String get syncPairedVerifyStep =>
+      'Op beide apparaten verschijnt een rij emoji. Controleer of ze overeenkomen en bevestig op elk apparaat — tot dan kan dit apparaat je notities niet lezen.';
+
+  @override
+  String get syncPairedVerifyStepDone =>
+      'Emoji kloppen – dit apparaat kan je notities lezen';
+
+  @override
+  String get syncPairedVerifyWaiting => 'Wachten tot de emoji verschijnen…';
+
+  @override
+  String get syncPairEnterManually => 'Code handmatig invoeren';
+
+  @override
+  String get syncPairErrorMalformed =>
+      'Dit lijkt geen koppelcode. Controleer of je hem helemaal hebt gekopieerd – druk op het andere apparaat opnieuw op Koppelcode kopiëren.';
+
+  @override
+  String get syncPairErrorVersion =>
+      'Deze code komt van een andere versie van Lotti. Werk beide apparaten bij en probeer het opnieuw.';
+
+  @override
+  String get syncPairGoToDevices => 'Naar Apparaten';
+
+  @override
+  String get syncPairMismatchRemedy =>
+      'Komt hij niet overeen? Gebruik dan de code die je eigen apparaat toont.';
+
+  @override
+  String get syncPairMismatchWarning =>
+      'Klopt dit niet? Verbind dan niet – de code hoort bij een ander account.';
+
+  @override
+  String get syncPairOnlyOwnCode =>
+      'Gebruik alleen een code die je zelf hebt gemaakt, op een apparaat dat van jou is. Scan je die van iemand anders, dan komt alles wat je hier schrijft in hun account terecht.';
+
+  @override
+  String get syncPairPasteTitle => 'Plak de koppelcode';
+
+  @override
+  String get syncPairScanInstead => 'Scannen met camera';
+
+  @override
+  String get syncPairScannerRejected =>
+      'Dat is de code die je hebt geweigerd. Scan de code die je eigen apparaat toont, of plak hem hieronder.';
+
+  @override
+  String get syncPairScanTitle =>
+      'Richt de camera op de code op je andere apparaat';
+
+  @override
+  String get syncPairShowEmojiAgain => 'Emoji opnieuw tonen';
+
+  @override
+  String get syncPairStepAlmost =>
+      'Stap 3 van 3 · Rond af op je andere apparaat';
+
+  @override
+  String get syncPairStepConfirm => 'Stap 2 van 3 · Bevestigen';
+
+  @override
+  String get syncPairStepConnecting => 'Stap 3 van 3 · Verbinden';
+
+  @override
+  String get syncPairStepFailed => 'Stap 3 van 3 · Verbinden mislukt';
+
+  @override
+  String get syncPairStepScan => 'Stap 1 van 3 · Haal de code op';
+
+  @override
+  String get syncPairWhereToFind =>
+      'Open op een apparaat dat al synchroniseert Instellingen → Instellingen synchroniseren → Apparaten en kies Apparaat toevoegen.';
+
+  @override
+  String get syncPairWillJoin => 'Dit apparaat sluit zich aan bij:';
 
   @override
   String get syncPayloadAgentBundle => 'Agent bundel';

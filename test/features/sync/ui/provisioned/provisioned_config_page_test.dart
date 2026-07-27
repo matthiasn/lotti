@@ -1,16 +1,22 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
+import 'package:lotti/features/sync/state/matrix_verification_relaunch_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
+import 'package:lotti/features/sync/state/sync_devices_provider.dart';
+import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_config_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -22,19 +28,38 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import 'provisioned_status_page_test_helpers.dart';
 
 /// A fake provisioning controller that provides a fixed state.
 class _FakeProvisioningController extends ProvisioningController {
-  _FakeProvisioningController(this.initialState);
+  _FakeProvisioningController(this.initialState, {this.rotates = false});
 
   final ProvisioningState initialState;
 
+  /// Stands in for the bundle kind the real controller derives this from.
+  final bool rotates;
+
   @override
   ProvisioningState build() => initialState;
+
+  @override
+  bool get rotatesPassword => rotates;
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  /// How far the connect phase has advanced, or null when no bar is rendered.
+  ///
+  /// The denominator is the assertion that matters: it comes from the bundle
+  /// kind, and keying it off the platform made a rotating mobile run count
+  /// "1/2, 2/2, 3/3". The bar carries no visible fraction — a second numbering
+  /// beside "Step 3 of 3" would contradict it — so the value is read directly.
+  double? progressValue(WidgetTester tester) {
+    final finder = find.byKey(const Key('provisioned_config_progress'));
+    if (finder.evaluate().isEmpty) return null;
+    return tester.widget<DesignSystemProgressBar>(finder).value;
+  }
 
   late MockMatrixService mockMatrixService;
   late ValueNotifier<int> pageIndexNotifier;
@@ -104,6 +129,7 @@ void main() {
     WidgetTester tester,
     ProvisioningState state, {
     List<Override> extraOverrides = const [],
+    bool rotates = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -111,7 +137,7 @@ void main() {
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
           provisioningControllerProvider.overrideWith(
-            () => _FakeProvisioningController(state),
+            () => _FakeProvisioningController(state, rotates: rotates),
           ),
           ...extraOverrides,
         ],
@@ -127,8 +153,8 @@ void main() {
         const ProvisioningState.initial(),
       );
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(progressValue(tester), isNull);
     });
 
     testWidgets('shows spinner when in bundleDecoded state', (tester) async {
@@ -137,8 +163,8 @@ void main() {
         const ProvisioningState.bundleDecoded(testBundle),
       );
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(progressValue(tester), isNull);
     });
 
     testWidgets('shows progress when in loggingIn state', (tester) async {
@@ -152,8 +178,8 @@ void main() {
         find.text(context.messages.provisionedSyncLoggingIn),
         findsOneWidget,
       );
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(progressValue(tester), closeTo(1 / 2, 1e-9));
     });
 
     testWidgets('shows progress when in joiningRoom state', (tester) async {
@@ -182,61 +208,9 @@ void main() {
         find.text(context.messages.provisionedSyncRotatingPassword),
         findsOneWidget,
       );
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
-      expect(find.text('3 / 3'), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(progressValue(tester), 1);
     });
-
-    testWidgets('shows QR code when in ready state', (tester) async {
-      await pumpConfigWidget(
-        tester,
-        const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-      );
-
-      final context = tester.element(find.byType(ProvisionedConfigWidget));
-      expect(
-        find.text(context.messages.provisionedSyncReady),
-        findsOneWidget,
-      );
-      expect(find.byKey(const Key('provisionedQrImage')), findsOneWidget);
-      // The handover data should be masked by default
-      expect(find.text('\u2022' * 24), findsOneWidget);
-      expect(find.byIcon(Icons.copy), findsOneWidget);
-    });
-
-    testWidgets(
-      'auto-advances via incoming verification stream',
-      (tester) async {
-        final keyVerification = MockKeyVerification();
-        final runner = MockKeyVerificationRunner();
-        final device = MockDeviceKeys();
-        final incomingController =
-            StreamController<KeyVerificationRunner>.broadcast();
-        addTearDown(incomingController.close);
-
-        var checks = 0;
-        when(() => keyVerification.isDone).thenReturn(true);
-        when(() => runner.lastStep).thenReturn('m.key.verification.done');
-        when(() => runner.keyVerification).thenReturn(keyVerification);
-        when(
-          () => mockMatrixService.incomingKeyVerificationRunnerStream,
-        ).thenAnswer((_) => incomingController.stream);
-        when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
-          checks += 1;
-          return checks < 3 ? [device] : [];
-        });
-
-        await pumpConfigWidget(
-          tester,
-          const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-        );
-
-        incomingController.add(runner);
-        await tester.pump(const Duration(seconds: 2));
-
-        expect(pageIndexNotifier.value, 2);
-      },
-    );
 
     testWidgets(
       'does not auto-advance on mobile when verification completes',
@@ -272,40 +246,6 @@ void main() {
       },
     );
 
-    testWidgets(
-      'auto-advances to status page when verification completes and trust updates',
-      (tester) async {
-        final keyVerification = MockKeyVerification();
-        final runner = MockKeyVerificationRunner();
-        final device = MockDeviceKeys();
-        final outgoingController =
-            StreamController<KeyVerificationRunner>.broadcast();
-        addTearDown(outgoingController.close);
-
-        var checks = 0;
-        when(() => keyVerification.isDone).thenReturn(true);
-        when(() => runner.lastStep).thenReturn('m.key.verification.done');
-        when(() => runner.keyVerification).thenReturn(keyVerification);
-        when(
-          () => mockMatrixService.keyVerificationStream,
-        ).thenAnswer((_) => outgoingController.stream);
-        when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
-          checks += 1;
-          return checks < 3 ? [device] : [];
-        });
-
-        await pumpConfigWidget(
-          tester,
-          const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-        );
-
-        outgoingController.add(runner);
-        await tester.pump(const Duration(seconds: 2));
-
-        expect(pageIndexNotifier.value, 2);
-      },
-    );
-
     testWidgets('shows success when in done state', (tester) async {
       await pumpConfigWidget(
         tester,
@@ -317,7 +257,7 @@ void main() {
         find.text(context.messages.provisionedSyncDone),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
     });
 
     testWidgets(
@@ -415,79 +355,6 @@ void main() {
       },
     );
 
-    testWidgets('shows masked handover data by default', (tester) async {
-      await pumpConfigWidget(
-        tester,
-        const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-      );
-
-      // Handover text should be masked by default
-      expect(find.text('dGVzdC1oYW5kb3Zlci1kYXRh'), findsNothing);
-      expect(find.text('\u2022' * 24), findsOneWidget);
-      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
-    });
-
-    testWidgets('reveals handover data when visibility toggled', (
-      tester,
-    ) async {
-      await pumpConfigWidget(
-        tester,
-        const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-      );
-
-      // Tap the visibility toggle
-      await tester.tap(find.byKey(const Key('toggleHandoverVisibility')));
-      await tester.pump();
-
-      // Now the handover text should be visible
-      expect(find.text('dGVzdC1oYW5kb3Zlci1kYXRh'), findsOneWidget);
-      expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-    });
-
-    testWidgets('copy button copies handover data to clipboard', (
-      tester,
-    ) async {
-      // Set up a mock clipboard channel
-      String? clipboardText;
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        (call) async {
-          if (call.method == 'Clipboard.setData') {
-            final args = call.arguments as Map<dynamic, dynamic>;
-            clipboardText = args['text'] as String?;
-          }
-          return null;
-        },
-      );
-      addTearDown(() {
-        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          SystemChannels.platform,
-          null,
-        );
-      });
-
-      await pumpConfigWidget(
-        tester,
-        const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-      );
-
-      final copyFinder = find.byKey(const Key('copyHandoverData'));
-      await tester.ensureVisible(copyFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(copyFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(clipboardText, 'dGVzdC1oYW5kb3Zlci1kYXRh');
-
-      final context = tester.element(find.byType(ProvisionedConfigWidget));
-      expect(
-        find.text(context.messages.provisionedSyncCopiedToClipboard),
-        findsOneWidget,
-      );
-    });
-
     testWidgets('retry button invokes controller retry in error state', (
       tester,
     ) async {
@@ -505,34 +372,325 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('shows 2-step progress on mobile for loggingIn state', (
+    // The step count follows the bundle kind, not the platform. Deriving it
+    // from `isDesktop` made a rotating run on mobile count "1/2, 2/2, 3/3".
+    testWidgets('counts two steps while a non-rotating bundle logs in', (
       tester,
     ) async {
-      final wasDesktop = isDesktop;
-      isDesktop = false;
-      addTearDown(() => isDesktop = wasDesktop);
-
-      await pumpConfigWidget(
-        tester,
-        const ProvisioningState.loggingIn(),
-      );
-
-      expect(find.text('1 / 2'), findsOneWidget);
+      await pumpConfigWidget(tester, const ProvisioningState.loggingIn());
+      expect(progressValue(tester), closeTo(1 / 2, 1e-9));
     });
 
-    testWidgets('shows 2-step progress on mobile for joiningRoom state', (
+    testWidgets('counts two steps while a non-rotating bundle joins', (
       tester,
     ) async {
-      final wasDesktop = isDesktop;
-      isDesktop = false;
-      addTearDown(() => isDesktop = wasDesktop);
+      await pumpConfigWidget(tester, const ProvisioningState.joiningRoom());
+      expect(progressValue(tester), closeTo(2 / 2, 1e-9));
+    });
 
+    /// Runs [body] with the platform flags forced to mobile, which is where
+    /// the old `isDesktop ? 3 : 2` count went wrong.
+    Future<void> onMobile(Future<void> Function() body) async {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = false;
+      isMobile = true;
+      try {
+        await body();
+      } finally {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      }
+    }
+
+    testWidgets('a rotating bundle on mobile counts out of three, not two', (
+      tester,
+    ) async {
+      await onMobile(() async {
+        await pumpConfigWidget(
+          tester,
+          const ProvisioningState.joiningRoom(),
+          rotates: true,
+        );
+        // The platform-keyed count said "2 / 2" here and then jumped to
+        // "3 / 3" on the very next state.
+        expect(progressValue(tester), isNot(closeTo(2 / 2, 1e-9)));
+        expect(progressValue(tester), closeTo(2 / 3, 1e-9));
+      });
+    });
+
+    testWidgets('a rotating bundle on mobile reaches the third step', (
+      tester,
+    ) async {
+      await onMobile(() async {
+        await pumpConfigWidget(
+          tester,
+          const ProvisioningState.rotatingPassword(),
+          rotates: true,
+        );
+        expect(progressValue(tester), closeTo(3 / 3, 1e-9));
+      });
+    });
+
+    void expectNextSteps(WidgetTester tester) {
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(find.text(context.messages.syncPairedNextTitle), findsOneWidget);
+      expect(find.text(context.messages.syncPairedVerifyStep), findsOneWidget);
+      expect(
+        find.text(context.messages.syncPairedSettingsStep),
+        findsOneWidget,
+      );
+      // The handover QR belongs to "Add device" on the roster now; showing one
+      // here handed the user a code seconds after they had scanned one.
+      expect(find.byKey(const Key('provisionedQrImage')), findsNothing);
+      expect(find.text('dGVzdC1oYW5kb3Zlci1kYXRh'), findsNothing);
+    }
+
+    testWidgets('the ready state renders next steps, not a second QR', (
+      tester,
+    ) async {
       await pumpConfigWidget(
         tester,
-        const ProvisioningState.joiningRoom(),
+        const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
+      );
+      expectNextSteps(tester);
+    });
+
+    testWidgets('the done state renders next steps', (tester) async {
+      await pumpConfigWidget(tester, const ProvisioningState.done());
+      expectNextSteps(tester);
+    });
+
+    testWidgets('says where in the journey this screen sits', (tester) async {
+      // The scan and confirm screens carry the same line; without it the
+      // device with the least context never learned how much was left.
+      await pumpConfigWidget(tester, const ProvisioningState.done());
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(find.byType(SyncPairStepIndicator), findsOneWidget);
+      expect(find.text(context.messages.syncPairStepAlmost), findsOneWidget);
+    });
+
+    testWidgets('the page has a title rank, shared with the work card', (
+      tester,
+    ) async {
+      await pumpConfigWidget(tester, const ProvisioningState.done());
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      final tokens = context.designTokens;
+      final done = tester.widget<Text>(
+        find.text(context.messages.provisionedSyncDone),
+      );
+      final outstanding = tester.widget<Text>(
+        find.text(context.messages.syncPairedNextTitle),
       );
 
-      expect(find.text('2 / 2'), findsOneWidget);
+      // This was the one joining screen with nothing at title rank: the lead
+      // rendered as body copy, so the largest type on the page was a heading
+      // *inside* the card it introduced. They now match — the card earns its
+      // weight from the numbered work it holds, not from out-ranking the lead.
+      expect(
+        done.style?.fontWeight,
+        tokens.typography.styles.subtitle.subtitle1.fontWeight,
+      );
+      expect(done.style?.fontSize, outstanding.style?.fontSize);
+      expect(done.style?.fontWeight, outstanding.style?.fontWeight);
+    });
+
+    testWidgets('names the remedy once a device is awaiting verification', (
+      tester,
+    ) async {
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.done(),
+        extraOverrides: [
+          matrixUnverifiedControllerProvider.overrideWith(
+            () => FakeMatrixUnverifiedController([MockDeviceKeys()]),
+          ),
+        ],
+      );
+
+      expect(find.byKey(const Key('paired_verify_fallback')), findsOneWidget);
+      expect(find.byKey(const Key('paired_verify_waiting')), findsNothing);
+    });
+
+    testWidgets('reports the ceremony as done once the peer is verified', (
+      tester,
+    ) async {
+      // Absence from getUnverifiedDevices() means both "keys have not arrived"
+      // and "the ceremony succeeded", so a two-branch version told a user who
+      // had just matched the emoji that they were still waiting for it — on
+      // the terminal screen of the whole flow.
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.done(),
+        extraOverrides: [
+          syncDevicesControllerProvider.overrideWith(
+            () => FakeSyncDevicesController(const [
+              SyncDeviceInfo(
+                deviceId: 'THIS',
+                isCurrentDevice: true,
+                verified: true,
+              ),
+              SyncDeviceInfo(
+                deviceId: 'PEER',
+                isCurrentDevice: false,
+                verified: true,
+              ),
+            ]),
+          ),
+        ],
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(find.byKey(const Key('paired_verify_done')), findsOneWidget);
+      expect(find.byKey(const Key('paired_verify_waiting')), findsNothing);
+      // Past tense in the step's own slot: appending a green row under a live
+      // imperative left the screen asserting two opposite things about the
+      // same fact, one line apart.
+      expect(
+        find.text(context.messages.syncPairedVerifyStepDone),
+        findsOneWidget,
+      );
+      expect(find.text(context.messages.syncPairedVerifyStep), findsNothing);
+      // And the card counts what is actually left.
+      expect(
+        find.text(context.messages.syncPairedNextTitleOne),
+        findsOneWidget,
+      );
+      expect(find.text(context.messages.syncPairedNextTitle), findsNothing);
+
+      // And the stall copy can no longer surface behind it.
+      await tester.pump(kVerifyStallTimeout);
+      await tester.pump();
+      expect(find.byKey(const Key('paired_verify_fallback')), findsNothing);
+    });
+
+    testWidgets('an unverified peer still reads as outstanding, not done', (
+      tester,
+    ) async {
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.done(),
+        extraOverrides: [
+          syncDevicesControllerProvider.overrideWith(
+            () => FakeSyncDevicesController(const [
+              SyncDeviceInfo(
+                deviceId: 'PEER',
+                isCurrentDevice: false,
+                verified: false,
+              ),
+            ]),
+          ),
+        ],
+      );
+      await tester.pump();
+
+      expect(find.byKey(const Key('paired_verify_done')), findsNothing);
+      expect(find.byKey(const Key('paired_verify_waiting')), findsOneWidget);
+    });
+
+    testWidgets('the stall remedy re-reads the trust state', (tester) async {
+      // The ceremony completes out of band, so "nothing happened" and "it
+      // worked and nobody told this screen" look identical until something
+      // asks again.
+      await pumpConfigWidget(tester, const ProvisioningState.done());
+      await tester.pump(kVerifyStallTimeout);
+      await tester.pump();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('paired_verify_recheck')),
+      );
+      await tester.tap(find.byKey(const Key('paired_verify_recheck')));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a dismissed prompt can be reopened, not merely re-queried', (
+      tester,
+    ) async {
+      // The launcher fires once per device and its guard lives in its own
+      // State, so the device staying unverified is exactly what keeps the
+      // guard set — re-querying the providers can never bring the sheet back.
+      late ProviderContainer container;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(
+              () => _FakeProvisioningController(const ProvisioningState.done()),
+            ),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => FakeMatrixUnverifiedController([MockDeviceKeys()]),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: resolveTestTheme(),
+            home: Consumer(
+              builder: (ctx, ref, _) {
+                container = ProviderScope.containerOf(ctx);
+                return Scaffold(
+                  body: ProvisionedConfigWidget(
+                    pageIndexNotifier: pageIndexNotifier,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      final relaunch = find.byKey(const Key('paired_verify_recheck'));
+      expect(
+        tester.widget<DesignSystemButton>(relaunch).label,
+        context.messages.syncPairShowEmojiAgain,
+      );
+
+      final before = container.read(matrixVerificationRelaunchProvider);
+      await tester.ensureVisible(relaunch);
+      await tester.tap(relaunch);
+      await tester.pump();
+
+      expect(
+        container.read(matrixVerificationRelaunchProvider),
+        greaterThan(before),
+      );
+    });
+
+    testWidgets('a prompt that never arrives gets a remedy, not a spinner', (
+      tester,
+    ) async {
+      // The one case where "keep waiting" is the wrong answer was also the
+      // only case with nothing on screen but an indefinite spinner.
+      await pumpConfigWidget(tester, const ProvisioningState.done());
+
+      expect(find.byKey(const Key('paired_verify_waiting')), findsOneWidget);
+      expect(find.byKey(const Key('paired_verify_fallback')), findsNothing);
+
+      await tester.pump(kVerifyStallTimeout);
+      await tester.pump();
+
+      // The spinner stays — the ceremony may still arrive — but the way out
+      // is now stated, and here re-querying *is* the right act: nothing was
+      // dismissed, so there is nothing to reopen.
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(find.byKey(const Key('paired_verify_waiting')), findsOneWidget);
+      expect(find.byKey(const Key('paired_verify_fallback')), findsOneWidget);
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('paired_verify_recheck')),
+            )
+            .label,
+        context.messages.syncPairCheckAgain,
+      );
     });
   });
 
@@ -565,7 +723,7 @@ void main() {
         final nextButton = tester.widget<DesignSystemButton>(
           find.widgetWithText(
             DesignSystemButton,
-            context.messages.settingsMatrixNextPage,
+            context.messages.syncPairGoToDevices,
           ),
         );
         expect(nextButton.onPressed, isNull);
@@ -599,7 +757,7 @@ void main() {
         final nextButton = tester.widget<DesignSystemButton>(
           find.widgetWithText(
             DesignSystemButton,
-            context.messages.settingsMatrixNextPage,
+            context.messages.syncPairGoToDevices,
           ),
         );
         expect(nextButton.onPressed, isNotNull);
@@ -630,7 +788,7 @@ void main() {
           find.byType(_ConfigActionBarTestWrapper),
         );
         await tester.tap(
-          find.text(context.messages.settingsMatrixNextPage),
+          find.text(context.messages.syncPairGoToDevices),
         );
         await tester.pump();
 
@@ -665,7 +823,7 @@ void main() {
         final nextButton = tester.widget<DesignSystemButton>(
           find.widgetWithText(
             DesignSystemButton,
-            context.messages.settingsMatrixNextPage,
+            context.messages.syncPairGoToDevices,
           ),
         );
         expect(nextButton.onPressed, isNotNull);
@@ -733,7 +891,7 @@ void main() {
         final nextButton = tester.widget<DesignSystemButton>(
           find.widgetWithText(
             DesignSystemButton,
-            context.messages.settingsMatrixNextPage,
+            context.messages.syncPairGoToDevices,
           ),
         );
         expect(nextButton.onPressed, isNull);
@@ -767,7 +925,7 @@ void main() {
         final nextButton = tester.widget<DesignSystemButton>(
           find.widgetWithText(
             DesignSystemButton,
-            context.messages.settingsMatrixNextPage,
+            context.messages.syncPairGoToDevices,
           ),
         );
         expect(nextButton.onPressed, isNull);
@@ -828,7 +986,7 @@ void main() {
 
       await tester.tap(find.text('open'));
       // Use pump+duration rather than pumpAndSettle to avoid timeout from
-      // ongoing CircularProgressIndicator animations.
+      // ongoing spinner animations.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -836,14 +994,13 @@ void main() {
     }
 
     testWidgets(
-      'previous button (secondary) is present and navigates to page 0',
+      'previous returns to the scanner from a state where rescanning helps',
       (tester) async {
         final localNotifier = await pumpConfigPage(
           tester,
-          state: const ProvisioningState.loggingIn(),
+          state: const ProvisioningState.bundleDecoded(testBundle),
         );
 
-        // The previous button (secondary) must be in the action bar.
         final prevFinder = find.byWidgetPredicate(
           (w) =>
               w is DesignSystemButton &&
@@ -851,17 +1008,42 @@ void main() {
         );
         expect(prevFinder, findsOneWidget);
 
-        // Set to a non-zero value so the navigation back to 0 is observable.
         localNotifier.value = 1;
 
         // Invoke the callback directly to avoid WoltModalSheet trying to
         // render page 1 (which doesn't exist in our single-page test setup).
         final prevBtn = tester.widget<DesignSystemButton>(prevFinder);
+        expect(prevBtn.onPressed, isNotNull);
         prevBtn.onPressed!();
 
         expect(localNotifier.value, 0);
       },
     );
+
+    // Going back mid-flight drops the user onto a live scanner while
+    // configureFromBundle is still running; going back from success and
+    // pressing Connect again logs out the working session and retries with a
+    // password that has already been rotated away.
+    for (final (label, state) in [
+      ('loggingIn', const ProvisioningState.loggingIn()),
+      ('joiningRoom', const ProvisioningState.joiningRoom()),
+      ('rotatingPassword', const ProvisioningState.rotatingPassword()),
+      ('ready', const ProvisioningState.ready('handover')),
+      ('done', const ProvisioningState.done()),
+    ]) {
+      testWidgets('previous is blocked in $label', (tester) async {
+        await pumpConfigPage(tester, state: state);
+
+        final prevBtn = tester.widget<DesignSystemButton>(
+          find.byWidgetPredicate(
+            (w) =>
+                w is DesignSystemButton &&
+                w.variant == DesignSystemButtonVariant.secondary,
+          ),
+        );
+        expect(prevBtn.onPressed, isNull);
+      });
+    }
 
     // Individual tests for each incomplete state to keep isolation clear and
     // avoid modal-bleed between iterations in a single test body.
@@ -945,178 +1127,14 @@ void main() {
           state: const ProvisioningState.loggingIn(),
         );
 
-        // The title "Provisioned Sync" should appear in the modal's top bar.
-        expect(find.text('Provisioned Sync'), findsOneWidget);
+        // The setup sheet carries its own title; "Devices" now names the
+        // roster, which lives in the settings pane rather than this flow.
+        expect(find.text('Sync Setup'), findsOneWidget);
         // The progress bar must also be visible (proves the body rendered).
-        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+        expect(progressValue(tester), isNotNull);
       },
     );
   });
-
-  group('_ReadyViewState — maybeAdvance via keyVerification.isDone', () {
-    // Covers line 231: the OR branch where lastStep is not the done string
-    // but runner.keyVerification.isDone is true.
-    testWidgets(
-      'auto-advances when keyVerification.isDone is true and lastStep differs',
-      (tester) async {
-        final keyVerification = MockKeyVerification();
-        final runner = MockKeyVerificationRunner();
-        final device = MockDeviceKeys();
-        final outgoingController =
-            StreamController<KeyVerificationRunner>.broadcast();
-        addTearDown(outgoingController.close);
-
-        var checks = 0;
-        // lastStep is NOT the done string — the second OR operand drives isDone.
-        when(() => runner.lastStep).thenReturn('m.key.verification.mac');
-        when(() => keyVerification.isDone).thenReturn(true);
-        when(() => runner.keyVerification).thenReturn(keyVerification);
-        when(
-          () => mockMatrixService.keyVerificationStream,
-        ).thenAnswer((_) => outgoingController.stream);
-        when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
-          checks += 1;
-          return checks < 3 ? [device] : [];
-        });
-
-        await pumpConfigWidget(
-          tester,
-          const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-        );
-
-        outgoingController.add(runner);
-        // Drive the delayed polling (20 × 350 ms max; we get early-exit at
-        // checks == 3, so 2 × 350 ms = 700 ms is enough).
-        await tester.pump(const Duration(milliseconds: 800));
-
-        expect(pageIndexNotifier.value, 2);
-      },
-    );
-  });
-
-  group(
-    '_ReadyViewState — waitUntilNoUnverifiedDevices post-loop fallback',
-    () {
-      // Covers lines 223-225: the code after the for-loop that runs when all
-      // 20 polling attempts still see unverified devices.
-      testWidgets(
-        'returns false and does not advance when devices remain unverified '
-        'after all polling attempts',
-        (tester) async {
-          final keyVerification = MockKeyVerification();
-          final runner = MockKeyVerificationRunner();
-          final device = MockDeviceKeys();
-          final outgoingController =
-              StreamController<KeyVerificationRunner>.broadcast();
-          addTearDown(outgoingController.close);
-
-          when(() => runner.lastStep).thenReturn('m.key.verification.done');
-          when(() => keyVerification.isDone).thenReturn(true);
-          when(() => runner.keyVerification).thenReturn(keyVerification);
-          when(
-            () => mockMatrixService.keyVerificationStream,
-          ).thenAnswer((_) => outgoingController.stream);
-          // Always return a non-empty list so the loop exhausts all 20 attempts
-          // and falls through to the post-loop check which also returns non-empty.
-          when(
-            () => mockMatrixService.getUnverifiedDevices(),
-          ).thenReturn([device]);
-
-          await pumpConfigWidget(
-            tester,
-            const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-          );
-
-          outgoingController.add(runner);
-          // Drive past 20 × 350 ms = 7 000 ms of polling time; use 8 s to
-          // cover the final post-loop check as well.
-          await tester.pump(const Duration(seconds: 8));
-
-          // Since devices never became verified, the page index must NOT change.
-          expect(pageIndexNotifier.value, 1);
-        },
-      );
-    },
-  );
-
-  group(
-    '_DoneViewState._triggerVerification finally block',
-    () {
-      // Covers lines 375-376, 378: the finally block that invalidates the
-      // unverified provider and releases the modal lock after the sheet closes.
-      testWidgets(
-        'releases lock and invalidates unverified provider after modal closes',
-        (tester) async {
-          final mockDevice = MockDeviceKeys();
-          when(() => mockDevice.deviceDisplayName).thenReturn('Other Device');
-          when(() => mockDevice.deviceId).thenReturn('OTHERDEVICE');
-          when(() => mockDevice.userId).thenReturn('@alice:example.com');
-          when(
-            () => mockMatrixService.getUnverifiedDevices(),
-          ).thenReturn([mockDevice]);
-          when(
-            () => mockMatrixService.verifyDevice(mockDevice),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockMatrixService.keyVerificationStream,
-          ).thenAnswer((_) => const Stream.empty());
-
-          late ProviderContainer container;
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                matrixServiceProvider.overrideWithValue(mockMatrixService),
-                provisioningControllerProvider.overrideWith(
-                  () => _FakeProvisioningController(
-                    const ProvisioningState.done(),
-                  ),
-                ),
-              ],
-              child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                theme: resolveTestTheme(),
-                home: Consumer(
-                  builder: (ctx, ref, _) {
-                    // Capture the container so we can read the lock state.
-                    container = ProviderScope.containerOf(ctx);
-                    return Scaffold(
-                      body: ProvisionedConfigWidget(
-                        pageIndexNotifier: pageIndexNotifier,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          );
-          await tester.pump();
-
-          // Advance past the 3 s delay to trigger the verification flow.
-          await tester.pump(const Duration(seconds: 3));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-
-          // The verification modal must be open.
-          expect(find.byType(VerificationModal), findsOneWidget);
-
-          // The lock should be acquired (true).
-          expect(container.read(matrixVerificationModalLockProvider), isTrue);
-
-          // Close the modal by tapping the close (X) button in the top bar.
-          final closeButton = find.byIcon(Icons.close_rounded);
-          await tester.ensureVisible(closeButton);
-          await tester.tap(closeButton);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-
-          // Modal is gone and the lock has been released (false).
-          expect(find.byType(VerificationModal), findsNothing);
-          expect(container.read(matrixVerificationModalLockProvider), isFalse);
-        },
-      );
-    },
-  );
 }
 
 /// Test wrapper that replicates the _ConfigActionBar logic since it's private.
@@ -1153,7 +1171,7 @@ class _ConfigActionBarTestWrapper extends ConsumerWidget {
             const SizedBox(width: 8),
             DesignSystemButton(
               onPressed: isComplete ? () => pageIndexNotifier.value = 2 : null,
-              label: context.messages.settingsMatrixNextPage,
+              label: context.messages.syncPairGoToDevices,
             ),
           ],
         ),

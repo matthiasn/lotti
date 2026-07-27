@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -48,179 +48,6 @@ void main() {
         user: '@alice:example.com',
         password: 'rotated-pw',
       ),
-    );
-  });
-
-  group('handover QR section (desktop)', () {
-    testWidgets('shows QR by default on desktop', (tester) async {
-      final wasDesktop = isDesktop;
-      isDesktop = true;
-      addTearDown(() => isDesktop = wasDesktop);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      final context = tester.element(find.byType(ProvisionedStatusWidget));
-      expect(
-        find.byKey(const Key('statusHandoverQrImage')),
-        findsOneWidget,
-      );
-      expect(find.text(context.messages.provisionedSyncReady), findsOneWidget);
-    });
-
-    testWidgets('hides QR button on mobile', (tester) async {
-      final wasDesktop = isDesktop;
-      isDesktop = false;
-      addTearDown(() => isDesktop = wasDesktop);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      final context = tester.element(find.byType(ProvisionedStatusWidget));
-      expect(
-        find.text(context.messages.provisionedSyncShowQr),
-        findsNothing,
-      );
-      expect(find.byKey(const Key('statusHandoverQrImage')), findsNothing);
-    });
-
-    testWidgets('toggles handover data visibility', (tester) async {
-      final wasDesktop = isDesktop;
-      isDesktop = true;
-      addTearDown(() => isDesktop = wasDesktop);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('\u2022' * 24), findsOneWidget);
-      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
-
-      // Toggle reveal
-      final toggleFinder = find.byKey(
-        const Key('statusToggleHandoverVisibility'),
-      );
-      await tester.ensureVisible(toggleFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(toggleFinder);
-      await tester.pump();
-
-      // Should now show the base64 string and hide icon
-      expect(find.text('\u2022' * 24), findsNothing);
-      expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-    });
-  });
-
-  testWidgets('shows retry button when config is null', (tester) async {
-    final wasDesktop = isDesktop;
-    isDesktop = true;
-    addTearDown(() => isDesktop = wasDesktop);
-
-    when(() => mockMatrixService.loadConfig()).thenAnswer(
-      (_) async => null,
-    );
-
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const ProvisionedStatusWidget(),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixUnverifiedControllerProvider.overrideWith(
-            () => FakeMatrixUnverifiedController(const []),
-          ),
-        ],
-      ),
-    );
-    await tester.pump();
-
-    final context = tester.element(find.byType(ProvisionedStatusWidget));
-    expect(find.byKey(const Key('statusHandoverQrImage')), findsNothing);
-    expect(
-      find.text(context.messages.provisionedSyncShowQr),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('copy button copies handover data on desktop', (tester) async {
-    final wasDesktop = isDesktop;
-    isDesktop = true;
-    addTearDown(() => isDesktop = wasDesktop);
-
-    String? clipboardText;
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        if (call.method == 'Clipboard.setData') {
-          final args = call.arguments as Map<dynamic, dynamic>;
-          clipboardText = args['text'] as String?;
-        }
-        return null;
-      },
-    );
-    addTearDown(() {
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        null,
-      );
-    });
-
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const ProvisionedStatusWidget(),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixUnverifiedControllerProvider.overrideWith(
-            () => FakeMatrixUnverifiedController(const []),
-          ),
-        ],
-      ),
-    );
-    await tester.pump();
-
-    final copyFinder = find.byKey(const Key('statusCopyHandoverData'));
-    await tester.ensureVisible(copyFinder);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(copyFinder);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(clipboardText, isNotNull);
-
-    final context = tester.element(find.byType(ProvisionedStatusWidget));
-    expect(
-      find.text(context.messages.provisionedSyncCopiedToClipboard),
-      findsOneWidget,
     );
   });
 
@@ -316,6 +143,68 @@ void main() {
         expect(find.text('Open Action Bar'), findsOneWidget);
       },
     );
+  });
+
+  group('action hierarchy', () {
+    testWidgets('the page reads constructive-first, destructive-quietest', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ProvisionedStatusWidget(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => FakeMatrixUnverifiedController(const []),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final context = tester.element(find.byType(ProvisionedStatusWidget));
+      final messages = context.messages;
+
+      // Two filled red pills and an accent-teal diagnostics link used to
+      // outweigh the one action the page exists to offer.
+      final disconnect = tester.widget<DesignSystemButton>(
+        find.widgetWithText(
+          DesignSystemButton,
+          messages.provisionedSyncDisconnect,
+        ),
+      );
+      expect(disconnect.variant, DesignSystemButtonVariant.dangerTertiary);
+
+      final diagnostics = tester.widget<DesignSystemButton>(
+        find.widgetWithText(
+          DesignSystemButton,
+          messages.settingsMatrixDiagnosticShowButton,
+        ),
+      );
+      expect(diagnostics.variant, DesignSystemButtonVariant.outlined);
+      // Neither support action borrows the "Add device" primary's shape, and
+      // the diagnostics dump — the least likely reason anyone opens this
+      // sheet — is the smaller of the two.
+      expect(diagnostics.fullWidth, isFalse);
+      expect(disconnect.fullWidth, isFalse);
+      expect(diagnostics.size, DesignSystemButtonSize.small);
+      expect(disconnect.size, DesignSystemButtonSize.medium);
+      // And it comes last in the row.
+      expect(
+        tester.getTopLeft(find.byType(DiagnosticInfoButton)).dx,
+        greaterThan(
+          tester
+              .getTopLeft(
+                find.widgetWithText(
+                  DesignSystemButton,
+                  messages.provisionedSyncDisconnect,
+                ),
+              )
+              .dx,
+        ),
+      );
+    });
   });
 
   group('_AutoVerificationLauncher finally block', () {

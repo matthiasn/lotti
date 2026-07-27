@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -90,7 +91,9 @@ void main() {
   ];
 
   group('BundleImportWidget', () {
-    testWidgets('renders text field and import button', (tester) async {
+    testWidgets('leads with a live paste action while the field is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
@@ -101,10 +104,56 @@ void main() {
 
       final context = tester.element(find.byType(BundleImportWidget));
       expect(find.byType(TextField), findsOneWidget);
+
+      // A disabled full-width slab used to sit here, above the only live
+      // control, so the secondary action read as the primary.
       expect(
         find.text(context.messages.provisionedSyncImportButton),
-        findsOneWidget,
+        findsNothing,
       );
+      final paste = tester.widget<DesignSystemButton>(
+        find.widgetWithText(
+          DesignSystemButton,
+          context.messages.provisionedSyncPasteClipboard,
+        ),
+      );
+      expect(paste.onPressed, isNotNull);
+    });
+
+    testWidgets('promotes the commit action but keeps paste reachable', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), validBase64);
+      await tester.pump();
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      final commit = tester.widget<DesignSystemButton>(
+        find.widgetWithText(
+          DesignSystemButton,
+          context.messages.provisionedSyncImportButton,
+        ),
+      );
+      expect(commit.onPressed, isNotNull);
+      expect(commit.fullWidth, isTrue);
+
+      // Paste stays available, demoted. The malformed-code error tells the
+      // user to copy the code again on the other device, and this was the
+      // control that disappeared exactly then — leaving a bad payload in the
+      // field with no way to overwrite it short of select-all on a phone.
+      final paste = tester.widget<DesignSystemButton>(
+        find.byKey(const Key('bundle_import_paste_again')),
+      );
+      expect(paste.label, context.messages.provisionedSyncPasteClipboard);
+      expect(paste.variant, DesignSystemButtonVariant.outlined);
+      expect(paste.fullWidth, isFalse);
     });
 
     testWidgets('shows summary card after valid Base64 paste', (tester) async {
@@ -128,13 +177,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Verify summary card is shown
-      expect(find.text('https://matrix.example.com'), findsOneWidget);
+      expect(find.text('matrix.example.com'), findsOneWidget);
       expect(find.text('@alice:example.com'), findsOneWidget);
-      expect(find.text('!room123:example.com'), findsOneWidget);
+      // The opaque room id no longer competes with the checkable facts.
+      expect(find.text('!room123:example.com'), findsNothing);
 
       // Verify configure button is shown
       expect(
-        find.text(context.messages.provisionedSyncConfigureButton),
+        find.text(context.messages.syncPairConnectButton),
         findsOneWidget,
       );
     });
@@ -188,7 +238,7 @@ void main() {
 
       // Tap configure button
       await tester.tap(
-        find.text(context.messages.provisionedSyncConfigureButton),
+        find.text(context.messages.syncPairConnectButton),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -224,10 +274,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Should show error text in the TextField decoration
-      // The error comes from FormatException when JSON parsing fails
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.decoration?.errorText, isNotNull);
+      // The error comes from the FormatException when JSON parsing fails.
+      expect(
+        find.text(context.messages.syncPairErrorMalformed),
+        findsOneWidget,
+      );
     });
 
     testWidgets('clears error text when text field changes', (tester) async {
@@ -251,20 +302,23 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Verify error is shown
-      var textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.decoration?.errorText, isNotNull);
+      expect(
+        find.text(context.messages.syncPairErrorMalformed),
+        findsOneWidget,
+      );
 
       // Now type something new to clear the error
       await tester.enterText(find.byType(TextField), 'new text');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Error should be cleared
-      textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.decoration?.errorText, isNull);
+      expect(
+        find.text(context.messages.syncPairErrorMalformed),
+        findsNothing,
+      );
     });
 
-    testWidgets('import button is disabled when text field is empty', (
+    testWidgets('a wrong code can be discarded instead of connected', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -275,15 +329,26 @@ void main() {
       );
       await tester.pump();
 
-      // With empty text field, the import button's onPressed should be null
+      await tester.enterText(find.byType(TextField), validBase64);
+      await tester.pump();
       final context = tester.element(find.byType(BundleImportWidget));
-      final importButton = tester.widget<DesignSystemButton>(
-        find.widgetWithText(
-          DesignSystemButton,
-          context.messages.provisionedSyncImportButton,
-        ),
+      await tester.tap(
+        find.text(context.messages.provisionedSyncImportButton),
       );
-      expect(importButton.onPressed, isNull);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('@alice:example.com'), findsOneWidget);
+
+      // Confirming something you cannot reject is not a confirmation: before
+      // this, a stale or wrong code could only be escaped by dismissing the
+      // whole modal.
+      await tester.tap(find.byKey(const Key('bundle_import_discard')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('@alice:example.com'), findsNothing);
+      expect(find.byType(TextField), findsOneWidget);
     });
 
     testWidgets('import button becomes enabled after entering text', (
@@ -340,9 +405,47 @@ void main() {
         find.text(context.messages.provisionedSyncSummaryUser),
         findsOneWidget,
       );
+      // The room id is an opaque handle nobody can verify by eye; it moved to
+      // the diagnostics dump so the card carries only checkable facts.
+      expect(find.text('!room123:example.com'), findsNothing);
       expect(
-        find.text(context.messages.provisionedSyncSummaryRoom),
+        find.byKey(const Key('bundle_import_check_code')),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('the check code matches what the other device derives', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), validBase64);
+      await tester.pump();
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(
+        find.text(context.messages.provisionedSyncImportButton),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final code = tester.widget<Text>(
+        find.byKey(const Key('bundle_import_check_code')),
+      );
+      // Both devices derive it from account + room, so it is the one value on
+      // this screen a person can actually compare.
+      expect(
+        code.data,
+        pairingCheckCode(
+          user: '@alice:example.com',
+          roomId: '!room123:example.com',
+          homeServer: 'https://matrix.example.com',
+        ),
       );
     });
   });
@@ -416,8 +519,193 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Should show the decoded bundle summary
-      expect(find.text('https://matrix.example.com'), findsOneWidget);
+      expect(find.text('matrix.example.com'), findsOneWidget);
       expect(find.text('@alice:example.com'), findsOneWidget);
+    });
+
+    /// Runs [body] with the platform flags forced to desktop — the only
+    /// configuration where paste is the single live control on the screen.
+    Future<void> onDesktop(Future<void> Function() body) async {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = true;
+      isMobile = false;
+      try {
+        await body();
+      } finally {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      }
+    }
+
+    Future<void> pumpWithClipboard(
+      WidgetTester tester,
+      Future<Object?> Function(MethodCall) handler,
+    ) async {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        handler,
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(
+        find.text(context.messages.provisionedSyncPasteClipboard),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('an empty clipboard says so instead of doing nothing', (
+      tester,
+    ) async {
+      await onDesktop(() async {
+        await pumpWithClipboard(tester, (call) async {
+          if (call.method == 'Clipboard.getData') {
+            return <String, dynamic>{'text': ''};
+          }
+          return null;
+        });
+
+        final context = tester.element(find.byType(BundleImportWidget));
+        expect(
+          find.text(context.messages.syncPairClipboardEmpty),
+          findsOneWidget,
+        );
+      });
+    });
+
+    testWidgets('an unreadable clipboard names the fallback', (tester) async {
+      await onDesktop(() async {
+        await pumpWithClipboard(tester, (call) async {
+          if (call.method == 'Clipboard.getData') {
+            throw PlatformException(code: 'unavailable');
+          }
+          return null;
+        });
+
+        final context = tester.element(find.byType(BundleImportWidget));
+        expect(
+          find.text(context.messages.syncPairClipboardUnavailable),
+          findsOneWidget,
+        );
+      });
+    });
+
+    testWidgets('says how the code reaches a machine with no camera', (
+      tester,
+    ) async {
+      await onDesktop(() async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: defaultOverrides(),
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(BundleImportWidget));
+        expect(
+          find.text(context.messages.syncPairCopyCodeHint),
+          findsOneWidget,
+        );
+      });
+    });
+  });
+
+  group('wayfinding and step scent', () {
+    Future<void> pumpImport(WidgetTester tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('names the step before a code has been read', (tester) async {
+      await pumpImport(tester);
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.text(context.messages.syncPairStepScan),
+        findsOneWidget,
+      );
+      expect(find.text(context.messages.syncPairStepConfirm), findsNothing);
+    });
+
+    testWidgets('advances the step once a code is decoded', (tester) async {
+      await pumpImport(tester);
+
+      await tester.enterText(find.byType(TextField), validBase64);
+      await tester.pump();
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(
+        find.text(context.messages.provisionedSyncImportButton),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(context.messages.syncPairStepConfirm), findsOneWidget);
+      expect(find.text(context.messages.syncPairStepScan), findsNothing);
+    });
+
+    testWidgets('warns which codes are safe to accept', (tester) async {
+      // The mirror of the inviting device's warning: scanning someone else's
+      // code joins this device, and everything on it, to their account.
+      await pumpImport(tester);
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.byKey(const Key('sync_pair_only_own_code')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.syncPairOnlyOwnCode),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the confirm screen leads with the comparison, not a receipt', (
+      tester,
+    ) async {
+      await pumpImport(tester);
+
+      await tester.enterText(find.byType(TextField), validBase64);
+      await tester.pump();
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(
+        find.text(context.messages.provisionedSyncImportButton),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('bundle_import_compare_heading')),
+        findsOneWidget,
+      );
+      // Naming the consequence is what turns a comparison into a decision.
+      expect(
+        find.text(context.messages.syncPairMismatchWarning),
+        findsOneWidget,
+      );
+      // The reject branch stays neutral; the accent means "commit" one button
+      // above it and cannot also mean "back out".
+      final discard = tester.widget<DesignSystemButton>(
+        find.byKey(const Key('bundle_import_discard')),
+      );
+      expect(discard.variant, DesignSystemButtonVariant.outlined);
     });
   });
 }

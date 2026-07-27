@@ -97,6 +97,10 @@ ThemeData screenshotTheme({bool dark = true}) {
 /// Renders [child] inside the app shell at [size] and writes a PNG via the
 /// golden mechanism (run the capture test with `--update-goldens`).
 ///
+/// Set [waitForIdle] to false for a surface that never goes idle — a
+/// perpetual spinner or a periodic poll makes `pumpAndSettle` time out. The
+/// capture then advances by discrete pumps instead.
+///
 /// [interaction] runs after the initial settle — use it to open a modal, tap a
 /// FAB, focus a field, etc. before the frame is captured. [overrides] are the
 /// Riverpod overrides for the providers the surface reads.
@@ -114,6 +118,7 @@ Future<void> captureInApp(
   List<Override> overrides = const [],
   Future<void> Function(WidgetTester tester)? interaction,
   String outputDir = 'screenshots',
+  bool waitForIdle = true,
 }) async {
   tester.view
     ..physicalSize = size * devicePixelRatio
@@ -129,15 +134,26 @@ Future<void> captureInApp(
       overrides: overrides,
     ),
   );
-  await tester.pumpAndSettle();
+  await _advance(tester, waitForIdle: waitForIdle);
 
   if (interaction != null) {
     await interaction(tester);
-    await tester.pumpAndSettle();
+    await _advance(tester, waitForIdle: waitForIdle);
   }
 
   await expectLater(
     find.byType(MaterialApp),
     matchesGoldenFile('$outputDir/$name.png'),
   );
+}
+
+/// Advances to a renderable frame: settling where the surface can settle, and
+/// by fixed pumps where it never will.
+Future<void> _advance(WidgetTester tester, {required bool waitForIdle}) async {
+  if (waitForIdle) {
+    await tester.pumpAndSettle();
+    return;
+  }
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
 }

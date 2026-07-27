@@ -91,15 +91,8 @@ void main() {
   ];
 
   group('mobile scanner', () {
-    testWidgets('shows scan button on mobile', (tester) async {
-      final wasDesktop = isDesktop;
-      final wasMobile = isMobile;
-      isDesktop = false;
-      isMobile = true;
-      addTearDown(() {
-        isDesktop = wasDesktop;
-        isMobile = wasMobile;
-      });
+    testWidgets('opens the camera immediately on mobile', (tester) async {
+      setUpMobileScanner();
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -109,15 +102,30 @@ void main() {
       );
       await tester.pump();
 
+      // Scanning is what a new phone is here for: no tap should be needed,
+      // and the base64 field must not be the first thing on screen.
+      expect(find.byType(MobileScanner), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+
+      // The screen leads with its own imperative; the prerequisite about a
+      // *different* device is supporting copy below the viewfinder.
       final context = tester.element(find.byType(BundleImportWidget));
+      expect(find.text(context.messages.syncPairScanTitle), findsOneWidget);
       expect(
-        find.text(context.messages.provisionedSyncScanButton),
+        find.text(context.messages.syncPairWhereToFind),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.qr_code_scanner), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text(context.messages.syncPairScanTitle)).dy,
+        lessThan(
+          tester.getTopLeft(find.text(context.messages.syncPairWhereToFind)).dy,
+        ),
+      );
     });
 
-    testWidgets('hides scan button on desktop', (tester) async {
+    testWidgets('desktop stays on manual entry with no camera', (
+      tester,
+    ) async {
       final wasDesktop = isDesktop;
       final wasMobile = isMobile;
       isDesktop = true;
@@ -136,6 +144,8 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.qr_code_scanner), findsNothing);
+      expect(find.byType(MobileScanner), findsNothing);
+      expect(find.byType(TextField), findsOneWidget);
     });
 
     testWidgets('hides import form after successful import', (tester) async {
@@ -165,7 +175,7 @@ void main() {
     });
 
     testWidgets(
-      'shows scan button and scanner on mobile, hides on second tap',
+      'mobile can fall back to manual entry and return to the camera',
       (tester) async {
         setUpMobileScanner();
 
@@ -177,29 +187,83 @@ void main() {
         );
         await tester.pump();
 
-        final context = tester.element(find.byType(BundleImportWidget));
-
-        // Tap scan button — scanner should appear
-        final scanButtonFinder = find.text(
-          context.messages.provisionedSyncScanButton,
-        );
-        await tester.ensureVisible(scanButtonFinder);
-        await tester.tap(scanButtonFinder);
-        await tester.pump();
-
         expect(find.byType(MobileScanner), findsOneWidget);
 
-        // Tap scan button again — scanner should disappear
-        await tester.ensureVisible(scanButtonFinder);
-        await tester.tap(scanButtonFinder);
+        final manualFinder = find.byKey(
+          const Key('bundle_import_enter_manually'),
+        );
+        await tester.ensureVisible(manualFinder);
+        await tester.tap(manualFinder);
         await tester.pump();
 
         expect(find.byType(MobileScanner), findsNothing);
+        expect(find.byType(TextField), findsOneWidget);
+
+        final scanFinder = find.byKey(const Key('bundle_import_scan_instead'));
+        await tester.ensureVisible(scanFinder);
+        await tester.tap(scanFinder);
+        await tester.pump();
+
+        expect(find.byType(MobileScanner), findsOneWidget);
+        expect(find.byType(TextField), findsNothing);
       },
     );
   });
 
   group('mobile scanner barcode handling', () {
+    testWidgets('declining a scanned code lands on the field and stays there', (
+      tester,
+    ) async {
+      setUpMobileScanner();
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      void scan() {
+        tester.widget<MobileScanner>(find.byType(MobileScanner)).onDetect!(
+          BarcodeCapture(barcodes: [Barcode(rawValue: validBase64)]),
+        );
+      }
+
+      scan();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.byKey(const Key('bundle_import_discard')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('bundle_import_discard')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      // "Enter a different pairing code" has to land on a field. It used to
+      // return to the viewfinder, contradicting its own label.
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.byType(MobileScanner), findsNothing);
+
+      // And the rejected code must not come back. The QR is still on the
+      // other device's screen, so before this the very next frame re-decoded
+      // it and bounced the user into the confirmation they just refused. It
+      // says so rather than going quietly inert.
+      await tester.tap(find.byKey(const Key('bundle_import_scan_instead')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      scan();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(find.byKey(const Key('bundle_import_discard')), findsNothing);
+      expect(find.byType(MobileScanner), findsOneWidget);
+      expect(
+        find.text(context.messages.syncPairScannerRejected),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
       'handles barcode detection: valid bundle shows summary and hides scanner',
       (tester) async {
@@ -211,16 +275,6 @@ void main() {
             overrides: defaultOverrides(),
           ),
         );
-        await tester.pump();
-
-        final context = tester.element(find.byType(BundleImportWidget));
-
-        // Show the scanner
-        final scanButtonFinder = find.text(
-          context.messages.provisionedSyncScanButton,
-        );
-        await tester.ensureVisible(scanButtonFinder);
-        await tester.tap(scanButtonFinder);
         await tester.pump();
 
         expect(find.byType(MobileScanner), findsOneWidget);
@@ -241,7 +295,7 @@ void main() {
 
         // Scanner should be hidden and summary card should appear
         expect(find.byType(MobileScanner), findsNothing);
-        expect(find.text('https://matrix.example.com'), findsOneWidget);
+        expect(find.text('matrix.example.com'), findsOneWidget);
         expect(find.text('@alice:example.com'), findsOneWidget);
       },
     );
@@ -259,16 +313,6 @@ void main() {
         );
         await tester.pump();
 
-        final context = tester.element(find.byType(BundleImportWidget));
-
-        // Show the scanner
-        final scanButtonFinder = find.text(
-          context.messages.provisionedSyncScanButton,
-        );
-        await tester.ensureVisible(scanButtonFinder);
-        await tester.tap(scanButtonFinder);
-        await tester.pump();
-
         expect(find.byType(MobileScanner), findsOneWidget);
 
         final scanner = tester.widget<MobileScanner>(
@@ -282,20 +326,20 @@ void main() {
         );
         await tester.pump();
 
-        // Error is shown; scanner still visible because bundle was invalid
-        final textField = tester.widget<TextField>(find.byType(TextField));
-        expect(textField.decoration?.errorText, isNotNull);
+        // Error is shown beside the viewfinder; the camera stays up because
+        // the bundle was invalid and the user should just scan again.
+        final errorFinder = find.byKey(const Key('bundle_import_scan_error'));
+        expect(errorFinder, findsOneWidget);
+        expect(find.byType(MobileScanner), findsOneWidget);
+        final errorBefore = tester.widget<Text>(errorFinder).data;
 
-        // Second scan with same code — deduplication prevents re-decode
-        // We verify the error text did NOT change (no second setState call)
-        final errorTextBefore = textField.decoration?.errorText;
+        // Second scan with the same code — deduplication prevents re-decode.
         scanner.onDetect!(
           const BarcodeCapture(barcodes: [Barcode(rawValue: invalidCode)]),
         );
         await tester.pump();
 
-        final textFieldAfter = tester.widget<TextField>(find.byType(TextField));
-        expect(textFieldAfter.decoration?.errorText, errorTextBefore);
+        expect(tester.widget<Text>(errorFinder).data, errorBefore);
       },
     );
 
@@ -312,16 +356,6 @@ void main() {
       );
       await tester.pump();
 
-      final context = tester.element(find.byType(BundleImportWidget));
-
-      // Show scanner
-      final scanButtonFinder = find.text(
-        context.messages.provisionedSyncScanButton,
-      );
-      await tester.ensureVisible(scanButtonFinder);
-      await tester.tap(scanButtonFinder);
-      await tester.pump();
-
       final scanner = tester.widget<MobileScanner>(find.byType(MobileScanner));
 
       // Null rawValue — should be ignored
@@ -334,8 +368,11 @@ void main() {
       );
       await tester.pump();
 
-      // Neither triggered a decode, so the input form is still shown
-      expect(find.byType(TextField), findsOneWidget);
+      // Neither triggered a decode, so the camera is still up and no bundle
+      // summary appeared.
+      expect(find.byType(MobileScanner), findsOneWidget);
+      expect(find.text('@alice:example.com'), findsNothing);
+      expect(find.byKey(const Key('bundle_import_scan_error')), findsNothing);
     });
   });
 

@@ -88,6 +88,146 @@ concepts describe. Construction order matters and is documented in
 | `actor/` | Isolate-based sync implementation — present and tested, **not** wired by the default bootstrap |
 | `services/`, `repository/` | Node capability probe, profile broadcaster, node-profile persistence, maintenance repository, synced-audio inference listener and dispatcher |
 
+# Pairing a new device
+
+Pairing moves a **handover bundle** — homeserver, MXID, live password, room id,
+Base64url-encoded — from a device that already syncs to one that does not.
+`SyncBundleKind` decides what consuming it does: a `provisioned` bundle (minted
+by the CLI) rotates the account password and persists the new one; a `handover`
+bundle (minted by a peer) joins without rotating, so every peer shares one live
+credential. `ProvisioningController.rotatesPassword` exposes that distinction —
+the progress step count is **three for a rotating bundle and two otherwise**,
+and derives from the bundle kind, never from the platform.
+
+```mermaid
+stateDiagram-v2
+  direction LR
+  state "Existing device" as Existing {
+    [*] --> Roster: Settings → Sync
+    Roster --> AddDevice: taps Add device
+    AddDevice --> ShowingCode: regenerateHandover() reads persisted config
+    AddDevice --> Unavailable: no config or no room id
+    Unavailable --> AddDevice: Retry
+    ShowingCode --> Joined: a device id absent at open appears
+    ShowingCode --> PollFailed: 3 consecutive roster fetch failures
+    PollFailed --> ShowingCode: Retry
+    ShowingCode --> SendingSettings: Send settings (opens SyncModal)
+    Joined --> SendingSettings: Send settings (opens SyncModal)
+  }
+  state "New device" as New {
+    [*] --> Scanning: mobile opens the camera
+    Scanning --> Manual: enter code manually
+    Manual --> Scanning: scan with camera
+    Scanning --> Decoded: barcode decodes
+    Manual --> Decoded: Import
+    Scanning --> Scanning: invalid code, error beside the viewfinder
+    Decoded --> Manual: Use a different code
+    Decoded --> Configuring: Connect this device
+    Configuring --> Paired: login, join room, optional rotate
+    Configuring --> Failed: login or configuration error
+    Failed --> Configuring: Retry
+    Paired --> Verifying: AutoVerificationLauncher opens the SAS ceremony
+  }
+  ShowingCode --> Scanning: QR is scanned
+```
+
+Four properties are deliberate:
+
+- **The handover code is a live credential, so it is never ambient.** It is
+  minted on demand inside `ui/provisioned/add_device_page.dart` and only while
+  that sheet is open — it used to render unconditionally at the bottom of the
+  status page on desktop. It is masked until revealed, and the sheet states
+  that the code unlocks the account.
+- **Add device is not platform-gated.** Any paired device can present a code,
+  so a surviving phone can onboard a replacement for a dead desktop.
+- **Both devices warn, and the joining one warns louder.** Each side wraps its
+  caveat in a lock-badged `SyncCallout` ahead of the thing it is about — above
+  the QR on the inviting side, above the viewfinder on the joining side. The
+  weight belongs on the joining device because that is the side an attack
+  lands on: the inviting device is showing its own code and is not at risk,
+  while a joining device tricked into scanning a stranger's code attaches
+  itself, and everything written on it, to that stranger's account. Its copy
+  names that consequence rather than stopping at "only use your own code".
+- **Both devices derive the same check code.** `models/pairing_check_code.dart`
+  hashes `"$user|$roomId|$homeServer"` and shows six hex characters, rendered on
+  both sides through one `PairingCheckCodeView`: the inviting device derives it
+  from its persisted config, the joining device from the decoded bundle. Every
+  field the confirmation card displays is folded in, so the digits cover what
+  the reader is actually looking at. It is a **recognition aid, not a security
+  control** — unkeyed and derived from public identifiers, so it catches the
+  wrong-code mistake and nothing more. Confidentiality comes from the SAS
+  ceremony that follows.
+- **The waiting latch, the hand-off gate and the hand-off's emphasis are three
+  separate questions.** `_observeRoster` latches "a new device joined" on a
+  device id absent when the sheet opened. Whether *Send settings* is *enabled*
+  is `AddDeviceActionBar.hasPeer` — does the account hold any session other
+  than this one — because the joining device tells the user to come back and
+  press it, by which time the sheet has usually been closed and reopened, and
+  gating on the delta left the button permanently dead in exactly that case.
+  Whether it takes the **accent** is the latch: a filled accent pinned over a
+  QR nobody has scanned yet outshouts the QR, which is the only thing on that
+  screen the user should be looking at.
+  `AddDeviceJoinSignal` — a `ValueNotifier<AddDeviceJoinState>` carrying the
+  body's retry callback — is what connects them, because the sticky bar is
+  built outside the view's `State`. The bar, not the card, renders the live
+  waiting/joined/failed line: on a phone the card's own strip is below the
+  fold, so a caption there described state the user could not see.
+- **The confirmation screen's rejection is a real rejection.** `_discardDecoded`
+  switches to manual entry and records the payload in `_rejectedCodes`.
+  Returning to the camera contradicts the button's label *and* re-decodes the
+  QR still displayed on the other device on the very next frame, so the reject
+  button used to bounce the user straight back into what they had refused. For
+  the same reason the mismatch copy names the account, not a fresh code: the
+  check code is a pure function of account, room and server, so regenerating a
+  handover produces a byte-identical one and cannot resolve a mismatch.
+
+Pairing does **not** bring data across. Config entities (categories, habits,
+dashboards, measurables, AI settings) only arrive when an existing device runs
+the entity push (`ui/sync_modal.dart`), which is why *Send settings* lives in
+the add-device sheet's sticky action bar — pinned there because the QR pushes
+everything else below the fold — and why the paired screen names it as an
+outstanding step. Entries that predate the join are not gap-detected either — a
+counter from a never-seen host is recorded without becoming a gap (see
+[sequence and backfill](sequence-and-backfill.md)).
+
+Both halves of the flow use one wayfinding component — a quiet
+`SyncPairStepIndicator` eyebrow above a subtitle-rank imperative — because the
+two are read side by side with both devices in hand, so the device must *look*
+the same on each. What the eyebrow says differs by half, deliberately. The
+joining device counts ("Step 2 of 3 · Confirm") because it walks a fixed
+three-screen route. The inviting device is temporal ("Now · Show the code",
+"Next · after it joins") because its second rung lives in the pinned bar, which
+is present from the start: a fraction there would put two "you are here"
+positions on one viewport, and a fraction only on the body would promise a
+step 2 that never announces itself.
+
+The connect phase's `DesignSystemProgressBar` inside step 3 renders no second
+fraction for the same reason. Step 3's eyebrow follows the state —
+*Connecting*, *Couldn't connect*, *Finish on your other device* — because a
+constant "Finish" printed above a spinner, a red error card, or a card of
+outstanding work is untrue in all three.
+
+The last screen is state-driven throughout, for one reason worth stating: a
+device that has completed the SAS ceremony leaves `getUnverifiedDevices()`
+exactly as an unpaired one does, so absence from that set cannot mean "done".
+`_PairedView` reads success off the roster instead and passes it down, which
+both retitles the card ("One thing left") and replaces step 1's imperative with
+a past-tense line. Computed in two places, they contradicted each other on the
+terminal screen of the entire flow.
+
+The three modal pages share `SyncStickyBar` and
+`WoltModalConfig.stickyActionBarClearance`: the bar draws a top hairline so
+content scrolling underneath reads as continuing rather than truncated, and the
+clearance is named rather than copy-pasted as a bare `80` into every page that
+has one.
+
+`AutoVerificationLauncher`
+(`ui/widgets/matrix/auto_verification_launcher.dart`) is shared by the paired
+screen and the status page. It reacts to `matrixUnverifiedControllerProvider`
+rather than waiting a fixed delay for device keys to arrive, and takes the
+app-wide modal lock so two surfaces watching the same provider cannot both
+open a ceremony.
+
 # Device management
 
 All of a user's devices are sessions on **one Matrix account**; verification

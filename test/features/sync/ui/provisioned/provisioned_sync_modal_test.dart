@@ -162,13 +162,13 @@ void main() {
 
           // Should open directly to status page (no provisioning input page)
           expect(
-            find.text('Show Diagnostic Info'),
+            find.text('Technical details'),
             findsOneWidget,
           );
-          expect(
-            find.byKey(const Key('statusHandoverQrImage')),
-            findsOneWidget,
-          );
+          // Keyed rather than by text: the settings card behind the sheet is
+          // also titled "Devices". The roster's refresh action is unique to it
+          // and renders even while the list is still loading.
+          expect(find.byKey(const Key('sync_devices_refresh')), findsOneWidget);
           expect(
             find.text(context.messages.settingsMatrixPreviousPage),
             findsNothing,

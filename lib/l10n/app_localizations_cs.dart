@@ -4782,7 +4782,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get deleteButton => 'Smazat';
 
   @override
-  String get deleteDeviceLabel => 'Odstranit zařízení';
+  String get deleteDeviceLabel => 'Odebrat ze synchronizace';
 
   @override
   String get designSystemActionVariantTitle => 'S akcí';
@@ -5300,17 +5300,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String deviceDeletedSuccess(String deviceName) {
-    return 'Zařízení $deviceName bylo úspěšně odstraněno';
-  }
-
-  @override
-  String deviceDeleteFailed(String error) {
-    return 'Zařízení se nepodařilo odstranit: $error';
+    return '$deviceName odebráno ze synchronizace';
   }
 
   @override
   String get deviceDeleteFailedForbidden =>
-      'Domovský server odmítl uložené heslo, takže zařízení nebylo možné odebrat. Spáruj toto zařízení znovu pomocí nového QR kódu a zkus to znovu.';
+      'Server synchronizace tuto změnu odmítl. Odeber zařízení ze synchronizace přímo na něm, nebo ho znovu spáruj novým párovacím kódem.';
+
+  @override
+  String get deviceDeleteFailedGeneric =>
+      'Zařízení se nepodařilo odebrat. Zkontroluj připojení a zkus to znovu.';
 
   @override
   String deviceDeleteQuestion(String deviceName) {
@@ -8282,84 +8281,65 @@ class AppLocalizationsCs extends AppLocalizations {
   String get promptSelectionModalTitle => 'Vyberte přednastavenou výzvu';
 
   @override
-  String get provisionedSyncBundleImported => 'Párovací balíček importován';
-
-  @override
-  String get provisionedSyncConfigureButton => 'Nastavit';
-
-  @override
   String get provisionedSyncCopiedToClipboard => 'Zkopírováno do schránky';
 
   @override
-  String get provisionedSyncDisconnect => 'Odpojit';
+  String get provisionedSyncDisconnect =>
+      'Ukončit synchronizaci na tomto zařízení';
 
   @override
-  String get provisionedSyncDone => 'Synchronizace úspěšně nakonfigurována';
+  String get provisionedSyncDone => 'Tohle zařízení je připojené';
 
   @override
-  String get provisionedSyncError => 'Nastavení se nezdařilo';
+  String get provisionedSyncError =>
+      'K tvému synchronizačnímu účtu se nepodařilo připojit';
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
-      'Při nastavování došlo k chybě. Zkus to znovu.';
+      'Při připojování se něco pokazilo. Zkus to znovu; pokud to selhává dál, zkontroluj, že druhé zařízení pořád synchronizuje.';
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Přihlášení selhalo. Zkontroluj přihlašovací údaje a zkus to znovu.';
+      'Přihlášení tímto kódem selhalo. Zkontroluj, že druhé zařízení pořád synchronizuje, pak tam znovu otevři Přidat zařízení a použij kód, který ukáže.';
 
   @override
-  String get provisionedSyncImportButton => 'Importovat';
+  String get provisionedSyncImportButton => 'Pokračovat';
 
   @override
-  String get provisionedSyncImportHint => 'Sem vlož párovací balíček';
+  String get provisionedSyncImportHint => 'Sem vlož párovací kód';
 
   @override
   String get provisionedSyncImportTitle => 'Nastavit synchronizaci';
 
   @override
-  String get provisionedSyncInvalidBundle => 'Neplatný párovací balíček';
+  String get provisionedSyncJoiningRoom => 'Nastavování sdíleného úložiště…';
 
   @override
-  String get provisionedSyncJoiningRoom =>
-      'Připojování k synchronizační místnosti...';
-
-  @override
-  String get provisionedSyncLoggingIn => 'Přihlašování...';
+  String get provisionedSyncLoggingIn =>
+      'Připojování k tvému synchronizačnímu účtu…';
 
   @override
   String get provisionedSyncPasteClipboard => 'Vložit ze schránky';
 
   @override
-  String get provisionedSyncReady =>
-      'Naskenuj tento QR kód na mobilním zařízení';
-
-  @override
   String get provisionedSyncRetry => 'Zkusit znovu';
 
   @override
-  String get provisionedSyncRotatingPassword => 'Zabezpečování účtu...';
-
-  @override
-  String get provisionedSyncScanButton => 'Naskenovat QR kód';
-
-  @override
-  String get provisionedSyncShowQr => 'Zobrazit párovací QR kód';
+  String get provisionedSyncRotatingPassword =>
+      'Zabezpečování tohoto zařízení…';
 
   @override
   String get provisionedSyncSubtitle =>
-      'Nastav synchronizaci pomocí párovacího balíčku';
+      'Spáruj další zařízení s tímto synchronizačním účtem';
 
   @override
-  String get provisionedSyncSummaryHomeserver => 'Server';
+  String get provisionedSyncSummaryHomeserver => 'Server synchronizace';
 
   @override
-  String get provisionedSyncSummaryRoom => 'Místnost';
+  String get provisionedSyncSummaryUser => 'Synchronizační účet';
 
   @override
-  String get provisionedSyncSummaryUser => 'Uživatel';
-
-  @override
-  String get provisionedSyncTitle => 'Nastavení synchronizace';
+  String get provisionedSyncTitle => 'Zařízení';
 
   @override
   String get queueCatchUpNowButton => 'Dohnat nyní';
@@ -9406,8 +9386,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Diagnostické informace synchronizace';
 
   @override
-  String get settingsMatrixDiagnosticShowButton =>
-      'Zobrazit diagnostické informace';
+  String get settingsMatrixDiagnosticShowButton => 'Technické podrobnosti';
 
   @override
   String get settingsMatrixDone => 'Hotovo';
@@ -9958,11 +9937,73 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncActivityTitle => 'Sync';
 
   @override
-  String get syncDeleteConfigConfirm => 'ANO, JSEM SI JISTÝ';
+  String get syncAddDeviceAction => 'Přidat zařízení';
+
+  @override
+  String get syncAddDeviceCodeHint =>
+      'Nové zařízení nemá kameru? Zkopíruj párovací kód a vlož ho tam místo skenování.';
+
+  @override
+  String get syncAddDeviceConnected => 'Připojilo se nové zařízení';
+
+  @override
+  String get syncAddDeviceCopyCode => 'Kopírovat párovací kód';
+
+  @override
+  String get syncAddDeviceHideCode => 'Skrýt párovací kód';
+
+  @override
+  String get syncAddDeviceIntro =>
+      'Nainstaluj Lotti na nové zařízení, otevři tam Nastavení → Nastavení synchronizace → Zařízení a naskenuj tento kód.';
+
+  @override
+  String get syncAddDeviceNextLeadIn => 'Dál · až se připojí';
+
+  @override
+  String get syncAddDeviceRevealCode => 'Zobrazit párovací kód jako text';
+
+  @override
+  String get syncAddDeviceRosterError =>
+      'Nepodařilo se ověřit, jestli se nové zařízení připojilo.';
+
+  @override
+  String get syncAddDeviceSecurityNote =>
+      'Tento párovací kód odemyká tvůj synchronizační účet – nech ho naskenovat jen svým vlastním novým zařízením a nikdy ho nefoť ani neposílej.';
+
+  @override
+  String get syncAddDeviceSendSettings => 'Odeslat nastavení';
+
+  @override
+  String get syncAddDeviceSendSettingsHint =>
+      'Jakmile je nové zařízení připojené, pošli mu své kategorie, návyky, přehledy a nastavení AI.';
+
+  @override
+  String get syncAddDeviceSendSettingsPending =>
+      'Bude k dispozici, jakmile se nové zařízení připojí.';
+
+  @override
+  String get syncAddDeviceSendSettingsReady =>
+      'Odešli hned, nebo počkej, až se nové zařízení připojí.';
+
+  @override
+  String get syncAddDeviceStepScan => 'Teď · Ukaž kód';
+
+  @override
+  String get syncAddDeviceStepScanTitle => 'Naskenuj to na novém zařízení';
+
+  @override
+  String get syncAddDeviceUnavailable =>
+      'Než přidáš další zařízení, nastav na tomto synchronizaci.';
+
+  @override
+  String get syncAddDeviceWaiting => 'Čeká se na nové zařízení…';
+
+  @override
+  String get syncDeleteConfigConfirm => 'Ukončit synchronizaci';
 
   @override
   String get syncDeleteConfigQuestion =>
-      'Chcete smazat konfiguraci synchronizace?';
+      'Ukončit synchronizaci na tomto zařízení?';
 
   @override
   String get syncDevicesKeylessHint =>
@@ -10048,6 +10089,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncDevicesVerifiedChip => 'Ověřeno';
 
   @override
+  String get syncDisconnectExplanation =>
+      'Tvé záznamy zůstanou na tomto zařízení. Bude odhlášeno ze synchronizačního účtu a k opětovné synchronizaci bude potřebovat nový párovací kód. Ostatní zařízení to neovlivní.';
+
+  @override
   String get syncEntitiesConfirm => 'SPUSTIT SYNCHRONIZACI';
 
   @override
@@ -10080,6 +10125,140 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncNotLoggedInToast => 'Synchronizace není přihlášena';
+
+  @override
+  String get syncPairBack => 'Zpět';
+
+  @override
+  String get syncPairCameraDenied =>
+      'Lotti potřebuje přístup k fotoaparátu. Povol ho v nastavení systému, nebo zadej kód ručně.';
+
+  @override
+  String get syncPairCameraRetry => 'Zkusit kameru znovu';
+
+  @override
+  String get syncPairCheckAgain => 'Zkontrolovat znovu';
+
+  @override
+  String get syncPairCheckCode => 'Zkontroluj, že to na druhém zařízení sedí';
+
+  @override
+  String get syncPairCheckCodeLabel => 'Kontrolní kód';
+
+  @override
+  String get syncPairClipboardEmpty =>
+      'Není co vložit. Nejdřív zkopíruj párovací kód na druhém zařízení.';
+
+  @override
+  String get syncPairClipboardUnavailable =>
+      'Schránku se nepodařilo přečíst. Vlož kód rovnou do pole.';
+
+  @override
+  String get syncPairConnectButton => 'Připojit toto zařízení';
+
+  @override
+  String get syncPairCopyCodeHint =>
+      'Tohle zařízení nemá kameru? Na druhém zařízení použij Kopírovat párovací kód a přenes ho sem správcem hesel, šifrovanou poznámkou nebo opsáním – ne chatem ani e-mailem.';
+
+  @override
+  String get syncPairDiscardCode => 'Zadat jiný párovací kód';
+
+  @override
+  String get syncPairedNextTitle => 'Zbývají dva kroky';
+
+  @override
+  String get syncPairedNextTitleOne => 'Zbývá jedna věc';
+
+  @override
+  String get syncPairedSettingsStep =>
+      'Na svém druhém zařízení zvol v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení. Tvé kategorie, návyky, přehledy a nastavení AI dorazí sem.';
+
+  @override
+  String get syncPairedSettingsStepFallback =>
+      'Nebo znovu otevři Nastavení → Nastavení synchronizace → Zařízení → Přidat zařízení.';
+
+  @override
+  String get syncPairedVerifyDone =>
+      'Obě zařízení ověřena – tohle zařízení teď vidí tvé záznamy';
+
+  @override
+  String get syncPairedVerifyFallback =>
+      'Emodži se ještě neobjevila? Zkontroluj to znovu – nebo otevři Zařízení a spusť ověření odtamtud.';
+
+  @override
+  String get syncPairedVerifyStep =>
+      'Na obou zařízeních se objeví řada emodži. Zkontroluj, že se shodují, a potvrď na každém — dokud to neuděláš, toto zařízení nepřečte tvé záznamy.';
+
+  @override
+  String get syncPairedVerifyStepDone =>
+      'Emodži se shodovala – tohle zařízení vidí tvé záznamy';
+
+  @override
+  String get syncPairedVerifyWaiting => 'Čekání, až se objeví emodži…';
+
+  @override
+  String get syncPairEnterManually => 'Zadat kód ručně';
+
+  @override
+  String get syncPairErrorMalformed =>
+      'Tohle nevypadá jako párovací kód. Zkontroluj, že jsi zkopíroval celý – na druhém zařízení znovu stiskni Kopírovat párovací kód.';
+
+  @override
+  String get syncPairErrorVersion =>
+      'Tento kód pochází z jiné verze Lotti. Aktualizuj obě zařízení a zkus to znovu.';
+
+  @override
+  String get syncPairGoToDevices => 'Přejít na Zařízení';
+
+  @override
+  String get syncPairMismatchRemedy =>
+      'Pokud se neshoduje, použij místo toho kód, který ukazuje tvoje vlastní zařízení.';
+
+  @override
+  String get syncPairMismatchWarning =>
+      'Pokud se tohle neshoduje, nepřipojuj se – kód patří jinému účtu.';
+
+  @override
+  String get syncPairOnlyOwnCode =>
+      'Používej jen kód, který sis sám vytvořil na svém zařízení. Naskenováním cizího kódu dostaneš všechno, co sem napíšeš, do cizího účtu.';
+
+  @override
+  String get syncPairPasteTitle => 'Vlož párovací kód';
+
+  @override
+  String get syncPairScanInstead => 'Naskenovat fotoaparátem';
+
+  @override
+  String get syncPairScannerRejected =>
+      'To je kód, který jsi odmítl. Naskenuj kód, který ukazuje tvoje vlastní zařízení, nebo ho vlož níže.';
+
+  @override
+  String get syncPairScanTitle => 'Namiř kameru na kód na svém druhém zařízení';
+
+  @override
+  String get syncPairShowEmojiAgain => 'Zobrazit emodži znovu';
+
+  @override
+  String get syncPairStepAlmost => 'Krok 3 ze 3 · Dokonči na druhém zařízení';
+
+  @override
+  String get syncPairStepConfirm => 'Krok 2 ze 3 · Potvrzení';
+
+  @override
+  String get syncPairStepConnecting => 'Krok 3 ze 3 · Připojování';
+
+  @override
+  String get syncPairStepFailed => 'Krok 3 ze 3 · Připojení selhalo';
+
+  @override
+  String get syncPairStepScan => 'Krok 1 ze 3 · Získej kód';
+
+  @override
+  String get syncPairWhereToFind =>
+      'Na zařízení, které už synchronizuje, otevři Nastavení → Nastavení synchronizace → Zařízení a zvol Přidat zařízení.';
+
+  @override
+  String get syncPairWillJoin => 'Tohle zařízení se připojí k:';
 
   @override
   String get syncPayloadAgentBundle => 'Balíček agenta';

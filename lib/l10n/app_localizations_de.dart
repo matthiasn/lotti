@@ -4762,7 +4762,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteButton => 'Löschen';
 
   @override
-  String get deleteDeviceLabel => 'Gerät löschen';
+  String get deleteDeviceLabel => 'Aus Sync entfernen';
 
   @override
   String get designSystemActionVariantTitle => 'Mit Aktion';
@@ -5276,17 +5276,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String deviceDeletedSuccess(String deviceName) {
-    return 'Gerät $deviceName erfolgreich gelöscht';
-  }
-
-  @override
-  String deviceDeleteFailed(String error) {
-    return 'Gerät konnte nicht gelöscht werden: $error';
+    return '$deviceName aus Sync entfernt';
   }
 
   @override
   String get deviceDeleteFailedForbidden =>
-      'Der Homeserver hat das gespeicherte Passwort abgelehnt, daher konnte das Gerät nicht entfernt werden. Kopple dieses Gerät mit einem neuen QR-Code neu und versuche es erneut.';
+      'Der Sync-Server hat diese Änderung abgelehnt. Entferne das Gerät direkt auf dem Gerät aus der Synchronisierung oder koppel es mit einem neuen Kopplungscode erneut.';
+
+  @override
+  String get deviceDeleteFailedGeneric =>
+      'Das Gerät konnte nicht entfernt werden. Prüfe deine Verbindung und versuche es erneut.';
 
   @override
   String deviceDeleteQuestion(String deviceName) {
@@ -8215,84 +8214,65 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptSelectionModalTitle => 'Vorkonfigurierten Prompt auswählen';
 
   @override
-  String get provisionedSyncBundleImported => 'Bereitstellungscode importiert';
-
-  @override
-  String get provisionedSyncConfigureButton => 'Konfigurieren';
-
-  @override
   String get provisionedSyncCopiedToClipboard =>
       'In die Zwischenablage kopiert';
 
   @override
-  String get provisionedSyncDisconnect => 'Trennen';
+  String get provisionedSyncDisconnect => 'Sync auf diesem Gerät beenden';
 
   @override
-  String get provisionedSyncDone => 'Synchronisierung erfolgreich konfiguriert';
+  String get provisionedSyncDone => 'Dieses Gerät ist verbunden';
 
   @override
-  String get provisionedSyncError => 'Konfiguration fehlgeschlagen';
+  String get provisionedSyncError =>
+      'Verbindung zu deinem Sync-Konto fehlgeschlagen';
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
-      'Bei der Konfiguration ist ein Fehler aufgetreten. Bitte versuche es erneut.';
+      'Beim Verbinden ist etwas schiefgegangen. Versuche es erneut; wenn es weiter fehlschlägt, prüfe, ob das andere Gerät noch synchronisiert.';
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten und versuche es erneut.';
+      'Die Anmeldung mit diesem Code ist fehlgeschlagen. Prüfe, ob das andere Gerät noch synchronisiert, öffne dort erneut „Gerät hinzufügen“ und nimm den Code, den es anzeigt.';
 
   @override
-  String get provisionedSyncImportButton => 'Importieren';
+  String get provisionedSyncImportButton => 'Weiter';
 
   @override
-  String get provisionedSyncImportHint => 'Bereitstellungscode hier einfügen';
+  String get provisionedSyncImportHint => 'Kopplungscode hier einfügen';
 
   @override
   String get provisionedSyncImportTitle => 'Sync einrichten';
 
   @override
-  String get provisionedSyncInvalidBundle => 'Ungültiger Bereitstellungscode';
+  String get provisionedSyncJoiningRoom =>
+      'Gemeinsamer Speicher wird eingerichtet…';
 
   @override
-  String get provisionedSyncJoiningRoom => 'Sync-Raum beitreten...';
-
-  @override
-  String get provisionedSyncLoggingIn => 'Anmeldung läuft...';
+  String get provisionedSyncLoggingIn => 'Verbindung zu deinem Sync-Konto…';
 
   @override
   String get provisionedSyncPasteClipboard => 'Aus Zwischenablage einfügen';
 
   @override
-  String get provisionedSyncReady =>
-      'Scanne diesen QR-Code auf deinem Mobilgerät';
-
-  @override
   String get provisionedSyncRetry => 'Erneut versuchen';
 
   @override
-  String get provisionedSyncRotatingPassword => 'Konto wird gesichert...';
-
-  @override
-  String get provisionedSyncScanButton => 'QR-Code scannen';
-
-  @override
-  String get provisionedSyncShowQr => 'QR-Code anzeigen';
+  String get provisionedSyncRotatingPassword =>
+      'Dieses Gerät wird abgesichert…';
 
   @override
   String get provisionedSyncSubtitle =>
-      'Synchronisierung aus einem Bereitstellungspaket einrichten';
+      'Ein weiteres Gerät mit diesem Sync-Konto koppeln';
 
   @override
-  String get provisionedSyncSummaryHomeserver => 'Homeserver';
+  String get provisionedSyncSummaryHomeserver => 'Sync-Server';
 
   @override
-  String get provisionedSyncSummaryRoom => 'Raum';
+  String get provisionedSyncSummaryUser => 'Sync-Konto';
 
   @override
-  String get provisionedSyncSummaryUser => 'Benutzer';
-
-  @override
-  String get provisionedSyncTitle => 'Provisionierte Synchronisierung';
+  String get provisionedSyncTitle => 'Geräte';
 
   @override
   String get queueCatchUpNowButton => 'Jetzt aufholen';
@@ -9331,7 +9311,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixDiagnosticDialogTitle => 'Sync-Diagnoseinfos';
 
   @override
-  String get settingsMatrixDiagnosticShowButton => 'Diagnoseinfos anzeigen';
+  String get settingsMatrixDiagnosticShowButton => 'Technische Details';
 
   @override
   String get settingsMatrixDone => 'Fertig';
@@ -9378,7 +9358,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixStatsTitle => 'Matrix-Statistiken';
 
   @override
-  String get settingsMatrixTitle => 'Matrix-Synchronisierungseinstellungen';
+  String get settingsMatrixTitle => 'Synchronisierungseinstellungen';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -9883,11 +9863,73 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncActivityTitle => 'Sync';
 
   @override
-  String get syncDeleteConfigConfirm => 'JA, ICH BIN SICHER';
+  String get syncAddDeviceAction => 'Gerät hinzufügen';
 
   @override
-  String get syncDeleteConfigQuestion =>
-      'Möchtest du die Synchronisierungskonfiguration löschen?';
+  String get syncAddDeviceCodeHint =>
+      'Das neue Gerät hat keine Kamera? Kopiere den Kopplungscode und füge ihn dort stattdessen ein.';
+
+  @override
+  String get syncAddDeviceConnected => 'Ein neues Gerät ist beigetreten';
+
+  @override
+  String get syncAddDeviceCopyCode => 'Kopplungscode kopieren';
+
+  @override
+  String get syncAddDeviceHideCode => 'Kopplungscode ausblenden';
+
+  @override
+  String get syncAddDeviceIntro =>
+      'Installiere Lotti auf dem neuen Gerät, öffne dort Einstellungen → Synchronisierungseinstellungen → Geräte und scanne diesen Code.';
+
+  @override
+  String get syncAddDeviceNextLeadIn =>
+      'Als Nächstes · wenn es beigetreten ist';
+
+  @override
+  String get syncAddDeviceRevealCode => 'Kopplungscode als Text anzeigen';
+
+  @override
+  String get syncAddDeviceRosterError =>
+      'Es konnte nicht geprüft werden, ob das neue Gerät beigetreten ist.';
+
+  @override
+  String get syncAddDeviceSecurityNote =>
+      'Dieser Kopplungscode entsperrt dein Sync-Konto – lass ihn nur von deinem eigenen neuen Gerät scannen und mach nie einen Screenshot davon oder verschicke ihn.';
+
+  @override
+  String get syncAddDeviceSendSettings => 'Einstellungen senden';
+
+  @override
+  String get syncAddDeviceSendSettingsHint =>
+      'Sobald das neue Gerät verbunden ist, sende deine Kategorien, Gewohnheiten, Dashboards und KI-Einstellungen dorthin.';
+
+  @override
+  String get syncAddDeviceSendSettingsPending =>
+      'Verfügbar, sobald das neue Gerät beigetreten ist.';
+
+  @override
+  String get syncAddDeviceSendSettingsReady =>
+      'Jetzt senden – oder warten, bis das neue Gerät beigetreten ist.';
+
+  @override
+  String get syncAddDeviceStepScan => 'Jetzt · Code zeigen';
+
+  @override
+  String get syncAddDeviceStepScanTitle => 'Auf dem neuen Gerät scannen';
+
+  @override
+  String get syncAddDeviceUnavailable =>
+      'Richte Sync auf diesem Gerät ein, bevor du ein weiteres hinzufügst.';
+
+  @override
+  String get syncAddDeviceWaiting => 'Warten auf das neue Gerät …';
+
+  @override
+  String get syncDeleteConfigConfirm => 'Sync beenden';
+
+  @override
+  String get syncDeleteConfigQuestion => 'Sync auf diesem Gerät beenden?';
 
   @override
   String get syncDevicesKeylessHint =>
@@ -9970,6 +10012,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncDevicesVerifiedChip => 'Verifiziert';
 
   @override
+  String get syncDisconnectExplanation =>
+      'Deine Einträge bleiben auf diesem Gerät. Es wird vom Sync-Konto abgemeldet und braucht einen neuen Kopplungscode, um wieder zu synchronisieren. Deine anderen Geräte sind nicht betroffen.';
+
+  @override
   String get syncEntitiesConfirm => 'SYNC STARTEN';
 
   @override
@@ -10003,6 +10049,145 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncNotLoggedInToast => 'Sync ist nicht angemeldet';
+
+  @override
+  String get syncPairBack => 'Zurück';
+
+  @override
+  String get syncPairCameraDenied =>
+      'Lotti braucht Kamerazugriff zum Scannen. Erlaube ihn in den Systemeinstellungen oder gib den Code manuell ein.';
+
+  @override
+  String get syncPairCameraRetry => 'Kamera erneut versuchen';
+
+  @override
+  String get syncPairCheckAgain => 'Erneut prüfen';
+
+  @override
+  String get syncPairCheckCode =>
+      'Prüfe, ob das auf dem anderen Gerät gleich ist';
+
+  @override
+  String get syncPairCheckCodeLabel => 'Prüfcode';
+
+  @override
+  String get syncPairClipboardEmpty =>
+      'Nichts zum Einfügen. Kopiere zuerst den Kopplungscode auf deinem anderen Gerät.';
+
+  @override
+  String get syncPairClipboardUnavailable =>
+      'Die Zwischenablage konnte nicht gelesen werden. Füge den Code direkt in das Feld ein.';
+
+  @override
+  String get syncPairConnectButton => 'Dieses Gerät verbinden';
+
+  @override
+  String get syncPairCopyCodeHint =>
+      'Dieses Gerät hat keine Kamera? Verwende auf dem anderen Gerät Kopplungscode kopieren und bring ihn per Passwort-Manager, verschlüsselter Notiz oder durch Abtippen hierher – nicht per Chat oder E-Mail.';
+
+  @override
+  String get syncPairDiscardCode => 'Anderen Kopplungscode eingeben';
+
+  @override
+  String get syncPairedNextTitle => 'Noch zwei Schritte';
+
+  @override
+  String get syncPairedNextTitleOne => 'Noch eine Sache';
+
+  @override
+  String get syncPairedSettingsStep =>
+      'Wähle auf deinem anderen Gerät im noch geöffneten Bildschirm Gerät hinzufügen die Option Einstellungen senden. Deine Kategorien, Gewohnheiten, Dashboards und KI-Einstellungen kommen dann hierher.';
+
+  @override
+  String get syncPairedSettingsStepFallback =>
+      'Oder öffne erneut Einstellungen → Synchronisierungseinstellungen → Geräte → Gerät hinzufügen.';
+
+  @override
+  String get syncPairedVerifyDone =>
+      'Beide Geräte verifiziert – dieses Gerät kann deine Einträge lesen';
+
+  @override
+  String get syncPairedVerifyFallback =>
+      'Noch keine Emojis? Prüfe erneut – oder öffne Geräte und starte die Prüfung dort.';
+
+  @override
+  String get syncPairedVerifyStep =>
+      'Auf beiden Geräten erscheint eine Reihe von Emojis. Prüfe, ob sie übereinstimmen, und bestätige auf jedem Gerät — bis dahin kann dieses Gerät deine Einträge nicht lesen.';
+
+  @override
+  String get syncPairedVerifyStepDone =>
+      'Emojis stimmen überein – dieses Gerät kann deine Einträge lesen';
+
+  @override
+  String get syncPairedVerifyWaiting =>
+      'Warte darauf, dass die Emojis erscheinen…';
+
+  @override
+  String get syncPairEnterManually => 'Code manuell eingeben';
+
+  @override
+  String get syncPairErrorMalformed =>
+      'Das sieht nicht nach einem Kopplungscode aus. Prüfe, ob du ihn vollständig kopiert hast – drücke auf dem anderen Gerät erneut Kopplungscode kopieren.';
+
+  @override
+  String get syncPairErrorVersion =>
+      'Dieser Code stammt aus einer anderen Lotti-Version. Aktualisiere beide Geräte und versuche es erneut.';
+
+  @override
+  String get syncPairGoToDevices => 'Zu Geräte';
+
+  @override
+  String get syncPairMismatchRemedy =>
+      'Wenn er nicht übereinstimmt, nimm stattdessen den Code, den dein eigenes Gerät anzeigt.';
+
+  @override
+  String get syncPairMismatchWarning =>
+      'Wenn das nicht übereinstimmt, verbinde nicht – der Code gehört zu einem anderen Konto.';
+
+  @override
+  String get syncPairOnlyOwnCode =>
+      'Verwende nur einen Code, den du selbst auf einem eigenen Gerät erzeugt hast. Scannst du den Code einer anderen Person, landet alles, was du hier schreibst, in deren Konto.';
+
+  @override
+  String get syncPairPasteTitle => 'Kopplungscode einfügen';
+
+  @override
+  String get syncPairScanInstead => 'Mit Kamera scannen';
+
+  @override
+  String get syncPairScannerRejected =>
+      'Das ist der Code, den du abgelehnt hast. Scanne den Code, den dein eigenes Gerät anzeigt, oder füge ihn unten ein.';
+
+  @override
+  String get syncPairScanTitle =>
+      'Richte die Kamera auf den Code auf deinem anderen Gerät';
+
+  @override
+  String get syncPairShowEmojiAgain => 'Emojis erneut anzeigen';
+
+  @override
+  String get syncPairStepAlmost =>
+      'Schritt 3 von 3 · Auf dem anderen Gerät abschließen';
+
+  @override
+  String get syncPairStepConfirm => 'Schritt 2 von 3 · Bestätigen';
+
+  @override
+  String get syncPairStepConnecting => 'Schritt 3 von 3 · Verbinden';
+
+  @override
+  String get syncPairStepFailed =>
+      'Schritt 3 von 3 · Verbindung fehlgeschlagen';
+
+  @override
+  String get syncPairStepScan => 'Schritt 1 von 3 · Code holen';
+
+  @override
+  String get syncPairWhereToFind =>
+      'Öffne auf einem Gerät, das bereits synchronisiert, Einstellungen → Synchronisierungseinstellungen → Geräte und wähle Gerät hinzufügen.';
+
+  @override
+  String get syncPairWillJoin => 'Dieses Gerät tritt bei:';
 
   @override
   String get syncPayloadAgentBundle => 'Agent-Bündel';
