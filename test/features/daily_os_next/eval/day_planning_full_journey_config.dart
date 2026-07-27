@@ -33,12 +33,19 @@ DateTime fullJourneyClockValue({
   required DateTime evaluationDate,
   required int startHour,
   required Duration elapsed,
-}) => DateTime(
-  evaluationDate.year,
-  evaluationDate.month,
-  evaluationDate.day,
-  startHour,
-).add(elapsed);
+}) {
+  final timeOfDay = DateTime.utc(2000, 1, 1, startHour).add(elapsed);
+  return DateTime(
+    evaluationDate.year,
+    evaluationDate.month,
+    evaluationDate.day,
+    timeOfDay.hour,
+    timeOfDay.minute,
+    timeOfDay.second,
+    timeOfDay.millisecond,
+    timeOfDay.microsecond,
+  );
+}
 
 String _dateOnly(DateTime value) =>
     '${value.year.toString().padLeft(4, '0')}-'

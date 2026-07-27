@@ -128,6 +128,10 @@ void main() {
     );
     expect(
       draftRule,
+      contains('`draft_day_plan` MUST be the final tool call'),
+    );
+    expect(
+      draftRule,
       contains(
         'A successful draft completes the wake without a separate summary '
         'turn',

@@ -54,4 +54,14 @@ void main() {
       expect(value, DateTime(2040, 6, 3, 12, 17));
     },
   );
+
+  test('scenario clock wraps time without leaving the configured date', () {
+    final value = fullJourneyClockValue(
+      evaluationDate: DateTime(2040, 6, 3),
+      startHour: 23,
+      elapsed: const Duration(hours: 2),
+    );
+
+    expect(value, DateTime(2040, 6, 3, 1));
+  });
 }
