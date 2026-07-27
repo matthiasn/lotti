@@ -253,44 +253,90 @@ void main() {
       expect(barRect.right - lastSlot.right, greaterThanOrEqualTo(rightInset));
     });
 
-    testWidgets('docks flush: surface absorbs the bottom safe-area inset', (
-      tester,
-    ) async {
-      const inset = 34.0;
-      await pumpBar(
-        tester,
-        items: barItems(),
-        mediaQueryData: const MediaQueryData(
-          size: Size(390, 844),
-          padding: EdgeInsets.only(bottom: inset),
-        ),
-      );
+    testWidgets(
+      'docks flush: iOS absorbs a fraction of the home-indicator inset',
+      (tester) async {
+        const inset = 34.0;
+        await pumpBar(
+          tester,
+          items: barItems(),
+          mediaQueryData: const MediaQueryData(
+            size: Size(390, 844),
+            padding: EdgeInsets.only(bottom: inset),
+          ),
+        );
 
-      final barRect = tester.getRect(find.byType(DesignSystemFiveSlotNavBar));
-      final slotRect = tester.getRect(
-        find.ancestor(of: find.text('Tasks'), matching: find.byType(InkWell)),
-      );
+        final barRect = tester.getRect(find.byType(DesignSystemFiveSlotNavBar));
+        final slotRect = tester.getRect(
+          find.ancestor(of: find.text('Tasks'), matching: find.byType(InkWell)),
+        );
 
-      // The rendered bar height matches the shared height contract...
-      expect(
-        barRect.height,
-        DesignSystemFiveSlotNavBar.barHeight(
-          tester.element(find.byType(DesignSystemFiveSlotNavBar)),
-        ),
-      );
-      // ...and the surface extends exactly the absorbed inset
-      // (bottomInsetFraction of the OS-reported one) plus the hairline
-      // border below the slot row: the
-      // trimmed inset replaces the internal bottom padding instead of
-      // stacking onto it, so home-indicator devices get no dead space.
-      expect(
-        barRect.bottom - slotRect.bottom,
-        moreOrLessEquals(
-          inset * DesignSystemFiveSlotNavBar.bottomInsetFraction +
-              DesignSystemNavigationFrostedSurface.borderWidth,
-        ),
-      );
-    });
+        // The rendered bar height matches the shared height contract...
+        expect(
+          barRect.height,
+          DesignSystemFiveSlotNavBar.barHeight(
+            tester.element(find.byType(DesignSystemFiveSlotNavBar)),
+          ),
+        );
+        // ...and the surface extends exactly the absorbed inset
+        // (bottomInsetFraction of the OS-reported one) plus the hairline
+        // border below the slot row: the trimmed inset replaces the internal
+        // bottom padding instead of stacking onto it, so home-indicator
+        // devices get no dead space. Trimming is safe here precisely because
+        // the home indicator is decorative.
+        expect(
+          barRect.bottom - slotRect.bottom,
+          moreOrLessEquals(
+            inset * DesignSystemFiveSlotNavBar.bottomInsetFraction +
+                DesignSystemNavigationFrostedSurface.borderWidth,
+          ),
+        );
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+
+    // Regression: the fraction was tuned for the iPhone home indicator and
+    // applied everywhere. On Android's three-button navigation bar the inset
+    // is ~48dp of live system buttons, so halving it left the bottom of the
+    // slot row sitting underneath recents/home/back — taps there hit the
+    // system bar, not the app.
+    testWidgets(
+      'docks flush: Android keeps the slot row clear of the whole inset',
+      (tester) async {
+        const inset = 48.0;
+        await pumpBar(
+          tester,
+          items: barItems(),
+          mediaQueryData: const MediaQueryData(
+            size: Size(390, 844),
+            padding: EdgeInsets.only(bottom: inset),
+          ),
+        );
+
+        final barRect = tester.getRect(find.byType(DesignSystemFiveSlotNavBar));
+        final slotRect = tester.getRect(
+          find.ancestor(of: find.text('Tasks'), matching: find.byType(InkWell)),
+        );
+
+        // Every tappable pixel of the slot row sits above the system
+        // navigation bar's territory.
+        expect(
+          barRect.bottom - slotRect.bottom,
+          greaterThanOrEqualTo(inset),
+          reason: 'the slot row must not overlap the system navigation bar',
+        );
+        expect(
+          barRect.height,
+          DesignSystemFiveSlotNavBar.barHeight(
+            tester.element(find.byType(DesignSystemFiveSlotNavBar)),
+          ),
+          reason:
+              'occupiedHeight math must follow the same padding rule, or '
+              'scrolled content would pad by the wrong amount',
+        );
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.android),
+    );
 
     testWidgets('active slot uses the interactive tint and active icon', (
       tester,

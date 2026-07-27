@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -41,10 +42,10 @@ class DesignSystemFiveSlotNavBarItem {
 /// those line-ups.
 ///
 /// The bar spans the full width with only the top corners rounded, and pads
-/// the bottom safe-area inset *inside* its surface ([bottomInsetFraction]
-/// of it, replacing the internal bottom padding), so the frosted fill
-/// reaches the physical bottom edge with zero gap while the slot row stays
-/// clear of the home indicator.
+/// the bottom safe-area inset *inside* its surface (replacing the internal
+/// bottom padding — see [bottomInsetFraction]), so the frosted fill reaches
+/// the physical bottom edge with zero gap while the slot row stays clear of
+/// the home indicator or the system navigation bar.
 ///
 /// Selection tint cross-fades over [tintDuration]; when the platform asks
 /// for reduced motion the tint snaps instead.
@@ -69,9 +70,17 @@ class DesignSystemFiveSlotNavBar extends StatelessWidget {
   static const Duration tintDuration = Duration(milliseconds: 240);
 
   /// Fraction of the bottom safe-area inset the bar absorbs into its
-  /// surface. The OS-reported home-indicator inset (34px on iPhones) is
+  /// surface **on iOS**. The home-indicator inset (34px on iPhones) is
   /// generous for a docked bar; rendering half of it keeps the slot row
   /// clear of the indicator without dead space below the labels.
+  ///
+  /// It applies to iOS only because the home indicator is a decorative pill
+  /// with no touch targets — overlapping its outer half costs nothing. Every
+  /// other platform's bottom inset can be real, tappable system UI: Android's
+  /// three-button navigation bar (recents/home/back) reports roughly 48dp of
+  /// live buttons, and trimming that in half puts the bottom of the slot row
+  /// underneath them, so taps land on the system bar instead of the app. See
+  /// [_bottomPadding].
   static const double bottomInsetFraction = 0.5;
 
   /// `cubic-bezier(0.25, 1, 0.5, 1)` — easeOutQuart.
@@ -110,16 +119,20 @@ class DesignSystemFiveSlotNavBar extends StatelessWidget {
         DesignSystemNavigationFrostedSurface.borderWidth * 2;
   }
 
-  /// Bottom padding of the frosted surface: [bottomInsetFraction] of the
-  /// safe-area inset, replacing — rather than stacking onto — the internal
-  /// `step2` padding, so home-indicator devices get no double spacing
-  /// below the slot row.
+  /// Bottom padding of the frosted surface, replacing — rather than stacking
+  /// onto — the internal `step2` padding, so devices reporting a bottom inset
+  /// get no double spacing below the slot row.
+  ///
+  /// iOS absorbs [bottomInsetFraction] of the inset; every other platform
+  /// absorbs it whole, because there the inset can be the system navigation
+  /// bar's live buttons rather than a decorative home indicator.
   static double _bottomPadding(BuildContext context) {
     final tokens = context.designTokens;
-    return math.max(
-      tokens.spacing.step2,
-      MediaQuery.paddingOf(context).bottom * bottomInsetFraction,
-    );
+    final inset = MediaQuery.paddingOf(context).bottom;
+    final absorbed = defaultTargetPlatform == TargetPlatform.iOS
+        ? inset * bottomInsetFraction
+        : inset;
+    return math.max(tokens.spacing.step2, absorbed);
   }
 
   /// Width one slot needs to render [label] comfortably: the caption line
