@@ -52,6 +52,7 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
+    ensureDomainLoggerRegistered();
     mockMaintenance = MockMaintenance();
     mockAgentRepository = MockAgentRepository();
     when(
@@ -227,6 +228,85 @@ void main() {
     expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
   });
 
+  testWidgets('completed phase reports its count and completion state', (
+    tester,
+  ) async {
+    final completer = Completer<void>();
+    when(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((invocation) {
+      final onProgress =
+          invocation.namedArguments[#onProgress] as ReSyncProgressCallback;
+      onProgress(
+        const ReSyncProgress(
+          phase: ReSyncPhase.journalEntities,
+          processed: 12,
+          total: 12,
+          isComplete: true,
+        ),
+      );
+      return completer.future;
+    });
+
+    await pumpModal(tester);
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    expect(find.byKey(const Key('reSyncProgress')), findsOneWidget);
+    expect(find.text('33%'), findsOneWidget);
+    expect(find.text('12 / 12'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
+
+    completer.complete();
+    await tester.pump();
+  });
+
+  testWidgets('failure stays in the modal and can be retried', (tester) async {
+    var attempts = 0;
+    when(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async {
+      attempts++;
+      if (attempts == 1) throw Exception('enqueue failed');
+    });
+
+    await pumpModal(tester);
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    expect(find.byKey(const Key('reSyncFailed')), findsOneWidget);
+    expect(find.byKey(const Key('reSyncComplete')), findsNothing);
+    expect(
+      tester
+          .widget<DesignSystemButton>(
+            find.widgetWithText(DesignSystemButton, 'Start'),
+          )
+          .onPressed,
+      isNotNull,
+    );
+
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    expect(attempts, 2);
+    expect(find.byKey(const Key('reSyncFailed')), findsNothing);
+    expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
+  });
+
   testWidgets('uses the localized maintenance label as the modal title', (
     tester,
   ) async {
@@ -251,6 +331,17 @@ void main() {
 
     expect(find.text('Re-sync messages'), findsWidgets);
     expect(find.text('Re-sync entries'), findsNothing);
+
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+    expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Done'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(ReSyncModalContent), findsNothing);
+    expect(find.text('Open'), findsOneWidget);
   });
 
   testWidgets(
