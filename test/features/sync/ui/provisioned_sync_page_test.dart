@@ -1,4 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -36,7 +39,24 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  Future<void> pump(WidgetTester tester, {required bool enabled}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    required bool enabled,
+    bool configured = false,
+  }) async {
+    when(mockMatrixService.isLoggedIn).thenReturn(configured);
+    when(
+      () => mockMatrixService.syncRoomId,
+    ).thenReturn(configured ? '!room:example.com' : null);
+    when(
+      () => mockMatrixService.getUnverifiedDevices(),
+    ).thenReturn([]);
+    when(
+      () => mockMatrixService.getSyncDevices(),
+    ).thenAnswer((_) async => const <SyncDeviceInfo>[]);
+    when(
+      () => mockMatrixService.keyVerificationStream,
+    ).thenAnswer((_) => const Stream.empty());
     when(
       () => mocks.journalDb.watchConfigFlag(enableMatrixFlag),
     ).thenAnswer((_) => Stream<bool>.value(enabled));
@@ -71,6 +91,30 @@ void main() {
     (tester) async {
       await pump(tester, enabled: false);
 
+      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'shows the device roster inline once sync is configured, as desktop does',
+    (tester) async {
+      // Every instruction in the pairing flow says "open Settings → Sync
+      // Settings → Devices, then choose Add device". While this page rendered
+      // the setup card unconditionally, a mobile user following that sentence
+      // landed on a screen with no Add device on it.
+      await pump(tester, enabled: true, configured: true);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
+      expect(
+        tester
+            .widget<ProvisionedStatusWidget>(
+              find.byType(ProvisionedStatusWidget),
+            )
+            .embedded,
+        isTrue,
+      );
+      expect(find.byKey(const Key('sync_devices_add_device')), findsOneWidget);
       expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
     },
   );

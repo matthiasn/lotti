@@ -10172,6 +10172,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPairDiscardCode => 'Zadat jiný párovací kód';
 
   @override
+  String get syncPairedFirstDeviceBody =>
+      'Zatím je to jediné zařízení na tvém synchronizačním účtu. Přidej další, kdykoli budeš chtít – všechno, co sem napíšeš, na něj počká.';
+
+  @override
+  String get syncPairedFirstDeviceTitle =>
+      'Synchronizace je na tomhle zařízení nastavená';
+
+  @override
   String get syncPairedNextTitle => 'Zbývají dva kroky';
 
   @override
@@ -10254,6 +10262,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPairStepConnecting => 'Krok 3 ze 3 · Připojování';
+
+  @override
+  String get syncPairStepDone => 'Krok 3 ze 3 · Hotovo';
 
   @override
   String get syncPairStepFailed => 'Krok 3 ze 3 · Připojení selhalo';

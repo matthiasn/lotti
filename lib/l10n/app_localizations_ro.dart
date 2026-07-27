@@ -10229,6 +10229,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPairDiscardCode => 'Introduceți alt cod de asociere';
 
   @override
+  String get syncPairedFirstDeviceBody =>
+      'Deocamdată este singurul dispozitiv din contul dvs. de sincronizare. Adăugați altul oricând doriți – tot ce scrieți aici îl va aștepta.';
+
+  @override
+  String get syncPairedFirstDeviceTitle =>
+      'Sincronizarea este configurată pe acest dispozitiv';
+
+  @override
   String get syncPairedNextTitle => 'Au mai rămas doi pași';
 
   @override
@@ -10313,6 +10321,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairStepConnecting => 'Pasul 3 din 3 · Se conectează';
+
+  @override
+  String get syncPairStepDone => 'Pasul 3 din 3 · Gata';
 
   @override
   String get syncPairStepFailed => 'Pasul 3 din 3 · Conectarea a eșuat';

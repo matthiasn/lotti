@@ -9965,6 +9965,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPairDiscardCode => 'Enter a different pairing code';
 
   @override
+  String get syncPairedFirstDeviceBody =>
+      'This is the only device on your sync account so far. Add another whenever you like — everything you write here will be waiting for it.';
+
+  @override
+  String get syncPairedFirstDeviceTitle => 'Sync is set up on this device';
+
+  @override
   String get syncPairedNextTitle => 'Two things left';
 
   @override
@@ -10048,6 +10055,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairStepConnecting => 'Step 3 of 3 · Connecting';
+
+  @override
+  String get syncPairStepDone => 'Step 3 of 3 · Done';
 
   @override
   String get syncPairStepFailed => 'Step 3 of 3 · Couldn\'t connect';

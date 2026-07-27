@@ -103,7 +103,7 @@ void main() {
 
   testWidgets(
     'sync hub renders its children with no landing-panel header, in the '
-    'shared-tree order with provisioned first',
+    'shared-tree order with Devices first',
     (tester) async {
       await _pump(tester, branchId: 'sync', overrides: _flags());
 

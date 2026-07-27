@@ -10233,6 +10233,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncPairDiscardCode => 'Saisir un autre code d’appairage';
 
   @override
+  String get syncPairedFirstDeviceBody =>
+      'C’est pour l’instant le seul appareil de ton compte de synchronisation. Ajoutes-en un autre quand tu veux — tout ce que tu écris ici l’attendra.';
+
+  @override
+  String get syncPairedFirstDeviceTitle =>
+      'La synchronisation est configurée sur cet appareil';
+
+  @override
   String get syncPairedNextTitle => 'Encore deux étapes';
 
   @override
@@ -10318,6 +10326,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPairStepConnecting => 'Étape 3 sur 3 · Connexion';
+
+  @override
+  String get syncPairStepDone => 'Étape 3 sur 3 · Terminé';
 
   @override
   String get syncPairStepFailed => 'Étape 3 sur 3 · Échec de la connexion';

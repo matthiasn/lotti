@@ -146,11 +146,18 @@ class ProvisionedConfigWidget extends ConsumerWidget {
         step: 3,
         totalSteps: 3,
       ),
+      // `ready` and `done` are not the same ending. `ready` follows a fresh
+      // CLI `provisioned` bundle, so this is usually the account's *first*
+      // device: there is no peer to run an emoji ceremony with and none to
+      // push settings from, and showing the two-outstanding-steps card told
+      // that user to wait on a device that does not exist. `done` follows a
+      // peer handover, so a peer demonstrably exists.
+      //
       // A rotated bundle leaves a handover payload behind, but it is the same
       // credential `regenerateHandover()` mints on demand from the persisted
       // config — so pairing the next device belongs to "Add device" on the
       // roster, not to a second QR on the screen that just consumed one.
-      ready: (_) => _PairedView(pageIndexNotifier: pageIndexNotifier),
+      ready: (_) => const _FirstDeviceView(),
       done: () => _PairedView(pageIndexNotifier: pageIndexNotifier),
       error: (error) => _ErrorView(
         error: error,
@@ -169,7 +176,7 @@ class ProvisionedConfigWidget extends ConsumerWidget {
       loggingIn: () => messages.syncPairStepConnecting,
       joiningRoom: () => messages.syncPairStepConnecting,
       rotatingPassword: () => messages.syncPairStepConnecting,
-      ready: (_) => messages.syncPairStepAlmost,
+      ready: (_) => messages.syncPairStepDone,
       done: () => messages.syncPairStepAlmost,
       error: (_) => messages.syncPairStepFailed,
     );
@@ -225,6 +232,52 @@ class _ProgressStep extends StatelessWidget {
           SizedBox(height: tokens.spacing.step2),
         ],
       ),
+    );
+  }
+}
+
+/// The end of a fresh provisioning run: this device is the account, and
+/// nothing is outstanding. Deliberately not [_PairedView] — there is no peer
+/// to verify against and none to receive settings from, so both of that
+/// screen's remaining steps would be unperformable.
+class _FirstDeviceView extends StatelessWidget {
+  const _FirstDeviceView();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    return Column(
+      key: const Key('paired_first_device'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              size: tokens.spacing.step5,
+              color: tokens.colors.alert.success.defaultColor,
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(
+              child: Text(
+                messages.syncPairedFirstDeviceTitle,
+                style: tokens.typography.styles.subtitle.subtitle1,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        SyncFlowSection(
+          child: Text(
+            messages.syncPairedFirstDeviceBody,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

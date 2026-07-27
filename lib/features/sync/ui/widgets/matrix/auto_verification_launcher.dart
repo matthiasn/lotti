@@ -30,14 +30,26 @@ class AutoVerificationLauncher extends ConsumerStatefulWidget {
 class _AutoVerificationLauncherState
     extends ConsumerState<AutoVerificationLauncher> {
   bool _launchInFlight = false;
-  String? _lastAutoLaunchedDeviceId;
+
+  /// Every `(userId, deviceId)` this launcher has already offered a ceremony
+  /// for. A single "last" id was not enough: a stale or legacy unverified peer
+  /// can sort ahead of the device actually being paired, and once that one was
+  /// recorded it stayed first, so the guard suppressed every later attempt —
+  /// including the explicit "Show the emoji again".
+  final _handled = <String>{};
+
+  static String _identity(DeviceKeys device) =>
+      '${device.userId}/${device.deviceId}';
 
   Future<void> _maybeLaunch(List<DeviceKeys> devices) async {
     if (!mounted || _launchInFlight || devices.isEmpty) return;
-    final target = devices.first;
-    final targetId = target.deviceId;
+    // The first one *not* yet offered, rather than simply the first.
+    final target = devices
+        .where((d) => !_handled.contains(_identity(d)))
+        .firstOrNull;
+    if (target == null) return;
+    final targetId = _identity(target);
 
-    if (_lastAutoLaunchedDeviceId == targetId) return;
     final lock = ref.read(matrixVerificationModalLockProvider.notifier);
     if (!lock.tryAcquire()) {
       // Record it anyway. Two launchers can be mounted at once — the settings
@@ -45,12 +57,12 @@ class _AutoVerificationLauncherState
       // loser used to return without marking the device handled. When the
       // winner closed and invalidated the providers, the loser rebuilt, took
       // the freed lock, and reopened the sheet the user had just dismissed.
-      _lastAutoLaunchedDeviceId = targetId;
+      _handled.add(targetId);
       return;
     }
 
     _launchInFlight = true;
-    _lastAutoLaunchedDeviceId = targetId;
+    _handled.add(targetId);
     try {
       await showVerificationModalSheet(
         context: context,
@@ -74,7 +86,7 @@ class _AutoVerificationLauncherState
     // else can: the device is still unverified, which is precisely the state
     // that keeps the guard set, so re-querying the providers changes nothing.
     ref.listen<int>(matrixVerificationRelaunchProvider, (_, _) {
-      _lastAutoLaunchedDeviceId = null;
+      _handled.clear();
       final devices = ref.read(matrixUnverifiedControllerProvider).value ?? [];
       unawaited(_maybeLaunch(devices));
     });
@@ -83,7 +95,7 @@ class _AutoVerificationLauncherState
         ref.watch(matrixUnverifiedControllerProvider).value ?? [];
 
     if (unverifiedDevices.isEmpty) {
-      _lastAutoLaunchedDeviceId = null;
+      _handled.clear();
       return const SizedBox.shrink();
     }
 

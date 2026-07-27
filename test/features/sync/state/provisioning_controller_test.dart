@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/get_it.dart';
@@ -299,6 +300,56 @@ void main() {
               .read(provisioningControllerProvider.notifier)
               .decodeBundle(httpxServer),
           throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('a payload with no version at all is malformed, not outdated', () {
+        // "Update both devices" is a guess when the code never announced a
+        // version — the remedy is to replace a payload that is not a pairing
+        // code at all.
+        final noVersion = encodeBundle({
+          'kind': 'handover',
+          'homeServer': 'https://matrix.example.com',
+          'user': '@alice:example.com',
+          'password': 'secret',
+          'roomId': '!room:example.com',
+        });
+
+        expect(
+          () => container
+              .read(provisioningControllerProvider.notifier)
+              .decodeBundle(noVersion),
+          throwsA(
+            isA<BundleDecodeException>().having(
+              (e) => e.error,
+              'error',
+              BundleDecodeError.malformedPayload,
+            ),
+          ),
+        );
+      });
+
+      test('a non-integer version is malformed, not outdated', () {
+        final textVersion = encodeBundle({
+          'v': 'two',
+          'kind': 'handover',
+          'homeServer': 'https://matrix.example.com',
+          'user': '@alice:example.com',
+          'password': 'secret',
+          'roomId': '!room:example.com',
+        });
+
+        expect(
+          () => container
+              .read(provisioningControllerProvider.notifier)
+              .decodeBundle(textVersion),
+          throwsA(
+            isA<BundleDecodeException>().having(
+              (e) => e.error,
+              'error',
+              BundleDecodeError.malformedPayload,
+            ),
+          ),
         );
       });
 
