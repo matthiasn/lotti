@@ -1111,6 +1111,110 @@ void main() {
       },
     );
 
+    // Regression: an ordinary edit landing on a pending re-sync row is
+    // represented by ONE Matrix event afterwards. If the merge took its
+    // attachment decision from the incoming edit alone, that surviving event
+    // would carry no blob — and its row, left with a null filePath, would be
+    // packed into a bundle, so nothing downstream could recover it either.
+    test('a merge keeps the pending re-sync row media-bearing', () async {
+      final sampleDate = DateTime.utc(2024);
+      const entryId = 'merge-media';
+
+      // Already pending: a re-sync re-send that opted into carrying media.
+      const pendingResync = SyncMessage.journalEntity(
+        id: entryId,
+        jsonPath: '/entries/$entryId.json',
+        vectorClock: VectorClock({'hostA': 5}),
+        status: SyncEntryStatus.update,
+        includeAttachments: true,
+      );
+      when(() => syncDatabase.findPendingByEntryId(entryId)).thenAnswer(
+        (_) async => OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(pendingResync.toJson()),
+          subject: 'hhash:5',
+          filePath: null,
+          outboxEntryId: entryId,
+          priority: OutboxPriority.low.index,
+        ),
+      );
+
+      String? capturedFilePath;
+      String? capturedMessage;
+      int? capturedPayloadSize;
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
+          filePath: any(named: 'filePath'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedFilePath = invocation.namedArguments[#filePath] as String?;
+        capturedMessage = invocation.namedArguments[#newMessage] as String?;
+        capturedPayloadSize = invocation.namedArguments[#payloadSize] as int?;
+        return 1;
+      });
+
+      final imageData = ImageData(
+        capturedAt: sampleDate,
+        imageId: 'img-$entryId',
+        imageFile: '$entryId.jpg',
+        imageDirectory: '/images/',
+      );
+      final journalEntity = JournalEntity.journalImage(
+        meta: Metadata(
+          id: entryId,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: const VectorClock({'hostA': 7}),
+        ),
+        data: imageData,
+      );
+      File('${documentsDirectory.path}/entries/$entryId.json')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      File('${documentsDirectory.path}/images/$entryId.jpg')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(10, 42));
+
+      final testService = buildService();
+
+      // The incoming edit itself asks for nothing: plain update, no opt-in.
+      await testService.enqueueMessage(
+        const SyncMessage.journalEntity(
+          id: entryId,
+          jsonPath: '/entries/$entryId.json',
+          vectorClock: VectorClock({'hostA': 7}),
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      expect(
+        capturedFilePath,
+        endsWith('/images/$entryId.jpg'),
+        reason:
+            'the surviving row must still carry the blob the re-sync '
+            'asked for, and stay out of the bundler',
+      );
+      final merged =
+          SyncMessage.fromJson(
+                jsonDecode(capturedMessage!) as Map<String, dynamic>,
+              )
+              as SyncJournalEntity;
+      expect(merged.includeAttachments, isTrue);
+      // The blob's 10 bytes are billed to the merged row too.
+      expect(capturedPayloadSize, greaterThan(10));
+    });
+
     test('payloadSize includes file bytes for journal image', () async {
       final capturedCompanions = <OutboxCompanion>[];
       when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>())).thenAnswer(

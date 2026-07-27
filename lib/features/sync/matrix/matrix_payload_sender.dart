@@ -556,9 +556,23 @@ class MatrixPayloadSender {
 
     bool? resendFlag;
     for (final child in children) {
+      // The type test and the path resolution are one step, so there is no
+      // unreachable "entity has media but is neither" branch to carry.
       final entity = journalEntityById[child.id];
-      if (entity is! JournalImage && entity is! JournalAudio) continue;
-      final mediaEntity = entity!;
+      final (String fullPath, String relativePath) media;
+      if (entity is JournalImage) {
+        media = (
+          getFullImagePath(entity, documentsDirectory: documentsDirectory.path),
+          getRelativeImagePath(entity),
+        );
+      } else if (entity is JournalAudio) {
+        media = (
+          AudioUtils.getAudioPath(entity, documentsDirectory),
+          AudioUtils.getRelativeAudioPath(entity),
+        );
+      } else {
+        continue;
+      }
 
       // Read the flag lazily: bundles are text-only in the normal case, so
       // most sends never need it.
@@ -578,21 +592,10 @@ class MatrixPayloadSender {
         subDomain: 'sendMatrixMsg.outboxBundle.attachment',
       );
 
-      final sent = await mediaEntity.maybeMap(
-        journalImage: (JournalImage image) => sendFile(
-          room: room,
-          fullPath: getFullImagePath(
-            image,
-            documentsDirectory: documentsDirectory.path,
-          ),
-          relativePath: getRelativeImagePath(image),
-        ),
-        journalAudio: (JournalAudio audio) => sendFile(
-          room: room,
-          fullPath: AudioUtils.getAudioPath(audio, documentsDirectory),
-          relativePath: AudioUtils.getRelativeAudioPath(audio),
-        ),
-        orElse: () async => true,
+      final sent = await sendFile(
+        room: room,
+        fullPath: media.$1,
+        relativePath: media.$2,
       );
       if (!sent) return false;
     }
