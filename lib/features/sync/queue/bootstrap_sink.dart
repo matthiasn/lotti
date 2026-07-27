@@ -85,8 +85,16 @@ class QueueBootstrapSink implements BootstrapSink {
         forQueue.add(event);
         continue;
       }
+      final roomId = event.roomId;
+      if (roomId == null || roomId.isEmpty) {
+        _logging.log(
+          LogDomain.sync,
+          'queue.bootstrap.unresolvedWithoutRoom eventId=${event.eventId}',
+          subDomain: _logSub,
+        );
+        continue;
+      }
       unresolvedCount++;
-      final roomId = event.roomId ?? '';
       final originTs = event.originServerTs.millisecondsSinceEpoch;
       final current = unresolvedFloors[roomId];
       if (current == null || originTs < current) {

@@ -38,12 +38,12 @@ import 'package:matrix/matrix.dart';
 /// control — our own per-run state — stays constant regardless of
 /// total history depth.
 ///
-/// [boundaryContinuationCap] bounds how many extra pages are pulled
-/// past the boundary when the sink keeps reporting `accepted=0`.
-/// Each extra page costs one `requestHistory` round-trip. Five is
-/// a compromise between "pull enough history to populate the SDK
-/// cache for the wake-up window" and "don't walk indefinitely on
-/// a steady-state bridge run."
+/// [boundaryContinuationCap] bounds how many extra pages are pulled past the
+/// boundary, both while the sink keeps reporting `accepted=0` and while an
+/// equal-millisecond timestamp bucket remains open. Each extra page costs one
+/// `requestHistory` round-trip. Exhausting the cap inside an equal-timestamp
+/// bucket reports the walk as incomplete so the caller retains its durable
+/// floor and retries rather than claiming partial coverage.
 Future<BootstrapResult> collectHistoryForBootstrapImpl({
   required Room room,
   required BootstrapSink sink,
@@ -144,12 +144,30 @@ Future<BootstrapResult> collectHistoryForBootstrapImpl({
         if (crossedBoundary) {
           // A page ending exactly on the boundary does not exhaust that
           // millisecond's collision bucket. Continue until the server is
-          // exhausted or a page reaches a strictly older timestamp.
+          // exhausted or a page reaches a strictly older timestamp, but keep
+          // the same request budget as every other boundary continuation.
+          // Exhausting this bucket budget is incomplete: the caller must keep
+          // the durable floor and retry instead of claiming the collision
+          // bucket was fully covered.
           if (pageOldestTs == untilTimestamp && timeline.canRequestHistory) {
+            if (boundaryContinuations >= boundaryContinuationCap) {
+              logging.log(
+                LogDomain.sync,
+                'bootstrap.boundaryTimestampBucket.exhausted '
+                'pages=$boundaryContinuations cap=$boundaryContinuationCap '
+                'timestamp=$pageOldestTs',
+                subDomain: 'bootstrap',
+              );
+              stopReason = BootstrapStopReason.error;
+              break;
+            }
+            boundaryContinuations++;
             logging.log(
               LogDomain.sync,
               'bootstrap.boundaryTimestampBucket.continue '
-              'timestamp=$pageOldestTs',
+              'timestamp=$pageOldestTs '
+              'attempt=$boundaryContinuations '
+              'cap=$boundaryContinuationCap',
               subDomain: 'bootstrap',
             );
           } else {

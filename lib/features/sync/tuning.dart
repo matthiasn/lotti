@@ -157,6 +157,14 @@ class SyncTuning {
   /// letting the bounded retry resume from the new anchor.
   static const int forwardWalkEventCap = catchupMaxLookback;
 
+  /// Wall-clock budget for one backward bridge or gap-recovery walk.
+  ///
+  /// The timestamp-boundary continuation cap bounds ordinary pagination, but
+  /// this also stops an SDK timeline that keeps advertising history from
+  /// holding the room's recovery lane indefinitely. Timeout is reported as an
+  /// incomplete walk, so the durable floor remains for a later retry.
+  static const Duration backwardWalkTimeout = Duration(minutes: 5);
+
   // Backfill tuning - self-healing sync for missing entries
   static const Duration backfillRequestInterval = Duration(minutes: 2);
   static const int backfillMaxRequestCount = 10;

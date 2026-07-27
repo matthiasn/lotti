@@ -16,7 +16,7 @@ import '../../../mocks/mocks.dart';
 Event _buildEvent({
   required String eventId,
   required int originTsMs,
-  String roomId = '!roomA:example.org',
+  String? roomId = '!roomA:example.org',
   String type = EventTypes.Message,
 }) {
   final event = MockEvent();
@@ -360,6 +360,34 @@ void main() {
             'own completion CAS',
       );
       expect((await queue.stats()).total, 0);
+    },
+  );
+
+  test(
+    'room-less ciphertext is logged without creating an unreachable floor',
+    () async {
+      final sink = QueueBootstrapSink(queue: queue, logging: logging);
+      final event = _buildEvent(
+        eventId: r'$roomless',
+        originTsMs: 15,
+        roomId: null,
+        type: EventTypes.Encrypted,
+      );
+
+      final cont = await sink.onPage([event], info(0, 1));
+
+      expect(cont, isTrue);
+      expect(sink.lastAcceptedCount, 0);
+      expect(sink.oldestUnresolvedTs, isNull);
+      expect(await queue.resumeFloorTs(''), isNull);
+      expect((await queue.stats()).total, 0);
+      verify(
+        () => logging.log(
+          LogDomain.sync,
+          'queue.bootstrap.unresolvedWithoutRoom eventId=${event.eventId}',
+          subDomain: 'queue.bootstrap',
+        ),
+      ).called(1);
     },
   );
 

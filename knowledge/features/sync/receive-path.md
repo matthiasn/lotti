@@ -79,7 +79,9 @@ round-tripping it through `Event.toJson` / `Event.fromJson` would not preserve a
 usable decrypted payload. If the floor write fails transiently, the observation
 remains process-local and every later queue insertion or floor read retries it;
 no later plaintext can enter the queue and advance the marker until the floor
-is durable.
+is durable. The key-trigger marker read goes through the same retrying accessor
+before deciding whether catch-up is needed, so a later room key can persist a
+previously failed observation and immediately schedule its recovery walk.
 
 The Matrix SDK owns the in-memory ciphertext and decryption attempts. Its sync
 handler calls `decryptRoomEvent`, retains failures in its pending-decryption
@@ -94,7 +96,9 @@ The same rule applies to bootstrap pages. `QueueBootstrapSink` lowers each
 room's floor before appending later plaintext from that page, re-decrypts each
 still-encrypted event at most once per visit, counts unresolved ciphertext as
 observed pagination progress, and tracks the oldest unresolved timestamp seen
-by that walk. This has no fixed capacity and no attempt timer.
+by that walk. Ciphertext without a usable room id is logged and excluded from
+floor reconciliation instead of creating an unreachable empty-string marker.
+This has no fixed capacity and no attempt timer.
 
 # Catch-up: the anchored forward walk
 
@@ -134,7 +138,10 @@ and unsafe anchors. An unsafe anchor walks back to `resume_floor_ts`, not
 timestamp spans pages, the backward walk continues until that entire
 millisecond bucket is exhausted. It retains only the event IDs emitted at the
 current oldest timestamp, so newly loaded collisions are delivered once
-without an unbounded all-history seen-set.
+without an unbounded all-history seen-set. Equal-timestamp continuation uses
+the same round-trip cap as stale-cache continuation; reaching the cap reports
+an incomplete walk and keeps the floor for a later retry. Bridge and
+gap-recovery backward walks also have a wall-clock budget.
 
 ```mermaid
 stateDiagram-v2
@@ -161,7 +168,10 @@ observes ciphertext while pagination is in flight, the comparison fails and
 the concurrent durable observation wins. An incomplete walk never reconciles
 the floor. The sink and completion both belong to the same room-specific walk,
 so switching rooms while pagination is in flight cannot erase another room's
-recovery state.
+recovery state. Bridge, manual full-history, and gap-recovery walks share a
+per-room serialization lane. A bridge that waited behind another walk refreshes
+its durable marker inside that lane before choosing forward or backward
+pagination, so it cannot act on the stale pre-wait anchor snapshot.
 
 # Draining
 
