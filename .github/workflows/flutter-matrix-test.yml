@@ -20,6 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-v1-${{ hashFiles('pubspec.lock') }}
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
@@ -43,6 +48,10 @@ jobs:
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
+          pub-cache: false
+      - name: Get Flutter dependencies
+        run: flutter pub get --offline --enforce-lockfile || flutter pub get --enforce-lockfile
       - uses: hoverkraft-tech/compose-action@v2.0.0
         with:
           cwd: "integration_test/docker"
@@ -55,7 +64,7 @@ jobs:
           run: |
             chmod +x ./setup_toxiproxy_docker.sh ./run_matrix_tests.sh
             ./setup_toxiproxy_docker.sh
-            ./run_matrix_tests.sh
+            ./run_matrix_tests.sh --no-pub
 
   test_actor_isolate:
     name: Matrix Actor Isolate Test on Linux
@@ -64,6 +73,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-v1-${{ hashFiles('pubspec.lock') }}
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
@@ -87,6 +101,10 @@ jobs:
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
+          pub-cache: false
+      - name: Get Flutter dependencies
+        run: flutter pub get --offline --enforce-lockfile || flutter pub get --enforce-lockfile
       - uses: hoverkraft-tech/compose-action@v2.0.0
         with:
           cwd: "integration_test/docker"
@@ -96,7 +114,7 @@ jobs:
           working-directory: ./integration_test
           run: |
             chmod +x ./run_matrix_actor_isolate_test.sh
-            ./run_matrix_actor_isolate_test.sh
+            ./run_matrix_actor_isolate_test.sh --no-pub
 
   test_degraded_network:
     name: Matrix Test on Linux with degraded network
@@ -105,6 +123,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-v1-${{ hashFiles('pubspec.lock') }}
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
@@ -128,6 +151,10 @@ jobs:
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
+          pub-cache: false
+      - name: Get Flutter dependencies
+        run: flutter pub get --offline --enforce-lockfile || flutter pub get --enforce-lockfile
       - uses: hoverkraft-tech/compose-action@v2.0.0
         with:
           cwd: "integration_test/docker"
@@ -140,4 +167,4 @@ jobs:
           run: |
             chmod +x ./setup_toxiproxy_docker.sh ./run_matrix_tests.sh
             ./setup_toxiproxy_docker.sh
-            ./run_matrix_tests.sh
+            ./run_matrix_tests.sh --no-pub
