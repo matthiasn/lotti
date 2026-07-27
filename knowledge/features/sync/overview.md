@@ -271,10 +271,11 @@ reach the wrong device or none at all:
   while its sheet is open, so every rebuild would consume another peer and
   leave a newly paired device with nothing once the lock freed.
 - Clearing that record once nothing is unverified is **deferred to a
-  post-frame callback**. Riverpod rejects a provider write during widget
-  construction, and this branch is reached by the *successful* verification of
-  the last device — so clearing inline turned the normal end of the flow into
-  an exception.
+  post-frame callback**, because Riverpod rejects a provider write during
+  widget construction. The empty-list branch runs on initial mount too, but it
+  only writes when the set is non-empty — which is the *successful*
+  verification of the last pending device. Clearing inline was therefore silent
+  in the common case and threw at the normal end of the flow.
 
 Whether the settings surface shows the roster or the pairing setup card is
 `syncConfiguredProvider` (`state/sync_configured_provider.dart`): logged in
