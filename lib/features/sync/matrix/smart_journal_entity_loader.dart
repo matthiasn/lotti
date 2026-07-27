@@ -25,10 +25,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   SmartJournalEntityLoader({
     required this._attachmentIndex,
     required DomainLogger loggingService,
-    Directory? documentsDirectory,
+    this.documentsDirectory,
     void Function()? onCachePurge,
   }) : _logging = loggingService,
-       _documentsDirectory = documentsDirectory,
        _fileLoader = FileSyncJournalEntityLoader(
          documentsDirectory: documentsDirectory,
        ) {
@@ -44,7 +43,8 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
 
   final AttachmentIndex _attachmentIndex;
   final DomainLogger _logging;
-  final Directory? _documentsDirectory;
+  @override
+  final Directory? documentsDirectory;
   final FileSyncJournalEntityLoader _fileLoader;
   late final VectorClockValidator _vectorClockValidator;
   late final DescriptorDownloader _descriptorDownloader;
@@ -298,7 +298,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   }
 
   File _resolveCandidateFile(String relativePath) {
-    final documentsDirectory = _documentsDirectory;
+    final documentsDirectory = this.documentsDirectory;
     return documentsDirectory == null
         ? resolveJsonCandidateFile(relativePath)
         : resolveJsonCandidateFileInDirectory(

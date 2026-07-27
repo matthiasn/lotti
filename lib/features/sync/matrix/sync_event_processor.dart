@@ -109,7 +109,8 @@ class SyncEventProcessor {
     this._notificationsDb,
     this._notificationScheduler,
     this._syncNodeProfileRepository,
-  }) : _documentsDirectory = documentsDirectory,
+  }) : _documentsDirectory =
+           journalEntityLoader?.documentsDirectory ?? documentsDirectory,
        _journalEntityLoader =
            journalEntityLoader ??
            FileSyncJournalEntityLoader(

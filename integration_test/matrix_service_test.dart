@@ -48,8 +48,10 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1701,8 +1703,8 @@ Metadata _nextMediaMetadata({
 
 String _relativeMediaPath(JournalEntity entity) {
   return switch (entity) {
-    JournalImage(:final data) => '${data.imageDirectory}${data.imageFile}',
-    JournalAudio(:final data) => '${data.audioDirectory}${data.audioFile}',
+    JournalImage() => getRelativeImagePath(entity),
+    JournalAudio() => AudioUtils.getRelativeAudioPath(entity),
     _ => throw ArgumentError.value(
       entity,
       'entity',

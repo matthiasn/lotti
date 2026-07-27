@@ -1,5 +1,3 @@
-// ignore_for_file: one_member_abstracts
-
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,6 +8,8 @@ import 'package:lotti/utils/file_utils.dart';
 /// Abstraction for loading journal entities and related attachments when
 /// processing sync messages.
 abstract class SyncJournalEntityLoader {
+  Directory? get documentsDirectory;
+
   Future<JournalEntity> load({
     required String jsonPath,
     VectorClock? incomingVectorClock,
@@ -20,6 +20,7 @@ abstract class SyncJournalEntityLoader {
 class FileSyncJournalEntityLoader implements SyncJournalEntityLoader {
   const FileSyncJournalEntityLoader({this.documentsDirectory});
 
+  @override
   final Directory? documentsDirectory;
 
   @override

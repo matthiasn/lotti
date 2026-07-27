@@ -70,7 +70,7 @@ extension _AgentHandlers on SyncEventProcessor {
     // This is a permanent error (malformed jsonPath), so catch and skip.
     final File file;
     try {
-      file = resolveJsonCandidateFile(jp);
+      file = _resolveJsonCandidateFile(jp);
     } on FileSystemException catch (e, st) {
       _loggingService.error(
         LogDomain.sync,
@@ -575,7 +575,7 @@ extension _AgentHandlers on SyncEventProcessor {
   }) async {
     if (jsonPath == null) return;
     try {
-      final file = resolveJsonCandidateFile(jsonPath);
+      final file = _resolveJsonCandidateFile(jsonPath);
       await saveJson(file.path, jsonString);
     } on FileSystemException catch (e, st) {
       _loggingService.error(
