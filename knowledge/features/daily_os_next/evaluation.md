@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-27T13:46:20+02:00 }
+generated: { by: codex/5, at: 2026-07-27T13:52:59+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -36,7 +36,8 @@ always legal, and inspecting it alone measures the guards rather than the model.
 
 | Scored on | Constraints |
 |-----------|-------------|
-| The persisted plan | overlap, capacity (as written *and* as estimated), working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, conflict surfaced, blocker-before-blocked, fabricated task ids, fabricated calendar blocks, fabricated history, duplicate ids |
+| Objective structure in the persisted plan | overlap, capacity (as written *and* as estimated), working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, fabricated task ids, fabricated calendar blocks, fabricated history, invented work, task-work typing, duplicate ids |
+| Weak semantic evidence in plan prose and accepted status/diff calls | conflict surfaced, blocker-before-blocked, directive honoured — visible per constraint, but excluded from ranking |
 | The rejection count | whether the model complied without being corrected |
 
 A run that never attempted `draft_day_plan` is **inapplicable** for the rejection

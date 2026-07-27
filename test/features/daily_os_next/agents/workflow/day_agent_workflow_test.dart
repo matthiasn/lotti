@@ -3279,12 +3279,7 @@ void main() {
     test(
       'forbids zero-duration placeholders for omitted work',
       () async {
-        final result = await workflow().execute(
-          agentIdentity: identity(),
-          runKey: runKey,
-          triggerTokens: {dayAgentPlanningDayToken(dayId)},
-          threadId: threadId,
-        );
+        final result = await execute(workflow());
 
         expect(result.success, isTrue, reason: result.error);
         expect(
@@ -3300,6 +3295,16 @@ void main() {
         expect(
           conversationRepository.lastSystemMessage,
           contains('name the omitted work in an existing block `reason`'),
+        );
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains(
+            'status `attentionNeeded` and reason\n  `overCommitted`',
+          ),
+        );
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('name the omitted work in its `note`'),
         );
       },
     );

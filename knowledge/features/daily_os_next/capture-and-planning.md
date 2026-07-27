@@ -5,7 +5,7 @@ description: The Capture/Reconcile/Draft/Refine tools, batch-first durable voice
 resource: ../../../lib/features/daily_os_next/agents/service
 tags: [daily-os, capture, planning, transcription, tools]
 status: stable
-generated: { by: codex/5, at: 2026-07-27T13:46:20+02:00 }
+generated: { by: codex/5, at: 2026-07-27T13:52:59+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: services
@@ -237,8 +237,11 @@ Omitted work is **never a block**. In particular, a zero-duration
 `UNSCHEDULED` placeholder is not a representation of a trade: `end > start`
 correctly rejects it, costs a model retry, and leaves no usable plan artifact.
 The drafting rules therefore say explicitly that every block has a later end
-and omitted work belongs in an existing block reason or an
-`attentionNeeded` status note.
+and omitted work belongs in an existing block reason. When there is no retained
+block to carry that reason, the planner must raise `attentionNeeded`, use the
+typed reason matching the conflict (`overCommitted`, or
+`directiveUnsatisfiable` for a binding directive), and name the omitted work in
+the status note.
 
 **A block that names a task is filed under that task's category.** The block's
 own `categoryId` and its `taskId` were each validated against the agent's
