@@ -126,26 +126,35 @@ class _GeneratedHistoryBootstrapScenario {
   }
 }
 
+/// Models the forward walk's budget as *round trips*, which is what the
+/// implementation counts.
+///
+/// The walk starts at one round trip (the anchor `/context` fetch) and spends
+/// one more per `requestFuture`. Iteration k therefore begins with
+/// `roundTrips == k`, and the budget check that precedes emitting page k trips
+/// as soon as `k >= cap`. Because this generator's server hands back exactly
+/// one event per request, that is also the worst case the old page-based cap
+/// got wrong: a page cap of C stopped after C pages *whatever* they contained,
+/// so a walk trailing a live burst spent its whole budget on C events.
 class _GeneratedForwardBootstrapScenario {
   const _GeneratedForwardBootstrapScenario({
     required this.futurePages,
-    required this.forwardPageCap,
+    required this.forwardRoundTripCap,
   });
 
   final int futurePages;
-  final int forwardPageCap;
+  final int forwardRoundTripCap;
+
+  /// The walk runs out of future pages after `futurePages + 1` emitted pages,
+  /// so a cap above that is never reached.
+  bool get capTrips => forwardRoundTripCap <= futurePages + 1;
 
   int get expectedFutureCalls =>
-      expectedStopReason == BootstrapStopReason.boundaryReached
-      ? forwardPageCap - 1
-      : futurePages;
+      capTrips ? forwardRoundTripCap - 1 : futurePages;
 
-  int get expectedPages =>
-      expectedStopReason == BootstrapStopReason.boundaryReached
-      ? forwardPageCap
-      : futurePages + 1;
+  int get expectedPages => capTrips ? forwardRoundTripCap - 1 : futurePages + 1;
 
-  BootstrapStopReason get expectedStopReason => forwardPageCap <= futurePages
+  BootstrapStopReason get expectedStopReason => capTrips
       ? BootstrapStopReason.boundaryReached
       : BootstrapStopReason.serverExhausted;
 
@@ -153,7 +162,7 @@ class _GeneratedForwardBootstrapScenario {
   String toString() {
     return '_GeneratedForwardBootstrapScenario('
         'futurePages: $futurePages, '
-        'forwardPageCap: $forwardPageCap'
+        'forwardRoundTripCap: $forwardRoundTripCap'
         ')';
   }
 }
@@ -211,10 +220,11 @@ extension _AnyCatchUpStrategyScenario on glados.Any {
   get forwardBootstrapScenario => glados.CombinableAny(this).combine2(
     glados.IntAnys(this).intInRange(0, 5),
     glados.IntAnys(this).intInRange(1, 6),
-    (int futurePages, int forwardPageCap) => _GeneratedForwardBootstrapScenario(
-      futurePages: futurePages,
-      forwardPageCap: forwardPageCap,
-    ),
+    (int futurePages, int forwardRoundTripCap) =>
+        _GeneratedForwardBootstrapScenario(
+          futurePages: futurePages,
+          forwardRoundTripCap: forwardRoundTripCap,
+        ),
   );
 }
 
@@ -1983,7 +1993,7 @@ void main() {
           sink: _CollectingBootstrapSink(pages.add, acceptedPerPage: 1),
           logging: log,
           anchorEventId: r'$anchor',
-          forwardPageCap: scenario.forwardPageCap,
+          forwardRoundTripCap: scenario.forwardRoundTripCap,
         );
 
         expect(result.stopReason, scenario.expectedStopReason);
@@ -2309,9 +2319,10 @@ void main() {
     );
 
     test(
-      'forwardPageCap trips with boundaryReached stopReason so the '
-      'caller treats the pass as completed — the cap is a safety net, '
-      'not a failure',
+      'the round-trip budget counts requests, not emitted pages, so a walk '
+      'trailing a live burst one event at a time still gets its full budget '
+      '— and reports boundaryReached, which the caller must read as '
+      'incomplete because the server still has more',
       () async {
         final room = MockRoom();
         final log = MockDomainLogger();
@@ -2348,11 +2359,65 @@ void main() {
           sink: _CollectingBootstrapSink((_) {}, acceptedPerPage: 1),
           logging: log,
           anchorEventId: r'$anchor',
-          forwardPageCap: 2,
+          forwardRoundTripCap: 3,
         );
 
         expect(result.stopReason, BootstrapStopReason.boundaryReached);
+        // Three round trips: the anchor context fetch plus two
+        // `requestFuture` calls, each yielding a single event. The old
+        // page-based cap of 3 would have allowed three *pages* here — and,
+        // more importantly, a cap of 50 allowed only 50 events instead of the
+        // 50 pages x 200 it was sized for.
         expect(result.totalPages, 2);
+        expect(result.totalEvents, 2);
+        expect(n, 2);
+      },
+    );
+
+    test(
+      'a request whose events all filter out still spends budget — the old '
+      'page counter never incremented on an empty page, so a server '
+      'returning nothing but already-emitted overlap could spin forever',
+      () async {
+        final room = MockRoom();
+        final log = MockDomainLogger();
+        final tl = MockTimeline();
+        // The anchor plus one genuinely new event. Every subsequent
+        // `requestFuture` "succeeds" but adds nothing, so the strictly-after
+        // filter yields an empty page every time while the server keeps
+        // advertising a forward token.
+        final events = <Event>[
+          buildEvent(r'$anchor', 100),
+          buildEvent(r'$e1', 110),
+        ];
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestFuture).thenReturn(true);
+        var requests = 0;
+        when(
+          () => tl.requestFuture(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async => requests++);
+        when(tl.cancelSubscriptions).thenAnswer((_) {});
+
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink((_) {}, acceptedPerPage: 1),
+          logging: log,
+          anchorEventId: r'$anchor',
+          forwardRoundTripCap: 4,
+        );
+
+        // Terminates on the budget rather than looping. Only the first page
+        // carried an event, so the walk stops with an empty page in hand and
+        // reports the honest "nothing more to emit" reason.
+        expect(requests, 3);
+        expect(result.totalPages, 1);
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
       },
     );
 

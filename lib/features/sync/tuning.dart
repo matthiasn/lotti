@@ -132,6 +132,31 @@ class SyncTuning {
   static const int catchupMaxLookback =
       10000; // Increased from 1000 to handle larger backlogs
 
+  /// Safety budget for one reconnect forward walk
+  /// (`collectForwardForBootstrapImpl`), in `/messages` + `/context`
+  /// requests.
+  ///
+  /// This used to be a *page* cap of 50, which conflated "pages emitted to the
+  /// sink" with "network requests spent". Both halves of that were wrong. A
+  /// walk that reaches the tip while the peer is still sending gets one event
+  /// per request, so it burned all 50 on 51 events — a budget meant to allow
+  /// 50 pages of 200 — and then reported the pass as completed, stranding the
+  /// rest of the burst. In the other direction, a
+  /// request whose events all filtered out incremented nothing, so the cap
+  /// could not bound that loop at all.
+  ///
+  /// Sized as an order-of-magnitude guard rather than a working limit: a
+  /// healthy walk over a 250-entry backlog observed 7 requests. Tripping this
+  /// is reported as `boundaryReached`, which the caller treats as incomplete
+  /// and retries, so the value bounds one pass rather than total recovery.
+  static const int forwardWalkRoundTripCap = 500;
+
+  /// Companion event budget for the same walk — bounds work rather than
+  /// network. Matches [catchupMaxLookback]: a single pass will not stream
+  /// more than a full lookback window into the queue before yielding and
+  /// letting the bounded retry resume from the new anchor.
+  static const int forwardWalkEventCap = catchupMaxLookback;
+
   // Backfill tuning - self-healing sync for missing entries
   static const Duration backfillRequestInterval = Duration(minutes: 2);
   static const int backfillMaxRequestCount = 10;

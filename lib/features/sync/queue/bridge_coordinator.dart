@@ -38,8 +38,8 @@ class BridgeMarker {
 /// the room tip (fresh client: no anchor) or a forward walk anchored
 /// at `marker.lastAppliedEventId` (reconnect: anchor known).
 ///
-/// Returns `true` when the walk completed (server exhausted OR
-/// boundary reached). Returns `false` when it stopped early (error,
+/// Returns `true` when the walk reached the server's tip. Returns
+/// `false` when it stopped early (budget tripped, error,
 /// back-pressure timeout, user cancelled) — the bridge treats that
 /// as incomplete and schedules a bounded retry.
 typedef BootstrapRunner =

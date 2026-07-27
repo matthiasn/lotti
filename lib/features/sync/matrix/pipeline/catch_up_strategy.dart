@@ -1,6 +1,7 @@
 import 'package:lotti/features/sync/matrix/pipeline/bootstrap_backward_strategy.dart';
 import 'package:lotti/features/sync/matrix/pipeline/bootstrap_forward_strategy.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
@@ -362,7 +363,8 @@ class CatchUpStrategy {
     required DomainLogger logging,
     required String anchorEventId,
     int pageSize = 200,
-    int forwardPageCap = 50,
+    int forwardRoundTripCap = SyncTuning.forwardWalkRoundTripCap,
+    int forwardEventCap = SyncTuning.forwardWalkEventCap,
     Duration? overallTimeout,
     DateTime Function()? now,
   }) => collectForwardForBootstrapImpl(
@@ -371,7 +373,8 @@ class CatchUpStrategy {
     logging: logging,
     anchorEventId: anchorEventId,
     pageSize: pageSize,
-    forwardPageCap: forwardPageCap,
+    forwardRoundTripCap: forwardRoundTripCap,
+    forwardEventCap: forwardEventCap,
     overallTimeout: overallTimeout,
     now: now,
   );

@@ -59,8 +59,8 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
   ///     `collectHistoryForBootstrap`. Stops when the server
   ///     exhausts history.
   ///
-  /// Returns `true` when the walk completed (server exhausted OR
-  /// boundary reached) and `false` on sink cancellation / pagination
+  /// Returns `true` only when the walk reached the server's tip, and
+  /// `false` on a tripped budget / sink cancellation / pagination
   /// error so the bridge can schedule a bounded retry.
   Future<bool> _runBootstrap({
     required Room room,
@@ -126,8 +126,14 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
       subDomain: '$_logSub.forward',
     );
     return switch (result.stopReason) {
-      BootstrapStopReason.serverExhausted ||
-      BootstrapStopReason.boundaryReached => BootstrapOutcome.completed,
+      BootstrapStopReason.serverExhausted => BootstrapOutcome.completed,
+      // The forward walk only reports `boundaryReached` when a budget tripped
+      // while the server still had more to give — a caught-up device stops
+      // with `serverExhausted` instead. Calling that completed is how a walk
+      // that covered 51 events of a 150-message burst could report success and
+      // leave the remaining 50 entries unreachable: the bounded retry never
+      // fired, and the backward fallback only runs on `errorNoProgress`.
+      BootstrapStopReason.boundaryReached ||
       BootstrapStopReason.sinkCancelled => BootstrapOutcome.incomplete,
       // No pages + error means "anchor unresolvable": the context
       // fetch returned an empty chunk or threw. Signal the caller so
@@ -215,8 +221,8 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
   }
 
   void _updateBarrenBridgeFlagForward(BootstrapOutcome outcome) {
-    // Forward-walk semantics: anchor resolved and we walked to the
-    // tip (or cap). Whether anything was accepted or not, the cache-
+    // Forward-walk semantics: anchor resolved and we walked all the
+    // way to the tip. Whether anything was accepted or not, the cache-
     // wedge scenario that drove the barren-bridge recovery does not
     // apply to this path — the forward walk fetches server state
     // directly. Clearing the flag prevents a later gap-detected
