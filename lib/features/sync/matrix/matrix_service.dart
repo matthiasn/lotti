@@ -235,6 +235,11 @@ class MatrixService {
   MatrixConfig? get matrixConfig => _sessionManager.matrixConfig;
 
   String? get syncRoomId => _roomManager.currentRoomId;
+
+  /// The sync room id on every change, null when cleared — for UI that gates
+  /// on whether sync is configured. [syncRoomId] is a plain read and cannot
+  /// notify on its own.
+  Stream<String?> get syncRoomIdChanges => _roomManager.roomIdChanges;
   Room? get syncRoom => _roomManager.currentRoom;
   Stream<SyncRoomInvite> get inviteRequests => _roomManager.inviteRequests;
 

@@ -270,6 +270,24 @@ reach the wrong device or none at all:
   ceremony holding the lock invalidates the unverified provider repeatedly
   while its sheet is open, so every rebuild would consume another peer and
   leave a newly paired device with nothing once the lock freed.
+- Clearing that record once nothing is unverified is **deferred to a
+  post-frame callback**, because Riverpod rejects a provider write during
+  widget construction. The empty-list branch runs on initial mount too, but it
+  only writes when the set is non-empty — which is the *successful*
+  verification of the last pending device. Clearing inline was therefore silent
+  in the common case and threw at the normal end of the flow.
+
+Whether the settings surface shows the roster or the pairing setup card is
+`syncConfiguredProvider` (`state/sync_configured_provider.dart`): logged in
+**and** holding a room id. Neither half notifies on its own —
+`MatrixService.syncRoomId` is a plain read through to a plain field — so the
+provider watches three signals and then reads the service once for the current
+truth. Login state alone is not enough, and the gap is not theoretical:
+`SyncSessionManager.connect()` drops a persisted room the account can no longer
+join (`M_FORBIDDEN`/`M_NOT_FOUND`) *after* the login event has already fired,
+leaving the roster on screen for a room that no longer exists.
+`SyncRoomManager.roomIdChanges` closes that — every mutation of the room id
+goes through one private setter, so no path can change it without emitting.
 
 `matrixVerificationRelaunchProvider` is what "show the emoji again" bumps. It
 releases only the identity that launcher last showed, deliberately rather than

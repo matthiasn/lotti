@@ -106,8 +106,16 @@ void main() {
       // never notifies when login and room hydration complete. Init runs
       // unawaited at bootstrap, so a route opened mid-startup used to keep the
       // setup card until the user navigated away and back.
-      final loginState = StreamController<LoginState>.broadcast();
-      addTearDown(loginState.close);
+      // A finite stream rather than a controller closed at teardown: the page
+      // stays subscribed through `loginStateStreamProvider`, and closing a
+      // broadcast controller during async widget teardown can race the
+      // listener under the bundled runner (see test/README.md).
+      final loginGate = Completer<void>();
+      Stream<LoginState> loginStates() async* {
+        await loginGate.future;
+        yield LoginState.loggedIn;
+      }
+
       var configured = false;
       when(mockMatrixService.isLoggedIn).thenAnswer((_) => configured);
       when(
@@ -128,7 +136,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
-            loginStateStreamProvider.overrideWith((_) => loginState.stream),
+            loginStateStreamProvider.overrideWith((_) => loginStates()),
           ],
           child: const ProvisionedSyncPage(),
         ),
@@ -140,12 +148,17 @@ void main() {
       // Startup completes: the login stream is the signal that gets the page
       // to re-evaluate.
       configured = true;
-      loginState.add(LoginState.loggedIn);
+      loginGate.complete();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
       expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+
+      // Unmount inside the test body so the stream's subscription is torn
+      // down here rather than racing teardown.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     },
   );
 

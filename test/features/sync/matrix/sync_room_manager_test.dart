@@ -1019,4 +1019,60 @@ void main() {
       ).called(1);
     });
   });
+
+  group('roomIdChanges', () {
+    test('emits on join and on clear, so UI can gate on configured', () async {
+      // `currentRoomId` is a plain field. Without this stream the device
+      // roster stays on screen for a room the account can no longer join,
+      // because the clear happens after the login event has already fired.
+      when(
+        () => settingsDb.saveSettingsItem(matrixRoomKey, '!room:server'),
+      ).thenAnswer((_) async => 1);
+      when(() => gateway.getRoomById('!room:server')).thenReturn(MockRoom());
+
+      final seen = <String?>[];
+      final sub = manager.roomIdChanges.listen(seen.add);
+      addTearDown(sub.cancel);
+
+      await manager.saveRoomId('!room:server');
+      await manager.clearPersistedRoom();
+      await pumpEventQueue();
+
+      expect(seen, ['!room:server', null]);
+    });
+
+    test(
+      'stays silent when the id is set to the value it already has',
+      () async {
+        when(
+          () => settingsDb.saveSettingsItem(matrixRoomKey, '!room:server'),
+        ).thenAnswer((_) async => 1);
+        when(() => gateway.getRoomById('!room:server')).thenReturn(MockRoom());
+
+        final seen = <String?>[];
+        final sub = manager.roomIdChanges.listen(seen.add);
+        addTearDown(sub.cancel);
+
+        await manager.saveRoomId('!room:server');
+        await manager.saveRoomId('!room:server');
+        await pumpEventQueue();
+
+        // A re-save on every sync tick would otherwise rebuild the roster
+        // repeatedly for no change.
+        expect(seen, ['!room:server']);
+      },
+    );
+
+    test(
+      'a clear after dispose does not throw on the closed controller',
+      () async {
+        await manager.dispose();
+
+        // dispose() is racy by nature: teardown can land while a leave is still
+        // in flight, and an add on a closed controller would surface as an
+        // unhandled error rather than a no-op.
+        await expectLater(manager.clearPersistedRoom(), completes);
+      },
+    );
+  });
 }
