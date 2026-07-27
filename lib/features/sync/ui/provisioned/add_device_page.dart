@@ -49,7 +49,7 @@ const double kAddDeviceDetailsMin = 250;
 /// the pinned bar. The bar is built outside the view's `State`, and the live
 /// signal has to live there: on a phone the body's own status strip is below
 /// the fold, so a caption pointing "above" pointed at nothing.
-enum AddDeviceJoinState { waiting, joined, rosterFailed }
+enum AddDeviceJoinState { waiting, joined, ready, rosterFailed }
 
 /// The one object the scroll body and the pinned bar share: the live state,
 /// plus the retry that only the body knows how to perform (it owns the poll
@@ -92,11 +92,10 @@ class AddDeviceModal {
 ///
 /// Every signal here follows one question — can this be pressed? — because
 /// three lines about one control that disagreed left the user unable to tell.
-/// It is pressable whenever the account has a peer at all, since a reopened
-/// sheet must still offer the hand-off; when it is, the button takes the
-/// accent and the "after it joins" lead-in disappears. When it is not, the
-/// lead-in, the status line and an outlined button all say so.
-class AddDeviceActionBar extends ConsumerWidget {
+/// It is pressable only after the device that joined through this sheet has
+/// completed emoji verification. That ordering matches Matrix key sharing:
+/// before verification the new device has ciphertext, but no keys to read it.
+class AddDeviceActionBar extends StatelessWidget {
   const AddDeviceActionBar({
     required this.signal,
     super.key,
@@ -115,24 +114,15 @@ class AddDeviceActionBar extends ConsumerWidget {
   /// [ReSyncModal].
   final Future<void> Function(BuildContext context)? onSendMessages;
 
-  /// Whether the account has a session other than this one.
-  ///
-  /// Deliberately *not* "a device appeared while this sheet was open": the
-  /// joining device tells the user to come back here and press this, by which
-  /// point the sheet has usually been closed and reopened, and a delta-only
-  /// gate would leave the button dead forever.
-  static bool hasPeer(List<SyncDeviceInfo>? devices) =>
-      devices?.any((device) => !device.isCurrentDevice) ?? false;
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final enabled = hasPeer(ref.watch(syncDevicesControllerProvider).value);
 
     return ValueListenableBuilder<AddDeviceJoinState>(
       valueListenable: signal,
       builder: (context, state, _) {
+        final enabled = state == AddDeviceJoinState.ready;
         return SyncStickyBar(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -162,7 +152,6 @@ class AddDeviceActionBar extends ConsumerWidget {
               // is below the fold, and a caption naming it pointed at nothing.
               _BarStatus(
                 state: state,
-                enabled: enabled,
                 onRetry: signal.onRetry,
               ),
               SizedBox(height: tokens.spacing.step2),
@@ -214,12 +203,10 @@ class AddDeviceActionBar extends ConsumerWidget {
 class _BarStatus extends StatelessWidget {
   const _BarStatus({
     required this.state,
-    required this.enabled,
     required this.onRetry,
   });
 
   final AddDeviceJoinState state;
-  final bool enabled;
   final VoidCallback? onRetry;
 
   @override
@@ -231,15 +218,35 @@ class _BarStatus extends StatelessWidget {
     );
 
     switch (state) {
+      case AddDeviceJoinState.ready:
+        return Row(
+          key: const Key('add_device_ready'),
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.verified_user_rounded,
+              size: tokens.spacing.step5,
+              color: tokens.colors.alert.success.defaultColor,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            Flexible(
+              child: Text(
+                messages.syncAddDeviceSendSettingsReady,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+              ),
+            ),
+          ],
+        );
       case AddDeviceJoinState.joined:
         return Row(
           key: const Key('add_device_joined'),
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.check_circle_rounded,
+            DesignSystemSpinner(
               size: tokens.spacing.step5,
-              color: tokens.colors.alert.success.defaultColor,
+              strokeWidth: tokens.spacing.step1 / 2,
             ),
             SizedBox(width: tokens.spacing.step2),
             Flexible(
@@ -278,25 +285,14 @@ class _BarStatus extends StatelessWidget {
           key: const Key('add_device_waiting'),
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Only while the action is genuinely blocked. Spinning beside a
-            // live button said "wait" over copy that said "send now".
-            if (!enabled)
-              DesignSystemSpinner(
-                size: tokens.spacing.step4,
-                strokeWidth: tokens.spacing.step1 / 2,
-              )
-            else
-              Icon(
-                Icons.schedule_rounded,
-                size: tokens.spacing.step4,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
+            DesignSystemSpinner(
+              size: tokens.spacing.step4,
+              strokeWidth: tokens.spacing.step1 / 2,
+            ),
             SizedBox(width: tokens.spacing.step2),
             Flexible(
               child: Text(
-                enabled
-                    ? messages.syncAddDeviceSendSettingsReady
-                    : messages.syncAddDeviceSendSettingsPending,
+                messages.syncAddDeviceSendSettingsPending,
                 key: const Key('add_device_send_settings_pending'),
                 textAlign: TextAlign.center,
                 style: caption,
@@ -343,7 +339,9 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   /// collided with any foreign user's would read as already known and the
   /// sheet would never latch.
   Set<String>? _knownDeviceIds;
+  String? _newDeviceIdentity;
   bool _joined = false;
+  bool _ready = false;
   int _pollFailures = 0;
   bool _pollInFlight = false;
   Timer? _poll;
@@ -412,7 +410,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
     _poll?.cancel();
     _pollFailures = 0;
     _poll = Timer.periodic(widget.pollInterval, (_) {
-      if (!mounted || _joined) return;
+      if (!mounted || _ready) return;
       unawaited(_pollOnce());
     });
   }
@@ -458,10 +456,12 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   void _publishJoinState() {
     final notifier = widget.signal;
     if (notifier == null) return;
-    final next = _joined
-        ? AddDeviceJoinState.joined
+    final next = _ready
+        ? AddDeviceJoinState.ready
         : _pollFailures >= kAddDeviceMaxPollFailures
         ? AddDeviceJoinState.rosterFailed
+        : _joined
+        ? AddDeviceJoinState.joined
         : AddDeviceJoinState.waiting;
     if (notifier.value == next) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -469,12 +469,9 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
     });
   }
 
-  /// Latches on the first device id that was not present when the sheet
-  /// opened. Latching matters: the roster keeps refreshing afterwards, and a
-  /// success that blinks away is worse than none.
-  ///
-  /// Drives the status strip only. Whether the settings hand-off is offered is
-  /// a separate, weaker question — see [AddDeviceActionBar.hasPeer].
+  /// Latches on the first device identity that was not present when the sheet
+  /// opened, then follows that exact device until Matrix reports it verified.
+  /// An older peer must never unlock the transfer actions for the new target.
   ///
   /// Derived during build rather than via `setState`: the value is a pure
   /// function of the roster this widget already watches, and it only ever
@@ -483,17 +480,36 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   static String _rosterIdentity(SyncDeviceInfo device) =>
       '${device.userId ?? 'self'}/${device.deviceId}';
 
-  void _observeRoster(List<String> deviceIds) {
-    if (_joined) return;
+  void _observeRoster(List<SyncDeviceInfo> devices) {
+    if (_ready) return;
+    final identities = devices.map(_rosterIdentity).toList(growable: false);
     final known = _knownDeviceIds;
     if (known == null) {
-      _knownDeviceIds = deviceIds.toSet();
+      _knownDeviceIds = identities.toSet();
       return;
     }
-    if (deviceIds.any((id) => !known.contains(id))) {
+
+    for (final identity in identities) {
+      if (!known.contains(identity)) {
+        _newDeviceIdentity ??= identity;
+        break;
+      }
+    }
+    final targetIdentity = _newDeviceIdentity;
+    if (targetIdentity == null) return;
+
+    if (!_joined) {
       _joined = true;
-      _poll?.cancel();
       _publishJoinState();
+    }
+
+    for (final device in devices) {
+      if (_rosterIdentity(device) == targetIdentity && device.verified) {
+        _ready = true;
+        _poll?.cancel();
+        _publishJoinState();
+        break;
+      }
     }
   }
 
@@ -541,9 +557,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
 
     final devices = ref.watch(syncDevicesControllerProvider).value;
     if (devices != null) {
-      _observeRoster(
-        devices.map(_rosterIdentity).toList(growable: false),
-      );
+      _observeRoster(devices);
     }
 
     final checkCode = _checkCode;

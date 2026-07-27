@@ -9873,7 +9873,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Heeft het nieuwe apparaat geen camera? Kopieer de koppelcode en plak hem daar.';
 
   @override
-  String get syncAddDeviceConnected => 'Er is een nieuw apparaat toegevoegd';
+  String get syncAddDeviceConnected =>
+      'Het nieuwe apparaat is toegevoegd — rond de emoji-verificatie af voordat je verstuurt.';
 
   @override
   String get syncAddDeviceCopyCode => 'Koppelcode kopiëren';
@@ -9890,7 +9891,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Installeer Lotti op het nieuwe apparaat, open daar Instellingen → Instellingen synchroniseren → Apparaten en scan deze code.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Daarna · zodra het is toegevoegd';
+  String get syncAddDeviceNextLeadIn => 'Daarna · na emoji-verificatie';
 
   @override
   String get syncAddDeviceRevealCode => 'Koppelcode als tekst tonen';
@@ -9911,15 +9912,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Zodra het nieuwe apparaat verbonden is, stuur je categorieën, gewoontes, dashboards en AI-instellingen ernaartoe.';
+      'Zodra het nieuwe apparaat met emoji’s is geverifieerd, stuur je categorieën, gewoontes, dashboards en AI-instellingen ernaartoe.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Beschikbaar zodra het nieuwe apparaat is toegevoegd.';
+      'Beschikbaar nadat het nieuwe apparaat is toegevoegd en met emoji’s is geverifieerd.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Verstuur nu, of wacht tot het nieuwe apparaat is toegevoegd.';
+      'Nieuw apparaat geverifieerd — klaar om te versturen.';
 
   @override
   String get syncAddDeviceStepScan => 'Nu · Toon de code';
@@ -10117,11 +10118,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Kies op je andere apparaat in het scherm Apparaat toevoegen dat nog openstaat eerst Instellingen versturen en daarna Berichten versturen. Je categorieën, gewoontes, dashboards, AI-instellingen en berichtgeschiedenis komen dan hierheen.';
+      'Kies na de emoji-verificatie op je andere apparaat in het scherm Apparaat toevoegen dat nog openstaat eerst Instellingen versturen en daarna Berichten versturen. Je categorieën, gewoontes, dashboards, AI-instellingen en berichtgeschiedenis komen dan hierheen.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Of open opnieuw Instellingen → Instellingen synchroniseren → Apparaten → Apparaat toevoegen.';
+      'Als je het hebt gesloten, open je op het andere apparaat Instellingen → Instellingen synchroniseren → Onderhoud, voer je de instellingensynchronisatie uit en daarna Berichten opnieuw synchroniseren.';
 
   @override
   String get syncPairedVerifyDone =>

@@ -9845,7 +9845,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Har den nya enheten ingen kamera? Kopiera parkopplingskoden och klistra in den där i stället.';
 
   @override
-  String get syncAddDeviceConnected => 'En ny enhet har anslutit';
+  String get syncAddDeviceConnected =>
+      'Den nya enheten har anslutit – slutför emoji-verifieringen innan du skickar.';
 
   @override
   String get syncAddDeviceCopyCode => 'Kopiera parkopplingskod';
@@ -9862,7 +9863,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Installera Lotti på den nya enheten, öppna Inställningar → Synkroniseringsinställningar → Enheter där och skanna den här koden.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Sedan · när den har anslutit';
+  String get syncAddDeviceNextLeadIn => 'Sedan · efter emoji-verifieringen';
 
   @override
   String get syncAddDeviceRevealCode => 'Visa parkopplingskoden som text';
@@ -9883,15 +9884,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'När den nya enheten är ansluten skickar du dina kategorier, vanor, instrumentpaneler och AI-inställningar dit.';
+      'När den nya enheten har emoji-verifierats skickar du dina kategorier, vanor, instrumentpaneler och AI-inställningar dit.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Tillgängligt så snart den nya enheten ansluter.';
+      'Tillgängligt när den nya enheten har anslutit och emoji-verifierats.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Skicka nu, eller vänta tills den nya enheten ansluter.';
+      'Den nya enheten är verifierad – klar att skicka.';
 
   @override
   String get syncAddDeviceStepScan => 'Nu · Visa koden';
@@ -10084,11 +10085,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'På din andra enhet väljer du Skicka inställningar och sedan Skicka meddelanden i skärmen Lägg till enhet som fortfarande är öppen. Dina kategorier, vanor, instrumentpaneler, AI-inställningar och din meddelandehistorik hamnar här.';
+      'Efter emoji-verifieringen väljer du på din andra enhet Skicka inställningar och sedan Skicka meddelanden i skärmen Lägg till enhet som fortfarande är öppen. Dina kategorier, vanor, instrumentpaneler, AI-inställningar och din meddelandehistorik hamnar här.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Eller öppna Inställningar → Synkroniseringsinställningar → Enheter → Lägg till enhet igen.';
+      'Om du stängde den öppnar du på den andra enheten Inställningar → Synkroniseringsinställningar → Underhåll, kör inställningssynkroniseringen och sedan Synkronisera om meddelanden.';
 
   @override
   String get syncPairedVerifyDone =>

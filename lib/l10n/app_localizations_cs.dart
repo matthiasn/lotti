@@ -9973,7 +9973,8 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nové zařízení nemá kameru? Zkopíruj párovací kód a vlož ho tam místo skenování.';
 
   @override
-  String get syncAddDeviceConnected => 'Připojilo se nové zařízení';
+  String get syncAddDeviceConnected =>
+      'Nové zařízení se připojilo – před odesláním dokonči ověření pomocí emoji.';
 
   @override
   String get syncAddDeviceCopyCode => 'Kopírovat párovací kód';
@@ -9990,7 +9991,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nainstaluj Lotti na nové zařízení, otevři tam Nastavení → Nastavení synchronizace → Zařízení a naskenuj tento kód.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Dál · až se připojí';
+  String get syncAddDeviceNextLeadIn => 'Dál · po ověření pomocí emoji';
 
   @override
   String get syncAddDeviceRevealCode => 'Zobrazit párovací kód jako text';
@@ -10011,15 +10012,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Jakmile je nové zařízení připojené, pošli mu své kategorie, návyky, přehledy a nastavení AI.';
+      'Po ověření nového zařízení pomocí emoji mu pošli své kategorie, návyky, přehledy a nastavení AI.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Bude k dispozici, jakmile se nové zařízení připojí.';
+      'Bude k dispozici, až se nové zařízení připojí a ověří pomocí emoji.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Odešli hned, nebo počkej, až se nové zařízení připojí.';
+      'Nové zařízení je ověřené – můžeš odesílat.';
 
   @override
   String get syncAddDeviceStepScan => 'Teď · Ukaž kód';
@@ -10219,11 +10220,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Na svém druhém zařízení zvol v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení a potom Odeslat zprávy. Tvé kategorie, návyky, přehledy, nastavení AI a historie zpráv dorazí sem.';
+      'Po ověření pomocí emoji zvol na svém druhém zařízení v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení a potom Odeslat zprávy. Tvé kategorie, návyky, přehledy, nastavení AI a historie zpráv dorazí sem.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Nebo znovu otevři Nastavení → Nastavení synchronizace → Zařízení → Přidat zařízení.';
+      'Pokud jsi ji zavřel, otevři na druhém zařízení Nastavení → Nastavení synchronizace → Údržba, spusť synchronizaci nastavení a potom Znovu synchronizovat zprávy.';
 
   @override
   String get syncPairedVerifyDone =>

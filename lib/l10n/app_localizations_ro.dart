@@ -10026,7 +10026,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Noul dispozitiv nu are cameră? Copiați codul de asociere și lipiți-l acolo.';
 
   @override
-  String get syncAddDeviceConnected => 'Un dispozitiv nou s-a alăturat';
+  String get syncAddDeviceConnected =>
+      'Noul dispozitiv s-a alăturat — finalizați verificarea cu emoji înainte de a trimite.';
 
   @override
   String get syncAddDeviceCopyCode => 'Copiați codul de asociere';
@@ -10043,7 +10044,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Instalați Lotti pe noul dispozitiv, deschideți acolo Setări → Setări sincronizare → Dispozitive și scanați acest cod.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Apoi · după ce se alătură';
+  String get syncAddDeviceNextLeadIn => 'Apoi · după verificarea cu emoji';
 
   @override
   String get syncAddDeviceRevealCode => 'Afișați codul de asociere ca text';
@@ -10064,15 +10065,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'După ce noul dispozitiv este conectat, trimiteți-i categoriile, obiceiurile, panourile și setările AI.';
+      'După verificarea cu emoji a noului dispozitiv, trimiteți-i categoriile, obiceiurile, panourile și setările AI.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Disponibil imediat ce noul dispozitiv se alătură.';
+      'Disponibil după ce noul dispozitiv se alătură și este verificat cu emoji.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Trimiteți acum sau așteptați ca noul dispozitiv să se alăture.';
+      'Noul dispozitiv este verificat — gata de trimitere.';
 
   @override
   String get syncAddDeviceStepScan => 'Acum · Afișați codul';
@@ -10277,11 +10278,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările, apoi Trimiteți mesajele. Categoriile, obiceiurile, panourile, setările AI și istoricul mesajelor ajung aici.';
+      'După verificarea cu emoji, pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările, apoi Trimiteți mesajele. Categoriile, obiceiurile, panourile, setările AI și istoricul mesajelor ajung aici.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Sau redeschideți Setări → Setări sincronizare → Dispozitive → Adăugați dispozitiv.';
+      'Dacă l-ați închis, pe celălalt dispozitiv deschideți Setări → Setări sincronizare → Întreținere, rulați sincronizarea setărilor, apoi Resincronizați mesajele.';
 
   @override
   String get syncPairedVerifyDone =>

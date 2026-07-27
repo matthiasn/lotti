@@ -9977,7 +9977,8 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il nuovo dispositivo non ha una fotocamera? Copia il codice di abbinamento e incollalo lì.';
 
   @override
-  String get syncAddDeviceConnected => 'Un nuovo dispositivo si è unito';
+  String get syncAddDeviceConnected =>
+      'Il nuovo dispositivo si è unito: completa la verifica con emoji prima di inviare.';
 
   @override
   String get syncAddDeviceCopyCode => 'Copia codice di abbinamento';
@@ -9994,7 +9995,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Installa Lotti sul nuovo dispositivo, apri lì Impostazioni → Impostazioni di sincronizzazione → Dispositivi e scansiona questo codice.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Poi · quando si è collegato';
+  String get syncAddDeviceNextLeadIn => 'Poi · dopo la verifica con emoji';
 
   @override
   String get syncAddDeviceRevealCode =>
@@ -10016,15 +10017,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Quando il nuovo dispositivo è connesso, inviagli categorie, abitudini, dashboard e impostazioni IA.';
+      'Quando il nuovo dispositivo è verificato con emoji, inviagli categorie, abitudini, dashboard e impostazioni IA.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Disponibile non appena il nuovo dispositivo si collega.';
+      'Disponibile quando il nuovo dispositivo si è unito ed è verificato con emoji.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Invia ora, oppure aspetta che il nuovo dispositivo si colleghi.';
+      'Nuovo dispositivo verificato: tutto pronto per l’invio.';
 
   @override
   String get syncAddDeviceStepScan => 'Ora · Mostra il codice';
@@ -10222,11 +10223,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Sull’altro dispositivo, nella schermata Aggiungi dispositivo ancora aperta, scegli Invia impostazioni e poi Invia messaggi. Categorie, abitudini, dashboard, impostazioni IA e cronologia dei messaggi arriveranno qui.';
+      'Dopo la verifica con emoji, sull’altro dispositivo, nella schermata Aggiungi dispositivo ancora aperta, scegli Invia impostazioni e poi Invia messaggi. Categorie, abitudini, dashboard, impostazioni IA e cronologia dei messaggi arriveranno qui.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Oppure riapri Impostazioni → Impostazioni di sincronizzazione → Dispositivi → Aggiungi dispositivo.';
+      'Se l’hai chiusa, sull’altro dispositivo apri Impostazioni → Impostazioni di sincronizzazione → Manutenzione, esegui la sincronizzazione delle impostazioni e poi Resync messaggi.';
 
   @override
   String get syncPairedVerifyDone =>

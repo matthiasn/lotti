@@ -9900,7 +9900,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das neue Gerät hat keine Kamera? Kopiere den Kopplungscode und füge ihn dort stattdessen ein.';
 
   @override
-  String get syncAddDeviceConnected => 'Ein neues Gerät ist beigetreten';
+  String get syncAddDeviceConnected =>
+      'Das neue Gerät ist beigetreten – schließe vor dem Senden die Emoji-Verifizierung ab.';
 
   @override
   String get syncAddDeviceCopyCode => 'Kopplungscode kopieren';
@@ -9918,7 +9919,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncAddDeviceNextLeadIn =>
-      'Als Nächstes · wenn es beigetreten ist';
+      'Als Nächstes · nach der Emoji-Verifizierung';
 
   @override
   String get syncAddDeviceRevealCode => 'Kopplungscode als Text anzeigen';
@@ -9939,15 +9940,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Sobald das neue Gerät verbunden ist, sende deine Kategorien, Gewohnheiten, Dashboards und KI-Einstellungen dorthin.';
+      'Sende deine Kategorien, Gewohnheiten, Dashboards und KI-Einstellungen, nachdem das neue Gerät per Emoji verifiziert wurde.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Verfügbar, sobald das neue Gerät beigetreten ist.';
+      'Verfügbar, nachdem das neue Gerät beigetreten und per Emoji verifiziert wurde.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Jetzt senden – oder warten, bis das neue Gerät beigetreten ist.';
+      'Neues Gerät verifiziert – bereit zum Senden.';
 
   @override
   String get syncAddDeviceStepScan => 'Jetzt · Code zeigen';
@@ -10145,11 +10146,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Wähle auf deinem anderen Gerät im noch geöffneten Bildschirm Gerät hinzufügen zuerst Einstellungen senden und dann Nachrichten senden. Deine Kategorien, Gewohnheiten, Dashboards, KI-Einstellungen und dein Nachrichtenverlauf kommen dann hierher.';
+      'Wähle nach der Emoji-Verifizierung auf deinem anderen Gerät im noch geöffneten Bildschirm Gerät hinzufügen zuerst Einstellungen senden und dann Nachrichten senden. Deine Kategorien, Gewohnheiten, Dashboards, KI-Einstellungen und dein Nachrichtenverlauf kommen dann hierher.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Oder öffne erneut Einstellungen → Synchronisierungseinstellungen → Geräte → Gerät hinzufügen.';
+      'Falls du ihn geschlossen hast, öffne auf dem anderen Gerät Einstellungen → Synchronisierungseinstellungen → Wartung, führe die Einstellungssynchronisierung aus und danach Nachrichten erneut synchronisieren.';
 
   @override
   String get syncPairedVerifyDone =>

@@ -41,9 +41,10 @@ merge of two users' work.
   joining device opens straight into the camera, with manual entry as the
   fallback, and finishes on a screen naming what is still outstanding: the
   emoji ceremony, plus the settings and message-history pushes that only the
-  other device can send. Both transfers stay beside the pairing code: message
-  history defaults to everything, with 30-day and custom ranges available, and
-  shows progress until the messages are queued.
+  other device can send. Both transfers stay beside the pairing code and remain
+  disabled until that exact new device is emoji-verified: message history
+  defaults to everything, with 30-day and custom ranges available, and shows
+  progress until the messages are queued.
 - **Gives both devices something a person can actually compare.** Before
   anything is configured, the joining device shows which account it is about to
   join and a six-character check code that the inviting device derives

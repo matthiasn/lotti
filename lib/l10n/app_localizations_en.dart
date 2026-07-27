@@ -9776,7 +9776,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'No camera on the new device? Copy the pairing code and paste it there instead.';
 
   @override
-  String get syncAddDeviceConnected => 'A new device joined';
+  String get syncAddDeviceConnected =>
+      'New device joined — finish emoji verification to send.';
 
   @override
   String get syncAddDeviceCopyCode => 'Copy pairing code';
@@ -9793,7 +9794,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Install Lotti on the new device, then open Settings → Sync Settings → Devices there and scan this code.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Next · after it joins';
+  String get syncAddDeviceNextLeadIn => 'Next · after emoji verification';
 
   @override
   String get syncAddDeviceRevealCode => 'Show pairing code as text';
@@ -9814,15 +9815,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Once the new device is connected, send your categories, habits, dashboards and AI settings across.';
+      'After the new device is emoji-verified, send your categories, habits, dashboards and AI settings across.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Ready once the new device joins.';
+      'Available after the new device joins and is emoji-verified.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Send now, or wait until the new device joins.';
+      'New device verified — ready to send.';
 
   @override
   String get syncAddDeviceStepScan => 'Now · Show the code';
@@ -10012,11 +10013,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'On your other device, in the Add device screen you still have open, choose Send settings, then Send messages. Your categories, habits, dashboards, AI settings and message history arrive here.';
+      'After emoji verification, on your other device, in the Add device screen you still have open, choose Send settings, then Send messages. Your categories, habits, dashboards, AI settings and message history arrive here.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Or reopen Settings → Sync Settings → Devices → Add device.';
+      'If you closed it, on the other device open Settings → Sync Settings → Maintenance and run the settings sync, then Re-sync messages.';
 
   @override
   String get syncPairedVerifyDone =>

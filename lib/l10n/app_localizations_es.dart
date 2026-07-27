@@ -9993,7 +9993,8 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿El nuevo dispositivo no tiene cámara? Copia el código de emparejamiento y pégalo allí.';
 
   @override
-  String get syncAddDeviceConnected => 'Se ha unido un dispositivo nuevo';
+  String get syncAddDeviceConnected =>
+      'El dispositivo nuevo se ha unido; termina la verificación con emojis antes de enviar.';
 
   @override
   String get syncAddDeviceCopyCode => 'Copiar código de emparejamiento';
@@ -10010,7 +10011,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Instala Lotti en el nuevo dispositivo, abre allí Ajustes → Ajustes de sincronización → Dispositivos y escanea este código.';
 
   @override
-  String get syncAddDeviceNextLeadIn => 'Después · cuando se haya unido';
+  String get syncAddDeviceNextLeadIn =>
+      'Después · tras la verificación con emojis';
 
   @override
   String get syncAddDeviceRevealCode =>
@@ -10032,15 +10034,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Cuando el nuevo dispositivo esté conectado, envíale tus categorías, hábitos, paneles y ajustes de IA.';
+      'Cuando el nuevo dispositivo esté verificado con emojis, envíale tus categorías, hábitos, paneles y ajustes de IA.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Disponible en cuanto el nuevo dispositivo se una.';
+      'Disponible cuando el nuevo dispositivo se haya unido y esté verificado con emojis.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Envía ahora, o espera a que el nuevo dispositivo se una.';
+      'Dispositivo nuevo verificado; ya puedes enviar.';
 
   @override
   String get syncAddDeviceStepScan => 'Ahora · Muestra el código';
@@ -10238,11 +10240,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'En tu otro dispositivo, en la pantalla Añadir dispositivo que sigue abierta, elige Enviar ajustes y después Enviar mensajes. Tus categorías, hábitos, paneles, ajustes de IA y el historial de mensajes llegarán aquí.';
+      'Después de la verificación con emojis, en tu otro dispositivo, en la pantalla Añadir dispositivo que sigue abierta, elige Enviar ajustes y después Enviar mensajes. Tus categorías, hábitos, paneles, ajustes de IA y el historial de mensajes llegarán aquí.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'O vuelve a abrir Ajustes → Ajustes de sincronización → Dispositivos → Añadir dispositivo.';
+      'Si la cerraste, en el otro dispositivo abre Ajustes → Ajustes de sincronización → Mantenimiento, ejecuta la sincronización de ajustes y después Volver a sincronizar mensajes.';
 
   @override
   String get syncPairedVerifyDone =>

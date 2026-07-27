@@ -16995,7 +16995,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncAddDeviceConnected.
   ///
   /// In en, this message translates to:
-  /// **'A new device joined'**
+  /// **'New device joined — finish emoji verification to send.'**
   String get syncAddDeviceConnected;
 
   /// No description provided for @syncAddDeviceCopyCode.
@@ -17025,7 +17025,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncAddDeviceNextLeadIn.
   ///
   /// In en, this message translates to:
-  /// **'Next · after it joins'**
+  /// **'Next · after emoji verification'**
   String get syncAddDeviceNextLeadIn;
 
   /// No description provided for @syncAddDeviceRevealCode.
@@ -17061,19 +17061,19 @@ abstract class AppLocalizations {
   /// No description provided for @syncAddDeviceSendSettingsHint.
   ///
   /// In en, this message translates to:
-  /// **'Once the new device is connected, send your categories, habits, dashboards and AI settings across.'**
+  /// **'After the new device is emoji-verified, send your categories, habits, dashboards and AI settings across.'**
   String get syncAddDeviceSendSettingsHint;
 
   /// No description provided for @syncAddDeviceSendSettingsPending.
   ///
   /// In en, this message translates to:
-  /// **'Ready once the new device joins.'**
+  /// **'Available after the new device joins and is emoji-verified.'**
   String get syncAddDeviceSendSettingsPending;
 
   /// No description provided for @syncAddDeviceSendSettingsReady.
   ///
   /// In en, this message translates to:
-  /// **'Send now, or wait until the new device joins.'**
+  /// **'New device verified — ready to send.'**
   String get syncAddDeviceSendSettingsReady;
 
   /// No description provided for @syncAddDeviceStepScan.
@@ -17349,13 +17349,13 @@ abstract class AppLocalizations {
   /// No description provided for @syncPairedSettingsStep.
   ///
   /// In en, this message translates to:
-  /// **'On your other device, in the Add device screen you still have open, choose Send settings, then Send messages. Your categories, habits, dashboards, AI settings and message history arrive here.'**
+  /// **'After emoji verification, on your other device, in the Add device screen you still have open, choose Send settings, then Send messages. Your categories, habits, dashboards, AI settings and message history arrive here.'**
   String get syncPairedSettingsStep;
 
   /// No description provided for @syncPairedSettingsStepFallback.
   ///
   /// In en, this message translates to:
-  /// **'Or reopen Settings → Sync Settings → Devices → Add device.'**
+  /// **'If you closed it, on the other device open Settings → Sync Settings → Maintenance and run the settings sync, then Re-sync messages.'**
   String get syncPairedSettingsStepFallback;
 
   /// No description provided for @syncPairedVerifyDone.

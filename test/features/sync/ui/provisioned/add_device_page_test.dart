@@ -113,6 +113,13 @@ void main() {
     verified: false,
   );
 
+  const verifiedPhone = SyncDeviceInfo(
+    deviceId: 'NEWPHONE',
+    displayName: 'Phone',
+    isCurrentDevice: false,
+    verified: true,
+  );
+
   setUp(() {
     // The generate path logs failures through DomainLogger.
     ensureDomainLoggerRegistered();
@@ -393,7 +400,9 @@ void main() {
       expect(signal.value, AddDeviceJoinState.waiting);
     });
 
-    testWidgets('reports the join and latches it', (tester) async {
+    testWidgets('follows the joined device through emoji verification', (
+      tester,
+    ) async {
       final signal = newSignal(tester);
       final container = ProviderContainer(
         overrides: overrides(calls: _Calls()),
@@ -437,6 +446,15 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(signal.value, AddDeviceJoinState.joined);
+
+      // Joining is not sufficient: directlyVerifiedOnly key sharing withholds
+      // the keys until the emoji ceremony completes. Follow the same target
+      // identity until the roster reports it verified.
+      container.read(syncDevicesControllerProvider.notifier).state =
+          AsyncData<List<SyncDeviceInfo>>([...existing, verifiedPhone]);
+      await tester.pump();
+      await tester.pump();
+      expect(signal.value, AddDeviceJoinState.ready);
     });
 
     testWidgets('stops claiming to wait once the roster keeps failing', (
@@ -778,7 +796,11 @@ void main() {
     testWidgets('takes the accent as soon as it can be pressed', (
       tester,
     ) async {
-      await pumpBar(tester, devices: [...existing, newPhone]);
+      await pumpBar(
+        tester,
+        devices: [...existing, verifiedPhone],
+        state: AddDeviceJoinState.ready,
+      );
 
       final context = tester.element(find.byType(AddDeviceActionBar));
       expect(
@@ -789,15 +811,16 @@ void main() {
             .variant,
         DesignSystemButtonVariant.primary,
       );
-      // And the lead-in is gone rather than saying "after it joins" over a
-      // status line saying "send now".
+      // Verification is complete, so the lead-in is gone and the ready status
+      // agrees with the live action.
       expect(
         find.text(context.messages.syncAddDeviceNextLeadIn),
         findsNothing,
       );
+      expect(find.byKey(const Key('add_device_ready')), findsOneWidget);
     });
 
-    testWidgets('takes the accent once the new device is here', (
+    testWidgets('stays quiet after join until emoji verification', (
       tester,
     ) async {
       await pumpBar(
@@ -811,35 +834,59 @@ void main() {
               find.byKey(const Key('add_device_send_settings')),
             )
             .variant,
-        DesignSystemButtonVariant.primary,
-      );
-      // Nothing left to explain: the device it was waiting for has arrived.
-      expect(
-        find.byKey(const Key('add_device_send_settings_pending')),
-        findsNothing,
+        DesignSystemButtonVariant.outlined,
       );
       expect(find.byKey(const Key('add_device_joined')), findsOneWidget);
     });
 
-    testWidgets('offers the hand-off whenever the account has a peer', (
+    testWidgets('withholds transfers until the joined device is verified', (
       tester,
     ) async {
-      // Deliberately not "a device appeared while this sheet was open": the
-      // joining device tells the user to come back here and press this, by
-      // which point the sheet has been closed and reopened, so a delta-only
-      // gate left the button dead forever.
+      await pumpBar(
+        tester,
+        devices: [...existing, newPhone],
+        state: AddDeviceJoinState.joined,
+      );
+
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('add_device_send_settings')),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('add_device_send_messages')),
+            )
+            .onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('does not let an older peer unlock a new target', (
+      tester,
+    ) async {
+      // Existing peers say nothing about whether the device joining through
+      // this sheet has completed emoji verification.
       await pumpBar(tester, devices: [...existing, newPhone]);
 
       final button = tester.widget<DesignSystemButton>(
         find.byKey(const Key('add_device_send_settings')),
       );
-      expect(button.onPressed, isNotNull);
+      expect(button.onPressed, isNull);
     });
 
-    testWidgets('offers message history beside settings once a peer exists', (
+    testWidgets('offers message history once the target is verified', (
       tester,
     ) async {
-      await pumpBar(tester, devices: [...existing, newPhone]);
+      await pumpBar(
+        tester,
+        devices: [...existing, verifiedPhone],
+        state: AddDeviceJoinState.ready,
+      );
 
       final sendMessages = tester.widget<DesignSystemButton>(
         find.byKey(const Key('add_device_send_messages')),
@@ -851,7 +898,8 @@ void main() {
       var handOffs = 0;
       await pumpBar(
         tester,
-        devices: [...existing, newPhone],
+        devices: [...existing, verifiedPhone],
+        state: AddDeviceJoinState.ready,
         onSendSettings: (_) async => handOffs++,
       );
 
@@ -865,7 +913,8 @@ void main() {
       var messageHandOffs = 0;
       await pumpBar(
         tester,
-        devices: [...existing, newPhone],
+        devices: [...existing, verifiedPhone],
+        state: AddDeviceJoinState.ready,
         onSendMessages: (_) async => messageHandOffs++,
       );
 
@@ -873,13 +922,6 @@ void main() {
       await tester.pump();
 
       expect(messageHandOffs, 1);
-    });
-
-    test('hasPeer ignores this device and an unresolved roster', () {
-      expect(AddDeviceActionBar.hasPeer(null), isFalse);
-      expect(AddDeviceActionBar.hasPeer(const []), isFalse);
-      expect(AddDeviceActionBar.hasPeer(existing), isFalse);
-      expect(AddDeviceActionBar.hasPeer([...existing, newPhone]), isTrue);
     });
   });
 }
