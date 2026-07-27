@@ -9815,7 +9815,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'After the new device is emoji-verified, send your categories, habits, dashboards and AI settings across.';
+      'After the new device is emoji-verified, send your measurables, categories, habits, dashboards and AI settings across.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
@@ -10013,11 +10013,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'After emoji verification, on your other device, in the Add device screen you still have open, choose Send settings, then Send message history. Your categories, habits, dashboards, AI settings and message history arrive here.';
+      'After emoji verification, on your other device, in the Add device screen you still have open, choose Send settings, then Send message history. Your measurables, categories, habits, dashboards, AI settings and message history arrive here.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'If you closed it, on the other device open Settings → Sync Settings → Maintenance, run the settings sync, then choose Message history.';
+      'If you closed it, on the other device open Settings → Sync Settings → Maintenance, choose Sync measurables, dashboards, habits, categories, AI settings, then choose Message history.';
 
   @override
   String get syncPairedVerifyDone =>

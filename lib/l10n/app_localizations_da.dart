@@ -9884,7 +9884,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Når den nye enhed er emoji-bekræftet, sender du dine kategorier, vaner, dashboards og AI-indstillinger derover.';
+      'Når den nye enhed er emoji-bekræftet, sender du dine målbare ting, kategorier, vaner, dashboards og AI-indstillinger derover.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
@@ -10084,7 +10084,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Efter emoji-bekræftelsen vælger du på din anden enhed Send indstillinger og derefter Send beskedhistorik i skærmen Tilføj enhed, som du stadig har åben. Dine kategorier, vaner, dashboards, AI-indstillinger og din beskedhistorik lander her.';
+      'Efter emoji-bekræftelsen vælger du på din anden enhed Send indstillinger og derefter Send beskedhistorik i skærmen Tilføj enhed, som du stadig har åben. Dine målbare ting, kategorier, vaner, dashboards, AI-indstillinger og din beskedhistorik lander her.';
 
   @override
   String get syncPairedSettingsStepFallback =>

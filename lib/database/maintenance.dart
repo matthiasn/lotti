@@ -130,7 +130,7 @@ class Maintenance {
         for (final entry in entries) {
           final jsonPath = relativeEntityPath(entry);
 
-          await outboxService.enqueueMessage(
+          await outboxService.enqueueMessageOrThrow(
             SyncMessage.journalEntity(
               id: entry.id,
               vectorClock: entry.meta.vectorClock,
@@ -143,7 +143,7 @@ class Maintenance {
 
           final entryLinks = linksByFromId[entry.meta.id] ?? const [];
           for (final entryLink in entryLinks) {
-            await outboxService.enqueueMessage(
+            await outboxService.enqueueMessageOrThrow(
               SyncMessage.entryLink(
                 status: SyncEntryStatus.update,
                 entryLink: entryLink,
@@ -176,7 +176,7 @@ class Maintenance {
           limit: limit,
           offset: offset,
         ),
-        enqueueAction: (entity) => outboxService.enqueueMessage(
+        enqueueAction: (entity) => outboxService.enqueueMessageOrThrow(
           SyncMessage.agentEntity(
             agentEntity: entity,
             status: SyncEntryStatus.update,
@@ -211,7 +211,7 @@ class Maintenance {
           limit: limit,
           offset: offset,
         ),
-        enqueueAction: (link) => outboxService.enqueueMessage(
+        enqueueAction: (link) => outboxService.enqueueMessageOrThrow(
           SyncMessage.agentLink(
             agentLink: link,
             status: SyncEntryStatus.update,

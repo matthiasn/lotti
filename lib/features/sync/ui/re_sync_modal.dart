@@ -288,10 +288,12 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
         completed += 1;
       } else if (progress.total != null && progress.total! > 0) {
         final total = progress.total!;
-        completed += progress.processed / total;
+        completed += (progress.processed / total).clamp(0.0, 1.0);
       }
     }
-    final value = phases.isEmpty ? 0.0 : completed / phases.length;
+    final value = phases.isEmpty
+        ? 0.0
+        : (completed / phases.length).clamp(0.0, 1.0);
     final percent = (value * 100).round();
 
     return Column(

@@ -10065,7 +10065,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'După verificarea cu emoji a noului dispozitiv, trimiteți-i categoriile, obiceiurile, panourile și setările AI.';
+      'După verificarea cu emoji a noului dispozitiv, trimiteți-i măsurabilele, categoriile, obiceiurile, panourile și setările AI.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
@@ -10278,11 +10278,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'După verificarea cu emoji, pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările, apoi Trimiteți istoricul mesajelor. Categoriile, obiceiurile, panourile, setările AI și istoricul mesajelor ajung aici.';
+      'După verificarea cu emoji, pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările, apoi Trimiteți istoricul mesajelor. Măsurabilele, categoriile, obiceiurile, panourile, setările AI și istoricul mesajelor ajung aici.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Dacă l-ați închis, pe celălalt dispozitiv deschideți Setări → Setări sincronizare → Întreținere, rulați sincronizarea setărilor, apoi alegeți Istoricul mesajelor.';
+      'Dacă l-ați închis, pe celălalt dispozitiv deschideți Setări → Setări sincronizare → Întreținere, alegeți Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI, apoi alegeți Istoricul mesajelor.';
 
   @override
   String get syncPairedVerifyDone =>

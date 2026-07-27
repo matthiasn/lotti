@@ -10012,7 +10012,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Po ověření nového zařízení pomocí emoji mu pošli své kategorie, návyky, přehledy a nastavení AI.';
+      'Po ověření nového zařízení pomocí emoji mu pošli své měřitelné údaje, kategorie, návyky, přehledy a nastavení AI.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
@@ -10220,7 +10220,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Po ověření pomocí emoji zvol na svém druhém zařízení v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení a potom Odeslat historii zpráv. Tvé kategorie, návyky, přehledy, nastavení AI a historie zpráv dorazí sem.';
+      'Po ověření pomocí emoji zvol na svém druhém zařízení v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení a potom Odeslat historii zpráv. Tvé měřitelné údaje, kategorie, návyky, přehledy, nastavení AI a historie zpráv dorazí sem.';
 
   @override
   String get syncPairedSettingsStepFallback =>

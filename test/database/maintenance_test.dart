@@ -198,7 +198,7 @@ void main() {
       sentMessages = [];
       loggedEvents = [];
       loggedExceptions = [];
-      when(() => outboxService.enqueueMessage(any())).thenAnswer((
+      when(() => outboxService.enqueueMessageOrThrow(any())).thenAnswer((
         invocation,
       ) async {
         sentMessages.add(invocation.positionalArguments.first as SyncMessage);
@@ -291,6 +291,39 @@ void main() {
         expect(
           journalMessages.map((m) => m.id),
           containsAll(entries.map((e) => e.meta.id)),
+        );
+        verify(
+          () => outboxService.enqueueMessageOrThrow(any()),
+        ).called(entries.length);
+      });
+
+      test('propagates a journal enqueue failure', () async {
+        final timestamp = DateTime(2024, 1, 15);
+        await _insertEntries(journalDb, [
+          _buildJournalEntry(
+            id: 'enqueue-failure',
+            timestamp: timestamp,
+            text: 'Failure',
+          ),
+        ]);
+        when(
+          () => outboxService.enqueueMessageOrThrow(any()),
+        ).thenThrow(Exception('outbox write failed'));
+
+        await expectLater(
+          maintenance.reSyncInterval(
+            start: timestamp.subtract(const Duration(days: 1)),
+            end: timestamp.add(const Duration(days: 1)),
+            agentRepository: mockAgentRepo,
+            includeAgentEntities: false,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (error) => error.toString(),
+              'message',
+              contains('outbox write failed'),
+            ),
+          ),
         );
       });
 

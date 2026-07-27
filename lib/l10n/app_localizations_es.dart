@@ -7041,7 +7041,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get maintenanceReSyncAgentEntities => 'Entidades de agente';
 
   @override
-  String get maintenanceReSyncAgentLinks => 'Enlaces de agentes';
+  String get maintenanceReSyncAgentLinks => 'Enlaces de agente';
 
   @override
   String get maintenanceReSyncCompleteDescription =>
@@ -10012,7 +10012,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncAddDeviceNextLeadIn =>
-      'Después · tras la verificación con emojis';
+      'Siguiente · después de la verificación con emojis';
 
   @override
   String get syncAddDeviceRevealCode =>
@@ -10034,7 +10034,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Cuando el nuevo dispositivo esté verificado con emojis, envíale tus categorías, hábitos, paneles y ajustes de IA.';
+      'Cuando el nuevo dispositivo esté verificado con emojis, envíale tus valores medibles, categorías, hábitos, paneles y ajustes de IA.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
@@ -10240,7 +10240,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Después de la verificación con emojis, en tu otro dispositivo, en la pantalla Añadir dispositivo que sigue abierta, elige Enviar ajustes y después Enviar historial de mensajes. Tus categorías, hábitos, paneles, ajustes de IA y el historial de mensajes llegarán aquí.';
+      'Después de la verificación con emojis, en tu otro dispositivo, en la pantalla Añadir dispositivo que sigue abierta, elige Enviar ajustes y después Enviar historial de mensajes. Tus valores medibles, categorías, hábitos, paneles, ajustes de IA y el historial de mensajes llegarán aquí.';
 
   @override
   String get syncPairedSettingsStepFallback =>

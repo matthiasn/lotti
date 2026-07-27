@@ -228,8 +228,11 @@ the inviting device exposes both follow-up transfers in the sticky action bar:
 and re-enqueues that device's local history. The latter defaults to
 *Everything*, with *Last 30 days* and a validated custom interval available,
 and reports the journal, agent-entity and agent-link enqueue phases before
-confirming that the messages are queued. The paired screen names both transfers
-because the new device cannot send history it does not yet have.
+confirming that the messages are queued. This maintenance path uses the outbox's
+throwing enqueue API, so any preparation or persistence failure keeps the modal
+open with a retry action instead of claiming that a partial batch completed.
+The paired screen names both transfers because the new device cannot send
+history it does not yet have.
 
 Both halves of the flow use one wayfinding component — a quiet
 `SyncPairStepIndicator` eyebrow above a subtitle-rank imperative — because the

@@ -518,6 +518,33 @@ void main() {
     verifyNever(() => journalDb.journalEntityById(any()));
   });
 
+  test('enqueueMessageOrThrow propagates an outbox write failure', () async {
+    when(
+      () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
+    ).thenThrow(Exception('database write failed'));
+
+    await expectLater(
+      service.enqueueMessageOrThrow(
+        const SyncMessage.aiConfigDelete(id: 'failing-config'),
+      ),
+      throwsA(
+        isA<Exception>().having(
+          (error) => error.toString(),
+          'message',
+          contains('database write failed'),
+        ),
+      ),
+    );
+    verify(
+      () => loggingService.error(
+        LogDomain.sync,
+        any<Object>(),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'enqueueMessage',
+      ),
+    ).called(1);
+  });
+
   test(
     'enqueueNotification saves JSON payload and queues notification',
     () async {

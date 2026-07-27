@@ -6995,7 +6995,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
-      'Selecteer ten minste één entiteittype';
+      'Selecteer ten minste één entiteitstype';
 
   @override
   String get maintenanceReSyncSending => 'Berichten voorbereiden';
@@ -9912,7 +9912,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Zodra het nieuwe apparaat met emoji’s is geverifieerd, stuur je categorieën, gewoontes, dashboards en AI-instellingen ernaartoe.';
+      'Zodra het nieuwe apparaat met emoji’s is geverifieerd, stuur je meetbare gegevens, categorieën, gewoontes, dashboards en AI-instellingen ernaartoe.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
@@ -10118,7 +10118,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Kies na de emoji-verificatie op je andere apparaat in het scherm Apparaat toevoegen dat nog openstaat eerst Instellingen versturen en daarna Berichtgeschiedenis verzenden. Je categorieën, gewoontes, dashboards, AI-instellingen en berichtgeschiedenis komen dan hierheen.';
+      'Kies na de emoji-verificatie op je andere apparaat in het scherm Apparaat toevoegen dat nog openstaat eerst Instellingen versturen en daarna Berichtgeschiedenis verzenden. Je meetbare gegevens, categorieën, gewoontes, dashboards, AI-instellingen en berichtgeschiedenis komen dan hierheen.';
 
   @override
   String get syncPairedSettingsStepFallback =>

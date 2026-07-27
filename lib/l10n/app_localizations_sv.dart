@@ -6944,7 +6944,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Dina andra enheter får dem när synkroniseringen har hunnit ikapp.';
 
   @override
-  String get maintenanceReSyncCompleteTitle => 'Meddelanden köade';
+  String get maintenanceReSyncCompleteTitle => 'Meddelanden i kö';
 
   @override
   String get maintenanceReSyncCustom => 'Anpassat';
@@ -6973,7 +6973,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get maintenanceReSyncLast30Days => 'Senaste 30 dagarna';
 
   @override
-  String get maintenanceReSyncSelectAtLeastOne => 'Välj minst en enhetstyp';
+  String get maintenanceReSyncSelectAtLeastOne => 'Välj minst en entitetstyp';
 
   @override
   String get maintenanceReSyncSending => 'Förbereder meddelanden';
@@ -9884,7 +9884,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'När den nya enheten har emoji-verifierats skickar du dina kategorier, vanor, instrumentpaneler och AI-inställningar dit.';
+      'När den nya enheten har emoji-verifierats skickar du dina mätbara saker, kategorier, vanor, instrumentpaneler och AI-inställningar dit.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
@@ -10085,7 +10085,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Efter emoji-verifieringen väljer du på din andra enhet Skicka inställningar och sedan Skicka meddelandehistorik i skärmen Lägg till enhet som fortfarande är öppen. Dina kategorier, vanor, instrumentpaneler, AI-inställningar och din meddelandehistorik hamnar här.';
+      'Efter emoji-verifieringen väljer du på din andra enhet Skicka inställningar och sedan Skicka meddelandehistorik på skärmen Lägg till enhet som fortfarande är öppen. Dina mätbara saker, kategorier, vanor, instrumentpaneler, AI-inställningar och din meddelandehistorik hamnar här.';
 
   @override
   String get syncPairedSettingsStepFallback =>

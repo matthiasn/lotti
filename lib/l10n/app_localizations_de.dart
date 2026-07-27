@@ -9940,7 +9940,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Sende deine Kategorien, Gewohnheiten, Dashboards und KI-Einstellungen, nachdem das neue Gerät per Emoji verifiziert wurde.';
+      'Sende deine Messgrößen, Kategorien, Gewohnheiten, Dashboards und KI-Einstellungen, nachdem das neue Gerät per Emoji verifiziert wurde.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
@@ -10146,7 +10146,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Wähle nach der Emoji-Verifizierung auf deinem anderen Gerät im noch geöffneten Bildschirm Gerät hinzufügen zuerst Einstellungen senden und dann Nachrichtenverlauf senden. Deine Kategorien, Gewohnheiten, Dashboards, KI-Einstellungen und dein Nachrichtenverlauf kommen dann hierher.';
+      'Wähle nach der Emoji-Verifizierung auf deinem anderen Gerät im noch geöffneten Bildschirm Gerät hinzufügen zuerst Einstellungen senden und dann Nachrichtenverlauf senden. Deine Messgrößen, Kategorien, Gewohnheiten, Dashboards, KI-Einstellungen und dein Nachrichtenverlauf kommen dann hierher.';
 
   @override
   String get syncPairedSettingsStepFallback =>

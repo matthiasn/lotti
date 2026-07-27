@@ -10038,7 +10038,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncAddDeviceConnected =>
-      'Le nouvel appareil a rejoint — termine la vérification par emoji avant l’envoi.';
+      'Le nouvel appareil a rejoint — termine la vérification par émojis avant l’envoi.';
 
   @override
   String get syncAddDeviceCopyCode => 'Copier le code d’appairage';
@@ -10056,7 +10056,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncAddDeviceNextLeadIn =>
-      'Ensuite · après la vérification par emoji';
+      'Ensuite · après la vérification par émojis';
 
   @override
   String get syncAddDeviceRevealCode => 'Afficher le code d’appairage en texte';
@@ -10077,15 +10077,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Une fois le nouvel appareil vérifié par emoji, envoie-lui tes catégories, habitudes, tableaux de bord et réglages d’IA.';
+      'Une fois le nouvel appareil vérifié par émojis, envoie-lui tes mesurables, catégories, habitudes, tableaux de bord et réglages d’IA.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Disponible une fois le nouvel appareil rejoint et vérifié par emoji.';
+      'Disponible une fois le nouvel appareil rejoint et vérifié par émojis.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Nouvel appareil vérifié — prêt à envoyer.';
+      'Nouvel appareil vérifié — prêt à recevoir.';
 
   @override
   String get syncAddDeviceStepScan => 'Maintenant · Affiche le code';
@@ -10282,7 +10282,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Après la vérification par emoji, sur ton autre appareil, dans l’écran Ajouter un appareil encore ouvert, choisis Envoyer les réglages, puis Envoyer l’historique des messages. Tes catégories, habitudes, tableaux de bord, réglages d’IA et ton historique de messages arrivent ici.';
+      'Après la vérification par émojis, sur ton autre appareil, dans l’écran Ajouter un appareil encore ouvert, choisis Envoyer les réglages, puis Envoyer l’historique des messages. Tes mesurables, catégories, habitudes, tableaux de bord, réglages d’IA et ton historique de messages arrivent ici.';
 
   @override
   String get syncPairedSettingsStepFallback =>

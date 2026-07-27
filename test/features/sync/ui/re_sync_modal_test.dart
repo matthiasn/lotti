@@ -268,6 +268,46 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('caps live progress at 100 percent when totals grow stale', (
+    tester,
+  ) async {
+    final completer = Completer<void>();
+    when(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((invocation) {
+      final onProgress =
+          invocation.namedArguments[#onProgress] as ReSyncProgressCallback;
+      onProgress(
+        const ReSyncProgress(
+          phase: ReSyncPhase.journalEntities,
+          processed: 2,
+          total: 1,
+          isComplete: false,
+        ),
+      );
+      return completer.future;
+    });
+
+    await pumpModal(tester);
+    await tester.tap(find.byKey(const Key('reSyncAgentEntitiesCheckbox')));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    expect(find.text('100%'), findsOneWidget);
+    expect(find.text('200%'), findsNothing);
+
+    completer.complete();
+    await tester.pump();
+  });
+
   testWidgets('failure stays in the modal and can be retried', (tester) async {
     var attempts = 0;
     when(

@@ -7027,7 +7027,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get maintenanceReSyncCompleteDescription =>
-      'Gli altri tuoi dispositivi li riceveranno quando la sincronizzazione si sarà aggiornata.';
+      'Gli altri tuoi dispositivi li riceveranno quando la sincronizzazione avrà recuperato il ritardo.';
 
   @override
   String get maintenanceReSyncCompleteTitle => 'Messaggi accodati';
@@ -10017,7 +10017,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Quando il nuovo dispositivo è verificato con emoji, inviagli categorie, abitudini, dashboard e impostazioni IA.';
+      'Quando il nuovo dispositivo è verificato con emoji, inviagli dati misurabili, categorie, abitudini, dashboard e impostazioni IA.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
@@ -10223,7 +10223,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Dopo la verifica con emoji, sull’altro dispositivo, nella schermata Aggiungi dispositivo ancora aperta, scegli Invia impostazioni e poi Invia cronologia messaggi. Categorie, abitudini, dashboard, impostazioni IA e cronologia dei messaggi arriveranno qui.';
+      'Dopo la verifica con emoji, sull’altro dispositivo, nella schermata Aggiungi dispositivo ancora aperta, scegli Invia impostazioni e poi Invia cronologia messaggi. Dati misurabili, categorie, abitudini, dashboard, impostazioni IA e cronologia dei messaggi arriveranno qui.';
 
   @override
   String get syncPairedSettingsStepFallback =>

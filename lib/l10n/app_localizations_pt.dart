@@ -6997,14 +6997,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get maintenanceReSync => 'Histórico de mensagens';
 
   @override
-  String get maintenanceReSyncAgentEntities => 'Entidades agentes';
+  String get maintenanceReSyncAgentEntities => 'Entidades de agente';
 
   @override
-  String get maintenanceReSyncAgentLinks => 'Ligações de agentes';
+  String get maintenanceReSyncAgentLinks => 'Links de agente';
 
   @override
   String get maintenanceReSyncCompleteDescription =>
-      'Os teus outros dispositivos vão recebê-las quando a sincronização estiver em dia.';
+      'Seus outros dispositivos vão recebê-las quando a sincronização estiver em dia.';
 
   @override
   String get maintenanceReSyncCompleteTitle => 'Mensagens em fila';
@@ -7014,7 +7014,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get maintenanceReSyncDescription =>
-      'Coloca mensagens na fila para os teus outros dispositivos';
+      'Coloque mensagens na fila para seus outros dispositivos';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Tipos de entidade';
@@ -7024,11 +7024,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get maintenanceReSyncFailed =>
-      'Não foi possível colocar as mensagens em fila. Tenta novamente.';
+      'Não foi possível colocar as mensagens em fila. Tente novamente.';
 
   @override
   String get maintenanceReSyncInvalidRange =>
-      'O início tem de ser anterior ao fim';
+      'O início deve ser anterior ao fim';
 
   @override
   String get maintenanceReSyncJournalEntities => 'Entidades de diário';
@@ -7041,7 +7041,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Selecione pelo menos um tipo de entidade';
 
   @override
-  String get maintenanceReSyncSending => 'A preparar mensagens';
+  String get maintenanceReSyncSending => 'Preparando mensagens';
 
   @override
   String get maintenanceReSyncStart => 'Começar';
@@ -9981,7 +9981,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Depois de o novo dispositivo ser verificado por emojis, envia-lhe as tuas categorias, hábitos, painéis e configurações de IA.';
+      'Depois que o novo dispositivo for verificado por emojis, envie a ele seus mensuráveis, categorias, hábitos, painéis e configurações de IA.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
@@ -10187,11 +10187,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Após a verificação por emojis, no teu outro dispositivo, no ecrã Adicionar dispositivo que ainda está aberto, escolhe Enviar configurações e depois Enviar histórico de mensagens. As tuas categorias, hábitos, painéis, configurações de IA e o histórico de mensagens chegam aqui.';
+      'Após a verificação por emojis, no seu outro dispositivo, na tela Adicionar dispositivo que ainda está aberta, escolha Enviar configurações e depois Enviar histórico de mensagens. Seus mensuráveis, categorias, hábitos, painéis, configurações de IA e o histórico de mensagens chegam aqui.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Se o fechaste, no outro dispositivo abre Configurações → Configurações de sincronização → Manutenção, executa a sincronização das configurações e depois escolhe Histórico de mensagens.';
+      'Se você a fechou, no outro dispositivo abra Configurações → Configurações de sincronização → Manutenção, execute a sincronização das configurações e depois escolha Histórico de mensagens.';
 
   @override
   String get syncPairedVerifyDone =>
