@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -361,6 +362,39 @@ void main() {
       );
     });
 
+    testWidgets('leaving the scanner mid-initialisation reports no error', (
+      tester,
+    ) async {
+      // The camera is started from an async call. If the page goes away while
+      // that is in flight, the controller is disposed underneath it and the
+      // start rejects. Left to `MobileScanner`'s own un-awaited initializer
+      // that lands as an unhandled async error nothing can catch, which is
+      // what broke every mobile manual capture (lotti3-82s).
+      setUpMobileScanner();
+      final gated = _GatedStartScanner();
+      MobileScannerPlatform.instance = gated;
+      addTearDown(gated.disposeControllers);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(MobileScanner), findsOneWidget);
+
+      // The user moves on before the camera has finished coming up.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
+      // ...and only now does the camera answer.
+      gated.gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('declining a scanned code lands on the field and stays there', (
       tester,
     ) async {
@@ -625,4 +659,16 @@ void main() {
       expect(find.text('@alice:example.com'), findsNothing);
     });
   });
+}
+
+/// A camera whose start hangs until released, so a test can tear the page down
+/// while initialisation is still in flight.
+class _GatedStartScanner extends FakeMethodChannelMobileScanner {
+  final Completer<void> gate = Completer<void>();
+
+  @override
+  Future<MobileScannerViewAttributes> start(StartOptions startOptions) async {
+    await gate.future;
+    return super.start(startOptions);
+  }
 }

@@ -33,6 +33,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/sync/matrix.dart';
@@ -439,6 +440,46 @@ class _ManualProvisioningController extends ProvisioningController {
   }
 }
 
+/// The viewfinder as the manual should depict it: a framed target area, not
+/// the black rectangle a camera-less capture would otherwise produce.
+class _ViewfinderStandIn extends StatelessWidget {
+  const _ViewfinderStandIn({required this.side});
+
+  final double side;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+      ),
+      child: Center(
+        child: SizedBox.square(
+          dimension: side * 0.6,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: tokens.colors.text.mediumEmphasis,
+                width: tokens.spacing.step1,
+              ),
+              borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.qr_code_2_rounded,
+                size: side * 0.3,
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ManualSyncDevicesController extends SyncDevicesController {
   _ManualSyncDevicesController(this.devices);
 
@@ -750,10 +791,15 @@ void main() {
       ..registerSingleton<NavService>(navService);
 
     beamToNamedOverride = (_) {};
+    // A capture has no camera plugin, so the real scanner is a black square
+    // and a stream of MissingPluginExceptions. This stands in for the
+    // viewfinder and makes the scanning step legible in the manual.
+    scannerPreviewOverride = (context, side) => _ViewfinderStandIn(side: side);
   });
 
   tearDown(() async {
     beamToNamedOverride = null;
+    scannerPreviewOverride = null;
     await verificationStream.close();
     await navService.dispose();
     await tearDownTestGetIt();

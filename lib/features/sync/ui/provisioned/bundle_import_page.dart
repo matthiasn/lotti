@@ -77,8 +77,15 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
   /// widget caches its failed start otherwise.
   int _scannerGeneration = 0;
 
+  /// The camera is started by [_ScannerView] rather than by `MobileScanner`.
+  ///
+  /// With `autoStart` the package calls `start()` from an initializer it never
+  /// awaits, so a page torn down mid-initialisation resumes that call against
+  /// a disposed controller and the error surfaces as an unhandled async
+  /// failure nothing can catch. Starting it ourselves makes the same failure
+  /// catchable.
   MobileScannerController _ensureScannerController() {
-    return _scannerController ??= MobileScannerController();
+    return _scannerController ??= MobileScannerController(autoStart: false);
   }
 
   /// Recreates the camera after the user has granted permission elsewhere.
@@ -392,7 +399,19 @@ class _StepTitle extends StatelessWidget {
   }
 }
 
-class _ScannerView extends StatelessWidget {
+/// Replaces the live camera preview, for tests and manual screenshots.
+///
+/// A headless capture has no camera plugin: `MobileScanner` renders a black
+/// rectangle and the platform channel answers every call with
+/// `MissingPluginException`. Neither belongs in the manual, and a stand-in
+/// viewfinder documents the step better than an empty frame would.
+///
+/// Follows the same override pattern as `beamToNamedOverride`. Null in
+/// production, where the real scanner is always used.
+@visibleForTesting
+Widget Function(BuildContext context, double side)? scannerPreviewOverride;
+
+class _ScannerView extends StatefulWidget {
   const _ScannerView({
     required this.controller,
     required this.onDetect,
@@ -413,10 +432,49 @@ class _ScannerView extends StatelessWidget {
   final String? errorText;
 
   @override
+  State<_ScannerView> createState() => _ScannerViewState();
+}
+
+class _ScannerViewState extends State<_ScannerView> {
+  @override
+  void initState() {
+    super.initState();
+    // Nothing to start when the preview is a stand-in.
+    if (scannerPreviewOverride == null) {
+      unawaited(_startCamera());
+    }
+  }
+
+  @override
+  void dispose() {
+    // Best effort: the controller belongs to the page, which disposes it.
+    if (scannerPreviewOverride == null) {
+      unawaited(widget.controller.stop().catchError((Object _) {}));
+    }
+    super.dispose();
+  }
+
+  /// Starts the camera and swallows a failure to do so.
+  ///
+  /// The failure that matters is the page being torn down while this is in
+  /// flight: the controller is disposed and `start()` then rejects. With
+  /// `autoStart` that call lives inside `MobileScanner`'s own un-awaited
+  /// initializer, where nothing can catch it and it surfaces as an unhandled
+  /// async error. Owning the call is what makes it catchable — a camera that
+  /// cannot start is already reported through `errorBuilder`.
+  Future<void> _startCamera() async {
+    try {
+      await widget.controller.start();
+    } on Exception {
+      // Reported by errorBuilder, or moot because the page has gone.
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final error = errorText;
+    final error = widget.errorText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -438,14 +496,16 @@ class _ScannerView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
                 child: SizedBox.square(
                   dimension: side,
-                  child: MobileScanner(
-                    controller: controller,
-                    onDetect: onDetect,
-                    errorBuilder: (context, error) => _CameraUnavailable(
-                      message: messages.syncPairCameraDenied,
-                      onRetry: onRetryCamera,
-                    ),
-                  ),
+                  child:
+                      scannerPreviewOverride?.call(context, side) ??
+                      MobileScanner(
+                        controller: widget.controller,
+                        onDetect: widget.onDetect,
+                        errorBuilder: (context, error) => _CameraUnavailable(
+                          message: messages.syncPairCameraDenied,
+                          onRetry: widget.onRetryCamera,
+                        ),
+                      ),
                 ),
               ),
             );
@@ -477,7 +537,7 @@ class _ScannerView extends StatelessWidget {
             key: const Key('bundle_import_enter_manually'),
             label: messages.syncPairEnterManually,
             variant: DesignSystemButtonVariant.outlined,
-            onPressed: onEnterManually,
+            onPressed: widget.onEnterManually,
           ),
         ),
       ],
