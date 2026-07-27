@@ -40,15 +40,6 @@ void main() {
     ).thenAnswer((_) => const Stream.empty());
 
     when(
-      () => mockSettingsDb.itemByKey('theme'),
-    ).thenAnswer((_) async => 'Grey Law');
-    when(
-      () => mockSettingsDb.itemByKey('LIGHT_SCHEME'),
-    ).thenAnswer((_) async => 'Grey Law');
-    when(
-      () => mockSettingsDb.itemByKey('DARK_SCHEMA'),
-    ).thenAnswer((_) async => 'Grey Law');
-    when(
       () => mockSettingsDb.itemByKey('THEME_MODE'),
     ).thenAnswer((_) async => 'system');
     when(
@@ -100,7 +91,7 @@ void main() {
   }
 
   group('ThemingPage Widget Tests', () {
-    testWidgets('theming page loads and displays theme selection controls', (
+    testWidgets('theming page shows the title and the mode toggle only', (
       tester,
     ) async {
       await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
@@ -116,12 +107,9 @@ void main() {
       // Verify the segmented button for theme mode is present
       expect(find.byType(DsSegmentedToggle<ThemeMode>), findsOneWidget);
 
-      // Verify the theme selection input decorators are present
-      expect(find.byType(InputDecorator), findsNWidgets(2));
-
-      // Verify the theme selection labels are present (localized)
-      expect(find.text(l10n.settingThemingLight), findsOneWidget);
-      expect(find.text(l10n.settingThemingDark), findsOneWidget);
+      // The FlexColorScheme pickers are gone: mode is the only preference,
+      // so no scheme-name fields may render.
+      expect(find.byType(InputDecorator), findsNothing);
     });
 
     testWidgets('theme mode segmented button changes theme mode', (
@@ -146,108 +134,6 @@ void main() {
       ).called(1);
     });
 
-    testWidgets(
-      'light theme selection opens modal and allows theme selection',
-      (tester) async {
-        await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
-        await tester.pumpAndSettle();
-
-        final l10n = AppLocalizations.of(
-          tester.element(find.byType(ThemingPage)),
-        )!;
-
-        // Find and tap the light theme input decorator by label
-        final lightThemeField = find.widgetWithText(
-          InputDecorator,
-          l10n.settingThemingLight,
-        );
-        expect(lightThemeField, findsOneWidget);
-        await tester.tap(lightThemeField);
-        await tester.pumpAndSettle();
-
-        // Verify the modal is shown
-        expect(find.byType(BottomSheet), findsOneWidget);
-
-        // Verify theme options are displayed in the modal
-        expect(find.text('Material'), findsOneWidget);
-        expect(find.text('Grey Law'), findsAtLeastNWidgets(1));
-        expect(find.text('Deep Blue'), findsOneWidget);
-
-        // Select a different theme from the modal
-        await tester.tap(find.text('Material').last);
-        await tester.pumpAndSettle();
-
-        // Verify the modal is closed and the theme was saved
-        expect(find.byType(BottomSheet), findsNothing);
-        verify(
-          () => mockSettingsDb.saveSettingsItem('LIGHT_SCHEME', 'Material'),
-        ).called(1);
-      },
-    );
-
-    testWidgets('dark theme selection opens modal and allows theme selection', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
-      await tester.pumpAndSettle();
-
-      final l10n = AppLocalizations.of(
-        tester.element(find.byType(ThemingPage)),
-      )!;
-
-      // Find and tap the dark theme input decorator by label
-      final darkThemeField = find.widgetWithText(
-        InputDecorator,
-        l10n.settingThemingDark,
-      );
-      expect(darkThemeField, findsOneWidget);
-      await tester.tap(darkThemeField);
-      await tester.pumpAndSettle();
-
-      // Verify the modal is shown
-      expect(find.byType(BottomSheet), findsOneWidget);
-
-      // Verify theme options are displayed in the modal
-      expect(find.text('Material'), findsOneWidget);
-      expect(find.text('Grey Law'), findsAtLeastNWidgets(1));
-      expect(find.text('Deep Blue'), findsOneWidget);
-
-      // Select a different theme from the modal
-      await tester.tap(find.text('Deep Blue').last);
-      await tester.pumpAndSettle();
-
-      // Verify the modal is closed and the theme was saved
-      expect(find.byType(BottomSheet), findsNothing);
-      verify(
-        () => mockSettingsDb.saveSettingsItem('DARK_SCHEMA', 'Deep Blue'),
-      ).called(1);
-    });
-
-    testWidgets('theme selection modal can be dismissed', (tester) async {
-      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
-      await tester.pumpAndSettle();
-
-      final l10n = AppLocalizations.of(
-        tester.element(find.byType(ThemingPage)),
-      )!;
-      final lightThemeField = find.widgetWithText(
-        InputDecorator,
-        l10n.settingThemingLight,
-      );
-      await tester.tap(lightThemeField);
-      await tester.pumpAndSettle();
-
-      // Verify the modal is shown
-      expect(find.byType(BottomSheet), findsOneWidget);
-
-      // Dismiss the modal by tapping outside
-      await tester.tapAt(const Offset(100, 100));
-      await tester.pumpAndSettle();
-
-      // Verify the modal is closed
-      expect(find.byType(BottomSheet), findsNothing);
-    });
-
     testWidgets('theme mode segments show correct icons', (tester) async {
       await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
@@ -264,21 +150,6 @@ void main() {
         ),
         findsNWidgets(3), // dark, system, light
       );
-    });
-
-    testWidgets('theme selection fields are read-only (using InputDecorator)', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
-      await tester.pumpAndSettle();
-
-      // Find the input decorators (replaced TextField for read-only display)
-      final inputDecorators = find.byType(InputDecorator);
-      expect(inputDecorators, findsNWidgets(2));
-
-      // Verify they display the theme names as Text widgets (read-only)
-      // The InputDecorator + Text pattern is inherently read-only
-      expect(find.text('Grey Law'), findsNWidgets(2));
     });
   });
 }

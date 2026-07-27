@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/themes/theme.dart';
 
 import '../widget_test_utils.dart';
@@ -77,16 +78,19 @@ Future<void> loadAppFonts() async {
   }
 }
 
-/// The app theme as rendered for screenshots: the production [withOverrides]
-/// theme with the bundled `Inter` family applied to the Material text themes.
+/// The app theme as rendered for screenshots: the PRODUCTION theme —
+/// `withOverrides(DesignSystemTheme)` — exactly what `ThemingController`
+/// builds for `MaterialApp`, with the bundled `Inter` family applied to the
+/// Material text themes.
 ///
-/// The bare test [ThemeData] otherwise falls back to an unbundled default font
-/// for any text that reads `Theme.of(context).textTheme` (modal titles, input
-/// decoration labels, …), which renders as boxes. Design-system token text
-/// already pins `Inter`, so only the Material text themes need the nudge.
+/// Captures once used `withOverrides(ThemeData.dark())`, which tinted every
+/// screenshot with the stock Material scheme instead of what users see; design
+/// verdicts made against those pixels did not transfer to the running app.
+/// Building from the same composition as production keeps the harness honest
+/// by construction.
 ThemeData screenshotTheme({bool dark = true}) {
   final base = withOverrides(
-    dark ? ThemeData.dark(useMaterial3: true) : ThemeData(useMaterial3: true),
+    dark ? DesignSystemTheme.dark() : DesignSystemTheme.light(),
   );
   return base.copyWith(
     textTheme: base.textTheme.apply(fontFamily: 'Inter'),

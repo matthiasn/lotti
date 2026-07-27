@@ -29,7 +29,6 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
-import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -240,8 +239,6 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
 
   await Future.wait([
     settingsDb.saveSettingsItem(themeModeKey, ThemeMode.dark.name),
-    settingsDb.saveSettingsItem(darkSchemeNameKey, defaultThemeName),
-    settingsDb.saveSettingsItem(lightSchemeNameKey, defaultThemeName),
   ]);
 
   getIt

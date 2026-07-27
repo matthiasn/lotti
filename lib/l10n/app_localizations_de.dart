@@ -9658,12 +9658,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Was gibt\'s Neues';
 
   @override
-  String get settingThemingDark => 'Dunkles Design';
-
-  @override
-  String get settingThemingLight => 'Helles Design';
-
-  @override
   String get sidebarActiveSectionTitle => 'Aktivität';
 
   @override

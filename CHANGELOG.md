@@ -51,6 +51,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing when there is nothing on the clipboard to paste.
 
 ### Changed
+- **The app has one look now.** Every screen renders the design system's own
+  theme — the same surfaces, type and accents the newer pages were built
+  against — instead of a third-party color scheme with the design tokens
+  bolted on top. Backgrounds, cards and accents finally agree across old and
+  new screens, and the brief near-black flash while the app starts is gone.
+- **The theme-scheme picker is gone.** Theming settings kept a list of 22
+  color schemes, but as screens moved onto the design system the picker
+  changed less and less of what you actually saw — on recent screens, nothing
+  at all. What remains is the choice that still does something: light, dark,
+  or follow the system, synced across devices as before.
 - **Pairing a device is a guided flow now, not a form.** Every screen says where
   you are ("Step 2 of 3") and leads with the one thing to do there. On phones
   the camera opens straight away and typing a code is the fallback, rather than

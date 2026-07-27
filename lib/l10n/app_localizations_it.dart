@@ -9736,12 +9736,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Che cosa è nuovo';
 
   @override
-  String get settingThemingDark => 'Temi scuri';
-
-  @override
-  String get settingThemingLight => 'Tema della luce';
-
-  @override
   String get sidebarActiveSectionTitle => 'Attività';
 
   @override

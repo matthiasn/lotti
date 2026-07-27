@@ -9606,12 +9606,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Hvad er nyt';
 
   @override
-  String get settingThemingDark => 'Mørkt tema';
-
-  @override
-  String get settingThemingLight => 'Lystema';
-
-  @override
   String get sidebarActiveSectionTitle => 'Aktivitet';
 
   @override

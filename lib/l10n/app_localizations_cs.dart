@@ -9731,12 +9731,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Co je nového';
 
   @override
-  String get settingThemingDark => 'Tmavé téma';
-
-  @override
-  String get settingThemingLight => 'Světlé téma';
-
-  @override
   String get sidebarActiveSectionTitle => 'Aktivita';
 
   @override

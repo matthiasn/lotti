@@ -56,7 +56,6 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
-import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -492,8 +491,6 @@ class TutorialAppHarness {
 
     await Future.wait([
       settingsDb.saveSettingsItem(themeModeKey, ThemeMode.dark.name),
-      settingsDb.saveSettingsItem(darkSchemeNameKey, defaultThemeName),
-      settingsDb.saveSettingsItem(lightSchemeNameKey, defaultThemeName),
       // The app shell resolves its UI language from this settings override
       // (ManualLanguageController) — platformDispatcher test locales are not
       // enough for the real desktop shell.

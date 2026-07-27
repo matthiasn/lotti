@@ -9536,12 +9536,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsWhatsNewTitle => 'What\'s New';
 
   @override
-  String get settingThemingDark => 'Dark Theme';
-
-  @override
-  String get settingThemingLight => 'Light Theme';
-
-  @override
   String get sidebarActiveSectionTitle => 'Activity';
 
   @override
