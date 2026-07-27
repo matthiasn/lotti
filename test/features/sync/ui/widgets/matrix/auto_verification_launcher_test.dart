@@ -132,12 +132,10 @@ void main() {
         deviceNamed('Stale', 'STALE'),
         deviceNamed('New phone', 'NEWPHONE'),
       ]);
-      final handled = container.read(
-        matrixVerificationHandledProvider.notifier,
-      );
-
       // Simulate the traversal having reached the newly paired device.
-      handled.markShown('@alice:example.com/NEWPHONE');
+      container
+          .read(matrixVerificationHandledProvider.notifier)
+          .markShown('@alice:example.com/NEWPHONE');
       expect(container.read(matrixVerificationHandledProvider), hasLength(2));
 
       container.read(matrixVerificationRelaunchProvider.notifier).request();
