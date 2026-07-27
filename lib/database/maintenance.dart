@@ -137,6 +137,12 @@ class Maintenance {
               jsonPath: jsonPath,
               status: SyncEntryStatus.update,
               originatingHostId: hostId,
+              // A re-sync targets a peer that may hold none of this history —
+              // typically a freshly provisioned device. `update` status is
+              // correct (the entry is not new here), but JSON alone would
+              // leave that peer with image and audio entries it can never
+              // render, so the media rides along.
+              includeAttachments: true,
             ),
           );
           processed++;

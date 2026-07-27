@@ -107,6 +107,12 @@ are resolved through the attachment index and loader before they are applied,
 which is why attachment ordering and dedupe are load-bearing for sync
 correctness rather than a storage detail.
 
+A journal entity's media blob is a *second* file event, sent alongside the JSON
+only when the payload calls for it — `status == initial`,
+`includeAttachments == true`, or the `resend_attachments` flag. The decision and
+why it is taken at enqueue time as well as at send time are in
+[sync send path](send-path.md#media-attachments-one-decision-two-places).
+
 ## Attachment encoding
 
 An attachment event may carry a `com.lotti.encoding` key declaring an on-wire

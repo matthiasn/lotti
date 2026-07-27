@@ -280,6 +280,11 @@ void main() {
     when(
       () => journalDb.linksForEntryIdsBidirectional(any()),
     ).thenAnswer((_) async => <EntryLink>[]);
+    // Attachment policy reads this on every journal-entity enqueue; off is the
+    // production default, so tests that care about the flag override it.
+    when(
+      () => journalDb.getConfigFlag(resendAttachments),
+    ).thenAnswer((_) async => false);
     // Ensure activity gate can construct if needed
     when(
       () => userActivityService.lastActivity,
@@ -978,6 +983,237 @@ void main() {
         expect(companion.payloadSize.value, greaterThan(10));
       },
     );
+
+    /// Enqueues an image entry whose blob is 10 bytes on disk and returns the
+    /// row the writer persisted. Shared by the attachment-policy tests below so
+    /// each one differs only in the payload's attachment intent.
+    Future<OutboxCompanion> enqueueImageEntry({
+      required SyncEntryStatus status,
+      bool? includeAttachments,
+      String entryId = 'policy-entry',
+    }) async {
+      final capturedCompanions = <OutboxCompanion>[];
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>())).thenAnswer(
+        (invocation) async {
+          capturedCompanions.add(
+            invocation.positionalArguments.first as OutboxCompanion,
+          );
+          return 1;
+        },
+      );
+
+      final testService = buildService();
+      final sampleDate = DateTime.utc(2024);
+      final imageData = ImageData(
+        capturedAt: sampleDate,
+        imageId: 'img-$entryId',
+        imageFile: '$entryId.jpg',
+        imageDirectory: '/images/',
+      );
+      final journalEntity = JournalEntity.journalImage(
+        meta: Metadata(
+          id: entryId,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: const VectorClock({'hostA': 1}),
+        ),
+        data: imageData,
+      );
+
+      final jsonPath = '/entries/$entryId.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      File(
+          '${documentsDirectory.path}${imageData.imageDirectory}'
+          '${imageData.imageFile}',
+        )
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(10, 42));
+
+      await testService.enqueueMessage(
+        SyncMessage.journalEntity(
+          id: entryId,
+          jsonPath: jsonPath,
+          vectorClock: const VectorClock({'device': 1}),
+          status: status,
+          includeAttachments: includeAttachments,
+        ),
+      );
+
+      expect(capturedCompanions, hasLength(1));
+      return capturedCompanions.single;
+    }
+
+    // Regression: a re-sync or backfill re-send targets a device that holds
+    // none of this history, so it must carry the blob even though the entry is
+    // not new here. Before the attachment policy landed, `update` status left
+    // `filePath` null — which also made the row bundle-eligible, and the
+    // dequeue-time bundler ships JSON manifests only. Media never reached a
+    // freshly provisioned device at all.
+    test(
+      'update payload opting into attachments stores the attachment path',
+      () async {
+        final companion = await enqueueImageEntry(
+          status: SyncEntryStatus.update,
+          includeAttachments: true,
+          entryId: 'resync-entry',
+        );
+
+        expect(
+          companion.filePath.value,
+          endsWith('/images/resync-entry.jpg'),
+          reason:
+              'a null filePath here would let the bundler pack the row '
+              'and silently drop the image',
+        );
+        // 10 blob bytes are billed to the row, not just the JSON.
+        expect(companion.payloadSize.value, greaterThan(10));
+      },
+    );
+
+    test('ordinary update sends JSON only, without the blob', () async {
+      final companion = await enqueueImageEntry(
+        status: SyncEntryStatus.update,
+        entryId: 'edit-entry',
+      );
+
+      expect(
+        companion.filePath.value,
+        isNull,
+        reason:
+            'the peer already holds the immutable blob; re-uploading it on '
+            'every caption edit would multiply sync traffic',
+      );
+    });
+
+    test(
+      'resend_attachments flag forces the blob onto an ordinary update',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(resendAttachments),
+        ).thenAnswer((_) async => true);
+
+        final companion = await enqueueImageEntry(
+          status: SyncEntryStatus.update,
+          entryId: 'flagged-entry',
+        );
+
+        expect(
+          companion.filePath.value,
+          endsWith('/images/flagged-entry.jpg'),
+          reason:
+              'the operator escape hatch must survive the bundler, which '
+              'means taking effect at enqueue time, not only at send time',
+        );
+      },
+    );
+
+    // Regression: an ordinary edit landing on a pending re-sync row is
+    // represented by ONE Matrix event afterwards. If the merge took its
+    // attachment decision from the incoming edit alone, that surviving event
+    // would carry no blob — and its row, left with a null filePath, would be
+    // packed into a bundle, so nothing downstream could recover it either.
+    test('a merge keeps the pending re-sync row media-bearing', () async {
+      final sampleDate = DateTime.utc(2024);
+      const entryId = 'merge-media';
+
+      // Already pending: a re-sync re-send that opted into carrying media.
+      const pendingResync = SyncMessage.journalEntity(
+        id: entryId,
+        jsonPath: '/entries/$entryId.json',
+        vectorClock: VectorClock({'hostA': 5}),
+        status: SyncEntryStatus.update,
+        includeAttachments: true,
+      );
+      when(() => syncDatabase.findPendingByEntryId(entryId)).thenAnswer(
+        (_) async => OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(pendingResync.toJson()),
+          subject: 'hhash:5',
+          filePath: null,
+          outboxEntryId: entryId,
+          priority: OutboxPriority.low.index,
+        ),
+      );
+
+      String? capturedFilePath;
+      String? capturedMessage;
+      int? capturedPayloadSize;
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
+          filePath: any(named: 'filePath'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedFilePath = invocation.namedArguments[#filePath] as String?;
+        capturedMessage = invocation.namedArguments[#newMessage] as String?;
+        capturedPayloadSize = invocation.namedArguments[#payloadSize] as int?;
+        return 1;
+      });
+
+      final imageData = ImageData(
+        capturedAt: sampleDate,
+        imageId: 'img-$entryId',
+        imageFile: '$entryId.jpg',
+        imageDirectory: '/images/',
+      );
+      final journalEntity = JournalEntity.journalImage(
+        meta: Metadata(
+          id: entryId,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: const VectorClock({'hostA': 7}),
+        ),
+        data: imageData,
+      );
+      File('${documentsDirectory.path}/entries/$entryId.json')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+      File('${documentsDirectory.path}/images/$entryId.jpg')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(10, 42));
+
+      final testService = buildService();
+
+      // The incoming edit itself asks for nothing: plain update, no opt-in.
+      await testService.enqueueMessage(
+        const SyncMessage.journalEntity(
+          id: entryId,
+          jsonPath: '/entries/$entryId.json',
+          vectorClock: VectorClock({'hostA': 7}),
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      expect(
+        capturedFilePath,
+        endsWith('/images/$entryId.jpg'),
+        reason:
+            'the surviving row must still carry the blob the re-sync '
+            'asked for, and stay out of the bundler',
+      );
+      final merged =
+          SyncMessage.fromJson(
+                jsonDecode(capturedMessage!) as Map<String, dynamic>,
+              )
+              as SyncJournalEntity;
+      expect(merged.includeAttachments, isTrue);
+      // The blob's 10 bytes are billed to the merged row too.
+      expect(capturedPayloadSize, greaterThan(10));
+    });
 
     test('payloadSize includes file bytes for journal image', () async {
       final capturedCompanions = <OutboxCompanion>[];

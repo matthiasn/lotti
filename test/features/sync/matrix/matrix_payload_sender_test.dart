@@ -1,11 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_payload_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -194,6 +200,262 @@ void main() {
           subDomain: 'sendMatrixMsg',
         ),
       ).called(1);
+    });
+  });
+
+  group('sendJournalEntityPayload attachments', () {
+    /// Writes an image entry's JSON payload and its 12-byte blob under the
+    /// documents directory, and returns the relative paths of every file event
+    /// the sender uploads for [message].
+    Future<List<String>> uploadedPathsFor(SyncJournalEntity message) async {
+      final sampleDate = DateTime.utc(2024);
+      final entity = JournalEntity.journalImage(
+        meta: Metadata(
+          id: message.id,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: message.vectorClock,
+        ),
+        data: ImageData(
+          capturedAt: sampleDate,
+          imageId: 'img-${message.id}',
+          imageFile: '${message.id}.jpg',
+          imageDirectory: '/images/',
+        ),
+      );
+
+      File('${documentsDirectory.path}${message.jsonPath}')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
+      File('${documentsDirectory.path}/images/${message.id}.jpg')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(12, 7));
+
+      final uploaded = <String>[];
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((invocation) async {
+        final extra =
+            invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
+        uploaded.add(extra?['relativePath'] as String? ?? '');
+        return 'event-${uploaded.length}';
+      });
+
+      final result = await payloadSender.sendJournalEntityPayload(
+        room: room,
+        message: message,
+      );
+      expect(result, isNotNull, reason: 'the send must succeed');
+      return uploaded;
+    }
+
+    // Regression: the sender used to derive the attachment decision from the
+    // status alone, so a re-sync or backfill re-send (necessarily `update`)
+    // uploaded the JSON and left the blob behind.
+    test('an update opting in uploads the blob alongside the JSON', () async {
+      when(
+        () => journalDb.getConfigFlag(resendAttachments),
+      ).thenAnswer((_) async => false);
+
+      final uploaded = await uploadedPathsFor(
+        const SyncMessage.journalEntity(
+              id: 'resend',
+              jsonPath: '/entries/resend.json',
+              vectorClock: VectorClock({'hostA': 1}),
+              status: SyncEntryStatus.update,
+              includeAttachments: true,
+            )
+            as SyncJournalEntity,
+      );
+
+      expect(uploaded, ['/entries/resend.json', '/images/resend.jpg']);
+    });
+
+    test('an ordinary update uploads the JSON only', () async {
+      when(
+        () => journalDb.getConfigFlag(resendAttachments),
+      ).thenAnswer((_) async => false);
+
+      final uploaded = await uploadedPathsFor(
+        const SyncMessage.journalEntity(
+              id: 'edit',
+              jsonPath: '/entries/edit.json',
+              vectorClock: VectorClock({'hostA': 1}),
+              status: SyncEntryStatus.update,
+            )
+            as SyncJournalEntity,
+      );
+
+      expect(uploaded, ['/entries/edit.json']);
+    });
+  });
+
+  group('sendOutboxBundlePayload attachments', () {
+    // Media rows are supposed to be excluded from bundles at claim time
+    // (`filePath != null` makes a row travel alone), so this path is defence
+    // in depth for rows enqueued by a build that had not yet moved the
+    // attachment decision to enqueue time. A manifest carries JSON only, so
+    // without it such a child's blob would vanish with no error anywhere.
+
+    /// Builds an image and an audio entity, writes their blobs, and returns
+    /// the relativePath of every file event the bundle send uploads.
+    Future<({List<String> uploaded, SyncOutboxBundle? result})> sendBundle({
+      required bool includeAttachments,
+      bool uploadSucceeds = true,
+    }) async {
+      final sampleDate = DateTime.utc(2024);
+      final image = JournalEntity.journalImage(
+        meta: Metadata(
+          id: 'img-child',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: const VectorClock({'hostA': 1}),
+        ),
+        data: ImageData(
+          capturedAt: sampleDate,
+          imageId: 'img-1',
+          imageFile: 'child.jpg',
+          imageDirectory: '/images/',
+        ),
+      );
+      final audio = JournalEntity.journalAudio(
+        meta: Metadata(
+          id: 'audio-child',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: const VectorClock({'hostA': 2}),
+        ),
+        data: AudioData(
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          audioFile: 'child.aac',
+          audioDirectory: '/audio/2024-01-01/',
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      final text = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'text-child',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: const VectorClock({'hostA': 3}),
+        ),
+        entryText: const EntryText(plainText: 'no media here'),
+      );
+
+      File('${documentsDirectory.path}/images/child.jpg')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(8, 1));
+      File('${documentsDirectory.path}/audio/2024-01-01/child.aac')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(9, 2));
+
+      when(
+        () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+      ).thenAnswer(
+        (_) async => {
+          'img-child': image,
+          'audio-child': audio,
+          'text-child': text,
+        },
+      );
+      when(
+        () => journalDb.getConfigFlag(resendAttachments),
+      ).thenAnswer((_) async => false);
+
+      final uploaded = <String>[];
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((invocation) async {
+        final extra =
+            invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
+        final path = extra?['relativePath'] as String? ?? '';
+        uploaded.add(path);
+        // Only the media uploads are failed when asked; the manifest upload
+        // is never reached in that case anyway.
+        return uploadSucceeds ? 'event-${uploaded.length}' : null;
+      });
+
+      SyncJournalEntity child(String id, String jsonPath) =>
+          SyncMessage.journalEntity(
+                id: id,
+                jsonPath: jsonPath,
+                vectorClock: null,
+                status: SyncEntryStatus.update,
+                includeAttachments: includeAttachments ? true : null,
+              )
+              as SyncJournalEntity;
+
+      final result = await payloadSender.sendOutboxBundlePayload(
+        room: room,
+        message:
+            SyncMessage.outboxBundle(
+                  children: [
+                    child('img-child', '/entries/img-child.json'),
+                    child('audio-child', '/entries/audio-child.json'),
+                    child('text-child', '/entries/text-child.json'),
+                  ],
+                  jsonPath: '/outbox_bundles/bundle-1.json',
+                )
+                as SyncOutboxBundle,
+      );
+      return (uploaded: uploaded, result: result);
+    }
+
+    test("uploads each media child's blob before the manifest", () async {
+      final sent = await sendBundle(includeAttachments: true);
+
+      expect(sent.result, isNotNull);
+      expect(
+        sent.uploaded,
+        [
+          '/images/child.jpg',
+          '/audio/2024-01-01/child.aac',
+          '/outbox_bundles/bundle-1.json',
+        ],
+        reason:
+            'both blobs must reach the room, and before the manifest that '
+            'references them — a text-only child adds no upload',
+      );
+    });
+
+    test('a bundle of ordinary updates uploads the manifest alone', () async {
+      final sent = await sendBundle(includeAttachments: false);
+
+      expect(sent.result, isNotNull);
+      expect(sent.uploaded, ['/outbox_bundles/bundle-1.json']);
+    });
+
+    test('a failed blob upload fails the whole bundle', () async {
+      final sent = await sendBundle(
+        includeAttachments: true,
+        uploadSucceeds: false,
+      );
+
+      // Returning null drops the send into the standard retry path. Acking
+      // the bundle here would leave peers permanently without the blob.
+      expect(sent.result, isNull);
+      expect(
+        sent.uploaded,
+        ['/images/child.jpg'],
+        reason:
+            'the send must abort on the first failure, not push the '
+            'manifest that claims those entries were delivered',
+      );
     });
   });
 

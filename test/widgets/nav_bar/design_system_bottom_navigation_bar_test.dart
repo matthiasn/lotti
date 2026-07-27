@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
@@ -78,53 +79,65 @@ void main() {
       expect(occupiedHeight, renderedHeight);
     });
 
-    testWidgets('includes the bottom safe-area inset in occupied height', (
-      tester,
-    ) async {
-      const withInset = MediaQueryData(
-        size: Size(390, 844),
-        padding: EdgeInsets.only(bottom: 34),
-      );
-      const withoutInset = MediaQueryData(
-        size: Size(390, 844),
-      );
+    testWidgets(
+      'includes the bottom safe-area inset in occupied height',
+      (
+        tester,
+      ) async {
+        const withInset = MediaQueryData(
+          size: Size(390, 844),
+          padding: EdgeInsets.only(bottom: 34),
+        );
+        const withoutInset = MediaQueryData(
+          size: Size(390, 844),
+        );
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SizedBox.shrink(),
-          theme: DesignSystemTheme.light(),
-          mediaQueryData: withInset,
-        ),
-      );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SizedBox.shrink(),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: withInset,
+          ),
+        );
 
-      final withInsetHeight = DesignSystemBottomNavigationBar.occupiedHeight(
-        tester.element(find.byType(Scaffold)),
-      );
+        final withInsetHeight = DesignSystemBottomNavigationBar.occupiedHeight(
+          tester.element(find.byType(Scaffold)),
+        );
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SizedBox.shrink(),
-          theme: DesignSystemTheme.light(),
-          mediaQueryData: withoutInset,
-        ),
-      );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SizedBox.shrink(),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: withoutInset,
+          ),
+        );
 
-      final withoutInsetHeight = DesignSystemBottomNavigationBar.occupiedHeight(
-        tester.element(find.byType(Scaffold)),
-      );
+        final withoutInsetHeight =
+            DesignSystemBottomNavigationBar.occupiedHeight(
+              tester.element(find.byType(Scaffold)),
+            );
 
-      // The bar absorbs bottomInsetFraction of the inset, which replaces
-      // (not stacks onto) its internal step2 bottom padding — so occupied
-      // height grows by the trimmed inset minus the padding it displaced.
-      expect(
-        withInsetHeight - withoutInsetHeight,
-        moreOrLessEquals(
-          withInset.padding.bottom *
-                  DesignSystemFiveSlotNavBar.bottomInsetFraction -
-              dsTokensLight.spacing.step2,
-        ),
-      );
-    });
+        // The absorbed inset replaces (not stacks onto) the surface's internal
+        // step2 bottom padding, so occupied height grows by the absorbed amount
+        // minus the padding it displaced. iOS trims the decorative home
+        // indicator to bottomInsetFraction; every other platform absorbs the
+        // whole inset, because there it can be the system navigation bar's live
+        // buttons — content padding by this number must clear them too, or a FAB
+        // and the last list row end up under recents/home/back.
+        final expectedAbsorbed = defaultTargetPlatform == TargetPlatform.iOS
+            ? withInset.padding.bottom *
+                  DesignSystemFiveSlotNavBar.bottomInsetFraction
+            : withInset.padding.bottom;
+        expect(
+          withInsetHeight - withoutInsetHeight,
+          moreOrLessEquals(expectedAbsorbed - dsTokensLight.spacing.step2),
+        );
+      },
+      variant: const TargetPlatformVariant({
+        TargetPlatform.iOS,
+        TargetPlatform.android,
+      }),
+    );
 
     testWidgets(
       'provides enough bottom padding to lift the FAB above the bar',

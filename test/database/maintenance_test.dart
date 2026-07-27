@@ -297,6 +297,34 @@ void main() {
         ).called(entries.length);
       });
 
+      // Regression: a re-sync is how a freshly provisioned device gets its
+      // history, and that device holds none of the referenced media. Sending
+      // the entries as plain updates left it with image and audio entries it
+      // could never render — the JSON synced, the blobs never did.
+      test('opts every re-sent entry into carrying its media', () async {
+        final timestamp = DateTime(2024, 3, 10);
+        await _insertEntries(journalDb, [
+          _buildJournalEntry(
+            id: 'media-entry',
+            timestamp: timestamp,
+            text: 'Has an image',
+          ),
+        ]);
+
+        await maintenance.reSyncInterval(
+          start: timestamp.subtract(const Duration(days: 1)),
+          end: timestamp.add(const Duration(days: 1)),
+          agentRepository: mockAgentRepo,
+          includeAgentEntities: false,
+        );
+
+        final journalMessages = sentMessages
+            .whereType<SyncJournalEntity>()
+            .toList();
+        expect(journalMessages, hasLength(1));
+        expect(journalMessages.single.includeAttachments, isTrue);
+      });
+
       test('propagates a journal enqueue failure', () async {
         final timestamp = DateTime(2024, 1, 15);
         await _insertEntries(journalDb, [

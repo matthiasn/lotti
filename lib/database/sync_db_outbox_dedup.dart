@@ -110,12 +110,20 @@ mixin _SyncDbOutboxDedup on _$SyncDatabase {
   /// overwriting in-flight or already-sent items (compare-and-swap on
   /// status). Returns the number of affected rows — 0 means the row was
   /// no longer pending and the caller should insert a fresh row instead.
+  ///
+  /// [filePath] promotes a text-only row to a media-bearing one when a merge
+  /// brings in a payload that must carry its attachment (a re-sync or backfill
+  /// re-send landing on a pending edit). It is never cleared: `null` leaves the
+  /// existing value untouched. A row that keeps `filePath` null while its
+  /// message asks for media would be packed into a dequeue-time bundle, which
+  /// ships JSON only, and the blob would be silently dropped.
   Future<int> updateOutboxMessage({
     required int itemId,
     required String newMessage,
     required String newSubject,
     int? payloadSize,
     int? priority,
+    String? filePath,
   }) {
     return (update(outbox)..where(
           (t) =>
@@ -130,6 +138,7 @@ mixin _SyncDbOutboxDedup on _$SyncDatabase {
                 ? Value(payloadSize)
                 : const Value.absent(),
             priority: priority != null ? Value(priority) : const Value.absent(),
+            filePath: filePath != null ? Value(filePath) : const Value.absent(),
           ),
         );
   }
