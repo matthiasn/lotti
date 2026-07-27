@@ -40,6 +40,19 @@ class _MockBridge extends Mock implements BridgeCoordinator {}
 
 class _MockSeeder extends Mock implements QueueMarkerSeeder {}
 
+SyncUpdate _roomKeySyncFor(String roomId) {
+  return SyncUpdate(
+    nextBatch: 'next-key',
+    toDevice: [
+      BasicEventWithSender(
+        type: EventTypes.RoomKey,
+        content: <String, Object?>{'room_id': roomId},
+        senderId: '@alice:example.org',
+      ),
+    ],
+  );
+}
+
 /// Test double for [AttachmentIngestor] that records every `process()`
 /// call and optionally throws, without needing mocktail fallbacks for
 /// every named-argument type (Function, DomainLogger, nullable refs).
@@ -1796,6 +1809,221 @@ void main() {
 
   group('triggerBridge with real BridgeCoordinator', () {
     test(
+      'a key-trigger retries a retained floor before deciding whether to '
+      'bridge',
+      () async {
+        await syncDb
+            .into(syncDb.queueMarkers)
+            .insert(
+              QueueMarkersCompanion.insert(
+                roomId: roomId,
+                lastAppliedTs: const Value(5000),
+                lastAppliedEventId: const Value(r'$ahead-anchor'),
+              ),
+            );
+        // QueueMarkerAdvancer's SQLite-trigger regression proves that a failed
+        // write stays process-local and this accessor retries it. Model the
+        // post-retry value here while the raw marker row deliberately remains
+        // null, so the coordinator must use the accessor before gating.
+        when(() => queue.resumeFloorTs(roomId)).thenAnswer((_) async => 3000);
+
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => room.partial).thenReturn(false);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        final timeline = MockTimeline();
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.canRequestHistory).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: queue,
+          workerOverride: worker,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+        addTearDown(coordinator.stop);
+
+        syncCtl.add(_roomKeySyncFor(roomId));
+        await pumpEventQueue();
+
+        verify(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).called(greaterThanOrEqualTo(1));
+        verify(
+          () => queue.resumeFloorTs(roomId),
+        ).called(greaterThanOrEqualTo(2));
+        verify(
+          () => queue.completeResumeWalk(
+            roomId: roomId,
+            walkStartedAtFloorRevision: 0,
+            unresolvedFloorTs: null,
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    test(
+      'a bridge queued behind manual history refreshes its marker inside '
+      'the shared room lane',
+      () async {
+        await syncDb
+            .into(syncDb.queueMarkers)
+            .insert(
+              QueueMarkersCompanion.insert(
+                roomId: roomId,
+                lastAppliedTs: const Value(5000),
+                lastAppliedEventId: const Value(r'$ahead-anchor'),
+              ),
+            );
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => roomManager.currentRoom).thenReturn(room);
+
+        final ciphertext = MockEvent();
+        when(() => ciphertext.eventId).thenReturn(r'$ciphertext');
+        when(() => ciphertext.roomId).thenReturn(roomId);
+        when(() => ciphertext.type).thenReturn(EventTypes.Encrypted);
+        when(
+          () => ciphertext.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+
+        final manualTimelineGate = Completer<Timeline>();
+        final manualTimeline = MockTimeline();
+        when(() => manualTimeline.events).thenReturn(<Event>[ciphertext]);
+        when(() => manualTimeline.canRequestHistory).thenReturn(false);
+        when(manualTimeline.cancelSubscriptions).thenAnswer((_) {});
+
+        final bridgeTimeline = MockTimeline();
+        when(() => bridgeTimeline.events).thenReturn(<Event>[ciphertext]);
+        when(() => bridgeTimeline.canRequestHistory).thenReturn(false);
+        when(bridgeTimeline.cancelSubscriptions).thenAnswer((_) {});
+
+        var backwardTimelineCalls = 0;
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) {
+          backwardTimelineCalls++;
+          if (backwardTimelineCalls == 1) {
+            return manualTimelineGate.future;
+          }
+          return Future<Timeline>.value(bridgeTimeline);
+        });
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          seederOverride: seeder,
+        );
+
+        final manualFuture = coordinator.collectHistory();
+        await pumpEventQueue();
+        expect(backwardTimelineCalls, 1);
+
+        final bridgeFuture = coordinator.triggerBridge();
+        await pumpEventQueue();
+        expect(
+          backwardTimelineCalls,
+          1,
+          reason: 'the bridge must wait for the manual walk in this room',
+        );
+        verifyNever(
+          () => room.getTimeline(
+            eventContextId: any(
+              named: 'eventContextId',
+              that: isNotNull,
+            ),
+            limit: any(named: 'limit'),
+          ),
+        );
+
+        manualTimelineGate.complete(manualTimeline);
+        await manualFuture;
+        await bridgeFuture;
+
+        expect(backwardTimelineCalls, 2);
+        verifyNever(
+          () => room.getTimeline(
+            eventContextId: any(
+              named: 'eventContextId',
+              that: isNotNull,
+            ),
+            limit: any(named: 'limit'),
+          ),
+        );
+        expect(await realQueue.resumeFloorTs(roomId), 1000);
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any<String>(that: contains('queue.bootstrap.markerRefreshed')),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a failed floor-reconciling walk releases the room lane for its retry',
+      () async {
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        final timeline = MockTimeline();
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.canRequestHistory).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        var failAtWalkStart = true;
+        when(() => queue.resumeFloorRevision(roomId)).thenAnswer((_) {
+          if (failAtWalkStart) {
+            throw StateError('revision unavailable');
+          }
+          return 0;
+        });
+        final coordinator = build();
+
+        await expectLater(
+          coordinator.collectHistory(),
+          throwsA(isA<StateError>()),
+        );
+        failAtWalkStart = false;
+
+        final retry = await coordinator.collectHistory();
+
+        expect(retry.stopReason, BootstrapStopReason.serverExhausted);
+        verify(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).called(1);
+      },
+    );
+
+    test(
       'a restart reloads the durable ciphertext floor and walks '
       'behind the ahead anchor before clearing the covered floor',
       () async {
@@ -1962,7 +2190,7 @@ void main() {
 
         verify(
           () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
-        ).called(1);
+        ).called(2);
       },
     );
 
@@ -2165,7 +2393,7 @@ void main() {
 
         verify(
           () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
-        ).called(1);
+        ).called(2);
       },
     );
 

@@ -949,6 +949,7 @@ void main() {
             );
             // Make the restarted test client poll deterministically instead of
             // waiting for its background long-poll cadence.
+            bob.client.backgroundSync = false;
             await bob.client.abortSync();
             await bob.client.oneShotSync(timeout: Duration.zero);
             await roomKeyReceived.future.timeout(lateKeyTimeout);
@@ -1002,7 +1003,10 @@ void main() {
               .clearOrUseOutboundGroupSession(roomId, wipe: true);
         }
       },
-      timeout: const Timeout(Duration(minutes: 5)),
+      // Four sequential operations use lateKeyTimeout. Keep the harness
+      // budget above their combined diagnostic budgets so waitUntilAsync (or
+      // the room-key timeout) reports the actual stalled phase.
+      timeout: const Timeout(Duration(minutes: 15)),
       skip: skipReason ?? false,
     );
 

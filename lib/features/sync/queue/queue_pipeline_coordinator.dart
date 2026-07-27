@@ -23,6 +23,7 @@ import 'package:lotti/features/sync/queue/queue_bootstrap_sinks.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -196,6 +197,14 @@ class QueuePipelineCoordinator {
   /// of gap signals on the same barren-bridge episode coalesces into
   /// one recovery pass so we do not spawn concurrent /messages walks.
   Future<void>? _gapRecoveryInFlight;
+
+  /// Serializes every resume-floor-reconciling history walk per room.
+  ///
+  /// Bridge, manual full-history, and gap-recovery walks all mutate the same
+  /// durable floor when they finish. Letting two overlap allows one walk to
+  /// clear ciphertext discovered by the other from a stale marker snapshot.
+  /// Different rooms retain independent lanes.
+  final Map<String, Future<void>> _resumeFloorWalkTails = {};
 
   /// How long a barren-bridge signal stays valid. After the window
   /// expires, a late gap no longer triggers the unbounded walk — by

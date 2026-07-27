@@ -1614,6 +1614,65 @@ void main() {
     );
 
     test(
+      'equal-timestamp boundary continuation stops incomplete at its '
+      'request cap',
+      () async {
+        final room = MockRoom();
+        final log = MockDomainLogger();
+        final timeline = MockTimeline();
+        final events = <Event>[buildEvent(r'$boundary-0', 100)];
+        var historyCalls = 0;
+
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+        when(() => timeline.events).thenAnswer((_) => events);
+        // Keep advertising enough same-timestamp history to exceed the
+        // configured cap. The extra terminal call makes the regression
+        // deterministic when the cap check is removed: that version reaches
+        // serverExhausted after three requests instead of hanging.
+        when(
+          () => timeline.canRequestHistory,
+        ).thenAnswer((_) => historyCalls < 3);
+        when(
+          () => timeline.requestHistory(
+            historyCount: any(named: 'historyCount'),
+          ),
+        ).thenAnswer((_) async {
+          historyCalls++;
+          events.add(buildEvent('\$boundary-$historyCalls', 100));
+        });
+        when(timeline.cancelSubscriptions).thenReturn(null);
+
+        final collected = <String>[];
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((page) {
+            collected.addAll(page.map((event) => event.eventId));
+          }),
+          pageSize: 1,
+          untilTimestamp: 100,
+          boundaryContinuationCap: 2,
+        );
+
+        expect(
+          result.stopReason,
+          BootstrapStopReason.error,
+          reason:
+              'a capped collision bucket is incomplete and must retain the '
+              'resume floor for a later retry',
+        );
+        expect(historyCalls, 2);
+        expect(collected, [
+          r'$boundary-0',
+          r'$boundary-1',
+          r'$boundary-2',
+        ]);
+      },
+    );
+
+    test(
       'overallTimeout ends paging with stopReason=error before the next '
       'requestHistory fires',
       () async {
