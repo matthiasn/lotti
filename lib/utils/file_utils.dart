@@ -92,13 +92,27 @@ Future<void> saveJournalEntityJson(
 /// normalized candidate path or throws [FileSystemException] if the resolved
 /// path is outside the documents directory.
 File resolveJsonCandidateFile(String jsonPath) {
-  final docDir = getDocumentsDirectory();
+  return resolveJsonCandidateFileInDirectory(
+    jsonPath,
+    getDocumentsDirectory(),
+  );
+}
+
+/// Resolves [jsonPath] against an explicit [documentsDirectory].
+///
+/// Production callers normally use [resolveJsonCandidateFile]. The explicit
+/// variant supports multi-sandbox integration harnesses while preserving the
+/// same traversal guard.
+File resolveJsonCandidateFileInDirectory(
+  String jsonPath,
+  Directory documentsDirectory,
+) {
   final normalized = normalize(jsonPath);
   final relative = normalized.startsWith(separator)
       ? normalized.substring(1)
       : normalized;
-  final candidate = normalize(join(docDir.path, relative));
-  final docPath = normalize(docDir.path);
+  final candidate = normalize(join(documentsDirectory.path, relative));
+  final docPath = normalize(documentsDirectory.path);
   if (!isWithin(docPath, candidate) && docPath != candidate) {
     throw FileSystemException(
       'jsonPath resolves outside documents directory',

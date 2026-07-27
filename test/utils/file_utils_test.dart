@@ -319,6 +319,28 @@ void main() {
       );
     });
 
+    test(
+      'resolveJsonCandidateFileInDirectory uses the explicit sandbox',
+      () {
+        final explicitDir = Directory(
+          '${docDir.path}/explicit',
+        )..createSync(recursive: true);
+        final file = resolveJsonCandidateFileInDirectory(
+          '/images/test.png',
+          explicitDir,
+        );
+
+        expect(file.path, '${explicitDir.path}/images/test.png');
+        expect(
+          () => resolveJsonCandidateFileInDirectory(
+            '../../../outside',
+            explicitDir,
+          ),
+          throwsA(isA<FileSystemException>()),
+        );
+      },
+    );
+
     // Properties: (a) any generated non-traversal relative path resolves to
     // a file inside docDir; (b) any '../'-prefixed path throws.
     glados.Glados2(

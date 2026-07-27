@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -47,14 +48,17 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 import '../test/mocks/mocks.dart';
+import '../test/test_resources/test_audio_data.dart';
 import '../test/utils/utils.dart';
 
 const _uuid = Uuid();
@@ -114,6 +118,7 @@ class _DeviceOutbox {
     required this.sender,
     required this.journalDb,
     required this.syncDb,
+    required this.documentsDirectory,
     required this.deviceName,
   });
 
@@ -121,6 +126,7 @@ class _DeviceOutbox {
   final _ObservedOutboxMessageSender sender;
   final JournalDb journalDb;
   final SyncDatabase syncDb;
+  final Directory documentsDirectory;
   final String deviceName;
   int nextCounter = 1;
 
@@ -159,6 +165,7 @@ class _DeviceOutbox {
       sender: sender,
       journalDb: journalDb,
       syncDb: syncDb,
+      documentsDirectory: documentsDirectory,
       deviceName: deviceName,
     );
   }
@@ -225,6 +232,12 @@ Future<MatrixService> _createMatrixService({
       SavedTaskFiltersPersistence(settingsDb),
       updateNotifications,
     ),
+    journalEntityLoader: SmartJournalEntityLoader(
+      attachmentIndex: sharedAttachmentIndex,
+      loggingService: loggingService,
+      documentsDirectory: documentsDirectory,
+    ),
+    documentsDirectory: documentsDirectory,
     attachmentIndex: sharedAttachmentIndex,
     sequenceLogService: sequenceLogService,
     journalDb: journalDb,
@@ -447,7 +460,9 @@ void main() {
     final mockUpdateNotifications = MockUpdateNotifications();
     late LoggingService sharedLoggingService;
     late UserActivityService sharedUserActivityService;
-    late Directory sharedDocumentsDirectory;
+    late Directory harnessDocumentsRoot;
+    late Directory aliceDocumentsDirectory;
+    late Directory bobDocumentsDirectory;
     late AiConfigRepository sharedAiConfigRepository;
 
     when(() => mockUpdateNotifications.updateStream).thenAnswer(
@@ -554,7 +569,13 @@ void main() {
         'lotti_matrix_${_uuid.v1()}_',
       );
       debugPrint('Created temporary docDir ${docDir.path}');
-      sharedDocumentsDirectory = docDir;
+      harnessDocumentsRoot = docDir;
+      aliceDocumentsDirectory = await Directory(
+        '${docDir.path}/alice',
+      ).create();
+      bobDocumentsDirectory = await Directory(
+        '${docDir.path}/bob',
+      ).create();
 
       aiConfigDb = AiConfigDb(inMemoryDatabase: true);
       sharedAiConfigRepository = AiConfigRepository(aiConfigDb);
@@ -564,7 +585,7 @@ void main() {
 
       // Register essential dependencies
       getIt
-        ..registerSingleton<Directory>(sharedDocumentsDirectory)
+        ..registerSingleton<Directory>(harnessDocumentsRoot)
         ..registerSingleton<LoggingService>(sharedLoggingService)
         ..registerSingleton<DomainLogger>(
           _EchoDomainLogger(loggingService: sharedLoggingService),
@@ -616,6 +637,11 @@ void main() {
       } catch (e) {
         debugPrint('Error during database cleanup: $e');
       }
+      try {
+        await harnessDocumentsRoot.delete(recursive: true);
+      } catch (e) {
+        debugPrint('Error deleting temporary documents: $e');
+      }
     });
 
     tearDown(() async {
@@ -638,7 +664,7 @@ void main() {
         ]);
 
         final aliceClient = await createMatrixClient(
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: aliceDocumentsDirectory,
           dbName: 'AliceV2',
         );
         final aliceRegistry = SentEventRegistry();
@@ -657,7 +683,7 @@ void main() {
           secureStorage: secureStorageMock,
           deviceName: 'AliceV2',
           activityService: sharedUserActivityService,
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: aliceDocumentsDirectory,
           updateNotifications: mockUpdateNotifications,
           aiConfigRepository: sharedAiConfigRepository,
           sentEventRegistry: aliceRegistry,
@@ -689,7 +715,7 @@ void main() {
 
         debugPrint('\n--- Bob goes live');
         bob = await _createBobService(
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: bobDocumentsDirectory,
           config: config2,
           loggingService: getIt<DomainLogger>(),
           journalDb: bobDb,
@@ -732,7 +758,7 @@ void main() {
           matrixService: alice,
           journalDb: aliceDb,
           syncDb: aliceSyncDb,
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: aliceDocumentsDirectory,
           userActivityService: sharedUserActivityService,
           loggingService: getIt<DomainLogger>(),
           vectorClockService: aliceVectorClockService,
@@ -743,7 +769,7 @@ void main() {
           matrixService: bob,
           journalDb: bobDb,
           syncDb: bobSyncDb,
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: bobDocumentsDirectory,
           userActivityService: sharedUserActivityService,
           loggingService: getIt<DomainLogger>(),
           vectorClockService: bobVectorClockService,
@@ -835,6 +861,93 @@ void main() {
     );
 
     test(
+      'Image sync transfers metadata and exact file bytes to Bob',
+      () async {
+        const mediaTimeout = Duration(minutes: 3);
+        final id = const Uuid().v1();
+        final timestamp = DateTime.utc(2025, 2, 1, 12);
+        final image = JournalImage(
+          meta: _nextMediaMetadata(
+            device: aliceOutbox,
+            id: id,
+            timestamp: timestamp,
+          ),
+          data: ImageData(
+            capturedAt: timestamp,
+            imageId: id,
+            imageFile: '$id.png',
+            imageDirectory: '/images/2025-02-01/',
+          ),
+          entryText: const EntryText(plainText: 'Matrix image fixture'),
+        );
+        final bytes = base64Decode(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC'
+          'AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        );
+
+        final received = await _sendMediaEntity(
+          entity: image,
+          bytes: bytes,
+          sender: aliceOutbox,
+          receiver: bobOutbox,
+          receiverService: bob,
+          timeout: mediaTimeout,
+        );
+
+        expect(received, isA<JournalImage>());
+        final receivedImage = received as JournalImage;
+        expect(receivedImage.meta, image.meta);
+        expect(receivedImage.data, image.data);
+        expect(receivedImage.entryText, image.entryText);
+      },
+      timeout: const Timeout(Duration(minutes: 5)),
+      skip: skipReason ?? false,
+    );
+
+    test(
+      'Audio sync transfers metadata and exact file bytes to Alice',
+      () async {
+        const mediaTimeout = Duration(minutes: 3);
+        final id = const Uuid().v1();
+        final timestamp = DateTime.utc(2025, 2, 1, 13);
+        final audio = JournalAudio(
+          meta: _nextMediaMetadata(
+            device: bobOutbox,
+            id: id,
+            timestamp: timestamp,
+          ),
+          data: AudioData(
+            dateFrom: timestamp,
+            dateTo: timestamp.add(const Duration(seconds: 1)),
+            audioFile: '$id.wav',
+            audioDirectory: '/audio/2025-02-01/',
+            duration: const Duration(seconds: 1),
+            language: 'en',
+          ),
+          entryText: const EntryText(plainText: 'Matrix audio fixture'),
+        );
+        final bytes = base64Decode(TestAudioData.shortSilenceWav);
+
+        final received = await _sendMediaEntity(
+          entity: audio,
+          bytes: bytes,
+          sender: bobOutbox,
+          receiver: aliceOutbox,
+          receiverService: alice,
+          timeout: mediaTimeout,
+        );
+
+        expect(received, isA<JournalAudio>());
+        final receivedAudio = received as JournalAudio;
+        expect(receivedAudio.meta, audio.meta);
+        expect(receivedAudio.data, audio.data);
+        expect(receivedAudio.entryText, audio.entryText);
+      },
+      timeout: const Timeout(Duration(minutes: 5)),
+      skip: skipReason ?? false,
+    );
+
+    test(
       'Late Megolm key survives Bob restart and clears the durable floor',
       () async {
         const lateKeyTimeout = Duration(minutes: 3);
@@ -889,7 +1002,7 @@ void main() {
           expect(persistedMarker.resumeFloorTs, floorBeforeRestart);
 
           bob = await _createBobService(
-            documentsDirectory: sharedDocumentsDirectory,
+            documentsDirectory: bobDocumentsDirectory,
             config: config2,
             loggingService: getIt<DomainLogger>(),
             journalDb: bobDb,
@@ -988,7 +1101,7 @@ void main() {
             matrixService: bob,
             journalDb: bobDb,
             syncDb: bobSyncDb,
-            documentsDirectory: sharedDocumentsDirectory,
+            documentsDirectory: bobDocumentsDirectory,
             userActivityService: sharedUserActivityService,
             loggingService: getIt<DomainLogger>(),
             vectorClockService: bobVectorClockService,
@@ -1086,7 +1199,7 @@ void main() {
         // Use singleInstance: false to avoid sqflite connection-cache
         // contention with the disposed first client's cached handle.
         bob = await _createBobService(
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: bobDocumentsDirectory,
           config: config2,
           loggingService: getIt<DomainLogger>(),
           journalDb: bobDb,
@@ -1358,7 +1471,7 @@ void main() {
         debugPrint('\n--- Phase 4: Bob cold-starts mid-burst');
         final catchupStopwatch = Stopwatch()..start();
         bob = await _createBobService(
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: bobDocumentsDirectory,
           config: config2,
           loggingService: getIt<DomainLogger>(),
           journalDb: bobDb,
@@ -1571,6 +1684,146 @@ Future<void> _setMatrixSyncEnabled(JournalDb db, {required bool enabled}) {
   );
 }
 
+Metadata _nextMediaMetadata({
+  required _DeviceOutbox device,
+  required String id,
+  required DateTime timestamp,
+}) {
+  final counter = device.nextCounter++;
+  return Metadata(
+    id: id,
+    createdAt: timestamp,
+    dateFrom: timestamp,
+    dateTo: timestamp,
+    updatedAt: timestamp,
+    starred: true,
+    vectorClock: VectorClock({device.deviceName: counter}),
+  );
+}
+
+String _relativeMediaPath(JournalEntity entity) {
+  return switch (entity) {
+    JournalImage() => getRelativeImagePath(entity),
+    JournalAudio() => AudioUtils.getRelativeAudioPath(entity),
+    _ => throw ArgumentError.value(
+      entity,
+      'entity',
+      'Expected JournalImage or JournalAudio',
+    ),
+  };
+}
+
+File _mediaFileFor(_DeviceOutbox device, JournalEntity entity) {
+  return File('${device.documentsDirectory.path}${_relativeMediaPath(entity)}');
+}
+
+Future<JournalEntity> _sendMediaEntity({
+  required JournalEntity entity,
+  required List<int> bytes,
+  required _DeviceOutbox sender,
+  required _DeviceOutbox receiver,
+  required MatrixService receiverService,
+  required Duration timeout,
+}) async {
+  final sourceFile = _mediaFileFor(sender, entity);
+  final receiverFile = _mediaFileFor(receiver, entity);
+  expect(
+    sourceFile.absolute.path,
+    isNot(receiverFile.absolute.path),
+    reason: 'simulated devices must use independent app sandboxes',
+  );
+  expect(
+    receiverFile.existsSync(),
+    isFalse,
+    reason: 'the receiver must not start with the sender media file',
+  );
+
+  await _setMatrixSyncEnabled(sender.journalDb, enabled: false);
+  try {
+    final actionableBefore = await sender.syncDb.getOutboxItems(
+      limit: 2,
+      statuses: const [
+        OutboxStatus.pending,
+        OutboxStatus.sending,
+        OutboxStatus.error,
+      ],
+    );
+    expect(
+      actionableBefore,
+      isEmpty,
+      reason: '${sender.deviceName} outbox must start drained',
+    );
+
+    await sourceFile.parent.create(recursive: true);
+    await sourceFile.writeAsBytes(bytes, flush: true);
+    await saveJournalEntityJson(
+      entity,
+      documentsDirectory: sender.documentsDirectory,
+    );
+    await sender.journalDb.updateJournalEntity(entity);
+    await sender.service.enqueueMessage(
+      SyncMessage.journalEntity(
+        id: entity.meta.id,
+        status: SyncEntryStatus.initial,
+        vectorClock: entity.meta.vectorClock,
+        jsonPath: relativeEntityPath(entity),
+        originatingHostId: sender.deviceName,
+      ),
+    );
+
+    final pending = await sender.syncDb.getOutboxItems(
+      limit: 2,
+      statuses: const [OutboxStatus.pending],
+    );
+    expect(pending, hasLength(1));
+    expect(
+      pending.single.filePath,
+      isNotNull,
+      reason: 'production outbox must classify media as an attachment row',
+    );
+  } finally {
+    await _setMatrixSyncEnabled(sender.journalDb, enabled: true);
+  }
+
+  final sentEventsBefore = sender.sender.sentEvents;
+  final sentEntriesBefore = sender.sender.sentEntries;
+  final bundleCountBefore = sender.sender.bundleSizes.length;
+  await sender.service.enqueueNextSendRequest(delay: Duration.zero);
+  await _waitForOutboxDrain(sender, timeout: timeout);
+
+  expect(sender.sender.sentEvents - sentEventsBefore, 1);
+  expect(sender.sender.sentEntries - sentEntriesBefore, 1);
+  expect(
+    sender.sender.bundleSizes.sublist(bundleCountBefore),
+    [1],
+    reason: 'media rows must travel alone rather than in an outbox bundle',
+  );
+
+  JournalEntity? received;
+  await waitUntilAsync(
+    () async {
+      received = await receiver.journalDb.journalEntityById(entity.meta.id);
+      if (received != null &&
+          receiverFile.existsSync() &&
+          receiverFile.lengthSync() == bytes.length) {
+        return true;
+      }
+      await receiverService.forceRescan();
+      await receiverService.retryNow();
+      return false;
+    },
+    timeout: timeout,
+  );
+
+  expect(received, isNotNull);
+  expect(
+    await receiverFile.readAsBytes(),
+    orderedEquals(bytes),
+    reason: 'Matrix must transfer the exact media payload between sandboxes',
+  );
+  return received!;
+}
+
 Future<void> _stageTestMessages(int n, {required _DeviceOutbox device}) async {
   await _setMatrixSyncEnabled(device.journalDb, enabled: false);
 
@@ -1615,7 +1868,10 @@ Future<void> _stageTestMessages(int n, {required _DeviceOutbox device}) async {
 
     final jsonPath = relativeEntityPath(entity);
 
-    await saveJournalEntityJson(entity);
+    await saveJournalEntityJson(
+      entity,
+      documentsDirectory: device.documentsDirectory,
+    );
     await device.journalDb.updateJournalEntity(entity);
     await device.service.enqueueMessage(
       SyncMessage.journalEntity(

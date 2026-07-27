@@ -2525,6 +2525,22 @@ void main() {
     group('descriptor-only resolution (jsonPath)', () {
       late Directory tempDir;
 
+      SyncEventProcessor processorForExplicitDirectory(
+        Directory explicitDirectory,
+      ) {
+        return SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: FileSyncJournalEntityLoader(
+            documentsDirectory: explicitDirectory,
+          ),
+          documentsDirectory: tempDir,
+        )..agentRepository = mockAgentRepo;
+      }
+
       setUp(() {
         tempDir = Directory.systemTemp.createTempSync(
           'agent_resolve_test',
@@ -2576,6 +2592,56 @@ void main() {
       });
 
       test(
+        'derives the agent payload sandbox from the injected loader',
+        () async {
+          final explicitDirectory = await Directory(
+            path.join(tempDir.path, 'explicit-device'),
+          ).create();
+          final explicitProcessor = processorForExplicitDirectory(
+            explicitDirectory,
+          );
+          final entity = AgentDomainEntity.agent(
+            id: 'agent-explicit',
+            agentId: 'agent-explicit',
+            kind: 'task_agent',
+            displayName: 'Explicit Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          const relativePath = '/agent_entities/agent-explicit.json';
+          final explicitFile = File(
+            path.join(
+              explicitDirectory.path,
+              stripLeadingSlashes(relativePath),
+            ),
+          )..parent.createSync(recursive: true);
+          explicitFile.writeAsStringSync(jsonEncode(entity.toJson()));
+
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: relativePath,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await explicitProcessor.process(event: event, journalDb: journalDb);
+
+          verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+          expect(
+            File(
+              path.join(tempDir.path, stripLeadingSlashes(relativePath)),
+            ).existsSync(),
+            isFalse,
+          );
+        },
+      );
+
+      test(
         'keeps dominant local agent entity cache when jsonPath payload is stale',
         () async {
           const localVc = VectorClock({'host-A': 2});
@@ -2621,6 +2687,70 @@ void main() {
           expect(
             restored.mapOrNull(agentState: (entity) => entity.revision),
             2,
+          );
+        },
+      );
+
+      test(
+        'restores a dominant agent cache inside the injected loader sandbox',
+        () async {
+          final explicitDirectory = await Directory(
+            path.join(tempDir.path, 'explicit-restore-device'),
+          ).create();
+          final explicitProcessor = processorForExplicitDirectory(
+            explicitDirectory,
+          );
+          const localVc = VectorClock({'host-A': 2});
+          const incomingVc = VectorClock({'host-A': 1});
+          final local = AgentDomainEntity.agentState(
+            id: 'state-explicit-cache',
+            agentId: 'agent-1',
+            revision: 2,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2024, 3, 16),
+            vectorClock: localVc,
+          );
+          final stale = AgentDomainEntity.agentState(
+            id: 'state-explicit-cache',
+            agentId: 'agent-1',
+            revision: 1,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: incomingVc,
+          );
+          when(
+            () => mockAgentRepo.getEntity('state-explicit-cache'),
+          ).thenAnswer((_) async => local);
+
+          const relativePath = '/agent_entities/state-explicit-cache.json';
+          final explicitFile = File(
+            path.join(
+              explicitDirectory.path,
+              stripLeadingSlashes(relativePath),
+            ),
+          )..parent.createSync(recursive: true);
+          explicitFile.writeAsStringSync(jsonEncode(stale.toJson()));
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: relativePath,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await explicitProcessor.process(event: event, journalDb: journalDb);
+
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          final restored = AgentDomainEntity.fromJson(
+            jsonDecode(explicitFile.readAsStringSync()) as Map<String, dynamic>,
+          );
+          expect(
+            restored.mapOrNull(agentState: (entity) => entity.revision),
+            2,
+          );
+          expect(
+            File(
+              path.join(tempDir.path, stripLeadingSlashes(relativePath)),
+            ).existsSync(),
+            isFalse,
           );
         },
       );
