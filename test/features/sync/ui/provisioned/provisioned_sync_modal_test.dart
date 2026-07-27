@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -33,109 +34,65 @@ void main() {
     );
   });
 
-  group('ProvisionedSyncSettingsCard', () {
-    testWidgets('displays correct title and subtitle', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedSyncSettingsCard(showDivider: false),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
+  Future<void> pumpEmptyState(WidgetTester tester) {
+    return tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const SyncSetupEmptyState(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+  }
 
-      final context = tester.element(find.byType(ProvisionedSyncSettingsCard));
+  group('SyncSetupEmptyState', () {
+    testWidgets('explains sync and leads with the one setup action', (
+      tester,
+    ) async {
+      await pumpEmptyState(tester);
+
+      final context = tester.element(find.byType(SyncSetupEmptyState));
+      // The value proposition, not an echo of the navigation entry: the old
+      // card repeated "Devices" under a header reading "Devices" and said
+      // nothing about what sync is.
       expect(
-        find.text(context.messages.provisionedSyncTitle),
+        find.text(context.messages.syncSetupEmptyTitle),
         findsOneWidget,
       );
       expect(
-        find.text(context.messages.provisionedSyncSubtitle),
+        find.text(context.messages.syncSetupEmptyHint),
         findsOneWidget,
       );
-    });
-
-    testWidgets('displays QR code scanner icon', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedSyncSettingsCard(showDivider: false),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      expect(find.byIcon(Icons.qr_code_scanner), findsWidgets);
-    });
-
-    testWidgets('card is tappable', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedSyncSettingsCard(showDivider: false),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      final card = find.byType(ProvisionedSyncSettingsCard);
-      expect(card, findsOneWidget);
-
-      expect(
-        find.descendant(
-          of: card,
-          matching: find.byType(GestureDetector),
-        ),
-        findsWidgets,
-      );
-    });
-
-    testWidgets('renders without errors', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedSyncSettingsCard(showDivider: false),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      expect(find.byType(ProvisionedSyncSettingsCard), findsOneWidget);
+      expect(find.byKey(const Key('sync_setup_cta')), findsOneWidget);
+      // Composes the design system's one empty-state grammar rather than a
+      // hand-rolled icon/text ramp.
+      expect(find.byType(DesignSystemEmptyState), findsOneWidget);
     });
 
     group('smart page detection', () {
       testWidgets(
-        'opens modal at import page when not logged in',
+        'opens the wizard at the import page when not logged in',
         (tester) async {
           when(mockMatrixService.isLoggedIn).thenReturn(false);
           when(() => mockMatrixService.syncRoomId).thenReturn(null);
 
-          await tester.pumpWidget(
-            makeTestableWidgetWithScaffold(
-              const ProvisionedSyncSettingsCard(showDivider: false),
-              overrides: [
-                matrixServiceProvider.overrideWithValue(mockMatrixService),
-              ],
-            ),
-          );
+          await pumpEmptyState(tester);
 
-          // Tap the card to open the modal
-          await tester.tap(find.byType(ProvisionedSyncSettingsCard));
+          await tester.tap(find.byKey(const Key('sync_setup_cta')));
           await tester.pumpAndSettle();
 
           // Should show page 0 (import page) content
-          final context = tester.element(
-            find.byType(ProvisionedSyncSettingsCard),
-          );
+          final context = tester.element(find.byType(SyncSetupEmptyState));
           expect(
             find.text(context.messages.provisionedSyncImportTitle),
             findsWidgets,
           );
+          expect(find.byType(BundleImportWidget), findsOneWidget);
         },
       );
 
       testWidgets(
-        'opens modal at status page when logged in with room',
+        'opens the devices sheet when logged in with a room',
         (tester) async {
           when(mockMatrixService.isLoggedIn).thenReturn(true);
           when(
@@ -143,40 +100,23 @@ void main() {
           ).thenReturn('!room123:example.com');
           when(() => mockClient.userID).thenReturn('@alice:example.com');
 
-          await tester.pumpWidget(
-            makeTestableWidgetWithScaffold(
-              const ProvisionedSyncSettingsCard(showDivider: false),
-              overrides: [
-                matrixServiceProvider.overrideWithValue(mockMatrixService),
-              ],
-            ),
-          );
+          await pumpEmptyState(tester);
 
-          // Tap the card to open the modal
-          await tester.tap(find.byType(ProvisionedSyncSettingsCard));
+          await tester.tap(find.byKey(const Key('sync_setup_cta')));
           await tester.pumpAndSettle();
 
-          final context = tester.element(
-            find.byType(ProvisionedSyncSettingsCard),
-          );
+          final context = tester.element(find.byType(SyncSetupEmptyState));
 
           // Should open directly to status page (no provisioning input page)
-          expect(
-            find.text('Technical details'),
-            findsOneWidget,
-          );
-          // Keyed rather than by text: the settings card behind the sheet is
-          // also titled "Devices". The roster's refresh action is unique to it
-          // and renders even while the list is still loading.
+          expect(find.text('Technical details'), findsOneWidget);
+          // Keyed rather than by text: the roster's refresh action is unique
+          // to the status page and renders even while the list is loading.
           expect(find.byKey(const Key('sync_devices_refresh')), findsOneWidget);
           expect(
             find.text(context.messages.settingsMatrixPreviousPage),
             findsNothing,
           );
-          expect(
-            find.byType(BundleImportWidget),
-            findsNothing,
-          );
+          expect(find.byType(BundleImportWidget), findsNothing);
         },
       );
 
@@ -186,23 +126,12 @@ void main() {
           when(mockMatrixService.isLoggedIn).thenReturn(true);
           when(() => mockMatrixService.syncRoomId).thenReturn(null);
 
-          await tester.pumpWidget(
-            makeTestableWidgetWithScaffold(
-              const ProvisionedSyncSettingsCard(showDivider: false),
-              overrides: [
-                matrixServiceProvider.overrideWithValue(mockMatrixService),
-              ],
-            ),
-          );
+          await pumpEmptyState(tester);
 
-          // Tap the card to open the modal
-          await tester.tap(find.byType(ProvisionedSyncSettingsCard));
+          await tester.tap(find.byKey(const Key('sync_setup_cta')));
           await tester.pumpAndSettle();
 
-          // Should show page 0 (import page)
-          final context = tester.element(
-            find.byType(ProvisionedSyncSettingsCard),
-          );
+          final context = tester.element(find.byType(SyncSetupEmptyState));
           expect(
             find.text(context.messages.provisionedSyncImportTitle),
             findsWidgets,
@@ -218,23 +147,14 @@ void main() {
             () => mockMatrixService.syncRoomId,
           ).thenReturn('!room123:example.com');
 
-          await tester.pumpWidget(
-            makeTestableWidgetWithScaffold(
-              const ProvisionedSyncSettingsCard(showDivider: false),
-              overrides: [
-                matrixServiceProvider.overrideWithValue(mockMatrixService),
-              ],
-            ),
-          );
+          await pumpEmptyState(tester);
 
-          // Tap the card to open the modal
-          await tester.tap(find.byType(ProvisionedSyncSettingsCard));
+          await tester.tap(find.byKey(const Key('sync_setup_cta')));
           await tester.pumpAndSettle();
 
-          // Should show page 0 (import page) - needs both conditions
-          final context = tester.element(
-            find.byType(ProvisionedSyncSettingsCard),
-          );
+          // Setup needs both conditions — a room without a session still
+          // goes through the import page.
+          final context = tester.element(find.byType(SyncSetupEmptyState));
           expect(
             find.text(context.messages.provisionedSyncImportTitle),
             findsWidgets,

@@ -62,7 +62,6 @@ import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
-import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.dart';
@@ -868,7 +867,7 @@ void main() {
     bool confirm = false,
     String? bundleText,
   }) async {
-    await tester.tap(find.byType(ProvisionedSyncSettingsCard));
+    await tester.tap(find.byKey(const Key('sync_setup_cta')));
     await settleFrames(tester, 10);
     expect(find.byType(BundleImportWidget), findsOneWidget);
 

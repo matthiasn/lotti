@@ -84,7 +84,7 @@ void main() {
       await pump(tester, enabled: true);
 
       final context = tester.element(find.byType(ProvisionedSyncPage));
-      expect(find.byType(ProvisionedSyncSettingsCard), findsOneWidget);
+      expect(find.byType(SyncSetupEmptyState), findsOneWidget);
       // Both the page header and the card surface the same title.
       expect(find.text(context.messages.provisionedSyncTitle), findsWidgets);
     },
@@ -95,7 +95,7 @@ void main() {
     (tester) async {
       await pump(tester, enabled: false);
 
-      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+      expect(find.byType(SyncSetupEmptyState), findsNothing);
     },
   );
 
@@ -143,7 +143,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      expect(find.byType(ProvisionedSyncSettingsCard), findsOneWidget);
+      expect(find.byType(SyncSetupEmptyState), findsOneWidget);
 
       // Startup completes: the login stream is the signal that gets the page
       // to re-evaluate.
@@ -153,7 +153,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
-      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+      expect(find.byType(SyncSetupEmptyState), findsNothing);
 
       // Unmount inside the test body so the stream's subscription is torn
       // down here rather than racing teardown.
@@ -182,7 +182,7 @@ void main() {
         isTrue,
       );
       expect(find.byKey(const Key('sync_devices_add_device')), findsOneWidget);
-      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+      expect(find.byType(SyncSetupEmptyState), findsNothing);
     },
   );
 }

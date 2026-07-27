@@ -719,15 +719,17 @@ void main() {
       expect(retries, 1);
     });
 
-    testWidgets('leads in without claiming a second position', (tester) async {
-      // The button needs a rung — its body heading is below the fold on every
-      // viewport — but a second "Step N of 2" on the same screen stops either
-      // fraction indicating anything.
+    testWidgets('carries one tier and no second position line', (
+      tester,
+    ) async {
+      // The bar is a single status-plus-button tier now: the old lead-in was
+      // a third line about one control, and the stack's height was what
+      // sliced the QR above it in half on short windows.
       await pumpBar(tester, devices: existing);
 
       final context = tester.element(find.byType(AddDeviceActionBar));
       expect(
-        find.text(context.messages.syncAddDeviceNextLeadIn),
+        find.byKey(const Key('add_device_send_settings_pending')),
         findsOneWidget,
       );
       // No second fraction: the body already carries "Now · Show the code".
@@ -740,7 +742,7 @@ void main() {
     testWidgets('is quiet, and says so, while it cannot be pressed', (
       tester,
     ) async {
-      // Three lines about one control have to agree. Outlined rather than
+      // The status line and the button have to agree. Outlined rather than
       // secondary: the component paints an enabled secondary with the same
       // fill it paints a disabled filled button, so a live action would have
       // read as inert.
@@ -754,10 +756,6 @@ void main() {
             )
             .variant,
         DesignSystemButtonVariant.outlined,
-      );
-      expect(
-        find.text(context.messages.syncAddDeviceNextLeadIn),
-        findsOneWidget,
       );
       expect(
         find.text(context.messages.syncAddDeviceSendSettingsPending),
@@ -779,11 +777,11 @@ void main() {
             .variant,
         DesignSystemButtonVariant.primary,
       );
-      // And the lead-in is gone rather than saying "after it joins" over a
-      // status line saying "send now".
+      // And the ready status replaces the waiting one instead of a lead-in
+      // saying "after it joins" over a status line saying "send now".
       expect(
-        find.text(context.messages.syncAddDeviceNextLeadIn),
-        findsNothing,
+        find.text(context.messages.syncAddDeviceSendSettingsReady),
+        findsOneWidget,
       );
     });
 

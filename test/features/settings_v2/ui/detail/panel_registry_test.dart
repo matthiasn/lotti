@@ -422,7 +422,7 @@ void main() {
             .embedded,
         isTrue,
       );
-      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+      expect(find.byType(SyncSetupEmptyState), findsNothing);
     });
 
     testWidgets('offers the setup card when sync is not configured yet', (
@@ -430,7 +430,7 @@ void main() {
     ) async {
       await pumpPanel(tester, configured: false);
 
-      expect(find.byType(ProvisionedSyncSettingsCard), findsOneWidget);
+      expect(find.byType(SyncSetupEmptyState), findsOneWidget);
       expect(find.byType(ProvisionedStatusWidget), findsNothing);
     });
 
@@ -440,7 +440,7 @@ void main() {
       await pumpPanel(tester, configured: true, matrixEnabled: false);
 
       expect(find.byType(ProvisionedStatusWidget), findsNothing);
-      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+      expect(find.byType(SyncSetupEmptyState), findsNothing);
     });
   });
 
