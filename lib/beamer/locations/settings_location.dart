@@ -41,6 +41,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.da
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_root_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
@@ -203,15 +204,20 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: SettingsMobileBranchPage(branchId: 'advanced'),
         ),
 
-      // AI Settings — list view. Rendered under any `/settings/ai/*`
-      // URL so the mobile page stack reads
-      // `SettingsPage > AiSettingsPage > <detail>` and the system
-      // back gesture returns to the list, not all the way to the
-      // Settings root. The legacy `/settings/ai/profiles` leaf opts
-      // out so it can render its own page directly.
-      if (path.startsWith('/settings/ai') &&
-          !pathContains('advanced') &&
-          path != '/settings/ai/profiles')
+      // AI Settings — list view. Rendered under EVERY `/settings/ai/*`
+      // URL, always on the same `settings-ai` key, so the mobile page
+      // stack reads `SettingsPage > AiSettingsPage > <detail>` and the
+      // system back gesture returns to the list rather than all the way
+      // to the Settings root.
+      //
+      // The one-stable-key rule matters as much as the presence: a child
+      // URL that omits this page (the legacy `/settings/ai/profiles`
+      // leaf used to) makes Navigator *swap* the leaf for the list on
+      // pop instead of revealing the list underneath it, so the leaf
+      // slides out while the list slides in — a push animation played on
+      // a back gesture. Sync learned the same lesson; see the
+      // `settings-sync` hub below.
+      if (path.startsWith('/settings/ai') && !pathContains('advanced'))
         const BeamPage(
           key: ValueKey('settings-ai'),
           title: 'AI Settings',
@@ -221,25 +227,38 @@ class SettingsLocation extends BeamLocation<BeamState> {
       // AI Settings — provider detail. Sits above the list page in the
       // mobile stack. `focusApiKey` is plumbed via a query parameter
       // so the Fix-flow URL is bookmarkable.
+      //
+      // Every AI detail URL is two segments deep under the list
+      // (`/settings/ai/<kind>/<id>`), but Beamer's default pop strips only
+      // ONE segment — stranding the route on `/settings/ai/<kind>`, which
+      // carries no id and so rebuilds the list page. The next back tap then
+      // popped that dead URI to `/settings/ai` and built the very same list
+      // again: the user watched the list slide out and an identical list
+      // slide back in, still on the page they were leaving. `popToNamed`
+      // skips the dead intermediate URI so one back tap is one level, with
+      // a real pop transition. Same rule as the two-segment habits
+      // sub-routes below.
       if (pathContainsKey('providerId'))
         BeamPage(
           key: ValueKey(
             'settings-ai-provider-${state.pathParameters['providerId']}',
           ),
           title: context.messages.aiProviderDetailPageTitle,
+          popToNamed: aiSettingsParentRoute,
           child: AiProviderDetailPage(
             providerId: state.pathParameters['providerId']!,
             focusApiKey: state.uri.queryParameters['focusApiKey'] == 'true',
           ),
         ),
 
-      // AI Settings — model edit. Same stacking rule.
+      // AI Settings — model edit. Same stacking and same pop rule.
       if (pathContainsKey('modelId'))
         BeamPage(
           key: ValueKey(
             'settings-ai-model-${state.pathParameters['modelId']}',
           ),
           title: context.messages.settingsBeamPageEditModelTitle,
+          popToNamed: aiSettingsParentRoute,
           child: InferenceModelEditPage(
             configId: state.pathParameters['modelId'],
           ),
@@ -257,6 +276,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
             'settings-ai-profile-${state.pathParameters['profileId']}',
           ),
           title: context.messages.settingsBeamPageEditProfileTitle,
+          popToNamed: aiSettingsParentRoute,
           child: InferenceProfileDetailPage(
             profileId: state.pathParameters['profileId']!,
           ),

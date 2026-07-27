@@ -82,6 +82,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **Leaving an AI setting takes one back tap, not two.** After opening a
+  provider, model or profile from AI Settings, backing out of the list you
+  returned to appeared to do nothing: the list slid away and an identical list
+  slid straight back in, and only a second tap actually left. Coming back from
+  a detail page had quietly left the app in a halfway state that still showed
+  the list, so the next tap was spent leaving that rather than going anywhere.
+  Back now moves one level per tap, and the Inference Profiles page animates
+  like a back gesture instead of like opening a new page.
 - **An over-full day no longer wastes a planning attempt on an impossible
   placeholder.** When some work did not fit, the planner could represent the
   omitted task as a zero-minute "unscheduled" block. The app correctly rejected
