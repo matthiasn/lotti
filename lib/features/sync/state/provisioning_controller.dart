@@ -65,9 +65,18 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
 
       final rawVersion = json['v'];
+      if (rawVersion is! int) {
+        // Never announced a version at all, so "update both devices" would be
+        // a guess. The payload is simply not a pairing code.
+        throw const BundleDecodeException(
+          BundleDecodeError.malformedPayload,
+          'Missing or non-integer bundle version',
+        );
+      }
       if (rawVersion != kSyncBundleVersion) {
-        // The devices are on different Lotti releases. Reported separately
-        // because the remedy is "update", not "get a fresh code".
+        // A real version this build does not speak: the devices are on
+        // different Lotti releases. Reported separately because the remedy is
+        // "update", not "get a fresh code".
         throw const BundleDecodeException(
           BundleDecodeError.unsupportedVersion,
           'Unsupported bundle version',

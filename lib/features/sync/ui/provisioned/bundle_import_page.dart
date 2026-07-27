@@ -106,6 +106,11 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
           .decodeBundle(input);
       setState(() {
         _decodedBundle = bundle;
+        // Whatever the source — camera, clipboard or typing — this is the
+        // payload on the confirmation screen, so declining it has something
+        // to remember. Tracking it only in `_handleBarcode` meant a pasted
+        // code that was rejected could be re-scanned straight back in.
+        _lastScannedCode = input;
         _errorText = null;
       });
     } on BundleDecodeException catch (e) {

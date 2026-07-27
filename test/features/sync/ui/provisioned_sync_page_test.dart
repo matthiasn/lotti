@@ -1,4 +1,10 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -6,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -36,7 +43,24 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  Future<void> pump(WidgetTester tester, {required bool enabled}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    required bool enabled,
+    bool configured = false,
+  }) async {
+    when(mockMatrixService.isLoggedIn).thenReturn(configured);
+    when(
+      () => mockMatrixService.syncRoomId,
+    ).thenReturn(configured ? '!room:example.com' : null);
+    when(
+      () => mockMatrixService.getUnverifiedDevices(),
+    ).thenReturn([]);
+    when(
+      () => mockMatrixService.getSyncDevices(),
+    ).thenAnswer((_) async => const <SyncDeviceInfo>[]);
+    when(
+      () => mockMatrixService.keyVerificationStream,
+    ).thenAnswer((_) => const Stream.empty());
     when(
       () => mocks.journalDb.watchConfigFlag(enableMatrixFlag),
     ).thenAnswer((_) => Stream<bool>.value(enabled));
@@ -71,6 +95,80 @@ void main() {
     (tester) async {
       await pump(tester, enabled: false);
 
+      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'swaps to the roster when startup finishes, without leaving the page',
+    (tester) async {
+      // `matrixServiceProvider` hands back one stable object, so watching it
+      // never notifies when login and room hydration complete. Init runs
+      // unawaited at bootstrap, so a route opened mid-startup used to keep the
+      // setup card until the user navigated away and back.
+      final loginState = StreamController<LoginState>.broadcast();
+      addTearDown(loginState.close);
+      var configured = false;
+      when(mockMatrixService.isLoggedIn).thenAnswer((_) => configured);
+      when(
+        () => mockMatrixService.syncRoomId,
+      ).thenAnswer((_) => configured ? '!room:example.com' : null);
+      when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+      when(
+        () => mockMatrixService.getSyncDevices(),
+      ).thenAnswer((_) async => const <SyncDeviceInfo>[]);
+      when(
+        () => mockMatrixService.keyVerificationStream,
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mocks.journalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            loginStateStreamProvider.overrideWith((_) => loginState.stream),
+          ],
+          child: const ProvisionedSyncPage(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(ProvisionedSyncSettingsCard), findsOneWidget);
+
+      // Startup completes: the login stream is the signal that gets the page
+      // to re-evaluate.
+      configured = true;
+      loginState.add(LoginState.loggedIn);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
+      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'shows the device roster inline once sync is configured, as desktop does',
+    (tester) async {
+      // Every instruction in the pairing flow says "open Settings → Sync
+      // Settings → Devices, then choose Add device". While this page rendered
+      // the setup card unconditionally, a mobile user following that sentence
+      // landed on a screen with no Add device on it.
+      await pump(tester, enabled: true, configured: true);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
+      expect(
+        tester
+            .widget<ProvisionedStatusWidget>(
+              find.byType(ProvisionedStatusWidget),
+            )
+            .embedded,
+        isTrue,
+      );
+      expect(find.byKey(const Key('sync_devices_add_device')), findsOneWidget);
       expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
     },
   );

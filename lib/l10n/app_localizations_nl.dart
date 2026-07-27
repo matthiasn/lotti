@@ -10069,6 +10069,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncPairDiscardCode => 'Een andere koppelcode invoeren';
 
   @override
+  String get syncPairedFirstDeviceBody =>
+      'Dit is voorlopig het enige apparaat op je sync-account. Voeg er wanneer je wilt een toe — alles wat je hier schrijft, staat dan klaar.';
+
+  @override
+  String get syncPairedFirstDeviceTitle =>
+      'Synchronisatie is ingesteld op dit apparaat';
+
+  @override
   String get syncPairedNextTitle => 'Nog twee stappen';
 
   @override
@@ -10153,6 +10161,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPairStepConnecting => 'Stap 3 van 3 · Verbinden';
+
+  @override
+  String get syncPairStepDone => 'Stap 3 van 3 · Klaar';
 
   @override
   String get syncPairStepFailed => 'Stap 3 van 3 · Verbinden mislukt';

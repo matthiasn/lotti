@@ -10036,6 +10036,14 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPairDiscardCode => 'Indtast en anden parringskode';
 
   @override
+  String get syncPairedFirstDeviceBody =>
+      'Det er indtil videre den eneste enhed på din synkroniseringskonto. Tilføj en til, når du vil — alt, du skriver her, venter på den.';
+
+  @override
+  String get syncPairedFirstDeviceTitle =>
+      'Synkronisering er sat op på denne enhed';
+
+  @override
   String get syncPairedNextTitle => 'To trin tilbage';
 
   @override
@@ -10118,6 +10126,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPairStepConnecting => 'Trin 3 af 3 · Forbinder';
+
+  @override
+  String get syncPairStepDone => 'Trin 3 af 3 · Færdig';
 
   @override
   String get syncPairStepFailed => 'Trin 3 af 3 · Kunne ikke forbinde';

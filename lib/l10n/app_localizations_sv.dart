@@ -10037,6 +10037,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncPairDiscardCode => 'Ange en annan parkopplingskod';
 
   @override
+  String get syncPairedFirstDeviceBody =>
+      'Det här är än så länge den enda enheten på ditt synkkonto. Lägg till en till när du vill — allt du skriver här väntar på den.';
+
+  @override
+  String get syncPairedFirstDeviceTitle =>
+      'Synkronisering är konfigurerad på den här enheten';
+
+  @override
   String get syncPairedNextTitle => 'Två steg kvar';
 
   @override
@@ -10119,6 +10127,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairStepConnecting => 'Steg 3 av 3 · Ansluter';
+
+  @override
+  String get syncPairStepDone => 'Steg 3 av 3 · Klart';
 
   @override
   String get syncPairStepFailed => 'Steg 3 av 3 · Kunde inte ansluta';

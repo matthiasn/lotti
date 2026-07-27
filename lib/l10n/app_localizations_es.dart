@@ -10190,6 +10190,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncPairDiscardCode => 'Introducir otro código de emparejamiento';
 
   @override
+  String get syncPairedFirstDeviceBody =>
+      'Por ahora es el único dispositivo de tu cuenta de sincronización. Añade otro cuando quieras: todo lo que escribas aquí le estará esperando.';
+
+  @override
+  String get syncPairedFirstDeviceTitle =>
+      'La sincronización está configurada en este dispositivo';
+
+  @override
   String get syncPairedNextTitle => 'Faltan dos pasos';
 
   @override
@@ -10274,6 +10282,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncPairStepConnecting => 'Paso 3 de 3 · Conectando';
+
+  @override
+  String get syncPairStepDone => 'Paso 3 de 3 · Listo';
 
   @override
   String get syncPairStepFailed => 'Paso 3 de 3 · No se pudo conectar';

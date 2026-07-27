@@ -294,6 +294,73 @@ void main() {
       expect(find.byKey(const ValueKey('scanner_1')), findsOneWidget);
     });
 
+    testWidgets('a declined *pasted* code is remembered too', (tester) async {
+      // Only _handleBarcode used to record the payload, so a code that
+      // arrived by clipboard or typing was never added to the rejected set —
+      // switching to the camera with that QR still up reopened the very
+      // confirmation the user had just declined.
+      //
+      // Mobile explicitly: this group inherits the host platform, and the
+      // camera fallback only exists there.
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = false;
+      isMobile = true;
+      addTearDown(() {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      });
+      setUpMobileScanner();
+
+      // Taller surface: the manual-entry fallback sits below the viewfinder
+      // and misses the tap on the default 600pt canvas.
+      tester.view
+        ..physicalSize = const Size(900, 1800)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('bundle_import_enter_manually')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.enterText(find.byType(TextField), validBase64);
+      await tester.pump();
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(
+        find.text(context.messages.provisionedSyncImportButton),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.byKey(const Key('bundle_import_discard')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('bundle_import_discard')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      await tester.tap(find.byKey(const Key('bundle_import_scan_instead')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      tester.widget<MobileScanner>(find.byType(MobileScanner)).onDetect!(
+        BarcodeCapture(barcodes: [Barcode(rawValue: validBase64)]),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(find.byKey(const Key('bundle_import_discard')), findsNothing);
+      expect(
+        find.text(context.messages.syncPairScannerRejected),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('declining a scanned code lands on the field and stays there', (
       tester,
     ) async {

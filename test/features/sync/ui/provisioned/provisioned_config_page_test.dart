@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
+import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_relaunch_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
@@ -29,6 +30,13 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import 'provisioned_status_page_test_helpers.dart';
+
+/// Holds the app-wide modal lock so `AutoVerificationLauncher` yields instead
+/// of opening a sheet over the widget under test.
+class _PreAcquiredLock extends MatrixVerificationModalLock {
+  @override
+  bool build() => true;
+}
 
 /// A fake provisioning controller that provides a fixed state.
 class _FakeProvisioningController extends ProvisioningController {
@@ -63,6 +71,16 @@ void main() {
 
   late MockMatrixService mockMatrixService;
   late ValueNotifier<int> pageIndexNotifier;
+
+  /// A peer awaiting the emoji ceremony. The launcher keys devices by
+  /// `(userId, deviceId)`, so both have to be stubbed.
+  MockDeviceKeys unverifiedPeer() {
+    final keys = MockDeviceKeys();
+    when(() => keys.deviceId).thenReturn('PEERDEVICE');
+    when(() => keys.userId).thenReturn('@alice:example.com');
+    when(() => keys.deviceDisplayName).thenReturn('Peer');
+    return keys;
+  }
 
   const testBundle = SyncProvisioningBundle(
     v: 2,
@@ -446,14 +464,34 @@ void main() {
       expect(find.text('dGVzdC1oYW5kb3Zlci1kYXRh'), findsNothing);
     }
 
-    testWidgets('the ready state renders next steps, not a second QR', (
+    testWidgets('the ready state ends a first-device setup, not a handover', (
       tester,
     ) async {
+      // `ready` follows a fresh CLI bundle, so this is usually the only device
+      // on the account: telling it to compare emoji with a peer and to go
+      // press Send settings on another device names two steps that cannot be
+      // performed. `done` — a peer handover — is the state that can.
       await pumpConfigWidget(
         tester,
         const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
       );
-      expectNextSteps(tester);
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(find.byKey(const Key('paired_first_device')), findsOneWidget);
+      expect(
+        find.text(context.messages.syncPairedFirstDeviceTitle),
+        findsOneWidget,
+      );
+      expect(find.text(context.messages.syncPairedNextTitle), findsNothing);
+      expect(find.text(context.messages.syncPairedVerifyStep), findsNothing);
+      expect(
+        find.text(context.messages.syncPairedSettingsStep),
+        findsNothing,
+      );
+      // And still no second QR handed to a device that just consumed one.
+      expect(find.byKey(const Key('provisionedQrImage')), findsNothing);
+      expect(find.text('dGVzdC1oYW5kb3Zlci1kYXRh'), findsNothing);
+      expect(find.text(context.messages.syncPairStepDone), findsOneWidget);
     });
 
     testWidgets('the done state renders next steps', (tester) async {
@@ -505,7 +543,11 @@ void main() {
         const ProvisioningState.done(),
         extraOverrides: [
           matrixUnverifiedControllerProvider.overrideWith(
-            () => FakeMatrixUnverifiedController([MockDeviceKeys()]),
+            () => FakeMatrixUnverifiedController([unverifiedPeer()]),
+          ),
+          // Otherwise the launcher opens the ceremony over the assertions.
+          matrixVerificationModalLockProvider.overrideWith(
+            _PreAcquiredLock.new,
           ),
         ],
       );
@@ -623,7 +665,11 @@ void main() {
               () => _FakeProvisioningController(const ProvisioningState.done()),
             ),
             matrixUnverifiedControllerProvider.overrideWith(
-              () => FakeMatrixUnverifiedController([MockDeviceKeys()]),
+              () => FakeMatrixUnverifiedController([unverifiedPeer()]),
+            ),
+            // Otherwise the launcher opens the ceremony over the button.
+            matrixVerificationModalLockProvider.overrideWith(
+              _PreAcquiredLock.new,
             ),
           ],
           child: MaterialApp(

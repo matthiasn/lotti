@@ -17262,6 +17262,18 @@ abstract class AppLocalizations {
   /// **'Enter a different pairing code'**
   String get syncPairDiscardCode;
 
+  /// No description provided for @syncPairedFirstDeviceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the only device on your sync account so far. Add another whenever you like — everything you write here will be waiting for it.'**
+  String get syncPairedFirstDeviceBody;
+
+  /// No description provided for @syncPairedFirstDeviceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync is set up on this device'**
+  String get syncPairedFirstDeviceTitle;
+
   /// No description provided for @syncPairedNextTitle.
   ///
   /// In en, this message translates to:
@@ -17405,6 +17417,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Step 3 of 3 · Connecting'**
   String get syncPairStepConnecting;
+
+  /// No description provided for @syncPairStepDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 3 of 3 · Done'**
+  String get syncPairStepDone;
 
   /// No description provided for @syncPairStepFailed.
   ///

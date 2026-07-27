@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
+import 'package:lotti/features/sync/state/matrix_verification_handled_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_relaunch_provider.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
@@ -30,27 +31,42 @@ class AutoVerificationLauncher extends ConsumerStatefulWidget {
 class _AutoVerificationLauncherState
     extends ConsumerState<AutoVerificationLauncher> {
   bool _launchInFlight = false;
-  String? _lastAutoLaunchedDeviceId;
+
+  /// The identity this launcher last actually showed a ceremony for — the one
+  /// the user was looking at, and therefore the one "show the emoji again"
+  /// means.
+  String? _lastOffered;
+
+  static String _identity(DeviceKeys device) =>
+      MatrixVerificationHandled.identityOf(
+        userId: device.userId,
+        deviceId: device.deviceId ?? '',
+      );
 
   Future<void> _maybeLaunch(List<DeviceKeys> devices) async {
     if (!mounted || _launchInFlight || devices.isEmpty) return;
-    final target = devices.first;
-    final targetId = target.deviceId;
+    final handled = ref.read(matrixVerificationHandledProvider.notifier);
 
-    if (_lastAutoLaunchedDeviceId == targetId) return;
+    // The first device not yet shown, rather than simply the first: a stale or
+    // legacy unverified peer can sort ahead of the one actually being paired.
+    final target = devices
+        .where((d) => !handled.contains(_identity(d)))
+        .firstOrNull;
+    if (target == null) return;
+    final targetId = _identity(target);
+
     final lock = ref.read(matrixVerificationModalLockProvider.notifier);
-    if (!lock.tryAcquire()) {
-      // Record it anyway. Two launchers can be mounted at once — the settings
-      // pane embeds the roster while the setup modal is still open — and the
-      // loser used to return without marking the device handled. When the
-      // winner closed and invalidated the providers, the loser rebuilt, took
-      // the freed lock, and reopened the sheet the user had just dismissed.
-      _lastAutoLaunchedDeviceId = targetId;
-      return;
-    }
+    // Deferred, not handled. Something else owns the lock — a manual or an
+    // incoming ceremony — and recording the device here would consume it
+    // without ever showing it. `VerificationModal` invalidates the unverified
+    // provider repeatedly while its sheet is open, so with several peers this
+    // branch would burn through all of them and leave a newly paired device
+    // with no ceremony once the lock freed up. A later rebuild retries.
+    if (!lock.tryAcquire()) return;
 
     _launchInFlight = true;
-    _lastAutoLaunchedDeviceId = targetId;
+    handled.markShown(targetId);
+    _lastOffered = targetId;
     try {
       await showVerificationModalSheet(
         context: context,
@@ -70,11 +86,16 @@ class _AutoVerificationLauncherState
 
   @override
   Widget build(BuildContext context) {
-    // An explicit "show it again" clears the once-per-device guard. Nothing
-    // else can: the device is still unverified, which is precisely the state
-    // that keeps the guard set, so re-querying the providers changes nothing.
+    // "Show it again" makes exactly one device eligible: the one last shown.
+    // Clearing the whole set restarts selection at the head of the list, which
+    // reopens a stale peer instead of the ceremony just dismissed. Re-querying
+    // the providers cannot help either — the device is still unverified, which
+    // is precisely the state that keeps it marked.
     ref.listen<int>(matrixVerificationRelaunchProvider, (_, _) {
-      _lastAutoLaunchedDeviceId = null;
+      final last = _lastOffered;
+      if (last != null) {
+        ref.read(matrixVerificationHandledProvider.notifier).release(last);
+      }
       final devices = ref.read(matrixUnverifiedControllerProvider).value ?? [];
       unawaited(_maybeLaunch(devices));
     });
@@ -83,7 +104,8 @@ class _AutoVerificationLauncherState
         ref.watch(matrixUnverifiedControllerProvider).value ?? [];
 
     if (unverifiedDevices.isEmpty) {
-      _lastAutoLaunchedDeviceId = null;
+      _lastOffered = null;
+      ref.read(matrixVerificationHandledProvider.notifier).clear();
       return const SizedBox.shrink();
     }
 
