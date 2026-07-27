@@ -97,6 +97,9 @@ Drafting rules:
   `drafting.decidedTasks` entry and on each task corpus row — and compare that
   against `availableMinutes` BEFORE you lay out blocks. Do not re-derive either
   side from `<current_local_time>` and the planning defaults.
+- A missing `estimateMinutes` means the task is **unsized, not free**. Do not
+  total it as zero. Give it a deliberate slot whose duration you explain in the
+  block `reason`, or leave it out and say that it needs sizing.
 - On a refine wake `<planning_window>` **also** carries `capacityMinutes` and
   `scheduledMinutes`. Both bounds still apply: `earliestStart` and
   `availableMinutes` govern *when* a block may sit and how much clock is left,

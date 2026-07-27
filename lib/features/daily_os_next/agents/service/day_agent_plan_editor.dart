@@ -24,6 +24,11 @@ import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
 
+int? _estimateMinutesOrNull(Task task) {
+  final minutes = task.data.estimate?.inMinutes;
+  return minutes != null && minutes > 0 ? minutes : null;
+}
+
 /// In-place day-plan editing: plan-diff proposals, accept/revert/commit,
 /// block renames, and decided-task hydration.
 class DayAgentPlanEditor {
@@ -177,6 +182,11 @@ class DayAgentPlanEditor {
   /// parsed-item matches — with duplicates collapsed to the first occurrence.
   /// Returns an empty list when both inputs are empty.
   ///
+  /// Every returned ref carries the task's positive `estimateMinutes` when
+  /// available, independently of [dependencyResolver]. Null, zero, and
+  /// sub-minute estimates are omitted so unsized work is never presented as
+  /// free.
+  ///
   /// When [dependencyResolver] is supplied, each returned ref also carries the
   /// task's `status` and its one-hop `blockedBy` (ADR 0043), resolved in a
   /// single batched `resolveBlockedStatus` call over the surviving ids. When
@@ -240,7 +250,7 @@ class DayAgentPlanEditor {
             id: task.id,
             title: task.data.title,
             categoryId: task.meta.categoryId,
-            estimateMinutes: task.data.estimate?.inMinutes,
+            estimateMinutes: _estimateMinutesOrNull(task),
           ),
       ];
     }
@@ -255,7 +265,7 @@ class DayAgentPlanEditor {
           categoryId: task.meta.categoryId,
           status: task.data.status.toDbString,
           blockedBy: blockedBy[task.id] ?? const [],
-          estimateMinutes: task.data.estimate?.inMinutes,
+          estimateMinutes: _estimateMinutesOrNull(task),
         ),
     ];
   }

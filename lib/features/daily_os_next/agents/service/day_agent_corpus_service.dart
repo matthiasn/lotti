@@ -41,7 +41,8 @@ class DayAgentCorpusService {
   /// key (ADR 0043 §1-2) — resolved once against the already-capped id set,
   /// never per task. Omitting it (the default) keeps every row byte-identical
   /// to the pre-ADR-0043 shape, which is what makes a dependency-free corpus
-  /// byte-stable.
+  /// byte-stable. Estimates are emitted only when positive; zero is the
+  /// standard persisted representation of unsized work and must not look free.
   Future<List<Map<String, Object?>>> buildTaskCorpusSnapshot({
     required Set<String> allowedCategoryIds,
     required DateTime day,
@@ -83,7 +84,9 @@ class DayAgentCorpusService {
           'status': task.data.status.toDbString,
           'categoryId': task.meta.categoryId,
           'due': task.data.due?.toIso8601String(),
-          'estimateMinutes': task.data.estimate?.inMinutes,
+          if (task.data.estimate?.inMinutes case final minutes?
+              when minutes > 0)
+            'estimateMinutes': minutes,
           'priority': task.data.priority.short,
           if (blockedBy[task.id] case final blockers?)
             'blockedBy': [for (final b in blockers) b.toJson()],
