@@ -322,7 +322,9 @@ void main() {
     test(
       'resolveJsonCandidateFileInDirectory uses the explicit sandbox',
       () {
-        final explicitDir = Directory('${docDir.path}/explicit')..createSync();
+        final explicitDir = Directory(
+          '${docDir.path}/explicit',
+        )..createSync(recursive: true);
         final file = resolveJsonCandidateFileInDirectory(
           '/images/test.png',
           explicitDir,
