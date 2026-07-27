@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/themes/theme_constants.dart';
 import 'package:lotti/themes/theme_text_styles.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -9,32 +8,19 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 ThemeData withOverrides(ThemeData themeData) {
   final isDark = themeData.brightness == Brightness.dark;
 
-  // LIGHT MODE: Force clean white backgrounds instead of grey
-  // DARK MODE: Use scheme-derived surface for consistency
-  final scaffoldColor = isDark
-      ? themeData.colorScheme.surface
-      : LightModeSurfaces.surface;
-
-  // Update colorScheme for light mode to use white surfaces
-  final updatedColorScheme = isDark
-      ? themeData.colorScheme
-      : themeData.colorScheme.copyWith(
-          surface: LightModeSurfaces.surface,
-          surfaceContainerLowest: LightModeSurfaces.surfaceContainerLowest,
-          surfaceContainerLow: LightModeSurfaces.surfaceContainerLow,
-          surfaceContainer: LightModeSurfaces.surfaceContainer,
-          surfaceContainerHigh: LightModeSurfaces.surfaceContainerHigh,
-          surfaceContainerHighest: LightModeSurfaces.surfaceContainerHighest,
-        );
+  // The base theme is the design system's: its token surfaces (white-based in
+  // light mode) pass through untouched. The hard-coded `LightModeSurfaces`
+  // ramp that used to replace them made Material consumers render different
+  // surfaces from `context.designTokens` consumers in the same frame.
+  final scaffoldColor = themeData.colorScheme.surface;
 
   return themeData.copyWith(
-    colorScheme: updatedColorScheme,
     scaffoldBackgroundColor: scaffoldColor,
     canvasColor: scaffoldColor,
     cardTheme: themeData.cardTheme.copyWith(
       clipBehavior: Clip.hardEdge,
       elevation: isDark ? 2 : 0,
-      color: isDark ? null : LightModeSurfaces.surface,
+      color: isDark ? null : themeData.colorScheme.surface,
       shadowColor: isDark ? null : Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
@@ -59,13 +45,13 @@ ThemeData withOverrides(ThemeData themeData) {
     bottomSheetTheme: BottomSheetThemeData(
       clipBehavior: Clip.hardEdge,
       elevation: 0,
-      backgroundColor: isDark ? null : LightModeSurfaces.surface,
+      backgroundColor: isDark ? null : themeData.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: isDark ? null : LightModeSurfaces.surface,
+      backgroundColor: isDark ? null : themeData.colorScheme.surface,
       elevation: isDark ? 8 : 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
