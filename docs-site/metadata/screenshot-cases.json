@@ -1,7 +1,19 @@
 {
   "schemaVersion": 2,
   "defaultLocale": "en",
-  "locales": ["en", "de", "fr", "it", "es", "cs", "nl", "ro", "pt", "da", "sv"],
+  "locales": [
+    "en",
+    "de",
+    "fr",
+    "it",
+    "es",
+    "cs",
+    "nl",
+    "ro",
+    "pt",
+    "da",
+    "sv"
+  ],
   "cases": [
     {
       "id": "daily-os/agenda",
@@ -1354,6 +1366,28 @@
         "mobile-dark": "sync_provisioned_mobile_dark.png",
         "desktop-light": "sync_provisioned_desktop_light.png",
         "desktop-dark": "sync_provisioned_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/add-device",
+      "title": "Add device handover code",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_add_device_mobile_light.png",
+        "mobile-dark": "sync_add_device_mobile_dark.png",
+        "desktop-light": "sync_add_device_desktop_light.png",
+        "desktop-dark": "sync_add_device_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/paired",
+      "title": "Device paired, remaining steps",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_paired_mobile_light.png",
+        "mobile-dark": "sync_paired_mobile_dark.png",
+        "desktop-light": "sync_paired_desktop_light.png",
+        "desktop-dark": "sync_paired_desktop_dark.png"
       }
     },
     {

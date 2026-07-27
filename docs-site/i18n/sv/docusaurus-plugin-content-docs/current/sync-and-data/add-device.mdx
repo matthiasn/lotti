@@ -1,0 +1,95 @@
+---
+title: Lägg till en enhet
+description: Para ihop en ny enhet med ditt synkroniseringskonto via en QR-kod, kontrollera kontrollkoden och slutför de två stegen efteråt.
+---
+
+# Lägg till en enhet
+
+Alla dina enheter delar ett enda synkroniseringskonto. Att lägga till en enhet
+innebär att du ger den inloggningsuppgifterna till det kontot — därför ber flödet
+dig jämföra en kort kod innan något ansluts. Det är det enda tillfälle då du kan
+skilja din egen enhet från någon annans.
+
+Du behöver båda enheterna framför dig. Börja på en som redan är ansluten — vilken
+som helst, telefon eller dator. Det finns ingen «huvudenhet».
+
+## Visa koden på en enhet du redan använder
+
+Öppna **Inställningar → Synkronisering → Enheter** och välj **Lägg till enhet**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Lottis skärm Lägg till enhet med QR-kod, säkerhetsnotis med hänglås och kontrollkoden 2BD-EF4"
+  caption="Koden skapas när du öppnar den här skärmen och bara så länge den är öppen. Lägg märke till kontrollkoden under — den jämför du strax."
+/>
+
+Behandla den här skärmen som ditt lösenord, för det är vad den innehåller. Den
+som skannar eller fotograferar QR-koden kan gå med i ditt konto och läsa dina
+anteckningar. Visa den bara för en enhet du själv äger, och skicka den aldrig via
+chatt, skärmbild eller delad skärm.
+
+**Kopiera ihopparningskod** finns medvetet för fallet där enheten som ansluter
+saknar kamera — en dator som ansluter till en dator. Den lägger samma uppgifter i
+urklipp: klistra in dem direkt i den andra enheten och ingen annanstans.
+
+## Skanna den på den nya enheten
+
+Installera Lotti på den nya enheten och öppna där **Inställningar →
+Synkronisering → Enheter**. På en telefon öppnas kameran direkt; rikta den mot
+den första enheten. På dator, eller om kameran inte är tillgänglig, välj **ange
+manuellt** och klistra in den kopierade koden.
+
+## Kontrollera att koden stämmer innan du ansluter
+
+Att avkoda koden ansluter ingenting. Det som visas först är en sammanfattning av
+det du är på väg att gå med i, med kontrollkoden överst.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Lottis ihopparningssammanfattning med kontrollkod, kontot som ansluts och synkroniseringsservern"
+  caption="Båda enheterna härleder koden oberoende av varandra ur konto, rum och server. De utbyter den aldrig — det är därför jämförelsen är värd att göra."
+/>
+
+Titta på kontrollkoden här och den på den första enheten. **De måste vara
+identiska.** Skiljer de sig åt, sluta: du tittar inte på din egen enhets kod.
+Kasta den och börja om från en nyöppnad Lägg till enhet-skärm.
+
+Kontot och servern under koden är sammanhang, inte något att jämföra — de visas
+inte på den andra enheten. När allt stämmer väljer du **Anslut den här enheten**.
+
+## Slutför de två stegen efteråt
+
+Anslutningen ansluter dig till kontot. Den ger ännu inte den nya enheten
+möjlighet att läsa något.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Lottis synkroniseringsinställning: den här enheten är ansluten, emoji-verifiering och Skicka inställningar återstår"
+  caption="Ansluten är den lätta halvan. Kortet namnger vad som saknas och säger tydligt att enheten fram till verifieringen inte kan läsa något."
+/>
+
+1. **Jämför emojierna.** En rad emoji visas på båda enheterna. Kontrollera att de
+   stämmer och bekräfta på var och en. Fram till dess får den nya enheten bara
+   krypterat innehåll den inte kan läsa — nycklar går enbart till verifierade
+   enheter. Se [Synkronisera enheter](./sync.mdx).
+2. **Skicka inställningarna.** På den första enheten, i den fortfarande öppna
+   Lägg till enhet-skärmen, välj **Skicka inställningar** så att kategorier,
+   vanor, instrumentpaneler och AI-konfiguration kommer fram. Har du stängt den,
+   öppna **Inställningar → Synkronisering → Enheter → Lägg till enhet** igen.
+
+Låt båda apparna vara öppna tills den första synkroniseringen är klar.
+
+## Om något går fel
+
+- **Kontrollkoderna skiljer sig åt.** Anslut inte. Stäng skärmen på den första
+  enheten, öppna en ny och försök igen — koden skapas på nytt varje gång.
+- **Koden går inte att avkoda.** Kopiera den igen på den första enheten i stället
+  för att rätta det du klistrade in; det kodade värdet är inte tänkt att justeras
+  för hand. Rapporterar appen olika versioner kör enheterna olika byggen och båda
+  behöver uppdateras.
+- **Den nya enheten är ansluten men förblir tom.** Det är det förväntade
+  tillståndet före verifiering. Slutför emoji-jämförelsen och kontrollera sedan
+  [Synkronisera enheter](./sync.mdx) för utkorg och återhämtning.
+
+Fortsätt med [Synkronisera enheter](./sync.mdx) för daglig status,
+leveranshälsa och återställningsverktyg.

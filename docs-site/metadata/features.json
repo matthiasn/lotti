@@ -384,15 +384,25 @@
       ]
     },
     {
+      "id": "add-device",
+      "title": "Add a device",
+      "page": "sync-and-data/add-device",
+      "status": "verified",
+      "screenshotCases": [
+        "sync/add-device",
+        "sync/provisioned",
+        "sync/paired",
+        "sync/verification"
+      ]
+    },
+    {
       "id": "sync",
       "title": "Sync and recovery",
       "page": "sync-and-data/sync",
       "status": "verified",
       "screenshotCases": [
         "sync/hub",
-        "sync/provisioned",
         "sync/status",
-        "sync/verification",
         "sync/node-profile",
         "sync/backfill",
         "sync/stats",

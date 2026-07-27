@@ -1,0 +1,103 @@
+---
+title: Ajouter un appareil
+description: Appaire un nouvel appareil à ton compte de synchronisation avec un QR code, vérifie le code de contrôle et termine les deux étapes qui suivent.
+---
+
+# Ajouter un appareil
+
+Tous tes appareils partagent un seul compte de synchronisation. Ajouter un
+appareil, c'est lui confier les identifiants de ce compte : c'est pourquoi le
+parcours te demande de comparer un code court avant toute connexion. C'est le
+seul moment où tu peux distinguer ton appareil de celui de quelqu'un d'autre.
+
+Il te faut les deux appareils devant toi. Commence sur un appareil déjà
+connecté — n'importe lequel, téléphone ou ordinateur. Il n'y a pas d'appareil
+« principal ».
+
+## Afficher le code sur un appareil déjà utilisé
+
+Ouvre **Paramètres → Synchronisation → Appareils** et choisis **Ajouter un
+appareil**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Écran Ajouter un appareil de Lotti avec un QR code, une note de sécurité avec cadenas et le code de contrôle 2BD-EF4"
+  caption="Le code est généré à l'ouverture de cet écran, et seulement tant qu'il reste ouvert. Note le code de contrôle en dessous : tu vas le comparer."
+/>
+
+Traite cet écran comme ton mot de passe, car c'est ce qu'il contient. Quiconque
+scanne ou photographie le QR code peut rejoindre ton compte et lire tes entrées.
+Ne le montre qu'à un appareil qui t'appartient, et ne l'envoie jamais par
+messagerie, capture d'écran ou partage d'écran.
+
+**Copier le code d'appairage** existe volontairement pour le cas où l'appareil
+qui rejoint n'a pas de caméra — un ordinateur rejoignant un ordinateur. Il place
+les mêmes identifiants dans ton presse-papiers : colle-les directement dans
+l'autre appareil et nulle part ailleurs.
+
+## Le scanner sur le nouvel appareil
+
+Installe Lotti sur le nouvel appareil, puis ouvres-y **Paramètres →
+Synchronisation → Appareils**. Sur un téléphone la caméra s'ouvre aussitôt ;
+vise le premier appareil. Sur un ordinateur, ou si la caméra est indisponible,
+choisis **saisir manuellement** et colle le code copié.
+
+## Vérifier que le code correspond avant de connecter
+
+Décoder le code ne connecte rien. Ce qui apparaît d'abord est un récapitulatif
+de ce que tu t'apprêtes à rejoindre, mené par le code de contrôle.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Récapitulatif d'appairage de Lotti avec le code de contrôle, le compte rejoint et le serveur de synchronisation"
+  caption="Les deux appareils dérivent ce code indépendamment du compte, du salon et du serveur. Ils ne l'échangent jamais — d'où l'intérêt de le comparer."
+/>
+
+Regarde le code de contrôle ici et celui du premier appareil. **Ils doivent être
+identiques.** S'ils diffèrent, arrête-toi : ce n'est pas le code de ton appareil.
+Écarte-le et recommence depuis un écran Ajouter un appareil fraîchement ouvert.
+
+Le compte et le serveur sous le code sont du contexte, pas des éléments à
+comparer — ils n'apparaissent pas sur l'autre appareil. Quand tout correspond,
+choisis **Connecter cet appareil**.
+
+## Terminer les deux étapes suivantes
+
+La connexion rejoint le compte. Elle ne permet pas encore au nouvel appareil de
+lire quoi que ce soit.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Configuration de synchronisation Lotti : cet appareil est connecté, vérification par emoji et Envoyer les réglages encore en attente"
+  caption="Connecté, c'est la moitié facile. La carte nomme ce qui manque et dit clairement que sans vérification l'appareil ne peut rien lire."
+/>
+
+1. **Compare les emoji.** Une rangée d'emoji apparaît sur les deux appareils.
+   Vérifie qu'ils correspondent et confirme sur chacun. Jusque-là, le nouvel
+   appareil ne reçoit que du chiffré illisible — les clés ne vont qu'aux
+   appareils vérifiés. Voir
+   [Vérifier le nouvel appareil](./sync.mdx).
+2. **Envoie les réglages.** Sur le premier appareil, dans l'écran Ajouter un
+   appareil encore ouvert, choisis **Envoyer les réglages** pour que catégories,
+   habitudes, tableaux de bord et configuration IA arrivent. Si tu l'as fermé,
+   rouvre **Paramètres → Synchronisation → Appareils → Ajouter un appareil**.
+
+Laisse les deux applications ouvertes jusqu'à la fin de la première
+synchronisation.
+
+## En cas de problème
+
+- **Les codes de contrôle diffèrent.** Ne connecte pas. Ferme l'écran sur le
+  premier appareil, ouvre-en un nouveau et réessaie — le code est régénéré à
+  chaque fois.
+- **Le code ne se décode pas.** Copie-le à nouveau sur le premier appareil
+  plutôt que de corriger ce que tu as collé ; la valeur encodée n'est pas faite
+  pour être retouchée. Si l'app signale une différence de version, les deux
+  appareils sont sur des builds différents et doivent être mis à jour.
+- **Le nouvel appareil est connecté mais reste vide.** C'est l'état attendu
+  avant vérification. Termine la comparaison des emoji, puis consulte
+  [Synchroniser les appareils](./sync.mdx) pour la file d'envoi et le
+  rattrapage.
+
+Poursuis avec [Synchroniser les appareils](./sync.mdx) pour l'état quotidien, la
+qualité de livraison et les outils de récupération.

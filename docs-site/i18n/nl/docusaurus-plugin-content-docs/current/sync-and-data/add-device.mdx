@@ -1,0 +1,101 @@
+---
+title: Een apparaat toevoegen
+description: Koppel een nieuw apparaat aan je synchronisatieaccount met een QR-code, controleer de controlecode en rond de twee stappen daarna af.
+---
+
+# Een apparaat toevoegen
+
+Al je apparaten delen één synchronisatieaccount. Een apparaat toevoegen betekent
+dat je het de inloggegevens van dat account geeft — daarom vraagt de stroom je om
+eerst een korte code te vergelijken. Dat is het enige moment waarop je je eigen
+apparaat van dat van iemand anders kunt onderscheiden.
+
+Je hebt beide apparaten voor je nodig. Begin op een apparaat dat al verbonden is
+— welk dan ook, telefoon of desktop. Er is geen «hoofdapparaat».
+
+## Toon de code op een apparaat dat je al gebruikt
+
+Open **Instellingen → Synchronisatie → Apparaten** en kies **Apparaat
+toevoegen**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Scherm Apparaat toevoegen van Lotti met QR-code, beveiligingsmelding met slot en de controlecode 2BD-EF4"
+  caption="De code ontstaat bij het openen van dit scherm en alleen zolang het open is. Let op de controlecode eronder — die vergelijk je zo."
+/>
+
+Behandel dit scherm zoals je je wachtwoord behandelt, want dat is wat erin zit.
+Wie de QR-code scant of fotografeert kan bij je synchronisatieaccount en je
+notities lezen. Toon hem alleen aan een apparaat dat van jou is, en stuur hem
+nooit via chat, schermafbeelding of gedeeld scherm.
+
+**Koppelcode kopiëren** bestaat bewust voor het geval het nieuwe apparaat geen
+camera heeft — een desktop die bij een desktop komt. Het zet dezelfde
+inloggegevens op je klembord: plak ze rechtstreeks in het andere apparaat en
+nergens anders.
+
+## Scan hem op het nieuwe apparaat
+
+Installeer Lotti op het nieuwe apparaat en open daar **Instellingen →
+Synchronisatie → Apparaten**. Op een telefoon opent de camera meteen; richt hem
+op het eerste apparaat. Op een desktop, of als de camera niet beschikbaar is,
+kies **handmatig invoeren** en plak de gekopieerde code.
+
+## Controleer of de code klopt voor je verbindt
+
+De code decoderen verbindt nog niets. Wat eerst verschijnt is een overzicht van
+waar je je bij gaat voegen, aangevoerd door de controlecode.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Koppeloverzicht van Lotti met de controlecode, het account waar je bij komt en de synchronisatieserver"
+  caption="Beide apparaten leiden deze code onafhankelijk af uit account, ruimte en server. Ze wisselen hem nooit uit — daarom is vergelijken zinvol."
+/>
+
+Kijk naar de controlecode hier en die op het eerste apparaat. **Ze moeten
+identiek zijn.** Verschillen ze, stop dan: je kijkt niet naar de code van je
+eigen apparaat. Gooi hem weg en begin opnieuw met een vers geopend scherm
+Apparaat toevoegen.
+
+Het account en de server onder de code zijn context, niets om te vergelijken —
+ze verschijnen niet op het andere apparaat. Klopt alles, kies dan **Dit apparaat
+verbinden**.
+
+## Rond de twee stappen daarna af
+
+Verbinden voegt je toe aan het account. Het geeft het nieuwe apparaat nog niet de
+mogelijkheid iets te lezen.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Lotti sync-instelling: dit apparaat is verbonden, emoji-verificatie en Instellingen versturen staan nog open"
+  caption="Verbonden is de makkelijke helft. De kaart benoemt wat er nog mist en zegt duidelijk dat dit apparaat tot de verificatie niets kan lezen."
+/>
+
+1. **Vergelijk de emoji.** Op beide apparaten verschijnt een rij emoji.
+   Controleer of ze overeenkomen en bevestig op allebei. Tot dan krijgt het
+   nieuwe apparaat alleen versleutelde tekst die het niet kan lezen — sleutels
+   gaan uitsluitend naar geverifieerde apparaten. Zie
+   [Apparaten synchroniseren](./sync.mdx).
+2. **Verstuur de instellingen.** Kies op het eerste apparaat, in het nog geopende
+   scherm Apparaat toevoegen, **Instellingen versturen** zodat categorieën,
+   gewoontes, dashboards en AI-configuratie aankomen. Al gesloten? Open
+   **Instellingen → Synchronisatie → Apparaten → Apparaat toevoegen** opnieuw.
+
+Laat beide apps open tot de eerste synchronisatie klaar is.
+
+## Als er iets misgaat
+
+- **De controlecodes verschillen.** Niet verbinden. Sluit het scherm op het
+  eerste apparaat, open een nieuw en probeer opnieuw — de code wordt elke keer
+  opnieuw aangemaakt.
+- **De code laat zich niet decoderen.** Kopieer hem opnieuw op het eerste
+  apparaat in plaats van te corrigeren wat je plakte; de gecodeerde waarde is
+  niet bedoeld om met de hand bij te werken. Meldt de app verschillende versies,
+  dan draaien de apparaten op verschillende builds en moeten beide bijgewerkt.
+- **Het nieuwe apparaat is verbonden maar blijft leeg.** Dat is de verwachte
+  toestand vóór verificatie. Rond de emoji-vergelijking af en bekijk daarna
+  [Apparaten synchroniseren](./sync.mdx) voor postvak uit en herstel.
+
+Ga verder met [Apparaten synchroniseren](./sync.mdx) voor dagelijkse status,
+bezorgkwaliteit en herstelgereedschap.

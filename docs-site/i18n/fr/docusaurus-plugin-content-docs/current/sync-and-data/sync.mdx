@@ -23,35 +23,32 @@ correspond au travail qui n’a pas encore atteint le service de synchronisation
   caption="Le centre de synchronisation maintient l’état courant près des outils de diagnostic et de récupération. Project Waddle contient actuellement trois éléments de boîte d’envoi à examiner."
 />
 
-## Appairer un autre appareil
+## Voir tes appareils
 
-Commence sur un appareil déjà connecté :
-
-1. Ouvre **Paramètres → Synchronisation → Synchronisation provisionnée**.
-2. Sur ordinateur, affiche le code QR de transfert. Garde cet écran privé : le
-   lot donne accès à ton compte et à ton salon de synchronisation.
-3. Sur le nouvel appareil, ouvre la même page et scanne le code QR ou colle le
-   lot de provisionnement complet.
-4. Examine le serveur, l’utilisateur et le salon décodés avant de sélectionner
-   **Importer**.
-5. Laisse la première synchronisation se terminer avant de fermer l’une ou
-   l’autre application.
+**Paramètres → Synchronisation → Appareils** liste chaque session de ton compte
+de synchronisation, pas seulement celles non vérifiées.
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="État de synchronisation provisionnée sur mobile et code QR de transfert sécurisé d’appareil sur ordinateur"
-  caption="L’ordinateur peut présenter le code QR de transfert ; le mobile indique le compte connecté et l’état de vérification. Traite ce code QR comme un mot de passe."
+  alt="Page Appareils de Lotti listant les sessions du compte de synchronisation avec leur état de vérification et leur dernière activité"
+  caption="Chaque ligne indique si l'appareil est vérifié et quand le serveur l'a vu pour la dernière fois. Un appareil non vérifié ne peut pas lire les nouvelles entrées, et la liste le dit."
 />
 
-<ManualScreenshot
-  caseId="sync/provisioned"
-  alt="Revue d’import de provisionnement Lotti affichant le serveur de synchronisation, l’utilisateur et le salon Project Waddle"
-  caption="N’importe que lorsque chaque valeur décodée appartient au compte de synchronisation que tu voulais rejoindre."
-/>
+Les sessions connectées avec ce compte peuvent être supprimées — sauf celle que
+tu utilises. Les appareils appairés à l'ancienne, avec leur propre compte,
+peuvent être vérifiés mais pas supprimés.
 
-Si l’import signale une erreur, garde l’appareil d’origine connecté, génère un
-nouveau lot de transfert et réessaie avec la valeur complète. Ne modifie pas
-manuellement le lot encodé.
+## Appairer un autre appareil
+
+L'appairage est un parcours à part entière, avec un code à comparer et deux
+étapes après la connexion. Il a sa propre page :
+[Ajouter un appareil](./add-device.mdx).
+
+En bref : sur un appareil déjà connecté, ouvre **Paramètres → Synchronisation →
+Appareils → Ajouter un appareil** et affiche le code. Sur le nouvel appareil,
+ouvre la même page et scanne-le. Compare le code de vérification sur les deux
+écrans avant de connecter — le QR code contient les identifiants de ton compte
+de synchronisation et ne va qu'à ton propre appareil.
 
 ## Vérifier le nouvel appareil
 

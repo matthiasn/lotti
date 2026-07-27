@@ -1,0 +1,102 @@
+---
+title: Gerät hinzufügen
+description: Koppele ein neues Gerät per QR-Code mit deinem Sync-Konto, prüfe den Vergleichscode und erledige die zwei Schritte danach.
+---
+
+# Gerät hinzufügen
+
+Alle deine Geräte teilen sich ein Sync-Konto. Ein Gerät hinzuzufügen heißt, ihm
+die Zugangsdaten dieses Kontos zu übergeben. Deshalb bittet dich der Ablauf,
+vorher einen kurzen Code zu vergleichen: Das ist der einzige Punkt, an dem du
+dein eigenes Gerät von einem fremden unterscheiden kannst.
+
+Du brauchst beide Geräte vor dir. Beginne auf einem, das bereits verbunden ist —
+egal welches, Telefon oder Desktop. Es gibt kein „Hauptgerät“.
+
+## Den Code auf einem bereits genutzten Gerät anzeigen
+
+Öffne **Einstellungen → Synchronisierung → Geräte** und wähle **Gerät
+hinzufügen**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Lottis Bildschirm „Gerät hinzufügen“ mit QR-Code, Sicherheitshinweis mit Schloss und dem Prüfcode 2BD-EF4"
+  caption="Der Code entsteht beim Öffnen dieses Bildschirms und nur solange er offen ist. Beachte den Prüfcode darunter — den vergleichst du gleich."
+/>
+
+Behandle diesen Bildschirm wie dein Passwort, denn genau das steckt darin. Wer
+den QR-Code scannt oder abfotografiert, kann deinem Sync-Konto beitreten und
+deine Einträge lesen. Zeige ihn nur einem Gerät, das dir gehört, und schicke ihn
+nie per Chat, Screenshot oder geteiltem Bildschirm.
+
+**Kopplungscode kopieren** gibt es bewusst für den Fall, dass das neue Gerät
+keine Kamera hat — ein Desktop, der einem Desktop beitritt. Es legt dieselben
+Zugangsdaten in die Zwischenablage: Füge sie direkt im anderen Gerät ein und
+sonst nirgends.
+
+## Auf dem neuen Gerät scannen
+
+Installiere Lotti auf dem neuen Gerät und öffne dort **Einstellungen →
+Synchronisierung → Geräte**. Auf dem Telefon öffnet sich die Kamera sofort;
+richte sie auf das erste Gerät. Auf dem Desktop, oder wenn keine Kamera
+verfügbar ist, wähle **manuell eingeben** und füge den kopierten Code ein.
+
+## Vor dem Verbinden den Code vergleichen
+
+Das Entschlüsseln des Codes verbindet noch nichts. Zuerst erscheint eine
+Übersicht dessen, dem du beitreten willst — angeführt vom Prüfcode.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Lottis Kopplungsübersicht mit Prüfcode, dem beizutretenden Konto und dem Sync-Server"
+  caption="Beide Geräte leiten diesen Code unabhängig aus Konto, Raum und Server ab. Sie tauschen ihn nie aus — deshalb lohnt der Vergleich."
+/>
+
+Sieh dir den Prüfcode hier und den auf dem ersten Gerät an. **Sie müssen
+identisch sein.** Unterscheiden sie sich, brich ab: Dann siehst du nicht den
+Code deines eigenen Geräts. Verwirf ihn und beginne mit einem frisch geöffneten
+Bildschirm „Gerät hinzufügen“ neu.
+
+Konto und Server unter dem Code sind Kontext, nichts zum Vergleichen — sie
+erscheinen auf dem anderen Gerät nicht. Wenn alles passt, wähle **Dieses Gerät
+verbinden**.
+
+## Die zwei Schritte danach abschließen
+
+Verbinden tritt dem Konto bei. Es erlaubt dem neuen Gerät noch nicht, etwas zu
+lesen.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Lottis Sync-Einrichtung: Dieses Gerät ist verbunden, Emoji-Verifizierung und Einstellungen senden stehen noch aus"
+  caption="Verbunden ist die leichte Hälfte. Die Karte benennt, was noch fehlt, und sagt klar, dass dieses Gerät bis zur Verifizierung nichts lesen kann."
+/>
+
+1. **Emoji vergleichen.** Auf beiden Geräten erscheint eine Reihe Emoji. Prüfe,
+   ob sie übereinstimmen, und bestätige auf beiden. Bis dahin erhält das neue
+   Gerät nur Chiffrat, das es nicht lesen kann — Schlüssel gehen ausschließlich
+   an verifizierte Geräte. Siehe
+   [Das neue Gerät verifizieren](./sync.mdx).
+2. **Einstellungen senden.** Wähle auf dem ersten Gerät im noch offenen
+   Bildschirm „Gerät hinzufügen“ **Einstellungen senden**, damit Kategorien,
+   Gewohnheiten, Dashboards und KI-Konfiguration ankommen. Hast du ihn schon
+   geschlossen, öffne **Einstellungen → Synchronisierung → Geräte → Gerät
+   hinzufügen** erneut.
+
+Lass beide Apps offen, bis die erste Synchronisierung fertig ist.
+
+## Wenn etwas schiefgeht
+
+- **Die Prüfcodes unterscheiden sich.** Nicht verbinden. Schließe den Bildschirm
+  auf dem ersten Gerät, öffne einen neuen und versuche es erneut — der Code wird
+  jedes Mal neu erzeugt.
+- **Der Code lässt sich nicht lesen.** Kopiere ihn auf dem ersten Gerät erneut,
+  statt das Eingefügte zu korrigieren; der kodierte Wert ist nicht für
+  Handarbeit gedacht. Meldet die App eine Versionsabweichung, laufen die Geräte
+  auf verschiedenen Lotti-Ständen und beide brauchen ein Update.
+- **Das neue Gerät ist verbunden, bleibt aber leer.** Das ist vor der
+  Verifizierung der erwartete Zustand. Schließe den Emoji-Vergleich ab und prüfe
+  dann unter [Geräte synchronisieren](./sync.mdx) Postausgang und Nachfüllung.
+
+Weiter mit [Geräte synchronisieren](./sync.mdx) für Alltagsstatus,
+Zustellqualität und Wiederherstellung.

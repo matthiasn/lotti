@@ -23,35 +23,32 @@ aún no ha llegado al servicio de sincronización.
   caption="El centro de Sync mantiene el estado diario cerca de las herramientas de diagnóstico y recuperación. Project Waddle tiene actualmente tres elementos en la bandeja de salida que conviene inspeccionar."
 />
 
-## Empareja otro dispositivo
+## Ver tus dispositivos
 
-Empieza en un dispositivo que ya esté conectado:
-
-1. Abre **Ajustes → Sync → Provisioned Sync**.
-2. En el escritorio, muestra el código QR de transferencia. Mantén esta pantalla
-   privada: el paquete concede acceso a tu cuenta y sala de sincronización.
-3. En el dispositivo nuevo, abre la misma página y escanea el código QR o pega
-   el paquete de aprovisionamiento completo.
-4. Revisa el servidor, usuario y sala descodificados antes de seleccionar
-   **Importar**.
-5. Deja que termine la primera sincronización antes de cerrar cualquiera de las
-   dos aplicaciones.
+**Ajustes → Sincronización → Dispositivos** enumera cada sesión de tu cuenta de
+sincronización, no solo las no verificadas.
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Estado de Provisioned Sync en móvil y código QR de transferencia segura entre dispositivos en escritorio"
-  caption="El escritorio puede mostrar el código QR de transferencia; el móvil muestra la cuenta conectada y el estado de verificación. Trata el código QR como una contraseña."
+  alt="Página Dispositivos de Lotti con las sesiones de la cuenta de sincronización, su estado de verificación y su última actividad"
+  caption="Cada fila muestra si el dispositivo está verificado y cuándo lo vio el servidor por última vez. Un dispositivo sin verificar no puede leer entradas nuevas, y la lista lo indica."
 />
 
-<ManualScreenshot
-  caseId="sync/provisioned"
-  alt="Revisión de la importación de aprovisionamiento de Lotti con el servidor, usuario y sala de sincronización de Project Waddle"
-  caption="Importa solo cuando cada valor descodificado pertenezca a la cuenta de sincronización a la que pretendías unirte."
-/>
+Las sesiones iniciadas con esta cuenta se pueden eliminar, salvo aquella en la
+que estás. Los dispositivos emparejados a la antigua, con su propia cuenta, se
+pueden verificar pero no eliminar.
 
-Si la importación informa de un error, mantén conectado el dispositivo original,
-genera un paquete de transferencia nuevo e inténtalo otra vez con el valor
-completo. No edites manualmente el paquete codificado.
+## Empareja otro dispositivo
+
+El emparejamiento es un flujo propio, con un código que comparar y dos pasos
+después de conectar. Tiene su propia página:
+[Añadir un dispositivo](./add-device.mdx).
+
+En resumen: en un dispositivo ya conectado abre **Ajustes → Sincronización →
+Dispositivos → Añadir dispositivo** y muestra el código. En el dispositivo nuevo
+abre la misma página y escanéalo. Compara el código de comprobación en ambas
+pantallas antes de conectar: el código QR lleva las credenciales de tu cuenta de
+sincronización y solo va a tu propio dispositivo.
 
 ## Verifica el dispositivo nuevo
 

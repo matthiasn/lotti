@@ -22,33 +22,32 @@ servizio ancora.
   caption="Il hub Sync mantiene lo stato di tutti i giorni vicino a strumenti diagnostici e di recupero."
 />
 
-## Coprire un altro dispositivo
+## Vedere i tuoi dispositivi
 
-Avviare su un dispositivo già collegato:
-
-1. Aprire ** Impostazioni → Sync → Provisioned Sync**.
-2. Sul desktop, mostrare il codice QR di consegna. Tenere questa schermata privata: il bundle
-   garantisce l'accesso al tuo account di sincronizzazione e alla tua stanza.
-3. Sul nuovo dispositivo, aprire la stessa pagina e scansionare il codice QR o incollare il
-   pacchetto completo di provisioning.
-4. Verificare il server, l'utente e la stanza decodificato prima di selezionare **Import**.
-5. Lasciare la prima terminazione di sincronizzazione prima di chiudere entrambe le app.
+**Impostazioni → Sincronizzazione → Dispositivi** elenca ogni sessione del tuo
+account di sincronizzazione, non solo quelle non verificate.
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Provisionato stato Sync su mobile e il dispositivo sicuro consegna codice QR sul desktop"
-  caption="Desktop può presentare il codice QR di consegna; mobile mostra l'account collegato e lo stato di verifica."
+  alt="Pagina Dispositivi di Lotti con le sessioni dell'account di sincronizzazione, stato di verifica e ultimo accesso"
+  caption="Ogni riga mostra se il dispositivo è verificato e quando il server lo ha visto l'ultima volta. Un dispositivo non verificato non può leggere le nuove voci, e l'elenco lo dice."
 />
 
-<ManualScreenshot
-  caseId="sync/provisioned"
-  alt="Lotti che fornisce l'importazione recensione che mostra il server di sincronizzazione Project Waddle, utente e camera"
-  caption="Importa solo quando ogni valore decodificato appartiene al conto di sincronizzazione che intendete aderire."
-/>
+Le sessioni collegate con questo account si possono rimuovere — tranne quella su
+cui ti trovi. I dispositivi accoppiati alla vecchia maniera, con un account
+proprio, si possono verificare ma non rimuovere.
 
-Se l'importazione segnala un errore, mantenere il dispositivo originale collegato, generare un
-nuovo fascio di consegna, e riprovare con il valore completo. Non modificare manualmente il
-fascio codificato.
+## Coprire un altro dispositivo
+
+L'accoppiamento è un percorso a sé, con un codice da confrontare e due passaggi
+dopo la connessione. Ha una pagina dedicata:
+[Aggiungere un dispositivo](./add-device.mdx).
+
+In breve: su un dispositivo già connesso apri **Impostazioni → Sincronizzazione
+→ Dispositivi → Aggiungi dispositivo** e mostra il codice. Sul nuovo dispositivo
+apri la stessa pagina e scansionalo. Confronta il codice di controllo su entrambi
+gli schermi prima di connettere — il codice QR contiene le credenziali del tuo
+account di sincronizzazione e va solo al tuo dispositivo.
 
 ## Verificare il nuovo dispositivo
 

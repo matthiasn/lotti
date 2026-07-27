@@ -21,34 +21,31 @@ synchronizační službě.
   caption="Centrum Sync drží běžný stav vedle diagnostiky a nástrojů obnovy. Project Waddle má právě tři položky odchozí fronty ke kontrole."
 />
 
-## Spáruj další zařízení
+## Zobraz svá zařízení
 
-Začni na zařízení, které už je připojené:
-
-1. Otevři **Nastavení → Sync → Nastavení synchronizace**.
-2. Na počítači zobraz předávací QR kód. Udržuj tuto obrazovku soukromou: balíček
-   uděluje přístup k synchronizačnímu účtu a místnosti.
-3. Na novém zařízení otevři stejnou stránku a QR kód naskenuj nebo vlož celý
-   balíček nastavení.
-4. Před volbou **Importovat** zkontroluj dekódovaný server, uživatele a
-   místnost.
-5. Nech dokončit první synchronizaci, než některou aplikaci zavřeš.
+**Nastavení → Synchronizace → Zařízení** vypíše každou relaci tvého
+synchronizačního účtu — nejen ty neověřené.
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Stav Nastavení synchronizace na mobilu a bezpečný párovací QR kód zařízení na počítači"
-  caption="Počítač může zobrazit předávací QR kód; mobil ukazuje připojený účet a stav ověření. S QR kódem zacházej jako s heslem."
+  alt="Stránka Zařízení v Lotti se seznamem relací synchronizačního účtu, stavem ověření a poslední aktivitou"
+  caption="Každý řádek ukazuje, zda je zařízení ověřené a kdy ho server naposledy viděl. Neověřené zařízení nepřečte nové záznamy a seznam to říká."
 />
 
-<ManualScreenshot
-  caseId="sync/provisioned"
-  alt="Kontrola importu nastavení Lotti se synchronizačním serverem, uživatelem a místností Project Waddle"
-  caption="Importuj jen tehdy, když všechny dekódované hodnoty patří k účtu, který jsi chtěl připojit."
-/>
+Relace přihlášené tímto účtem lze odebrat — kromě té, na které právě jsi.
+Zařízení spárovaná starým způsobem, s vlastním účtem, lze ověřit, ale ne
+odebrat.
 
-Pokud import hlásí chybu, ponech původní zařízení připojené, vytvoř nový
-předávací balíček a zopakuj postup s celou hodnotou. Zakódovaný balíček ručně
-neupravuj.
+## Spáruj další zařízení
+
+Párování je samostatný postup s kódem k porovnání a dvěma kroky po připojení.
+Má vlastní stránku: [Přidat zařízení](./add-device.mdx).
+
+Stručně: na už připojeném zařízení otevři **Nastavení → Synchronizace →
+Zařízení → Přidat zařízení** a zobraz kód. Na novém zařízení otevři stejnou
+stránku a naskenuj ho. Před připojením porovnej kontrolní kód na obou
+obrazovkách — QR kód nese přihlašovací údaje k tvému synchronizačnímu účtu
+a patří jen tvému vlastnímu zařízení.
 
 ## Ověř nové zařízení
 

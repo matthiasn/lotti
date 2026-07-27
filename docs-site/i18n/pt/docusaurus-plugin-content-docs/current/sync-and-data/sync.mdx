@@ -23,33 +23,32 @@ saída** é o trabalho que ainda não chegou ao serviço de sincronização.
   caption="O hub de sincronização mantém o status do dia a dia perto das ferramentas de diagnóstico e recuperação. O Project Waddle atualmente tem três itens na caixa de saída para inspecionar."
 />
 
-## Parear outro dispositivo
+## Vê os teus dispositivos
 
-Comece em um dispositivo que já esteja conectado:
-
-1. Abra **Configurações → Sincronização → Sincronização Provisionada**.
-2. No desktop, mostre o código QR de transferência. Mantenha esta tela privada: o pacote
-   concede acesso à sua conta e sala de sincronização.
-3. No novo dispositivo, abra a mesma página e escaneie o código QR ou cole o
-   pacote completo de provisionamento.
-4. Revise o servidor, o usuário e a sala decodificados antes de selecionar **Importar**.
-5. Deixe a primeira sincronização terminar antes de fechar qualquer um dos aplicativos.
+**Definições → Sincronização → Dispositivos** lista todas as sessões da tua
+conta de sincronização — não apenas as não verificadas.
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Status da Sincronização Provisionada no celular e o código QR seguro de transferência do dispositivo no desktop"
-  caption="O desktop pode apresentar o código QR de transferência; o celular mostra a conta conectada e o estado de verificação. Trate o código QR como uma senha."
+  alt="Página Dispositivos do Lotti com as sessões da conta de sincronização, estado de verificação e última atividade"
+  caption="Cada linha mostra se o dispositivo está verificado e quando o servidor o viu pela última vez. Um dispositivo não verificado não consegue ler entradas novas, e a lista di-lo."
 />
 
-<ManualScreenshot
-  caseId="sync/provisioned"
-  alt="Revisão de importação de provisionamento do Lotti mostrando o servidor de sincronização, o usuário e a sala do Project Waddle"
-  caption="Importe somente quando cada valor decodificado pertencer à conta de sincronização na qual você pretende ingressar."
-/>
+As sessões com sessão iniciada nesta conta podem ser removidas — exceto aquela
+em que estás. Os dispositivos emparelhados à maneira antiga, cada um com a sua
+conta, podem ser verificados mas não removidos.
 
-Se a importação reportar um erro, mantenha o dispositivo original conectado,
-gere um novo pacote de transferência e tente novamente com o valor completo.
-Não edite o pacote codificado manualmente.
+## Parear outro dispositivo
+
+O pareamento é um fluxo próprio, com um código para comparar e dois passos
+depois de conectar. Tem uma página própria:
+[Adicionar um dispositivo](./add-device.mdx).
+
+Em resumo: num dispositivo já conectado abre **Definições → Sincronização →
+Dispositivos → Adicionar dispositivo** e mostra o código. No dispositivo novo
+abre a mesma página e faz a leitura. Compara o código de verificação nos dois
+ecrãs antes de conectar — o código QR leva as credenciais da tua conta de
+sincronização e vai apenas para o teu próprio dispositivo.
 
 ## Verifique o novo dispositivo
 

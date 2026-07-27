@@ -22,33 +22,31 @@ service än.
   caption="The Sync hub keeps everyday status near diagnostics and recovery tools. Project Waddle currently has three outbox items to inspect."
 />
 
-## Para ihop en annan enhet
+## Se dina enheter
 
-Börja på en enhet som redan är ansluten:
-
-1. Öppna **Inställningar → Synkronisera → Provisionerad Synkronisering**.
-2. På datorn, visa QR-koden för överlämningen. Håll denna skärm privat: paketet
-   Ger tillgång till ditt Sync-konto och rum.
-3. På den nya enheten, öppna samma sida och skanna QR-koden eller klistra in
-   Komplett provisioneringspaket.
-4. Gå igenom den avkodade servern, användaren och rummet innan du väljer **Importera**.
-5. Låt den första synkroniseringen bli klar innan du stänger någon av apparna.
+**Inställningar → Synkronisering → Enheter** listar varje session på ditt
+synkroniseringskonto — inte bara de overifierade.
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Provisioned Sync status on mobile and the secure device handover QR code on desktop"
-  caption="Desktop can present the handover QR code; mobile shows the connected account and verification state. Treat the QR code like a password."
+  alt="Lottis Enheter-sida med sessionerna på synkroniseringskontot, verifieringsstatus och senast sedd"
+  caption="Varje rad visar om enheten är verifierad och när servern senast såg den. En overifierad enhet kan inte läsa nya anteckningar, och listan säger det."
 />
 
-<ManualScreenshot
-  caseId="sync/provisioned"
-  alt="Lotti provisioning import review showing the Project Waddle sync server, user, and room"
-  caption="Import only when every decoded value belongs to the sync account you intended to join."
-/>
+Sessioner som är inloggade med det här kontot kan tas bort — utom den du sitter
+på. Enheter som parats på det gamla sättet, var och en med eget konto, kan
+verifieras men inte tas bort.
 
-Om importen rapporterar ett fel, behåll den ursprungliga enheten ansluten, generera en
-Ny överlämning och försök igen med full värde. Redigera inte manuellt
-Kodad bunt.
+## Para ihop en annan enhet
+
+Ihopparning är ett eget flöde, med en kod att jämföra och två steg efter
+anslutningen. Den har en egen sida: [Lägg till en enhet](./add-device.mdx).
+
+Kort sagt: på en enhet som redan är ansluten öppnar du **Inställningar →
+Synkronisering → Enheter → Lägg till enhet** och visar koden. På den nya enheten
+öppnar du samma sida och skannar den. Jämför kontrollkoden på båda skärmarna
+innan du ansluter — QR-koden bär inloggningsuppgifterna till ditt
+synkroniseringskonto och går bara till din egen enhet.
 
 ## Verifiera den nya enheten
 

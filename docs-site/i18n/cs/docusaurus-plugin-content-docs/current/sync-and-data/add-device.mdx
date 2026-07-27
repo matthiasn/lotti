@@ -1,0 +1,94 @@
+---
+title: Přidat zařízení
+description: Spáruj nové zařízení se svým synchronizačním účtem pomocí QR kódu, ověř kontrolní kód a dokonči dva kroky, které následují.
+---
+
+# Přidat zařízení
+
+Všechna tvá zařízení sdílejí jeden synchronizační účet. Přidat zařízení znamená
+předat mu přihlašovací údaje k tomuto účtu — proto tě postup před jakýmkoli
+připojením žádá o porovnání krátkého kódu. Je to jediný okamžik, kdy poznáš své
+vlastní zařízení od cizího.
+
+Potřebuješ obě zařízení před sebou. Začni na tom, které už je připojené — na
+kterémkoli, telefonu i počítači. Žádné „hlavní“ zařízení neexistuje.
+
+## Zobraz kód na zařízení, které už používáš
+
+Otevři **Nastavení → Synchronizace → Zařízení** a zvol **Přidat zařízení**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Obrazovka Přidat zařízení v Lotti s QR kódem, bezpečnostním upozorněním se zámkem a kontrolním kódem 2BD-EF4"
+  caption="Kód vzniká při otevření této obrazovky a jen po dobu, kdy je otevřená. Všimni si kontrolního kódu pod ním — ten budeš za chvíli porovnávat."
+/>
+
+Zacházej s touto obrazovkou jako se svým heslem, protože přesně to obsahuje. Kdo
+naskenuje nebo vyfotí QR kód, může se připojit k tvému účtu a číst tvé záznamy.
+Ukazuj ho jen zařízení, které ti patří, a nikdy ho neposílej chatem, snímkem
+obrazovky ani sdílenou obrazovkou.
+
+**Kopírovat párovací kód** je tu záměrně pro případ, že připojované zařízení nemá
+fotoaparát — počítač připojující se k počítači. Vloží stejné údaje do schránky:
+vlož je přímo do druhého zařízení a nikam jinam.
+
+## Naskenuj ho na novém zařízení
+
+Nainstaluj Lotti na nové zařízení a otevři tam **Nastavení → Synchronizace →
+Zařízení**. Na telefonu se fotoaparát otevře hned; namiř ho na první zařízení. Na
+počítači, nebo když fotoaparát není dostupný, zvol **zadat ručně** a vlož
+zkopírovaný kód.
+
+## Před připojením ověř, že kód souhlasí
+
+Dekódování kódu nic nepřipojí. Nejdřív se objeví přehled toho, k čemu se
+chystáš připojit, v čele s kontrolním kódem.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Přehled párování v Lotti s kontrolním kódem, účtem k připojení a synchronizačním serverem"
+  caption="Obě zařízení odvozují tento kód nezávisle z účtu, místnosti a serveru. Nikdy si ho nevyměňují — proto má porovnání smysl."
+/>
+
+Podívej se na kontrolní kód tady a na ten na prvním zařízení. **Musí být
+totožné.** Pokud se liší, přestaň: nedíváš se na kód svého vlastního zařízení.
+Zahoď ho a začni znovu z čerstvě otevřené obrazovky Přidat zařízení.
+
+Účet a server pod kódem jsou kontext, ne věci k porovnávání — na druhém zařízení
+se neobjeví. Když všechno souhlasí, zvol **Připojit toto zařízení**.
+
+## Dokonči dva následující kroky
+
+Připojení tě přidá k účtu. Nové zařízení tím ještě nic nepřečte.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Nastavení synchronizace v Lotti: toto zařízení je připojeno, ověření emoji a Odeslat nastavení stále čekají"
+  caption="Připojeno je ta snadná polovina. Karta pojmenuje, co chybí, a jasně říká, že do ověření toto zařízení nic nepřečte."
+/>
+
+1. **Porovnej emoji.** Na obou zařízeních se objeví řada emoji. Zkontroluj, že
+   souhlasí, a potvrď na každém. Do té doby dostává nové zařízení jen šifru,
+   kterou nepřečte — klíče jdou výhradně ověřeným zařízením. Viz
+   [Synchronizace zařízení](./sync.mdx).
+2. **Odešli nastavení.** Na prvním zařízení, v stále otevřené obrazovce Přidat
+   zařízení, zvol **Odeslat nastavení**, aby dorazily kategorie, návyky,
+   nástěnky a konfigurace AI. Pokud jsi ji už zavřel, otevři znovu **Nastavení →
+   Synchronizace → Zařízení → Přidat zařízení**.
+
+Nech obě aplikace otevřené, dokud první synchronizace neskončí.
+
+## Když se něco pokazí
+
+- **Kontrolní kódy se liší.** Nepřipojuj. Zavři obrazovku na prvním zařízení,
+  otevři novou a zkus to znovu — kód se pokaždé vytvoří nový.
+- **Kód nejde dekódovat.** Zkopíruj ho na prvním zařízení znovu, místo abys
+  opravoval vložený text; zakódovaná hodnota není určená k ručním úpravám. Když
+  aplikace hlásí neshodu verzí, zařízení běží na různých sestaveních a obě
+  potřebují aktualizaci.
+- **Nové zařízení se připojilo, ale zůstává prázdné.** To je před ověřením
+  očekávaný stav. Dokonči porovnání emoji a pak zkontroluj
+  [Synchronizace zařízení](./sync.mdx) kvůli frontě odeslání a doplňování.
+
+Pokračuj na [Synchronizace zařízení](./sync.mdx) pro každodenní stav, kvalitu
+doručení a nástroje obnovy.

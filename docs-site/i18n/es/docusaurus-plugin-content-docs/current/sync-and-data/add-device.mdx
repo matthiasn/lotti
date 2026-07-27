@@ -1,0 +1,101 @@
+---
+title: Añadir un dispositivo
+description: Empareja un dispositivo nuevo con tu cuenta de sincronización mediante un código QR, comprueba el código de verificación y completa los dos pasos siguientes.
+---
+
+# Añadir un dispositivo
+
+Todos tus dispositivos comparten una sola cuenta de sincronización. Añadir un
+dispositivo significa entregarle las credenciales de esa cuenta: por eso el flujo
+te pide comparar un código corto antes de conectar nada. Es el único momento en
+el que puedes distinguir tu dispositivo del de otra persona.
+
+Necesitas ambos dispositivos delante. Empieza en uno que ya esté conectado —
+cualquiera, móvil u ordenador. No hay un dispositivo «principal».
+
+## Muestra el código en un dispositivo que ya usas
+
+Abre **Ajustes → Sincronización → Dispositivos** y elige **Añadir dispositivo**.
+
+<ManualScreenshot
+  caseId="sync/add-device"
+  alt="Pantalla Añadir dispositivo de Lotti con código QR, aviso de seguridad con candado y el código de verificación 2BD-EF4"
+  caption="El código se genera al abrir esta pantalla y solo mientras siga abierta. Fíjate en el código de verificación de debajo: lo compararás enseguida."
+/>
+
+Trata esta pantalla como tratarías tu contraseña, porque es lo que contiene.
+Quien escanee o fotografíe el código QR puede unirse a tu cuenta y leer tus
+entradas. Muéstralo solo a un dispositivo tuyo y nunca lo envíes por chat,
+captura de pantalla o pantalla compartida.
+
+**Copiar código de emparejamiento** existe a propósito para cuando el
+dispositivo que se une no tiene cámara — un ordenador uniéndose a otro. Pone las
+mismas credenciales en el portapapeles: pégalas directamente en el otro
+dispositivo y en ningún otro sitio.
+
+## Escanéalo en el dispositivo nuevo
+
+Instala Lotti en el dispositivo nuevo y abre allí **Ajustes → Sincronización →
+Dispositivos**. En el móvil la cámara se abre enseguida; apunta al primer
+dispositivo. En ordenador, o si la cámara no está disponible, elige **introducir
+manualmente** y pega el código copiado.
+
+## Comprueba que el código coincide antes de conectar
+
+Descodificar el código no conecta nada. Lo primero que aparece es un resumen de
+aquello a lo que estás a punto de unirte, encabezado por el código de
+verificación.
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Resumen de emparejamiento de Lotti con el código de verificación, la cuenta a la que se unirá y el servidor de sincronización"
+  caption="Ambos dispositivos derivan este código de forma independiente a partir de cuenta, sala y servidor. Nunca se lo intercambian: por eso compararlo sirve."
+/>
+
+Mira el código de verificación aquí y el del primer dispositivo. **Deben ser
+idénticos.** Si difieren, para: no estás viendo el código de tu propio
+dispositivo. Descártalo y empieza de nuevo desde una pantalla Añadir dispositivo
+recién abierta.
+
+La cuenta y el servidor bajo el código son contexto, no cosas que comparar: no
+aparecen en el otro dispositivo. Cuando todo coincida, elige **Conectar este
+dispositivo**.
+
+## Completa los dos pasos siguientes
+
+Conectar une a la cuenta. Todavía no permite al dispositivo nuevo leer nada.
+
+<ManualScreenshot
+  caseId="sync/paired"
+  alt="Configuración de sincronización de Lotti: este dispositivo está conectado, verificación con emoji y Enviar ajustes aún pendientes"
+  caption="Conectado es la mitad fácil. La tarjeta nombra lo que falta y dice claramente que sin verificación este dispositivo no puede leer nada."
+/>
+
+1. **Compara los emoji.** En ambos dispositivos aparece una fila de emoji.
+   Comprueba que coinciden y confirma en cada uno. Hasta entonces el dispositivo
+   nuevo solo recibe cifrado que no puede leer: las claves van únicamente a
+   dispositivos verificados. Consulta
+   [Sincronizar dispositivos](./sync.mdx).
+2. **Envía los ajustes.** En el primer dispositivo, en la pantalla Añadir
+   dispositivo que sigue abierta, elige **Enviar ajustes** para que lleguen
+   categorías, hábitos, paneles y la configuración de IA. Si ya la cerraste,
+   vuelve a abrir **Ajustes → Sincronización → Dispositivos → Añadir
+   dispositivo**.
+
+Deja ambas apps abiertas hasta que termine la primera sincronización.
+
+## Si algo va mal
+
+- **Los códigos de verificación difieren.** No conectes. Cierra la pantalla del
+  primer dispositivo, abre una nueva e inténtalo otra vez: el código se regenera
+  cada vez.
+- **El código no se descodifica.** Cópialo de nuevo en el primer dispositivo en
+  lugar de corregir lo que pegaste; el valor codificado no está pensado para
+  arreglarse a mano. Si la app informa de versiones distintas, los dispositivos
+  llevan compilaciones diferentes y ambos necesitan actualizarse.
+- **El dispositivo nuevo conecta pero sigue vacío.** Es el estado esperado antes
+  de la verificación. Termina la comparación de emoji y luego revisa
+  [Sincronizar dispositivos](./sync.mdx) para bandeja de salida y recuperación.
+
+Continúa con [Sincronizar dispositivos](./sync.mdx) para el estado diario, la
+salud de la entrega y las herramientas de recuperación.
