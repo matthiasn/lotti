@@ -1,26 +1,20 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
-import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
-import 'package:lotti/features/sync/state/sync_devices_provider.dart';
-import 'package:lotti/features/sync/ui/clipboard_helper.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/auto_verification_launcher.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_devices_list.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:matrix/matrix.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 SliverWoltModalSheetPage provisionedStatusPage({
@@ -33,8 +27,14 @@ SliverWoltModalSheetPage provisionedStatusPage({
     stickyActionBar: _StatusActionBar(
       pageIndexNotifier: pageIndexNotifier,
     ),
-    title: context.messages.provisionedSyncTitle,
-    padding: WoltModalConfig.pagePadding + const EdgeInsets.only(bottom: 80),
+    // The setup flow's own title. Reusing the roster's name titled a sheet
+    // "Devices" that also contains a "Devices" section header.
+    title: context.messages.provisionedSyncImportTitle,
+    padding:
+        WoltModalConfig.pagePadding +
+        const EdgeInsets.only(
+          bottom: WoltModalConfig.stickyActionBarClearance,
+        ),
     child: const ProvisionedStatusWidget(),
   );
 }
@@ -48,86 +48,23 @@ class _StatusActionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ColoredBox(
-      color: context.colorScheme.surface,
-      child: Padding(
-        padding: WoltModalConfig.pagePadding,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Spacer(),
-            const SizedBox(width: 8),
-            Flexible(
-              child: DesignSystemButton(
-                onPressed: () {
-                  // Keep notifier state predictable for future multi-step flows.
-                  pageIndexNotifier.value = 0;
-                  Navigator.of(context).pop();
-                },
-                label: context.messages.tasksLabelsDialogClose,
-                variant: DesignSystemButtonVariant.secondary,
-                size: DesignSystemButtonSize.large,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ProvisionedStatusWidget extends ConsumerWidget {
-  const ProvisionedStatusWidget({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final matrixService = ref.watch(matrixServiceProvider);
-    final messages = context.messages;
-
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return SyncStickyBar(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const _AutoVerificationLauncher(),
-          const DiagnosticInfoButton(),
-          const SizedBox(height: 16),
-          const SyncDevicesList(),
-          if (isDesktop) ...[
-            const SizedBox(height: 16),
-            const _HandoverQrSection(),
-          ],
-          const SizedBox(height: 16),
-          DesignSystemButton(
-            variant: DesignSystemButtonVariant.secondary,
-            size: DesignSystemButtonSize.large,
-            onPressed: () async {
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder: (dialogContext) => AlertDialog(
-                  title: Text(messages.syncDeleteConfigQuestion),
-                  actions: [
-                    DesignSystemButton(
-                      label: messages.settingsMatrixCancel,
-                      variant: DesignSystemButtonVariant.tertiary,
-                      onPressed: () => Navigator.of(dialogContext).pop(false),
-                    ),
-                    DesignSystemButton(
-                      label: messages.syncDeleteConfigConfirm,
-                      variant: DesignSystemButtonVariant.danger,
-                      onPressed: () => Navigator.of(dialogContext).pop(true),
-                    ),
-                  ],
-                ),
-              );
-              if (confirmed ?? false) {
-                await matrixService.deleteConfig();
-                if (!context.mounted) return;
-                ref.read(provisioningControllerProvider.notifier).reset();
-                await Navigator.of(context).maybePop();
-              }
-            },
-            label: messages.provisionedSyncDisconnect,
+          const Spacer(),
+          SizedBox(width: context.designTokens.spacing.step3),
+          Flexible(
+            child: DesignSystemButton(
+              onPressed: () {
+                // Keep notifier state predictable for future multi-step flows.
+                pageIndexNotifier.value = 0;
+                Navigator.of(context).pop();
+              },
+              label: context.messages.tasksLabelsDialogClose,
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.large,
+            ),
           ),
         ],
       ),
@@ -135,193 +72,101 @@ class ProvisionedStatusWidget extends ConsumerWidget {
   }
 }
 
-class _AutoVerificationLauncher extends ConsumerStatefulWidget {
-  const _AutoVerificationLauncher();
+class ProvisionedStatusWidget extends ConsumerWidget {
+  const ProvisionedStatusWidget({super.key, this.embedded = false});
+
+  /// True when rendered directly in the settings detail pane rather than
+  /// inside the pairing modal. Embedded, there is no sheet to dismiss after
+  /// disconnecting — popping would walk the user out of Settings.
+  final bool embedded;
 
   @override
-  ConsumerState<_AutoVerificationLauncher> createState() =>
-      _AutoVerificationLauncherState();
-}
-
-class _AutoVerificationLauncherState
-    extends ConsumerState<_AutoVerificationLauncher> {
-  bool _launchInFlight = false;
-  String? _lastAutoLaunchedDeviceId;
-
-  Future<void> _maybeLaunch(List<DeviceKeys> devices) async {
-    if (!mounted || _launchInFlight || devices.isEmpty) return;
-    final target = devices.first;
-    final targetId = target.deviceId;
-
-    if (_lastAutoLaunchedDeviceId == targetId) return;
-    final lock = ref.read(matrixVerificationModalLockProvider.notifier);
-    if (!lock.tryAcquire()) return;
-
-    _launchInFlight = true;
-    _lastAutoLaunchedDeviceId = targetId;
-    try {
-      await showVerificationModalSheet(
-        context: context,
-        title: context.messages.settingsMatrixVerifyLabel,
-        child: VerificationModal(target),
-      );
-    } finally {
-      if (mounted) {
-        ref
-          ..invalidate(matrixUnverifiedControllerProvider)
-          ..invalidate(syncDevicesControllerProvider);
-      }
-      lock.release();
-      _launchInFlight = false;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final unverifiedDevices =
-        ref.watch(matrixUnverifiedControllerProvider).value ?? [];
-
-    if (unverifiedDevices.isEmpty) {
-      _lastAutoLaunchedDeviceId = null;
-      return const SizedBox.shrink();
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_maybeLaunch(unverifiedDevices));
-    });
-
-    return const SizedBox.shrink();
-  }
-}
-
-class _HandoverQrSection extends ConsumerStatefulWidget {
-  const _HandoverQrSection();
-
-  @override
-  ConsumerState<_HandoverQrSection> createState() => _HandoverQrSectionState();
-}
-
-class _HandoverQrSectionState extends ConsumerState<_HandoverQrSection> {
-  String? _handoverBase64;
-  bool _loading = false;
-  bool _revealed = false;
-  bool _loadAttempted = false;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_generate());
-  }
-
-  Future<void> _generate() async {
-    if (_loading) return;
-    setState(() => _loading = true);
-    try {
-      final data = await ref
-          .read(provisioningControllerProvider.notifier)
-          .regenerateHandover();
-      if (mounted) {
-        setState(() {
-          _loadAttempted = true;
-          _handoverBase64 = data;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final matrixService = ref.watch(matrixServiceProvider);
     final messages = context.messages;
+    final tokens = context.designTokens;
 
-    if (_handoverBase64 == null) {
-      if (_loading) {
-        return const SyncFlowSection(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-        );
-      }
-
-      if (_loadAttempted) {
-        return DesignSystemButton(
-          onPressed: _generate,
-          label: messages.provisionedSyncShowQr,
-          variant: DesignSystemButtonVariant.secondary,
-          size: DesignSystemButtonSize.large,
-        );
-      }
-
-      return const SizedBox.shrink();
-    }
-
-    return SyncFlowSection(
+    return SingleChildScrollView(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
-          Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(8),
-                child: QrImageView(
-                  data: _handoverBase64!,
-                  padding: EdgeInsets.zero,
-                  size: 240,
-                  key: const Key('statusHandoverQrImage'),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            messages.provisionedSyncReady,
-            style: context.textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Row(
+          const AutoVerificationLauncher(),
+          const SyncDevicesList(),
+          SizedBox(height: tokens.spacing.sectionGap),
+          // One secondary grammar for the page's two support actions: both
+          // compact, both on the content rail. Full-width and large gave the
+          // disconnect the exact geometry of the "Add device" primary above.
+          // A Wrap, not a Row: a long localized disconnect label ("Stop
+          // syncing this device" is half again as long in German) overflowed
+          // a Row whose first child took its intrinsic width unconditionally.
+          Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step2,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
-                child: _revealed
-                    ? SelectableText(
-                        _handoverBase64!,
-                        style: context.textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
+              DesignSystemButton(
+                // Destructive but rare, and never the reason someone opened
+                // this page: borderless, so the constructive "Add device"
+                // above stays the loudest control. Sized to match the
+                // diagnostics button beside it — at large + fullWidth it had
+                // the exact geometry of that primary.
+                variant: DesignSystemButtonVariant.dangerTertiary,
+                size: DesignSystemButtonSize.medium,
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: Text(messages.syncDeleteConfigQuestion),
+                      content: Text(messages.syncDisconnectExplanation),
+                      actions: [
+                        DesignSystemButton(
+                          label: messages.settingsMatrixCancel,
+                          variant: DesignSystemButtonVariant.tertiary,
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(false),
                         ),
-                      )
-                    : Text(
-                        '\u2022' * 24,
-                        style: context.textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
+                        DesignSystemButton(
+                          label: messages.syncDeleteConfigConfirm,
+                          variant: DesignSystemButtonVariant.danger,
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(true),
                         ),
-                      ),
+                      ],
+                    ),
+                  );
+                  if (confirmed ?? false) {
+                    try {
+                      await matrixService.deleteConfig();
+                    } catch (e, stackTrace) {
+                      // Silent failure left the pane showing a "configured"
+                      // view of a config that had not been torn down, with
+                      // nothing said and nothing logged.
+                      getIt<DomainLogger>().error(
+                        LogDomain.sync,
+                        e,
+                        stackTrace: stackTrace,
+                        subDomain: 'deleteConfig',
+                      );
+                      if (context.mounted) {
+                        context.showToast(
+                          tone: DesignSystemToastTone.error,
+                          title: messages.syncDisconnectFailed,
+                        );
+                      }
+                      return;
+                    }
+                    if (!context.mounted) return;
+                    ref.read(provisioningControllerProvider.notifier).reset();
+                    if (!embedded) await Navigator.of(context).maybePop();
+                  }
+                },
+                label: messages.provisionedSyncDisconnect,
               ),
-              IconButton(
-                key: const Key('statusToggleHandoverVisibility'),
-                icon: Icon(
-                  _revealed
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                ),
-                onPressed: () => setState(() => _revealed = !_revealed),
-              ),
-              IconButton(
-                key: const Key('statusCopyHandoverData'),
-                icon: const Icon(Icons.copy),
-                onPressed: () => ClipboardHelper.copyTextAndNotify(
-                  context,
-                  _handoverBase64!,
-                  title: context.messages.provisionedSyncCopiedToClipboard,
-                ),
-              ),
+              // Last and smallest: a diagnostics dump is the least likely
+              // reason anyone opens this sheet, and as the first bordered pill
+              // in the row it won a weight contest against the account action.
+              const DiagnosticInfoButton(),
             ],
           ),
         ],

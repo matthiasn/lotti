@@ -62,7 +62,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Show Diagnostic Info'), findsOneWidget);
+      expect(find.text('Technical details'), findsOneWidget);
     });
 
     testWidgets('displays disconnect button', (tester) async {

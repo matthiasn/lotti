@@ -37,6 +37,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   part. The assistant also sees how already-linked tasks relate to the current
   one, so it stops guessing parent/child roles from link direction and won't
   re-suggest a relationship that already exists.
+- **Add a device from whichever device you have to hand.** "Add device" is now
+  an action on the device list itself, so the phone in your pocket can bring in
+  the new laptop just as well as the other way round. The sheet shows the
+  pairing code, tells you when the new device has actually joined, and keeps
+  "Send settings" — for your categories, habits, dashboards and AI settings —
+  within reach the whole time instead of below the code. It also says plainly
+  what the code is: letting your own new device scan it is fine, keeping a
+  screenshot or sending it through chat is not.
+- **A machine with no camera can be brought in too.** The typing screen now
+  explains how to get the code across from the other device — copy it there,
+  and move it the way you would a password — and says so instead of doing
+  nothing when there is nothing on the clipboard to paste.
+
+### Changed
+- **Pairing a device is a guided flow now, not a form.** Every screen says where
+  you are ("Step 2 of 3") and leads with the one thing to do there. On phones
+  the camera opens straight away and typing a code is the fallback, rather than
+  the other way round. Before anything is configured you see which account you
+  are about to join and a short check code to compare against the device showing
+  the code, with a plain line about what to do if they differ — so a wrong or
+  stale code is something you back out of, not something you discover
+  afterwards. A code from a different Lotti version tells you to update both
+  devices instead of calling itself invalid.
+- **Nothing in the flow waits forever without saying what to do.** If the emoji
+  check never appears, the last screen now tells you where to start it by hand
+  instead of spinning indefinitely. If the camera cannot start, there is a way
+  to try again once you have granted access. And if the device list cannot be
+  reached while you are waiting for a new device to appear, it says so and
+  offers a retry rather than pretending to still be looking.
+- **The device list reads constructively.** "Add device" is the prominent action
+  on the page; removing a device and the technical-details link are quiet
+  alongside it. "Delete device" is now "Remove from sync", which is what it
+  does, and a removal that the server refuses explains the situation instead of
+  showing you the raw error.
 
 ### Changed
 - **The linked-tasks card is a third shorter.** The relationship headings

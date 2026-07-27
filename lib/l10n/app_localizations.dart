@@ -8108,7 +8108,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteDeviceLabel.
   ///
   /// In en, this message translates to:
-  /// **'Delete device'**
+  /// **'Remove from sync'**
   String get deleteDeviceLabel;
 
   /// No description provided for @designSystemActionVariantTitle.
@@ -9104,20 +9104,20 @@ abstract class AppLocalizations {
   /// No description provided for @deviceDeletedSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Device {deviceName} deleted successfully'**
+  /// **'{deviceName} removed from sync'**
   String deviceDeletedSuccess(String deviceName);
-
-  /// No description provided for @deviceDeleteFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete device: {error}'**
-  String deviceDeleteFailed(String error);
 
   /// No description provided for @deviceDeleteFailedForbidden.
   ///
   /// In en, this message translates to:
-  /// **'The homeserver rejected the stored password, so the device couldn\'t be removed. Re-pair this device with a fresh QR code and try again.'**
+  /// **'The sync server refused this change. Remove this device from sync on the device itself, or re-pair with a fresh pairing code.'**
   String get deviceDeleteFailedForbidden;
+
+  /// No description provided for @deviceDeleteFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'The device couldn\'t be removed. Check your connection and try again.'**
+  String get deviceDeleteFailedGeneric;
 
   /// Confirmation question shown before deleting a device from the Matrix sync account.
   ///
@@ -14133,18 +14133,6 @@ abstract class AppLocalizations {
   /// **'Select Preconfigured Prompt'**
   String get promptSelectionModalTitle;
 
-  /// No description provided for @provisionedSyncBundleImported.
-  ///
-  /// In en, this message translates to:
-  /// **'Provisioning code imported'**
-  String get provisionedSyncBundleImported;
-
-  /// No description provided for @provisionedSyncConfigureButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure'**
-  String get provisionedSyncConfigureButton;
-
   /// No description provided for @provisionedSyncCopiedToClipboard.
   ///
   /// In en, this message translates to:
@@ -14154,43 +14142,43 @@ abstract class AppLocalizations {
   /// No description provided for @provisionedSyncDisconnect.
   ///
   /// In en, this message translates to:
-  /// **'Disconnect'**
+  /// **'Stop syncing this device'**
   String get provisionedSyncDisconnect;
 
   /// No description provided for @provisionedSyncDone.
   ///
   /// In en, this message translates to:
-  /// **'Sync configured successfully'**
+  /// **'This device is connected'**
   String get provisionedSyncDone;
 
   /// No description provided for @provisionedSyncError.
   ///
   /// In en, this message translates to:
-  /// **'Configuration failed'**
+  /// **'Couldn\'t connect to your sync account'**
   String get provisionedSyncError;
 
   /// No description provided for @provisionedSyncErrorConfigurationFailed.
   ///
   /// In en, this message translates to:
-  /// **'An error occurred during configuration. Please try again.'**
+  /// **'Something went wrong while connecting. Try again; if it keeps failing, check the other device is still syncing.'**
   String get provisionedSyncErrorConfigurationFailed;
 
   /// No description provided for @provisionedSyncErrorLoginFailed.
   ///
   /// In en, this message translates to:
-  /// **'Login failed. Please check your credentials and try again.'**
+  /// **'Signing in with that code failed. Check the other device is still syncing, then open Add device there again and use the code it shows.'**
   String get provisionedSyncErrorLoginFailed;
 
   /// No description provided for @provisionedSyncImportButton.
   ///
   /// In en, this message translates to:
-  /// **'Import'**
+  /// **'Continue'**
   String get provisionedSyncImportButton;
 
   /// No description provided for @provisionedSyncImportHint.
   ///
   /// In en, this message translates to:
-  /// **'Paste provisioning code here'**
+  /// **'Paste the pairing code here'**
   String get provisionedSyncImportHint;
 
   /// No description provided for @provisionedSyncImportTitle.
@@ -14199,22 +14187,16 @@ abstract class AppLocalizations {
   /// **'Sync Setup'**
   String get provisionedSyncImportTitle;
 
-  /// No description provided for @provisionedSyncInvalidBundle.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid provisioning code'**
-  String get provisionedSyncInvalidBundle;
-
   /// No description provided for @provisionedSyncJoiningRoom.
   ///
   /// In en, this message translates to:
-  /// **'Joining sync room...'**
+  /// **'Setting up shared storage…'**
   String get provisionedSyncJoiningRoom;
 
   /// No description provided for @provisionedSyncLoggingIn.
   ///
   /// In en, this message translates to:
-  /// **'Logging in...'**
+  /// **'Connecting to your sync account…'**
   String get provisionedSyncLoggingIn;
 
   /// No description provided for @provisionedSyncPasteClipboard.
@@ -14222,12 +14204,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paste from clipboard'**
   String get provisionedSyncPasteClipboard;
-
-  /// No description provided for @provisionedSyncReady.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan this QR code on your mobile device'**
-  String get provisionedSyncReady;
 
   /// No description provided for @provisionedSyncRetry.
   ///
@@ -14238,49 +14214,31 @@ abstract class AppLocalizations {
   /// No description provided for @provisionedSyncRotatingPassword.
   ///
   /// In en, this message translates to:
-  /// **'Securing account...'**
+  /// **'Securing this device…'**
   String get provisionedSyncRotatingPassword;
-
-  /// No description provided for @provisionedSyncScanButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan QR Code'**
-  String get provisionedSyncScanButton;
-
-  /// No description provided for @provisionedSyncShowQr.
-  ///
-  /// In en, this message translates to:
-  /// **'Show provisioning QR'**
-  String get provisionedSyncShowQr;
 
   /// No description provided for @provisionedSyncSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Set up sync from a provisioning bundle'**
+  /// **'Pair another device to this sync account'**
   String get provisionedSyncSubtitle;
 
   /// No description provided for @provisionedSyncSummaryHomeserver.
   ///
   /// In en, this message translates to:
-  /// **'Homeserver'**
+  /// **'Sync server'**
   String get provisionedSyncSummaryHomeserver;
-
-  /// No description provided for @provisionedSyncSummaryRoom.
-  ///
-  /// In en, this message translates to:
-  /// **'Room'**
-  String get provisionedSyncSummaryRoom;
 
   /// No description provided for @provisionedSyncSummaryUser.
   ///
   /// In en, this message translates to:
-  /// **'User'**
+  /// **'Sync account'**
   String get provisionedSyncSummaryUser;
 
   /// No description provided for @provisionedSyncTitle.
   ///
   /// In en, this message translates to:
-  /// **'Provisioned Sync'**
+  /// **'Devices'**
   String get provisionedSyncTitle;
 
   /// No description provided for @queueCatchUpNowButton.
@@ -16020,7 +15978,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsMatrixDiagnosticShowButton.
   ///
   /// In en, this message translates to:
-  /// **'Show Diagnostic Info'**
+  /// **'Technical details'**
   String get settingsMatrixDiagnosticShowButton;
 
   /// No description provided for @settingsMatrixDone.
@@ -16968,16 +16926,130 @@ abstract class AppLocalizations {
   /// **'Sync'**
   String get syncActivityTitle;
 
+  /// No description provided for @syncAddDeviceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add device'**
+  String get syncAddDeviceAction;
+
+  /// No description provided for @syncAddDeviceCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No camera on the new device? Copy the pairing code and paste it there instead.'**
+  String get syncAddDeviceCodeHint;
+
+  /// No description provided for @syncAddDeviceConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'A new device joined'**
+  String get syncAddDeviceConnected;
+
+  /// No description provided for @syncAddDeviceCopyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy pairing code'**
+  String get syncAddDeviceCopyCode;
+
+  /// No description provided for @syncAddDeviceGenerateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create a pairing code. Try again.'**
+  String get syncAddDeviceGenerateFailed;
+
+  /// No description provided for @syncAddDeviceHideCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide pairing code'**
+  String get syncAddDeviceHideCode;
+
+  /// No description provided for @syncAddDeviceIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Lotti on the new device, then open Settings → Sync Settings → Devices there and scan this code.'**
+  String get syncAddDeviceIntro;
+
+  /// No description provided for @syncAddDeviceNextLeadIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Next · after it joins'**
+  String get syncAddDeviceNextLeadIn;
+
+  /// No description provided for @syncAddDeviceRevealCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Show pairing code as text'**
+  String get syncAddDeviceRevealCode;
+
+  /// No description provided for @syncAddDeviceRosterError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check whether the new device has joined.'**
+  String get syncAddDeviceRosterError;
+
+  /// No description provided for @syncAddDeviceSecurityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This pairing code unlocks your sync account — let only your own new device scan it, and never screenshot or send it.'**
+  String get syncAddDeviceSecurityNote;
+
+  /// No description provided for @syncAddDeviceSendSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Send settings'**
+  String get syncAddDeviceSendSettings;
+
+  /// No description provided for @syncAddDeviceSendSettingsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Once the new device is connected, send your categories, habits, dashboards and AI settings across.'**
+  String get syncAddDeviceSendSettingsHint;
+
+  /// No description provided for @syncAddDeviceSendSettingsPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready once the new device joins.'**
+  String get syncAddDeviceSendSettingsPending;
+
+  /// No description provided for @syncAddDeviceSendSettingsReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Send now, or wait until the new device joins.'**
+  String get syncAddDeviceSendSettingsReady;
+
+  /// No description provided for @syncAddDeviceStepScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Now · Show the code'**
+  String get syncAddDeviceStepScan;
+
+  /// No description provided for @syncAddDeviceStepScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this on the new device'**
+  String get syncAddDeviceStepScanTitle;
+
+  /// No description provided for @syncAddDeviceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up sync on this device before adding another one.'**
+  String get syncAddDeviceUnavailable;
+
+  /// No description provided for @syncAddDeviceWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the new device…'**
+  String get syncAddDeviceWaiting;
+
   /// No description provided for @syncDeleteConfigConfirm.
   ///
   /// In en, this message translates to:
-  /// **'YES, I\'M SURE'**
+  /// **'Stop syncing'**
   String get syncDeleteConfigConfirm;
 
   /// No description provided for @syncDeleteConfigQuestion.
   ///
   /// In en, this message translates to:
-  /// **'Do you want to delete the sync configuration?'**
+  /// **'Stop syncing this device?'**
   String get syncDeleteConfigQuestion;
 
   /// No description provided for @syncDevicesKeylessHint.
@@ -17064,6 +17136,18 @@ abstract class AppLocalizations {
   /// **'Verified'**
   String get syncDevicesVerifiedChip;
 
+  /// No description provided for @syncDisconnectExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your entries stay on this device. It is signed out of the sync account and needs a new pairing code to sync again. Your other devices are not affected.'**
+  String get syncDisconnectExplanation;
+
+  /// No description provided for @syncDisconnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t stop syncing this device. Check your connection and try again.'**
+  String get syncDisconnectFailed;
+
   /// No description provided for @syncEntitiesConfirm.
   ///
   /// In en, this message translates to:
@@ -17111,6 +17195,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync is not logged in'**
   String get syncNotLoggedInToast;
+
+  /// No description provided for @syncPairBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get syncPairBack;
+
+  /// No description provided for @syncPairCameraDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti needs camera access to scan. Allow it in system settings, or enter the code manually.'**
+  String get syncPairCameraDenied;
+
+  /// No description provided for @syncPairCameraRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try the camera again'**
+  String get syncPairCameraRetry;
+
+  /// No description provided for @syncPairCheckAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get syncPairCheckAgain;
+
+  /// No description provided for @syncPairCheckCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Check this matches on the other device'**
+  String get syncPairCheckCode;
+
+  /// No description provided for @syncPairCheckCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Check code'**
+  String get syncPairCheckCodeLabel;
+
+  /// No description provided for @syncPairClipboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to paste. Copy the pairing code on your other device first.'**
+  String get syncPairClipboardEmpty;
+
+  /// No description provided for @syncPairClipboardUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the clipboard. Paste the code into the field instead.'**
+  String get syncPairClipboardUnavailable;
+
+  /// No description provided for @syncPairConnectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect this device'**
+  String get syncPairConnectButton;
+
+  /// No description provided for @syncPairCopyCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No camera on this device? On the other device use Copy pairing code, move it here with a password manager, an encrypted note, or by typing it out — not through chat or email.'**
+  String get syncPairCopyCodeHint;
+
+  /// No description provided for @syncPairDiscardCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a different pairing code'**
+  String get syncPairDiscardCode;
+
+  /// No description provided for @syncPairedNextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Two things left'**
+  String get syncPairedNextTitle;
+
+  /// No description provided for @syncPairedNextTitleOne.
+  ///
+  /// In en, this message translates to:
+  /// **'One thing left'**
+  String get syncPairedNextTitleOne;
+
+  /// No description provided for @syncPairedSettingsStep.
+  ///
+  /// In en, this message translates to:
+  /// **'On your other device, in the Add device screen you still have open, choose Send settings. Your categories, habits, dashboards and AI settings arrive here.'**
+  String get syncPairedSettingsStep;
+
+  /// No description provided for @syncPairedSettingsStepFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Or reopen Settings → Sync Settings → Devices → Add device.'**
+  String get syncPairedSettingsStepFallback;
+
+  /// No description provided for @syncPairedVerifyDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Both devices verified — this device can read your entries'**
+  String get syncPairedVerifyDone;
+
+  /// No description provided for @syncPairedVerifyFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'No emoji yet? Check again — or open Devices and start it from there.'**
+  String get syncPairedVerifyFallback;
+
+  /// No description provided for @syncPairedVerifyStep.
+  ///
+  /// In en, this message translates to:
+  /// **'A row of emoji appears on both devices. Check they match, then confirm on each — until you do, this device cannot read your entries.'**
+  String get syncPairedVerifyStep;
+
+  /// No description provided for @syncPairedVerifyStepDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Emoji matched — this device can read your entries'**
+  String get syncPairedVerifyStepDone;
+
+  /// No description provided for @syncPairedVerifyWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the emoji to appear…'**
+  String get syncPairedVerifyWaiting;
+
+  /// No description provided for @syncPairEnterManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter code manually'**
+  String get syncPairEnterManually;
+
+  /// No description provided for @syncPairErrorMalformed.
+  ///
+  /// In en, this message translates to:
+  /// **'That does not look like a pairing code. Check you copied all of it — on the other device, press Copy pairing code again.'**
+  String get syncPairErrorMalformed;
+
+  /// No description provided for @syncPairErrorVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'This code came from a different version of Lotti. Update both devices and try again.'**
+  String get syncPairErrorVersion;
+
+  /// No description provided for @syncPairGoToDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Devices'**
+  String get syncPairGoToDevices;
+
+  /// No description provided for @syncPairMismatchRemedy.
+  ///
+  /// In en, this message translates to:
+  /// **'If it doesn\'t match, use the code your own device is showing instead.'**
+  String get syncPairMismatchRemedy;
+
+  /// No description provided for @syncPairMismatchWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'If this doesn\'t match, don\'t connect — the code belongs to a different account.'**
+  String get syncPairMismatchWarning;
+
+  /// No description provided for @syncPairOnlyOwnCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Only use a code you made yourself, on a device you own. Scanning someone else’s code puts everything you write here into their account.'**
+  String get syncPairOnlyOwnCode;
+
+  /// No description provided for @syncPairPasteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the pairing code'**
+  String get syncPairPasteTitle;
+
+  /// No description provided for @syncPairScanInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan with camera'**
+  String get syncPairScanInstead;
+
+  /// No description provided for @syncPairScannerRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s the code you declined. Scan the code your own device is showing, or paste it below.'**
+  String get syncPairScannerRejected;
+
+  /// No description provided for @syncPairScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at the code on your other device'**
+  String get syncPairScanTitle;
+
+  /// No description provided for @syncPairShowEmojiAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the emoji again'**
+  String get syncPairShowEmojiAgain;
+
+  /// No description provided for @syncPairStepAlmost.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 3 of 3 · Finish on your other device'**
+  String get syncPairStepAlmost;
+
+  /// No description provided for @syncPairStepConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 2 of 3 · Confirm'**
+  String get syncPairStepConfirm;
+
+  /// No description provided for @syncPairStepConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 3 of 3 · Connecting'**
+  String get syncPairStepConnecting;
+
+  /// No description provided for @syncPairStepFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 3 of 3 · Couldn\'t connect'**
+  String get syncPairStepFailed;
+
+  /// No description provided for @syncPairStepScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 1 of 3 · Get the code'**
+  String get syncPairStepScan;
+
+  /// No description provided for @syncPairWhereToFind.
+  ///
+  /// In en, this message translates to:
+  /// **'On a device that already syncs, open Settings → Sync Settings → Devices and choose Add device.'**
+  String get syncPairWhereToFind;
+
+  /// No description provided for @syncPairWillJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'This device will join:'**
+  String get syncPairWillJoin;
 
   /// No description provided for @syncPayloadAgentBundle.
   ///

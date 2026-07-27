@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -65,10 +66,16 @@ class ProvisioningController extends Notifier<ProvisioningState> {
 
       final rawVersion = json['v'];
       if (rawVersion != kSyncBundleVersion) {
-        throw const FormatException('Unsupported bundle version');
+        // The devices are on different Lotti releases. Reported separately
+        // because the remedy is "update", not "get a fresh code".
+        throw const BundleDecodeException(
+          BundleDecodeError.unsupportedVersion,
+          'Unsupported bundle version',
+        );
       }
       if (json['kind'] is! String) {
-        throw const FormatException(
+        throw const BundleDecodeException(
+          BundleDecodeError.malformedPayload,
           'Missing bundle kind discriminator',
         );
       }
@@ -76,13 +83,20 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       final bundle = SyncProvisioningBundle.fromJson(json);
 
       if (!bundle.user.startsWith('@')) {
-        throw const FormatException('Invalid MXID: must start with @');
+        throw const BundleDecodeException(
+          BundleDecodeError.malformedPayload,
+          'Invalid MXID: must start with @',
+        );
       }
       if (!bundle.roomId.startsWith('!')) {
-        throw const FormatException('Invalid room ID: must start with !');
+        throw const BundleDecodeException(
+          BundleDecodeError.malformedPayload,
+          'Invalid room ID: must start with !',
+        );
       }
       if (!bundle.homeServer.startsWith('https://')) {
-        throw const FormatException(
+        throw const BundleDecodeException(
+          BundleDecodeError.malformedPayload,
           'Invalid homeserver URL: must start with https://',
         );
       }
@@ -92,7 +106,10 @@ class ProvisioningController extends Notifier<ProvisioningState> {
     } on FormatException {
       rethrow;
     } catch (e) {
-      throw FormatException('Invalid provisioning bundle: $e');
+      throw BundleDecodeException(
+        BundleDecodeError.malformedPayload,
+        'Invalid provisioning bundle: $e',
+      );
     }
   }
 
@@ -202,6 +219,13 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       link.close();
     }
   }
+
+  /// Whether the bundle being consumed rotates the account password, which is
+  /// what makes provisioning three steps instead of two.
+  ///
+  /// It is a property of [SyncBundleKind], not of the platform: a mobile
+  /// device consuming a fresh CLI bundle rotates just as a desktop does.
+  bool get rotatesPassword => _lastBundle?.kind == SyncBundleKind.provisioned;
 
   /// Resets the controller to its initial state.
   void reset() {

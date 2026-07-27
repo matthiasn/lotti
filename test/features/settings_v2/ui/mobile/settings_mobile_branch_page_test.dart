@@ -113,7 +113,7 @@ void main() {
       expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
 
       // Children come straight from `buildSettingsTree`, so the mobile
-      // order matches the desktop sidebar. Provisioned Sync is the first
+      // order matches the desktop sidebar. Devices is the first
       // row, replacing the old header.
       final rowIds = tester
           .widgetList<SettingsTreeRow>(find.byType(SettingsTreeRow))

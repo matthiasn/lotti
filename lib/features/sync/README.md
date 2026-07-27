@@ -32,6 +32,21 @@ merge of two users' work.
   device — a fresh install awaiting its ceremony, or a dead session left by
   an uninstalled app — receives ciphertext it cannot read, while every
   verified device keeps syncing. Nothing ever halts.
+- **Adds a device from any device already syncing.** "Add device" sits on the
+  device roster and mints a handover code on demand — a phone that outlives its
+  desktop can onboard the replacement. The code is shown only when asked for,
+  and it says plainly that it unlocks the account — it can also be copied as
+  text, so it is treated as a credential throughout: let your own new device
+  scan it, but never keep a screenshot or send it through chat or email. The
+  joining device opens straight into the camera, with manual entry as the
+  fallback, and finishes on a screen naming the two things still outstanding:
+  the emoji ceremony, and the settings push that only the other device can send.
+- **Gives both devices something a person can actually compare.** Before
+  anything is configured, the joining device shows which account it is about to
+  join and a six-character check code that the inviting device derives
+  independently and displays too — so a wrong or stale code is something to back
+  out of rather than discover afterwards. A code from a different Lotti release
+  says so instead of calling itself invalid.
 - **Lets the user manage the device roster.** The sync status page lists every
   session on the account — verified or not, with when the server last saw it —
   and any of this account's sessions except the current one can be removed.

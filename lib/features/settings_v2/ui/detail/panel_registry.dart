@@ -37,15 +37,18 @@ import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.d
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/ui/detail/ai_panel_dispatch.dart';
 import 'package:lotti/features/settings_v2/ui/detail/detail_id_dispatch.dart';
+import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
+import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/tts/ui/speech_settings_body.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 
 export 'package:lotti/features/settings_v2/ui/detail/ai_panel_dispatch.dart';
@@ -273,13 +276,29 @@ Widget _syncProvisionedPanel(BuildContext context) {
       final enabled =
           ref.watch(configFlagProvider(enableMatrixFlag)).value ?? false;
       if (!enabled) return const SizedBox.shrink();
+
+      // Watched so completing setup (or disconnecting) swaps this pane
+      // without needing a re-navigation.
+      ref.watch(provisioningControllerProvider);
+      final service = ref.watch(matrixServiceProvider);
+      final configured = service.isLoggedIn() && service.syncRoomId != null;
+
       return Padding(
-        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
-        child: const DesignSystemGroupedList(
-          children: [
-            ProvisionedSyncSettingsCard(showDivider: false),
-          ],
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step4,
         ),
+        // Once sync is set up, the roster IS this panel: hiding it behind a
+        // card that opens a modal added a tap and a second surface with the
+        // same name, and made every "open Settings → … → Devices"
+        // instruction in the pairing flow one step short.
+        child: configured
+            ? const ProvisionedStatusWidget(embedded: true)
+            : const DesignSystemGroupedList(
+                children: [
+                  ProvisionedSyncSettingsCard(showDivider: false),
+                ],
+              ),
       );
     },
   );

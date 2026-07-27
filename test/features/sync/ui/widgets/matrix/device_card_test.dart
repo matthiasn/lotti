@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
@@ -49,6 +50,8 @@ void main() {
   );
 
   setUp(() {
+    // The delete path logs the raw exception instead of showing it.
+    ensureDomainLoggerRegistered();
     mockMatrixService = MockMatrixService();
     mockDeviceKeys = MockDeviceKeys();
 
@@ -56,6 +59,8 @@ void main() {
     when(() => mockDeviceKeys.deviceId).thenReturn('DEVICE1');
     when(() => mockDeviceKeys.userId).thenReturn('@user:server');
   });
+
+  tearDown(tearDownTestGetIt);
 
   Future<void> pumpCard(
     WidgetTester tester,
@@ -86,7 +91,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // The confirm button renders the upper-cased delete label.
-    await tester.tap(find.text('DELETE DEVICE'));
+    await tester.tap(find.text('REMOVE FROM SYNC'));
     await tester.pumpAndSettle();
   }
 
@@ -117,15 +122,12 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('DELETE DEVICE'));
+      await tester.tap(find.text('REMOVE FROM SYNC'));
       await tester.pumpAndSettle();
 
       verify(() => mockMatrixService.deleteDeviceById('DEVICE1')).called(1);
       expect(refreshed, isTrue);
-      expect(
-        find.text('Device Pixel 7 deleted successfully'),
-        findsOneWidget,
-      );
+      expect(find.text('Pixel 7 removed from sync'), findsOneWidget);
     });
 
     testWidgets('cancelling the confirmation leaves the device alone', (
@@ -164,8 +166,12 @@ void main() {
 
       verify(() => mockMatrixService.deleteDeviceById('DEVICE1')).called(1);
       expect(refreshed, isFalse);
+      // The raw "Exception: boom" belongs in the log, not in a toast.
       expect(
-        find.text('Failed to delete device: Exception: boom'),
+        find.text(
+          "The device couldn't be removed. Check your connection and try "
+          'again.',
+        ),
         findsOneWidget,
       );
     });
@@ -183,9 +189,8 @@ void main() {
 
       expect(
         find.text(
-          'The homeserver rejected the stored password, so the device '
-          "couldn't be removed. Re-pair this device with a fresh QR code "
-          'and try again.',
+          'The sync server refused this change. Remove this device from sync '
+          'on the device itself, or re-pair with a fresh pairing code.',
         ),
         findsOneWidget,
       );
@@ -204,7 +209,8 @@ void main() {
 
       expect(
         find.text(
-          'Failed to delete device: M_LIMIT_EXCEEDED: Too many requests',
+          "The device couldn't be removed. Check your connection and try "
+          'again.',
         ),
         findsOneWidget,
       );
@@ -313,13 +319,13 @@ void main() {
         find.byKey(const Key('matrix_remove_device_primary')),
         findsOneWidget,
       );
-      expect(find.text('Delete device'), findsOneWidget);
+      expect(find.text('Remove from sync'), findsOneWidget);
       expect(find.text('Verify'), findsOneWidget);
 
       // The labeled button still runs through the confirmation modal.
       await tester.tap(find.byKey(const Key('matrix_remove_device_primary')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('DELETE DEVICE'));
+      await tester.tap(find.text('REMOVE FROM SYNC'));
       await tester.pumpAndSettle();
 
       verify(() => mockMatrixService.deleteDeviceById('DEVICE1')).called(1);
@@ -338,6 +344,110 @@ void main() {
         find.byKey(const Key('matrix_remove_device_primary')),
         findsNothing,
       );
+      // Borderless: removing a healthy device is routine cleanup and must not
+      // outweigh "Add device" on the page around it. The blocking case keeps
+      // its fill, because there removal *is* the primary act.
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('matrix_delete_device')),
+            )
+            .variant,
+        DesignSystemButtonVariant.dangerTertiary,
+      );
+    });
+
+    testWidgets('a blocking device keeps the loud removal button', (
+      tester,
+    ) async {
+      await pumpCard(tester, buildDevice(lastSeen: DateTime(2026, 5, 14)));
+
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('matrix_remove_device_primary')),
+            )
+            .variant,
+        DesignSystemButtonVariant.danger,
+      );
+    });
+  });
+
+  group('responsive layout', () {
+    Future<void> pumpAtWidth(WidgetTester tester, double width) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: width,
+            child: DeviceCard(
+              buildDevice(verified: true),
+              refreshListCallback: () {},
+              now: now,
+            ),
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('stacks the name above its badges on a phone card', (
+      tester,
+    ) async {
+      await pumpAtWidth(tester, kDeviceCardWideBreakpoint - 60);
+
+      final name = tester.getRect(find.text('Pixel 7'));
+      final badge = tester.getRect(find.text('Verified'));
+      expect(badge.top, greaterThanOrEqualTo(name.bottom));
+    });
+
+    testWidgets('puts the name and its badges on one row when wide', (
+      tester,
+    ) async {
+      await pumpAtWidth(tester, kDeviceCardWideBreakpoint + 120);
+
+      final name = tester.getRect(find.text('Pixel 7'));
+      final badge = tester.getRect(find.text('Verified'));
+      // Same row: the badge starts to the right of the name, not below it.
+      expect(badge.left, greaterThan(name.right));
+      expect(badge.top, lessThan(name.bottom));
+    });
+
+    testWidgets('wraps badges rather than overflowing at large text', (
+      tester,
+    ) async {
+      // As a plain Row child the badge Wrap got unbounded constraints and laid
+      // every badge out in one run, overflowing instead of wrapping.
+      tester.view.physicalSize = const Size(2000, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2.5)),
+            child: SizedBox(
+              width: kDeviceCardWideBreakpoint + 10,
+              child: DeviceCard(
+                buildDevice(isCurrentDevice: true, verified: true),
+                refreshListCallback: () {},
+                now: now,
+              ),
+            ),
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.takeException(), isNull);
     });
   });
 

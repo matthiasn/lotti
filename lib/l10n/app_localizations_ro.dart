@@ -4807,7 +4807,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get deleteButton => 'Ștergeți';
 
   @override
-  String get deleteDeviceLabel => 'Ștergeți dispozitivul';
+  String get deleteDeviceLabel => 'Eliminați din sincronizare';
 
   @override
   String get designSystemActionVariantTitle => 'Cu acțiune';
@@ -5325,17 +5325,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String deviceDeletedSuccess(String deviceName) {
-    return 'Dispozitivul $deviceName a fost șters cu succes';
-  }
-
-  @override
-  String deviceDeleteFailed(String error) {
-    return 'Ștergerea dispozitivului a eșuat: $error';
+    return '$deviceName eliminat din sincronizare';
   }
 
   @override
   String get deviceDeleteFailedForbidden =>
-      'Serverul a respins parola salvată, deci dispozitivul nu a putut fi eliminat. Asociați din nou acest dispozitiv cu un cod QR nou și încercați din nou.';
+      'Serverul de sincronizare a refuzat această modificare. Eliminați dispozitivul din sincronizare chiar de pe el sau reasociați-l cu un cod de asociere nou.';
+
+  @override
+  String get deviceDeleteFailedGeneric =>
+      'Dispozitivul nu a putut fi eliminat. Verificați conexiunea și încercați din nou.';
 
   @override
   String deviceDeleteQuestion(String deviceName) {
@@ -8319,84 +8318,66 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptSelectionModalTitle => 'Selectați un prompt preconfigurat';
 
   @override
-  String get provisionedSyncBundleImported => 'Cod de provizionare importat';
-
-  @override
-  String get provisionedSyncConfigureButton => 'Configurați';
-
-  @override
   String get provisionedSyncCopiedToClipboard => 'Copiat în clipboard';
 
   @override
-  String get provisionedSyncDisconnect => 'Deconectează';
+  String get provisionedSyncDisconnect =>
+      'Opriți sincronizarea pe acest dispozitiv';
 
   @override
-  String get provisionedSyncDone => 'Sincronizare configurată cu succes';
+  String get provisionedSyncDone => 'Acest dispozitiv este conectat';
 
   @override
-  String get provisionedSyncError => 'Configurarea a eșuat';
+  String get provisionedSyncError =>
+      'Nu s-a putut conecta la contul dvs. de sincronizare';
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
-      'A apărut o eroare în timpul configurării. Încearcă din nou.';
+      'Ceva nu a mers bine la conectare. Încercați din nou; dacă eșuează în continuare, verificați dacă celălalt dispozitiv încă se sincronizează.';
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Autentificarea a eșuat. Verifică datele de acces și încearcă din nou.';
+      'Autentificarea cu acel cod a eșuat. Verificați dacă celălalt dispozitiv încă se sincronizează, redeschideți acolo Adăugați dispozitiv și folosiți codul afișat.';
 
   @override
-  String get provisionedSyncImportButton => 'Importă';
+  String get provisionedSyncImportButton => 'Continuați';
 
   @override
-  String get provisionedSyncImportHint => 'Lipiți aici codul de configurare';
+  String get provisionedSyncImportHint => 'Lipiți aici codul de asociere';
 
   @override
   String get provisionedSyncImportTitle => 'Configurați sincronizarea';
 
   @override
-  String get provisionedSyncInvalidBundle => 'Cod de provizionare invalid';
-
-  @override
   String get provisionedSyncJoiningRoom =>
-      'Se alătură camerei de sincronizare...';
+      'Se configurează spațiul de stocare partajat…';
 
   @override
-  String get provisionedSyncLoggingIn => 'Conectare în curs...';
+  String get provisionedSyncLoggingIn =>
+      'Se conectează la contul dvs. de sincronizare…';
 
   @override
   String get provisionedSyncPasteClipboard => 'Lipiți din clipboard';
 
   @override
-  String get provisionedSyncReady =>
-      'Scanați acest cod QR pe dispozitivul mobil';
-
-  @override
   String get provisionedSyncRetry => 'Reîncercați';
 
   @override
-  String get provisionedSyncRotatingPassword => 'Securizarea contului...';
-
-  @override
-  String get provisionedSyncScanButton => 'Scanați codul QR';
-
-  @override
-  String get provisionedSyncShowQr => 'Afișați codul QR de configurare';
+  String get provisionedSyncRotatingPassword =>
+      'Se securizează acest dispozitiv…';
 
   @override
   String get provisionedSyncSubtitle =>
-      'Configurarea sincronizării dintr-un pachet de provizionare';
+      'Asociați un alt dispozitiv la acest cont de sincronizare';
 
   @override
-  String get provisionedSyncSummaryHomeserver => 'Server';
+  String get provisionedSyncSummaryHomeserver => 'Server de sincronizare';
 
   @override
-  String get provisionedSyncSummaryRoom => 'Cameră';
+  String get provisionedSyncSummaryUser => 'Cont de sincronizare';
 
   @override
-  String get provisionedSyncSummaryUser => 'Utilizator';
-
-  @override
-  String get provisionedSyncTitle => 'Sincronizare provizionată';
+  String get provisionedSyncTitle => 'Dispozitive';
 
   @override
   String get queueCatchUpNowButton => 'Recuperați acum';
@@ -9450,8 +9431,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Informații de diagnostic pentru sincronizare';
 
   @override
-  String get settingsMatrixDiagnosticShowButton =>
-      'Afișați informațiile de diagnostic';
+  String get settingsMatrixDiagnosticShowButton => 'Detalii tehnice';
 
   @override
   String get settingsMatrixDone => 'Gata';
@@ -9498,7 +9478,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixStatsTitle => 'Statistici Matrix';
 
   @override
-  String get settingsMatrixTitle => 'Setări sincronizare Matrix';
+  String get settingsMatrixTitle => 'Setări sincronizare';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -10009,11 +9989,78 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncActivityTitle => 'Sincronizare';
 
   @override
-  String get syncDeleteConfigConfirm => 'DA, SUNT SIGUR';
+  String get syncAddDeviceAction => 'Adăugați dispozitiv';
+
+  @override
+  String get syncAddDeviceCodeHint =>
+      'Noul dispozitiv nu are cameră? Copiați codul de asociere și lipiți-l acolo.';
+
+  @override
+  String get syncAddDeviceConnected => 'Un dispozitiv nou s-a alăturat';
+
+  @override
+  String get syncAddDeviceCopyCode => 'Copiați codul de asociere';
+
+  @override
+  String get syncAddDeviceGenerateFailed =>
+      'Nu s-a putut crea un cod de asociere. Încercați din nou.';
+
+  @override
+  String get syncAddDeviceHideCode => 'Ascundeți codul de asociere';
+
+  @override
+  String get syncAddDeviceIntro =>
+      'Instalați Lotti pe noul dispozitiv, deschideți acolo Setări → Setări sincronizare → Dispozitive și scanați acest cod.';
+
+  @override
+  String get syncAddDeviceNextLeadIn => 'Apoi · după ce se alătură';
+
+  @override
+  String get syncAddDeviceRevealCode => 'Afișați codul de asociere ca text';
+
+  @override
+  String get syncAddDeviceRosterError =>
+      'Nu s-a putut verifica dacă noul dispozitiv s-a alăturat.';
+
+  @override
+  String get syncAddDeviceSecurityNote =>
+      'Acest cod de asociere deblochează contul dvs. de sincronizare – lăsați-l scanat doar de propriul dispozitiv nou și nu îl fotografiați și nu îl trimiteți niciodată.';
+
+  @override
+  String get syncAddDeviceSendSettings => 'Trimiteți setările';
+
+  @override
+  String get syncAddDeviceSendSettingsHint =>
+      'După ce noul dispozitiv este conectat, trimiteți-i categoriile, obiceiurile, panourile și setările AI.';
+
+  @override
+  String get syncAddDeviceSendSettingsPending =>
+      'Disponibil imediat ce noul dispozitiv se alătură.';
+
+  @override
+  String get syncAddDeviceSendSettingsReady =>
+      'Trimiteți acum sau așteptați ca noul dispozitiv să se alăture.';
+
+  @override
+  String get syncAddDeviceStepScan => 'Acum · Afișați codul';
+
+  @override
+  String get syncAddDeviceStepScanTitle =>
+      'Scanați acest cod pe noul dispozitiv';
+
+  @override
+  String get syncAddDeviceUnavailable =>
+      'Configurați sincronizarea pe acest dispozitiv înainte de a adăuga altul.';
+
+  @override
+  String get syncAddDeviceWaiting => 'Se așteaptă noul dispozitiv…';
+
+  @override
+  String get syncDeleteConfigConfirm => 'Opriți sincronizarea';
 
   @override
   String get syncDeleteConfigQuestion =>
-      'Doriți să ștergeți configurația de sincronizare?';
+      'Opriți sincronizarea pe acest dispozitiv?';
 
   @override
   String get syncDevicesKeylessHint =>
@@ -10102,6 +10149,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncDevicesVerifiedChip => 'Verificat';
 
   @override
+  String get syncDisconnectExplanation =>
+      'Intrările dvs. rămân pe acest dispozitiv. Va fi deconectat de la contul de sincronizare și va avea nevoie de un cod nou pentru a sincroniza din nou. Celelalte dispozitive nu sunt afectate.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Sincronizarea acestui dispozitiv nu a putut fi oprită. Verificați conexiunea și încercați din nou.';
+
+  @override
   String get syncEntitiesConfirm => 'ÎNCEPE SINCRONIZAREA';
 
   @override
@@ -10134,6 +10189,143 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncNotLoggedInToast => 'Sincronizarea nu este conectată';
+
+  @override
+  String get syncPairBack => 'Înapoi';
+
+  @override
+  String get syncPairCameraDenied =>
+      'Lotti are nevoie de acces la cameră pentru a scana. Permiteți-l în setările sistemului sau introduceți codul manual.';
+
+  @override
+  String get syncPairCameraRetry => 'Încercați din nou camera';
+
+  @override
+  String get syncPairCheckAgain => 'Verificați din nou';
+
+  @override
+  String get syncPairCheckCode =>
+      'Verificați dacă este identic pe celălalt dispozitiv';
+
+  @override
+  String get syncPairCheckCodeLabel => 'Cod de verificare';
+
+  @override
+  String get syncPairClipboardEmpty =>
+      'Nu există nimic de lipit. Copiați mai întâi codul de asociere pe celălalt dispozitiv al dvs.';
+
+  @override
+  String get syncPairClipboardUnavailable =>
+      'Clipboardul nu a putut fi citit. Lipiți codul direct în câmp.';
+
+  @override
+  String get syncPairConnectButton => 'Conectați acest dispozitiv';
+
+  @override
+  String get syncPairCopyCodeHint =>
+      'Acest dispozitiv nu are cameră? Pe celălalt dispozitiv folosiți Copiați codul de asociere și aduceți-l aici cu un manager de parole, o notiță criptată sau tastându-l – niciodată prin chat sau e-mail.';
+
+  @override
+  String get syncPairDiscardCode => 'Introduceți alt cod de asociere';
+
+  @override
+  String get syncPairedNextTitle => 'Au mai rămas doi pași';
+
+  @override
+  String get syncPairedNextTitleOne => 'A mai rămas un lucru';
+
+  @override
+  String get syncPairedSettingsStep =>
+      'Pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările. Categoriile, obiceiurile, panourile și setările AI ajung aici.';
+
+  @override
+  String get syncPairedSettingsStepFallback =>
+      'Sau redeschideți Setări → Setări sincronizare → Dispozitive → Adăugați dispozitiv.';
+
+  @override
+  String get syncPairedVerifyDone =>
+      'Ambele dispozitive verificate – acest dispozitiv vă poate citi înregistrările';
+
+  @override
+  String get syncPairedVerifyFallback =>
+      'Încă niciun emoji? Verificați din nou – sau deschideți Dispozitive și porniți de acolo.';
+
+  @override
+  String get syncPairedVerifyStep =>
+      'Pe ambele dispozitive apare un șir de emoji. Verificați dacă sunt identice, apoi confirmați pe fiecare — până atunci, acest dispozitiv nu vă poate citi intrările.';
+
+  @override
+  String get syncPairedVerifyStepDone =>
+      'Emoji potrivite – acest dispozitiv vă poate citi înregistrările';
+
+  @override
+  String get syncPairedVerifyWaiting => 'Se așteaptă apariția emoji-urilor…';
+
+  @override
+  String get syncPairEnterManually => 'Introduceți codul manual';
+
+  @override
+  String get syncPairErrorMalformed =>
+      'Acesta nu pare un cod de asociere. Verificați dacă l-ați copiat integral – pe celălalt dispozitiv apăsați din nou Copiați codul de asociere.';
+
+  @override
+  String get syncPairErrorVersion =>
+      'Acest cod provine dintr-o altă versiune de Lotti. Actualizați ambele dispozitive și încercați din nou.';
+
+  @override
+  String get syncPairGoToDevices => 'Mergeți la Dispozitive';
+
+  @override
+  String get syncPairMismatchRemedy =>
+      'Dacă nu se potrivește, folosiți în schimb codul afișat de propriul dispozitiv.';
+
+  @override
+  String get syncPairMismatchWarning =>
+      'Dacă acest lucru nu se potrivește, nu vă conectați – codul aparține altui cont.';
+
+  @override
+  String get syncPairOnlyOwnCode =>
+      'Folosiți doar un cod creat de dvs., pe un dispozitiv care vă aparține. Scanarea codului altcuiva pune tot ce scrieți aici în contul acelei persoane.';
+
+  @override
+  String get syncPairPasteTitle => 'Lipiți codul de asociere';
+
+  @override
+  String get syncPairScanInstead => 'Scanați cu camera';
+
+  @override
+  String get syncPairScannerRejected =>
+      'Acesta este codul pe care l-ați refuzat. Scanați codul afișat de propriul dispozitiv sau lipiți-l mai jos.';
+
+  @override
+  String get syncPairScanTitle =>
+      'Îndreptați camera spre codul de pe celălalt dispozitiv';
+
+  @override
+  String get syncPairShowEmojiAgain => 'Afișați din nou emoji-urile';
+
+  @override
+  String get syncPairStepAlmost =>
+      'Pasul 3 din 3 · Finalizați pe celălalt dispozitiv';
+
+  @override
+  String get syncPairStepConfirm => 'Pasul 2 din 3 · Confirmare';
+
+  @override
+  String get syncPairStepConnecting => 'Pasul 3 din 3 · Se conectează';
+
+  @override
+  String get syncPairStepFailed => 'Pasul 3 din 3 · Conectarea a eșuat';
+
+  @override
+  String get syncPairStepScan => 'Pasul 1 din 3 · Obțineți codul';
+
+  @override
+  String get syncPairWhereToFind =>
+      'Pe un dispozitiv deja sincronizat, deschideți Setări → Setări sincronizare → Dispozitive și alegeți Adăugați dispozitiv.';
+
+  @override
+  String get syncPairWillJoin => 'Acest dispozitiv se va alătura la:';
 
   @override
   String get syncPayloadAgentBundle => 'Pachet agent';

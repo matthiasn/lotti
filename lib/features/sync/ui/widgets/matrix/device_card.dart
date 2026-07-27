@@ -11,10 +11,17 @@ import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provide
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:matrix/matrix.dart';
+
+/// Card width at which the name and its trust badges stop stacking. Below it
+/// a phone card would cramp; above it the stacked layout wastes most of the
+/// row.
+const double kDeviceCardWideBreakpoint = 420;
 
 /// One session of the sync account: name, trust state, last-seen, and the
 /// actions that apply to it.
@@ -76,20 +83,34 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
           title: context.messages.deviceDeletedSuccess(deviceName),
         );
       }
-    } on MatrixException catch (e) {
+    } on MatrixException catch (e, stackTrace) {
+      // The raw exception goes to the log, not to a toast: `M_LIMIT_EXCEEDED:
+      // Too many requests` told the user nothing they could act on.
+      getIt<DomainLogger>().error(
+        LogDomain.sync,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'deleteDevice',
+      );
       if (context.mounted) {
         context.showToast(
           tone: DesignSystemToastTone.error,
           title: e.errcode == 'M_FORBIDDEN'
               ? context.messages.deviceDeleteFailedForbidden
-              : context.messages.deviceDeleteFailed('$e'),
+              : context.messages.deviceDeleteFailedGeneric,
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.sync,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'deleteDevice',
+      );
       if (context.mounted) {
         context.showToast(
           tone: DesignSystemToastTone.error,
-          title: context.messages.deviceDeleteFailed('$e'),
+          title: context.messages.deviceDeleteFailedGeneric,
         );
       }
     } finally {
@@ -185,16 +206,47 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            device.titleLabel,
-            style: tokens.typography.styles.subtitle.subtitle2,
-            softWrap: true,
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step2,
-            children: trustBadges,
+          // Wide enough, the name and its trust state share a row: on a
+          // desktop card the stacked version left roughly two thirds of the
+          // width empty while keeping the card its full mobile height.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final title = Text(
+                device.titleLabel,
+                style: tokens.typography.styles.subtitle.subtitle2,
+                softWrap: true,
+              );
+              final badges = Wrap(
+                spacing: tokens.spacing.step3,
+                runSpacing: tokens.spacing.step2,
+                children: trustBadges,
+              );
+
+              if (constraints.maxWidth < kDeviceCardWideBreakpoint) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    title,
+                    SizedBox(height: tokens.spacing.step2),
+                    badges,
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Loose, not Expanded: the badges belong beside the name,
+                  // not pinned to the far edge with a void between them.
+                  Flexible(child: title),
+                  SizedBox(width: tokens.spacing.step3),
+                  // Also flexible: as a plain Row child the Wrap got unbounded
+                  // constraints and laid every badge out in one run, so a long
+                  // translation or a large text scale overflowed instead of
+                  // wrapping.
+                  Flexible(child: badges),
+                ],
+              );
+            },
           ),
           if (metaLine != null) ...[
             SizedBox(height: tokens.spacing.step2),
@@ -279,10 +331,15 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                       // Match a sibling Verify's height; standing alone on a
                       // healthy card it stays small so destruction is never
                       // the focal element of a card needing nothing done.
-                      size: canVerify
-                          ? DesignSystemButtonSize.large
-                          : DesignSystemButtonSize.small,
-                      variant: DesignSystemButtonVariant.dangerSecondary,
+                      // Borderless, and on the card's own text rail: with the
+                      // button's internal padding the label sat visibly right
+                      // of the name, badges and last-seen above it.
+                      alignsLabelToLeadingEdge: true,
+                      // Borderless on a healthy card: a routine cleanup
+                      // action must not read louder than "Add device" on the
+                      // page around it. The blocking case above keeps its
+                      // fill, because there removal *is* the primary act.
+                      variant: DesignSystemButtonVariant.dangerTertiary,
                       isLoading: _busy,
                       onPressed: () => _deleteDevice(context),
                       label: messages.deleteDeviceLabel,

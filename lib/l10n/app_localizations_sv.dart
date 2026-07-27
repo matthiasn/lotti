@@ -4729,7 +4729,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get deleteButton => 'Radera';
 
   @override
-  String get deleteDeviceLabel => 'Ta bort enheten';
+  String get deleteDeviceLabel => 'Ta bort från synkronisering';
 
   @override
   String get designSystemActionVariantTitle => 'Med handling';
@@ -5243,17 +5243,16 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String deviceDeletedSuccess(String deviceName) {
-    return 'Enheten $deviceName har raderats';
-  }
-
-  @override
-  String deviceDeleteFailed(String error) {
-    return 'Misslyckades med att ta bort enheten: $error';
+    return '$deviceName borttagen från synkronisering';
   }
 
   @override
   String get deviceDeleteFailedForbidden =>
-      'Hemservern avvisade det sparade lösenordet, så enheten kunde inte tas bort. Para ihop den här enheten igen med en ny QR-kod och försök igen.';
+      'Synkroniseringsservern nekade ändringen. Ta bort enheten från synkronisering på själva enheten, eller parkoppla den igen med en ny parkopplingskod.';
+
+  @override
+  String get deviceDeleteFailedGeneric =>
+      'Enheten kunde inte tas bort. Kontrollera din anslutning och försök igen.';
 
   @override
   String deviceDeleteQuestion(String deviceName) {
@@ -8175,83 +8174,62 @@ class AppLocalizationsSv extends AppLocalizations {
   String get promptSelectionModalTitle => 'Välj förkonfigurerad prompt';
 
   @override
-  String get provisionedSyncBundleImported => 'Importerad provisioneringskod';
-
-  @override
-  String get provisionedSyncConfigureButton => 'Konfigurera';
-
-  @override
   String get provisionedSyncCopiedToClipboard => 'Kopierat till skrivplatta';
 
   @override
-  String get provisionedSyncDisconnect => 'Koppla bort';
+  String get provisionedSyncDisconnect => 'Sluta synka den här enheten';
 
   @override
-  String get provisionedSyncDone =>
-      'Synkroniserade konfigurerade framgångsrikt';
+  String get provisionedSyncDone => 'Den här enheten är ansluten';
 
   @override
-  String get provisionedSyncError => 'Konfigurationen misslyckades';
+  String get provisionedSyncError =>
+      'Det gick inte att ansluta till ditt synkkonto';
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
-      'Ett fel uppstod under konfigurationen. Försök igen, tack.';
+      'Något gick fel vid anslutningen. Försök igen; om det fortsätter misslyckas, kontrollera att den andra enheten fortfarande synkar.';
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Inloggningen misslyckades. Kontrollera dina behörigheter och försök igen.';
+      'Det gick inte att logga in med den koden. Kontrollera att den andra enheten fortfarande synkar, öppna Lägg till enhet där igen och använd koden som visas.';
 
   @override
-  String get provisionedSyncImportButton => 'Import';
+  String get provisionedSyncImportButton => 'Fortsätt';
 
   @override
-  String get provisionedSyncImportHint => 'Klistra in provisioneringskoden här';
+  String get provisionedSyncImportHint => 'Klistra in parkopplingskoden här';
 
   @override
   String get provisionedSyncImportTitle => 'Synkroniseringsinställning';
 
   @override
-  String get provisionedSyncInvalidBundle => 'Ogiltig provisioneringskod';
+  String get provisionedSyncJoiningRoom => 'Ställer in delat lagringsutrymme…';
 
   @override
-  String get provisionedSyncJoiningRoom => 'Ansluter till synkrummet...';
-
-  @override
-  String get provisionedSyncLoggingIn => 'Loggar in...';
+  String get provisionedSyncLoggingIn => 'Ansluter till ditt synkkonto…';
 
   @override
   String get provisionedSyncPasteClipboard => 'Klistra in från skrivplatta';
 
   @override
-  String get provisionedSyncReady => 'Skanna denna QR-kod på din mobila enhet';
-
-  @override
   String get provisionedSyncRetry => 'Omprövning';
 
   @override
-  String get provisionedSyncRotatingPassword => 'Säkrar kontot...';
-
-  @override
-  String get provisionedSyncScanButton => 'Skanna QR-kod';
-
-  @override
-  String get provisionedSyncShowQr => 'Visa provisionering QR';
+  String get provisionedSyncRotatingPassword => 'Säkrar den här enheten…';
 
   @override
   String get provisionedSyncSubtitle =>
-      'Sätt upp synk från ett provisioning-paket';
+      'Para ihop en enhet till med det här synkkontot';
 
   @override
-  String get provisionedSyncSummaryHomeserver => 'Homeserver';
+  String get provisionedSyncSummaryHomeserver => 'Synkroniseringsserver';
 
   @override
-  String get provisionedSyncSummaryRoom => 'Rum';
+  String get provisionedSyncSummaryUser => 'Synkkonto';
 
   @override
-  String get provisionedSyncSummaryUser => 'Användare';
-
-  @override
-  String get provisionedSyncTitle => 'Provisionerad synkronisering';
+  String get provisionedSyncTitle => 'Enheter';
 
   @override
   String get queueCatchUpNowButton => 'Ta igen nu';
@@ -9283,8 +9261,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Synkronisera diagnostisk information';
 
   @override
-  String get settingsMatrixDiagnosticShowButton =>
-      'Visa diagnostisk information';
+  String get settingsMatrixDiagnosticShowButton => 'Tekniska detaljer';
 
   @override
   String get settingsMatrixDone => 'Klart';
@@ -9832,11 +9809,76 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncActivityTitle => 'Synk';
 
   @override
-  String get syncDeleteConfigConfirm => 'JA, JAG ÄR SÄKER';
+  String get syncAddDeviceAction => 'Lägg till enhet';
 
   @override
-  String get syncDeleteConfigQuestion =>
-      'Vill du ta bort synkroniseringskonfigurationen?';
+  String get syncAddDeviceCodeHint =>
+      'Har den nya enheten ingen kamera? Kopiera parkopplingskoden och klistra in den där i stället.';
+
+  @override
+  String get syncAddDeviceConnected => 'En ny enhet har anslutit';
+
+  @override
+  String get syncAddDeviceCopyCode => 'Kopiera parkopplingskod';
+
+  @override
+  String get syncAddDeviceGenerateFailed =>
+      'Det gick inte att skapa en parkopplingskod. Försök igen.';
+
+  @override
+  String get syncAddDeviceHideCode => 'Dölj parkopplingskoden';
+
+  @override
+  String get syncAddDeviceIntro =>
+      'Installera Lotti på den nya enheten, öppna Inställningar → Synkroniseringsinställningar → Enheter där och skanna den här koden.';
+
+  @override
+  String get syncAddDeviceNextLeadIn => 'Sedan · när den har anslutit';
+
+  @override
+  String get syncAddDeviceRevealCode => 'Visa parkopplingskoden som text';
+
+  @override
+  String get syncAddDeviceRosterError =>
+      'Det gick inte att kontrollera om den nya enheten har anslutit.';
+
+  @override
+  String get syncAddDeviceSecurityNote =>
+      'Den här parkopplingskoden låser upp ditt synkkonto – låt bara din egen nya enhet skanna den, och ta aldrig en skärmbild av den eller skicka den.';
+
+  @override
+  String get syncAddDeviceSendSettings => 'Skicka inställningar';
+
+  @override
+  String get syncAddDeviceSendSettingsHint =>
+      'När den nya enheten är ansluten skickar du dina kategorier, vanor, instrumentpaneler och AI-inställningar dit.';
+
+  @override
+  String get syncAddDeviceSendSettingsPending =>
+      'Tillgängligt så snart den nya enheten ansluter.';
+
+  @override
+  String get syncAddDeviceSendSettingsReady =>
+      'Skicka nu, eller vänta tills den nya enheten ansluter.';
+
+  @override
+  String get syncAddDeviceStepScan => 'Nu · Visa koden';
+
+  @override
+  String get syncAddDeviceStepScanTitle => 'Skanna detta på den nya enheten';
+
+  @override
+  String get syncAddDeviceUnavailable =>
+      'Ställ in synk på den här enheten innan du lägger till en till.';
+
+  @override
+  String get syncAddDeviceWaiting => 'Väntar på den nya enheten…';
+
+  @override
+  String get syncDeleteConfigConfirm => 'Sluta synka';
+
+  @override
+  String get syncDeleteConfigQuestion => 'Sluta synka den här enheten?';
 
   @override
   String get syncDevicesKeylessHint =>
@@ -9916,6 +9958,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncDevicesVerifiedChip => 'Verifierad';
 
   @override
+  String get syncDisconnectExplanation =>
+      'Dina anteckningar stannar på den här enheten. Den loggas ut från synkkontot och behöver en ny parkopplingskod för att synka igen. Dina andra enheter påverkas inte.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Det gick inte att stoppa synkroniseringen för den här enheten. Kontrollera din anslutning och försök igen.';
+
+  @override
   String get syncEntitiesConfirm => 'STARTA SYNKRONISERING';
 
   @override
@@ -9947,6 +9997,141 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncNotLoggedInToast => 'Sync är inte inloggad';
+
+  @override
+  String get syncPairBack => 'Tillbaka';
+
+  @override
+  String get syncPairCameraDenied =>
+      'Lotti behöver kameraåtkomst för att skanna. Tillåt det i systeminställningarna, eller ange koden manuellt.';
+
+  @override
+  String get syncPairCameraRetry => 'Försök med kameran igen';
+
+  @override
+  String get syncPairCheckAgain => 'Kontrollera igen';
+
+  @override
+  String get syncPairCheckCode =>
+      'Kontrollera att det stämmer på den andra enheten';
+
+  @override
+  String get syncPairCheckCodeLabel => 'Kontrollkod';
+
+  @override
+  String get syncPairClipboardEmpty =>
+      'Det finns inget att klistra in. Kopiera först parkopplingskoden på din andra enhet.';
+
+  @override
+  String get syncPairClipboardUnavailable =>
+      'Det gick inte att läsa urklipp. Klistra in koden direkt i fältet.';
+
+  @override
+  String get syncPairConnectButton => 'Anslut den här enheten';
+
+  @override
+  String get syncPairCopyCodeHint =>
+      'Har den här enheten ingen kamera? Använd Kopiera parkopplingskod på den andra enheten och flytta den hit med en lösenordshanterare, en krypterad anteckning eller genom att skriva av den – aldrig via chatt eller e-post.';
+
+  @override
+  String get syncPairDiscardCode => 'Ange en annan parkopplingskod';
+
+  @override
+  String get syncPairedNextTitle => 'Två steg kvar';
+
+  @override
+  String get syncPairedNextTitleOne => 'En sak kvar';
+
+  @override
+  String get syncPairedSettingsStep =>
+      'På din andra enhet väljer du Skicka inställningar i skärmen Lägg till enhet som fortfarande är öppen. Dina kategorier, vanor, instrumentpaneler och AI-inställningar hamnar här.';
+
+  @override
+  String get syncPairedSettingsStepFallback =>
+      'Eller öppna Inställningar → Synkroniseringsinställningar → Enheter → Lägg till enhet igen.';
+
+  @override
+  String get syncPairedVerifyDone =>
+      'Båda enheterna verifierade – den här enheten kan läsa dina anteckningar';
+
+  @override
+  String get syncPairedVerifyFallback =>
+      'Inga emojier än? Kontrollera igen – eller öppna Enheter och starta därifrån.';
+
+  @override
+  String get syncPairedVerifyStep =>
+      'En rad emojier visas på båda enheterna. Kontrollera att de stämmer överens och bekräfta på varje enhet — tills dess kan den här enheten inte läsa dina anteckningar.';
+
+  @override
+  String get syncPairedVerifyStepDone =>
+      'Emojier stämmer – den här enheten kan läsa dina anteckningar';
+
+  @override
+  String get syncPairedVerifyWaiting => 'Väntar på att emojierna ska dyka upp…';
+
+  @override
+  String get syncPairEnterManually => 'Ange koden manuellt';
+
+  @override
+  String get syncPairErrorMalformed =>
+      'Det ser inte ut som en parkopplingskod. Kontrollera att du kopierade hela – tryck på Kopiera parkopplingskod igen på den andra enheten.';
+
+  @override
+  String get syncPairErrorVersion =>
+      'Koden kommer från en annan version av Lotti. Uppdatera båda enheterna och försök igen.';
+
+  @override
+  String get syncPairGoToDevices => 'Gå till Enheter';
+
+  @override
+  String get syncPairMismatchRemedy =>
+      'Om den inte stämmer, använd i stället koden som din egen enhet visar.';
+
+  @override
+  String get syncPairMismatchWarning =>
+      'Om detta inte stämmer ska du inte ansluta – koden hör till ett annat konto.';
+
+  @override
+  String get syncPairOnlyOwnCode =>
+      'Använd bara en kod du själv har skapat, på en enhet du äger. Skannar du någon annans kod hamnar allt du skriver här i deras konto.';
+
+  @override
+  String get syncPairPasteTitle => 'Klistra in parkopplingskoden';
+
+  @override
+  String get syncPairScanInstead => 'Skanna med kameran';
+
+  @override
+  String get syncPairScannerRejected =>
+      'Det är koden du avvisade. Skanna den kod som din egen enhet visar, eller klistra in den nedan.';
+
+  @override
+  String get syncPairScanTitle => 'Rikta kameran mot koden på din andra enhet';
+
+  @override
+  String get syncPairShowEmojiAgain => 'Visa emojierna igen';
+
+  @override
+  String get syncPairStepAlmost => 'Steg 3 av 3 · Avsluta på din andra enhet';
+
+  @override
+  String get syncPairStepConfirm => 'Steg 2 av 3 · Bekräfta';
+
+  @override
+  String get syncPairStepConnecting => 'Steg 3 av 3 · Ansluter';
+
+  @override
+  String get syncPairStepFailed => 'Steg 3 av 3 · Kunde inte ansluta';
+
+  @override
+  String get syncPairStepScan => 'Steg 1 av 3 · Hämta koden';
+
+  @override
+  String get syncPairWhereToFind =>
+      'Öppna Inställningar → Synkroniseringsinställningar → Enheter på en enhet som redan synkar och välj Lägg till enhet.';
+
+  @override
+  String get syncPairWillJoin => 'Den här enheten ansluter till:';
 
   @override
   String get syncPayloadAgentBundle => 'Agentbunt';

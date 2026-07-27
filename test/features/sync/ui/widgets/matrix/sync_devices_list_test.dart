@@ -2,12 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
+import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_devices_list.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -295,7 +299,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('DELETE DEVICE'));
+      await tester.tap(find.text('REMOVE FROM SYNC'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
@@ -377,7 +381,7 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.text('DELETE DEVICE'));
+    await tester.tap(find.text('REMOVE FROM SYNC'));
     await tester.pump();
 
     // The sheet closes while the deletion is still in flight.
@@ -542,5 +546,73 @@ void main() {
     verify(() => mockMatrixService.getSyncDevices()).called(1);
     expect(find.byType(DeviceCard), findsNWidgets(2));
     expect(find.text('Freshly paired phone'), findsOneWidget);
+  });
+
+  testWidgets('offers Add device above the roster, on every platform', (
+    tester,
+  ) async {
+    for (final mobile in [true, false]) {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = !mobile;
+      isMobile = mobile;
+      addTearDown(() {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      });
+
+      await pumpList(
+        tester,
+        controller: () => _FakeSyncDevicesController([currentDevice]),
+      );
+
+      // Pairing must be reachable from the surface that manages devices, and
+      // a phone that outlives its desktop has to be able to onboard the
+      // replacement — so this is not desktop-only.
+      final addDevice = find.byKey(const Key('sync_devices_add_device'));
+      expect(addDevice, findsOneWidget);
+
+      // It leads the roster: the empty-ish list must offer the remedy first.
+      final addY = tester.getTopLeft(addDevice).dy;
+      final cardY = tester.getTopLeft(find.byType(DeviceCard).first).dy;
+      expect(addY, lessThan(cardY));
+
+      // And it carries the accent. As an outline it lost the weight contest
+      // to the page's destructive controls, which is the wrong hierarchy for
+      // the one constructive action the surface exists to offer.
+      expect(
+        tester.widget<DesignSystemButton>(addDevice).variant,
+        DesignSystemButtonVariant.primary,
+      );
+    }
+  });
+
+  testWidgets('Add device opens the pairing sheet', (tester) async {
+    // The roster is the only route to the handover code, so the button has to
+    // actually reach AddDeviceModal rather than merely render.
+    when(() => mockMatrixService.loadConfig()).thenAnswer(
+      (_) async => const MatrixConfig(
+        homeServer: 'https://matrix.example.com',
+        user: '@alice:example.com',
+        password: 'rotated-pw',
+      ),
+    );
+    when(
+      () => mockMatrixService.syncRoomId,
+    ).thenReturn('!room123:example.com');
+
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([currentDevice]),
+    );
+
+    await tester.tap(find.byKey(const Key('sync_devices_add_device')));
+    // Discrete pumps: the sheet's waiting strip spins forever, so
+    // pumpAndSettle never returns.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(AddDeviceView), findsOneWidget);
+    expect(find.byType(AddDeviceActionBar), findsOneWidget);
   });
 }

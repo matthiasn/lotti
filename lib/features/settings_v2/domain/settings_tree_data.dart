@@ -161,8 +161,8 @@ List<SettingsNode> buildSettingsTree({
         // The Sync branch has no landing panel of its own — selecting it
         // leaves the desktop detail pane empty. The provisioned-sync
         // (QR-pairing) entry point is the first child leaf instead, so it
-        // reads as a normal row in the list (Provisioned Sync · This
-        // device · Backfill · …) rather than as a default pane body.
+        // reads as a normal row in the list (Devices · This device ·
+        // Backfill · …) rather than as a default pane body.
         children: [
           // QR-pairing / provisioning-bundle setup. First in the list so
           // it stays the natural starting point for a fresh device.

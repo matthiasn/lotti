@@ -4809,7 +4809,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deleteButton => 'Supprimer';
 
   @override
-  String get deleteDeviceLabel => 'Supprimer l\'appareil';
+  String get deleteDeviceLabel => 'Retirer de la synchronisation';
 
   @override
   String get designSystemActionVariantTitle => 'Avec action';
@@ -5331,17 +5331,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String deviceDeletedSuccess(String deviceName) {
-    return 'Appareil $deviceName supprimé avec succès';
-  }
-
-  @override
-  String deviceDeleteFailed(String error) {
-    return 'Échec de suppression de l\'appareil : $error';
+    return '$deviceName retiré de la synchronisation';
   }
 
   @override
   String get deviceDeleteFailedForbidden =>
-      'Le serveur a refusé le mot de passe enregistré, l\'appareil n\'a donc pas pu être supprimé. Appaire à nouveau cet appareil avec un nouveau QR code et réessaie.';
+      'Le serveur de synchronisation a refusé cette modification. Retire cet appareil de la synchronisation depuis l’appareil lui-même, ou réappaire-le avec un nouveau code d’appairage.';
+
+  @override
+  String get deviceDeleteFailedGeneric =>
+      'Impossible de retirer cet appareil. Vérifie ta connexion et réessaie.';
 
   @override
   String deviceDeleteQuestion(String deviceName) {
@@ -8338,85 +8337,64 @@ class AppLocalizationsFr extends AppLocalizations {
   String get promptSelectionModalTitle => 'Sélectionner un prompt préconfiguré';
 
   @override
-  String get provisionedSyncBundleImported => 'Code de provisionnement importé';
-
-  @override
-  String get provisionedSyncConfigureButton => 'Configurer';
-
-  @override
   String get provisionedSyncCopiedToClipboard => 'Copié dans le presse-papiers';
 
   @override
-  String get provisionedSyncDisconnect => 'Déconnecter';
+  String get provisionedSyncDisconnect =>
+      'Arrêter la synchronisation sur cet appareil';
 
   @override
-  String get provisionedSyncDone => 'Synchronisation configurée avec succès';
+  String get provisionedSyncDone => 'Cet appareil est connecté';
 
   @override
-  String get provisionedSyncError => 'Échec de la configuration';
+  String get provisionedSyncError =>
+      'Impossible de se connecter à ton compte de synchronisation';
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
-      'Une erreur est survenue lors de la configuration. Réessaie.';
+      'Un problème est survenu pendant la connexion. Réessaie ; si l’échec persiste, vérifie que l’autre appareil synchronise toujours.';
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Échec de la connexion. Vérifie tes identifiants et réessaie.';
+      'La connexion avec ce code a échoué. Vérifie que l’autre appareil synchronise toujours, rouvre Ajouter un appareil là-bas et utilise le code affiché.';
 
   @override
-  String get provisionedSyncImportButton => 'Importer';
+  String get provisionedSyncImportButton => 'Continuer';
 
   @override
-  String get provisionedSyncImportHint =>
-      'Colle le code de provisionnement ici';
+  String get provisionedSyncImportHint => 'Colle le code d’appairage ici';
 
   @override
   String get provisionedSyncImportTitle => 'Configurer la synchronisation';
 
   @override
-  String get provisionedSyncInvalidBundle => 'Code de provisionnement invalide';
+  String get provisionedSyncJoiningRoom => 'Configuration du stockage partagé…';
 
   @override
-  String get provisionedSyncJoiningRoom =>
-      'Rejoindre la salle de synchronisation...';
-
-  @override
-  String get provisionedSyncLoggingIn => 'Connexion en cours...';
+  String get provisionedSyncLoggingIn =>
+      'Connexion à ton compte de synchronisation…';
 
   @override
   String get provisionedSyncPasteClipboard => 'Coller depuis le presse-papiers';
 
   @override
-  String get provisionedSyncReady =>
-      'Scanne ce code QR sur ton appareil mobile';
-
-  @override
   String get provisionedSyncRetry => 'Réessayer';
 
   @override
-  String get provisionedSyncRotatingPassword => 'Sécurisation du compte...';
-
-  @override
-  String get provisionedSyncScanButton => 'Scanner le code QR';
-
-  @override
-  String get provisionedSyncShowQr => 'Afficher le QR de provisionnement';
+  String get provisionedSyncRotatingPassword => 'Sécurisation de cet appareil…';
 
   @override
   String get provisionedSyncSubtitle =>
-      'Configurer la synchronisation à partir d\'un paquet de provisionnement';
+      'Associer un autre appareil à ce compte de synchronisation';
 
   @override
-  String get provisionedSyncSummaryHomeserver => 'Serveur';
+  String get provisionedSyncSummaryHomeserver => 'Serveur de synchronisation';
 
   @override
-  String get provisionedSyncSummaryRoom => 'Salle';
+  String get provisionedSyncSummaryUser => 'Compte de synchronisation';
 
   @override
-  String get provisionedSyncSummaryUser => 'Utilisateur';
-
-  @override
-  String get provisionedSyncTitle => 'Synchronisation provisionnée';
+  String get provisionedSyncTitle => 'Appareils';
 
   @override
   String get queueCatchUpNowButton => 'Rattraper maintenant';
@@ -9465,8 +9443,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Informations de diagnostic de synchronisation';
 
   @override
-  String get settingsMatrixDiagnosticShowButton =>
-      'Afficher les informations de diagnostic';
+  String get settingsMatrixDiagnosticShowButton => 'Détails techniques';
 
   @override
   String get settingsMatrixDone => 'Terminé';
@@ -9513,7 +9490,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMatrixStatsTitle => 'Statistiques Matrix';
 
   @override
-  String get settingsMatrixTitle => 'Paramètres de synchronisation Matrix';
+  String get settingsMatrixTitle => 'Paramètres de synchronisation';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
@@ -10024,11 +10001,77 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncActivityTitle => 'Synchronisation';
 
   @override
-  String get syncDeleteConfigConfirm => 'OUI, JE SUIS SÛR';
+  String get syncAddDeviceAction => 'Ajouter un appareil';
+
+  @override
+  String get syncAddDeviceCodeHint =>
+      'Le nouvel appareil n’a pas de caméra ? Copie le code d’appairage et colle-le là-bas.';
+
+  @override
+  String get syncAddDeviceConnected => 'Un nouvel appareil a rejoint';
+
+  @override
+  String get syncAddDeviceCopyCode => 'Copier le code d’appairage';
+
+  @override
+  String get syncAddDeviceGenerateFailed =>
+      'Impossible de créer un code d’appairage. Réessaie.';
+
+  @override
+  String get syncAddDeviceHideCode => 'Masquer le code d’appairage';
+
+  @override
+  String get syncAddDeviceIntro =>
+      'Installe Lotti sur le nouvel appareil, ouvre Paramètres → Paramètres de synchronisation → Appareils là-bas et scanne ce code.';
+
+  @override
+  String get syncAddDeviceNextLeadIn => 'Ensuite · une fois qu’il a rejoint';
+
+  @override
+  String get syncAddDeviceRevealCode => 'Afficher le code d’appairage en texte';
+
+  @override
+  String get syncAddDeviceRosterError =>
+      'Impossible de vérifier si le nouvel appareil a rejoint le compte.';
+
+  @override
+  String get syncAddDeviceSecurityNote =>
+      'Ce code d’appairage déverrouille ton compte de synchronisation — ne le fais scanner que par ton propre nouvel appareil, et ne le capture ni ne l’envoie jamais.';
+
+  @override
+  String get syncAddDeviceSendSettings => 'Envoyer les réglages';
+
+  @override
+  String get syncAddDeviceSendSettingsHint =>
+      'Une fois le nouvel appareil connecté, envoie-lui tes catégories, habitudes, tableaux de bord et réglages d’IA.';
+
+  @override
+  String get syncAddDeviceSendSettingsPending =>
+      'Disponible dès que le nouvel appareil a rejoint.';
+
+  @override
+  String get syncAddDeviceSendSettingsReady =>
+      'Envoie maintenant, ou attends que le nouvel appareil ait rejoint.';
+
+  @override
+  String get syncAddDeviceStepScan => 'Maintenant · Affiche le code';
+
+  @override
+  String get syncAddDeviceStepScanTitle => 'Scanne ceci sur le nouvel appareil';
+
+  @override
+  String get syncAddDeviceUnavailable =>
+      'Configure la synchronisation sur cet appareil avant d’en ajouter un autre.';
+
+  @override
+  String get syncAddDeviceWaiting => 'En attente du nouvel appareil…';
+
+  @override
+  String get syncDeleteConfigConfirm => 'Arrêter la synchronisation';
 
   @override
   String get syncDeleteConfigQuestion =>
-      'Veux-tu supprimer la configuration de synchronisation ?';
+      'Arrêter la synchronisation sur cet appareil ?';
 
   @override
   String get syncDevicesKeylessHint =>
@@ -10111,6 +10154,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncDevicesVerifiedChip => 'Vérifié';
 
   @override
+  String get syncDisconnectExplanation =>
+      'Tes entrées restent sur cet appareil. Il est déconnecté du compte de synchronisation et aura besoin d’un nouveau code pour se resynchroniser. Tes autres appareils ne sont pas affectés.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Impossible d’arrêter la synchronisation de cet appareil. Vérifie ta connexion et réessaie.';
+
+  @override
   String get syncEntitiesConfirm => 'DÉMARRER LA SYNCHRONISATION';
 
   @override
@@ -10142,6 +10193,144 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncNotLoggedInToast => 'La synchronisation n\'est pas connectée';
+
+  @override
+  String get syncPairBack => 'Retour';
+
+  @override
+  String get syncPairCameraDenied =>
+      'Lotti a besoin d’accéder à la caméra pour scanner. Autorise-le dans les réglages système, ou saisis le code manuellement.';
+
+  @override
+  String get syncPairCameraRetry => 'Réessayer la caméra';
+
+  @override
+  String get syncPairCheckAgain => 'Vérifier à nouveau';
+
+  @override
+  String get syncPairCheckCode =>
+      'Vérifie que c’est identique sur l’autre appareil';
+
+  @override
+  String get syncPairCheckCodeLabel => 'Code de contrôle';
+
+  @override
+  String get syncPairClipboardEmpty =>
+      'Rien à coller. Copie d’abord le code d’appairage sur ton autre appareil.';
+
+  @override
+  String get syncPairClipboardUnavailable =>
+      'Impossible de lire le presse-papiers. Colle le code directement dans le champ.';
+
+  @override
+  String get syncPairConnectButton => 'Connecter cet appareil';
+
+  @override
+  String get syncPairCopyCodeHint =>
+      'Cet appareil n’a pas de caméra ? Sur l’autre appareil, utilise Copier le code d’appairage et transfère-le via un gestionnaire de mots de passe, une note chiffrée ou en le recopiant — jamais par chat ou e-mail.';
+
+  @override
+  String get syncPairDiscardCode => 'Saisir un autre code d’appairage';
+
+  @override
+  String get syncPairedNextTitle => 'Encore deux étapes';
+
+  @override
+  String get syncPairedNextTitleOne => 'Il reste une chose';
+
+  @override
+  String get syncPairedSettingsStep =>
+      'Sur ton autre appareil, dans l’écran Ajouter un appareil encore ouvert, choisis Envoyer les réglages. Tes catégories, habitudes, tableaux de bord et réglages d’IA arrivent ici.';
+
+  @override
+  String get syncPairedSettingsStepFallback =>
+      'Ou rouvre Paramètres → Paramètres de synchronisation → Appareils → Ajouter un appareil.';
+
+  @override
+  String get syncPairedVerifyDone =>
+      'Les deux appareils sont vérifiés — cet appareil peut lire tes entrées';
+
+  @override
+  String get syncPairedVerifyFallback =>
+      'Pas encore d’émojis ? Vérifie à nouveau — ou ouvre Appareils et lance la vérification depuis là.';
+
+  @override
+  String get syncPairedVerifyStep =>
+      'Une série d’émojis apparaît sur les deux appareils. Vérifie qu’ils correspondent, puis confirme sur chacun — tant que tu ne l’as pas fait, cet appareil ne peut pas lire tes entrées.';
+
+  @override
+  String get syncPairedVerifyStepDone =>
+      'Émojis identiques — cet appareil peut lire tes entrées';
+
+  @override
+  String get syncPairedVerifyWaiting =>
+      'En attente de l’apparition des émojis…';
+
+  @override
+  String get syncPairEnterManually => 'Saisir le code manuellement';
+
+  @override
+  String get syncPairErrorMalformed =>
+      'Cela ne ressemble pas à un code d’appairage. Vérifie que tu l’as copié en entier — sur l’autre appareil, appuie de nouveau sur Copier le code d’appairage.';
+
+  @override
+  String get syncPairErrorVersion =>
+      'Ce code vient d’une autre version de Lotti. Mets à jour les deux appareils et réessaie.';
+
+  @override
+  String get syncPairGoToDevices => 'Aller à Appareils';
+
+  @override
+  String get syncPairMismatchRemedy =>
+      'S’il ne correspond pas, utilise plutôt le code qu’affiche ton propre appareil.';
+
+  @override
+  String get syncPairMismatchWarning =>
+      'Si cela ne correspond pas, ne connecte pas — le code appartient à un autre compte.';
+
+  @override
+  String get syncPairOnlyOwnCode =>
+      'N’utilise qu’un code que tu as créé toi-même, sur un appareil qui t’appartient. Scanner celui de quelqu’un d’autre place tout ce que tu écris ici dans son compte.';
+
+  @override
+  String get syncPairPasteTitle => 'Colle le code d’appairage';
+
+  @override
+  String get syncPairScanInstead => 'Scanner avec la caméra';
+
+  @override
+  String get syncPairScannerRejected =>
+      'C’est le code que tu as refusé. Scanne celui qu’affiche ton propre appareil, ou colle-le ci-dessous.';
+
+  @override
+  String get syncPairScanTitle =>
+      'Dirige la caméra vers le code sur ton autre appareil';
+
+  @override
+  String get syncPairShowEmojiAgain => 'Afficher de nouveau les émojis';
+
+  @override
+  String get syncPairStepAlmost =>
+      'Étape 3 sur 3 · Termine sur ton autre appareil';
+
+  @override
+  String get syncPairStepConfirm => 'Étape 2 sur 3 · Confirmer';
+
+  @override
+  String get syncPairStepConnecting => 'Étape 3 sur 3 · Connexion';
+
+  @override
+  String get syncPairStepFailed => 'Étape 3 sur 3 · Échec de la connexion';
+
+  @override
+  String get syncPairStepScan => 'Étape 1 sur 3 · Obtiens le code';
+
+  @override
+  String get syncPairWhereToFind =>
+      'Sur un appareil déjà synchronisé, ouvre Paramètres → Paramètres de synchronisation → Appareils, puis choisis Ajouter un appareil.';
+
+  @override
+  String get syncPairWillJoin => 'Cet appareil va rejoindre :';
 
   @override
   String get syncPayloadAgentBundle => 'Lot d\'agent';

@@ -3,13 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
+import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_callout.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Every session on the sync account: a header with a refresh action, a
@@ -160,42 +163,25 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
         header,
         if (blocked) ...[
           SizedBox(height: tokens.spacing.step3),
-          // The toast's warning-callout grammar (level02 surface, warning
-          // border and icon, high-emphasis text): clearly a message, not a
-          // control, and distinct from the cards' hairline outline.
-          DecoratedBox(
-            key: const Key('sync_devices_paused_banner'),
-            decoration: BoxDecoration(
-              color: tokens.colors.background.level02,
-              border: Border.all(
-                color: tokens.colors.alert.warning.defaultColor,
-              ),
-              borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(tokens.spacing.step4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.warning_rounded,
-                    size: tokens.spacing.step6,
-                    color: tokens.colors.alert.warning.defaultColor,
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Expanded(
-                    child: Text(
-                      bannerText,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          SyncCallout(
+            icon: Icons.warning_rounded,
+            text: bannerText,
+            calloutKey: const Key('sync_devices_paused_banner'),
           ),
         ],
+        SizedBox(height: tokens.spacing.step4),
+        // Pairing belongs where devices are managed: this is the surface a
+        // person opens when they think "I want my other device on here".
+        DesignSystemButton(
+          key: const Key('sync_devices_add_device'),
+          label: messages.syncAddDeviceAction,
+          // The only constructive action on the page; as an outline it lost
+          // the weight contest to two tinted red pills and a diagnostics link.
+          size: DesignSystemButtonSize.large,
+          fullWidth: true,
+          leadingIcon: Icons.add_rounded,
+          onPressed: () => unawaited(AddDeviceModal.show(context)),
+        ),
         SizedBox(height: tokens.spacing.step4),
         for (var i = 0; i < devices.length; i++) ...[
           if (i > 0) SizedBox(height: tokens.spacing.cardItemSpacing),

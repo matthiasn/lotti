@@ -301,7 +301,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
       if (path == '/settings/sync/provisioned')
         const BeamPage(
           key: ValueKey('settings-sync-provisioned'),
-          title: 'Provisioned Sync',
+          title: 'Devices',
           child: ProvisionedSyncPage(),
         ),
 
