@@ -53,6 +53,7 @@ import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 part 'day_agent_context_builder.dart';

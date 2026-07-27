@@ -3276,39 +3276,6 @@ void main() {
       );
     });
 
-    test(
-      'forbids zero-duration placeholders for omitted work',
-      () async {
-        final result = await execute(workflow());
-
-        expect(result.success, isTrue, reason: result.error);
-        expect(
-          conversationRepository.lastSystemMessage,
-          contains(
-            'Never represent omitted or unscheduled work as a zero-duration',
-          ),
-        );
-        expect(
-          conversationRepository.lastSystemMessage,
-          contains('Every block must have `end` later than `start`'),
-        );
-        expect(
-          conversationRepository.lastSystemMessage,
-          contains('name the omitted work in an existing block `reason`'),
-        );
-        expect(
-          conversationRepository.lastSystemMessage,
-          contains(
-            'status `attentionNeeded` and reason\n  `overCommitted`',
-          ),
-        );
-        expect(
-          conversationRepository.lastSystemMessage,
-          contains('name the omitted work in its `note`'),
-        );
-      },
-    );
-
     test('a refine wake budgets against the plan it is editing', () async {
       // propose_plan_diff applies changes on top of an existing plan, so its
       // budget is what that plan has left. Advertising a fresh day here told

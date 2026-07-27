@@ -242,7 +242,7 @@ class EvalReport {
     var applicable = 0;
     for (final result in list) {
       for (final constraint in result.constraints) {
-        if (EvalConstraintSignals.isHeuristic(constraint.id)) continue;
+        if (EvalConstraintSignals.isHeuristicResult(constraint)) continue;
         if (!constraint.isApplicable) continue;
         applicable++;
         if (constraint.passed ?? false) passed++;
@@ -588,8 +588,10 @@ class EvalReport {
           constraint.id: {
             'passed': constraint.passed,
             'detail': constraint.detail,
-            'kind': EvalConstraintSignals.kindFor(constraint.id),
-            'caveat': ?EvalConstraintSignals.caveatFor(constraint.id),
+            'kind': EvalConstraintSignals.kindForResult(constraint),
+            'caveat': ?EvalConstraintSignals.isHeuristicResult(constraint)
+                ? EvalConstraintSignals.caveatFor(constraint.id)
+                : null,
           },
       },
       'job': {
@@ -650,11 +652,12 @@ class EvalReport {
       ..writeln()
       ..writeln(
         'Heuristic signals are weak priors, not evidence that the model '
-        'understood the trade. `surfacedConflict`, `blockerBeforeBlocked`, and '
-        '`directiveHonoured` use string or structural presence to catch '
-        'silence; inspect the judge bundle before treating a green result as '
-        'reasoning quality. They remain visible below but are excluded from '
-        'the objective leaderboard.',
+        'understood the trade. `surfacedConflict` and `directiveHonoured` are '
+        'heuristic throughout. `blockerBeforeBlocked` is mixed: an actual '
+        'ordering pass or unexcused failure is objective, while a pass through '
+        'its prose bypass is heuristic. Inspect the judge bundle before '
+        'treating a heuristic green as reasoning quality. Heuristic outcomes '
+        'remain visible below but are excluded from the objective leaderboard.',
       )
       ..writeln()
       ..writeln('## Constraints by model')
@@ -673,9 +676,11 @@ class EvalReport {
               .firstWhere((rate) => rate.constraintId == id)
               .label,
       ];
-      final signal = EvalConstraintSignals.isHeuristic(id)
-          ? 'heuristic · inspect'
-          : 'objective';
+      final signal = switch (EvalConstraintSignals.kindFor(id)) {
+        'heuristic' => 'heuristic · inspect',
+        'mixed' => 'mixed · inspect',
+        _ => 'objective',
+      };
       buffer.writeln('| $id | $signal | ${cells.join(' | ')} |');
     }
 

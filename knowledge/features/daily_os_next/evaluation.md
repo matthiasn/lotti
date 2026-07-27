@@ -5,7 +5,7 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-27T13:52:59+02:00 }
+generated: { by: codex/5, at: 2026-07-27T13:59:55+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
@@ -36,8 +36,8 @@ always legal, and inspecting it alone measures the guards rather than the model.
 
 | Scored on | Constraints |
 |-----------|-------------|
-| Objective structure in the persisted plan | overlap, capacity (as written *and* as estimated), working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, fabricated task ids, fabricated calendar blocks, fabricated history, invented work, task-work typing, duplicate ids |
-| Weak semantic evidence in plan prose and accepted status/diff calls | conflict surfaced, blocker-before-blocked, directive honoured — visible per constraint, but excluded from ranking |
+| Objective structure in the persisted plan | overlap, capacity (as written *and* as estimated), working hours, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, blocker ordering, fabricated task ids, fabricated calendar blocks, fabricated history, invented work, task-work typing, duplicate ids |
+| Weak semantic evidence in plan prose and accepted status/diff calls | conflict surfaced, blocker-bypass justification, directive honoured — visible per constraint, but excluded from ranking |
 | The rejection count | whether the model complied without being corrected |
 
 A run that never attempted `draft_day_plan` is **inapplicable** for the rejection
@@ -64,19 +64,21 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   checked against task **estimates**, not the block lengths the model wrote, since
   the cheapest way to make an impossible day fit is to claim each task is shorter
   than it is.
-- **Three semantic checks are heuristic, not ranking evidence.**
-  `surfacedConflict` passes either when an accepted `attentionNeeded`
+- **Weak semantic outcomes are not ranking evidence.** `surfacedConflict`
+  passes either when an accepted `attentionNeeded`
   escalation uses an allowed typed conflict reason or when block prose names
-  omitted work. `blockerBeforeBlocked` accepts a reason that names a blocker id
-  or title. `directiveHonoured` accepts commitments named in plan or trade
+  omitted work. `directiveHonoured` accepts commitments named in plan or trade
   prose, the typed `directiveUnsatisfiable` escalation, or another allowed
-  escalation whose status note is merely non-empty. These checks catch the
-  important failure mode of saying nothing, but their string and structural
-  presence tests can pass without demonstrating comprehension. They remain
-  visible per constraint as weak priors, carry a caveat into the JSON and judge
-  bundle, and are excluded from the objective model leaderboard. A reviewer
-  must inspect the plan, changes, reasons, and status notes before calling a
-  green result good reasoning.
+  escalation whose status note is merely non-empty. Both are wholly heuristic.
+  `blockerBeforeBlocked` is mixed: a pass from actual blocker ordering and an
+  unexcused ordering failure remain objective, while a pass that relies on a
+  reason naming a blocker is heuristic. The semantic paths catch the important
+  failure mode of saying nothing, but their string and structural presence tests
+  can pass without demonstrating comprehension. They remain visible per
+  constraint as weak priors, carry a caveat into the JSON and judge bundle, and
+  only those heuristic outcomes are excluded from the objective model
+  leaderboard. A reviewer must inspect the plan, changes, reasons, and status
+  notes before calling a heuristic green result good reasoning.
 - **Fabrication is judged against what the model was shown.** The task corpus
   renders only inside the capture context, so a wake without a capture sees only
   its decided tasks — which do carry `status` and `blockedBy`, but not

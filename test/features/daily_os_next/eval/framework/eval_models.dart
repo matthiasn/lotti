@@ -378,13 +378,22 @@ class EvalConstraintResult {
     required this.id,
     required this.passed,
     required this.detail,
+    this.heuristic = false,
   });
 
   const EvalConstraintResult.notApplicable(this.id, this.detail)
-    : passed = null;
+    : passed = null,
+      heuristic = false;
 
   final String id;
   final bool? passed;
+
+  /// Whether this particular outcome relies on weak semantic evidence.
+  ///
+  /// Usually signal strength is fixed by constraint id. This per-result flag
+  /// preserves the objective ordering outcomes of a mixed constraint while
+  /// marking only its prose-based escape hatch as heuristic.
+  final bool heuristic;
 
   /// Human-readable, and specific enough to act on — names the offending
   /// block or task rather than restating the rule.

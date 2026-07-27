@@ -95,8 +95,13 @@ void main() {
     );
   }
 
-  EvalConstraintResult pass(String id) =>
-      EvalConstraintResult(id: id, passed: true, detail: 'fine');
+  EvalConstraintResult pass(String id, {bool heuristic = false}) =>
+      EvalConstraintResult(
+        id: id,
+        passed: true,
+        detail: 'fine',
+        heuristic: heuristic,
+      );
   EvalConstraintResult fail(String id, [String detail = 'broken']) =>
       EvalConstraintResult(id: id, passed: false, detail: detail);
   EvalConstraintResult na(String id) =>
@@ -166,7 +171,10 @@ void main() {
           constraints: [
             pass(EvalConstraintIds.withinCapacity),
             fail(EvalConstraintIds.surfacedConflict),
-            pass(EvalConstraintIds.blockerBeforeBlocked),
+            pass(
+              EvalConstraintIds.blockerBeforeBlocked,
+              heuristic: true,
+            ),
             fail(EvalConstraintIds.directiveHonoured),
           ],
         ),
@@ -197,6 +205,21 @@ void main() {
             'directive evidence stays visible even though its structural '
             'escalation path is not ranked',
       );
+    });
+
+    test('keeps structured blocker ordering in the objective pass rate', () {
+      final report = EvalReport.fromResults([
+        result(
+          constraints: [
+            pass(EvalConstraintIds.blockerBeforeBlocked),
+          ],
+        ),
+      ], generatedAt: generatedAt);
+
+      final standing = report.standings.single;
+      expect(standing.overall.passed, 1);
+      expect(standing.overall.applicable, 1);
+      expect(standing.overall.rate, 1);
     });
 
     test('sorts by pass rate, best first', () {
@@ -383,7 +406,10 @@ void main() {
         result(
           constraints: [
             pass(EvalConstraintIds.surfacedConflict),
-            fail(EvalConstraintIds.blockerBeforeBlocked),
+            pass(
+              EvalConstraintIds.blockerBeforeBlocked,
+              heuristic: true,
+            ),
             pass(EvalConstraintIds.directiveHonoured),
           ],
         ),
@@ -404,6 +430,10 @@ void main() {
       expect(
         signals[EvalConstraintIds.withinCapacity],
         containsPair('kind', 'objective'),
+      );
+      expect(
+        signals[EvalConstraintIds.blockerBeforeBlocked],
+        containsPair('kind', 'mixed'),
       );
 
       final constraints =
@@ -448,10 +478,14 @@ void main() {
           'understood the trade',
         ),
       );
-      expect(markdown, contains('inspect the judge bundle'));
+      expect(markdown, contains('Inspect the judge bundle'));
       expect(
         markdown,
         contains('| surfacedConflict | heuristic · inspect |'),
+      );
+      expect(
+        markdown,
+        contains('| blockerBeforeBlocked | mixed · inspect |'),
       );
       expect(
         markdown,
