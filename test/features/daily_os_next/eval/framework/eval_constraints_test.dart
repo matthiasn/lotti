@@ -1477,6 +1477,18 @@ void main() {
             '60 of the 120 minutes are not scheduled; '
             'this block is only a placeholder.',
       ),
+      (
+        name: 'an uncontracted cannot-negated split',
+        reason:
+            '60 of the 120 minutes cannot be scheduled; '
+            'this block is only a placeholder.',
+      ),
+      (
+        name: 'an unrelated workday remainder',
+        reason:
+            'Partial progress is recorded; '
+            '60 minutes remain in the workday.',
+      ),
     ]) {
       test('charges ${badDisclosure.name} at the full estimate', () {
         final result = scoreWithinCapacityByEstimate(

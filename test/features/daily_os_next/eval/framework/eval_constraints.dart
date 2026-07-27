@@ -706,8 +706,16 @@ final _partialLeadingRemainingPattern = RegExp(
 final _partialMentionPattern = RegExp(r'\bpartial\b', caseSensitive: false);
 
 final _negationWordPattern = RegExp(
-  r'\b(?:not|no|never|(?:isn|wasn|weren|aren|doesn|don|didn|can|couldn|'
+  r'\b(?:not|no|never|cannot|(?:isn|wasn|weren|aren|doesn|don|didn|can|couldn|'
   r'won|wouldn|shouldn|hasn|haven|hadn)[\x27’]?t)\b',
+  caseSensitive: false,
+);
+
+final _partialRemainderDispositionPattern = RegExp(
+  r'\b(?:for\s+(?:later|tomorrow|another\s+day|a\s+(?:later|future)\s+day)|'
+  r'(?:roll|move|carry)(?:s|d|ed|ing)?\s+(?:over|to)\b|'
+  r'defer(?:s|red|ring)?\b|unscheduled\b|'
+  r'(?:of|for)\s+(?:this|the)\s+(?:task|work)\b)',
   caseSensitive: false,
 );
 
@@ -798,22 +806,23 @@ bool _isAuditedPartial(_EstimatedTaskPlacement placement) =>
 /// Block duration remains the authority. A reason earns partial accounting
 /// only when its concrete minute arithmetic agrees with both that duration and
 /// the corpus estimate. This accepts either an explicit `60m of 120m` split or
-/// the prompt's `partial` plus `60m remain` form; vague prose and contradictory
-/// numbers anywhere in the task's disclosure keep the conservative
-/// full-estimate charge.
+/// the prompt's `partial` plus a task-bound `60m remain for later` form. Vague
+/// prose, unrelated day-capacity arithmetic, and contradictory numbers anywhere
+/// in the task's disclosure keep the conservative full-estimate charge.
 bool _hasAuditablePartialDisclosure({
   required List<String> reasons,
   required int allocatedMinutes,
   required int estimateMinutes,
 }) {
   final remainingMinutes = estimateMinutes - allocatedMinutes;
-  var mentionsPartial = false;
   var hasMatchingSplit = false;
-  var hasMatchingRemainder = false;
+  var hasBoundPartialRemainder = false;
   for (final reason in reasons) {
+    var reasonMentionsPartial = false;
+    var reasonHasBoundRemainder = false;
     for (final match in _partialMentionPattern.allMatches(reason)) {
       if (_matchClauseIsNegated(reason, match)) return false;
-      mentionsPartial = true;
+      reasonMentionsPartial = true;
     }
     for (final match in _partialOfEstimatePattern.allMatches(reason)) {
       if (_matchClauseIsNegated(reason, match)) return false;
@@ -829,19 +838,36 @@ bool _hasAuditablePartialDisclosure({
       if (_matchClauseIsNegated(reason, match)) return false;
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
-      hasMatchingRemainder = true;
+      if (_remainderIsTaskBound(reason, match)) {
+        reasonHasBoundRemainder = true;
+      }
     }
     for (final match in _partialLeadingRemainingPattern.allMatches(reason)) {
       if (_matchClauseIsNegated(reason, match)) return false;
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
-      hasMatchingRemainder = true;
+      if (_remainderIsTaskBound(reason, match)) {
+        reasonHasBoundRemainder = true;
+      }
+    }
+    if (reasonMentionsPartial && reasonHasBoundRemainder) {
+      hasBoundPartialRemainder = true;
     }
   }
-  return hasMatchingSplit || (mentionsPartial && hasMatchingRemainder);
+  return hasMatchingSplit || hasBoundPartialRemainder;
 }
 
 bool _matchClauseIsNegated(String reason, Match match) {
+  return _negationWordPattern.hasMatch(_matchClause(reason, match));
+}
+
+bool _remainderIsTaskBound(String reason, Match match) {
+  final clause = _matchClause(reason, match);
+  return _partialMentionPattern.hasMatch(clause) ||
+      _partialRemainderDispositionPattern.hasMatch(clause);
+}
+
+String _matchClause(String reason, Match match) {
   const boundaries = '.;!?\n';
   var clauseStart = 0;
   for (var i = match.start - 1; i >= 0; i--) {
@@ -857,9 +883,7 @@ bool _matchClauseIsNegated(String reason, Match match) {
       break;
     }
   }
-  return _negationWordPattern.hasMatch(
-    reason.substring(clauseStart, clauseEnd),
-  );
+  return reason.substring(clauseStart, clauseEnd);
 }
 
 /// Work the scenario says any competent plan must include.
