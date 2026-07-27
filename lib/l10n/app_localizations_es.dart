@@ -7035,7 +7035,7 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Estás seguro de que quieres recrear el índice de texto completo? Esto puede tardar un tiempo.';
 
   @override
-  String get maintenanceReSync => 'Volver a sincronizar mensajes';
+  String get maintenanceReSync => 'Historial de mensajes';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Entidades de agente';
@@ -10027,7 +10027,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Este código de emparejamiento desbloquea tu cuenta de sincronización: déjalo escanear solo a tu propio dispositivo nuevo, y nunca lo captures ni lo envíes.';
 
   @override
-  String get syncAddDeviceSendMessages => 'Enviar mensajes';
+  String get syncAddDeviceSendMessages => 'Enviar historial de mensajes';
 
   @override
   String get syncAddDeviceSendSettings => 'Enviar ajustes';
@@ -10240,11 +10240,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Después de la verificación con emojis, en tu otro dispositivo, en la pantalla Añadir dispositivo que sigue abierta, elige Enviar ajustes y después Enviar mensajes. Tus categorías, hábitos, paneles, ajustes de IA y el historial de mensajes llegarán aquí.';
+      'Después de la verificación con emojis, en tu otro dispositivo, en la pantalla Añadir dispositivo que sigue abierta, elige Enviar ajustes y después Enviar historial de mensajes. Tus categorías, hábitos, paneles, ajustes de IA y el historial de mensajes llegarán aquí.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Si la cerraste, en el otro dispositivo abre Ajustes → Ajustes de sincronización → Mantenimiento, ejecuta la sincronización de ajustes y después Volver a sincronizar mensajes.';
+      'Si la cerraste, en el otro dispositivo abre Ajustes → Ajustes de sincronización → Mantenimiento, ejecuta la sincronización de ajustes y después elige Historial de mensajes.';
 
   @override
   String get syncPairedVerifyDone =>

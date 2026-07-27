@@ -6895,7 +6895,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
-  String get maintenanceReSync => 'Re-sync messages';
+  String get maintenanceReSync => 'Message history';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Agent entities';
@@ -9808,7 +9808,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'This pairing code unlocks your sync account — let only your own new device scan it, and never screenshot or send it.';
 
   @override
-  String get syncAddDeviceSendMessages => 'Send messages';
+  String get syncAddDeviceSendMessages => 'Send message history';
 
   @override
   String get syncAddDeviceSendSettings => 'Send settings';
@@ -10013,11 +10013,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'After emoji verification, on your other device, in the Add device screen you still have open, choose Send settings, then Send messages. Your categories, habits, dashboards, AI settings and message history arrive here.';
+      'After emoji verification, on your other device, in the Add device screen you still have open, choose Send settings, then Send message history. Your categories, habits, dashboards, AI settings and message history arrive here.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'If you closed it, on the other device open Settings → Sync Settings → Maintenance and run the settings sync, then Re-sync messages.';
+      'If you closed it, on the other device open Settings → Sync Settings → Maintenance, run the settings sync, then choose Message history.';
 
   @override
   String get syncPairedVerifyDone =>
@@ -11451,12 +11451,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get maintenanceRecreateFts5Description =>
       'Recreate full-text search index';
-
-  @override
-  String get maintenanceReSync => 'Re-sync messages';
-
-  @override
-  String get maintenanceReSyncDescription => 'Re-sync messages from server';
 
   @override
   String get maintenanceSyncDefinitions =>

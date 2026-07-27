@@ -115,7 +115,7 @@ stateDiagram-v2
     PollFailed --> Joined: Retry after the device joined
     Joined --> Ready: the same device is emoji-verified
     Ready --> SendingSettings: Send settings (opens SyncModal)
-    Ready --> SendingMessages: Send messages (opens ReSyncModal)
+    Ready --> SendingMessages: Send message history (opens ReSyncModal)
   }
   state "New device" as New {
     [*] --> Scanning: mobile opens the camera
@@ -176,13 +176,14 @@ Four properties are deliberate:
   boundary.** `_observeRoster` records the first `(userId, deviceId)` absent
   when the sheet opened, reports that it joined, and keeps polling until that
   same roster row is verified. An older peer cannot unlock the new target's
-  transfer actions. *Send settings* and *Send messages* remain disabled until
-  the state reaches `ready`, because `ShareKeysWith.directlyVerifiedOnly`
-  means an unverified target receives the ciphertext but not the keys needed
-  to read it. The inviting sheet therefore has to stay open through the emoji
-  ceremony. If it was closed, the safe fallback is the other device's Sync
-  Settings → Maintenance page, whose independent settings and message pushes
-  do not pretend to identify a newly joined target.
+  transfer actions. *Send settings* and *Send message history* remain disabled
+  until the state reaches `ready`, because
+  `ShareKeysWith.directlyVerifiedOnly` means an unverified target receives the
+  ciphertext but not the keys needed to read it. The inviting sheet therefore
+  has to stay open through the emoji ceremony. If it was closed, the safe
+  fallback is the other device's Sync Settings → Maintenance page, whose
+  independent settings and message pushes do not pretend to identify a newly
+  joined target.
 
   The **accent** on *Send settings* follows readiness too, and deliberately so:
   the design system paints an enabled `secondary` button with the same token
@@ -222,7 +223,8 @@ join are not gap-detected either — a counter from a never-seen host is recorde
 without becoming a gap (see
 [sequence and backfill](sequence-and-backfill.md)). After emoji verification,
 the inviting device exposes both follow-up transfers in the sticky action bar:
-*Send settings* opens `SyncModal`, while *Send messages* opens `ReSyncModal`
+*Send settings* opens `SyncModal`, while *Send message history* opens
+`ReSyncModal`
 and re-enqueues that device's local history. The latter defaults to
 *Everything*, with *Last 30 days* and a validated custom interval available,
 and reports the journal, agent-entity and agent-link enqueue phases before

@@ -7017,7 +7017,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Sei sicuro di voler ricreare l\'indice full-text? Potrebbe volerci un po\' di tempo.';
 
   @override
-  String get maintenanceReSync => 'Resync messaggi';
+  String get maintenanceReSync => 'Cronologia messaggi';
 
   @override
   String get maintenanceReSyncAgentEntities => 'entità dell\'agente';
@@ -10010,7 +10010,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questo codice di abbinamento sblocca il tuo account di sincronizzazione: fallo scansionare solo dal tuo nuovo dispositivo e non fotografarlo né inviarlo mai.';
 
   @override
-  String get syncAddDeviceSendMessages => 'Invia messaggi';
+  String get syncAddDeviceSendMessages => 'Invia cronologia messaggi';
 
   @override
   String get syncAddDeviceSendSettings => 'Invia impostazioni';
@@ -10223,11 +10223,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Dopo la verifica con emoji, sull’altro dispositivo, nella schermata Aggiungi dispositivo ancora aperta, scegli Invia impostazioni e poi Invia messaggi. Categorie, abitudini, dashboard, impostazioni IA e cronologia dei messaggi arriveranno qui.';
+      'Dopo la verifica con emoji, sull’altro dispositivo, nella schermata Aggiungi dispositivo ancora aperta, scegli Invia impostazioni e poi Invia cronologia messaggi. Categorie, abitudini, dashboard, impostazioni IA e cronologia dei messaggi arriveranno qui.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Se l’hai chiusa, sull’altro dispositivo apri Impostazioni → Impostazioni di sincronizzazione → Manutenzione, esegui la sincronizzazione delle impostazioni e poi Resync messaggi.';
+      'Se l’hai chiusa, sull’altro dispositivo apri Impostazioni → Impostazioni di sincronizzazione → Manutenzione, esegui la sincronizzazione delle impostazioni e poi scegli Cronologia messaggi.';
 
   @override
   String get syncPairedVerifyDone =>

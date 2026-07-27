@@ -7034,7 +7034,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Opravdu chcete znovu vytvořit index fulltextového vyhledávání? Toto může chvíli trvat.';
 
   @override
-  String get maintenanceReSync => 'Znovu synchronizovat zprávy';
+  String get maintenanceReSync => 'Historie zpráv';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Entity agentů';
@@ -10005,7 +10005,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tento párovací kód odemyká tvůj synchronizační účet – nech ho naskenovat jen svým vlastním novým zařízením a nikdy ho nefoť ani neposílej.';
 
   @override
-  String get syncAddDeviceSendMessages => 'Odeslat zprávy';
+  String get syncAddDeviceSendMessages => 'Odeslat historii zpráv';
 
   @override
   String get syncAddDeviceSendSettings => 'Odeslat nastavení';
@@ -10220,11 +10220,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Po ověření pomocí emoji zvol na svém druhém zařízení v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení a potom Odeslat zprávy. Tvé kategorie, návyky, přehledy, nastavení AI a historie zpráv dorazí sem.';
+      'Po ověření pomocí emoji zvol na svém druhém zařízení v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení a potom Odeslat historii zpráv. Tvé kategorie, návyky, přehledy, nastavení AI a historie zpráv dorazí sem.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Pokud jsi ji zavřel, otevři na druhém zařízení Nastavení → Nastavení synchronizace → Údržba, spusť synchronizaci nastavení a potom Znovu synchronizovat zprávy.';
+      'Pokud jsi ji zavřel, otevři na druhém zařízení Nastavení → Nastavení synchronizace → Údržba, spusť synchronizaci nastavení a potom zvol Historie zpráv.';
 
   @override
   String get syncPairedVerifyDone =>

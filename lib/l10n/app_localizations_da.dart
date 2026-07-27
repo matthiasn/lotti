@@ -6933,7 +6933,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Er du sikker på, at du vil genskabe fuldtekstindekset? Det kan tage noget tid.';
 
   @override
-  String get maintenanceReSync => 'Gensynkroniser beskeder';
+  String get maintenanceReSync => 'Beskedhistorik';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Agentenheder';
@@ -9877,7 +9877,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Denne parringskode låser din synkroniseringskonto op – lad kun din egen nye enhed scanne den, og tag aldrig skærmbillede af den eller send den.';
 
   @override
-  String get syncAddDeviceSendMessages => 'Send beskeder';
+  String get syncAddDeviceSendMessages => 'Send beskedhistorik';
 
   @override
   String get syncAddDeviceSendSettings => 'Send indstillinger';
@@ -10084,11 +10084,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Efter emoji-bekræftelsen vælger du på din anden enhed Send indstillinger og derefter Send beskeder i skærmen Tilføj enhed, som du stadig har åben. Dine kategorier, vaner, dashboards, AI-indstillinger og din beskedhistorik lander her.';
+      'Efter emoji-bekræftelsen vælger du på din anden enhed Send indstillinger og derefter Send beskedhistorik i skærmen Tilføj enhed, som du stadig har åben. Dine kategorier, vaner, dashboards, AI-indstillinger og din beskedhistorik lander her.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Hvis du lukkede den, skal du på den anden enhed åbne Indstillinger → Synkroniseringsindstillinger → Vedligeholdelse, køre indstillingssynkroniseringen og derefter Gensynkroniser beskeder.';
+      'Hvis du lukkede den, skal du på den anden enhed åbne Indstillinger → Synkroniseringsindstillinger → Vedligeholdelse, køre indstillingssynkroniseringen og derefter vælge Beskedhistorik.';
 
   @override
   String get syncPairedVerifyDone =>

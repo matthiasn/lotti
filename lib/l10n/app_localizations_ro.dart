@@ -7066,7 +7066,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sigur doriți să recreați indexul de căutare text complet? Acest lucru poate dura ceva timp.';
 
   @override
-  String get maintenanceReSync => 'Resincronizați mesajele';
+  String get maintenanceReSync => 'Istoricul mesajelor';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Entități agent';
@@ -10058,7 +10058,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acest cod de asociere deblochează contul dvs. de sincronizare – lăsați-l scanat doar de propriul dispozitiv nou și nu îl fotografiați și nu îl trimiteți niciodată.';
 
   @override
-  String get syncAddDeviceSendMessages => 'Trimiteți mesajele';
+  String get syncAddDeviceSendMessages => 'Trimiteți istoricul mesajelor';
 
   @override
   String get syncAddDeviceSendSettings => 'Trimiteți setările';
@@ -10278,11 +10278,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'După verificarea cu emoji, pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările, apoi Trimiteți mesajele. Categoriile, obiceiurile, panourile, setările AI și istoricul mesajelor ajung aici.';
+      'După verificarea cu emoji, pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările, apoi Trimiteți istoricul mesajelor. Categoriile, obiceiurile, panourile, setările AI și istoricul mesajelor ajung aici.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Dacă l-ați închis, pe celălalt dispozitiv deschideți Setări → Setări sincronizare → Întreținere, rulați sincronizarea setărilor, apoi Resincronizați mesajele.';
+      'Dacă l-ați închis, pe celălalt dispozitiv deschideți Setări → Setări sincronizare → Întreținere, rulați sincronizarea setărilor, apoi alegeți Istoricul mesajelor.';
 
   @override
   String get syncPairedVerifyDone =>

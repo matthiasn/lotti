@@ -6931,7 +6931,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Är du säker på att du vill återskapa fulltextindexet? Detta kan ta lite tid.';
 
   @override
-  String get maintenanceReSync => 'Synkronisera om meddelanden';
+  String get maintenanceReSync => 'Meddelandehistorik';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Agententiteter';
@@ -9877,7 +9877,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Den här parkopplingskoden låser upp ditt synkkonto – låt bara din egen nya enhet skanna den, och ta aldrig en skärmbild av den eller skicka den.';
 
   @override
-  String get syncAddDeviceSendMessages => 'Skicka meddelanden';
+  String get syncAddDeviceSendMessages => 'Skicka meddelandehistorik';
 
   @override
   String get syncAddDeviceSendSettings => 'Skicka inställningar';
@@ -10085,11 +10085,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Efter emoji-verifieringen väljer du på din andra enhet Skicka inställningar och sedan Skicka meddelanden i skärmen Lägg till enhet som fortfarande är öppen. Dina kategorier, vanor, instrumentpaneler, AI-inställningar och din meddelandehistorik hamnar här.';
+      'Efter emoji-verifieringen väljer du på din andra enhet Skicka inställningar och sedan Skicka meddelandehistorik i skärmen Lägg till enhet som fortfarande är öppen. Dina kategorier, vanor, instrumentpaneler, AI-inställningar och din meddelandehistorik hamnar här.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Om du stängde den öppnar du på den andra enheten Inställningar → Synkroniseringsinställningar → Underhåll, kör inställningssynkroniseringen och sedan Synkronisera om meddelanden.';
+      'Om du stängde den öppnar du på den andra enheten Inställningar → Synkroniseringsinställningar → Underhåll, kör inställningssynkroniseringen och väljer sedan Meddelandehistorik.';
 
   @override
   String get syncPairedVerifyDone =>

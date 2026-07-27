@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the encryption keys needed to read them. The sheet also says plainly what the
   code is: letting your own new device scan it is fine, keeping a screenshot or
   sending it through chat is not.
-- **Send message history while adding a device.** "Send messages" now sits
+- **Send message history while adding a device.** "Send message history" now sits
   beside "Send settings" on the existing device, where it can queue the local
   history the new device does not have yet. It defaults to everything, also
   offers the last 30 days or a custom range, and stays open with per-phase

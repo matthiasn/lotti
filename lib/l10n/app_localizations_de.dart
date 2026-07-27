@@ -6970,7 +6970,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchtest du den Volltextindex wirklich neu erstellen? Dies kann einige Zeit dauern.';
 
   @override
-  String get maintenanceReSync => 'Nachrichten erneut synchronisieren';
+  String get maintenanceReSync => 'Nachrichtenverlauf';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Agenten-Entitäten';
@@ -9933,7 +9933,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieser Kopplungscode entsperrt dein Sync-Konto – lass ihn nur von deinem eigenen neuen Gerät scannen und mach nie einen Screenshot davon oder verschicke ihn.';
 
   @override
-  String get syncAddDeviceSendMessages => 'Nachrichten senden';
+  String get syncAddDeviceSendMessages => 'Nachrichtenverlauf senden';
 
   @override
   String get syncAddDeviceSendSettings => 'Einstellungen senden';
@@ -10146,11 +10146,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Wähle nach der Emoji-Verifizierung auf deinem anderen Gerät im noch geöffneten Bildschirm Gerät hinzufügen zuerst Einstellungen senden und dann Nachrichten senden. Deine Kategorien, Gewohnheiten, Dashboards, KI-Einstellungen und dein Nachrichtenverlauf kommen dann hierher.';
+      'Wähle nach der Emoji-Verifizierung auf deinem anderen Gerät im noch geöffneten Bildschirm Gerät hinzufügen zuerst Einstellungen senden und dann Nachrichtenverlauf senden. Deine Kategorien, Gewohnheiten, Dashboards, KI-Einstellungen und dein Nachrichtenverlauf kommen dann hierher.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Falls du ihn geschlossen hast, öffne auf dem anderen Gerät Einstellungen → Synchronisierungseinstellungen → Wartung, führe die Einstellungssynchronisierung aus und danach Nachrichten erneut synchronisieren.';
+      'Falls du ihn geschlossen hast, öffne auf dem anderen Gerät Einstellungen → Synchronisierungseinstellungen → Wartung, führe die Einstellungssynchronisierung aus und wähle danach Nachrichtenverlauf.';
 
   @override
   String get syncPairedVerifyDone =>

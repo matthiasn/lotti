@@ -6951,7 +6951,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Weet u zeker dat u de volledige tekstindex wilt namaken? Dit kan enige tijd duren.';
 
   @override
-  String get maintenanceReSync => 'Berichten opnieuw synchroniseren';
+  String get maintenanceReSync => 'Berichtgeschiedenis';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Agententiteiten';
@@ -9905,7 +9905,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze koppelcode ontgrendelt je sync-account – laat alleen je eigen nieuwe apparaat hem scannen, en maak er nooit een schermafbeelding van of verstuur hem.';
 
   @override
-  String get syncAddDeviceSendMessages => 'Berichten versturen';
+  String get syncAddDeviceSendMessages => 'Berichtgeschiedenis verzenden';
 
   @override
   String get syncAddDeviceSendSettings => 'Instellingen versturen';
@@ -10118,11 +10118,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Kies na de emoji-verificatie op je andere apparaat in het scherm Apparaat toevoegen dat nog openstaat eerst Instellingen versturen en daarna Berichten versturen. Je categorieën, gewoontes, dashboards, AI-instellingen en berichtgeschiedenis komen dan hierheen.';
+      'Kies na de emoji-verificatie op je andere apparaat in het scherm Apparaat toevoegen dat nog openstaat eerst Instellingen versturen en daarna Berichtgeschiedenis verzenden. Je categorieën, gewoontes, dashboards, AI-instellingen en berichtgeschiedenis komen dan hierheen.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Als je het hebt gesloten, open je op het andere apparaat Instellingen → Instellingen synchroniseren → Onderhoud, voer je de instellingensynchronisatie uit en daarna Berichten opnieuw synchroniseren.';
+      'Als je het hebt gesloten, open je op het andere apparaat Instellingen → Instellingen synchroniseren → Onderhoud, voer je de instellingensynchronisatie uit en kies je daarna Berichtgeschiedenis.';
 
   @override
   String get syncPairedVerifyDone =>

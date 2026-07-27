@@ -329,8 +329,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Re-sync messages'), findsWidgets);
-    expect(find.text('Re-sync entries'), findsNothing);
+    expect(find.text('Message history'), findsWidgets);
+    expect(find.text('Re-sync messages'), findsNothing);
 
     await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
     await tester.pump();

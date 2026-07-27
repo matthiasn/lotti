@@ -12084,7 +12084,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceReSync.
   ///
   /// In en, this message translates to:
-  /// **'Re-sync messages'**
+  /// **'Message history'**
   String get maintenanceReSync;
 
   /// No description provided for @maintenanceReSyncAgentEntities.
@@ -17049,7 +17049,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncAddDeviceSendMessages.
   ///
   /// In en, this message translates to:
-  /// **'Send messages'**
+  /// **'Send message history'**
   String get syncAddDeviceSendMessages;
 
   /// No description provided for @syncAddDeviceSendSettings.
@@ -17349,13 +17349,13 @@ abstract class AppLocalizations {
   /// No description provided for @syncPairedSettingsStep.
   ///
   /// In en, this message translates to:
-  /// **'After emoji verification, on your other device, in the Add device screen you still have open, choose Send settings, then Send messages. Your categories, habits, dashboards, AI settings and message history arrive here.'**
+  /// **'After emoji verification, on your other device, in the Add device screen you still have open, choose Send settings, then Send message history. Your categories, habits, dashboards, AI settings and message history arrive here.'**
   String get syncPairedSettingsStep;
 
   /// No description provided for @syncPairedSettingsStepFallback.
   ///
   /// In en, this message translates to:
-  /// **'If you closed it, on the other device open Settings → Sync Settings → Maintenance and run the settings sync, then Re-sync messages.'**
+  /// **'If you closed it, on the other device open Settings → Sync Settings → Maintenance, run the settings sync, then choose Message history.'**
   String get syncPairedSettingsStepFallback;
 
   /// No description provided for @syncPairedVerifyDone.
