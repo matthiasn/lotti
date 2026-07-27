@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/auto_verification_launcher.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_devices_list.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -132,7 +136,26 @@ class ProvisionedStatusWidget extends ConsumerWidget {
                     ),
                   );
                   if (confirmed ?? false) {
-                    await matrixService.deleteConfig();
+                    try {
+                      await matrixService.deleteConfig();
+                    } catch (e, stackTrace) {
+                      // Silent failure left the pane showing a "configured"
+                      // view of a config that had not been torn down, with
+                      // nothing said and nothing logged.
+                      getIt<DomainLogger>().error(
+                        LogDomain.sync,
+                        e,
+                        stackTrace: stackTrace,
+                        subDomain: 'deleteConfig',
+                      );
+                      if (context.mounted) {
+                        context.showToast(
+                          tone: DesignSystemToastTone.error,
+                          title: messages.syncDisconnectFailed,
+                        );
+                      }
+                      return;
+                    }
                     if (!context.mounted) return;
                     ref.read(provisioningControllerProvider.notifier).reset();
                     if (!embedded) await Navigator.of(context).maybePop();

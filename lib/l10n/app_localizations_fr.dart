@@ -10014,6 +10014,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncAddDeviceCopyCode => 'Copier le code d’appairage';
 
   @override
+  String get syncAddDeviceGenerateFailed =>
+      'Impossible de créer un code d’appairage. Réessaie.';
+
+  @override
   String get syncAddDeviceHideCode => 'Masquer le code d’appairage';
 
   @override
@@ -10152,6 +10156,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get syncDisconnectExplanation =>
       'Tes entrées restent sur cet appareil. Il est déconnecté du compte de synchronisation et aura besoin d’un nouveau code pour se resynchroniser. Tes autres appareils ne sont pas affectés.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Impossible d’arrêter la synchronisation de cet appareil. Vérifie ta connexion et réessaie.';
 
   @override
   String get syncEntitiesConfirm => 'DÉMARRER LA SYNCHRONISATION';

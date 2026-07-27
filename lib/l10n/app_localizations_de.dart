@@ -9876,6 +9876,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncAddDeviceCopyCode => 'Kopplungscode kopieren';
 
   @override
+  String get syncAddDeviceGenerateFailed =>
+      'Der Kopplungscode konnte nicht erstellt werden. Versuche es erneut.';
+
+  @override
   String get syncAddDeviceHideCode => 'Kopplungscode ausblenden';
 
   @override
@@ -10014,6 +10018,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get syncDisconnectExplanation =>
       'Deine Einträge bleiben auf diesem Gerät. Es wird vom Sync-Konto abgemeldet und braucht einen neuen Kopplungscode, um wieder zu synchronisieren. Deine anderen Geräte sind nicht betroffen.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Die Synchronisierung dieses Geräts konnte nicht beendet werden. Prüfe deine Verbindung und versuche es erneut.';
 
   @override
   String get syncEntitiesConfirm => 'SYNC STARTEN';

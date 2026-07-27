@@ -239,7 +239,11 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
                   // not pinned to the far edge with a void between them.
                   Flexible(child: title),
                   SizedBox(width: tokens.spacing.step3),
-                  badges,
+                  // Also flexible: as a plain Row child the Wrap got unbounded
+                  // constraints and laid every badge out in one run, so a long
+                  // translation or a large text scale overflowed instead of
+                  // wrapping.
+                  Flexible(child: badges),
                 ],
               );
             },

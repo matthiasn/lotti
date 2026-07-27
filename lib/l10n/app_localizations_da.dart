@@ -9822,6 +9822,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncAddDeviceCopyCode => 'Kopiér parringskode';
 
   @override
+  String get syncAddDeviceGenerateFailed =>
+      'Parringskoden kunne ikke oprettes. Prøv igen.';
+
+  @override
   String get syncAddDeviceHideCode => 'Skjul parringskoden';
 
   @override
@@ -9956,6 +9960,10 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get syncDisconnectExplanation =>
       'Dine noter bliver på denne enhed. Den logges ud af synkroniseringskontoen og skal bruge en ny parringskode for at synkronisere igen. Dine andre enheder påvirkes ikke.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Synkroniseringen for denne enhed kunne ikke stoppes. Tjek din forbindelse, og prøv igen.';
 
   @override
   String get syncEntitiesConfirm => 'START SYNC';

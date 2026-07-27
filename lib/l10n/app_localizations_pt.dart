@@ -9916,6 +9916,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get syncAddDeviceCopyCode => 'Copiar código de emparelhamento';
 
   @override
+  String get syncAddDeviceGenerateFailed =>
+      'Não foi possível criar um código de emparelhamento. Tente novamente.';
+
+  @override
   String get syncAddDeviceHideCode => 'Ocultar o código de emparelhamento';
 
   @override
@@ -10055,6 +10059,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get syncDisconnectExplanation =>
       'Suas entradas continuam neste dispositivo. Ele sai da conta de sincronização e precisará de um novo código para sincronizar de novo. Seus outros dispositivos não são afetados.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Não foi possível parar a sincronização deste dispositivo. Verifique sua conexão e tente novamente.';
 
   @override
   String get syncEntitiesConfirm => 'INICIAR SINCRONIZAÇÃO';

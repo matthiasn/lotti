@@ -62,11 +62,15 @@ class _FakeProvisioningController extends ProvisioningController {
     required this.calls,
     this.handover,
     this.completer,
+    this.throws = false,
   });
 
   final _Calls calls;
   final String? handover;
   final Completer<String?>? completer;
+
+  /// Stands in for secure-storage or homeserver failures while minting.
+  final bool throws;
 
   @override
   ProvisioningState build() => const ProvisioningState.initial();
@@ -74,6 +78,7 @@ class _FakeProvisioningController extends ProvisioningController {
   @override
   Future<String?> regenerateHandover() {
     calls.regenerate++;
+    if (throws) return Future.error(Exception('secure storage unavailable'));
     return completer?.future ?? Future.value(handover);
   }
 }
@@ -109,6 +114,8 @@ void main() {
   );
 
   setUp(() {
+    // The generate path logs failures through DomainLogger.
+    ensureDomainLoggerRegistered();
     mockMatrixService = MockMatrixService();
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => const MatrixConfig(
@@ -124,6 +131,8 @@ void main() {
       () => mockMatrixService.getSyncDevices(),
     ).thenAnswer((_) async => existing);
   });
+
+  tearDown(tearDownTestGetIt);
 
   /// Sizes the surface for the sheet's tall single column; without it the
   /// lower controls sit outside the view and taps miss.
@@ -141,6 +150,7 @@ void main() {
     Completer<String?>? completer,
     List<SyncDeviceInfo>? devices,
     bool refreshSucceeds = true,
+    bool generateThrows = false,
   }) => <Override>[
     matrixServiceProvider.overrideWithValue(mockMatrixService),
     provisioningControllerProvider.overrideWith(
@@ -148,6 +158,7 @@ void main() {
         calls: calls,
         handover: handoverData,
         completer: completer,
+        throws: generateThrows,
       ),
     ),
     syncDevicesControllerProvider.overrideWith(
@@ -165,6 +176,7 @@ void main() {
     Completer<String?>? completer,
     List<SyncDeviceInfo>? devices,
     bool refreshSucceeds = true,
+    bool generateThrows = false,
     Duration pollInterval = const Duration(days: 1),
     AddDeviceJoinSignal? signal,
   }) async {
@@ -186,6 +198,7 @@ void main() {
           completer: completer,
           devices: devices,
           refreshSucceeds: refreshSucceeds,
+          generateThrows: generateThrows,
         ),
       ),
     );
@@ -315,6 +328,27 @@ void main() {
       );
     });
 
+    testWidgets('says the code could not be made when minting throws', (
+      tester,
+    ) async {
+      // Launched with `unawaited`, so an escaping exception both crashed the
+      // zone and left the sheet claiming sync was not set up on a device that
+      // is set up.
+      await pumpAddDevice(tester, generateThrows: true);
+
+      final context = tester.element(find.byType(AddDeviceView));
+      expect(tester.takeException(), isNull);
+      expect(
+        find.text(context.messages.syncAddDeviceGenerateFailed),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.syncAddDeviceUnavailable),
+        findsNothing,
+      );
+      expect(find.byKey(const Key('add_device_regenerate')), findsOneWidget);
+    });
+
     testWidgets('offers a retry when no code can be minted', (tester) async {
       final calls = await pumpAddDevice(tester, handoverData: null);
 
@@ -425,6 +459,102 @@ void main() {
       }
 
       expect(signal.value, AddDeviceJoinState.rosterFailed);
+    });
+
+    testWidgets('stops polling once it has given up, and resumes on retry', (
+      tester,
+    ) async {
+      // Continuing to hammer a homeserver that has failed three times running
+      // changes nothing on screen and only adds load.
+      final signal = newSignal(tester);
+      final calls = await pumpAddDevice(
+        tester,
+        signal: signal,
+        refreshSucceeds: false,
+        pollInterval: const Duration(seconds: 5),
+      );
+
+      for (var i = 0; i < kAddDeviceMaxPollFailures; i++) {
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pump();
+      }
+      expect(signal.value, AddDeviceJoinState.rosterFailed);
+
+      final settled = calls.refresh;
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pump();
+      expect(calls.refresh, settled);
+
+      signal.onRetry!();
+      await tester.pump();
+      await tester.pump();
+      expect(calls.refresh, greaterThan(settled));
+
+      // And the timer is running again.
+      final afterRetry = calls.refresh;
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump();
+      expect(calls.refresh, greaterThan(afterRetry));
+    });
+
+    testWidgets('treats a foreign device id as a different device', (
+      tester,
+    ) async {
+      // Device ids are unique only within a Matrix user, and the roster spans
+      // users so legacy one-account-per-device pairings still appear. Keyed on
+      // the id alone, a new device colliding with a foreign one read as
+      // already known and the sheet never latched.
+      final signal = newSignal(tester);
+      const foreign = SyncDeviceInfo(
+        deviceId: 'SHARED',
+        displayName: 'Legacy phone',
+        isCurrentDevice: false,
+        verified: false,
+        userId: '@other:example.com',
+      );
+      final container = ProviderContainer(
+        overrides: overrides(
+          calls: _Calls(),
+          devices: [...existing, foreign],
+        ),
+      );
+      addTearDown(container.dispose);
+
+      useTallSurface(tester);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidgetWithScaffold(
+            SingleChildScrollView(
+              child: AddDeviceView(
+                pollInterval: const Duration(days: 1),
+                signal: signal,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(signal.value, AddDeviceJoinState.waiting);
+
+      // Same device id, this account: a genuinely new session.
+      container
+          .read(syncDevicesControllerProvider.notifier)
+          .state = AsyncData<List<SyncDeviceInfo>>([
+        ...existing,
+        foreign,
+        const SyncDeviceInfo(
+          deviceId: 'SHARED',
+          displayName: 'New phone',
+          isCurrentDevice: false,
+          verified: false,
+        ),
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      expect(signal.value, AddDeviceJoinState.joined);
     });
 
     testWidgets('a retry re-reads the roster and drops the error state', (

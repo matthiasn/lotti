@@ -16950,6 +16950,12 @@ abstract class AppLocalizations {
   /// **'Copy pairing code'**
   String get syncAddDeviceCopyCode;
 
+  /// No description provided for @syncAddDeviceGenerateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create a pairing code. Try again.'**
+  String get syncAddDeviceGenerateFailed;
+
   /// No description provided for @syncAddDeviceHideCode.
   ///
   /// In en, this message translates to:
@@ -17135,6 +17141,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your entries stay on this device. It is signed out of the sync account and needs a new pairing code to sync again. Your other devices are not affected.'**
   String get syncDisconnectExplanation;
+
+  /// No description provided for @syncDisconnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t stop syncing this device. Check your connection and try again.'**
+  String get syncDisconnectFailed;
 
   /// No description provided for @syncEntitiesConfirm.
   ///

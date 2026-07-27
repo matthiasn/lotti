@@ -136,8 +136,11 @@ Four properties are deliberate:
 - **The handover code is a live credential, so it is never ambient.** It is
   minted on demand inside `ui/provisioned/add_device_page.dart` and only while
   that sheet is open — it used to render unconditionally at the bottom of the
-  status page on desktop. It is masked until revealed, and the sheet states
-  that the code unlocks the account.
+  status page on desktop. It is hidden until revealed, and the sheet states
+  that the code unlocks the account. "Never ambient" is about *display*, not
+  secrecy: *Copy pairing code* puts it on the clipboard by design, because a
+  desktop joining a desktop has no camera. See the check-code bullet below for
+  what that means for the threat model.
 - **Add device is not platform-gated.** Any paired device can present a code,
   so a surviving phone can onboard a replacement for a dead desktop.
 - **Both devices warn, and the joining one warns louder.** Each side wraps its
@@ -155,8 +158,16 @@ Four properties are deliberate:
   field the confirmation card displays is folded in, so the digits cover what
   the reader is actually looking at. It is a **recognition aid, not a security
   control** — unkeyed and derived from public identifiers, so it catches the
-  wrong-code mistake and nothing more. Confidentiality comes from the SAS
-  ceremony that follows.
+  wrong-code mistake and nothing more.
+
+  Nothing in this step protects the bundle itself. It carries the account's
+  live password, Base64url-encoded — encoding, not encryption — and the sheet
+  offers a *Copy pairing code* control, so it can leave the screen as text.
+  Anyone holding it can join the account. The SAS ceremony that follows
+  protects a different thing: which devices are trusted with megolm keys from
+  then on (`ShareKeysWith.directlyVerifiedOnly`, ADR 0045). It does not
+  retroactively protect a leaked bundle. Reducing what the code carries is
+  tracked separately in lotti3-ujm.
 - **The waiting latch, the hand-off gate and the hand-off's emphasis are three
   separate questions.** `_observeRoster` latches "a new device joined" on a
   device id absent when the sheet opened. Whether *Send settings* is *enabled*
@@ -164,12 +175,15 @@ Four properties are deliberate:
   than this one — because the joining device tells the user to come back and
   press it, by which time the sheet has usually been closed and reopened, and
   gating on the delta left the button permanently dead in exactly that case.
-  Whether it takes the **accent** is the latch: a filled accent pinned over a
-  QR nobody has scanned yet outshouts the QR, which is the only thing on that
-  screen the user should be looking at.
+  The **accent** follows enablement too, and deliberately so: the design
+  system paints an enabled `secondary` button with the same token it paints a
+  *disabled* filled one, so a quiet-but-live control read as inert. It is
+  `outlined` while it cannot be pressed and `primary` the moment it can, with
+  the lead-in and the status line switching off the same boolean — three lines
+  about one control that disagreed left the user unable to tell.
   `AddDeviceJoinSignal` — a `ValueNotifier<AddDeviceJoinState>` carrying the
-  body's retry callback — is what connects them, because the sticky bar is
-  built outside the view's `State`. The bar, not the card, renders the live
+  body's retry callback — is what connects the halves, because the sticky bar
+  is built outside the view's `State`. The bar, not the card, renders the live
   waiting/joined/failed line: on a phone the card's own strip is below the
   fold, so a caption there described state the user could not see.
 - **The confirmation screen's rejection is a real rejection.** `_discardDecoded`

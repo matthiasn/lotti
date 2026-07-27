@@ -39,7 +39,15 @@ class _AutoVerificationLauncherState
 
     if (_lastAutoLaunchedDeviceId == targetId) return;
     final lock = ref.read(matrixVerificationModalLockProvider.notifier);
-    if (!lock.tryAcquire()) return;
+    if (!lock.tryAcquire()) {
+      // Record it anyway. Two launchers can be mounted at once — the settings
+      // pane embeds the roster while the setup modal is still open — and the
+      // loser used to return without marking the device handled. When the
+      // winner closed and invalidated the providers, the loser rebuilt, took
+      // the freed lock, and reopened the sheet the user had just dismissed.
+      _lastAutoLaunchedDeviceId = targetId;
+      return;
+    }
 
     _launchInFlight = true;
     _lastAutoLaunchedDeviceId = targetId;

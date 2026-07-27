@@ -9950,6 +9950,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncAddDeviceCopyCode => 'Kopírovat párovací kód';
 
   @override
+  String get syncAddDeviceGenerateFailed =>
+      'Párovací kód se nepodařilo vytvořit. Zkus to znovu.';
+
+  @override
   String get syncAddDeviceHideCode => 'Skrýt párovací kód';
 
   @override
@@ -10091,6 +10095,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get syncDisconnectExplanation =>
       'Tvé záznamy zůstanou na tomto zařízení. Bude odhlášeno ze synchronizačního účtu a k opětovné synchronizaci bude potřebovat nový párovací kód. Ostatní zařízení to neovlivní.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Synchronizaci tohoto zařízení se nepodařilo zastavit. Zkontroluj připojení a zkus to znovu.';
 
   @override
   String get syncEntitiesConfirm => 'SPUSTIT SYNCHRONIZACI';

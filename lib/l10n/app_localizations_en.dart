@@ -9752,6 +9752,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncAddDeviceCopyCode => 'Copy pairing code';
 
   @override
+  String get syncAddDeviceGenerateFailed =>
+      'Couldn\'t create a pairing code. Try again.';
+
+  @override
   String get syncAddDeviceHideCode => 'Hide pairing code';
 
   @override
@@ -9885,6 +9889,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get syncDisconnectExplanation =>
       'Your entries stay on this device. It is signed out of the sync account and needs a new pairing code to sync again. Your other devices are not affected.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Couldn\'t stop syncing this device. Check your connection and try again.';
 
   @override
   String get syncEntitiesConfirm => 'START SYNC';

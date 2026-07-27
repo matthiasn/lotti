@@ -9849,6 +9849,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncAddDeviceCopyCode => 'Koppelcode kopiëren';
 
   @override
+  String get syncAddDeviceGenerateFailed =>
+      'Kon geen koppelcode maken. Probeer het opnieuw.';
+
+  @override
   String get syncAddDeviceHideCode => 'Koppelcode verbergen';
 
   @override
@@ -9987,6 +9991,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get syncDisconnectExplanation =>
       'Je notities blijven op dit apparaat staan. Het wordt afgemeld bij het sync-account en heeft een nieuwe koppelcode nodig om weer te synchroniseren. Je andere apparaten worden niet beïnvloed.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Kon de synchronisatie van dit apparaat niet stoppen. Controleer je verbinding en probeer het opnieuw.';
 
   @override
   String get syncEntitiesConfirm => 'START SYNC';

@@ -9822,6 +9822,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncAddDeviceCopyCode => 'Kopiera parkopplingskod';
 
   @override
+  String get syncAddDeviceGenerateFailed =>
+      'Det gick inte att skapa en parkopplingskod. Försök igen.';
+
+  @override
   String get syncAddDeviceHideCode => 'Dölj parkopplingskoden';
 
   @override
@@ -9956,6 +9960,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get syncDisconnectExplanation =>
       'Dina anteckningar stannar på den här enheten. Den loggas ut från synkkontot och behöver en ny parkopplingskod för att synka igen. Dina andra enheter påverkas inte.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Det gick inte att stoppa synkroniseringen för den här enheten. Kontrollera din anslutning och försök igen.';
 
   @override
   String get syncEntitiesConfirm => 'STARTA SYNKRONISERING';

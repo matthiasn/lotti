@@ -34,8 +34,10 @@ merge of two users' work.
   verified device keeps syncing. Nothing ever halts.
 - **Adds a device from any device already syncing.** "Add device" sits on the
   device roster and mints a handover code on demand — a phone that outlives its
-  desktop can onboard the replacement. The code is only ever on screen because
-  the user asked for it, and it says plainly that it unlocks the account. The
+  desktop can onboard the replacement. The code is shown only when asked for,
+  and it says plainly that it unlocks the account — it can also be copied as
+  text, so it is treated as a credential throughout: let your own new device
+  scan it, but never keep a screenshot or send it through chat or email. The
   joining device opens straight into the camera, with manual entry as the
   fallback, and finishes on a screen naming the two things still outstanding:
   the emoji ceremony, and the settings push that only the other device can send.

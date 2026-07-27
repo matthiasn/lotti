@@ -10002,6 +10002,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncAddDeviceCopyCode => 'Copiați codul de asociere';
 
   @override
+  String get syncAddDeviceGenerateFailed =>
+      'Nu s-a putut crea un cod de asociere. Încercați din nou.';
+
+  @override
   String get syncAddDeviceHideCode => 'Ascundeți codul de asociere';
 
   @override
@@ -10147,6 +10151,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get syncDisconnectExplanation =>
       'Intrările dvs. rămân pe acest dispozitiv. Va fi deconectat de la contul de sincronizare și va avea nevoie de un cod nou pentru a sincroniza din nou. Celelalte dispozitive nu sunt afectate.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Sincronizarea acestui dispozitiv nu a putut fi oprită. Verificați conexiunea și încercați din nou.';
 
   @override
   String get syncEntitiesConfirm => 'ÎNCEPE SINCRONIZAREA';

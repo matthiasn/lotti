@@ -18,8 +18,10 @@ import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.da
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_callout.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -314,11 +316,20 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   bool _loading = true;
   bool _revealed = false;
 
-  /// The sessions already on the account when this sheet opened. A device id
-  /// outside this set is the new device arriving.
+  /// True when minting the code threw, as opposed to there being no sync
+  /// config to mint one from. The remedies differ: retry versus set sync up.
+  bool _generateFailed = false;
+
+  /// The sessions already on the account when this sheet opened, keyed by
+  /// user *and* device: ids are only unique within a Matrix user, and the
+  /// roster deliberately spans users so legacy one-account-per-device pairings
+  /// still show up. Keyed on the device id alone, a new device whose id
+  /// collided with any foreign user's would read as already known and the
+  /// sheet would never latch.
   Set<String>? _knownDeviceIds;
   bool _joined = false;
   int _pollFailures = 0;
+  bool _pollInFlight = false;
   Timer? _poll;
 
   @override
@@ -339,6 +350,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
     if (mounted) setState(() => _loading = true);
     String? data;
     String? check;
+    var failed = false;
     try {
       data = await ref
           .read(provisioningControllerProvider.notifier)
@@ -356,11 +368,23 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
           homeServer: config.homeServer,
         );
       }
+    } catch (e, stackTrace) {
+      // Launched with `unawaited`, so without this the exception escapes to
+      // the zone — and the finally branch would meanwhile render "set up sync
+      // on this device first", a misdiagnosis on a device that is set up.
+      failed = true;
+      getIt<DomainLogger>().error(
+        LogDomain.sync,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'addDeviceGenerate',
+      );
     } finally {
       if (mounted) {
         setState(() {
           _handover = data;
           _checkCode = check;
+          _generateFailed = failed;
           _loading = false;
         });
         if (data != null) _startPolling();
@@ -379,20 +403,37 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
 
   /// One roster fetch, counting consecutive failures. Without this the strip
   /// spins "Waiting for the new device…" forever against a dead homeserver.
+  ///
+  /// Serialized: a fetch slower than the interval used to overlap the next
+  /// tick, so a struggling homeserver got *more* concurrent load the worse it
+  /// performed, and the failure count could advance more than once per round
+  /// trip.
   Future<void> _pollOnce() async {
-    final succeeded = await ref
-        .read(syncDevicesControllerProvider.notifier)
-        .refresh();
+    if (_pollInFlight) return;
+    _pollInFlight = true;
+    final bool succeeded;
+    try {
+      succeeded = await ref
+          .read(syncDevicesControllerProvider.notifier)
+          .refresh();
+    } finally {
+      _pollInFlight = false;
+    }
     if (!mounted) return;
     setState(() {
       _pollFailures = succeeded ? 0 : _pollFailures + 1;
     });
+    // Once the strip has given up and offered Retry, stop asking on a timer:
+    // continuing to poll a homeserver that has failed three times running
+    // changes nothing on screen and only adds load. Retry restarts it.
+    if (_pollFailures >= kAddDeviceMaxPollFailures) _poll?.cancel();
     _publishJoinState();
   }
 
   void _retryPolling() {
     setState(() => _pollFailures = 0);
     _publishJoinState();
+    _startPolling();
     unawaited(_pollOnce());
   }
 
@@ -422,6 +463,10 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   /// Derived during build rather than via `setState`: the value is a pure
   /// function of the roster this widget already watches, and it only ever
   /// moves forward, so no extra frame is needed to show it.
+  /// Identity of a roster row: device ids are unique only within a user.
+  static String _rosterIdentity(SyncDeviceInfo device) =>
+      '${device.userId ?? 'self'}/${device.deviceId}';
+
   void _observeRoster(List<String> deviceIds) {
     if (_joined) return;
     final known = _knownDeviceIds;
@@ -458,7 +503,9 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              messages.syncAddDeviceUnavailable,
+              _generateFailed
+                  ? messages.syncAddDeviceGenerateFailed
+                  : messages.syncAddDeviceUnavailable,
               key: const Key('add_device_unavailable'),
               style: tokens.typography.styles.body.bodyMedium.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
@@ -478,7 +525,9 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
 
     final devices = ref.watch(syncDevicesControllerProvider).value;
     if (devices != null) {
-      _observeRoster(devices.map((d) => d.deviceId).toList(growable: false));
+      _observeRoster(
+        devices.map(_rosterIdentity).toList(growable: false),
+      );
     }
 
     final checkCode = _checkCode;
@@ -547,10 +596,16 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
                 // left: sizing the code by a share and clamping it let the
                 // floor win at the dialog's actual width, starving the column
                 // and ellipsising the very control the joining device names.
+                //
+                // The quiet zone counts. `side` is the image; _QrCard pads it
+                // by step3 on each side, so the card occupies `side + 2·step3`
+                // and budgeting as though it were `side` overspent by exactly
+                // that much.
                 final side =
                     (constraints.maxWidth -
                             kAddDeviceDetailsMin -
-                            tokens.spacing.step5)
+                            tokens.spacing.step5 -
+                            tokens.spacing.step3 * 2)
                         .clamp(180.0, 300.0);
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

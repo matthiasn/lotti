@@ -9953,6 +9953,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncAddDeviceCopyCode => 'Copia codice di abbinamento';
 
   @override
+  String get syncAddDeviceGenerateFailed =>
+      'Non è stato possibile creare un codice di abbinamento. Riprova.';
+
+  @override
   String get syncAddDeviceHideCode => 'Nascondi il codice di abbinamento';
 
   @override
@@ -10093,6 +10097,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get syncDisconnectExplanation =>
       'Le tue voci restano su questo dispositivo. Verrà disconnesso dall’account di sincronizzazione e servirà un nuovo codice per sincronizzare di nuovo. Gli altri dispositivi non sono interessati.';
+
+  @override
+  String get syncDisconnectFailed =>
+      'Non è stato possibile interrompere la sincronizzazione di questo dispositivo. Controlla la connessione e riprova.';
 
   @override
   String get syncEntitiesConfirm => 'AVVIA SINCRONIZZAZIONE';

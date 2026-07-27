@@ -81,7 +81,10 @@ void main() {
       tester,
     ) async {
       final resolve = await _buildResolver(tester);
-      expect(resolve('sync/provisioned').title, 'Provisioned Sync');
+      // The node is the device roster, and its own section header says
+      // "Devices" — titling the tree entry "Provisioned Sync" named the
+      // mechanism rather than what the user finds there.
+      expect(resolve('sync/provisioned').title, 'Devices');
       expect(resolve('sync/backfill').title, 'Backfill sync');
       expect(resolve('sync/stats').title, 'Matrix Stats');
       expect(resolve('sync/matrix-maintenance').title, 'Maintenance');
