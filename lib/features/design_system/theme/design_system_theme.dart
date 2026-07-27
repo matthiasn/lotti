@@ -61,8 +61,14 @@ class DesignSystemTheme {
       onTertiary: tokens.colors.text.onInteractiveAlert,
       tertiaryContainer: tokens.colors.background.level03,
       onTertiaryContainer: tokens.colors.text.highEmphasis,
-      errorContainer: tokens.colors.alert.error.hover,
-      onErrorContainer: tokens.colors.text.onInteractiveAlert,
+      // A subtle wash, not a solid fill: consumers paint errorContainer as
+      // banner and badge backgrounds (often with further alpha), and its
+      // foreground must survive over what is effectively the page surface.
+      // 0x2E is the token set's own surface-wash alpha (see the generated
+      // proposalKind surfaces); `ink` is the error foreground designed for
+      // exactly such barely-tinted surfaces.
+      errorContainer: tokens.colors.alert.error.defaultColor.withAlpha(0x2E),
+      onErrorContainer: tokens.colors.alert.error.ink,
       // The full Material container ramp. Left unset, the low/mid/high slots
       // fall back to `surface`, so every legacy consumer of them — chat
       // inputs, agent cards, selection surfaces — collapsed onto the page

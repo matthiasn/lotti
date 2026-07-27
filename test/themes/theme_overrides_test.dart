@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
-import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -89,33 +88,35 @@ void main() {
       final baseTheme = ThemeData.light();
       final themedData = withOverrides(baseTheme);
 
-      // In light mode, scaffold should be forced to pure white
+      // Both modes take the base scheme's surface — the token ramp passes
+      // through untouched.
       expect(
         themedData.scaffoldBackgroundColor,
-        equals(LightModeSurfaces.surface),
+        equals(baseTheme.colorScheme.surface),
       );
       expect(
         themedData.canvasColor,
-        equals(LightModeSurfaces.surface),
+        equals(baseTheme.colorScheme.surface),
       );
     });
 
-    test('applies white colorScheme surfaces in light mode', () {
+    test('leaves the base colorScheme surfaces untouched', () {
+      // The hard-coded light ramp that used to replace these made Material
+      // consumers render different surfaces from token consumers.
       final baseTheme = ThemeData.light();
       final themedData = withOverrides(baseTheme);
 
-      // Light mode colorScheme surfaces should be white/near-white
       expect(
         themedData.colorScheme.surface,
-        equals(LightModeSurfaces.surface),
+        equals(baseTheme.colorScheme.surface),
       );
       expect(
         themedData.colorScheme.surfaceContainerLowest,
-        equals(LightModeSurfaces.surfaceContainerLowest),
+        equals(baseTheme.colorScheme.surfaceContainerLowest),
       );
       expect(
         themedData.colorScheme.surfaceContainerLow,
-        equals(LightModeSurfaces.surfaceContainerLow),
+        equals(baseTheme.colorScheme.surfaceContainerLow),
       );
     });
 
@@ -123,9 +124,12 @@ void main() {
       final baseTheme = ThemeData.light();
       final themedData = withOverrides(baseTheme);
 
-      // Light mode cards should have no elevation and white color
+      // Light mode cards should have no elevation and the scheme surface
       expect(themedData.cardTheme.elevation, equals(0));
-      expect(themedData.cardTheme.color, equals(LightModeSurfaces.surface));
+      expect(
+        themedData.cardTheme.color,
+        equals(baseTheme.colorScheme.surface),
+      );
       expect(themedData.cardTheme.shadowColor, equals(Colors.transparent));
     });
 
@@ -135,7 +139,7 @@ void main() {
 
       expect(
         themedData.bottomSheetTheme.backgroundColor,
-        equals(LightModeSurfaces.surface),
+        equals(baseTheme.colorScheme.surface),
       );
     });
 
@@ -145,7 +149,7 @@ void main() {
 
       expect(
         themedData.dialogTheme.backgroundColor,
-        equals(LightModeSurfaces.surface),
+        equals(baseTheme.colorScheme.surface),
       );
       expect(themedData.dialogTheme.elevation, equals(0));
     });

@@ -80,13 +80,14 @@ or Daily OS category exclusions, which stay put.
 
 `ThemingController._buildTheme` composes
 `withOverrides(DesignSystemTheme.dark()/light())`: the
-[design system](design_system/) supplies the token-derived `ColorScheme`,
-`TextTheme` (including the platform-aware color-emoji font fallback) and the
-`DsTokens` extension behind `context.designTokens`; `withOverrides` layers the
-Material-level extras on top — wolt sheet motion, markdown theme, input/card
-shapes, and the forced-white light-mode surfaces. The screenshot harness's
-`screenshotTheme` builds the identical composition, which is what keeps design
-verdicts made on captures transferable to the running app.
+[design system](design_system/) supplies the token-derived `ColorScheme`
+(surfaces, container ramp, accents), `TextTheme` (including the platform-aware
+color-emoji font fallback) and the `DsTokens` extension behind
+`context.designTokens`; `withOverrides` layers the Material-level extras on
+top — wolt sheet motion, markdown theme, input/card shapes — without touching
+the scheme or the text theme. The screenshot harness's `screenshotTheme`
+builds the identical composition, which is what keeps design verdicts made on
+captures transferable to the running app.
 
 The theming **UI** lives under [settings](settings.md); the state machine lives
 here.

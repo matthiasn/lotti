@@ -48,11 +48,16 @@ void main() {
           ),
           ('tertiary', scheme.tertiary, colors.alert.info.defaultColor),
           ('onTertiary', scheme.onTertiary, colors.text.onInteractiveAlert),
+          // A subtle wash with the ink foreground designed for it: consumers
+          // paint errorContainer as banner backgrounds, often with further
+          // alpha, so a solid fill with a polarity-matched foreground turned
+          // unreadable the moment any transparency was applied.
           (
             'errorContainer',
             scheme.errorContainer,
-            colors.alert.error.hover,
+            colors.alert.error.defaultColor.withAlpha(0x2E),
           ),
+          ('onErrorContainer', scheme.onErrorContainer, colors.alert.error.ink),
           // The full container ramp: unset slots fall back to `surface`,
           // collapsing every legacy surfaceContainer* consumer onto the page
           // background. level03 is a divider gray, so the ramp deliberately
