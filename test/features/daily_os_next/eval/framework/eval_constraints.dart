@@ -705,15 +705,16 @@ final _partialLeadingRemainingPattern = RegExp(
 
 final _partialMentionPattern = RegExp(r'\bpartial\b', caseSensitive: false);
 
-final _negatedPartialPattern = RegExp(
-  r"\b(?:not|no|never|isn['’]?t|wasn['’]?t)\b"
-  r'(?:\s+\w+){0,3}\s+\bpartial\b',
+final _negationWordPattern = RegExp(
+  r'\b(?:not|no|never|(?:isn|wasn|weren|aren|doesn|don|didn|can|couldn|'
+  r'won|wouldn|shouldn|hasn|haven|hadn)[\x27’]?t)\b',
   caseSensitive: false,
 );
 
 typedef _EstimatedTaskPlacement = ({
   int allocatedMinutes,
   int estimateMinutes,
+  bool hasOverlappingBlocks,
   List<String> reasons,
 });
 
@@ -726,6 +727,7 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
   EvalRunOutcome outcome,
 ) {
   final allocatedByTask = <String, int>{};
+  final blocksByTask = <String, List<PlannedBlock>>{};
   final reasonsByTask = <String, List<String>>{};
   for (final block in _scheduled(outcome)) {
     if (block.type != PlannedBlockType.ai &&
@@ -740,6 +742,7 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
           minutes + block.endTime.difference(block.startTime).inMinutes,
       ifAbsent: () => block.endTime.difference(block.startTime).inMinutes,
     );
+    blocksByTask.putIfAbsent(taskId, () => []).add(block);
     final reason = block.reason?.trim();
     if (reason != null && reason.isNotEmpty) {
       reasonsByTask.putIfAbsent(taskId, () => []).add(reason);
@@ -752,9 +755,24 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
         entry.key: (
           allocatedMinutes: entry.value,
           estimateMinutes: estimate,
+          hasOverlappingBlocks: _hasOverlappingIntervals(
+            blocksByTask[entry.key] ?? const [],
+          ),
           reasons: reasonsByTask[entry.key] ?? const [],
         ),
   };
+}
+
+bool _hasOverlappingIntervals(List<PlannedBlock> blocks) {
+  if (blocks.length < 2) return false;
+  final ordered = [...blocks]
+    ..sort((a, b) => a.startTime.compareTo(b.startTime));
+  var latestEnd = ordered.first.endTime;
+  for (final block in ordered.skip(1)) {
+    if (block.startTime.isBefore(latestEnd)) return true;
+    if (block.endTime.isAfter(latestEnd)) latestEnd = block.endTime;
+  }
+  return false;
 }
 
 /// Whether a placement is substantial and its partial arithmetic is auditable.
@@ -762,10 +780,13 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
 /// The 10% floor matches the token-placement boundary used by
 /// [scoreRespectsEstimates]. Keeping it here prevents capacity and conflict
 /// scoring from treating a one-minute task marker as genuine partial work.
+/// Overlapping blocks are likewise ineligible because summed intervals can
+/// manufacture represented minutes without adding wall-clock work.
 bool _isAuditedPartial(_EstimatedTaskPlacement placement) =>
     placement.allocatedMinutes > 0 &&
     placement.allocatedMinutes < placement.estimateMinutes &&
     placement.allocatedMinutes * 10 >= placement.estimateMinutes &&
+    !placement.hasOverlappingBlocks &&
     _hasAuditablePartialDisclosure(
       reasons: placement.reasons,
       allocatedMinutes: placement.allocatedMinutes,
@@ -786,12 +807,16 @@ bool _hasAuditablePartialDisclosure({
   required int estimateMinutes,
 }) {
   final remainingMinutes = estimateMinutes - allocatedMinutes;
-  if (reasons.any(_negatedPartialPattern.hasMatch)) return false;
-  final mentionsPartial = reasons.any(_partialMentionPattern.hasMatch);
+  var mentionsPartial = false;
   var hasMatchingSplit = false;
   var hasMatchingRemainder = false;
   for (final reason in reasons) {
+    for (final match in _partialMentionPattern.allMatches(reason)) {
+      if (_matchClauseIsNegated(reason, match)) return false;
+      mentionsPartial = true;
+    }
     for (final match in _partialOfEstimatePattern.allMatches(reason)) {
+      if (_matchClauseIsNegated(reason, match)) return false;
       final declaredAllocated = int.tryParse(match.group(1) ?? '');
       final declaredEstimate = int.tryParse(match.group(2) ?? '');
       if (declaredAllocated != allocatedMinutes ||
@@ -801,17 +826,40 @@ bool _hasAuditablePartialDisclosure({
       hasMatchingSplit = true;
     }
     for (final match in _partialRemainingPattern.allMatches(reason)) {
+      if (_matchClauseIsNegated(reason, match)) return false;
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
       hasMatchingRemainder = true;
     }
     for (final match in _partialLeadingRemainingPattern.allMatches(reason)) {
+      if (_matchClauseIsNegated(reason, match)) return false;
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
       hasMatchingRemainder = true;
     }
   }
   return hasMatchingSplit || (mentionsPartial && hasMatchingRemainder);
+}
+
+bool _matchClauseIsNegated(String reason, Match match) {
+  const boundaries = '.;!?\n';
+  var clauseStart = 0;
+  for (var i = match.start - 1; i >= 0; i--) {
+    if (boundaries.contains(reason[i])) {
+      clauseStart = i + 1;
+      break;
+    }
+  }
+  var clauseEnd = reason.length;
+  for (var i = match.end; i < reason.length; i++) {
+    if (boundaries.contains(reason[i])) {
+      clauseEnd = i;
+      break;
+    }
+  }
+  return _negationWordPattern.hasMatch(
+    reason.substring(clauseStart, clauseEnd),
+  );
 }
 
 /// Work the scenario says any competent plan must include.

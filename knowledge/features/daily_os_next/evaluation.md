@@ -79,8 +79,9 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   that task's work blocks and the corpus estimate. Every concrete split and
   remainder in the task's disclosure must agree; one matching fragment cannot
   override a contradictory remainder elsewhere in the same disclosure.
-  Negated or vague “partial” prose, silence, contradictory numbers, buffer or
-  calendar blocks carrying a task id, and allocations below 10% of the estimate
+  Negated arithmetic clauses, negated or vague “partial” prose, silence,
+  contradictory numbers, buffer or calendar blocks carrying a task id,
+  allocations below 10% of the estimate, and overlapping blocks for one task
   are charged at the full estimate or receive no placement score. An audited
   partial remainder also counts as deferred work for `surfacedConflict`, so a
   plan that represents every task only partially must still name the trade or

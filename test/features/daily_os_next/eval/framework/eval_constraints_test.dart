@@ -1465,6 +1465,18 @@ void main() {
         name: 'a contracted negated partial disclosure',
         reason: "This isn't a partial placement; 60 minutes remain for later.",
       ),
+      (
+        name: 'a negated completed-estimate split',
+        reason:
+            'This block does not schedule 60 of the 120 minutes; '
+            'it is only a placeholder.',
+      ),
+      (
+        name: 'a completed-estimate split followed by negation',
+        reason:
+            '60 of the 120 minutes are not scheduled; '
+            'this block is only a placeholder.',
+      ),
     ]) {
       test('charges ${badDisclosure.name} at the full estimate', () {
         final result = scoreWithinCapacityByEstimate(
@@ -1592,6 +1604,31 @@ void main() {
 
       expect(result.passed, isTrue);
       expect(result.detail, contains('task-c 12min partial of 120min'));
+    });
+
+    test('overlapping blocks cannot manufacture a substantive partial', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            for (var i = 0; i < 12; i++)
+              block(
+                id: 'overlap-$i',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason: i == 0
+                    ? 'Partial: 12 minutes of the 120-minute task are '
+                          'scheduled; 108 minutes remain.'
+                    : null,
+              ).copyWith(endTime: DateTime(2026, 7, 18, 9, 1)),
+          ],
+          corpus: tasks,
+          capacityMinutes: 12,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 12min of 120min'));
     });
 
     for (final type in [PlannedBlockType.buffer, PlannedBlockType.cal]) {
