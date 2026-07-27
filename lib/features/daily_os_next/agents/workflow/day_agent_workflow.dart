@@ -408,6 +408,15 @@ class DayAgentWorkflow {
         threadId: threadId,
         runKey: runKey,
         domainLogger: domainLogger,
+        terminalToolNames: {
+          if (_requiresCaptureParse(
+            wakeContext: wakeContext,
+            captureContext: captureContext,
+          ))
+            DayAgentToolNames.parseCaptureToItems,
+          if (_requiresDraftDayPlan(wakeContext: wakeContext))
+            DayAgentToolNames.draftDayPlan,
+        },
         executeToolHandler: (toolName, args, manager) => _executeToolHandler(
           agentId: agentId,
           threadId: threadId,
@@ -434,7 +443,11 @@ class DayAgentWorkflow {
         );
       }
 
-      final tools = _buildToolDefinitions(agentId: agentId);
+      final tools = _buildToolDefinitions(
+        agentId: agentId,
+        wakeContext: wakeContext,
+        captureContext: captureContext,
+      );
       final recordConsumption = getIt.isRegistered<AiInteractionCapture>();
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,

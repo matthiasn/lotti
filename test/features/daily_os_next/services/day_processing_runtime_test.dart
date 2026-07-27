@@ -7,8 +7,10 @@ import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
+import '../../../mocks/mocks.dart';
 import 'day_processing_test_db.dart';
 
 void main() {
@@ -68,6 +70,181 @@ void main() {
       expect(scheduledDelay, Duration.zero);
     },
   );
+
+  test(
+    'outbox change during an active drain triggers an immediate follow-up',
+    () async {
+      final firstDrainStarted = Completer<void>();
+      final releaseFirstDrain = Completer<void>();
+      final secondDrainCompleted = Completer<void>();
+      void Function()? scheduledCallback;
+      var drains = 0;
+      final runtime = DayProcessingRuntime(
+        repository: repository,
+        now: () => now,
+        connectivityChanges: const Stream.empty(),
+        drain: () async {
+          drains += 1;
+          if (drains == 1) {
+            final claim = await repository.claimNext();
+            await repository.markSucceeded(
+              jobId: claim!.job.id,
+              claimToken: claim.token,
+            );
+            firstDrainStarted.complete();
+            await releaseFirstDrain.future;
+          } else if (drains == 2) {
+            final claim = await repository.claimNext();
+            await repository.markSucceeded(
+              jobId: claim!.job.id,
+              claimToken: claim.token,
+            );
+            secondDrainCompleted.complete();
+          }
+          return 0;
+        },
+        schedule: (_, callback) => scheduledCallback = callback,
+      );
+      addTearDown(runtime.dispose);
+
+      runtime.start();
+      final firstNudge = runtime.nudge();
+      await firstDrainStarted.future;
+      await repository.enqueueParseCapture(
+        dayId: 'dayplan-2026-07-18',
+        captureId: 'capture-arrived-during-drain',
+      );
+      releaseFirstDrain.complete();
+      await firstNudge;
+      scheduledCallback!();
+      await secondDrainCompleted.future;
+
+      expect(drains, 2);
+    },
+  );
+
+  test('drain-owned outbox mutations do not request another drain', () async {
+    var drains = 0;
+    final runtime = DayProcessingRuntime(
+      repository: repository,
+      now: () => now,
+      connectivityChanges: const Stream.empty(),
+      drain: () async {
+        drains += 1;
+        final claim = await repository.claimNext();
+        if (claim != null) {
+          await repository.markSucceeded(
+            jobId: claim.job.id,
+            claimToken: claim.token,
+          );
+        }
+        return claim == null ? 0 : 1;
+      },
+      schedule: (_, _) {},
+    );
+    addTearDown(runtime.dispose);
+
+    runtime.start();
+    await runtime.nudge();
+    await Future<void>.value();
+
+    expect(drains, 1);
+    expect(
+      (await repository.getById('transcribe_session-1'))!.status,
+      DayProcessingJobStatus.succeeded,
+    );
+  });
+
+  test(
+    'external change after drain mutation phase requests one follow-up',
+    () async {
+      final changes = StreamController<void>.broadcast(sync: true);
+      final outbox = MockDayProcessingOutboxRepository();
+      final firstQueryStarted = Completer<void>();
+      final releaseFirstQuery = Completer<void>();
+      var drains = 0;
+      var queries = 0;
+      when(() => outbox.changes).thenAnswer((_) => changes.stream);
+      when(outbox.getSchedulable).thenAnswer((_) async {
+        queries += 1;
+        if (queries == 1) {
+          firstQueryStarted.complete();
+          await releaseFirstQuery.future;
+        }
+        return const [];
+      });
+
+      final runtime = DayProcessingRuntime(
+        repository: outbox,
+        connectivityChanges: const Stream.empty(),
+        drain: () async {
+          drains += 1;
+          return 0;
+        },
+        schedule: (_, _) {},
+      );
+      addTearDown(() async {
+        await runtime.dispose();
+        await changes.close();
+      });
+
+      runtime.start();
+      final firstNudge = runtime.nudge();
+      await firstQueryStarted.future;
+      changes.add(null);
+      releaseFirstQuery.complete();
+      await firstNudge;
+      for (var i = 0; i < 3; i++) {
+        await Future<void>.value();
+      }
+
+      expect(drains, 2);
+      expect(queries, 2);
+    },
+  );
+
+  test('failed drain restores the outbox change listener', () async {
+    final changes = StreamController<void>.broadcast(sync: true);
+    final outbox = MockDayProcessingOutboxRepository();
+    var drains = 0;
+    var queries = 0;
+    Duration? scheduledDelay;
+    when(() => outbox.changes).thenAnswer((_) => changes.stream);
+    when(outbox.getSchedulable).thenAnswer((_) async {
+      queries += 1;
+      return const [];
+    });
+
+    final runtime = DayProcessingRuntime(
+      repository: outbox,
+      connectivityChanges: const Stream.empty(),
+      failureRetryDelay: const Duration(seconds: 17),
+      drain: () async {
+        drains += 1;
+        if (drains == 1) {
+          throw StateError('drain failed');
+        }
+        return 0;
+      },
+      schedule: (delay, _) => scheduledDelay = delay,
+    );
+    addTearDown(() async {
+      await runtime.dispose();
+      await changes.close();
+    });
+
+    runtime.start();
+    await runtime.nudge();
+    expect(scheduledDelay, const Duration(seconds: 17));
+
+    changes.add(null);
+    for (var i = 0; i < 3; i++) {
+      await Future<void>.value();
+    }
+
+    expect(drains, 2);
+    expect(queries, 1);
+  });
 
   test(
     'connectivity restoration advances offline work and drains it',

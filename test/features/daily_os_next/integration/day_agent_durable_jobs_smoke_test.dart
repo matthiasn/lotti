@@ -2,18 +2,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/ai_config_factories.dart';
+import '../eval/framework/eval_scenario.dart';
 import '../services/day_processing_test_db.dart';
+import 'day_agent_journey_support.dart';
 import 'day_agent_pipeline_harness.dart';
+import 'realistic_day_planning_scenarios.dart';
 import 'scripted_conversation_repository.dart';
 
 /// End-to-end smoke test for the ADR 0032 durable draft/refine pipeline.
@@ -28,8 +34,8 @@ import 'scripted_conversation_repository.dart';
 /// normal unit-test lane: it proves the new outbox → runtime → executor →
 /// orchestrator → workflow → plan-service → outbox-completion round trip
 /// genuinely works, not just that each link passes its own mocked unit
-/// test. (The `eval/day_planning_eval_live_test.dart` matrix runs the
-/// same chain against a real model.)
+/// test. The full-journey live eval runs these same realistic fixtures against
+/// Melious, including the coordinator and both user-facing wakes.
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -63,6 +69,11 @@ void main() {
       provider: testInferenceProvider(
         id: 'provider-day',
         apiKey: 'provider-key',
+      ),
+      dependencyResolver: EvalFixtureDependencyResolver(const {}),
+      config: const DayAgentConfig(
+        capacityMinutes: 300,
+        workingHoursEnd: '18:00',
       ),
     );
     addTearDown(() => harness.dispose());
@@ -159,6 +170,418 @@ void main() {
       expect(refineJobs.single.isTerminal, isTrue);
       expect(refineJobs.single.status.name, 'succeeded');
       expect(refineJobs.single.resultEntityId, isNotNull);
+    },
+  );
+
+  test(
+    'planner directive and dense multi-category capture retain every selected '
+    'instruction without leaking unrelated corpus work',
+    () async {
+      seedScenarioCorpus(
+        journalDb: harness.journalDb,
+        scenario: denseRestOfDayScenario,
+        planDate: dayDate,
+        journalRepository: harness.journalRepository,
+      );
+
+      final coordinator = await harness.dayAgentService
+          .getOrCreatePlannerAgent();
+      conversationRepository.script([
+        scriptedToolCall(
+          id: 'directive-dentist',
+          name: DayAgentToolNames.issueDayDirective,
+          args: {
+            'dayId': dayId,
+            'commitments': [
+              {
+                'id': 'fixed-dentist',
+                'source': 'userCommitment',
+                'title': 'Dentist appointment at 16:30',
+                'minutes': 60,
+              },
+            ],
+            'capacityBudget': {'availableMinutes': 300},
+            'attentionNotes': [
+              'The dentist is fixed; preserve the time anchor.',
+            ],
+          },
+        ),
+      ]);
+      await runPlannerDigest(
+        harness: harness,
+        coordinator: coordinator,
+        dayId: dayId,
+      );
+
+      conversationRepository.scriptFromMessage(
+        (message) => _matchedParseCalls(
+          message: message,
+          scenario: denseRestOfDayScenario,
+          selectedTaskIds: denseRestOfDayScenario.decidedTaskIds,
+        ),
+      );
+      final captureId = await harness.realDayAgent.submitCapture(
+        transcript: denseRestOfDayScenario.captureTranscript!,
+        capturedAt: dayDate.add(const Duration(hours: 8)),
+        dayDate: dayDate,
+      );
+      final parseJob = await waitForTerminalDayProcessingJob(
+        harness.outbox,
+        DayProcessingOutboxRepository.parseJobId(captureId.value),
+      );
+      expect(parseJob.status, DayProcessingJobStatus.succeeded);
+
+      final parsed = await harness.realDayAgent.parseCaptureToItems(captureId);
+      expect(parsed, hasLength(denseRestOfDayScenario.decidedTaskIds.length));
+      expect(
+        parsed.map((item) => item.matchedTaskId),
+        unorderedEquals(denseRestOfDayScenario.decidedTaskIds),
+      );
+      expect(
+        parsed.map((item) => item.spokenPhrase),
+        everyElement(isNotEmpty),
+      );
+
+      conversationRepository.script([
+        scriptedToolCall(
+          id: 'dense-draft',
+          name: DayAgentToolNames.draftDayPlan,
+          args: {
+            'dayId': dayId,
+            'captureId': captureId.value,
+            'decidedTaskIds': denseRestOfDayScenario.decidedTaskIds,
+            'blocks': [
+              _block(
+                dayDate,
+                taskId: 'task-migration',
+                title: 'Finish the database migration',
+                categoryId: 'cat-project',
+                startHour: 9,
+                endHour: 10,
+                endMinute: 15,
+                reason: 'Finish the in-progress migration first.',
+              ),
+              _block(
+                dayDate,
+                taskId: 'task-invoice',
+                title: 'Send the overdue client invoice',
+                categoryId: 'cat-admin',
+                startHour: 10,
+                startMinute: 15,
+                endHour: 10,
+                endMinute: 35,
+                reason: 'Complete before the requested 15:00 deadline.',
+              ),
+              _block(
+                dayDate,
+                taskId: 'task-client-call',
+                title: 'Client planning call',
+                categoryId: 'cat-client',
+                startHour: 13,
+                endHour: 13,
+                endMinute: 45,
+                reason: 'Keep the user-stated 13:00 call.',
+              ),
+              _block(
+                dayDate,
+                taskId: 'task-reset',
+                title: 'Reset after the client call',
+                categoryId: 'cat-wellbeing',
+                startHour: 13,
+                startMinute: 45,
+                endHour: 14,
+                reason: 'Preserve the requested 15-minute break relationship.',
+              ),
+              _block(
+                dayDate,
+                taskId: 'task-walk',
+                title: 'Take a 30-minute walk',
+                categoryId: 'cat-health',
+                startHour: 14,
+                endHour: 14,
+                endMinute: 30,
+                reason: 'Place the requested walk after lunch.',
+              ),
+              _block(
+                dayDate,
+                taskId: 'task-dentist',
+                title: 'Dentist appointment',
+                categoryId: 'cat-personal',
+                startHour: 16,
+                startMinute: 30,
+                endHour: 17,
+                endMinute: 30,
+                reason: 'Binding fixed-dentist commitment at 16:30.',
+              ),
+            ],
+          },
+        ),
+      ]);
+      final draft = await harness.realDayAgent.draftDayPlan(
+        captureId: captureId,
+        decidedTaskIds: denseRestOfDayScenario.decidedTaskIds,
+        dayDate: dayDate,
+      );
+
+      expect(
+        draft.blocks.map((block) => block.taskId),
+        orderedEquals(denseRestOfDayScenario.decidedTaskIds),
+      );
+      for (final unrelatedId in [
+        'task-security-review',
+        'task-release-notes',
+        'task-expenses',
+        'task-groceries',
+        'task-training',
+        'task-team-replies',
+      ]) {
+        expect(
+          draft.blocks.map((block) => block.taskId),
+          isNot(contains(unrelatedId)),
+          reason: '$unrelatedId was visible but never selected',
+        );
+      }
+      expect(draft.blocks[3].duration, const Duration(minutes: 15));
+      expect(draft.blocks[5].start.hour, 16);
+      expect(draft.blocks[5].start.minute, 30);
+
+      final parsePrompt = conversationRepository.userMessages[1];
+      expect(parsePrompt, contains(denseRestOfDayScenario.captureTranscript));
+      expect(parsePrompt, contains('task-security-review'));
+      expect(parsePrompt, contains('task-release-notes'));
+      expect(parsePrompt, contains('cat-health'));
+      expect(parsePrompt, contains('cat-finance'));
+      final draftPrompt = conversationRepository.userMessages[2];
+      for (final id in denseRestOfDayScenario.decidedTaskIds) {
+        expect(draftPrompt, contains(id), reason: '$id must reach drafting');
+      }
+      expect(draftPrompt, contains('fixed-dentist'));
+      expect(
+        conversationRepository.toolNamesBySend[1],
+        {DayAgentToolNames.parseCaptureToItems},
+      );
+      expect(
+        conversationRepository.toolNamesBySend[2],
+        {
+          DayAgentToolNames.createTaskFromPhrase,
+          DayAgentToolNames.raiseDayStatus,
+          DayAgentToolNames.draftDayPlan,
+        },
+        reason:
+            'Drafting should expose only tools that can produce its artifact '
+            'or make an unavoidable conflict explicit.',
+      );
+      expect(
+        conversationRepository.sendCount,
+        3,
+        reason:
+            'One planner digest, one capture parse, and one draft should be '
+            'enough; successful terminal tools must not trigger extra sends.',
+      );
+
+      final dayAgent = await harness.agentRepository.getEntity(
+        perDayAgentId(dayId),
+      );
+      expect(dayAgent, isA<AgentIdentityEntity>());
+      expect(
+        (dayAgent! as AgentIdentityEntity).agentId,
+        isNot(coordinator.agentId),
+      );
+    },
+  );
+
+  test(
+    'overcommitted day agent names omitted selected work and the planner '
+    'receives the escalation on its next digest',
+    () async {
+      seedScenarioCorpus(
+        journalDb: harness.journalDb,
+        scenario: overcommittedRestOfDayScenario,
+        planDate: dayDate,
+        journalRepository: harness.journalRepository,
+      );
+      final coordinator = await harness.dayAgentService
+          .getOrCreatePlannerAgent();
+      conversationRepository.script([
+        scriptedToolCall(
+          id: 'initial-board-directive',
+          name: DayAgentToolNames.issueDayDirective,
+          args: {
+            'dayId': dayId,
+            'commitments': [
+              {
+                'id': 'must-board-deck',
+                'source': 'userCommitment',
+                'title': 'Prepare the board deck',
+                'minutes': 90,
+              },
+            ],
+            'capacityBudget': {'availableMinutes': 180},
+            'attentionNotes': ['The board deck cannot slip.'],
+          },
+        ),
+      ]);
+      await runPlannerDigest(
+        harness: harness,
+        coordinator: coordinator,
+        dayId: dayId,
+      );
+
+      conversationRepository.scriptFromMessage(
+        (message) => _matchedParseCalls(
+          message: message,
+          scenario: overcommittedRestOfDayScenario,
+          selectedTaskIds: overcommittedRestOfDayScenario.decidedTaskIds,
+        ),
+      );
+      final captureId = await harness.realDayAgent.submitCapture(
+        transcript: overcommittedRestOfDayScenario.captureTranscript!,
+        capturedAt: dayDate.add(const Duration(hours: 12)),
+        dayDate: dayDate,
+      );
+      final parseJob = await waitForTerminalDayProcessingJob(
+        harness.outbox,
+        DayProcessingOutboxRepository.parseJobId(captureId.value),
+      );
+      expect(parseJob.status, DayProcessingJobStatus.succeeded);
+
+      conversationRepository.script([
+        scriptedToolCall(
+          id: 'surface-omissions',
+          name: DayAgentToolNames.raiseDayStatus,
+          args: {
+            'dayId': dayId,
+            'status': 'attentionNeeded',
+            'reasons': ['overCommitted'],
+            'note':
+                'Interview two candidates and Take an afternoon walk do not '
+                'fit after the board deck, release notes, and support inbox.',
+          },
+        ),
+        scriptedToolCall(
+          id: 'overcommitted-draft',
+          name: DayAgentToolNames.draftDayPlan,
+          args: {
+            'dayId': dayId,
+            'captureId': captureId.value,
+            'decidedTaskIds': overcommittedRestOfDayScenario.decidedTaskIds,
+            'blocks': [
+              _block(
+                dayDate,
+                taskId: 'task-board-deck',
+                title: 'Prepare the board deck',
+                categoryId: 'cat-leadership',
+                startHour: 13,
+                endHour: 14,
+                endMinute: 30,
+                reason:
+                    'Honour must-board-deck; interviews and the walk are '
+                    'omitted because only 180 minutes remain.',
+              ),
+              _block(
+                dayDate,
+                taskId: 'task-release',
+                title: 'Write the release notes',
+                categoryId: 'cat-product',
+                startHour: 14,
+                startMinute: 30,
+                endHour: 15,
+                endMinute: 15,
+                reason: 'Due today and fits after the binding commitment.',
+              ),
+              _block(
+                dayDate,
+                taskId: 'task-inbox',
+                title: 'Clear the support inbox',
+                categoryId: 'cat-support',
+                startHour: 15,
+                startMinute: 15,
+                endHour: 15,
+                endMinute: 45,
+                reason:
+                    'Short selected task; interviews and walk remain omitted.',
+              ),
+            ],
+          },
+        ),
+      ]);
+      final draft = await harness.realDayAgent.draftDayPlan(
+        captureId: captureId,
+        decidedTaskIds: overcommittedRestOfDayScenario.decidedTaskIds,
+        dayDate: dayDate,
+      );
+      expect(
+        draft.blocks.map((block) => block.taskId),
+        orderedEquals(['task-board-deck', 'task-release', 'task-inbox']),
+      );
+
+      final events = await harness.agentRepository.getDayStatusEventsSince(
+        DateTime(2020),
+      );
+      expect(events, hasLength(1));
+      expect(events.single.status.name, 'attentionNeeded');
+      expect(
+        events.single.reasons.map((reason) => reason.name),
+        contains('overCommitted'),
+      );
+      expect(events.single.note, contains('Interview two candidates'));
+      expect(events.single.note, contains('Take an afternoon walk'));
+
+      conversationRepository.script([
+        scriptedToolCall(
+          id: 'revised-after-escalation',
+          name: DayAgentToolNames.issueDayDirective,
+          args: {
+            'dayId': dayId,
+            'commitments': [
+              {
+                'id': 'must-board-deck',
+                'source': 'userCommitment',
+                'title': 'Prepare the board deck',
+                'minutes': 90,
+              },
+            ],
+            'capacityBudget': {
+              'availableMinutes': 180,
+              'alreadyScheduledMinutes': 165,
+            },
+            'carryOver': [
+              {
+                'title': 'Interview two candidates',
+                'reason':
+                    'Did not fit after the selected higher-priority work.',
+                'taskId': 'task-interviews',
+              },
+              {
+                'title': 'Take an afternoon walk',
+                'reason': 'Did not fit in the remaining planning window.',
+                'taskId': 'task-afternoon-walk',
+              },
+            ],
+            'attentionNotes': [
+              'The day agent escalated both omitted selected items.',
+            ],
+          },
+        ),
+      ]);
+      await runPlannerDigest(
+        harness: harness,
+        coordinator: coordinator,
+        dayId: dayId,
+      );
+
+      final plannerPrompt = conversationRepository.userMessages.last;
+      expect(plannerPrompt, contains('<digest>'));
+      expect(plannerPrompt, contains('overCommitted'));
+      expect(plannerPrompt, contains('Interview two candidates'));
+      expect(plannerPrompt, contains('Take an afternoon walk'));
+      expect(
+        conversationRepository.sendCount,
+        4,
+        reason:
+            'Two planner digests plus one parse and one draft should cover '
+            'the full bidirectional protocol without terminal extra turns.',
+      );
     },
   );
 
@@ -296,3 +719,69 @@ void main() {
     },
   );
 }
+
+List<ChatCompletionMessageToolCall> _matchedParseCalls({
+  required String message,
+  required EvalScenario scenario,
+  required List<String> selectedTaskIds,
+}) {
+  final captureId = RegExp(
+    r'"captureId"\s*:\s*"([^"]+)"',
+  ).firstMatch(message)?.group(1);
+  if (captureId == null) {
+    throw StateError('Rendered capture prompt did not contain a captureId.');
+  }
+  final tasks = {for (final task in scenario.tasks) task.id: task};
+  return [
+    scriptedToolCall(
+      id: 'parse-$captureId',
+      name: DayAgentToolNames.parseCaptureToItems,
+      args: {
+        'captureId': captureId,
+        'items': [
+          for (final taskId in selectedTaskIds)
+            {
+              'kind': 'matched',
+              'title': tasks[taskId]!.title,
+              'categoryId': tasks[taskId]!.categoryId,
+              'confidenceScore': 0.99,
+              'spokenPhrase': tasks[taskId]!.title,
+              'matchedTaskId': taskId,
+              'estimateMinutes': tasks[taskId]!.estimateMinutes,
+            },
+        ],
+      },
+    ),
+  ];
+}
+
+Map<String, Object?> _block(
+  DateTime day, {
+  required String taskId,
+  required String title,
+  required String categoryId,
+  required int startHour,
+  required int endHour,
+  required String reason,
+  int startMinute = 0,
+  int endMinute = 0,
+}) => {
+  'taskId': taskId,
+  'title': title,
+  'categoryId': categoryId,
+  'start': DateTime(
+    day.year,
+    day.month,
+    day.day,
+    startHour,
+    startMinute,
+  ).toIso8601String(),
+  'end': DateTime(
+    day.year,
+    day.month,
+    day.day,
+    endHour,
+    endMinute,
+  ).toIso8601String(),
+  'reason': reason,
+};

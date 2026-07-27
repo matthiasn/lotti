@@ -5,12 +5,16 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-27T13:59:55+02:00 }
+generated: { by: codex/5, at: 2026-07-27T15:38:00+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: eval
     resource: ../../../test/features/daily_os_next/eval
     title: Day-planning eval framework and live runner
+    last_modified: 2026-07-27
+  - id: integration
+    resource: ../../../test/features/daily_os_next/integration
+    title: Full durable multi-agent integration fixtures
     last_modified: 2026-07-27
   - id: benchmark
     resource: ../../../test/features/daily_os_next/benchmark
@@ -23,6 +27,11 @@ sources:
 - **`framework/` runs in ordinary CI.** The scorers, value types and
   fixture-coherence checks are deterministic and provider-free, so they are plain
   tests expected to stay green like any other.
+- **`integration/day_agent_durable_jobs_smoke_test.dart` runs the complete
+  deterministic protocol.** It submits real captures through the durable
+  outbox, parses against large mixed-category corpora, drafts from the selected
+  results, and sends overcommit status back through a real coordinator digest.
+  Only the model responses are scripted.
 - **The live runner is opt-in and never in CI.** It spends money against a real
   provider and is non-deterministic, so it **always passes and reports** rather
   than failing — a red build people learn to ignore is worse than no signal.
@@ -275,14 +284,66 @@ DAY_PLANNING_EVAL_SAMPLES=3 \
 `DAY_PLANNING_EVAL_JSON` and `DAY_PLANNING_EVAL_MARKDOWN` choose where the report
 lands.
 
-**It always passes when it runs.** Violations are reported, never asserted. The
-report and its judge bundle are the deliverable. **Missing credentials are the one
-hard failure**, because that is a setup error rather than anything a model did.
+The quality matrix above isolates one drafting wake. The full-journey runner
+measures the interaction the user actually waits for, plus the coordinator's
+follow-up as a separate stage:
 
-There is one live eval path. The earlier single-scenario eval was folded in: its
-subject — a same-day draft where the model's proposed times meet the past-start
-guard — is now the `lateStart` scenario, which additionally seeds real work so the
-run can say something about planning rather than only about the guard.
+```sh
+LOTTI_DAY_PLANNING_FULL_JOURNEY_LIVE=1 \
+DAY_PLANNING_EVAL_MODELS=glm-5.2,qwen3.5-397b-a17b \
+DAY_PLANNING_EVAL_DATE=2030-01-15 \
+  fvm flutter test \
+  test/features/daily_os_next/eval/day_planning_full_journey_live_test.dart
+```
+
+`DAY_PLANNING_EVAL_DATE` is optional and defaults to `2030-01-15`. The runner
+anchors every scenario and seeded task to that calendar date and freezes each
+cell's planning clock at the fixture's `startHour`. Latency uses stopwatches
+without advancing the model-facing clock, and wall-clock timestamps are reserved
+for report metadata. This keeps prompt context and results comparable across
+models, runs and midnight boundaries.
+
+It uses two shared realistic fixtures rather than an empty smoke corpus:
+
+- a 12-task, 12-category rest-of-day capture with six mentioned items, mixed
+  open/in-progress state, an overdue invoice, fixed times, sequencing and a
+  required break;
+- an eight-task overloaded afternoon whose five selected items total 255
+  minutes against 180 available, requiring the day agent to name omissions and
+  escalate them to the planner.
+
+The system prompt's worked examples deliberately use different tasks and
+constraint shapes from both fixtures, so the live matrix measures held-out
+instruction handling rather than recall of a demonstrated answer.
+
+The JSON report splits parse, draft and coordinator latency; records every wake,
+provider interaction, durable retry, tool rejection, parsed match, planned task
+and status event; and reports the **user-visible latency** as parse plus draft.
+
+One-sample Melious measurements after narrowing each user-facing wake to its
+artifact-producing tools (2026-07-27; provider latency is non-deterministic):
+
+| Model / scenario | Parse | Draft | User-visible | Coordinator | Result |
+|---|---:|---:|---:|---:|---|
+| GLM 5.2 / dense | 3.2s | 7.7s | 10.9s | 6.0s | 6/6 matched and placed |
+| GLM 5.2 / overloaded | 2.3s | 14.4s | 16.7s | 10.4s | 5/5 matched; two omissions named and escalated |
+| Qwen 3.5 397B / dense | 13.9s | 51.2s | 65.1s | 8.6s | 6/6 matched and placed |
+| Qwen 3.5 397B / overloaded | 7.2s | 153.0s | 160.2s | 15.9s | first draft timed out at 120s; durable retry succeeded |
+
+This separates two defects that otherwise look like one spinner. Extra
+application-induced tool turns were real and are preventable. Qwen still took
+more than a minute with a minimal tool surface and no forced follow-up, so that
+remainder is provider/model-route latency, not local outbox scheduling.
+
+**It always passes when it runs.** Violations are reported, never asserted. The
+report and its judge bundle are the deliverable. **Only setup errors fail hard:
+missing credentials, an unknown scenario id, or an invalid evaluation date**,
+because none is something the model did. A blank model selection uses the
+default GLM 5.2 matrix rather than emitting an empty successful report.
+
+There are two live eval paths on purpose: the quality matrix isolates drafting
+behavior for comparable scoring, while the full journey measures latency and
+instruction survival across capture, selection, drafting and coordination.
 
 # The storage benchmark
 

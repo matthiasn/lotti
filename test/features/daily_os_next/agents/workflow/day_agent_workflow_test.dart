@@ -4109,6 +4109,14 @@ void main() {
           (blocks.single as Map<String, dynamic>)['id'],
           'block-1',
         );
+        final offeredTools = conversationRepository
+            .sendMessageCalls
+            .single
+            .tools
+            .map((tool) => tool.function.name)
+            .toSet();
+        expect(offeredTools, contains(DayAgentToolNames.proposePlanDiff));
+        expect(offeredTools, isNot(contains(DayAgentToolNames.draftDayPlan)));
         // hydrateDecidedTasks must NOT be called on a refine wake.
         verifyNever(
           () => planService.hydrateDecidedTasks(

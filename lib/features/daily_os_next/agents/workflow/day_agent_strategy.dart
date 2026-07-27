@@ -50,6 +50,7 @@ class DayAgentStrategy extends ConversationStrategy {
     required this.runKey,
     required this.executeToolHandler,
     required this.domainLogger,
+    this.terminalToolNames = const {},
   });
 
   /// Sync-aware write service for persisted conversation messages.
@@ -69,6 +70,13 @@ class DayAgentStrategy extends ConversationStrategy {
 
   /// Structured logger.
   final DomainLogger domainLogger;
+
+  /// Successful tools that complete this particular wake immediately.
+  ///
+  /// The workflow derives this from the wake mode. The same tool name can be
+  /// valid but non-terminal in another mode, so terminal behavior must not be
+  /// inferred globally from the tool itself.
+  final Set<String> terminalToolNames;
 
   final _observations = <ObservationRecord>[];
   var _didPersistCaptureParse = false;
@@ -104,7 +112,8 @@ class DayAgentStrategy extends ConversationStrategy {
   }) async {
     await _recordAssistantMessage();
 
-    for (final call in toolCalls) {
+    for (var index = 0; index < toolCalls.length; index += 1) {
+      final call = toolCalls[index];
       final toolName = call.function.name;
       late final Map<String, dynamic> args;
       try {
@@ -130,18 +139,34 @@ class DayAgentStrategy extends ConversationStrategy {
 
       if (DayAgentToolNames.isWorkflowHandlerTool(toolName)) {
         final result = await executeToolHandler(toolName, args, manager);
+        var persistedArtifact = false;
         if (toolName == DayAgentToolNames.parseCaptureToItems &&
             _didPersistCaptureParseResult(result)) {
           _didPersistCaptureParse = true;
+          persistedArtifact = true;
         }
         if (toolName == DayAgentToolNames.draftDayPlan && result.success) {
           _didPersistDraftDayPlan = true;
+          persistedArtifact = true;
         }
         manager.addToolResponse(toolCallId: call.id, response: result.output);
         await _recordToolResultMessage(
           toolName: toolName,
           errorMessage: result.success ? null : result.output,
         );
+        if (persistedArtifact && terminalToolNames.contains(toolName)) {
+          // A provider may batch multiple tool calls in one response. Once
+          // this wake's terminal artifact is durable, later calls must not
+          // mutate state after the artifact that ends the conversation. Keep
+          // them in the durable log as rejected so evaluation cannot mistake
+          // an unexecuted ordering violation for compliant output.
+          await _recordCallsSkippedAfterTerminalArtifact(
+            calls: toolCalls.skip(index + 1),
+            terminalToolName: toolName,
+            manager: manager,
+          );
+          return ConversationAction.complete;
+        }
         continue;
       }
 
@@ -154,6 +179,34 @@ class DayAgentStrategy extends ConversationStrategy {
     }
 
     return ConversationAction.continueConversation;
+  }
+
+  Future<void> _recordCallsSkippedAfterTerminalArtifact({
+    required Iterable<ChatCompletionMessageToolCall> calls,
+    required String terminalToolName,
+    required ConversationManager manager,
+  }) async {
+    final errorMessage =
+        'Error: skipped because terminal tool "$terminalToolName" already '
+        'persisted this wake artifact.';
+    for (final call in calls) {
+      final toolName = call.function.name;
+      try {
+        final args = _parseToolArguments(call.function.arguments);
+        await _recordActionMessage(toolName: toolName, args: args);
+      } catch (_) {
+        // The skipped rejection remains the primary result. A malformed call
+        // has no structured arguments to attach to its action log.
+      }
+      manager.addToolResponse(
+        toolCallId: call.id,
+        response: errorMessage,
+      );
+      await _recordToolResultMessage(
+        toolName: toolName,
+        errorMessage: errorMessage,
+      );
+    }
   }
 
   bool _didPersistCaptureParseResult(DayAgentToolResult result) {
