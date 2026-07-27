@@ -547,6 +547,56 @@ void main() {
     );
   });
 
+  testWidgets('confirming a cancelled ceremony closes the sheet and stops '
+      'its timer', (tester) async {
+    // The confirm button is the only way out of the cancelled state, and the
+    // runner polls the SDK every 100 ms until something stops it.
+    final runner = MockKeyVerificationRunner();
+    when(() => mockKeyVerification.canceled).thenReturn(true);
+    when(
+      () => mockKeyVerification.state,
+    ).thenReturn(KeyVerificationState.error);
+
+    when(() => runner.lastStep).thenReturn('m.key.verification.cancel');
+    when(() => runner.emojis).thenReturn(null);
+    when(() => runner.keyVerification).thenReturn(mockKeyVerification);
+    when(() => mockKeyVerification.isDone).thenReturn(true);
+    when(runner.stopTimer).thenReturn(null);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => IncomingVerificationModal(mockKeyVerification),
+              ),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    controller.add(runner);
+    // Two pumps: the emission crosses the broadcast stream on a microtask, so
+    // one frame is not enough once the modal sits on a pushed route.
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(
+      find.byKey(const Key('matrix_incoming_cancelled_confirm')),
+    );
+    await tester.pumpAndSettle();
+
+    verify(runner.stopTimer).called(1);
+    expect(find.byType(IncomingVerificationModal), findsNothing);
+  });
+
   testWidgets('does not auto-accept a ceremony that was already cancelled', (
     tester,
   ) async {
