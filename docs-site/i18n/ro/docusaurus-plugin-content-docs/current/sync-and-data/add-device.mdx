@@ -6,9 +6,16 @@ description: Asociați un dispozitiv nou contului dumneavoastră de sincronizare
 # Adăugați un dispozitiv
 
 Toate dispozitivele dumneavoastră folosesc un singur cont de sincronizare. A
-adăuga un dispozitiv înseamnă a-i încredința datele de acces ale acelui cont — de
-aceea fluxul vă cere să comparați un cod scurt înainte de a conecta ceva. Este
-singurul moment în care puteți deosebi dispozitivul dumneavoastră de al altcuiva.
+adăuga un dispozitiv înseamnă a-i încredința datele de acces ale acelui cont, așa
+că fluxul are două verificări: un **cod de control** scurt, pe care îl comparați
+înainte de conectare, și o **verificare prin emoji** după aceea.
+
+Ele fac lucruri diferite. Codul de control arată că ambele ecrane vorbesc despre
+același cont — prinde un cod vechi sau greșit, adică eroarea care chiar se
+întâmplă. Este derivat din identificatori publici, deci este un ajutor de
+recunoaștere, nu o dovadă a cine se află la celălalt capăt. Verificarea prin
+emoji care urmează este pasul care autentifică dispozitivul, iar până se încheie
+noul dispozitiv nu poate citi nimic.
 
 Aveți nevoie de ambele dispozitive în față. Începeți de pe unul deja conectat —
 oricare, telefon sau calculator. Nu există un dispozitiv „principal”.
@@ -30,6 +37,11 @@ dumneavoastră și vă poate citi însemnările. Arătați-l doar unui dispoziti
 vă aparține și nu îl trimiteți niciodată prin chat, captură de ecran sau ecran
 partajat.
 
+**Închiderea ecranului ascunde codul, dar nu îl revocă.** Codul conține parola
+actuală a contului dumneavoastră: o fotografie rămâne utilizabilă atât timp cât
+acea parolă este valabilă. Dacă bănuiți că cineva l-a capturat, tratați-l ca pe
+o parolă compromisă, nu ca pe ceva care între timp ar fi expirat.
+
 **Copiați codul de asociere** există intenționat pentru cazul în care
 dispozitivul care se alătură nu are cameră — un calculator care se alătură unui
 calculator. Pune aceleași date în clipboard: lipiți-le direct în celălalt
@@ -38,9 +50,9 @@ dispozitiv și nicăieri altundeva.
 ## Scanați-l pe dispozitivul nou
 
 Instalați Lotti pe dispozitivul nou, apoi deschideți acolo **Setări →
-Sincronizare → Dispozitive**. Pe telefon camera se deschide imediat; îndreptați-o
+Sincronizare → Dispozitive** și selectați cardul **Dispozitive**. Pe telefon camera se deschide imediat; îndreptați-o
 spre primul dispozitiv. Pe calculator, sau dacă nu există cameră, alegeți
-**introduceți manual** și lipiți codul copiat.
+**Introduceți codul manual** și lipiți codul copiat.
 
 ## Verificați că se potrivește codul înainte de conectare
 
@@ -87,8 +99,9 @@ Lăsați ambele aplicații deschise până se termină prima sincronizare.
 ## Dacă ceva nu merge
 
 - **Codurile de control diferă.** Nu conectați. Închideți ecranul de pe primul
-  dispozitiv, deschideți unul nou și încercați din nou — codul este regenerat de
-  fiecare dată.
+  dispozitiv, deschideți unul nou și încercați din nou — același cont produce de fiecare dată
+  același cod, deci o nepotrivire înseamnă că cele două ecrane aparțin unor
+  conturi diferite.
 - **Codul nu se decodifică.** Copiați-l din nou pe primul dispozitiv în loc să
   corectați ce ați lipit; valoarea codificată nu este menită să fie ajustată
   manual. Dacă aplicația semnalează versiuni diferite, dispozitivele rulează

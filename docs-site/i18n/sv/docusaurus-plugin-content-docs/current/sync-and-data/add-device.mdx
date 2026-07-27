@@ -6,9 +6,16 @@ description: Para ihop en ny enhet med ditt synkroniseringskonto via en QR-kod, 
 # Lägg till en enhet
 
 Alla dina enheter delar ett enda synkroniseringskonto. Att lägga till en enhet
-innebär att du ger den inloggningsuppgifterna till det kontot — därför ber flödet
-dig jämföra en kort kod innan något ansluts. Det är det enda tillfälle då du kan
-skilja din egen enhet från någon annans.
+innebär att du ger den inloggningsuppgifterna till det kontot, så flödet har två
+kontroller: en kort **kontrollkod** som du jämför innan du ansluter, och en
+**emoji-verifiering** efteråt.
+
+De gör olika saker. Kontrollkoden säger att de två skärmarna talar om samma
+konto — den fångar en gammal eller felaktig kod, alltså det misstag man faktiskt
+gör. Den härleds ur offentliga identifierare och är därför ett igenkänningsstöd,
+inte ett bevis för vem som är i andra änden. Emoji-verifieringen som följer är
+steget som autentiserar enheten, och tills den är klar kan den nya enheten inte
+läsa något.
 
 Du behöver båda enheterna framför dig. Börja på en som redan är ansluten — vilken
 som helst, telefon eller dator. Det finns ingen «huvudenhet».
@@ -28,6 +35,11 @@ som skannar eller fotograferar QR-koden kan gå med i ditt konto och läsa dina
 anteckningar. Visa den bara för en enhet du själv äger, och skicka den aldrig via
 chatt, skärmbild eller delad skärm.
 
+**Att stänga skärmen döljer koden, men återkallar den inte.** Koden innehåller
+ditt kontos nuvarande lösenord: ett foto går att använda så länge det lösenordet
+gäller. Tror du att någon har fångat den, behandla den som ett läckt lösenord och
+inte som något som hunnit gå ut.
+
 **Kopiera ihopparningskod** finns medvetet för fallet där enheten som ansluter
 saknar kamera — en dator som ansluter till en dator. Den lägger samma uppgifter i
 urklipp: klistra in dem direkt i den andra enheten och ingen annanstans.
@@ -35,9 +47,8 @@ urklipp: klistra in dem direkt i den andra enheten och ingen annanstans.
 ## Skanna den på den nya enheten
 
 Installera Lotti på den nya enheten och öppna där **Inställningar →
-Synkronisering → Enheter**. På en telefon öppnas kameran direkt; rikta den mot
-den första enheten. På dator, eller om kameran inte är tillgänglig, välj **ange
-manuellt** och klistra in den kopierade koden.
+Synkronisering → Enheter** och välj kortet **Enheter**. På en telefon öppnas kameran direkt; rikta den mot
+den första enheten. På dator, eller om kameran inte är tillgänglig, välj **Ange koden manuellt** och klistra in den kopierade koden.
 
 ## Kontrollera att koden stämmer innan du ansluter
 
@@ -82,7 +93,8 @@ Låt båda apparna vara öppna tills den första synkroniseringen är klar.
 ## Om något går fel
 
 - **Kontrollkoderna skiljer sig åt.** Anslut inte. Stäng skärmen på den första
-  enheten, öppna en ny och försök igen — koden skapas på nytt varje gång.
+  enheten, öppna en ny och försök igen — samma konto ger samma kod varje
+  gång, så en skillnad betyder att de två skärmarna hör till olika konton.
 - **Koden går inte att avkoda.** Kopiera den igen på den första enheten i stället
   för att rätta det du klistrade in; det kodade värdet är inte tänkt att justeras
   för hand. Rapporterar appen olika versioner kör enheterna olika byggen och båda

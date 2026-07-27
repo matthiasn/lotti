@@ -6,9 +6,16 @@ description: Par en ny enhed med din synkroniseringskonto via en QR-kode, kontro
 # Tilføj en enhed
 
 Alle dine enheder deler én synkroniseringskonto. At tilføje en enhed betyder at
-give den loginoplysningerne til den konto — derfor beder forløbet dig sammenligne
-en kort kode, før noget forbindes. Det er det eneste tidspunkt, hvor du kan skelne
-din egen enhed fra en andens.
+give den loginoplysningerne til den konto, så forløbet har to kontroller: en kort
+**kontrolkode**, du sammenligner før du forbinder, og en **emoji-verifikation**
+bagefter.
+
+De gør hver sit. Kontrolkoden fortæller, at de to skærme taler om den samme
+konto — den fanger en forældet eller forkert kode, altså den fejl man faktisk
+begår. Den udledes af offentlige identifikatorer og er derfor en genkendelseshjælp,
+ikke et bevis for, hvem der er i den anden ende. Emoji-verifikationen bagefter er
+det trin, der autentificerer enheden, og indtil den er færdig kan den nye enhed
+ikke læse noget.
 
 Du skal have begge enheder foran dig. Start på en, der allerede er forbundet —
 hvilken som helst, telefon eller computer. Der findes ingen «hovedenhed».
@@ -28,6 +35,11 @@ der scanner eller fotograferer QR-koden, kan tilslutte sig din konto og læse di
 noter. Vis den kun til en enhed, du selv ejer, og send den aldrig via chat,
 skærmbillede eller delt skærm.
 
+**At lukke skærmen skjuler koden, men tilbagekalder den ikke.** Koden
+indeholder din kontos nuværende adgangskode: et foto kan bruges, så længe den
+adgangskode gælder. Tror du, at nogen har taget et billede af den, så behandl
+den som en lækket adgangskode og ikke som noget, der er udløbet.
+
 **Kopiér parringskode** findes med vilje til de tilfælde, hvor den nye enhed ikke
 har kamera — en computer, der forbinder til en computer. Den lægger de samme
 oplysninger i udklipsholderen: indsæt dem direkte i den anden enhed og intet
@@ -36,9 +48,8 @@ andet sted.
 ## Scan den på den nye enhed
 
 Installér Lotti på den nye enhed, og åbn der **Indstillinger → Synkronisering →
-Enheder**. På en telefon åbner kameraet med det samme; ret det mod den første
-enhed. På computer, eller hvis kameraet ikke er tilgængeligt, vælg **indtast
-manuelt**, og indsæt den kopierede kode.
+Enheder**, og vælg kortet **Enheder**. På en telefon åbner kameraet med det samme; ret det mod den første
+enhed. På computer, eller hvis kameraet ikke er tilgængeligt, vælg **Indtast koden manuelt**, og indsæt den kopierede kode.
 
 ## Kontrollér, at koden stemmer, før du forbinder
 
@@ -83,7 +94,8 @@ Lad begge apps være åbne, indtil den første synkronisering er færdig.
 ## Hvis noget går galt
 
 - **Kontrolkoderne er forskellige.** Forbind ikke. Luk skærmen på den første
-  enhed, åbn en ny, og prøv igen — koden dannes på ny hver gang.
+  enhed, åbn en ny, og prøv igen — den samme konto giver den samme kode
+  hver gang, så en forskel betyder, at de to skærme hører til forskellige konti.
 - **Koden kan ikke afkodes.** Kopiér den igen på den første enhed i stedet for at
   rette i det, du indsatte; den kodede værdi er ikke beregnet til håndarbejde.
   Melder appen om forskellige versioner, kører enhederne på forskellige builds og

@@ -6,9 +6,16 @@ description: Koppel een nieuw apparaat aan je synchronisatieaccount met een QR-c
 # Een apparaat toevoegen
 
 Al je apparaten delen één synchronisatieaccount. Een apparaat toevoegen betekent
-dat je het de inloggegevens van dat account geeft — daarom vraagt de stroom je om
-eerst een korte code te vergelijken. Dat is het enige moment waarop je je eigen
-apparaat van dat van iemand anders kunt onderscheiden.
+dat je het de inloggegevens van dat account geeft, dus de stroom kent twee
+controles: een korte **controlecode** die je vóór het verbinden vergelijkt, en
+daarna een **emoji-verificatie**.
+
+Ze doen iets verschillends. De controlecode zegt dat beide schermen over
+hetzelfde account gaan — hij vangt een verouderde of verkeerde code, de fout die
+mensen echt maken. Hij wordt afgeleid uit openbare identificatoren en is dus een
+herkenningshulp, geen bewijs van wie er aan de andere kant zit. De
+emoji-verificatie daarna is de stap die het apparaat authenticeert, en tot die
+klaar is kan het nieuwe apparaat niets lezen.
 
 Je hebt beide apparaten voor je nodig. Begin op een apparaat dat al verbonden is
 — welk dan ook, telefoon of desktop. Er is geen «hoofdapparaat».
@@ -29,6 +36,11 @@ Wie de QR-code scant of fotografeert kan bij je synchronisatieaccount en je
 notities lezen. Toon hem alleen aan een apparaat dat van jou is, en stuur hem
 nooit via chat, schermafbeelding of gedeeld scherm.
 
+**Het scherm sluiten verbergt de code, maar trekt hem niet in.** De code bevat
+het huidige wachtwoord van je account: een foto blijft bruikbaar zolang dat
+wachtwoord geldt. Denk je dat iemand hem heeft vastgelegd, behandel het dan als
+een gelekt wachtwoord en niet als iets dat inmiddels verlopen is.
+
 **Koppelcode kopiëren** bestaat bewust voor het geval het nieuwe apparaat geen
 camera heeft — een desktop die bij een desktop komt. Het zet dezelfde
 inloggegevens op je klembord: plak ze rechtstreeks in het andere apparaat en
@@ -37,9 +49,9 @@ nergens anders.
 ## Scan hem op het nieuwe apparaat
 
 Installeer Lotti op het nieuwe apparaat en open daar **Instellingen →
-Synchronisatie → Apparaten**. Op een telefoon opent de camera meteen; richt hem
+Synchronisatie → Apparaten** en kies de kaart **Apparaten**. Op een telefoon opent de camera meteen; richt hem
 op het eerste apparaat. Op een desktop, of als de camera niet beschikbaar is,
-kies **handmatig invoeren** en plak de gekopieerde code.
+kies **Code handmatig invoeren** en plak de gekopieerde code.
 
 ## Controleer of de code klopt voor je verbindt
 
@@ -87,8 +99,9 @@ Laat beide apps open tot de eerste synchronisatie klaar is.
 ## Als er iets misgaat
 
 - **De controlecodes verschillen.** Niet verbinden. Sluit het scherm op het
-  eerste apparaat, open een nieuw en probeer opnieuw — de code wordt elke keer
-  opnieuw aangemaakt.
+  eerste apparaat, open een nieuw en probeer opnieuw — hetzelfde account levert elke keer
+  dezelfde code op, dus een verschil betekent dat de twee schermen bij
+  verschillende accounts horen.
 - **De code laat zich niet decoderen.** Kopieer hem opnieuw op het eerste
   apparaat in plaats van te corrigeren wat je plakte; de gecodeerde waarde is
   niet bedoeld om met de hand bij te werken. Meldt de app verschillende versies,

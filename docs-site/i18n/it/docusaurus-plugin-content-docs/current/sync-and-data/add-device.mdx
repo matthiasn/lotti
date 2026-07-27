@@ -6,10 +6,16 @@ description: Accoppia un nuovo dispositivo al tuo account di sincronizzazione co
 # Aggiungere un dispositivo
 
 Tutti i tuoi dispositivi condividono un unico account di sincronizzazione.
-Aggiungere un dispositivo significa consegnargli le credenziali di quell'account:
-per questo il percorso ti chiede di confrontare un codice breve prima di
-collegare qualcosa. È l'unico momento in cui puoi distinguere il tuo dispositivo
-da quello di qualcun altro.
+Aggiungere un dispositivo significa consegnargli le credenziali di quell'account,
+perciò il percorso prevede due controlli: un breve **codice di controllo** da
+confrontare prima di connettere e una **verifica con emoji** subito dopo.
+
+Fanno cose diverse. Il codice di controllo dice che i due schermi parlano dello
+stesso account — intercetta un codice vecchio o sbagliato, cioè l'errore che si
+commette davvero. Deriva da identificatori pubblici: è un aiuto al
+riconoscimento, non una prova di chi sta dall'altra parte. La verifica con emoji
+che segue è il passaggio che autentica il dispositivo, e finché non è completata
+il nuovo dispositivo non può leggere nulla.
 
 Ti servono entrambi i dispositivi davanti. Parti da uno già connesso — uno
 qualsiasi, telefono o computer. Non esiste un dispositivo «principale».
@@ -30,6 +36,11 @@ contiene. Chi scansiona o fotografa il codice QR può entrare nel tuo account e
 leggere le tue voci. Mostralo solo a un dispositivo tuo e non inviarlo mai via
 chat, screenshot o schermo condiviso.
 
+**Chiudere la schermata nasconde il codice, non lo revoca.** Il codice
+contiene la password attuale del tuo account: una foto resta utilizzabile
+finché quella password è valida. Se sospetti che qualcuno l'abbia catturata,
+trattala come una password trapelata, non come qualcosa di scaduto.
+
 **Copia codice di accoppiamento** esiste di proposito per quando il dispositivo
 che si unisce non ha fotocamera — un computer che si unisce a un computer. Mette
 le stesse credenziali negli appunti: incollale direttamente nell'altro
@@ -38,9 +49,10 @@ dispositivo e da nessuna altra parte.
 ## Scansionalo sul nuovo dispositivo
 
 Installa Lotti sul nuovo dispositivo, poi apri lì **Impostazioni →
-Sincronizzazione → Dispositivi**. Sul telefono la fotocamera si apre subito:
+Sincronizzazione → Dispositivi** e seleziona la scheda **Dispositivi**. Sul
+telefono la fotocamera si apre subito:
 inquadra il primo dispositivo. Su computer, o se la fotocamera non è
-disponibile, scegli **inserisci manualmente** e incolla il codice copiato.
+disponibile, scegli **Inserisci il codice manualmente** e incolla il codice copiato.
 
 ## Controlla che il codice corrisponda prima di connettere
 
@@ -89,8 +101,9 @@ Lascia aperte entrambe le app finché la prima sincronizzazione non è finita.
 ## Se qualcosa va storto
 
 - **I codici di controllo differiscono.** Non connettere. Chiudi la schermata sul
-  primo dispositivo, aprine una nuova e riprova: il codice viene rigenerato ogni
-  volta.
+  primo dispositivo, aprine una nuova e riprova: lo stesso account produce sempre lo
+  stesso codice, quindi una differenza significa che i due schermi appartengono
+  ad account diversi.
 - **Il codice non si decodifica.** Copialo di nuovo sul primo dispositivo invece
   di correggere ciò che hai incollato; il valore codificato non è pensato per
   essere sistemato a mano. Se l'app segnala versioni diverse, i due dispositivi

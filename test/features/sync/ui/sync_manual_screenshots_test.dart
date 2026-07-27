@@ -800,14 +800,14 @@ void main() {
           terminal: const ProvisioningState.done(),
         ),
       ),
-    if (surface == _SyncSurface.addDevice) ...[
+    if (surface == _SyncSurface.addDevice)
       provisioningControllerProvider.overrideWith(
         _ManualProvisioningController.new,
       ),
+    if (surface == _SyncSurface.addDevice || surface == _SyncSurface.status)
       syncDevicesControllerProvider.overrideWith(
         () => _ManualSyncDevicesController(_manualDevices),
       ),
-    ],
   ];
 
   /// Opens the setup modal and gets the decoded bundle on screen.
@@ -819,6 +819,7 @@ void main() {
   Future<void> openBundleImport(
     WidgetTester tester, {
     bool confirm = false,
+    String? bundleText,
   }) async {
     await tester.tap(find.byType(ProvisionedSyncSettingsCard));
     await settleFrames(tester, 10);
@@ -832,7 +833,10 @@ void main() {
       await settleFrames(tester, 8);
     }
 
-    await tester.enterText(find.byType(TextField), _provisioningBundleText);
+    await tester.enterText(
+      find.byType(TextField),
+      bundleText ?? _provisioningBundleText,
+    );
     await tester.pump();
 
     final context = tester.element(find.byType(BundleImportWidget));
@@ -868,7 +872,15 @@ void main() {
         await tester.tap(find.byKey(const Key('sync_devices_add_device')));
         await settleFrames(tester, 18);
       case _SyncSurface.paired:
-        await openBundleImport(tester, confirm: true);
+        // A handover bundle, not the provisioned one: production sends
+        // `provisioned` through password rotation to `ready` and the
+        // first-device view, and only a peer's `handover` reaches `done` and
+        // the paired steps this capture documents.
+        await openBundleImport(
+          tester,
+          confirm: true,
+          bundleText: _manualHandover,
+        );
         await settleFrames(tester, 18);
       case _SyncSurface.status:
         // A configured account renders the roster inline on the page; there is
@@ -944,6 +956,11 @@ void main() {
         expect(find.byType(SyncFlowSection), findsWidgets);
       case _SyncSurface.status:
         expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
+        // The roster rows are the subject of this capture; asserting only the
+        // surrounding widget passed happily against an empty list.
+        for (final device in _manualDevices) {
+          expect(find.text(device.displayName!), findsWidgets);
+        }
         expect(
           find.text(messages.settingsMatrixDiagnosticShowButton),
           findsOneWidget,

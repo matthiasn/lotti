@@ -6,10 +6,16 @@ description: Pareia um novo dispositivo com a tua conta de sincronização atrav
 # Adicionar um dispositivo
 
 Todos os teus dispositivos partilham uma única conta de sincronização.
-Adicionar um dispositivo significa entregar-lhe as credenciais dessa conta — por
-isso o processo pede que compares um código curto antes de ligar seja o que for.
-É o único momento em que consegues distinguir o teu dispositivo do de outra
-pessoa.
+Adicionar um dispositivo significa entregar-lhe as credenciais dessa conta, por
+isso o processo tem duas verificações: um **código de verificação** curto que
+comparas antes de ligar e uma **verificação por emoji** a seguir.
+
+Fazem coisas diferentes. O código de verificação diz que os dois ecrãs falam da
+mesma conta — apanha um código antigo ou errado, que é o erro que de facto se
+comete. Deriva de identificadores públicos, por isso é uma ajuda ao
+reconhecimento, não uma prova de quem está do outro lado. A verificação por emoji
+que se segue é o passo que autentica o dispositivo e, até terminar, o dispositivo
+novo não consegue ler nada.
 
 Precisas dos dois dispositivos à frente. Começa num que já esteja ligado —
 qualquer um, telemóvel ou computador. Não há dispositivo «principal».
@@ -30,6 +36,11 @@ contém. Quem ler ou fotografar o código QR pode entrar na tua conta e ler as t
 entradas. Mostra-o apenas a um dispositivo teu e nunca o envies por conversa,
 captura de ecrã ou ecrã partilhado.
 
+**Fechar o ecrã esconde o código, mas não o revoga.** O código contém a
+palavra-passe atual da tua conta: uma fotografia continua utilizável enquanto
+essa palavra-passe for válida. Se achas que alguém a captou, trata-a como uma
+palavra-passe divulgada e não como algo que entretanto expirou.
+
 **Copiar código de emparelhamento** existe de propósito para quando o
 dispositivo que se junta não tem câmara — um computador a juntar-se a outro.
 Coloca as mesmas credenciais na área de transferência: cola-as diretamente no
@@ -38,9 +49,9 @@ outro dispositivo e em mais lado nenhum.
 ## Lê o código no dispositivo novo
 
 Instala o Lotti no dispositivo novo e abre lá **Definições → Sincronização →
-Dispositivos**. No telemóvel a câmara abre de imediato; aponta ao primeiro
+Dispositivos** e seleciona o cartão **Dispositivos**. No telemóvel a câmara abre de imediato; aponta ao primeiro
 dispositivo. No computador, ou se a câmara não estiver disponível, escolhe
-**introduzir manualmente** e cola o código copiado.
+**Digitar o código manualmente** e cola o código copiado.
 
 ## Confere que o código coincide antes de ligar
 
@@ -59,8 +70,7 @@ próprio dispositivo. Descarta-o e recomeça a partir de um ecrã Adicionar
 dispositivo acabado de abrir.
 
 A conta e o servidor por baixo do código são contexto, não coisas a comparar —
-não aparecem no outro dispositivo. Quando tudo coincidir, escolhe **Ligar este
-dispositivo**.
+não aparecem no outro dispositivo. Quando tudo coincidir, escolhe **Conectar este dispositivo**.
 
 ## Conclui os dois passos seguintes
 
@@ -69,7 +79,7 @@ que seja.
 
 <ManualScreenshot
   caseId="sync/paired"
-  alt="Configuração de sincronização do Lotti: este dispositivo está ligado, verificação por emoji e Enviar definições ainda pendentes"
+  alt="Configuração de sincronização do Lotti: este dispositivo está ligado, verificação por emoji e Enviar configurações ainda pendentes"
   caption="Ligado é a metade fácil. O cartão diz o que falta e afirma claramente que, até à verificação, este dispositivo não consegue ler nada."
 />
 
@@ -78,7 +88,7 @@ que seja.
    apenas cifra que não consegue ler — as chaves só vão para dispositivos
    verificados. Vê [Sincronizar dispositivos](./sync.mdx).
 2. **Envia as definições.** No primeiro dispositivo, no ecrã Adicionar
-   dispositivo que ainda tens aberto, escolhe **Enviar definições** para que
+   dispositivo que ainda tens aberto, escolhe **Enviar configurações** para que
    categorias, hábitos, painéis e configuração de IA cheguem. Se já o fechaste,
    reabre **Definições → Sincronização → Dispositivos → Adicionar dispositivo**.
 
@@ -87,8 +97,9 @@ Deixa as duas aplicações abertas até a primeira sincronização terminar.
 ## Se algo correr mal
 
 - **Os códigos de verificação diferem.** Não ligues. Fecha o ecrã no primeiro
-  dispositivo, abre um novo e tenta outra vez — o código é gerado de novo de cada
-  vez.
+  dispositivo, abre um novo e tenta outra vez — a mesma conta produz sempre o mesmo
+  código, por isso uma diferença significa que os dois ecrãs pertencem a contas
+  diferentes.
 - **O código não descodifica.** Copia-o outra vez no primeiro dispositivo em vez
   de corrigires o que colaste; o valor codificado não é para ser acertado à mão.
   Se a aplicação indicar versões diferentes, os dispositivos têm compilações

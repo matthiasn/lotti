@@ -6,9 +6,16 @@ description: Koppele ein neues Gerät per QR-Code mit deinem Sync-Konto, prüfe 
 # Gerät hinzufügen
 
 Alle deine Geräte teilen sich ein Sync-Konto. Ein Gerät hinzuzufügen heißt, ihm
-die Zugangsdaten dieses Kontos zu übergeben. Deshalb bittet dich der Ablauf,
-vorher einen kurzen Code zu vergleichen: Das ist der einzige Punkt, an dem du
-dein eigenes Gerät von einem fremden unterscheiden kannst.
+die Zugangsdaten dieses Kontos zu übergeben. Deshalb hat der Ablauf zwei
+Prüfungen: einen kurzen **Prüfcode**, den du vor dem Verbinden vergleichst, und
+danach eine **Emoji-Verifizierung**.
+
+Sie leisten Verschiedenes. Der Prüfcode zeigt, dass beide Bildschirme dasselbe
+Konto meinen — er fängt einen veralteten oder falschen Code ab, also den Fehler,
+den man tatsächlich macht. Er wird aus öffentlichen Kennungen abgeleitet und ist
+damit eine Wiedererkennungshilfe, kein Beweis, wer am anderen Ende sitzt. Die
+anschließende Emoji-Verifizierung ist der Schritt, der das Gerät authentifiziert,
+und bis sie abgeschlossen ist, kann das neue Gerät nichts lesen.
 
 Du brauchst beide Geräte vor dir. Beginne auf einem, das bereits verbunden ist —
 egal welches, Telefon oder Desktop. Es gibt kein „Hauptgerät“.
@@ -29,6 +36,12 @@ den QR-Code scannt oder abfotografiert, kann deinem Sync-Konto beitreten und
 deine Einträge lesen. Zeige ihn nur einem Gerät, das dir gehört, und schicke ihn
 nie per Chat, Screenshot oder geteiltem Bildschirm.
 
+**Das Schließen des Bildschirms blendet den Code aus, macht ihn aber nicht
+ungültig.** Der Code enthält dein aktuelles Kontopasswort — ein Foto davon
+bleibt so lange nutzbar, wie dieses Passwort gilt. Wenn du vermutest, dass ihn
+jemand abfotografiert hat, behandle ihn wie ein geleaktes Passwort und nicht
+wie etwas, das inzwischen abgelaufen wäre.
+
 **Kopplungscode kopieren** gibt es bewusst für den Fall, dass das neue Gerät
 keine Kamera hat — ein Desktop, der einem Desktop beitritt. Es legt dieselben
 Zugangsdaten in die Zwischenablage: Füge sie direkt im anderen Gerät ein und
@@ -37,9 +50,9 @@ sonst nirgends.
 ## Auf dem neuen Gerät scannen
 
 Installiere Lotti auf dem neuen Gerät und öffne dort **Einstellungen →
-Synchronisierung → Geräte**. Auf dem Telefon öffnet sich die Kamera sofort;
+Synchronisierung → Geräte** und wähle dort die Karte **Geräte**. Auf dem Telefon öffnet sich die Kamera sofort;
 richte sie auf das erste Gerät. Auf dem Desktop, oder wenn keine Kamera
-verfügbar ist, wähle **manuell eingeben** und füge den kopierten Code ein.
+verfügbar ist, wähle **Code manuell eingeben** und füge den kopierten Code ein.
 
 ## Vor dem Verbinden den Code vergleichen
 
@@ -88,8 +101,9 @@ Lass beide Apps offen, bis die erste Synchronisierung fertig ist.
 ## Wenn etwas schiefgeht
 
 - **Die Prüfcodes unterscheiden sich.** Nicht verbinden. Schließe den Bildschirm
-  auf dem ersten Gerät, öffne einen neuen und versuche es erneut — der Code wird
-  jedes Mal neu erzeugt.
+  auf dem ersten Gerät, öffne einen neuen und versuche es erneut — dasselbe Konto erzeugt
+  jedes Mal denselben Code, eine Abweichung heißt also, dass die beiden
+  Bildschirme zu verschiedenen Konten gehören.
 - **Der Code lässt sich nicht lesen.** Kopiere ihn auf dem ersten Gerät erneut,
   statt das Eingefügte zu korrigieren; der kodierte Wert ist nicht für
   Handarbeit gedacht. Meldet die App eine Versionsabweichung, laufen die Geräte

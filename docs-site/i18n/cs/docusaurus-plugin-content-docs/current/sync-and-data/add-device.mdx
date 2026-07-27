@@ -6,9 +6,15 @@ description: Spáruj nové zařízení se svým synchronizačním účtem pomoc�
 # Přidat zařízení
 
 Všechna tvá zařízení sdílejí jeden synchronizační účet. Přidat zařízení znamená
-předat mu přihlašovací údaje k tomuto účtu — proto tě postup před jakýmkoli
-připojením žádá o porovnání krátkého kódu. Je to jediný okamžik, kdy poznáš své
-vlastní zařízení od cizího.
+předat mu přihlašovací údaje k tomuto účtu, a proto má postup dvě kontroly:
+krátký **kontrolní kód**, který porovnáš před připojením, a **ověření emoji**
+poté.
+
+Dělají různé věci. Kontrolní kód říká, že obě obrazovky mluví o témže účtu —
+zachytí zastaralý nebo špatný kód, tedy chybu, která se opravdu stává. Odvozuje
+se z veřejných identifikátorů, takže je to pomůcka k rozpoznání, ne důkaz, kdo je
+na druhé straně. Následné ověření emoji je krok, který zařízení autentizuje, a
+dokud neproběhne, nové zařízení nic nepřečte.
 
 Potřebuješ obě zařízení před sebou. Začni na tom, které už je připojené — na
 kterémkoli, telefonu i počítači. Žádné „hlavní“ zařízení neexistuje.
@@ -28,6 +34,11 @@ naskenuje nebo vyfotí QR kód, může se připojit k tvému účtu a číst tv�
 Ukazuj ho jen zařízení, které ti patří, a nikdy ho neposílej chatem, snímkem
 obrazovky ani sdílenou obrazovkou.
 
+**Zavření obrazovky kód skryje, ale nezneplatní ho.** Kód obsahuje aktuální
+heslo tvého účtu — fotka zůstane použitelná, dokud to heslo platí. Pokud máš
+podezření, že si ho někdo vyfotil, ber to jako uniklé heslo, ne jako něco, co
+mezitím vypršelo.
+
 **Kopírovat párovací kód** je tu záměrně pro případ, že připojované zařízení nemá
 fotoaparát — počítač připojující se k počítači. Vloží stejné údaje do schránky:
 vlož je přímo do druhého zařízení a nikam jinam.
@@ -35,8 +46,8 @@ vlož je přímo do druhého zařízení a nikam jinam.
 ## Naskenuj ho na novém zařízení
 
 Nainstaluj Lotti na nové zařízení a otevři tam **Nastavení → Synchronizace →
-Zařízení**. Na telefonu se fotoaparát otevře hned; namiř ho na první zařízení. Na
-počítači, nebo když fotoaparát není dostupný, zvol **zadat ručně** a vlož
+Zařízení** a vyber kartu **Zařízení**. Na telefonu se fotoaparát otevře hned; namiř ho na první zařízení. Na
+počítači, nebo když fotoaparát není dostupný, zvol **Zadat kód ručně** a vlož
 zkopírovaný kód.
 
 ## Před připojením ověř, že kód souhlasí
@@ -81,7 +92,8 @@ Nech obě aplikace otevřené, dokud první synchronizace neskončí.
 ## Když se něco pokazí
 
 - **Kontrolní kódy se liší.** Nepřipojuj. Zavři obrazovku na prvním zařízení,
-  otevři novou a zkus to znovu — kód se pokaždé vytvoří nový.
+  otevři novou a zkus to znovu — stejný účet vytvoří pokaždé stejný
+  kód, takže neshoda znamená, že obrazovky patří různým účtům.
 - **Kód nejde dekódovat.** Zkopíruj ho na prvním zařízení znovu, místo abys
   opravoval vložený text; zakódovaná hodnota není určená k ručním úpravám. Když
   aplikace hlásí neshodu verzí, zařízení běží na různých sestaveních a obě

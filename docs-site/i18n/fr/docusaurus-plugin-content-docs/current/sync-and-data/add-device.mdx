@@ -6,9 +6,16 @@ description: Appaire un nouvel appareil à ton compte de synchronisation avec un
 # Ajouter un appareil
 
 Tous tes appareils partagent un seul compte de synchronisation. Ajouter un
-appareil, c'est lui confier les identifiants de ce compte : c'est pourquoi le
-parcours te demande de comparer un code court avant toute connexion. C'est le
-seul moment où tu peux distinguer ton appareil de celui de quelqu'un d'autre.
+appareil, c'est lui confier les identifiants de ce compte, d'où deux
+vérifications : un court **code de contrôle** que tu compares avant de
+connecter, et une **vérification par emoji** ensuite.
+
+Elles ne font pas la même chose. Le code de contrôle dit que les deux écrans
+parlent du même compte — il attrape un code périmé ou erroné, l'erreur que l'on
+commet réellement. Il dérive d'identifiants publics : c'est une aide à la
+reconnaissance, pas une preuve de qui se trouve en face. La vérification par
+emoji qui suit est l'étape qui authentifie l'appareil, et tant qu'elle n'est pas
+terminée le nouvel appareil ne peut rien lire.
 
 Il te faut les deux appareils devant toi. Commence sur un appareil déjà
 connecté — n'importe lequel, téléphone ou ordinateur. Il n'y a pas d'appareil
@@ -30,6 +37,11 @@ scanne ou photographie le QR code peut rejoindre ton compte et lire tes entrées
 Ne le montre qu'à un appareil qui t'appartient, et ne l'envoie jamais par
 messagerie, capture d'écran ou partage d'écran.
 
+**Fermer l'écran masque le code, mais ne le révoque pas.** Le code contient
+le mot de passe actuel de ton compte : une photo reste utilisable aussi
+longtemps que ce mot de passe. Si tu penses que quelqu'un l'a capturé, traite-le
+comme un mot de passe divulgué, pas comme quelque chose qui aurait expiré.
+
 **Copier le code d'appairage** existe volontairement pour le cas où l'appareil
 qui rejoint n'a pas de caméra — un ordinateur rejoignant un ordinateur. Il place
 les mêmes identifiants dans ton presse-papiers : colle-les directement dans
@@ -38,9 +50,10 @@ l'autre appareil et nulle part ailleurs.
 ## Le scanner sur le nouvel appareil
 
 Installe Lotti sur le nouvel appareil, puis ouvres-y **Paramètres →
-Synchronisation → Appareils**. Sur un téléphone la caméra s'ouvre aussitôt ;
+Synchronisation → Appareils** et sélectionne la carte **Appareils**. Sur un
+téléphone la caméra s'ouvre aussitôt ;
 vise le premier appareil. Sur un ordinateur, ou si la caméra est indisponible,
-choisis **saisir manuellement** et colle le code copié.
+choisis **Saisir le code manuellement** et colle le code copié.
 
 ## Vérifier que le code correspond avant de connecter
 
@@ -88,8 +101,9 @@ synchronisation.
 ## En cas de problème
 
 - **Les codes de contrôle diffèrent.** Ne connecte pas. Ferme l'écran sur le
-  premier appareil, ouvre-en un nouveau et réessaie — le code est régénéré à
-  chaque fois.
+  premier appareil, ouvre-en un nouveau et réessaie — le même compte produit le même
+  code à chaque fois, donc un écart signifie que les deux écrans appartiennent à
+  des comptes différents.
 - **Le code ne se décode pas.** Copie-le à nouveau sur le premier appareil
   plutôt que de corriger ce que tu as collé ; la valeur encodée n'est pas faite
   pour être retouchée. Si l'app signale une différence de version, les deux
