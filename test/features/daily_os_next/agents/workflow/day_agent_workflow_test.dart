@@ -3279,6 +3279,10 @@ void main() {
         conversationRepository.lastSystemMessage,
         contains('availableMinutes'),
       );
+      expect(
+        conversationRepository.lastSystemMessage,
+        contains('unsized, not free'),
+      );
     });
 
     test('a refine wake budgets against the plan it is editing', () async {

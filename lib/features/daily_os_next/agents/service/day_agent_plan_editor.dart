@@ -24,6 +24,11 @@ import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
 
+int? _estimateMinutesOrNull(Task task) {
+  final minutes = task.data.estimate?.inMinutes;
+  return minutes != null && minutes > 0 ? minutes : null;
+}
+
 /// In-place day-plan editing: plan-diff proposals, accept/revert/commit,
 /// block renames, and decided-task hydration.
 class DayAgentPlanEditor {
@@ -177,6 +182,11 @@ class DayAgentPlanEditor {
   /// parsed-item matches — with duplicates collapsed to the first occurrence.
   /// Returns an empty list when both inputs are empty.
   ///
+  /// Every returned ref carries the task's positive `estimateMinutes` when
+  /// available, independently of [dependencyResolver]. Null, zero, and
+  /// sub-minute estimates are omitted so unsized work is never presented as
+  /// free.
+  ///
   /// When [dependencyResolver] is supplied, each returned ref also carries the
   /// task's `status` and its one-hop `blockedBy` (ADR 0043), resolved in a
   /// single batched `resolveBlockedStatus` call over the surviving ids. When
@@ -240,7 +250,7 @@ class DayAgentPlanEditor {
             id: task.id,
             title: task.data.title,
             categoryId: task.meta.categoryId,
-            estimateMinutes: _estimateMinutesOf(task),
+            estimateMinutes: _estimateMinutesOrNull(task),
           ),
       ];
     }
@@ -255,22 +265,9 @@ class DayAgentPlanEditor {
           categoryId: task.meta.categoryId,
           status: task.data.status.toDbString,
           blockedBy: blockedBy[task.id] ?? const [],
-          estimateMinutes: _estimateMinutesOf(task),
+          estimateMinutes: _estimateMinutesOrNull(task),
         ),
     ];
-  }
-
-  /// A task's estimate in minutes, or null when it has none.
-  ///
-  /// Zero counts as none. Both creation paths store `Duration.zero` rather
-  /// than null for an unestimated task (`create_entry.dart`, and
-  /// `createTaskFromPhrase` when the model supplies no estimate), so passing
-  /// `inMinutes` straight through would tell the model that unsized work
-  /// costs nothing — actively worse than omitting it, since the capacity
-  /// rule would then total it as free.
-  int? _estimateMinutesOf(Task task) {
-    final minutes = task.data.estimate?.inMinutes;
-    return minutes == null || minutes <= 0 ? null : minutes;
   }
 
   /// Blocked-work state for tasks an earlier draft already scheduled.

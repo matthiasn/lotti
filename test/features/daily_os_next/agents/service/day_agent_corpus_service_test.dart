@@ -19,6 +19,7 @@ Task _task({
   required TaskStatus status,
   String? categoryId = 'work',
   DateTime? due,
+  Duration? estimate,
 }) {
   return JournalEntity.task(
         meta: Metadata(
@@ -36,6 +37,7 @@ Task _task({
           dateTo: DateTime(2026, 5, 20, 1),
           title: title,
           due: due,
+          estimate: estimate,
         ),
       )
       as Task;
@@ -135,6 +137,47 @@ void main() {
 
       expect(snapshot, hasLength(1));
     });
+
+    test(
+      'omits non-positive estimates instead of presenting free work',
+      () async {
+        when(
+          () => journalDb.getOpenTasksForDayAgentCorpus(
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _task(
+              id: 't-unsized',
+              title: 'Unsized',
+              status: _openStatus(),
+              estimate: Duration.zero,
+            ),
+            _task(
+              id: 't-sized',
+              title: 'Sized',
+              status: _openStatus(),
+              estimate: const Duration(minutes: 45),
+            ),
+          ],
+        );
+        when(
+          () => journalDb.getTasksDueOnOrBefore(any()),
+        ).thenAnswer((_) async => const <Task>[]);
+
+        final snapshot = await createService().buildTaskCorpusSnapshot(
+          allowedCategoryIds: {'work'},
+          day: _day,
+        );
+        final rowsById = {
+          for (final row in snapshot) row['taskId']! as String: row,
+        };
+
+        expect(rowsById['t-unsized']!.containsKey('estimateMinutes'), isFalse);
+        expect(rowsById['t-sized'], containsPair('estimateMinutes', 45));
+      },
+    );
 
     test(
       'no dependencyResolver supplied — no row gains a blockedBy key '

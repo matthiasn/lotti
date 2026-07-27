@@ -153,13 +153,14 @@ one commit earlier. `DecidedTaskRef` carries `estimateMinutes` from
 `task.data.estimate`, the read `hydrateDecidedTasks` already performs, and it is
 omitted rather than zeroed when a task has no estimate.
 
-Zero is normalised to absent on the way out, because both creation paths store
-`Duration.zero` rather than null for an unestimated task — passing `inMinutes`
-straight through would have told the model that unsized work costs nothing,
-which is worse than saying nothing at all. And absence alone is not enough: the
-rules say outright that a missing estimate means **unsized, not free**, so it is
-given a deliberate slot with a stated reason or left out, rather than totalling
-as zero against `availableMinutes`.
+Both decided-task hydration and task-corpus serialization normalise zero to
+absent, because both creation paths store `Duration.zero` rather than null for
+an unestimated task — passing `inMinutes` straight through would have told the
+model that unsized work costs nothing, which is worse than saying nothing at
+all. And absence alone is not enough: the rules say outright that a missing
+estimate means **unsized, not free**, so it is given a deliberate slot with a
+stated reason or left out, rather than totalling as zero against
+`availableMinutes`.
 
 **The day's remaining budget is stated, not derived.** `<planning_window>`
 carries `availableMinutes` — working time still available, bounded by the
