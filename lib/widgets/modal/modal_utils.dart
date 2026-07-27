@@ -24,9 +24,13 @@ class ModalUtils {
     required bool isDark,
     required BuildContext context,
   }) {
+    // A neutral scrim, not a tinted surface: a translucent gray surface laid
+    // over the page read as haze rather than dimming — the backdrop got
+    // *lighter*. Scrim is black in both design-system themes; dark mode dims
+    // harder because its surfaces start dark.
     return isDark
-        ? context.colorScheme.surfaceContainerLow.withAlpha(180)
-        : context.colorScheme.outline.withAlpha(128);
+        ? context.colorScheme.scrim.withAlpha(170)
+        : context.colorScheme.scrim.withAlpha(110);
   }
 
   /// Standard sheet content inset, derived entirely from design-system
