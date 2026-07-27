@@ -5,13 +5,17 @@ description: The Capture/Reconcile/Draft/Refine tools, batch-first durable voice
 resource: ../../../lib/features/daily_os_next/agents/service
 tags: [daily-os, capture, planning, transcription, tools]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2026-10-26
+generated: { by: codex/5, at: 2026-07-27T13:46:20+02:00 }
+stale_after: 2026-10-27
 sources:
   - id: services
     resource: ../../../lib/features/daily_os_next/agents/service
     title: Capture and plan services
     last_modified: 2026-07-26
+  - id: prompt-builder
+    resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
+    title: Day-agent prompt builder
+    last_modified: 2026-07-27
   - id: state
     resource: ../../../lib/features/daily_os_next/state
     title: Controllers and runtime wiring

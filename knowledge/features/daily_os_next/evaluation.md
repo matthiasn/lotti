@@ -5,13 +5,13 @@ description: Measuring what the model plans (not what the guards enforce), and p
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T12:00:41Z }
-stale_after: 2026-10-26
+generated: { by: codex/5, at: 2026-07-27T13:46:20+02:00 }
+stale_after: 2026-10-27
 sources:
   - id: eval
     resource: ../../../test/features/daily_os_next/eval
     title: Day-planning eval framework and live runner
-    last_modified: 2026-07-26
+    last_modified: 2026-07-27
   - id: benchmark
     resource: ../../../test/features/daily_os_next/benchmark
     title: Storage benchmark
@@ -63,15 +63,19 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   checked against task **estimates**, not the block lengths the model wrote, since
   the cheapest way to make an impossible day fit is to claim each task is shorter
   than it is.
-- **Two semantic checks are heuristic, not ranking evidence.**
-  `surfacedConflict` looks for omitted work named in output, while
-  `blockerBeforeBlocked` accepts a reason that names a blocker id or title.
-  Both catch the important failure mode of saying nothing, but either can pass
-  through string presence without demonstrating comprehension. They remain
+- **Three semantic checks are heuristic, not ranking evidence.**
+  `surfacedConflict` passes either when an accepted `attentionNeeded`
+  escalation uses an allowed typed conflict reason or when block prose names
+  omitted work. `blockerBeforeBlocked` accepts a reason that names a blocker id
+  or title. `directiveHonoured` accepts commitments named in plan or trade
+  prose, the typed `directiveUnsatisfiable` escalation, or another allowed
+  escalation whose status note is merely non-empty. These checks catch the
+  important failure mode of saying nothing, but their string and structural
+  presence tests can pass without demonstrating comprehension. They remain
   visible per constraint as weak priors, carry a caveat into the JSON and judge
   bundle, and are excluded from the objective model leaderboard. A reviewer
-  must inspect the plan, reasons, and status notes before calling either green
-  result good reasoning.
+  must inspect the plan, changes, reasons, and status notes before calling a
+  green result good reasoning.
 - **Fabrication is judged against what the model was shown.** The task corpus
   renders only inside the capture context, so a wake without a capture sees only
   its decided tasks — which do carry `status` and `blockedBy`, but not

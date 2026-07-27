@@ -69,15 +69,16 @@ abstract final class EvalConstraintIds {
 
 /// How strongly each constraint result should be interpreted.
 ///
-/// Most constraints compare structured data and are objective. The two
-/// semantic checks below deliberately use string presence as an inexpensive
-/// indifference detector. A green result from either is useful evidence that
+/// Most constraints compare structured data and are objective. The semantic
+/// checks below deliberately accept string or structural presence as an
+/// inexpensive indifference detector. A green result is useful evidence that
 /// the model did not stay silent, but it is not evidence that the model
-/// understood the dependency or capacity trade it named.
+/// understood the dependency, capacity trade, or directive it answered.
 abstract final class EvalConstraintSignals {
   static const heuristicIds = <String>{
     EvalConstraintIds.blockerBeforeBlocked,
     EvalConstraintIds.surfacedConflict,
+    EvalConstraintIds.directiveHonoured,
   };
 
   static const caveats = <String, String>{
@@ -90,6 +91,12 @@ abstract final class EvalConstraintSignals {
         'escalation reason. A match does not prove that the model understood '
         'the capacity trade; inspect the plan, reasons, and status note in the '
         'judge bundle.',
+    EvalConstraintIds.directiveHonoured:
+        'Checks whether commitments are named in plan or trade prose, or uses '
+        'an accepted escalation whose status note may be non-empty but '
+        'unrelated. A match does not prove that the model understood or '
+        'answered the directive; inspect the plan, changes, reasons, and '
+        'status note in the judge bundle.',
   };
 
   static bool isHeuristic(String id) => heuristicIds.contains(id);

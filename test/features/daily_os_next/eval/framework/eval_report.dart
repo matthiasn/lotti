@@ -650,11 +650,11 @@ class EvalReport {
       ..writeln()
       ..writeln(
         'Heuristic signals are weak priors, not evidence that the model '
-        'understood the trade. `surfacedConflict` and '
-        '`blockerBeforeBlocked` use string matching to catch silence; inspect '
-        'the judge bundle before treating a green result as reasoning quality. '
-        'They remain visible below but are excluded from the objective '
-        'leaderboard.',
+        'understood the trade. `surfacedConflict`, `blockerBeforeBlocked`, and '
+        '`directiveHonoured` use string or structural presence to catch '
+        'silence; inspect the judge bundle before treating a green result as '
+        'reasoning quality. They remain visible below but are excluded from '
+        'the objective leaderboard.',
       )
       ..writeln()
       ..writeln('## Constraints by model')

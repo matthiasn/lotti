@@ -167,6 +167,7 @@ void main() {
             pass(EvalConstraintIds.withinCapacity),
             fail(EvalConstraintIds.surfacedConflict),
             pass(EvalConstraintIds.blockerBeforeBlocked),
+            fail(EvalConstraintIds.directiveHonoured),
           ],
         ),
       ], generatedAt: generatedAt);
@@ -183,6 +184,18 @@ void main() {
             .rate,
         0,
         reason: 'heuristics remain visible even though they are not ranked',
+      );
+      expect(
+        standing.byConstraint
+            .firstWhere(
+              (rate) =>
+                  rate.constraintId == EvalConstraintIds.directiveHonoured,
+            )
+            .rate,
+        0,
+        reason:
+            'directive evidence stays visible even though its structural '
+            'escalation path is not ranked',
       );
     });
 
@@ -371,6 +384,7 @@ void main() {
           constraints: [
             pass(EvalConstraintIds.surfacedConflict),
             fail(EvalConstraintIds.blockerBeforeBlocked),
+            pass(EvalConstraintIds.directiveHonoured),
           ],
         ),
       ], generatedAt: generatedAt);
@@ -405,6 +419,13 @@ void main() {
         constraints[EvalConstraintIds.blockerBeforeBlocked],
         containsPair('kind', 'heuristic'),
       );
+      expect(
+        constraints[EvalConstraintIds.directiveHonoured],
+        allOf(
+          containsPair('kind', 'heuristic'),
+          containsPair('caveat', contains('status note')),
+        ),
+      );
     });
 
     test('tells Markdown readers that heuristic greens need review', () {
@@ -413,6 +434,7 @@ void main() {
           constraints: [
             pass(EvalConstraintIds.withinCapacity),
             pass(EvalConstraintIds.surfacedConflict),
+            pass(EvalConstraintIds.directiveHonoured),
           ],
         ),
       ], generatedAt: generatedAt);
@@ -430,6 +452,10 @@ void main() {
       expect(
         markdown,
         contains('| surfacedConflict | heuristic · inspect |'),
+      );
+      expect(
+        markdown,
+        contains('| directiveHonoured | heuristic · inspect |'),
       );
     });
 
