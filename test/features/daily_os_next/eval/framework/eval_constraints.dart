@@ -624,28 +624,67 @@ EvalConstraintResult scoreRespectsEstimates(EvalRunOutcome outcome) {
   );
 }
 
-/// Placed work must fit the day at its *estimated* length, not its written
-/// one.
+/// Placed work must fit the day at its *estimated* length, except for an
+/// explicitly auditable partial placement.
 ///
 /// The per-task [scoreRespectsEstimates] check cannot catch a coordinated
 /// shrink: 240/180/120/180-minute tasks written as 160/120/80/120 all clear a
 /// per-task ratio while summing to exactly the 480-minute capacity. Summing
 /// estimates instead makes the arithmetic honest — 720 minutes of work does
-/// not fit in 480 however the blocks are labelled.
+/// not fit in 480 however the blocks are labelled. A shortened task is charged
+/// at its represented minutes only when its reason gives concrete minute
+/// arithmetic that agrees with both the block duration and corpus estimate;
+/// vague or contradictory partial prose keeps the full-estimate charge.
 EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.withinCapacityByEstimate;
   final noPlan = _requirePlan(outcome, id);
   if (noPlan != null) return noPlan;
-  var estimated = 0;
-  var counted = 0;
-  final seen = <String>{};
+  final allocatedByTask = <String, int>{};
+  final reasonsByTask = <String, List<String>>{};
   for (final block in _scheduled(outcome)) {
     final taskId = block.taskId;
-    if (taskId == null || !seen.add(taskId)) continue;
+    if (taskId == null) continue;
+    allocatedByTask.update(
+      taskId,
+      (minutes) =>
+          minutes + block.endTime.difference(block.startTime).inMinutes,
+      ifAbsent: () => block.endTime.difference(block.startTime).inMinutes,
+    );
+    final reason = block.reason?.trim();
+    if (reason != null && reason.isNotEmpty) {
+      reasonsByTask.putIfAbsent(taskId, () => []).add(reason);
+    }
+  }
+  var chargedMinutes = 0;
+  var counted = 0;
+  final partials = <String>[];
+  final undisclosedShortenings = <String>[];
+  for (final entry in allocatedByTask.entries) {
+    final taskId = entry.key;
     final estimate = outcome.inputs.taskById(taskId)?.estimateMinutes;
     if (estimate == null || estimate <= 0) continue;
-    estimated += estimate;
     counted++;
+    final allocated = entry.value;
+    if (allocated > 0 &&
+        allocated < estimate &&
+        _hasAuditablePartialDisclosure(
+          reasons: reasonsByTask[taskId] ?? const [],
+          allocatedMinutes: allocated,
+          estimateMinutes: estimate,
+        )) {
+      chargedMinutes += allocated;
+      partials.add(
+        '$taskId ${allocated}min partial of ${estimate}min '
+        '(${estimate - allocated}min remain)',
+      );
+    } else {
+      chargedMinutes += estimate;
+      if (allocated > 0 && allocated < estimate) {
+        undisclosedShortenings.add(
+          '$taskId allocated ${allocated}min of ${estimate}min',
+        );
+      }
+    }
   }
   if (counted == 0) {
     return const EvalConstraintResult.notApplicable(
@@ -654,14 +693,65 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
     );
   }
   final capacity = outcome.inputs.capacityMinutes;
+  final evidence = [
+    if (partials.isNotEmpty) 'audited partials: ${partials.join(', ')}',
+    if (undisclosedShortenings.isNotEmpty)
+      'charged at full estimate without a matching concrete partial disclosure: ${undisclosedShortenings.join(', ')}',
+  ];
   return EvalConstraintResult(
     id: id,
-    passed: estimated <= capacity,
+    passed: chargedMinutes <= capacity,
     detail:
-        '$counted placed task(s) estimated at ${estimated}min against '
+        '$counted placed task(s) charged at ${chargedMinutes}min against '
         '${capacity}min capacity'
-        '${estimated > capacity ? ' (over by ${estimated - capacity})' : ''}',
+        '${chargedMinutes > capacity ? ' (over by ${chargedMinutes - capacity})' : ''}'
+        '${evidence.isEmpty ? '' : '; ${evidence.join('; ')}'}',
   );
+}
+
+final _partialOfEstimatePattern = RegExp(
+  r'\b(\d+)(?:\s*(?:m|mins?|minutes?))?\s+of\s+(?:the\s+)?'
+  r'(\d+)(?:\s+estimated)?\s*[-–—]?\s*(?:m|mins?|minutes?)\b',
+  caseSensitive: false,
+);
+
+final _partialRemainingPattern = RegExp(
+  r'\b(\d+)\s*(?:m|mins?|minutes?)\s+'
+  r'(?:(?:is|are)\s+)?(?:left|remain(?:s|ing)?)\b',
+  caseSensitive: false,
+);
+
+/// Whether prose makes a shortened placement safe to charge as partial.
+///
+/// Block duration remains the authority. A reason earns partial accounting
+/// only when its concrete minute arithmetic agrees with both that duration and
+/// the corpus estimate. This accepts either an explicit `60m of 120m` split or
+/// the prompt's `partial` plus `60m remain` form; vague prose and contradictory
+/// numbers keep the conservative full-estimate charge.
+bool _hasAuditablePartialDisclosure({
+  required List<String> reasons,
+  required int allocatedMinutes,
+  required int estimateMinutes,
+}) {
+  final remainingMinutes = estimateMinutes - allocatedMinutes;
+  for (final reason in reasons) {
+    for (final match in _partialOfEstimatePattern.allMatches(reason)) {
+      final declaredAllocated = int.tryParse(match.group(1) ?? '');
+      final declaredEstimate = int.tryParse(match.group(2) ?? '');
+      if (declaredAllocated == allocatedMinutes &&
+          declaredEstimate == estimateMinutes) {
+        return true;
+      }
+    }
+    if (!reason.toLowerCase().contains('partial')) continue;
+    for (final match in _partialRemainingPattern.allMatches(reason)) {
+      final declaredRemaining = int.tryParse(match.group(1) ?? '');
+      if (declaredRemaining == remainingMinutes) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /// Work the scenario says any competent plan must include.

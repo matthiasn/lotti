@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 
 import 'eval_constraints.dart';
@@ -1315,6 +1316,7 @@ void main() {
           blocks: [
             block(id: '1', startHour: 9, endHour: 13, taskId: 'task-a'),
             block(id: '2', startHour: 13, endHour: 16, taskId: 'task-b'),
+            block(id: 'break', startHour: 16, endHour: 17),
           ],
           corpus: tasks,
         ),
@@ -1322,6 +1324,231 @@ void main() {
 
       expect(result.passed, isTrue);
     });
+
+    test(
+      'charges an explicit partial placement at its represented minutes',
+      () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(id: '1', startHour: 9, endHour: 13, taskId: 'task-a'),
+              block(id: '2', startHour: 13, endHour: 16, taskId: 'task-b'),
+              block(
+                id: '3',
+                startHour: 16,
+                endHour: 17,
+                taskId: 'task-c',
+                reason:
+                    'Only 60m of the 120m estimate fits in the remaining slot. '
+                    'One candidate interview can be completed; the second and '
+                    'Task D are deferred.',
+              ),
+            ],
+            corpus: tasks,
+          ),
+        );
+
+        expect(result.passed, isTrue);
+        expect(result.detail, contains('task-c'));
+        expect(result.detail, contains('60min partial'));
+        expect(result.detail, contains('480min'));
+      },
+    );
+
+    test('accepts the prompt contract of partial plus concrete remainder', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason: 'This placement is partial; 60 minutes remain for later.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('accepts compact completed-of-estimate minute arithmetic', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Partial placement: 60 of 120 estimated minutes. '
+                  'Remaining 60 min roll to a future day.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    test('audits a partial task across all of its scheduled blocks', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial-1',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+            ).copyWith(endTime: DateTime(2026, 7, 18, 9, 30)),
+            block(
+              id: 'partial-2',
+              startHour: 10,
+              endHour: 11,
+              taskId: 'task-c',
+              reason: 'Only 60 minutes of the 120-minute estimate fit.',
+            ).copyWith(endTime: DateTime(2026, 7, 18, 10, 30)),
+          ],
+          corpus: tasks,
+          capacityMinutes: 60,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 60min partial of 120min'));
+    });
+
+    for (final badDisclosure in <({String name, String? reason})>[
+      (
+        name: 'vague partial prose',
+        reason: 'Partial interview work; finish the rest later.',
+      ),
+      (name: 'silent compression', reason: null),
+      (name: 'blank disclosure', reason: '   '),
+      (
+        name: 'concrete duration without a partial split',
+        reason: 'Scheduled 60 minutes for the interview task.',
+      ),
+      (
+        name: 'numbers that contradict the block',
+        reason:
+            'Partial: 90 minutes of the 120-minute task are scheduled; '
+            '30 minutes remain.',
+      ),
+    ]) {
+      test('charges ${badDisclosure.name} at the full estimate', () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(id: '1', startHour: 9, endHour: 13, taskId: 'task-a'),
+              block(id: '2', startHour: 13, endHour: 16, taskId: 'task-b'),
+              block(
+                id: '3',
+                startHour: 16,
+                endHour: 17,
+                taskId: 'task-c',
+                reason: badDisclosure.reason,
+              ),
+            ],
+            corpus: tasks,
+          ),
+        );
+
+        expect(result.passed, isFalse);
+        expect(result.detail, contains('540min'));
+        expect(result.detail, contains('over by 60'));
+      });
+    }
+
+    for (final estimate in <int?>[null, 0]) {
+      test('is not applicable for a placed task with estimate $estimate', () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(id: 'unknown', startHour: 9, endHour: 10, taskId: 'task-x'),
+            ],
+            corpus: [
+              EvalCorpusTask(
+                taskId: 'task-x',
+                title: 'X',
+                estimateMinutes: estimate,
+              ),
+            ],
+          ),
+        );
+
+        expect(result.isApplicable, isFalse);
+        expect(result.detail, contains('no placed task carries an estimate'));
+      });
+    }
+
+    test('a zero-duration placeholder never earns partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'zero',
+              startHour: 9,
+              endHour: 9,
+              taskId: 'task-c',
+              reason:
+                  'Partial: 0 minutes of the 120-minute task are scheduled; '
+                  '120 minutes remain.',
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: 0,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('charged at 120min'));
+      expect(result.detail, isNot(contains('audited partials')));
+    });
+
+    glados.Glados<int>(
+      glados.any.intInRange(15, 106),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('matching partial disclosures preserve capacity arithmetic', (
+      allocated,
+    ) {
+      const estimate = 120;
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'partial',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Partial: $allocated minutes of the $estimate-minute task '
+                  'are scheduled; ${estimate - allocated} minutes remain.',
+            ).copyWith(
+              endTime: DateTime(2026, 7, 18, 9).add(
+                Duration(minutes: allocated),
+              ),
+            ),
+          ],
+          corpus: tasks,
+          capacityMinutes: allocated,
+        ),
+      );
+
+      expect(
+        result.passed,
+        isTrue,
+        reason: 'allocated=$allocated, estimate=$estimate',
+      );
+    }, tags: 'glados');
   });
 
   group('requiredWorkPlaced', () {

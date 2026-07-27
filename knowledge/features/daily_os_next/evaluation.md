@@ -72,7 +72,14 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   that ignores twelve hours of requested work scores clean. Capacity is likewise
   checked against task **estimates**, not the block lengths the model wrote, since
   the cheapest way to make an impossible day fit is to claim each task is shorter
-  than it is.
+  than it is. The one exception is an auditable partial placement: the block
+  duration may replace the full estimate only when its reason gives concrete
+  minute arithmetic (`60m of 120m`, or `partial` plus `60m remain`) that agrees
+  with both the summed duration of that task's blocks and the corpus estimate.
+  Vague “partial” prose, silence, or contradictory numbers are charged at the
+  full estimate. The constraint detail records every credited partial and every
+  shortening denied credit, so the judge bundle preserves the accounting
+  evidence rather than only the final pass/fail.
 - **Weak semantic outcomes are not ranking evidence.** `surfacedConflict`
   passes either when an accepted `attentionNeeded`
   escalation uses an allowed typed conflict reason or when block prose names
