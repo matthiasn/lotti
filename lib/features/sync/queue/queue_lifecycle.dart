@@ -42,7 +42,19 @@ extension QueueLifecycle on QueuePipelineCoordinator {
     // retry `start()`. The unwind catch below mops up whatever did
     // come up before the failure.
     try {
-      _liveSub = _sessionManager.timelineEvents.listen(_handleLiveEvent);
+      _liveSub = _sessionManager.timelineEvents
+          .asyncMap(_handleTrackedLiveEvent)
+          .listen(
+            (_) {},
+            onError: (Object error, StackTrace stackTrace) {
+              _logging.error(
+                LogDomain.sync,
+                error,
+                stackTrace: stackTrace,
+                subDomain: '$_logSub.liveSub',
+              );
+            },
+          );
       // Subscribe to onSync so we can un-partial the current room
       // (via `room.postLoad()`) the first time we see it. Without
       // this, Matrix SDK skips `RoomMember` state events on partial
@@ -168,63 +180,23 @@ extension QueueLifecycle on QueuePipelineCoordinator {
     );
   }
 
-  /// How many consecutive pen flushes that actually re-queried the room may
-  /// produce nothing before [drainUntilEmptyImpl] stops waiting on it.
-  ///
-  /// Counted in *eligible* sweeps, not wall-clock ticks: the pen throttles
-  /// lookups on its own cadence and this loop polls faster than that, so
-  /// counting throttled sweeps would burn the whole allowance inside a single
-  /// lookup interval and tear down without ever having looked.
-  static const int _penStallFlushes = 5;
-
   /// Implementation of [QueuePipelineCoordinator.drainUntilEmpty]; see [QueueLifecycle].
   /// Drains the queue until every persisted row has applied (or has
   /// been permanently skipped), or the [timeout] elapses.
   ///
-  /// Unlike [InboundWorker.drainToCompletion], this does sleep through
-  /// retry leases and pen attempts: the F7 contract of
+  /// Unlike [InboundWorker.drainToCompletion], this sleeps through retry
+  /// leases: the F7 contract of
   /// `stop(drainFirst: true)` is "don't strand rows on restart", so a
   /// single ready-at-call-time pass is not enough. Rows with a future
-  /// `nextDueAt`/`leaseUntil`, rows held by [PendingDecryptionPen], and
-  /// rows the worker is currently looping through a `noRoom` retry on
-  /// all survive a single `drainToCompletion()` — this loop closes that
-  /// gap by flushing the pen, sleeping until the next ready timestamp,
+  /// `nextDueAt`/`leaseUntil` and rows the worker is currently looping
+  /// through a `noRoom` retry on survive a single `drainToCompletion()` —
+  /// this loop closes that gap by sleeping until the next ready timestamp
   /// and re-peeking until the queue is empty or time runs out.
   Future<void> drainUntilEmptyImpl({Duration? timeout}) async {
     final deadline = clock.now().add(
       timeout ?? QueuePipelineCoordinator.drainUntilEmptyTimeout,
     );
-    var unproductivePenFlushes = 0;
     while (true) {
-      // 1. Flush the pen first so any event the SDK has decrypted
-      //    since the last sweep lands in the queue before we ask it
-      //    for stats — otherwise the loop can declare the queue empty
-      //    while held events are waiting to enter it.
-      final room = await _resolveRoom();
-      var penEnqueued = 0;
-      var penLookups = 0;
-      // No room means no lookup is possible at all — after logout or room
-      // removal the pen can never drain, so a pass with no room counts as
-      // stalled. Without this the eligible-lookup rule below never fires and
-      // teardown polls the whole 30s deadline, blocking the user-visible
-      // flag-off and logout paths.
-      final penCanProgress = room != null;
-      if (room != null) {
-        try {
-          final outcome = await _pen.flushInto(queue: _queue, room: room);
-          penEnqueued = outcome.enqueued;
-          penLookups = outcome.lookups;
-        } catch (error, stackTrace) {
-          _logging.error(
-            LogDomain.sync,
-            error,
-            stackTrace: stackTrace,
-            subDomain: '$_logSub.drainUntilEmpty.pen',
-          );
-        }
-      }
-
-      // 2. Apply every row that is ready right now.
       try {
         await _worker.drainToCompletion();
       } catch (error, stackTrace) {
@@ -236,37 +208,8 @@ extension QueueLifecycle on QueuePipelineCoordinator {
         );
       }
 
-      if (penEnqueued > 0) {
-        unproductivePenFlushes = 0;
-      } else if (_pen.size > 0 && (penLookups > 0 || !penCanProgress)) {
-        // Only a sweep that actually re-queried the room counts. The pen
-        // throttles its own lookups, and this loop polls faster than that
-        // interval — counting throttled sweeps would let shutdown exhaust its
-        // allowance without ever having looked once, discarding a key that
-        // landed in the gap.
-        unproductivePenFlushes++;
-      }
-
       final stats = await _queue.stats();
-      // Held ciphertext is not a stranded row. Shutdown's contract is that
-      // nothing persisted is left un-applied; an entry in the pen has no row
-      // yet and is re-fetched from the server on the next startup bridge, so
-      // it survives teardown regardless. Waiting past the point where the pen
-      // stops producing only delays teardown — and since attempts are now
-      // spaced in real time, a pen holding an undecryptable event can no
-      // longer empty itself inside this window at all, which would pin every
-      // shutdown to the full timeout.
-      final penIsStuck =
-          _pen.size > 0 && unproductivePenFlushes >= _penStallFlushes;
-      if (stats.total == 0 && (_pen.size == 0 || penIsStuck)) {
-        if (penIsStuck) {
-          _logging.log(
-            LogDomain.sync,
-            'queue.coordinator.drainUntilEmpty.penStillHolding '
-            'penSize=${_pen.size}',
-            subDomain: _logSub,
-          );
-        }
+      if (stats.total == 0) {
         _logging.log(
           LogDomain.sync,
           'queue.coordinator.drainUntilEmpty.done',
@@ -281,9 +224,8 @@ extension QueueLifecycle on QueuePipelineCoordinator {
         final readyAtMs = await _queue.earliestReadyAt();
         Duration wait;
         if (readyAtMs == null) {
-          // Nothing in the queue but the pen is non-empty — the pen has
-          // its own sweep interval, so back off for a short tick and
-          // re-flush rather than busy-loop.
+          // The queue reports work but no scheduled ready time. Back off for
+          // a short tick rather than busy-looping.
           wait = const Duration(milliseconds: 200);
         } else {
           final nowMs = clock.now().millisecondsSinceEpoch;
@@ -299,7 +241,7 @@ extension QueueLifecycle on QueuePipelineCoordinator {
         _logging.log(
           LogDomain.sync,
           'queue.coordinator.drainUntilEmpty.timeout '
-          'remaining=${stats.total} penSize=${_pen.size}',
+          'remaining=${stats.total}',
           subDomain: _logSub,
         );
         return;
@@ -397,7 +339,6 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       }
 
       await tryRun('worker', _worker.stop);
-      await tryRun('pen', _pen.stop);
       await tryRun('queue', _queue.dispose);
     } finally {
       _started = false;

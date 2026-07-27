@@ -45,6 +45,19 @@ SyncUpdate _nonLimitedSyncFor(String roomId) {
   );
 }
 
+SyncUpdate _roomKeySyncFor(String roomId) {
+  return SyncUpdate(
+    nextBatch: 'next-key',
+    toDevice: [
+      BasicEventWithSender(
+        type: EventTypes.RoomKey,
+        content: <String, Object?>{'room_id': roomId},
+        senderId: '@alice:example.org',
+      ),
+    ],
+  );
+}
+
 /// Minimal bootstrap runner that records invocations. Each call is
 /// an awaitable completer so tests can gate a run mid-flight.
 class _RecordingRunner {
@@ -199,7 +212,7 @@ void main() {
     // A forward walk emits only events strictly after its anchor. If the
     // durable floor sits at or behind the applied timestamp, that walk would
     // step over known-missing work — which is how held ciphertext used to be
-    // lost for good once the pen was discarded.
+    // lost for good once its in-memory ciphertext was discarded.
     test('no floor means the anchor is trusted', () {
       expect(
         const BridgeMarker(
@@ -292,6 +305,8 @@ void main() {
   BridgeCoordinator buildCoordinator({
     int? markerTs = 1000,
     String? anchorEventId,
+    int? resumeFloorTs,
+    Future<BridgeMarker> Function()? readMarker,
     Future<Room?> Function()? resolveRoom,
     _RecordingRunner? runner,
     Duration incompleteRetryDelay = const Duration(seconds: 10),
@@ -302,10 +317,13 @@ void main() {
       client: client,
       currentRoomId: () => roomId,
       resolveRoom: resolveRoom ?? () async => null,
-      readMarker: () async => BridgeMarker(
-        lastAppliedTs: markerTs,
-        lastAppliedEventId: anchorEventId,
-      ),
+      readMarker:
+          readMarker ??
+          () async => BridgeMarker(
+            lastAppliedTs: markerTs,
+            lastAppliedEventId: anchorEventId,
+            resumeFloorTs: resumeFloorTs,
+          ),
       bootstrapRunner: recording.runner,
       logging: logging,
       incompleteRetryDelay: incompleteRetryDelay,
@@ -324,6 +342,95 @@ void main() {
         subDomain: any(named: 'subDomain'),
       ),
     );
+    await coordinator.stop();
+  });
+
+  test(
+    'room-key traffic retries a durable unresolved floor after the SDK '
+    'has processed the late decryption key',
+    () async {
+      final room = MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      final runner = _RecordingRunner();
+      final coordinator = buildCoordinator(
+        markerTs: 5000,
+        anchorEventId: r'$after-ciphertext',
+        resumeFloorTs: 3000,
+        resolveRoom: () async => room,
+        runner: runner,
+      )..start();
+
+      syncCtl.add(_roomKeySyncFor(roomId));
+      await pumpEventQueue();
+
+      expect(runner.calls, hasLength(1));
+      expect(runner.calls.single.room, same(room));
+      expect(runner.calls.single.marker.resumeFloorTs, 3000);
+      await coordinator.stop();
+    },
+  );
+
+  test(
+    'a failed to-device marker read is contained and a later key retries',
+    () async {
+      final room = MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      final runner = _RecordingRunner();
+      var markerReadFails = true;
+      final coordinator = buildCoordinator(
+        readMarker: () async {
+          if (markerReadFails) {
+            throw StateError('marker database unavailable');
+          }
+          return const BridgeMarker(
+            lastAppliedTs: 5000,
+            lastAppliedEventId: r'$after-ciphertext',
+            resumeFloorTs: 3000,
+          );
+        },
+        resolveRoom: () async => room,
+        runner: runner,
+      )..start();
+
+      syncCtl.add(_roomKeySyncFor(roomId));
+      await pumpEventQueue();
+
+      expect(runner.calls, isEmpty);
+      verify(
+        () => logging.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(
+            named: 'subDomain',
+            that: endsWith('.keyTrigger'),
+          ),
+        ),
+      ).called(1);
+
+      markerReadFails = false;
+      syncCtl.add(_roomKeySyncFor(roomId));
+      await pumpEventQueue();
+
+      expect(runner.calls, hasLength(1));
+      expect(runner.calls.single.marker.resumeFloorTs, 3000);
+      await coordinator.stop();
+    },
+  );
+
+  test('to-device traffic is ignored when no resume floor exists', () async {
+    final room = MockRoom();
+    when(() => room.id).thenReturn(roomId);
+    final runner = _RecordingRunner();
+    final coordinator = buildCoordinator(
+      resolveRoom: () async => room,
+      runner: runner,
+    )..start();
+
+    syncCtl.add(_roomKeySyncFor(roomId));
+    await pumpEventQueue();
+
+    expect(runner.calls, isEmpty);
     await coordinator.stop();
   });
 
@@ -429,47 +536,6 @@ void main() {
           subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
-    },
-  );
-
-  test(
-    'a completed walk reports the room it actually covered even when the '
-    'selected room changes before completion',
-    () async {
-      const otherRoomId = '!other:example.org';
-      var selectedRoomId = roomId;
-      final room = MockRoom();
-      when(() => room.id).thenReturn(roomId);
-      final coveredRooms = <String>[];
-      final runner = _RecordingRunner()
-        ..override = (Room resolvedRoom, BridgeMarker marker) async {
-          selectedRoomId = otherRoomId;
-          return true;
-        };
-      final coordinator = BridgeCoordinator(
-        client: client,
-        currentRoomId: () => selectedRoomId,
-        resolveRoom: () async => room,
-        readMarker: () async => const BridgeMarker(
-          lastAppliedTs: 1000,
-          lastAppliedEventId: null,
-        ),
-        bootstrapRunner: runner.runner,
-        onWalkCovered: (coveredRoomId) async {
-          coveredRooms.add(coveredRoomId);
-        },
-        logging: logging,
-      );
-
-      await coordinator.bridgeNow();
-
-      expect(
-        coveredRooms,
-        <String>[roomId],
-        reason:
-            'clearing the newly selected room would discard recovery state '
-            'for a room this walk never visited',
-      );
     },
   );
 

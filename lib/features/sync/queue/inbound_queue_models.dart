@@ -24,8 +24,9 @@ class EnqueueResult {
   final int filteredOutByType;
 
   /// Rejected because the Matrix event was still encrypted at enqueue
-  /// time. The caller (usually `PendingDecryptionPen`) is expected to
-  /// retain the event and re-submit once decryption completes (F3).
+  /// time. Producers must lower the durable resume floor before skipping it
+  /// so a later bridge revisits the event after the Matrix SDK receives its
+  /// decryption key (F3).
   final int deferredPendingDecryption;
 
   final int oldestTsAccepted;

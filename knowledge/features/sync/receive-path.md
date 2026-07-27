@@ -53,8 +53,7 @@ All under `lib/features/sync/queue/`:
 |-----------|------|
 | `InboundQueue` | Drift-backed queue in `sync_db` — `inbound_event_queue` plus a per-room `queue_markers` table |
 | `InboundWorker` | Per-room drain loop, gated by `UserActivityGate` |
-| `BridgeCoordinator` | Subscribes to `Client.onSync`; runs anchored catch-up walks. Single-flight |
-| `PendingDecryptionPen` | LRU holding pen for Megolm events that arrive before their session key |
+| `BridgeCoordinator` | Subscribes to `Client.onSync`; runs anchored catch-up walks and retries durable ciphertext floors after to-device traffic. Single-flight |
 | `QueueApplyAdapter` | Bridges the worker to `SyncEventProcessor.prepare` / `apply` |
 | `QueuePipelineCoordinator` | Owns the above plus the live producer subscription; exposed as `MatrixService.queueCoordinator` |
 | `QueueMarkerSeeder` | One-shot migration copying legacy `lastReadMatrixEventTs`/`Id` into `queue_markers`. Never overwrites an existing row |
@@ -72,32 +71,30 @@ mid-drain simply re-leases the same rows on restart.
 # Live ingestion
 
 `QueuePipelineCoordinator` subscribes to `MatrixSessionManager.timelineEvents`.
-Live events are routed through `PendingDecryptionPen` first, so
-**pre-decryption ciphertext never lands in `inbound_event_queue.raw_json`**. The
-worker sweeps the pen at the top of every drain iteration and only
-fully-decrypted events reach `raw_json`.
+The subscription uses `asyncMap`, so live events are handled in stream order.
+For an event still typed `m.room.encrypted`, the coordinator first lowers the
+room's durable `queue_markers.resume_floor_ts`, then skips the event.
+**Pre-decryption ciphertext never lands in `inbound_event_queue.raw_json`**:
+round-tripping it through `Event.toJson` / `Event.fromJson` would not preserve a
+usable decrypted payload. If the floor write fails transiently, the observation
+remains process-local and every later queue insertion or floor read retries it;
+no later plaintext can enter the queue and advance the marker until the floor
+is durable.
 
-Each eligible sweep calls the Matrix SDK's
-`Encryption.decryptRoomEvent(held)` directly. Reading the event back with
-`room.getEventById` is not equivalent: once the SDK has cached the ciphertext,
-that method returns the cached copy and does not attempt decryption. The direct
-call also lets the SDK request a missing Megolm session through its own key
-manager.
+The Matrix SDK owns the in-memory ciphertext and decryption attempts. Its sync
+handler calls `decryptRoomEvent`, retains failures in its pending-decryption
+queue, and processes to-device keys before publishing `Client.onSync`. Lotti
+does not maintain a second retry cache. When any to-device traffic arrives
+while a durable floor exists, `BridgeCoordinator` reruns catch-up; pagination
+can still return a cached encrypted `Event`, so `QueueBootstrapSink` makes one
+fresh `decryptRoomEvent` attempt before classifying it. Successful plaintext is
+queued; ciphertext that remains unresolved keeps the floor.
 
-**The pen's give-up budget is measured in time, not in sweeps.** An entry that
-never decrypts is eventually dropped, and a dropped entry is gone — its
-ciphertext is never written to the queue, so nothing retries it and nothing
-records it as abandoned. That makes the budget load-bearing, and it cannot be
-counted per sweep: the worker sweeps at the top of every drain iteration and
-loops straight back after a non-empty batch, so sweep frequency tracks queue
-throughput. Counting one attempt per sweep once spent the entire 20-attempt
-budget in ~2ms while a burst drained, discarding events whose Megolm key was
-still in flight — worst on slow links, where keys take longest and bursts drain
-longest. An attempt is therefore only spent once `attemptInterval` has elapsed
-since the last one, giving a real `maxAttempts * attemptInterval` window
-(10 minutes by default). Spacing the countdown costs no recovery latency: every
-sweep still asks the room for a decrypted copy and enqueues it the moment one
-exists.
+The same rule applies to bootstrap pages. `QueueBootstrapSink` lowers each
+room's floor before appending later plaintext from that page, re-decrypts each
+still-encrypted event at most once per visit, counts unresolved ciphertext as
+observed pagination progress, and tracks the oldest unresolved timestamp seen
+by that walk. This has no fixed capacity and no attempt timer.
 
 # Catch-up: the anchored forward walk
 
@@ -133,12 +130,16 @@ The fallback is a timestamp-bounded **backward** walk
 (`collectHistoryForBootstrap`), used for fresh clients, unresolvable anchors,
 and unsafe anchors. An unsafe anchor walks back to `resume_floor_ts`, not
 `last_applied_ts`. Both directions feed the same enqueue path with
-`producer=bootstrap` via `InboundQueue.appendBootstrapPage`.
+`producer=bootstrap` via `InboundQueue.appendBootstrapPage`. When the boundary
+timestamp spans pages, the backward walk continues until that entire
+millisecond bucket is exhausted. It retains only the event IDs emitted at the
+current oldest timestamp, so newly loaded collisions are delivered once
+without an unbounded all-history seen-set.
 
 ```mermaid
 stateDiagram-v2
   [*] --> NoFloor
-  NoFloor --> FloorRecorded: ciphertext held or pen capacity exceeded
+  NoFloor --> FloorRecorded: encrypted event skipped
   FloorRecorded --> FloorLowered: older unresolved event observed
   FloorLowered --> FloorLowered: newer unresolved event observed
   FloorRecorded --> WalkIncomplete: catch-up stops before coverage
@@ -146,14 +147,21 @@ stateDiagram-v2
   WalkIncomplete --> FloorRecorded: retry starts from durable floor
   FloorRecorded --> WalkComplete: backward walk covers floor
   FloorLowered --> WalkComplete: backward walk covers floor
-  WalkComplete --> FloorRecorded: ciphertext still held
-  WalkComplete --> NoFloor: no unresolved ciphertext remains
+  WalkComplete --> FloorRecorded: walk still observes ciphertext
+  WalkComplete --> NoFloor: walk observes no unresolved ciphertext
 ```
 
-A completed walk replaces the old floor with the pen's oldest still-held event,
-or clears it when the pen is empty. An incomplete walk never clears it. The room
-id passed to that completion step is the room actually walked, so switching
-rooms while pagination is in flight cannot erase another room's recovery state.
+A completed walk compare-and-sets the floor revision it observed at walk start
+with the sink's oldest still-encrypted event, or clears it when the walk
+observes none. Live ciphertext observations increment the revision, even when
+their millisecond timestamp equals the current floor. Walk-local observations
+persist the floor before page payloads are queued but do not increment the
+revision, so the walk cannot invalidate its own completion CAS. If live traffic
+observes ciphertext while pagination is in flight, the comparison fails and
+the concurrent durable observation wins. An incomplete walk never reconciles
+the floor. The sink and completion both belong to the same room-specific walk,
+so switching rooms while pagination is in flight cannot erase another room's
+recovery state.
 
 # Draining
 
@@ -166,8 +174,7 @@ entries on top of that just delayed the first commit.
 ```mermaid
 flowchart TD
     Tick["Worker tick"] --> Gate["activityGate.waitUntilIdle"]
-    Gate --> Flush["Pen.flushInto(queue, room)"]
-    Flush --> Peek["queue.peekBatchReady(maxBatch = 1)"]
+    Gate --> Peek["queue.peekBatchReady(maxBatch = 1)"]
     Peek --> Empty{"batch empty?"}
     Empty -->|yes| Wait["wait for depthChanges or 5s tick"]
     Wait --> Tick
@@ -222,58 +229,13 @@ tiebreak only when both sides are durable. The candidate is clamped against the
 oldest still-active row for the room, so the marker never crosses an unapplied
 gap.
 
-**The SDK decryption attempt has its own, shorter cadence.** A sweep does not
-retry every held entry: `decryptRoomEvent` is the expensive half, the worker
-sweeps before every batch, and `SyncTuning.inboundWorkerBatchSize` is 1 —
-draining 10k rows against a full 256-entry pen would otherwise issue ~2.5M
-sequential attempts. That load used to be self-limiting only because entries
-were dropped after 20 sweeps; holding them for ten real minutes makes it
-persist. So an entry is retried at most once per `lookupInterval` (1s), which
-bounds the cost while keeping detection within about a second of the key
-landing. It is a real, if small, latency: a key that arrives inside an entry's
-interval is noticed by the next eligible sweep, not the next sweep.
-
-Callers that give up after N unproductive sweeps must count only sweeps that
-actually looked. `drainUntilEmptyImpl` polls every 200ms, faster than the
-lookup interval, so counting throttled sweeps would spend its whole allowance
-inside one interval and tear the pen down without ever having queried the room.
-
-**Held ciphertext clamps it too.** A `PendingDecryptionPen` entry is
-received-but-not-applied — exactly what the clamp exists for — but it has no
-queue row by design, so the table-based probe cannot see it. Left invisible, a
-newer event applying moves the marker past it, the pen is discarded at
-teardown, and the next start's strictly-forward walk
-(`collectForwardForBootstrap`: "only events that sort strictly after the
-anchor") never re-fetches it: gone, with no row, no ledger entry and no
-counter. `QueueMarkerAdvancer.unqueuedFloorTs` therefore takes the older of the
-oldest active row and the pen's oldest held event for that room.
-
-**Backfill stops at pen capacity rather than evicting.** Ciphertext produces no
-queue rows, so the depth-based back-pressure in `QueueBootstrapSink` applies
-nothing to an all-encrypted run, while a forward walk may stream up to
-`SyncTuning.forwardWalkEventCap` events and manual history collection is
-unbounded against a fixed 256-entry LRU.
-The sink admits only what fits — checked *before* holding, because `hold`
-enforces capacity by evicting — and returns false once a page needs more room
-than remains.
-
-That budget is **per room**, and the difference matters: capacity and LRU are
-global, `onRoomChanged` prunes queue rows but not the pen, and the worker only
-ever sweeps the current room. Measured globally, ciphertext left behind by a
-room the user switched away from would occupy every slot and stop the active
-room's bootstrap without admitting anything. Measured per room, the active
-room is admitted and the global LRU reclaims the stale entries — so backfill
-does not evict *within* a room, but it will evict *across* one. That is the
-intended trade: the displaced entries belong to a room nothing is sweeping. Stopping is safe only because of the clamp above: the marker
-cannot pass what the pen holds, so the next run resumes from the right anchor
-instead of skipping the gap.
-
-The in-memory clamp cannot pull an already-advanced marker back. The durable
-`queue_markers.resume_floor_ts` closes that restart hole: every held or
-overflowed ciphertext event lowers the floor before later page entries can
-advance the marker, and `_runBootstrap` rejects a forward anchor at or ahead of
-it. The next process therefore walks backward to the floor instead of stepping
-over work the previous process knew was unresolved.
+Ciphertext has no row and therefore does not participate in that in-memory
+clamp. Its separate durable `queue_markers.resume_floor_ts` closes the gap:
+every skipped encrypted event lowers the floor before later plaintext can
+advance the applied marker, and `_runBootstrap` rejects a forward anchor at or
+ahead of it. The current or next process therefore walks backward to the floor
+instead of stepping over work known to be unresolved. Only a completed walk
+may raise or clear the floor.
 
 It deliberately does **not** use `TimelineEventOrdering.isNewer`, because
 `isNewer` treats a null stored event id as "no marker" even when the marker
@@ -289,7 +251,7 @@ stateDiagram-v2
     [*] --> Stopped
     Stopped --> Starting: coordinator.start()
     Starting --> Running: marker seeded · stranded rows pruned · worker + bridge started
-    Running --> Running: live event → pen? yes: hold / no: enqueueLive<br/>worker drains one entry per batch
+    Running --> Running: plaintext → enqueueLive<br/>ciphertext → lower durable floor + skip<br/>worker drains one entry per batch
     Running --> Draining: coordinator.stop(drainFirst: true)
     Draining --> Stopped: coordinator.drainUntilEmpty()<br/>(loops worker.drainToCompletion until queue empty or timeout)
     Running --> Stopped: coordinator.stop(drainFirst: false)

@@ -22,21 +22,31 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     if (room == null) {
       throw StateError('collectHistory: no current room');
     }
+    final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
+    final queueSink = QueueBootstrapSink(
+      queue: _queue,
+      logging: _logging,
+      cancelSignal: cancelSignal,
+      decryptEvent: _decryptBootstrapEvent,
+    );
     final sink = ProgressForwardingSink(
-      inner: QueueBootstrapSink(
-        queue: _queue,
-        logging: _logging,
-        cancelSignal: cancelSignal,
-        pen: _pen,
-      ),
+      inner: queueSink,
       onProgress: onProgress,
     );
-    return CatchUpStrategy.collectHistoryForBootstrap(
+    final result = await CatchUpStrategy.collectHistoryForBootstrap(
       room: room,
       sink: sink,
       logging: _logging,
       overallTimeout: overallTimeout,
     );
+    if (result.stopReason == BootstrapStopReason.serverExhausted) {
+      await _queue.completeResumeWalk(
+        roomId: room.id,
+        walkStartedAtFloorRevision: walkStartedAtFloorRevision,
+        unresolvedFloorTs: queueSink.oldestUnresolvedTs,
+      );
+    }
+    return result;
   }
 
   /// Streams the room's catch-up events through [QueueBootstrapSink]
@@ -103,14 +113,16 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     required Room room,
     required String anchorEventId,
   }) async {
+    final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
+    final queueSink = QueueBootstrapSink(
+      queue: _queue,
+      logging: _logging,
+      decryptEvent: _decryptBootstrapEvent,
+    );
     final innerSink = _attachmentIngestor == null
-        ? QueueBootstrapSink(queue: _queue, logging: _logging, pen: _pen)
+        ? queueSink
         : AttachmentAwareBootstrapSink(
-                inner: QueueBootstrapSink(
-                  queue: _queue,
-                  logging: _logging,
-                  pen: _pen,
-                ),
+                inner: queueSink,
                 processAttachment: _processAttachment,
               )
               as BootstrapSink;
@@ -129,7 +141,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
       'stopReason=${result.stopReason.name}',
       subDomain: '$_logSub.forward',
     );
-    return switch (result.stopReason) {
+    final outcome = switch (result.stopReason) {
       BootstrapStopReason.serverExhausted => BootstrapOutcome.completed,
       // The forward walk only reports `boundaryReached` when a budget tripped
       // while the server still had more to give — a caught-up device stops
@@ -146,12 +158,21 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
         BootstrapOutcome.errorNoProgress,
       BootstrapStopReason.error => BootstrapOutcome.incomplete,
     };
+    if (outcome == BootstrapOutcome.completed) {
+      await _queue.completeResumeWalk(
+        roomId: room.id,
+        walkStartedAtFloorRevision: walkStartedAtFloorRevision,
+        unresolvedFloorTs: queueSink.oldestUnresolvedTs,
+      );
+    }
+    return outcome;
   }
 
   Future<bool> _runBackwardBootstrap({
     required Room room,
     required int? untilTimestamp,
   }) async {
+    final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
     // Wrap the queue sink so attachment descriptor events in each
     // paginated page get fed to `AttachmentIngestor.process()` before
     // the queue's own enqueue drops them as non-payload. Without
@@ -159,14 +180,15 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     // enqueue the sync-payload events while their descriptor
     // JSONs never land on disk, producing the pendingAttachment
     // skip cascade we just fixed.
+    final queueSink = QueueBootstrapSink(
+      queue: _queue,
+      logging: _logging,
+      decryptEvent: _decryptBootstrapEvent,
+    );
     final innerSink = _attachmentIngestor == null
-        ? QueueBootstrapSink(queue: _queue, logging: _logging, pen: _pen)
+        ? queueSink
         : AttachmentAwareBootstrapSink(
-                inner: QueueBootstrapSink(
-                  queue: _queue,
-                  logging: _logging,
-                  pen: _pen,
-                ),
+                inner: queueSink,
                 processAttachment: _processAttachment,
               )
               as BootstrapSink;
@@ -185,11 +207,27 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
       result: result,
       totalAccepted: countingSink.totalAccepted,
     );
-    return switch (result.stopReason) {
+    final completed = switch (result.stopReason) {
       BootstrapStopReason.serverExhausted ||
       BootstrapStopReason.boundaryReached => true,
       BootstrapStopReason.sinkCancelled || BootstrapStopReason.error => false,
     };
+    if (completed) {
+      await _queue.completeResumeWalk(
+        roomId: room.id,
+        walkStartedAtFloorRevision: walkStartedAtFloorRevision,
+        unresolvedFloorTs: queueSink.oldestUnresolvedTs,
+      );
+    }
+    return completed;
+  }
+
+  Future<Event> _decryptBootstrapEvent(Event event) async {
+    final encryption = _sessionManager.client.encryption;
+    if (encryption == null) {
+      return event;
+    }
+    return encryption.decryptRoomEvent(event);
   }
 
   void _updateBarrenBridgeFlag({

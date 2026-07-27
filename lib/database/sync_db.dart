@@ -593,8 +593,8 @@ class SyncDatabase extends _$SyncDatabase
         if (from >= 12 && from < 28) {
           // Durable floor for received-but-unresolved work. Additive and
           // nullable: an existing device simply has nothing outstanding
-          // recorded, which is the correct starting state — anything the pen
-          // was holding at upgrade time was in memory and already lost.
+          // recorded, which is the correct starting state — anything held
+          // only in memory at upgrade time was already lost.
           // Earlier versions create the current queue_markers table in the
           // `from < 12` branch above, so adding the current column again would
           // fail with a duplicate-column error.

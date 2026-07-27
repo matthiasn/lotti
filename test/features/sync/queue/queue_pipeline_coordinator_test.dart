@@ -18,7 +18,6 @@ import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
-import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -30,7 +29,6 @@ import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-import 'test_utils.dart';
 
 class _MockSessionManager extends Mock implements MatrixSessionManager {}
 
@@ -40,18 +38,21 @@ class _MockWorker extends Mock implements InboundWorker {}
 
 class _MockBridge extends Mock implements BridgeCoordinator {}
 
-class _MockPen extends Mock implements PendingDecryptionPen {}
-
 class _MockSeeder extends Mock implements QueueMarkerSeeder {}
 
 /// Test double for [AttachmentIngestor] that records every `process()`
 /// call and optionally throws, without needing mocktail fallbacks for
 /// every named-argument type (Function, DomainLogger, nullable refs).
 class _FakeAttachmentIngestor implements AttachmentIngestor {
-  _FakeAttachmentIngestor({this.shouldThrow = false, this.firstProcessed});
+  _FakeAttachmentIngestor({
+    this.shouldThrow = false,
+    this.firstProcessed,
+    this.processGate,
+  });
 
   bool shouldThrow;
   final Completer<Event>? firstProcessed;
+  final Future<void>? processGate;
   final List<Map<Symbol, Object?>> processCalls = <Map<Symbol, Object?>>[];
 
   @override
@@ -68,6 +69,7 @@ class _FakeAttachmentIngestor implements AttachmentIngestor {
     if (firstProcessed case final completer? when !completer.isCompleted) {
       completer.complete(event);
     }
+    await processGate;
     if (shouldThrow) {
       throw StateError('ingestor boom');
     }
@@ -127,8 +129,6 @@ enum _GeneratedLiveEventKind { message, encrypted }
 
 enum _GeneratedLiveSelfEchoKind { absent, present }
 
-enum _GeneratedLivePenKind { passes, holds }
-
 enum _GeneratedLiveIngestorKind { succeeds, throwsError }
 
 class _GeneratedLiveIngressOperation {
@@ -137,7 +137,6 @@ class _GeneratedLiveIngressOperation {
     required this.statusKind,
     required this.eventKind,
     required this.selfEchoKind,
-    required this.penKind,
     required this.slot,
   });
 
@@ -145,7 +144,6 @@ class _GeneratedLiveIngressOperation {
   final _GeneratedLiveStatusKind statusKind;
   final _GeneratedLiveEventKind eventKind;
   final _GeneratedLiveSelfEchoKind selfEchoKind;
-  final _GeneratedLivePenKind penKind;
   final int slot;
 
   EventStatus get status {
@@ -179,8 +177,6 @@ class _GeneratedLiveIngressOperation {
 
   bool get selfEcho => selfEchoKind == _GeneratedLiveSelfEchoKind.present;
 
-  bool get penHolds => penKind == _GeneratedLivePenKind.holds;
-
   bool get reachesDownstream =>
       hasCurrentRoom && eventMatchesCurrentRoom && synced && !selfEcho;
 
@@ -191,7 +187,6 @@ class _GeneratedLiveIngressOperation {
         'statusKind: $statusKind, '
         'eventKind: $eventKind, '
         'selfEchoKind: $selfEchoKind, '
-        'penKind: $penKind, '
         'slot: $slot'
         ')';
   }
@@ -225,10 +220,17 @@ class _GeneratedLiveIngressScenario {
 
   int get expectedIngestorCalls => _downstreamOperations.length;
 
-  int get expectedPenCalls => _downstreamOperations.length;
+  int get expectedQueueCalls => _downstreamOperations
+      .where(
+        (operation) => operation.eventKind == _GeneratedLiveEventKind.message,
+      )
+      .length;
 
-  int get expectedQueueCalls =>
-      _downstreamOperations.where((operation) => !operation.penHolds).length;
+  int get expectedFloorCalls => _downstreamOperations
+      .where(
+        (operation) => operation.eventKind == _GeneratedLiveEventKind.encrypted,
+      )
+      .length;
 
   Iterable<_GeneratedLiveIngressOperation> get _downstreamOperations sync* {
     for (final operation in operations) {
@@ -258,33 +260,27 @@ extension _AnyGeneratedLiveIngressScenario on glados.Any {
   glados.Generator<_GeneratedLiveSelfEchoKind> get liveSelfEchoKind =>
       glados.AnyUtils(this).choose(_GeneratedLiveSelfEchoKind.values);
 
-  glados.Generator<_GeneratedLivePenKind> get livePenKind =>
-      glados.AnyUtils(this).choose(_GeneratedLivePenKind.values);
-
   glados.Generator<_GeneratedLiveIngestorKind> get liveIngestorKind =>
       glados.AnyUtils(this).choose(_GeneratedLiveIngestorKind.values);
 
   glados.Generator<_GeneratedLiveIngressOperation> get liveIngressOperation =>
-      glados.CombinableAny(this).combine6(
+      glados.CombinableAny(this).combine5(
         liveRoomKind,
         liveStatusKind,
         liveEventKind,
         liveSelfEchoKind,
-        livePenKind,
         glados.IntAnys(this).intInRange(0, 8),
         (
           _GeneratedLiveRoomKind roomKind,
           _GeneratedLiveStatusKind statusKind,
           _GeneratedLiveEventKind eventKind,
           _GeneratedLiveSelfEchoKind selfEchoKind,
-          _GeneratedLivePenKind penKind,
           int slot,
         ) => _GeneratedLiveIngressOperation(
           roomKind: roomKind,
           statusKind: statusKind,
           eventKind: eventKind,
           selfEchoKind: selfEchoKind,
-          penKind: penKind,
           slot: slot,
         ),
       );
@@ -305,173 +301,13 @@ extension _AnyGeneratedLiveIngressScenario on glados.Any {
       );
 }
 
-enum _GeneratedDrainRoomKind { absent, present }
-
-enum _GeneratedDrainFailureKind { none, penThrows, workerThrows, bothThrow }
-
-enum _GeneratedDrainReadyAtKind { none, now, soon }
-
-enum _GeneratedDrainTerminationKind { completes, timesOut }
-
-class _GeneratedDrainStep {
-  const _GeneratedDrainStep({
-    required this.total,
-    required this.penSize,
-    required this.readyAtKind,
-  });
-
-  final int total;
-  final int penSize;
-  final _GeneratedDrainReadyAtKind readyAtKind;
-
-  bool get isEmpty => total == 0 && penSize == 0;
-
-  _GeneratedDrainStep asNonEmpty() {
-    if (!isEmpty) return this;
-    return _GeneratedDrainStep(
-      total: 1,
-      penSize: 0,
-      readyAtKind: readyAtKind,
-    );
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedDrainStep('
-        'total: $total, '
-        'penSize: $penSize, '
-        'readyAtKind: $readyAtKind'
-        ')';
-  }
-}
-
-class _GeneratedDrainScenario {
-  const _GeneratedDrainScenario({
-    required this.rawSteps,
-    required this.roomKind,
-    required this.failureKind,
-    required this.terminationKind,
-  });
-
-  final List<_GeneratedDrainStep> rawSteps;
-  final _GeneratedDrainRoomKind roomKind;
-  final _GeneratedDrainFailureKind failureKind;
-  final _GeneratedDrainTerminationKind terminationKind;
-
-  bool get hasRoom => roomKind == _GeneratedDrainRoomKind.present;
-
-  bool get penThrows =>
-      failureKind == _GeneratedDrainFailureKind.penThrows ||
-      failureKind == _GeneratedDrainFailureKind.bothThrow;
-
-  bool get workerThrows =>
-      failureKind == _GeneratedDrainFailureKind.workerThrows ||
-      failureKind == _GeneratedDrainFailureKind.bothThrow;
-
-  bool get timesOut =>
-      terminationKind == _GeneratedDrainTerminationKind.timesOut;
-
-  Duration get timeout =>
-      timesOut ? const Duration(milliseconds: 20) : const Duration(seconds: 3);
-
-  Duration get advanceBy =>
-      timesOut ? const Duration(milliseconds: 25) : const Duration(seconds: 3);
-
-  List<_GeneratedDrainStep> get steps {
-    if (timesOut) {
-      return const [
-        _GeneratedDrainStep(
-          total: 1,
-          penSize: 0,
-          readyAtKind: _GeneratedDrainReadyAtKind.none,
-        ),
-      ];
-    }
-    return [
-      for (final step in rawSteps) step.asNonEmpty(),
-      const _GeneratedDrainStep(
-        total: 0,
-        penSize: 0,
-        readyAtKind: _GeneratedDrainReadyAtKind.now,
-      ),
-    ];
-  }
-
-  int get expectedIterations => steps.length;
-
-  _GeneratedDrainStep stepAt(int index) {
-    final materialized = steps;
-    if (index < materialized.length) return materialized[index];
-    return materialized.last;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedDrainScenario('
-        'rawSteps: $rawSteps, '
-        'roomKind: $roomKind, '
-        'failureKind: $failureKind, '
-        'terminationKind: $terminationKind'
-        ')';
-  }
-}
-
-extension _AnyGeneratedDrainScenario on glados.Any {
-  glados.Generator<_GeneratedDrainRoomKind> get drainRoomKind =>
-      glados.AnyUtils(this).choose(_GeneratedDrainRoomKind.values);
-
-  glados.Generator<_GeneratedDrainFailureKind> get drainFailureKind =>
-      glados.AnyUtils(this).choose(_GeneratedDrainFailureKind.values);
-
-  glados.Generator<_GeneratedDrainReadyAtKind> get drainReadyAtKind =>
-      glados.AnyUtils(this).choose(_GeneratedDrainReadyAtKind.values);
-
-  glados.Generator<_GeneratedDrainTerminationKind> get drainTerminationKind =>
-      glados.AnyUtils(this).choose(_GeneratedDrainTerminationKind.values);
-
-  glados.Generator<_GeneratedDrainStep> get drainStep =>
-      glados.CombinableAny(this).combine3(
-        glados.IntAnys(this).intInRange(0, 4),
-        glados.IntAnys(this).intInRange(0, 3),
-        drainReadyAtKind,
-        (
-          int total,
-          int penSize,
-          _GeneratedDrainReadyAtKind readyAtKind,
-        ) => _GeneratedDrainStep(
-          total: total,
-          penSize: penSize,
-          readyAtKind: readyAtKind,
-        ),
-      );
-
-  glados.Generator<_GeneratedDrainScenario> get drainScenario =>
-      glados.CombinableAny(this).combine4(
-        glados.ListAnys(this).listWithLengthInRange(0, 4, drainStep),
-        drainRoomKind,
-        drainFailureKind,
-        drainTerminationKind,
-        (
-          List<_GeneratedDrainStep> rawSteps,
-          _GeneratedDrainRoomKind roomKind,
-          _GeneratedDrainFailureKind failureKind,
-          _GeneratedDrainTerminationKind terminationKind,
-        ) => _GeneratedDrainScenario(
-          rawSteps: rawSteps,
-          roomKind: roomKind,
-          failureKind: failureKind,
-          terminationKind: terminationKind,
-        ),
-      );
-}
-
-/// Shared scaffolding for the two Glados coordinator properties.
+/// Shared scaffolding for the coordinator properties.
 ///
 /// Creates the full local mock set with the same baseline stubs as the
 /// file-level `setUp()`, plus the in-memory databases the coordinator
 /// constructor requires (never written by these properties). Property
 /// bodies re-stub only the members their model drives (queue.stats,
-/// pen.flushInto, earliestReadyAt, ...) — a later `when(...)` wins.
+/// earliestReadyAt, ...) — a later `when(...)` wins.
 /// [AttachmentIndex] with a synchronous controller so a test can land a
 /// path in the coordinator's pending-resurrection set at an exact point
 /// in the start() sequence (the real index delivers asynchronously).
@@ -523,8 +359,6 @@ class _GladosBench {
     when(bridge.start).thenReturn(null);
     when(bridge.stop).thenAnswer((_) async {});
     when(bridge.bridgeNow).thenAnswer((_) async {});
-    when(pen.stop).thenAnswer((_) async {});
-    when(() => pen.size).thenReturn(0);
     when(queue.dispose).thenAnswer((_) async {});
     when(queue.stats).thenAnswer(
       (_) async => const QueueStats(
@@ -535,6 +369,17 @@ class _GladosBench {
       ),
     );
     when(queue.earliestReadyAt).thenAnswer((_) async => null);
+    when(() => queue.resumeFloorTs(any())).thenAnswer((_) async => null);
+    when(() => queue.resumeFloorRevision(any())).thenReturn(0);
+    when(
+      () => queue.completeResumeWalk(
+        roomId: any<String>(named: 'roomId'),
+        walkStartedAtFloorRevision: any(
+          named: 'walkStartedAtFloorRevision',
+        ),
+        unresolvedFloorTs: any(named: 'unresolvedFloorTs'),
+      ),
+    ).thenAnswer((_) async {});
     when(
       () => logging.log(
         any<LogDomain>(),
@@ -553,8 +398,8 @@ class _GladosBench {
   }
 
   /// Shared placeholder databases for the coordinator's required
-  /// constructor args. The Glados properties mock the queue/worker/pen,
-  /// so these are never written - sharing one pair across every generated
+  /// constructor args. The Glados properties mock the queue/worker, so these
+  /// are never written - sharing one pair across every generated
   /// run avoids ~5-10ms of Drift in-memory setup per run. Closed once via
   /// [closeSharedDbs] in the file's tearDownAll.
   static SyncDatabase? _sharedSyncDb;
@@ -582,7 +427,6 @@ class _GladosBench {
   final queue = MockInboundQueue();
   final worker = _MockWorker();
   final bridge = _MockBridge();
-  final pen = _MockPen();
   final seeder = _MockSeeder();
   final client = MockMatrixClient();
   final room = MockRoom();
@@ -596,10 +440,6 @@ class _GladosBench {
     AttachmentIndex? attachmentIndex,
     UpdateNotifications? updateNotifications,
   }) {
-    // `capacity` is a non-nullable int the bootstrap sink reads to decide
-    // whether it may keep paginating; an unstubbed mock getter yields null.
-    when(() => pen.capacity).thenReturn(256);
-    stubPenDecryption(room);
     return QueuePipelineCoordinator(
       syncDb: syncDb,
       settingsDb: settingsDb,
@@ -617,7 +457,6 @@ class _GladosBench {
       queueOverride: queue,
       workerOverride: worker,
       bridgeOverride: bridge,
-      penOverride: pen,
       seederOverride: seeder,
     );
   }
@@ -714,7 +553,6 @@ void main() {
   late MockInboundQueue queue;
   late _MockWorker worker;
   late _MockBridge bridge;
-  late _MockPen pen;
   late _MockSeeder seeder;
   late StreamController<Event> timelineCtl;
   late CachedStreamController<SyncUpdate> syncCtl;
@@ -740,8 +578,6 @@ void main() {
     queue = MockInboundQueue();
     worker = _MockWorker();
     bridge = _MockBridge();
-    pen = _MockPen();
-    when(() => pen.capacity).thenReturn(256);
     seeder = _MockSeeder();
     timelineCtl = StreamController<Event>.broadcast(sync: true);
     syncCtl = CachedStreamController<SyncUpdate>();
@@ -762,8 +598,6 @@ void main() {
     when(bridge.start).thenReturn(null);
     when(bridge.stop).thenAnswer((_) async {});
     when(bridge.bridgeNow).thenAnswer((_) async {});
-    when(pen.stop).thenAnswer((_) async {});
-    when(() => pen.size).thenReturn(0);
     when(() => queue.dispose()).thenAnswer((_) async {});
     when(() => queue.enqueueLive(any())).thenAnswer(
       (_) async => EnqueueResult.empty,
@@ -777,7 +611,29 @@ void main() {
       ),
     );
     when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
-    when(() => pen.hold(any())).thenReturn(false);
+    when(() => queue.resumeFloorTs(any())).thenAnswer((_) async => null);
+    when(() => queue.resumeFloorRevision(any())).thenReturn(0);
+    when(
+      () => queue.completeResumeWalk(
+        roomId: any<String>(named: 'roomId'),
+        walkStartedAtFloorRevision: any(
+          named: 'walkStartedAtFloorRevision',
+        ),
+        unresolvedFloorTs: any(named: 'unresolvedFloorTs'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => queue.lowerResumeFloor(
+        roomId: any<String>(named: 'roomId'),
+        originTs: any<int>(named: 'originTs'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => queue.lowerResumeFloorFromWalk(
+        roomId: any<String>(named: 'roomId'),
+        originTs: any<int>(named: 'originTs'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -787,7 +643,9 @@ void main() {
     await journalDb.close();
   });
 
-  QueuePipelineCoordinator build() => QueuePipelineCoordinator(
+  QueuePipelineCoordinator build({
+    AttachmentIngestor? attachmentIngestor,
+  }) => QueuePipelineCoordinator(
     syncDb: syncDb,
     settingsDb: settingsDb,
     journalDb: journalDb,
@@ -797,10 +655,10 @@ void main() {
     sequenceLogService: sequenceLog,
     activityGate: null,
     logging: logging,
+    attachmentIngestor: attachmentIngestor,
     queueOverride: queue,
     workerOverride: worker,
     bridgeOverride: bridge,
-    penOverride: pen,
     seederOverride: seeder,
   );
 
@@ -813,6 +671,9 @@ void main() {
     // the Matrix SDK; every test building a "real" live event needs
     // to declare it synced.
     when(() => e.status).thenReturn(EventStatus.synced);
+    when(
+      () => e.originServerTs,
+    ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1234));
     return e;
   }
 
@@ -830,30 +691,111 @@ void main() {
     },
   );
 
-  test('encrypted live event is routed through the pen (F3)', () async {
-    final coordinator = build();
-    await coordinator.start();
+  test(
+    'encrypted live event lowers the durable floor and is skipped',
+    () async {
+      final coordinator = build();
+      await coordinator.start();
 
-    when(() => pen.hold(any())).thenReturn(true);
-    timelineCtl.add(buildEvent(EventTypes.Encrypted));
-    await pumpEventQueue();
+      timelineCtl.add(buildEvent(EventTypes.Encrypted));
+      await pumpEventQueue();
 
-    verifyNever(() => queue.enqueueLive(any()));
-    verify(() => pen.hold(any())).called(1);
-    await coordinator.stop();
-  });
+      verifyNever(() => queue.enqueueLive(any()));
+      verify(
+        () => queue.lowerResumeFloor(roomId: roomId, originTs: 1234),
+      ).called(1);
+      await coordinator.stop();
+    },
+  );
 
-  test('plain live event bypasses pen and enters the queue', () async {
+  test('plain live event enters the queue without lowering a floor', () async {
     final coordinator = build();
     await coordinator.start();
 
     timelineCtl.add(buildEvent(EventTypes.Message));
     await pumpEventQueue();
 
-    verify(() => pen.hold(any())).called(1);
     verify(() => queue.enqueueLive(any())).called(1);
+    verifyNever(
+      () => queue.lowerResumeFloor(
+        roomId: any<String>(named: 'roomId'),
+        originTs: any<int>(named: 'originTs'),
+      ),
+    );
     await coordinator.stop();
   });
+
+  test(
+    'a room switch during attachment processing drops the old-room event',
+    () async {
+      final attachmentStarted = Completer<Event>();
+      final releaseAttachment = Completer<void>();
+      final ingestor = _FakeAttachmentIngestor(
+        firstProcessed: attachmentStarted,
+        processGate: releaseAttachment.future,
+      );
+      final coordinator = build(attachmentIngestor: ingestor);
+      await coordinator.start();
+      final event = buildEvent(EventTypes.Message);
+
+      timelineCtl.add(event);
+      expect(await attachmentStarted.future, same(event));
+
+      when(
+        () => roomManager.currentRoomId,
+      ).thenReturn('!replacement:example.org');
+      await coordinator.onRoomChanged('!replacement:example.org');
+      releaseAttachment.complete();
+      await pumpEventQueue();
+
+      verifyNever(() => queue.enqueueLive(any()));
+      verifyNever(
+        () => queue.lowerResumeFloor(
+          roomId: any<String>(named: 'roomId'),
+          originTs: any<int>(named: 'originTs'),
+        ),
+      );
+      await coordinator.stop();
+    },
+  );
+
+  test(
+    'a live-handler error is logged without an uncaught cleanup future',
+    () async {
+      when(
+        () => queue.lowerResumeFloor(
+          roomId: roomId,
+          originTs: 1234,
+        ),
+      ).thenThrow(StateError('floor write failed'));
+      final uncaught = <Object>[];
+
+      await runZonedGuarded(
+        () async {
+          final coordinator = build();
+          await coordinator.start();
+          timelineCtl.add(buildEvent(EventTypes.Encrypted));
+          await pumpEventQueue();
+          await coordinator.stop();
+          await pumpEventQueue();
+        },
+        (error, _) => uncaught.add(error),
+      );
+
+      expect(uncaught, isEmpty);
+      verify(
+        () => logging.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(
+            named: 'subDomain',
+            that: endsWith('.liveSub'),
+          ),
+        ),
+      ).called(1);
+    },
+  );
 
   test(
     'live event for a different room is ignored',
@@ -868,8 +810,13 @@ void main() {
       timelineCtl.add(foreign);
       await pumpEventQueue();
 
-      verifyNever(() => pen.hold(any()));
       verifyNever(() => queue.enqueueLive(any()));
+      verifyNever(
+        () => queue.lowerResumeFloor(
+          roomId: any<String>(named: 'roomId'),
+          originTs: any<int>(named: 'originTs'),
+        ),
+      );
       await coordinator.stop();
     },
   );
@@ -893,7 +840,12 @@ void main() {
       when(
         () => bench.queue.enqueueLive(any()),
       ).thenAnswer((_) async => EnqueueResult.empty);
-      when(() => bench.pen.hold(any())).thenReturn(false);
+      when(
+        () => bench.queue.lowerResumeFloor(
+          roomId: any<String>(named: 'roomId'),
+          originTs: any<int>(named: 'originTs'),
+        ),
+      ).thenAnswer((_) async {});
 
       final coordinator = bench.buildCoordinator(
         sentEventRegistry: bench.sentEventRegistry,
@@ -937,8 +889,13 @@ void main() {
         expect(suppressionLogs(), hasLength(2));
         expect(suppressionLogs().last, contains('count=3'));
 
-        // Suppressed events never reach the pen or the queue.
-        verifyNever(() => bench.pen.hold(any()));
+        // Suppressed events never reach the floor or the queue.
+        verifyNever(
+          () => bench.queue.lowerResumeFloor(
+            roomId: any<String>(named: 'roomId'),
+            originTs: any<int>(named: 'originTs'),
+          ),
+        );
         verifyNever(() => bench.queue.enqueueLive(any()));
 
         await coordinator.stop();
@@ -1021,9 +978,8 @@ void main() {
         shouldThrow:
             scenario.ingestorKind == _GeneratedLiveIngestorKind.throwsError,
       );
-      final penEvents = <Event>[];
       final enqueuedEvents = <Event>[];
-      final penHoldsByEventId = <String, bool>{};
+      final loweredFloors = <({String roomId, int originTs})>[];
       String? currentRoomId = scenario.currentRoomId;
 
       when(() => bench.roomManager.currentRoomId).thenAnswer(
@@ -1035,10 +991,16 @@ void main() {
         enqueuedEvents.add(invocation.positionalArguments.single as Event);
         return EnqueueResult.empty;
       });
-      when(() => bench.pen.hold(any())).thenAnswer((invocation) {
-        final event = invocation.positionalArguments.single as Event;
-        penEvents.add(event);
-        return penHoldsByEventId[event.eventId] ?? false;
+      when(
+        () => bench.queue.lowerResumeFloor(
+          roomId: any<String>(named: 'roomId'),
+          originTs: any<int>(named: 'originTs'),
+        ),
+      ).thenAnswer((invocation) async {
+        loweredFloors.add((
+          roomId: invocation.namedArguments[#roomId] as String,
+          originTs: invocation.namedArguments[#originTs] as int,
+        ));
       });
 
       final coordinator = bench.buildCoordinator(
@@ -1054,7 +1016,6 @@ void main() {
           currentRoomId = operation.hasCurrentRoom
               ? scenario.currentRoomId
               : null;
-          penHoldsByEventId[eventId] = operation.penHolds;
           if (operation.selfEcho) {
             bench.sentEventRegistry.register(eventId);
           }
@@ -1064,7 +1025,11 @@ void main() {
           when(() => event.roomId).thenReturn(scenario.eventRoomIdAt(i));
           when(() => event.type).thenReturn(operation.type);
           when(() => event.status).thenReturn(operation.status);
+          when(
+            () => event.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
           bench.timelineCtl.add(event);
+          await pumpEventQueue();
         }
         await coordinator.stop();
 
@@ -1074,8 +1039,8 @@ void main() {
           reason: '$scenario',
         );
         expect(
-          penEvents,
-          hasLength(scenario.expectedPenCalls),
+          loweredFloors,
+          hasLength(scenario.expectedFloorCalls),
           reason: '$scenario',
         );
         expect(
@@ -1100,7 +1065,6 @@ void main() {
       verify(() => queue.stats()).called(greaterThanOrEqualTo(1));
       verify(() => worker.stop()).called(1);
       verify(bridge.stop).called(1);
-      verify(pen.stop).called(1);
       verify(() => queue.dispose()).called(1);
     },
   );
@@ -1118,7 +1082,7 @@ void main() {
     'stop wraps each teardown stage in tryRun so a throwing worker.stop '
     'is logged under the stop.worker subDomain yet later stages still run',
     () async {
-      // `worker.stop()` throwing must not orphan the pen/queue stages —
+      // `worker.stop()` throwing must not orphan the queue stage —
       // `tryRun` catches it, logs under `stop.worker`, and continues.
       when(() => worker.stop()).thenThrow(StateError('worker teardown boom'));
       final coordinator = build();
@@ -1138,7 +1102,6 @@ void main() {
         ),
       ).called(1);
       // Stages after the throwing one still ran (best-effort cleanup).
-      verify(pen.stop).called(1);
       verify(() => queue.dispose()).called(1);
       expect(coordinator.isRunning, isFalse);
     },
@@ -1232,7 +1195,6 @@ void main() {
 
   test('handles onSync signal: postLoad called on partial room', () async {
     final room = MockRoom();
-    stubPenDecryption(room);
     when(() => room.partial).thenReturn(true);
     when(room.postLoad).thenAnswer((_) async {});
     when(() => roomManager.currentRoom).thenReturn(room);
@@ -1252,7 +1214,6 @@ void main() {
     'onSync does not call postLoad when room is already non-partial',
     () async {
       final room = MockRoom();
-      stubPenDecryption(room);
       when(() => room.partial).thenReturn(false);
       when(room.postLoad).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
@@ -1303,7 +1264,7 @@ void main() {
       'exits immediately when the server has no history',
       () async {
         final room = MockRoom();
-        stubPenDecryption(room);
+        when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(
@@ -1345,12 +1306,11 @@ void main() {
           queueOverride: realQueue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
 
         final room = MockRoom();
-        stubPenDecryption(room);
+        when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(
@@ -1390,6 +1350,71 @@ void main() {
     );
 
     test(
+      'encrypted history uses the production SDK decryptor before enqueue',
+      () async {
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final encryption = MockEncryption();
+        when(() => client.encryption).thenReturn(encryption);
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          seederOverride: seeder,
+        );
+
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        final timeline = MockTimeline();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        final encrypted = buildEvent(EventTypes.Encrypted);
+        final decrypted = MockEvent();
+        when(() => decrypted.eventId).thenReturn(r'$decrypted-bootstrap');
+        when(() => decrypted.roomId).thenReturn(roomId);
+        when(() => decrypted.type).thenReturn(EventTypes.Message);
+        when(
+          () => decrypted.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1234));
+        when(() => decrypted.content).thenReturn(<String, dynamic>{
+          'msgtype': syncMessageType,
+        });
+        when(decrypted.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$decrypted-bootstrap',
+          'room_id': roomId,
+          'origin_server_ts': 1234,
+          'type': EventTypes.Message,
+          'content': <String, dynamic>{'msgtype': syncMessageType},
+        });
+        when(
+          () => encryption.decryptRoomEvent(encrypted),
+        ).thenAnswer((_) async => decrypted);
+        when(() => timeline.events).thenReturn(<Event>[encrypted]);
+        when(() => timeline.canRequestHistory).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+
+        final result = await coordinator.collectHistory();
+
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        verify(() => encryption.decryptRoomEvent(encrypted)).called(1);
+        expect((await realQueue.stats()).total, 1);
+        expect(await realQueue.resumeFloorTs(roomId), isNull);
+      },
+    );
+
+    test(
       'onProgress exception does not abort the bootstrap',
       () async {
         final realQueue = InboundQueue(db: syncDb, logging: logging);
@@ -1408,12 +1433,11 @@ void main() {
           queueOverride: realQueue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
 
         final room = MockRoom();
-        stubPenDecryption(room);
+        when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(
@@ -1457,7 +1481,6 @@ void main() {
 
   test('postLoad error drops the marker so a later sync retries', () async {
     final room = MockRoom();
-    stubPenDecryption(room);
     when(() => room.partial).thenReturn(true);
     when(room.postLoad).thenThrow(StateError('sdk down'));
     when(() => roomManager.currentRoom).thenReturn(room);
@@ -1509,7 +1532,6 @@ void main() {
         oldestEnqueuedAt: null,
       ),
     );
-    when(() => pen.size).thenReturn(0);
     final coordinator = build();
     await coordinator.start();
     await coordinator.stop(drainFirst: true);
@@ -1523,7 +1545,6 @@ void main() {
       ),
     ).called(greaterThanOrEqualTo(1));
     verify(() => worker.stop()).called(1);
-    verify(pen.stop).called(1);
     verify(() => queue.dispose()).called(1);
   });
 
@@ -1543,7 +1564,7 @@ void main() {
       await coordinator.start();
 
       timelineCtl.add(buildEvent(EventTypes.Message));
-      // Let _handleLiveEvent run through pen.hold and _safeEnqueue so the
+      // Let _handleLiveEvent run through _safeEnqueue so the
       // gated enqueueLive future is registered in _inFlightEnqueues.
       await pumpEventQueue();
       verify(() => queue.enqueueLive(any())).called(1);
@@ -1577,8 +1598,8 @@ void main() {
     'marker from legacy settings and isRunning flips true then false',
     () async {
       // No override collaborators: the coordinator builds its own
-      // InboundQueue, InboundWorker, BridgeCoordinator, PendingDecryptionPen
-      // and QueueMarkerSeeder against the real in-memory databases.
+      // InboundQueue, InboundWorker, BridgeCoordinator, and QueueMarkerSeeder
+      // against the real in-memory databases.
       when(() => sessionManager.client).thenReturn(client);
       // The default seeder reads the legacy marker from settings; supply a
       // value so a successful seed is observable as a queue_markers row.
@@ -1711,7 +1732,7 @@ void main() {
     );
 
     test(
-      'drainUntilEmpty keeps looping while rows remain and the pen holds',
+      'drainUntilEmpty keeps looping while queue rows remain',
       () async {
         // Fake a queue that reports 2 rows on the first stats() call and
         // 0 on the second, so the loop exits on the second iteration.
@@ -1738,199 +1759,6 @@ void main() {
         // (first iteration with non-zero remaining, second with zero).
         verify(worker.drainToCompletion).called(greaterThanOrEqualTo(2));
         verify(() => queue.stats()).called(greaterThanOrEqualTo(2));
-      },
-    );
-
-    test(
-      'the queue is given the pen as its unqueued marker floor',
-      () async {
-        // Without this wiring the two halves of the fix are inert: the pen
-        // can report its oldest held event and the advancer can clamp on a
-        // floor, but nothing connects them, so the marker still steps over
-        // held ciphertext. Deleting the assignment leaves every other test in
-        // this change passing, so it needs its own.
-        build();
-
-        final assigned =
-            verify(
-                  () => queue.unqueuedFloorTs = captureAny(),
-                ).captured.last
-                as int? Function(String);
-
-        when(
-          () => pen.oldestHeldOriginTs('!roomA:example.org'),
-        ).thenReturn(4242);
-        expect(assigned('!roomA:example.org'), 4242);
-        verify(() => pen.oldestHeldOriginTs('!roomA:example.org')).called(1);
-      },
-    );
-
-    test(
-      'a lookup-throttled sweep does not count toward the stall limit',
-      () async {
-        // The pen throttles its own SDK decryption calls, and this loop
-        // polls faster than that interval. Counting throttled sweeps burned
-        // the whole allowance inside a single interval, so shutdown could
-        // tear the pen down without ever having looked once — discarding a
-        // key that landed in the gap.
-        when(() => queue.stats()).thenAnswer(
-          (_) async => const QueueStats(
-            total: 0,
-            byProducer: {},
-            readyNow: 0,
-            oldestEnqueuedAt: null,
-          ),
-        );
-        when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
-        final room = MockRoom();
-        stubPenDecryption(room);
-        when(() => roomManager.currentRoom).thenReturn(room);
-        when(() => pen.size).thenReturn(1);
-        // Every sweep is throttled: nothing enqueued, and no lookup made.
-        when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
-          (_) async => const PenFlushOutcome(
-            enqueued: 0,
-            stillEncrypted: 1,
-            dropped: 0,
-            lookups: 0,
-          ),
-        );
-
-        final coordinator = build();
-        fakeAsync((async) {
-          var completed = false;
-          withClock(Clock(() => DateTime.utc(2026).add(async.elapsed)), () {
-            unawaited(
-              coordinator
-                  .drainUntilEmpty(timeout: const Duration(seconds: 30))
-                  .then<void>((_) => completed = true),
-            );
-          });
-
-          // Past where five 200ms polls would have exhausted the allowance.
-          async.elapse(const Duration(seconds: 3));
-          expect(
-            completed,
-            isFalse,
-            reason: 'throttled sweeps must not spend the stall allowance',
-          );
-
-          // It still ends, at the timeout, rather than hanging forever.
-          async.elapse(const Duration(seconds: 30));
-          expect(completed, isTrue);
-        });
-      },
-    );
-
-    test(
-      'a pen with no room to resolve counts as stalled straight away',
-      () async {
-        // After logout or room removal the pen can never drain: no room means
-        // no lookup, so the eligible-lookup rule would never fire and
-        // teardown would poll the whole 30s deadline — on the user-visible
-        // flag-off and logout paths.
-        when(() => queue.stats()).thenAnswer(
-          (_) async => const QueueStats(
-            total: 0,
-            byProducer: {},
-            readyNow: 0,
-            oldestEnqueuedAt: null,
-          ),
-        );
-        when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
-        when(() => roomManager.currentRoom).thenReturn(null);
-        when(() => pen.size).thenReturn(2);
-
-        final coordinator = build();
-        fakeAsync((async) {
-          var completed = false;
-          withClock(Clock(() => DateTime.utc(2026).add(async.elapsed)), () {
-            unawaited(
-              coordinator
-                  .drainUntilEmpty(timeout: const Duration(seconds: 30))
-                  .then<void>((_) => completed = true),
-            );
-          });
-
-          async.elapse(const Duration(seconds: 5));
-          expect(
-            completed,
-            isTrue,
-            reason:
-                'teardown must not wait out the deadline for a pen that '
-                'has no room to drain into',
-          );
-        });
-      },
-    );
-
-    test(
-      'drainUntilEmpty stops waiting on a pen that cannot produce',
-      () async {
-        // Ciphertext whose key has not arrived is not a stranded row: it has
-        // no queue row yet and the startup bridge re-fetches it next run. Now
-        // that pen attempts are spaced in real time, the pen can no longer
-        // empty itself inside a 30s shutdown — so waiting for it would pin
-        // every teardown to the full timeout.
-        when(() => queue.stats()).thenAnswer(
-          (_) async => const QueueStats(
-            total: 0,
-            byProducer: {},
-            readyNow: 0,
-            oldestEnqueuedAt: null,
-          ),
-        );
-        when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
-        final room = MockRoom();
-        stubPenDecryption(room);
-        when(() => roomManager.currentRoom).thenReturn(room);
-        when(() => pen.size).thenReturn(3);
-        when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
-          (_) async => const PenFlushOutcome(
-            enqueued: 0,
-            stillEncrypted: 3,
-            dropped: 0,
-            lookups: 3,
-          ),
-        );
-
-        final coordinator = build();
-        // Virtual time: the loop's 200ms back-off and the 30s deadline are
-        // both real durations, so a wall-clock version of this test would
-        // idle for a second on every run and could flake on a loaded runner.
-        fakeAsync((async) {
-          var completed = false;
-          withClock(Clock(() => DateTime.utc(2026).add(async.elapsed)), () {
-            unawaited(
-              coordinator
-                  .drainUntilEmpty(timeout: const Duration(seconds: 30))
-                  .then<void>((_) => completed = true),
-            );
-          });
-
-          // Five unproductive flushes at the 200ms back-off, plus slack for
-          // the awaits between them — well short of the 30s timeout.
-          async.elapse(const Duration(seconds: 5));
-          expect(
-            completed,
-            isTrue,
-            reason:
-                'a pen that cannot produce must not hold teardown open '
-                'until the drain timeout',
-          );
-        });
-
-        verify(
-          () => logging.log(
-            any<LogDomain>(),
-            any<String>(
-              that: contains(
-                'queue.coordinator.drainUntilEmpty.penStillHolding',
-              ),
-            ),
-            subDomain: any<String>(named: 'subDomain'),
-          ),
-        ).called(1);
       },
     );
 
@@ -1964,217 +1792,11 @@ void main() {
         ).called(1);
       },
     );
-
-    test(
-      'drainUntilEmpty flushes the pen before sampling stats',
-      () async {
-        final room = MockRoom();
-        stubPenDecryption(room);
-        when(() => roomManager.currentRoom).thenReturn(room);
-        when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
-          (_) async => const PenFlushOutcome(
-            enqueued: 0,
-            stillEncrypted: 0,
-            dropped: 0,
-            lookups: 0,
-          ),
-        );
-
-        final coordinator = build();
-        await coordinator.drainUntilEmpty(
-          timeout: const Duration(milliseconds: 10),
-        );
-
-        verify(
-          () => pen.flushInto(queue: queue, room: room),
-        ).called(greaterThanOrEqualTo(1));
-      },
-    );
-
-    glados.Glados(
-      glados.any.drainScenario,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'generated drainUntilEmpty follows queue, pen, ready-at and timeout model',
-      (scenario) async {
-        final bench = _GladosBench();
-        final events = <String>[];
-        final exceptionSubDomains = <String>[];
-        var statsCalls = 0;
-        var drainCalls = 0;
-        var flushCalls = 0;
-        var readyAtCalls = 0;
-
-        when(() => bench.roomManager.currentRoomId).thenReturn(roomId);
-        when(() => bench.roomManager.currentRoom).thenReturn(
-          scenario.hasRoom ? bench.room : null,
-        );
-        when(bench.worker.drainToCompletion).thenAnswer((_) async {
-          drainCalls++;
-          if (scenario.workerThrows) {
-            throw StateError('generated drain failure');
-          }
-          return 0;
-        });
-        when(
-          () => bench.pen.flushInto(queue: bench.queue, room: bench.room),
-        ).thenAnswer((_) async {
-          flushCalls++;
-          if (scenario.penThrows) {
-            throw StateError('generated pen failure');
-          }
-          return const PenFlushOutcome(
-            enqueued: 0,
-            stillEncrypted: 0,
-            dropped: 0,
-            lookups: 0,
-          );
-        });
-        when(bench.queue.stats).thenAnswer((_) async {
-          final step = scenario.stepAt(statsCalls);
-          statsCalls++;
-          return QueueStats(
-            total: step.total,
-            byProducer: const {},
-            readyNow: step.total,
-            oldestEnqueuedAt: null,
-          );
-        });
-        when(() => bench.pen.size).thenAnswer((_) {
-          final index = statsCalls <= 0 ? 0 : statsCalls - 1;
-          return scenario.stepAt(index).penSize;
-        });
-        when(bench.queue.earliestReadyAt).thenAnswer((_) async {
-          readyAtCalls++;
-          final index = statsCalls <= 0 ? 0 : statsCalls - 1;
-          final step = scenario.stepAt(index);
-          switch (step.readyAtKind) {
-            case _GeneratedDrainReadyAtKind.none:
-              return null;
-            case _GeneratedDrainReadyAtKind.now:
-              return clock.now().millisecondsSinceEpoch;
-            case _GeneratedDrainReadyAtKind.soon:
-              return clock
-                  .now()
-                  .add(const Duration(milliseconds: 15))
-                  .millisecondsSinceEpoch;
-          }
-        });
-        when(
-          () => bench.logging.log(
-            any<LogDomain>(),
-            any<String>(),
-            subDomain: any<String>(named: 'subDomain'),
-          ),
-        ).thenAnswer((invocation) {
-          events.add(invocation.positionalArguments[1] as String);
-        });
-        when(
-          () => bench.logging.error(
-            any<LogDomain>(),
-            any<Object>(),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: any<String>(named: 'subDomain'),
-          ),
-        ).thenAnswer((invocation) async {
-          exceptionSubDomains.add(
-            invocation.namedArguments[#subDomain] as String,
-          );
-        });
-
-        final coordinator = bench.buildCoordinator();
-
-        try {
-          fakeAsync((async) {
-            var completed = false;
-            Object? error;
-            withClock(
-              Clock(
-                () => DateTime.utc(2026).add(async.elapsed),
-              ),
-              () {
-                unawaited(
-                  coordinator
-                      .drainUntilEmpty(timeout: scenario.timeout)
-                      .then<void>((_) {
-                        completed = true;
-                      })
-                      .catchError((Object e) {
-                        error = e;
-                      }),
-                );
-              },
-            );
-
-            async
-              ..flushMicrotasks()
-              ..elapse(scenario.advanceBy)
-              ..flushMicrotasks();
-
-            expect(error, isNull, reason: '$scenario');
-            expect(completed, isTrue, reason: '$scenario');
-          });
-
-          expect(statsCalls, scenario.expectedIterations, reason: '$scenario');
-          expect(drainCalls, scenario.expectedIterations, reason: '$scenario');
-          expect(
-            flushCalls,
-            scenario.hasRoom ? scenario.expectedIterations : 0,
-            reason: '$scenario',
-          );
-          if (scenario.timesOut) {
-            expect(
-              events,
-              contains(
-                contains('queue.coordinator.drainUntilEmpty.timeout'),
-              ),
-              reason: '$scenario',
-            );
-          } else {
-            expect(
-              events,
-              contains(contains('queue.coordinator.drainUntilEmpty.done')),
-              reason: '$scenario',
-            );
-          }
-          if (scenario.hasRoom && scenario.penThrows) {
-            expect(
-              exceptionSubDomains.where(
-                (subDomain) => subDomain.endsWith('.pen'),
-              ),
-              hasLength(scenario.expectedIterations),
-              reason: '$scenario',
-            );
-          }
-          if (scenario.workerThrows) {
-            expect(
-              exceptionSubDomains.where(
-                (subDomain) => subDomain.endsWith('.drain'),
-              ),
-              hasLength(scenario.expectedIterations),
-              reason: '$scenario',
-            );
-          }
-          expect(
-            readyAtCalls,
-            scenario.timesOut
-                ? 1
-                : scenario.expectedIterations == 0
-                ? 0
-                : scenario.expectedIterations - 1,
-            reason: '$scenario',
-          );
-        } finally {
-          await bench.dispose();
-        }
-      },
-      tags: 'glados',
-    );
   });
 
   group('triggerBridge with real BridgeCoordinator', () {
     test(
-      'a restart reloads the floor persisted for held ciphertext and walks '
+      'a restart reloads the durable ciphertext floor and walks '
       'behind the ahead anchor before clearing the covered floor',
       () async {
         await syncDb
@@ -2184,43 +1806,10 @@ void main() {
                 roomId: roomId,
                 lastAppliedTs: const Value(5000),
                 lastAppliedEventId: const Value(r'$ahead-anchor'),
+                resumeFloorTs: const Value(3000),
               ),
             );
 
-        final firstQueue = InboundQueue(db: syncDb, logging: logging);
-        addTearDown(firstQueue.dispose);
-        final firstPen = PendingDecryptionPen(logging: logging);
-        final firstCoordinator = QueuePipelineCoordinator(
-          syncDb: syncDb,
-          settingsDb: settingsDb,
-          journalDb: journalDb,
-          sessionManager: sessionManager,
-          roomManager: roomManager,
-          eventProcessor: processor,
-          sequenceLogService: sequenceLog,
-          activityGate: null,
-          logging: logging,
-          queueOverride: firstQueue,
-          workerOverride: worker,
-          bridgeOverride: bridge,
-          penOverride: firstPen,
-          seederOverride: seeder,
-        );
-
-        final ciphertext = MockEvent();
-        when(() => ciphertext.eventId).thenReturn(r'$held');
-        when(() => ciphertext.roomId).thenReturn(roomId);
-        when(() => ciphertext.type).thenReturn(EventTypes.Encrypted);
-        when(
-          () => ciphertext.originServerTs,
-        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(3000));
-
-        expect(firstPen.hold(ciphertext), isTrue);
-        expect(firstCoordinator.heldCiphertextCount, 1);
-
-        // Reading on the same Drift executor queues behind the fire-and-forget
-        // floor write, so this also proves the callback reached durable state
-        // before the first process is abandoned.
         final beforeRestart = await (syncDb.select(
           syncDb.queueMarkers,
         )..where((t) => t.roomId.equals(roomId))).getSingle();
@@ -2229,9 +1818,7 @@ void main() {
 
         final secondQueue = InboundQueue(db: syncDb, logging: logging);
         addTearDown(secondQueue.dispose);
-        final secondPen = PendingDecryptionPen(logging: logging);
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         when(() => roomManager.currentRoom).thenReturn(room);
 
@@ -2255,7 +1842,6 @@ void main() {
           logging: logging,
           queueOverride: secondQueue,
           workerOverride: worker,
-          penOverride: secondPen,
           seederOverride: seeder,
         );
 
@@ -2297,7 +1883,6 @@ void main() {
         addTearDown(realQueue.dispose);
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
@@ -2324,7 +1909,6 @@ void main() {
           logging: logging,
           queueOverride: realQueue,
           workerOverride: worker,
-          penOverride: pen,
           seederOverride: seeder,
         );
 
@@ -2348,7 +1932,6 @@ void main() {
         addTearDown(realQueue.dispose);
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
@@ -2372,7 +1955,6 @@ void main() {
           logging: logging,
           queueOverride: realQueue,
           workerOverride: worker,
-          penOverride: pen,
           seederOverride: seeder,
         );
 
@@ -2408,7 +1990,6 @@ void main() {
         addTearDown(realQueue.dispose);
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
@@ -2431,7 +2012,6 @@ void main() {
           logging: logging,
           queueOverride: realQueue,
           workerOverride: worker,
-          penOverride: pen,
           seederOverride: seeder,
         );
 
@@ -2484,7 +2064,6 @@ void main() {
         addTearDown(realQueue.dispose);
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final forwardTimeline = MockTimeline();
         final anchor = MockEvent();
@@ -2515,7 +2094,6 @@ void main() {
           logging: logging,
           queueOverride: realQueue,
           workerOverride: worker,
-          penOverride: pen,
           seederOverride: seeder,
         );
 
@@ -2558,7 +2136,6 @@ void main() {
         addTearDown(realQueue.dispose);
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
@@ -2581,7 +2158,6 @@ void main() {
           logging: logging,
           queueOverride: realQueue,
           workerOverride: worker,
-          penOverride: pen,
           seederOverride: seeder,
         );
 
@@ -2614,7 +2190,6 @@ void main() {
           logging: logging,
           queueOverride: realQueue,
           workerOverride: worker,
-          penOverride: pen,
           seederOverride: seeder,
         );
 
@@ -2656,7 +2231,6 @@ void main() {
           logging: logging,
           queueOverride: realQueue,
           workerOverride: worker,
-          penOverride: pen,
           seederOverride: seeder,
         );
 
@@ -2704,7 +2278,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -2758,7 +2331,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -2835,7 +2407,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -2901,7 +2472,6 @@ void main() {
             queueOverride: queue,
             workerOverride: worker,
             bridgeOverride: bridge,
-            penOverride: pen,
             seederOverride: seeder,
           );
           addTearDown(() async => coordinator.stop());
@@ -2945,7 +2515,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -3000,7 +2569,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -3050,7 +2618,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -3092,7 +2659,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -3143,7 +2709,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -3214,7 +2779,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -3271,7 +2835,6 @@ void main() {
             queueOverride: queue,
             workerOverride: worker,
             bridgeOverride: bridge,
-            penOverride: pen,
             seederOverride: seeder,
           );
           addTearDown(() async => coordinator.stop());
@@ -3322,7 +2885,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -3371,7 +2933,6 @@ void main() {
           queueOverride: queue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -3461,7 +3022,6 @@ void main() {
         queueOverride: realQueue,
         workerOverride: worker,
         bridgeOverride: bridge,
-        penOverride: pen,
         seederOverride: seeder,
       );
     }
@@ -3482,7 +3042,6 @@ void main() {
         // producing boundary-crossing, 0-accepted pages. That is the
         // "barren" shape we want to detect.
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         // `maybeStartGapRecovery` resolves the room via
         // `_resolveRoom`, which consults the room manager first and
@@ -3565,7 +3124,6 @@ void main() {
         // the SDK has no more history. That is a different stopReason
         // and must also clear the barren flag.
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final events = <Event>[buildSyncPayload(id: r'$e-prod', tsMs: 50)];
         final timeline = stubTimeline(
@@ -3607,7 +3165,6 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = stubTimeline(
           events: <Event>[],
@@ -3639,7 +3196,6 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         // Forward walk: the anchor context fetch throws, producing
         // totalPages == 0 + error == _BootstrapOutcome.errorNoProgress.
@@ -3706,7 +3262,6 @@ void main() {
         final baseTime = DateTime(2026, 4, 21, 10);
         await withClock(Clock.fixed(baseTime), () async {
           final room = MockRoom();
-          stubPenDecryption(room);
           when(() => room.id).thenReturn(roomId);
           var historyCalls = 0;
           final events = <Event>[buildSyncPayload(id: r'$e-0', tsMs: 50)];
@@ -3759,7 +3314,6 @@ void main() {
 
         // First: record the barren bridge.
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         when(() => roomManager.currentRoom).thenReturn(room);
         var historyCalls = 0;
@@ -3834,7 +3388,6 @@ void main() {
 
         // Record the barren bridge against a resolvable room.
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         when(() => roomManager.currentRoom).thenReturn(room);
         var historyCalls = 0;
@@ -3898,7 +3451,6 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         when(() => roomManager.currentRoom).thenReturn(room);
         var historyCalls = 0;
@@ -3960,7 +3512,6 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         // First page has one event (so the walk does not immediately
         // serverExhaust), the SDK still claims more history, and the
@@ -4011,7 +3562,6 @@ void main() {
 
         // Record the barren bridge so a gap signal can launch recovery.
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         when(() => roomManager.currentRoom).thenReturn(room);
         var historyCalls = 0;
@@ -4099,14 +3649,12 @@ void main() {
           queueOverride: realQueue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
 
         final forwardTimeline = MockTimeline();
@@ -4173,14 +3721,12 @@ void main() {
           queueOverride: realQueue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         final anchor = MockEvent();
@@ -4239,14 +3785,12 @@ void main() {
           queueOverride: realQueue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         // Forward-walk timeline: empty events (anchor unresolvable).
         final forwardTl = MockTimeline();
@@ -4310,7 +3854,6 @@ void main() {
           queueOverride: realQueue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -4407,14 +3950,12 @@ void main() {
           queueOverride: realQueue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final timeline = MockTimeline();
         final anchor = MockEvent();
@@ -4493,7 +4034,6 @@ void main() {
           queueOverride: realQueue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
@@ -4502,7 +4042,6 @@ void main() {
         // Phase 1 — prime the barren-bridge flag with a backward walk
         // that ends boundaryReached + 0 accepted.
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final barrenEvent = MockEvent();
         when(() => barrenEvent.eventId).thenReturn(r'$e-0');
@@ -4619,14 +4158,12 @@ void main() {
           queueOverride: realQueue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final anchor = MockEvent();
         when(() => anchor.eventId).thenReturn(r'$anchor');
@@ -4700,14 +4237,12 @@ void main() {
           queueOverride: realQueue,
           workerOverride: worker,
           bridgeOverride: bridge,
-          penOverride: pen,
           seederOverride: seeder,
         );
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
         final room = MockRoom();
-        stubPenDecryption(room);
         when(() => room.id).thenReturn(roomId);
         final e = MockEvent();
         when(() => e.eventId).thenReturn(r'$e1');
@@ -4807,13 +4342,11 @@ void main() {
             queueOverride: realQueue,
             workerOverride: worker,
             bridgeOverride: bridge,
-            penOverride: pen,
             seederOverride: seeder,
           );
           await coordinator.start();
 
           final room = MockRoom();
-          stubPenDecryption(room);
           when(() => room.id).thenReturn(roomId);
 
           // Forward-walk timeline stub shaped by the scenario outcome.
@@ -4927,10 +4460,10 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────
   // Pipeline integration coverage (merged from the dissolved
   // queue_pipeline_integration_test.dart per the one-test-file-per-source
-  // rule): real InboundQueue + worker + pen + marker writes against the
+  // rule): real InboundQueue + worker + marker writes against the
   // in-memory SyncDatabase; only the session/room/processor edges are
   // mocked.
-  group('pipeline integration (real queue/worker/pen)', () {
+  group('pipeline integration (real queue/worker)', () {
     late MockStubbableSyncEventProcessor liveProcessor;
     late SyncSequenceLogService liveSequenceLog;
     late MockRoom room;
@@ -4947,7 +4480,6 @@ void main() {
         loggingService: MockDomainLogger(),
       );
       room = MockRoom();
-      stubPenDecryption(room);
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => room.id).thenReturn(roomId);
       // Non-partial so the coordinator's _maybePostLoadCurrentRoom
@@ -4981,7 +4513,7 @@ void main() {
     );
 
     test(
-      'flag-on path: live event flows through pen -> queue -> worker -> apply',
+      'flag-on path: live event flows through queue -> worker -> apply',
       () async {
         final prepared = MockPreparedSyncEvent();
         when(
@@ -5005,7 +4537,7 @@ void main() {
         addTearDown(() => coordinator.stop(drainFirst: true));
 
         // Emit a live event. The coordinator's subscription routes it
-        // through the pen (not encrypted) -> enqueueLive -> queue row.
+        // through enqueueLive -> queue row.
         // The running worker loop wakes on the depth signal and applies.
         final event = _buildLiveSyncEvent(
           eventId: r'$live1',
@@ -5036,95 +4568,6 @@ void main() {
           syncDb.queueMarkers,
         )..where((t) => t.roomId.equals(roomId))).getSingle();
         expect(marker.lastAppliedTs, 1000);
-      },
-    );
-
-    test(
-      'encrypted-then-decrypted event eventually applies via the pen',
-      () async {
-        final prepared = MockPreparedSyncEvent();
-        when(
-          () => liveProcessor.prepare(event: any(named: 'event')),
-        ).thenAnswer((_) async => prepared);
-        final bothApplied = Completer<void>();
-        var applyCount = 0;
-        when(
-          () => liveProcessor.apply(
-            prepared: any(named: 'prepared'),
-            journalDb: journalDb,
-          ),
-        ).thenAnswer((_) async {
-          applyCount++;
-          if (applyCount == 2 && !bothApplied.isCompleted) {
-            bothApplied.complete();
-          }
-          return null;
-        });
-
-        final coordinator = buildIntegration();
-        await coordinator.start();
-        addTearDown(() => coordinator.stop(drainFirst: true));
-
-        // Build an encrypted event and a decrypted variant that the SDK
-        // returns once the Megolm session key arrives.
-        final encrypted = MockEvent();
-        final encryptedContent = <String, dynamic>{
-          'msgtype': syncMessageType,
-          'algorithm': 'm.megolm.v1.aes-sha2',
-        };
-        when(() => encrypted.eventId).thenReturn(r'$enc');
-        when(() => encrypted.roomId).thenReturn(roomId);
-        when(() => encrypted.type).thenReturn(EventTypes.Encrypted);
-        when(() => encrypted.status).thenReturn(EventStatus.synced);
-        when(() => encrypted.content).thenReturn(encryptedContent);
-        when(() => encrypted.text).thenReturn('cipher');
-        when(
-          () => encrypted.originServerTs,
-        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
-        when(encrypted.toJson).thenReturn(<String, dynamic>{
-          'event_id': r'$enc',
-          'room_id': roomId,
-          'origin_server_ts': 2000,
-          'type': EventTypes.Encrypted,
-          'sender': '@tester:example.org',
-          'content': encryptedContent,
-        });
-
-        final decrypted = _buildLiveSyncEvent(
-          eventId: r'$enc',
-          roomId: roomId,
-          originTsMs: 2000,
-        );
-        when(
-          () => room.getEventById(r'$enc'),
-        ).thenAnswer((_) async => decrypted);
-
-        // Step 1: encrypted event arrives - pen holds it, queue stays
-        // empty.
-        timelineCtl.add(encrypted);
-        final statsAfterHold = await coordinator.queue.stats();
-        expect(statsAfterHold.total, 0);
-
-        // Step 2: let the worker loop tick through its pen-flush. The
-        // loop's idleTick is 5s, so we trigger another depth-change
-        // event to wake it - any plain event routed into the queue
-        // triggers the wake.
-        final wakeEvent = _buildLiveSyncEvent(
-          eventId: r'$wake',
-          roomId: roomId,
-          originTsMs: 1500,
-        );
-        timelineCtl.add(wakeEvent);
-
-        await bothApplied.future;
-
-        // Both the wake event and the now-decrypted event applied.
-        verify(
-          () => liveProcessor.apply(
-            prepared: prepared,
-            journalDb: journalDb,
-          ),
-        ).called(2);
       },
     );
 

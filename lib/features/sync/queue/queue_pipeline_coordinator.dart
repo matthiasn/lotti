@@ -18,7 +18,6 @@ import 'package:lotti/features/sync/queue/bootstrap_sink.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
-import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/queue/queue_bootstrap_sinks.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
@@ -35,16 +34,16 @@ part 'queue_lifecycle.dart';
 
 const _logSub = 'queue.coordinator';
 
-/// Top-level owner of the queue pipeline. Wires the four collaborators
-/// — `InboundQueue`, `InboundWorker`, `BridgeCoordinator`, and
-/// `PendingDecryptionPen` — into a single start/stop lifecycle that
-/// `MatrixService` manages.
+/// Top-level owner of the queue pipeline. Wires `InboundQueue`,
+/// `InboundWorker`, and `BridgeCoordinator` into a single start/stop
+/// lifecycle that `MatrixService` manages.
 ///
 /// Responsibilities:
 /// - Subscribe the live-stream producer to the session manager's
 ///   `timelineEvents` stream.
-/// - Route encrypted events through the decryption pen so pre-decryption
-///   ciphertext never lands in `inbound_event_queue.raw_json` (F3).
+/// - Skip still-encrypted events after durably lowering the room's resume
+///   floor, so ciphertext never lands in `inbound_event_queue.raw_json` and
+///   a later key-triggered bridge revisits it (F3).
 /// - Seed `queue_markers` from the legacy `settings_db` on first start
 ///   so the queue resumes wherever the legacy pipeline stopped.
 /// - Drain stranded rows whenever the current room changes (F6).
@@ -69,7 +68,6 @@ class QueuePipelineCoordinator {
     InboundQueue? queueOverride,
     InboundWorker? workerOverride,
     BridgeCoordinator? bridgeOverride,
-    PendingDecryptionPen? penOverride,
     QueueMarkerSeeder? seederOverride,
   }) : _syncDb = syncDb,
        _settingsDb = settingsDb,
@@ -81,7 +79,6 @@ class QueuePipelineCoordinator {
              logging: logging,
              activitySignaler: activitySignaler,
            ),
-       _pen = penOverride ?? PendingDecryptionPen(logging: logging),
        _seeder =
            seederOverride ??
            QueueMarkerSeeder(
@@ -94,31 +91,6 @@ class QueuePipelineCoordinator {
          journalDb: journalDb,
          logging: logging,
        ) {
-    // Held ciphertext has no queue row, so the marker advancer cannot see it
-    // in the table. Give it the pen's floor, or a newer event applying will
-    // step the marker past ciphertext that the next startup's
-    // strictly-forward bridge then never re-fetches.
-    _queue.unqueuedFloorTs = _pen.oldestHeldOriginTs;
-
-    // ...and the durable half. The clamp above only survives while this
-    // process does; `resume_floor_ts` is what stops the next one anchoring
-    // past ciphertext this one was still holding.
-    _pen.onCiphertextHeld = (roomId, originTs) {
-      unawaited(
-        _queue.lowerResumeFloor(roomId: roomId, originTs: originTs).catchError((
-          Object error,
-          StackTrace stackTrace,
-        ) {
-          _logging.error(
-            LogDomain.sync,
-            error,
-            stackTrace: stackTrace,
-            subDomain: '$_logSub.resumeFloor',
-          );
-        }),
-      );
-    };
-
     _worker =
         workerOverride ??
         InboundWorker(
@@ -129,7 +101,6 @@ class QueuePipelineCoordinator {
           prepareBatch: _applyAdapter.bindPrepareBatch(),
           logging: _logging,
           activityGate: _activityGate,
-          decryptionPen: _pen,
         );
     _bridge =
         bridgeOverride ??
@@ -138,10 +109,6 @@ class QueuePipelineCoordinator {
           currentRoomId: () => _roomManager.currentRoomId,
           resolveRoom: _resolveRoom,
           readMarker: _readMarker,
-          onWalkCovered: (roomId) => _queue.completeResumeWalk(
-            roomId: roomId,
-            unresolvedFloorTs: _pen.oldestHeldOriginTs(roomId),
-          ),
           bootstrapRunner: _runBootstrap,
           logging: _logging,
         );
@@ -167,7 +134,6 @@ class QueuePipelineCoordinator {
   DateTime? _lastSuppressedLogAt;
   static const Duration _suppressionLogInterval = Duration(seconds: 30);
   final InboundQueue _queue;
-  final PendingDecryptionPen _pen;
   final QueueMarkerSeeder _seeder;
   final QueueApplyAdapter _applyAdapter;
   late final InboundWorker _worker;
@@ -178,7 +144,7 @@ class QueuePipelineCoordinator {
   // cancel_subscriptions lint cannot trace the cancels across the extension
   // boundary, so it is suppressed per field here.
   // ignore: cancel_subscriptions
-  StreamSubscription<Event>? _liveSub;
+  StreamSubscription<void>? _liveSub;
   // ignore: cancel_subscriptions
   StreamSubscription<SyncUpdate>? _syncSub;
   // ignore: cancel_subscriptions
@@ -266,15 +232,6 @@ class QueuePipelineCoordinator {
   /// events still in the pipe.
   bool get isBridgeInFlight => _bridge.isBridgeInFlight;
 
-  /// How many encrypted events are held awaiting their Megolm key.
-  ///
-  /// Part of "is anything still outstanding?", and invisible without this: a
-  /// penned event deliberately has no queue row, so queue depth reads zero
-  /// while the work is very much in progress. A caller that treats depth plus
-  /// bridge state as exhaustive will mistake a device waiting on a key for a
-  /// device that has stopped.
-  int get heldCiphertextCount => _pen.size;
-
   /// Callback that fires once per terminal bridge pass. Intended for
   /// the backfill request service to be nudged the moment the walk
   /// settles, so it can dispatch requests for any entries still
@@ -328,23 +285,22 @@ class QueuePipelineCoordinator {
   Future<void> start() => startImpl();
 
   /// Upper bound on how long [stop] waits for `drainFirst` to empty the
-  /// queue before tearing down anyway. Chosen so a wedged pen or a
-  /// retriable row with a long backoff can't block shutdown indefinitely
-  /// on a user-visible path (flag-off, logout), while still giving a
-  /// cold-start catch-up enough headroom to finish under normal load.
+  /// queue before tearing down anyway. A retriable row with a long backoff
+  /// must not block shutdown indefinitely on a user-visible path (flag-off,
+  /// logout), while a cold-start catch-up still needs enough headroom to
+  /// finish under normal load.
   static const Duration drainUntilEmptyTimeout = Duration(seconds: 30);
 
   /// Drains the queue until every persisted row has applied (or has
   /// been permanently skipped), or the [timeout] elapses.
   ///
-  /// Unlike [InboundWorker.drainToCompletion], this does sleep through
-  /// retry leases and pen attempts: the F7 contract of
+  /// Unlike [InboundWorker.drainToCompletion], this sleeps through retry
+  /// leases: the F7 contract of
   /// `stop(drainFirst: true)` is "don't strand rows on restart", so a
   /// single ready-at-call-time pass is not enough. Rows with a future
-  /// `nextDueAt`/`leaseUntil`, rows held by [PendingDecryptionPen], and
-  /// rows the worker is currently looping through a `noRoom` retry on
-  /// all survive a single `drainToCompletion()` — this loop closes that
-  /// gap by flushing the pen, sleeping until the next ready timestamp,
+  /// `nextDueAt`/`leaseUntil` and rows the worker is currently looping
+  /// through a `noRoom` retry on survive a single `drainToCompletion()` —
+  /// this loop closes that gap by sleeping until the next ready timestamp
   /// and re-peeking until the queue is empty or time runs out.
   Future<void> drainUntilEmpty({Duration? timeout}) =>
       drainUntilEmptyImpl(timeout: timeout);
@@ -367,7 +323,7 @@ class QueuePipelineCoordinator {
   Future<void> stop({bool drainFirst = false}) =>
       stopImpl(drainFirst: drainFirst);
 
-  void _handleLiveEvent(Event event) {
+  Future<void> _handleLiveEvent(Event event) async {
     final currentRoomId = _roomManager.currentRoomId;
     if (currentRoomId == null || event.roomId != currentRoomId) return;
     // Pre-sync fake-sync suppression. `Room.sendEvent` in matrix-sdk
@@ -422,12 +378,32 @@ class QueuePipelineCoordinator {
     // in-band equivalent of the legacy `AttachmentIngestor.process`
     // hook, and companion sync-payload events get stuck in
     // `pendingAttachment` forever.
-    _trackEnqueue(_processAttachment(event));
-    // F3: encrypted events live in the pen until decryption completes;
-    // the worker's decryptionPen flush on every drain iteration picks
-    // them up as soon as the SDK has the session key.
-    if (_pen.hold(event)) return;
-    _trackEnqueue(_safeEnqueue(event));
+    await _processAttachment(event);
+    if (_roomManager.currentRoomId != currentRoomId) return;
+    if (event.type == EventTypes.Encrypted) {
+      // The Matrix SDK retains encrypted timeline events and retries them when
+      // a Megolm key arrives. Persist the gap before processing a later event
+      // so a bridge can safely revisit this ciphertext without storing its
+      // lossy pre-decryption JSON in the queue.
+      await _queue.lowerResumeFloor(
+        roomId: currentRoomId,
+        originTs: event.originServerTs.millisecondsSinceEpoch,
+      );
+      _logging.log(
+        LogDomain.sync,
+        'queue.coordinator.ciphertextSkipped '
+        'roomId=$currentRoomId eventId=${event.eventId}',
+        subDomain: '$_logSub.resumeFloor',
+      );
+      return;
+    }
+    await _safeEnqueue(event);
+  }
+
+  Future<void> _handleTrackedLiveEvent(Event event) {
+    final future = _handleLiveEvent(event);
+    _trackEnqueue(future);
+    return future;
   }
 
   /// Fire-and-forget ingestor hook. No-op when either the ingestor
@@ -595,7 +571,14 @@ class QueuePipelineCoordinator {
 
   void _trackEnqueue(Future<void> future) {
     _inFlightEnqueues.add(future);
-    future.whenComplete(() => _inFlightEnqueues.remove(future));
+    unawaited(
+      future.then<void>(
+        (_) => _inFlightEnqueues.remove(future),
+        onError: (Object _, StackTrace _) {
+          _inFlightEnqueues.remove(future);
+        },
+      ),
+    );
   }
 
   Future<Room?> _resolveRoom() async {

@@ -6,7 +6,7 @@ Integration tests verify end-to-end functionality that cannot be adequately test
 
 ### 1. Matrix Sync Tests (`matrix_service_test.dart`)
 
-This suite contains three tests:
+This suite contains four tests:
 
 **`Create room & join (sync v2)`** — the baseline two-device flow:
 - Two-device sync flow with real Matrix homeserver (Dendrite)
@@ -15,6 +15,15 @@ This suite contains three tests:
 - Bidirectional message exchange (100 messages each direction, or 10 in slow network mode)
 - Self-event suppression (devices don't re-apply their own messages)
 - Message persistence to local database
+
+**`Late Megolm key survives Bob restart and clears the durable floor`** —
+Alice deliberately withholds a Megolm session from Bob, sends through the
+production outbox, and verifies that Bob records a durable resume floor without
+applying ciphertext. Bob is fully restarted on the same Matrix SDK, journal,
+settings, and sync databases, and a startup bridge proves the unresolved floor
+is retained. Alice then sends the real encrypted room key after Bob becomes
+eligible again. The restarted production queue must recover the event exactly
+once through its one-shot bootstrap re-decryption and clear the floor.
 
 **`Large-volume convergence: Bob catches up 1000 messages after cold restart`**
 (250 in slow network mode, 30-minute test timeout with a 15-minute internal

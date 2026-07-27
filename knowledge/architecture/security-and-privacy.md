@@ -120,9 +120,12 @@ flowchart LR
 
 The homeserver relays ciphertext it cannot read. Device trust is established
 through Matrix key verification (`key_verification_runner.dart`), and events
-that arrive before their session key does are parked in the
-**pending-decryption pen** rather than dropped, so a late key still yields the
-message instead of a permanent hole.
+that arrive before their session key lower a durable receive-floor timestamp
+before being skipped. The Matrix SDK retains the ciphertext; late key traffic
+then triggers a catch-up walk back to that floor, including across app restart.
+Because SDK pagination may return a cached encrypted event even after storing
+the key, the bootstrap sink makes one fresh SDK decryption attempt on each
+revisit before deciding that the event remains unresolved.
 
 # AI inference
 
@@ -159,5 +162,5 @@ export, not a tap.
 | Keystore wrapper | [`lib/features/sync/secure_storage.dart`](../../lib/features/sync/secure_storage.dart) |
 | Matrix client creation | [`lib/features/sync/matrix/client.dart`](../../lib/features/sync/matrix/client.dart) |
 | Key verification | [`lib/features/sync/matrix/key_verification_runner.dart`](../../lib/features/sync/matrix/key_verification_runner.dart) |
-| Late-key handling | [`lib/features/sync/queue/pending_decryption_pen.dart`](../../lib/features/sync/queue/pending_decryption_pen.dart) |
+| Late-key handling | [`lib/features/sync/queue/bootstrap_sink.dart`](../../lib/features/sync/queue/bootstrap_sink.dart), [`lib/features/sync/queue/bridge_coordinator.dart`](../../lib/features/sync/queue/bridge_coordinator.dart) |
 | Published policy | [`PRIVACY.md`](../../PRIVACY.md) |
