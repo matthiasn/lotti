@@ -245,17 +245,35 @@ class DayAgentCaptureService {
   /// This is the restart-safe manual continuation path used by Activity: the
   /// capture remains the durable user intent even if the process died. A
   /// still-queued/running parse job attaches; a stuck or terminal one is
-  /// re-armed by [DayProcessingOutboxRepository.enqueueParseCapture].
+  /// re-armed by [DayProcessingOutboxRepository.enqueueParseCapture]. A
+  /// successful explicit-empty parse is complete too, so it is recognized by
+  /// the capture's durable `parseCompletedAt` marker rather than re-running
+  /// inference whenever Activity reopens it.
   Future<bool> retryCapture(String captureId) async {
     final entity = await agentRepository.getEntity(captureId);
     if (entity is! CaptureEntity || entity.deletedAt != null) return false;
-    if ((await parsedItemsForCapture(captureId)).isNotEmpty) return true;
+    if (entity.parseCompletedAt != null ||
+        (await parsedItemsForCapture(captureId)).isNotEmpty) {
+      return true;
+    }
     await outbox.enqueueParseCapture(
       dayId: captureDayId(entity),
       captureId: entity.id,
     );
     nudgeProcessing?.call();
     return true;
+  }
+
+  /// Whether [captureId] has a successful persisted parse, including an
+  /// explicit empty result.
+  ///
+  /// Existing parsed items remain a compatibility signal for captures written
+  /// before `parseCompletedAt` existed.
+  Future<bool> hasCompletedCaptureParse(String captureId) async {
+    final capture = await getCapture(captureId);
+    if (capture == null || capture.deletedAt != null) return false;
+    if (capture.parseCompletedAt != null) return true;
+    return (await parsedItemsForCapture(captureId)).isNotEmpty;
   }
 
   /// Fetch parsed items linked to [captureId], oldest first.
@@ -348,6 +366,7 @@ class DayAgentCaptureService {
 
     await syncService.runInTransaction(() async {
       await _softDeleteExistingParsedItems(captureId, now);
+      await syncService.upsertEntity(capture.copyWith(parseCompletedAt: now));
       for (final parsedItem in parsedItems) {
         await syncService.upsertEntity(parsedItem);
         await syncService.upsertLink(

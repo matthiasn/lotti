@@ -42,7 +42,8 @@ through the workflow handler:
 identity's category allow-list** — the planner cannot close, re-date, or create
 tasks outside its configured categories.
 
-`submit_capture` persists a `CaptureEntity` and enqueues a manual wake with a
+`submit_capture` persists a `CaptureEntity` and enqueues a durable
+`parseCapture` outbox job. Its executor later starts the agent wake with a
 `capture_submitted:<captureId>` trigger token. **The caller supplies the selected
 planning day independently of the recording timestamp**, so reusing a retained
 check-in from a past or future Day Activity view cannot enqueue work into the
@@ -75,7 +76,11 @@ and six of seven were that same capture.
 An empty parse is not a no-op. `persistParsedItems` replaces a capture's items
 wholesale, so it clears an earlier parse rather than leaving a stale queue in
 the reconcile panel — which is what makes "nothing here" a correction the model
-can actually make.
+can actually make. It also writes `CaptureEntity.parseCompletedAt`, the durable
+completion signal shared by the workflow, the outbox executor, and Activity's
+retry path. Without that marker a successful empty result is indistinguishable
+from an unparsed capture after restart and reopening Activity spends another
+inference run. Legacy captures with parsed-item links still count as complete.
 
 ## Three guards worth stating precisely
 

@@ -51,7 +51,7 @@ class DayAgentJobExecutor {
     required this.pendingDiffCreatedSince,
     required this.pendingDiffForRuns,
     required this.recordRunKey,
-    required this.hasParsedItems,
+    required this.hasCompletedCaptureParse,
     required this.hasPendingDraftWork,
     this.wakeTimeout = const Duration(minutes: 3),
     this.maxAttempts = 5,
@@ -99,8 +99,9 @@ class DayAgentJobExecutor {
   /// so a post-crash re-claim can still recognize the wake's artifact.
   final Future<void> Function(String jobId, String runKey) recordRunKey;
 
-  /// Whether the given capture already has parsed items.
-  final Future<bool> Function(String captureId) hasParsedItems;
+  /// Whether the given capture has a successful persisted parse, including an
+  /// explicit empty result.
+  final Future<bool> Function(String captureId) hasCompletedCaptureParse;
 
   /// Whether the day still has a draft job in the outbox that can produce a
   /// plan (queued, running, or waiting for network). Used by refine jobs
@@ -239,7 +240,7 @@ class DayAgentJobExecutor {
   }) async {
     switch (job.payload) {
       case ParseCapturePayload(:final captureId):
-        if (await hasParsedItems(captureId)) {
+        if (await hasCompletedCaptureParse(captureId)) {
           return const DayAgentJobSucceeded();
         }
         return null;

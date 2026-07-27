@@ -412,6 +412,31 @@ void main() {
       expect(nudgeCount, 0);
     });
 
+    test('retryCapture preserves a completed empty parse', () async {
+      final capture =
+          AgentDomainEntity.capture(
+                id: 'capture-empty',
+                agentId: _agentId,
+                transcript: 'Nothing much on today.',
+                capturedAt: DateTime(2026, 5, 25, 8, 45),
+                createdAt: _now,
+                vectorClock: null,
+                dayId: 'dayplan-2026-05-25',
+                parseCompletedAt: DateTime(2026, 5, 25, 8, 46),
+              )
+              as CaptureEntity;
+      agentEntities[capture.id] = capture;
+
+      expect(await createService().retryCapture(capture.id), isTrue);
+      verifyNever(
+        () => outbox.enqueueParseCapture(
+          dayId: any(named: 'dayId'),
+          captureId: any(named: 'captureId'),
+        ),
+      );
+      expect(nudgeCount, 0);
+    });
+
     test(
       'parsedItemsForCapture returns linked items in created order',
       () async {
@@ -2633,18 +2658,24 @@ void main() {
                 as CaptureEntity;
         agentEntities[capture.id] = capture;
 
-        final result = await createService().executeTool(
-          agentId: _agentId,
-          threadId: _threadId,
-          runKey: _runKey,
-          toolName: DayAgentToolNames.parseCaptureToItems,
-          args: const {'captureId': 'capture-1', 'items': <dynamic>[]},
-        );
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.parseCaptureToItems,
+            args: const {'captureId': 'capture-1', 'items': <dynamic>[]},
+          );
+        });
 
         expect(result.success, isTrue);
         final output = jsonDecode(result.output) as Map<String, dynamic>;
         expect(output['captureId'], 'capture-1');
         expect(output['items'], isEmpty);
+        expect(
+          (agentEntities[capture.id]! as CaptureEntity).parseCompletedAt,
+          _now,
+        );
       },
     );
 

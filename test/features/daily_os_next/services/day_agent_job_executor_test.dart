@@ -87,7 +87,7 @@ void main() {
     Future<String?> Function(String agentId, String dayId, Set<String> runKeys)?
     pendingDiffForRuns,
     Future<void> Function(String jobId, String runKey)? recordRunKey,
-    Future<bool> Function(String captureId)? hasParsedItems,
+    Future<bool> Function(String captureId)? hasCompletedCaptureParse,
     Future<bool> Function(String dayId)? hasPendingDraftWork,
     Duration wakeTimeout = const Duration(seconds: 1),
     int maxAttempts = 5,
@@ -99,7 +99,7 @@ void main() {
     pendingDiffCreatedSince: pendingDiffCreatedSince ?? (_, _, _) async => null,
     pendingDiffForRuns: pendingDiffForRuns ?? (_, _, _) async => null,
     recordRunKey: recordRunKey ?? (_, _) async {},
-    hasParsedItems: hasParsedItems ?? (_) async => false,
+    hasCompletedCaptureParse: hasCompletedCaptureParse ?? (_) async => false,
     hasPendingDraftWork: hasPendingDraftWork ?? (_) async => false,
     wakeTimeout: wakeTimeout,
     maxAttempts: maxAttempts,
@@ -107,11 +107,11 @@ void main() {
 
   group('artifact pre-check (idempotency)', () {
     test(
-      'parseCapture short-circuits when parsed items already exist',
+      'parseCapture short-circuits when a completed parse already exists',
       () async {
         var wakeEnqueued = false;
         final executor = buildExecutor(
-          hasParsedItems: (captureId) async => captureId == 'cap-1',
+          hasCompletedCaptureParse: (captureId) async => captureId == 'cap-1',
           enqueueWake: (request) {
             wakeEnqueued = true;
             return 'run-key';
@@ -378,7 +378,7 @@ void main() {
           return 'run-key';
         },
         runCompletions: completions.stream,
-        hasParsedItems: (_) async => false,
+        hasCompletedCaptureParse: (_) async => false,
       );
       unawaited(
         Future<void>.delayed(Duration.zero, () {
@@ -431,7 +431,7 @@ void main() {
       addTearDown(completions.close);
       final executor = buildExecutor(
         runCompletions: completions.stream,
-        hasParsedItems: (_) async => false,
+        hasCompletedCaptureParse: (_) async => false,
       );
       unawaited(
         Future<void>.delayed(Duration.zero, () {
@@ -463,7 +463,7 @@ void main() {
       addTearDown(completions.close);
       final executor = buildExecutor(
         runCompletions: completions.stream,
-        hasParsedItems: (_) async => false,
+        hasCompletedCaptureParse: (_) async => false,
         maxAttempts: 3,
       );
       unawaited(

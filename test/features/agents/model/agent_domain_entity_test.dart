@@ -641,7 +641,8 @@ void main() {
     });
 
     group('Daily OS capture variants', () {
-      test('CaptureEntity roundtrips all fields incl. dayId', () {
+      test('CaptureEntity roundtrips all fields incl. parse completion', () {
+        final parseCompletedAt = DateTime(2026, 5, 25, 8, 31);
         final original = AgentDomainEntity.capture(
           id: 'capture-001',
           agentId: 'day-agent-001',
@@ -651,6 +652,7 @@ void main() {
           vectorClock: vectorClock,
           dayId: 'dayplan-2026-05-25',
           audioRef: 'audio-001',
+          parseCompletedAt: parseCompletedAt,
         );
 
         final roundtripped = roundtrip(original);
@@ -658,6 +660,7 @@ void main() {
         expect(roundtripped, equals(original));
         expect(roundtripped, isA<CaptureEntity>());
         expect((roundtripped as CaptureEntity).dayId, 'dayplan-2026-05-25');
+        expect(roundtripped.parseCompletedAt, parseCompletedAt);
         expect(roundtripped.toJson()['runtimeType'], equals('capture'));
       });
 
@@ -677,6 +680,7 @@ void main() {
         final decoded = AgentDomainEntity.fromJson(legacyJson) as CaptureEntity;
 
         expect(decoded.dayId, isEmpty);
+        expect(decoded.parseCompletedAt, isNull);
         expect(decoded.transcript, 'old capture');
       });
 
