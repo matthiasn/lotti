@@ -7040,18 +7040,47 @@ class AppLocalizationsCs extends AppLocalizations {
   String get maintenanceReSyncAgentEntities => 'Entity agentů';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Vazby agentů';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Tvoje ostatní zařízení je obdrží, jakmile se synchronizace dožene.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Zprávy zařazeny do fronty';
+
+  @override
+  String get maintenanceReSyncCustom => 'Vlastní';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Znovu synchronizovat zprávy ze serveru';
+      'Zařadit zprávy do fronty pro ostatní zařízení';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Typy entit';
 
   @override
+  String get maintenanceReSyncEverything => 'Vše';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Zprávy se nepodařilo zařadit do fronty. Zkus to znovu.';
+
+  @override
+  String get maintenanceReSyncInvalidRange => 'Začátek musí být před koncem';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Záznamy v deníku';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Posledních 30 dní';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Vyber alespoň jeden typ entity';
+
+  @override
+  String get maintenanceReSyncSending => 'Připravuji zprávy';
 
   @override
   String get maintenanceReSyncStart => 'Spustit';
@@ -9975,6 +10004,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tento párovací kód odemyká tvůj synchronizační účet – nech ho naskenovat jen svým vlastním novým zařízením a nikdy ho nefoť ani neposílej.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Odeslat zprávy';
+
+  @override
   String get syncAddDeviceSendSettings => 'Odeslat nastavení';
 
   @override
@@ -10187,7 +10219,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Na svém druhém zařízení zvol v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení. Tvé kategorie, návyky, přehledy a nastavení AI dorazí sem.';
+      'Na svém druhém zařízení zvol v obrazovce Přidat zařízení, kterou máš ještě otevřenou, Odeslat nastavení a potom Odeslat zprávy. Tvé kategorie, návyky, přehledy, nastavení AI a historie zpráv dorazí sem.';
 
   @override
   String get syncPairedSettingsStepFallback =>

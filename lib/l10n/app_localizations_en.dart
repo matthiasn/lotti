@@ -6901,17 +6901,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenanceReSyncAgentEntities => 'Agent entities';
 
   @override
-  String get maintenanceReSyncDescription => 'Re-sync messages from server';
+  String get maintenanceReSyncAgentLinks => 'Agent links';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Your other devices will receive them as sync catches up.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Messages queued';
+
+  @override
+  String get maintenanceReSyncCustom => 'Custom';
+
+  @override
+  String get maintenanceReSyncDescription =>
+      'Queue messages for your other devices';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Entity types';
 
   @override
+  String get maintenanceReSyncEverything => 'Everything';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Messages could not be queued. Try again.';
+
+  @override
+  String get maintenanceReSyncInvalidRange => 'Start must be before end';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Journal entities';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Last 30 days';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Select at least one entity type';
+
+  @override
+  String get maintenanceReSyncSending => 'Preparing messages';
 
   @override
   String get maintenanceReSyncStart => 'Start';
@@ -9777,6 +9807,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'This pairing code unlocks your sync account — let only your own new device scan it, and never screenshot or send it.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Send messages';
+
+  @override
   String get syncAddDeviceSendSettings => 'Send settings';
 
   @override
@@ -9979,7 +10012,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'On your other device, in the Add device screen you still have open, choose Send settings. Your categories, habits, dashboards and AI settings arrive here.';
+      'On your other device, in the Add device screen you still have open, choose Send settings, then Send messages. Your categories, habits, dashboards, AI settings and message history arrive here.';
 
   @override
   String get syncPairedSettingsStepFallback =>

@@ -113,6 +113,8 @@ stateDiagram-v2
     PollFailed --> ShowingCode: Retry
     ShowingCode --> SendingSettings: Send settings (opens SyncModal)
     Joined --> SendingSettings: Send settings (opens SyncModal)
+    ShowingCode --> SendingMessages: Send messages (opens ReSyncModal)
+    Joined --> SendingMessages: Send messages (opens ReSyncModal)
   }
   state "New device" as New {
     [*] --> Scanning: mobile opens the camera
@@ -171,12 +173,13 @@ Four properties are deliberate:
   tracked separately in lotti3-ujm.
 - **The waiting latch, the hand-off gate and the hand-off's emphasis are three
   separate questions.** `_observeRoster` latches "a new device joined" on a
-  device id absent when the sheet opened. Whether *Send settings* is *enabled*
-  is `AddDeviceActionBar.hasPeer` — does the account hold any session other
-  than this one — because the joining device tells the user to come back and
-  press it, by which time the sheet has usually been closed and reopened, and
-  gating on the delta left the button permanently dead in exactly that case.
-  The **accent** follows enablement too, and deliberately so: the design
+  device id absent when the sheet opened. Whether *Send settings* and *Send
+  messages* are *enabled* is `AddDeviceActionBar.hasPeer` — does the account
+  hold any session other than this one — because the joining device tells the
+  user to come back and press them, by which time the sheet has usually been
+  closed and reopened, and gating on the delta left the actions permanently
+  dead in exactly that case. The **accent** on *Send settings* follows
+  enablement too, and deliberately so: the design
   system paints an enabled `secondary` button with the same token it paints a
   *disabled* filled one, so a quiet-but-live control read as inert. It is
   `outlined` while it cannot be pressed and `primary` the moment it can, with
@@ -207,14 +210,19 @@ peer demonstrably exists; that is the state `_PairedView` serves, with its two
 outstanding steps. Collapsing them told a first device to wait on a device that
 did not exist.
 
-Pairing does **not** bring data across. Config entities (categories, habits,
-dashboards, measurables, AI settings) only arrive when an existing device runs
-the entity push (`ui/sync_modal.dart`), which is why *Send settings* lives in
-the add-device sheet's sticky action bar — pinned there because the QR pushes
-everything else below the fold — and why `_PairedView` names it as an
-outstanding step. Entries that predate the join are not gap-detected either — a
-counter from a never-seen host is recorded without becoming a gap (see
-[sequence and backfill](sequence-and-backfill.md)).
+Pairing does **not** bring data across by itself. Config entities (categories,
+habits, dashboards, measurables, AI settings) only arrive when an existing
+device runs the entity push (`ui/sync_modal.dart`). Entries that predate the
+join are not gap-detected either — a counter from a never-seen host is recorded
+without becoming a gap (see
+[sequence and backfill](sequence-and-backfill.md)). The inviting device
+therefore exposes both follow-up transfers in the sticky action bar: *Send
+settings* opens `SyncModal`, while *Send messages* opens `ReSyncModal` and
+re-enqueues that device's local history. The latter defaults to *Everything*,
+with *Last 30 days* and a validated custom interval available, and reports the
+journal, agent-entity and agent-link enqueue phases before confirming that the
+messages are queued. The paired screen names both transfers because the new
+device cannot send history it does not yet have.
 
 Both halves of the flow use one wayfinding component — a quiet
 `SyncPairStepIndicator` eyebrow above a subtitle-rank imperative — because the

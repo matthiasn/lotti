@@ -47,6 +47,9 @@ void main() {
           start: any(named: 'start'),
           end: any(named: 'end'),
           agentRepository: any(named: 'agentRepository'),
+          includeJournalEntities: any(named: 'includeJournalEntities'),
+          includeAgentEntities: any(named: 'includeAgentEntities'),
+          onProgress: any(named: 'onProgress'),
         ),
       ).thenAnswer((_) async {});
       when(
@@ -172,7 +175,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Re-sync entries'), findsOneWidget);
+      expect(find.text(context.messages.maintenanceReSync), findsWidgets);
     });
 
     testWidgets('populate sequence log card opens modal', (tester) async {
@@ -320,6 +323,9 @@ void main() {
           start: any(named: 'start'),
           end: any(named: 'end'),
           agentRepository: any(named: 'agentRepository'),
+          includeJournalEntities: any(named: 'includeJournalEntities'),
+          includeAgentEntities: any(named: 'includeAgentEntities'),
+          onProgress: any(named: 'onProgress'),
         ),
       ).thenAnswer((_) async {});
       when(() => mockMaintenance.deleteSyncDb()).thenAnswer((_) async {});

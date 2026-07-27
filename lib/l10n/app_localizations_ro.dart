@@ -7072,18 +7072,48 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenanceReSyncAgentEntities => 'Entități agent';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Legături între agenți';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Celelalte dispozitive ale dvs. le vor primi când sincronizarea ajunge la zi.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Mesaje adăugate în coadă';
+
+  @override
+  String get maintenanceReSyncCustom => 'Personalizat';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Resincronizează mesajele de pe server';
+      'Puneți mesajele în coadă pentru celelalte dispozitive';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Tipuri de entități';
 
   @override
+  String get maintenanceReSyncEverything => 'Totul';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Mesajele nu au putut fi adăugate în coadă. Încercați din nou.';
+
+  @override
+  String get maintenanceReSyncInvalidRange =>
+      'Începutul trebuie să fie înaintea sfârșitului';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Intrări jurnal';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Ultimele 30 de zile';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Selectați cel puțin un tip de entitate';
+
+  @override
+  String get maintenanceReSyncSending => 'Se pregătesc mesajele';
 
   @override
   String get maintenanceReSyncStart => 'Porniți';
@@ -10027,6 +10057,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acest cod de asociere deblochează contul dvs. de sincronizare – lăsați-l scanat doar de propriul dispozitiv nou și nu îl fotografiați și nu îl trimiteți niciodată.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Trimiteți mesajele';
+
+  @override
   String get syncAddDeviceSendSettings => 'Trimiteți setările';
 
   @override
@@ -10244,7 +10277,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările. Categoriile, obiceiurile, panourile și setările AI ajung aici.';
+      'Pe celălalt dispozitiv, în ecranul Adăugați dispozitiv rămas deschis, alegeți Trimiteți setările, apoi Trimiteți mesajele. Categoriile, obiceiurile, panourile, setările AI și istoricul mesajelor ajung aici.';
 
   @override
   String get syncPairedSettingsStepFallback =>

@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
+import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_callout.dart';
@@ -43,14 +44,6 @@ const double kAddDeviceWideCard = 420;
 /// label, and the joining device's manual screen names that label, so it must
 /// not ellipsise.
 const double kAddDeviceDetailsMin = 250;
-
-/// Bottom inset for this sheet specifically.
-///
-/// [WoltModalConfig.stickyActionBarClearance] assumes a bar of padding plus one
-/// large button. This one also carries a lead-in and a live status line, and
-/// its fallback pair wraps to two runs at phone width — reserving the shared
-/// constant sliced a control in half at rest.
-const double kAddDeviceBarClearance = 200;
 
 /// What the inviting sheet is waiting on, shared between the scroll body and
 /// the pinned bar. The bar is built outside the view's `State`, and the live
@@ -83,7 +76,11 @@ class AddDeviceModal {
       // Clears the sticky bar, which would otherwise cover the last block.
       padding:
           WoltModalConfig.pagePadding +
-          const EdgeInsets.only(bottom: kAddDeviceBarClearance),
+          EdgeInsets.only(
+            bottom:
+                context.designTokens.spacing.step13 +
+                context.designTokens.spacing.step10,
+          ),
       stickyActionBarBuilder: (_) => AddDeviceActionBar(signal: joinState),
       builder: (_) => AddDeviceView(signal: joinState),
     ).whenComplete(joinState.dispose);
@@ -103,6 +100,7 @@ class AddDeviceActionBar extends ConsumerWidget {
   const AddDeviceActionBar({
     required this.signal,
     super.key,
+    this.onSendMessages,
     this.onSendSettings,
   });
 
@@ -112,6 +110,10 @@ class AddDeviceActionBar extends ConsumerWidget {
 
   /// Test seam for the settings hand-off; defaults to opening [SyncModal].
   final Future<void> Function(BuildContext context)? onSendSettings;
+
+  /// Test seam for the message-history hand-off; defaults to opening
+  /// [ReSyncModal].
+  final Future<void> Function(BuildContext context)? onSendMessages;
 
   /// Whether the account has a session other than this one.
   ///
@@ -183,6 +185,20 @@ class AddDeviceActionBar extends ConsumerWidget {
                 onPressed: enabled
                     ? () => unawaited(
                         (onSendSettings ?? SyncModal.show)(context),
+                      )
+                    : null,
+              ),
+              SizedBox(height: tokens.spacing.step3),
+              DesignSystemButton(
+                key: const Key('add_device_send_messages'),
+                label: messages.syncAddDeviceSendMessages,
+                variant: DesignSystemButtonVariant.outlined,
+                size: DesignSystemButtonSize.large,
+                leadingIcon: Icons.history_rounded,
+                fullWidth: true,
+                onPressed: enabled
+                    ? () => unawaited(
+                        (onSendMessages ?? ReSyncModal.show)(context),
                       )
                     : null,
               ),

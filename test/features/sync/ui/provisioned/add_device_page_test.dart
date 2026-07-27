@@ -645,6 +645,7 @@ void main() {
     Future<void> pumpBar(
       WidgetTester tester, {
       required List<SyncDeviceInfo> devices,
+      Future<void> Function(BuildContext)? onSendMessages,
       Future<void> Function(BuildContext)? onSendSettings,
       AddDeviceJoinState state = AddDeviceJoinState.waiting,
     }) async {
@@ -654,6 +655,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           AddDeviceActionBar(
             signal: signal,
+            onSendMessages: onSendMessages ?? (_) async {},
             onSendSettings: onSendSettings ?? (_) async {},
           ),
           overrides: overrides(calls: _Calls(), devices: devices),
@@ -672,6 +674,14 @@ void main() {
         find.byKey(const Key('add_device_send_settings')),
       );
       expect(button.onPressed, isNull);
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('add_device_send_messages')),
+            )
+            .onPressed,
+        isNull,
+      );
       expect(
         find.byKey(const Key('add_device_send_settings_pending')),
         findsOneWidget,
@@ -826,6 +836,17 @@ void main() {
       expect(button.onPressed, isNotNull);
     });
 
+    testWidgets('offers message history beside settings once a peer exists', (
+      tester,
+    ) async {
+      await pumpBar(tester, devices: [...existing, newPhone]);
+
+      final sendMessages = tester.widget<DesignSystemButton>(
+        find.byKey(const Key('add_device_send_messages')),
+      );
+      expect(sendMessages.onPressed, isNotNull);
+    });
+
     testWidgets('runs the hand-off when pressed', (tester) async {
       var handOffs = 0;
       await pumpBar(
@@ -838,6 +859,20 @@ void main() {
       await tester.pump();
 
       expect(handOffs, 1);
+    });
+
+    testWidgets('opens message history when pressed', (tester) async {
+      var messageHandOffs = 0;
+      await pumpBar(
+        tester,
+        devices: [...existing, newPhone],
+        onSendMessages: (_) async => messageHandOffs++,
+      );
+
+      await tester.tap(find.byKey(const Key('add_device_send_messages')));
+      await tester.pump();
+
+      expect(messageHandOffs, 1);
     });
 
     test('hasPeer ignores this device and an unresolved roster', () {

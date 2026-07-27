@@ -39,8 +39,11 @@ merge of two users' work.
   text, so it is treated as a credential throughout: let your own new device
   scan it, but never keep a screenshot or send it through chat or email. The
   joining device opens straight into the camera, with manual entry as the
-  fallback, and finishes on a screen naming the two things still outstanding:
-  the emoji ceremony, and the settings push that only the other device can send.
+  fallback, and finishes on a screen naming what is still outstanding: the
+  emoji ceremony, plus the settings and message-history pushes that only the
+  other device can send. Both transfers stay beside the pairing code: message
+  history defaults to everything, with 30-day and custom ranges available, and
+  shows progress until the messages are queued.
 - **Gives both devices something a person can actually compare.** Before
   anything is configured, the joining device shows which account it is about to
   join and a six-character check code that the inviting device derives

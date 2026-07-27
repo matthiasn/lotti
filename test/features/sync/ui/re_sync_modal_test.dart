@@ -1,7 +1,12 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
@@ -19,6 +24,31 @@ void main() {
   late MockMaintenance mockMaintenance;
   late MockAgentRepository mockAgentRepository;
 
+  Future<void> pumpModal(WidgetTester tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const ReSyncModalContent(),
+        overrides: [
+          maintenanceProvider.overrideWithValue(mockMaintenance),
+          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+        ],
+      ),
+    );
+    await tester.pump();
+  }
+
+  Future<void> selectPreset(
+    WidgetTester tester,
+    ReSyncRangePreset preset,
+  ) async {
+    tester
+        .widget<DsSegmentedToggle<ReSyncRangePreset>>(
+          find.byType(DsSegmentedToggle<ReSyncRangePreset>),
+        )
+        .onChanged(preset);
+    await tester.pump();
+  }
+
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
@@ -31,45 +61,42 @@ void main() {
         agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
       ),
     ).thenAnswer((_) async {});
   });
 
-  testWidgets('starts re-sync with selected interval', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const ReSyncModalContent(),
-        overrides: [
-          maintenanceProvider.overrideWithValue(mockMaintenance),
-          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
-        ],
-      ),
-    );
+  testWidgets('defaults to Everything and hides custom date fields', (
+    tester,
+  ) async {
+    await pumpModal(tester);
 
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Everything'), findsWidgets);
+    expect(find.text('Last 30 days'), findsWidgets);
+    expect(find.text('Custom'), findsWidgets);
+    expect(find.byType(DateTimeField), findsNothing);
+  });
 
-    final dateFieldFinder = find.byType(DateTimeField);
-    final fields = dateFieldFinder.evaluate().map(
-      (element) => element.widget as DateTimeField,
-    );
-    final start = DateTime(2024, 1, 1, 8, 0);
+  testWidgets('starts re-sync with the selected custom interval', (
+    tester,
+  ) async {
+    await pumpModal(tester);
+    await selectPreset(tester, ReSyncRangePreset.custom);
+
+    final fields = find
+        .byType(DateTimeField)
+        .evaluate()
+        .map((element) => element.widget as DateTimeField)
+        .toList();
+    final start = DateTime(2024, 1, 1, 8);
     final end = DateTime(2024, 1, 2, 18, 30);
 
     fields.first.setDateTime(start);
     fields.last.setDateTime(end);
-
     await tester.pump();
 
-    final startButtonFinder = find.widgetWithText(
-      DesignSystemButton,
-      'Start',
-    );
-    expect(startButtonFinder, findsOneWidget);
-
-    await tester.tap(startButtonFinder);
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
 
     verify(
       () => mockMaintenance.reSyncInterval(
@@ -78,38 +105,163 @@ void main() {
         agentRepository: mockAgentRepository,
         includeJournalEntities: true,
         includeAgentEntities: true,
+        onProgress: any(named: 'onProgress'),
       ),
     ).called(1);
   });
 
-  testWidgets(
-    'unchecking agent entities passes includeAgentEntities=false',
-    (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ReSyncModalContent(),
-          overrides: [
-            maintenanceProvider.overrideWithValue(mockMaintenance),
-            agentRepositoryProvider.overrideWithValue(mockAgentRepository),
-          ],
+  testWidgets('Everything sends the complete historical interval', (
+    tester,
+  ) async {
+    final now = DateTime.utc(2026, 7, 27, 12);
+
+    await withClock(Clock.fixed(now), () async {
+      await pumpModal(tester);
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+      await tester.pump();
+    });
+
+    verify(
+      () => mockMaintenance.reSyncInterval(
+        start: reSyncEverythingStart,
+        end: now,
+        agentRepository: mockAgentRepository,
+        includeJournalEntities: true,
+        includeAgentEntities: true,
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('Last 30 days sends a deterministic 30-day interval', (
+    tester,
+  ) async {
+    final now = DateTime.utc(2026, 7, 27, 12);
+
+    await withClock(Clock.fixed(now), () async {
+      await pumpModal(tester);
+      await selectPreset(tester, ReSyncRangePreset.last30Days);
+      expect(find.byType(DateTimeField), findsNothing);
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+      await tester.pump();
+    });
+
+    verify(
+      () => mockMaintenance.reSyncInterval(
+        start: now.subtract(const Duration(days: 30)),
+        end: now,
+        agentRepository: mockAgentRepository,
+        includeJournalEntities: true,
+        includeAgentEntities: true,
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('Custom rejects a range whose start is not before its end', (
+    tester,
+  ) async {
+    await pumpModal(tester);
+    await selectPreset(tester, ReSyncRangePreset.custom);
+
+    final fields = find
+        .byType(DateTimeField)
+        .evaluate()
+        .map((element) => element.widget as DateTimeField)
+        .toList();
+    expect(fields, hasLength(2));
+
+    fields.first.setDateTime(DateTime(2026, 7, 28));
+    fields.last.setDateTime(DateTime(2026, 7, 27));
+    await tester.pump();
+
+    expect(find.byKey(const Key('reSyncInvalidRangeError')), findsOneWidget);
+    expect(
+      tester
+          .widget<DesignSystemButton>(
+            find.widgetWithText(DesignSystemButton, 'Start'),
+          )
+          .onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('Start waits in the modal and reports per-phase progress', (
+    tester,
+  ) async {
+    final completer = Completer<void>();
+    when(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((invocation) {
+      final onProgress =
+          invocation.namedArguments[#onProgress] as ReSyncProgressCallback;
+      onProgress(
+        const ReSyncProgress(
+          phase: ReSyncPhase.journalEntities,
+          processed: 12,
+          total: 25,
+          isComplete: false,
         ),
       );
+      return completer.future;
+    });
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+    await pumpModal(tester);
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
 
-      // Untick the "Agent entities" checkbox.
+    expect(find.byKey(const Key('reSyncProgress')), findsOneWidget);
+    expect(find.byKey(const Key('reSyncComplete')), findsNothing);
+    expect(find.text('12 / 25'), findsOneWidget);
+
+    completer.complete();
+    await tester.pump();
+
+    expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
+  });
+
+  testWidgets('uses the localized maintenance label as the modal title', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => ReSyncModal.show(context),
+            child: const Text('Open'),
+          ),
+        ),
+        overrides: [
+          maintenanceProvider.overrideWithValue(mockMaintenance),
+          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Re-sync messages'), findsWidgets);
+    expect(find.text('Re-sync entries'), findsNothing);
+  });
+
+  testWidgets(
+    'unchecking agent entities excludes agent entities',
+    (tester) async {
+      await pumpModal(tester);
+
       await tester.tap(find.byKey(const Key('reSyncAgentEntitiesCheckbox')));
       await tester.pump();
-
-      final startButtonFinder = find.widgetWithText(
-        DesignSystemButton,
-        'Start',
-      );
-      expect(startButtonFinder, findsOneWidget);
-      await tester.tap(startButtonFinder);
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockMaintenance.reSyncInterval(
@@ -118,37 +270,21 @@ void main() {
           agentRepository: mockAgentRepository,
           includeJournalEntities: true,
           includeAgentEntities: false,
+          onProgress: any(named: 'onProgress'),
         ),
       ).called(1);
     },
   );
 
   testWidgets(
-    'unchecking journal entities passes includeJournalEntities=false',
+    'unchecking journal entities excludes journal entities',
     (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ReSyncModalContent(),
-          overrides: [
-            maintenanceProvider.overrideWithValue(mockMaintenance),
-            agentRepositoryProvider.overrideWithValue(mockAgentRepository),
-          ],
-        ),
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await pumpModal(tester);
 
       await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
       await tester.pump();
-
-      final startButtonFinder = find.widgetWithText(
-        DesignSystemButton,
-        'Start',
-      );
-      await tester.tap(startButtonFinder);
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockMaintenance.reSyncInterval(
@@ -157,121 +293,49 @@ void main() {
           agentRepository: mockAgentRepository,
           includeJournalEntities: false,
           includeAgentEntities: true,
+          onProgress: any(named: 'onProgress'),
         ),
       ).called(1);
     },
   );
 
-  testWidgets(
-    'start button disables when neither entity type is selected',
-    (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ReSyncModalContent(),
-          overrides: [
-            maintenanceProvider.overrideWithValue(mockMaintenance),
-            agentRepositoryProvider.overrideWithValue(mockAgentRepository),
-          ],
-        ),
-      );
+  testWidgets('Start disables when neither entity type is selected', (
+    tester,
+  ) async {
+    await pumpModal(tester);
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Untick both checkboxes.
-      await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('reSyncAgentEntitiesCheckbox')));
-      await tester.pump();
-
-      final startButton = tester.widget<DesignSystemButton>(
-        find.widgetWithText(DesignSystemButton, 'Start'),
-      );
-      expect(startButton.onPressed, isNull);
-      // The user-visible signal that explains the disabled state.
-      expect(
-        find.byKey(const Key('reSyncSelectAtLeastOneError')),
-        findsOneWidget,
-      );
-
-      // Re-tick journal — start should re-enable and the hint disappears.
-      await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
-      await tester.pump();
-      final startButtonAfter = tester.widget<DesignSystemButton>(
-        find.widgetWithText(DesignSystemButton, 'Start'),
-      );
-      expect(startButtonAfter.onPressed, isNotNull);
-      expect(
-        find.byKey(const Key('reSyncSelectAtLeastOneError')),
-        findsNothing,
-      );
-    },
-  );
-
-  testWidgets('start button enabled with default dates', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const ReSyncModalContent(),
-        overrides: [
-          maintenanceProvider.overrideWithValue(mockMaintenance),
-          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
-        ],
-      ),
-    );
-
+    await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    final startButtonFinder = find.widgetWithText(
-      DesignSystemButton,
-      'Start',
-    );
-    expect(startButtonFinder, findsOneWidget);
-
-    final startButton = tester.widget<DesignSystemButton>(startButtonFinder);
-    expect(startButton.onPressed, isNotNull);
-  });
-
-  testWidgets('default dates set to last 24 hours', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const ReSyncModalContent(),
-        overrides: [
-          maintenanceProvider.overrideWithValue(mockMaintenance),
-          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
-        ],
-      ),
-    );
-
+    await tester.tap(find.byKey(const Key('reSyncAgentEntitiesCheckbox')));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
 
-    final dateFieldFinder = find.byType(DateTimeField);
-    final fields = dateFieldFinder
-        .evaluate()
-        .map((element) => element.widget as DateTimeField)
-        .toList();
-
-    expect(fields.length, 2);
-
-    final dateFrom = fields.first.dateTime;
-    final dateTo = fields.last.dateTime;
-
-    expect(dateFrom, isNotNull);
-    expect(dateTo, isNotNull);
-
-    // Verify dateFrom is approximately 24 hours before dateTo
-    final difference = dateTo!.difference(dateFrom!);
-    expect(difference.inHours, 24);
-    expect(difference.inMinutes, closeTo(24 * 60, 1));
-
-    // Verify dateTo is a recent date (the widget initializes with
-    // DateTime.now() internally, so we just check it's reasonable)
-    final referenceDate = DateTime(2020, 1, 1);
     expect(
-      dateTo.isAfter(referenceDate),
-      isTrue,
-      reason: 'dateTo should be a recent date',
+      tester
+          .widget<DesignSystemButton>(
+            find.widgetWithText(DesignSystemButton, 'Start'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      find.byKey(const Key('reSyncSelectAtLeastOneError')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<DesignSystemButton>(
+            find.widgetWithText(DesignSystemButton, 'Start'),
+          )
+          .onPressed,
+      isNotNull,
+    );
+    expect(
+      find.byKey(const Key('reSyncSelectAtLeastOneError')),
+      findsNothing,
     );
   });
 }

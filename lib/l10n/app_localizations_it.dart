@@ -7023,17 +7023,47 @@ class AppLocalizationsIt extends AppLocalizations {
   String get maintenanceReSyncAgentEntities => 'entità dell\'agente';
 
   @override
-  String get maintenanceReSyncDescription => 'Resync messaggi dal server';
+  String get maintenanceReSyncAgentLinks => 'Collegamenti degli agenti';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Gli altri tuoi dispositivi li riceveranno quando la sincronizzazione si sarà aggiornata.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Messaggi accodati';
+
+  @override
+  String get maintenanceReSyncCustom => 'Personalizzato';
+
+  @override
+  String get maintenanceReSyncDescription =>
+      'Metti in coda i messaggi per gli altri dispositivi';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Tipi di ammissione';
 
   @override
+  String get maintenanceReSyncEverything => 'Tutto';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Impossibile accodare i messaggi. Riprova.';
+
+  @override
+  String get maintenanceReSyncInvalidRange => 'L’inizio deve precedere la fine';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Enti di pubblicazione';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Ultimi 30 giorni';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Selezionare almeno un tipo di entità';
+
+  @override
+  String get maintenanceReSyncSending => 'Preparazione dei messaggi';
 
   @override
   String get maintenanceReSyncStart => 'Iniziare';
@@ -9979,6 +10009,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questo codice di abbinamento sblocca il tuo account di sincronizzazione: fallo scansionare solo dal tuo nuovo dispositivo e non fotografarlo né inviarlo mai.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Invia messaggi';
+
+  @override
   String get syncAddDeviceSendSettings => 'Invia impostazioni';
 
   @override
@@ -10189,7 +10222,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Sull’altro dispositivo, nella schermata Aggiungi dispositivo ancora aperta, scegli Invia impostazioni. Categorie, abitudini, dashboard e impostazioni IA arriveranno qui.';
+      'Sull’altro dispositivo, nella schermata Aggiungi dispositivo ancora aperta, scegli Invia impostazioni e poi Invia messaggi. Categorie, abitudini, dashboard, impostazioni IA e cronologia dei messaggi arriveranno qui.';
 
   @override
   String get syncPairedSettingsStepFallback =>

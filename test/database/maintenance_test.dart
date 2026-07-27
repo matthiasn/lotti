@@ -356,6 +356,56 @@ void main() {
         expect(linkMessages.first.entryLink.id, equals(link.id));
       });
 
+      test('reports paged journal progress through completion', () async {
+        final baseDate = DateTime(2024, 3);
+        final entryA = _buildJournalEntry(
+          id: 'progress-A',
+          timestamp: baseDate,
+          text: 'Progress A',
+        );
+        final entryB = _buildJournalEntry(
+          id: 'progress-B',
+          timestamp: baseDate.add(const Duration(minutes: 5)),
+          text: 'Progress B',
+        );
+        await _insertEntries(journalDb, [entryA, entryB]);
+        await journalDb.upsertEntryLink(
+          _buildEntryLink(
+            id: 'progress-link',
+            fromId: entryA.meta.id,
+            toId: entryB.meta.id,
+            timestamp: baseDate,
+          ),
+        );
+        final progress = <ReSyncProgress>[];
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(hours: 1)),
+          end: baseDate.add(const Duration(hours: 1)),
+          agentRepository: mockAgentRepo,
+          includeAgentEntities: false,
+          onProgress: progress.add,
+        );
+
+        expect(progress.first.phase, ReSyncPhase.journalEntities);
+        expect(progress.first.processed, 0);
+        expect(progress.first.total, isNull);
+        expect(progress.first.isComplete, isFalse);
+        expect(
+          progress.any(
+            (event) =>
+                event.phase == ReSyncPhase.journalEntities &&
+                event.processed == 3 &&
+                !event.isComplete,
+          ),
+          isTrue,
+        );
+        expect(progress.last.phase, ReSyncPhase.journalEntities);
+        expect(progress.last.processed, 3);
+        expect(progress.last.total, 3);
+        expect(progress.last.isComplete, isTrue);
+      });
+
       test('filters journal entities by provided date range', () async {
         final baseDate = DateTime(2024, 4);
         final beforeEntry = _buildJournalEntry(
@@ -626,6 +676,64 @@ void main() {
           containsAll(['combo-entity-1', 'combo-state-1']),
         );
         expect(linkMessages.first.agentLink?.id, equals('combo-link-1'));
+      });
+
+      test('reports agent entity and link phases with totals', () async {
+        final baseDate = DateTime(2025, 2);
+        final entity = AgentDomainEntity.agent(
+          id: 'progress-agent',
+          agentId: 'progress-agent',
+          kind: 'task_agent',
+          displayName: 'Progress Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'progress-state',
+          config: const AgentConfig(),
+          createdAt: baseDate,
+          updatedAt: baseDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+        final link = agent_model.AgentLink.basic(
+          id: 'progress-agent-link',
+          fromId: 'progress-agent',
+          toId: 'progress-state',
+          createdAt: baseDate,
+          updatedAt: baseDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+        await populateAgentDb(entities: [entity], links: [link]);
+        final progress = <ReSyncProgress>[];
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(hours: 1)),
+          end: baseDate.add(const Duration(hours: 1)),
+          agentRepository: agentRepo,
+          includeJournalEntities: false,
+          onProgress: progress.add,
+        );
+
+        expect(
+          progress
+              .where(
+                (event) =>
+                    event.phase == ReSyncPhase.agentEntities &&
+                    event.isComplete,
+              )
+              .single
+              .processed,
+          1,
+        );
+        expect(
+          progress
+              .where(
+                (event) =>
+                    event.phase == ReSyncPhase.agentLinks && event.isComplete,
+              )
+              .single
+              .total,
+          1,
+        );
       });
 
       test(

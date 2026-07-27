@@ -6939,17 +6939,46 @@ class AppLocalizationsDa extends AppLocalizations {
   String get maintenanceReSyncAgentEntities => 'Agentenheder';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Agentlinks';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Dine andre enheder modtager dem, når synkroniseringen har indhentet det forsømte.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Beskeder sat i kø';
+
+  @override
+  String get maintenanceReSyncCustom => 'Tilpasset';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Gensynkroniser beskeder fra serveren';
+      'Sæt beskeder i kø til dine andre enheder';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Enhedstyper';
 
   @override
+  String get maintenanceReSyncEverything => 'Alt';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Beskederne kunne ikke sættes i kø. Prøv igen.';
+
+  @override
+  String get maintenanceReSyncInvalidRange => 'Start skal være før slut';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Tidsskriftsenheder';
 
   @override
+  String get maintenanceReSyncLast30Days => 'Seneste 30 dage';
+
+  @override
   String get maintenanceReSyncSelectAtLeastOne => 'Vælg mindst én enhedstype';
+
+  @override
+  String get maintenanceReSyncSending => 'Forbereder beskeder';
 
   @override
   String get maintenanceReSyncStart => 'Start';
@@ -9847,6 +9876,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Denne parringskode låser din synkroniseringskonto op – lad kun din egen nye enhed scanne den, og tag aldrig skærmbillede af den eller send den.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Send beskeder';
+
+  @override
   String get syncAddDeviceSendSettings => 'Send indstillinger';
 
   @override
@@ -10051,7 +10083,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'På din anden enhed vælger du Send indstillinger i skærmen Tilføj enhed, som du stadig har åben. Dine kategorier, vaner, dashboards og AI-indstillinger lander her.';
+      'På din anden enhed vælger du Send indstillinger og derefter Send beskeder i skærmen Tilføj enhed, som du stadig har åben. Dine kategorier, vaner, dashboards, AI-indstillinger og din beskedhistorik lander her.';
 
   @override
   String get syncPairedSettingsStepFallback =>

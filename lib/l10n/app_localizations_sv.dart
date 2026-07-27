@@ -6937,17 +6937,46 @@ class AppLocalizationsSv extends AppLocalizations {
   String get maintenanceReSyncAgentEntities => 'Agententiteter';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Agentlänkar';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Dina andra enheter får dem när synkroniseringen har hunnit ikapp.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Meddelanden köade';
+
+  @override
+  String get maintenanceReSyncCustom => 'Anpassat';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Synkronisera om meddelanden från servern';
+      'Köa meddelanden för dina andra enheter';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Enhetstyper';
 
   @override
+  String get maintenanceReSyncEverything => 'Allt';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Meddelandena kunde inte köas. Försök igen.';
+
+  @override
+  String get maintenanceReSyncInvalidRange => 'Start måste vara före slut';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Tidskriftsenheter';
 
   @override
+  String get maintenanceReSyncLast30Days => 'Senaste 30 dagarna';
+
+  @override
   String get maintenanceReSyncSelectAtLeastOne => 'Välj minst en enhetstyp';
+
+  @override
+  String get maintenanceReSyncSending => 'Förbereder meddelanden';
 
   @override
   String get maintenanceReSyncStart => 'Start';
@@ -9847,6 +9876,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Den här parkopplingskoden låser upp ditt synkkonto – låt bara din egen nya enhet skanna den, och ta aldrig en skärmbild av den eller skicka den.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Skicka meddelanden';
+
+  @override
   String get syncAddDeviceSendSettings => 'Skicka inställningar';
 
   @override
@@ -10052,7 +10084,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'På din andra enhet väljer du Skicka inställningar i skärmen Lägg till enhet som fortfarande är öppen. Dina kategorier, vanor, instrumentpaneler och AI-inställningar hamnar här.';
+      'På din andra enhet väljer du Skicka inställningar och sedan Skicka meddelanden i skärmen Lägg till enhet som fortfarande är öppen. Dina kategorier, vanor, instrumentpaneler, AI-inställningar och din meddelandehistorik hamnar här.';
 
   @override
   String get syncPairedSettingsStepFallback =>

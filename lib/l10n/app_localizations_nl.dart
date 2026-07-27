@@ -6957,18 +6957,48 @@ class AppLocalizationsNl extends AppLocalizations {
   String get maintenanceReSyncAgentEntities => 'Agententiteiten';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Agentkoppelingen';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Je andere apparaten ontvangen ze zodra de synchronisatie is bijgewerkt.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Berichten in wachtrij';
+
+  @override
+  String get maintenanceReSyncCustom => 'Aangepast';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Berichten van de server opnieuw synchroniseren';
+      'Zet berichten klaar voor je andere apparaten';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Soorten entiteiten';
 
   @override
+  String get maintenanceReSyncEverything => 'Alles';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Berichten konden niet in de wachtrij worden gezet. Probeer het opnieuw.';
+
+  @override
+  String get maintenanceReSyncInvalidRange =>
+      'Het begin moet voor het einde liggen';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Journalentiteiten';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Afgelopen 30 dagen';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Selecteer ten minste één entiteittype';
+
+  @override
+  String get maintenanceReSyncSending => 'Berichten voorbereiden';
 
   @override
   String get maintenanceReSyncStart => 'Begin';
@@ -9874,6 +9904,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze koppelcode ontgrendelt je sync-account – laat alleen je eigen nieuwe apparaat hem scannen, en maak er nooit een schermafbeelding van of verstuur hem.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Berichten versturen';
+
+  @override
   String get syncAddDeviceSendSettings => 'Instellingen versturen';
 
   @override
@@ -10084,7 +10117,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Kies op je andere apparaat in het scherm Apparaat toevoegen dat nog openstaat Instellingen versturen. Je categorieën, gewoontes, dashboards en AI-instellingen komen dan hierheen.';
+      'Kies op je andere apparaat in het scherm Apparaat toevoegen dat nog openstaat eerst Instellingen versturen en daarna Berichten versturen. Je categorieën, gewoontes, dashboards, AI-instellingen en berichtgeschiedenis komen dan hierheen.';
 
   @override
   String get syncPairedSettingsStepFallback =>

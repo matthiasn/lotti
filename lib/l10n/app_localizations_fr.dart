@@ -7070,18 +7070,47 @@ class AppLocalizationsFr extends AppLocalizations {
   String get maintenanceReSyncAgentEntities => 'Entités d\'agent';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Liens d’agents';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Tes autres appareils les recevront quand la synchronisation aura rattrapé son retard.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Messages mis en attente';
+
+  @override
+  String get maintenanceReSyncCustom => 'Personnalisé';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Resynchroniser les messages depuis le serveur';
+      'Mettre les messages en attente pour tes autres appareils';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Types d\'entités';
 
   @override
+  String get maintenanceReSyncEverything => 'Tout';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Impossible de mettre les messages en attente. Réessaie.';
+
+  @override
+  String get maintenanceReSyncInvalidRange => 'Le début doit précéder la fin';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Entrées du journal';
+
+  @override
+  String get maintenanceReSyncLast30Days => '30 derniers jours';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Sélectionne au moins un type d\'entité';
+
+  @override
+  String get maintenanceReSyncSending => 'Préparation des messages';
 
   @override
   String get maintenanceReSyncStart => 'Démarrer';
@@ -10039,6 +10068,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ce code d’appairage déverrouille ton compte de synchronisation — ne le fais scanner que par ton propre nouvel appareil, et ne le capture ni ne l’envoie jamais.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Envoyer les messages';
+
+  @override
   String get syncAddDeviceSendSettings => 'Envoyer les réglages';
 
   @override
@@ -10248,7 +10280,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Sur ton autre appareil, dans l’écran Ajouter un appareil encore ouvert, choisis Envoyer les réglages. Tes catégories, habitudes, tableaux de bord et réglages d’IA arrivent ici.';
+      'Sur ton autre appareil, dans l’écran Ajouter un appareil encore ouvert, choisis Envoyer les réglages, puis Envoyer les messages. Tes catégories, habitudes, tableaux de bord, réglages d’IA et ton historique de messages arrivent ici.';
 
   @override
   String get syncPairedSettingsStepFallback =>

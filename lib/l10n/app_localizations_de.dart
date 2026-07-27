@@ -6976,18 +6976,48 @@ class AppLocalizationsDe extends AppLocalizations {
   String get maintenanceReSyncAgentEntities => 'Agenten-Entitäten';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Agenten-Verknüpfungen';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Deine anderen Geräte erhalten sie, sobald die Synchronisierung aufgeholt hat.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Nachrichten eingereiht';
+
+  @override
+  String get maintenanceReSyncCustom => 'Benutzerdefiniert';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Nachrichten vom Server erneut synchronisieren';
+      'Nachrichten für deine anderen Geräte einreihen';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Entitätstypen';
 
   @override
+  String get maintenanceReSyncEverything => 'Alles';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Nachrichten konnten nicht eingereiht werden. Versuch es erneut.';
+
+  @override
+  String get maintenanceReSyncInvalidRange =>
+      'Der Start muss vor dem Ende liegen';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Journal-Einträge';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Letzte 30 Tage';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Wähle mindestens einen Entitätstyp aus';
+
+  @override
+  String get maintenanceReSyncSending => 'Nachrichten werden vorbereitet';
 
   @override
   String get maintenanceReSyncStart => 'Starten';
@@ -9902,6 +9932,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieser Kopplungscode entsperrt dein Sync-Konto – lass ihn nur von deinem eigenen neuen Gerät scannen und mach nie einen Screenshot davon oder verschicke ihn.';
 
   @override
+  String get syncAddDeviceSendMessages => 'Nachrichten senden';
+
+  @override
   String get syncAddDeviceSendSettings => 'Einstellungen senden';
 
   @override
@@ -10112,7 +10145,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Wähle auf deinem anderen Gerät im noch geöffneten Bildschirm Gerät hinzufügen die Option Einstellungen senden. Deine Kategorien, Gewohnheiten, Dashboards und KI-Einstellungen kommen dann hierher.';
+      'Wähle auf deinem anderen Gerät im noch geöffneten Bildschirm Gerät hinzufügen zuerst Einstellungen senden und dann Nachrichten senden. Deine Kategorien, Gewohnheiten, Dashboards, KI-Einstellungen und dein Nachrichtenverlauf kommen dann hierher.';
 
   @override
   String get syncPairedSettingsStepFallback =>
