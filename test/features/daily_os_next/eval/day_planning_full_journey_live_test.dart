@@ -25,6 +25,7 @@ import '../../ai_consumption/test_utils.dart';
 import '../integration/day_agent_journey_support.dart';
 import '../integration/day_agent_pipeline_harness.dart';
 import '../integration/realistic_day_planning_scenarios.dart';
+import 'day_planning_full_journey_config.dart';
 import 'framework/eval_models.dart';
 import 'framework/eval_runner.dart';
 import 'framework/eval_scenario.dart';
@@ -42,6 +43,7 @@ import 'framework/eval_test_setup.dart';
 /// set -a; source .env; set +a
 /// LOTTI_DAY_PLANNING_FULL_JOURNEY_LIVE=1 \
 /// DAY_PLANNING_EVAL_MODELS=glm-5.2,qwen3.5-397b-a17b \
+/// DAY_PLANNING_EVAL_DATE=2030-01-15 \
 ///   fvm flutter test \
 ///   test/features/daily_os_next/eval/day_planning_full_journey_live_test.dart
 /// ```
@@ -50,13 +52,11 @@ void main() {
 
   final environment = Platform.environment;
   final live = environment['LOTTI_DAY_PLANNING_FULL_JOURNEY_LIVE'] == '1';
-  final modelIds = _csv(
+  final modelIds = fullJourneyModelIds(
     environment['DAY_PLANNING_EVAL_MODELS'],
-    'glm-5.2',
   );
-  final scenarioIds = _csv(
+  final scenarioIds = parseFullJourneyCsv(
     environment['DAY_PLANNING_EVAL_SCENARIOS'],
-    '',
   );
   final scenarios = scenarioIds.isEmpty
       ? realisticDayPlanningScenarios
@@ -81,6 +81,9 @@ void main() {
           '${unknownScenarioIds.join(', ')}.',
         );
       }
+      final evaluationDate = fullJourneyEvaluationDate(
+        environment['DAY_PLANNING_EVAL_DATE'],
+      );
       final validatedScenarios =
           <({EvalScenario scenario, int startHour, String transcript})>[];
       for (final scenario in scenarios) {
@@ -168,16 +171,15 @@ void main() {
 
         for (final journey in validatedScenarios) {
           final scenario = journey.scenario;
-          final realNow = DateTime.now();
-          final anchoredAt = DateTime(
-            realNow.year,
-            realNow.month,
-            realNow.day,
-            journey.startHour,
-          );
           final runningClock = Stopwatch()..start();
           final report = await withClock(
-            Clock(() => anchoredAt.add(runningClock.elapsed)),
+            Clock(
+              () => fullJourneyClockValue(
+                evaluationDate: evaluationDate,
+                startHour: journey.startHour,
+                elapsed: runningClock.elapsed,
+              ),
+            ),
             () => _runJourney(
               scenario: scenario,
               captureTranscript: journey.transcript,
@@ -200,7 +202,7 @@ void main() {
             '${report['totalLatencyMs']}ms total, '
             '${report['parsedItemCount']} parsed, '
             '${report['planBlockCount']} planned, '
-            '${report['error'] ?? 'completed'}',
+            '${report['error'] ?? report['metricsError'] ?? 'completed'}',
           );
         }
       }
@@ -218,6 +220,10 @@ void main() {
           )..writeAsStringSync(
             const JsonEncoder.withIndent('  ').convert({
               'generatedAt': DateTime.now().toIso8601String(),
+              'evaluationDate': evaluationDate.toIso8601String().substring(
+                0,
+                10,
+              ),
               'provider': 'melious',
               'runs': reports,
             }),
@@ -335,95 +341,106 @@ Future<Map<String, Object?>> _runJourney({
     total.stop();
   }
 
-  final expectedIds = scenario.decidedTaskIds;
-  final matchedIds = {
-    for (final item in parsedItems) ?item.matchedTaskId,
-  };
-  final plannedTaskIds = {
-    for (final block in plan.blocks) ?block.taskId,
-  };
-  final statusEvents = harness == null
-      ? const <DayStatusEventEntity>[]
-      : await harness.agentRepository.getDayStatusEventsSince(DateTime(2020));
-  final draftJob = harness == null
-      ? null
-      : await harness.outbox.getById(
+  final result = <String, Object?>{};
+  try {
+    var statusEvents = const <DayStatusEventEntity>[];
+    DayProcessingJob? draftJob;
+    var toolCalls = const <EvalToolCall>[];
+    Object? metricsError;
+    if (harness != null) {
+      try {
+        statusEvents = await harness.agentRepository.getDayStatusEventsSince(
+          DateTime(2020),
+        );
+        draftJob = await harness.outbox.getById(
           DayProcessingOutboxRepository.draftJobId(dayId),
         );
-  final toolCalls = harness == null
-      ? const <EvalToolCall>[]
-      : evalToolCallsFrom(harness.agentRepository.entities);
-  final result = <String, Object?>{
-    'scenarioId': scenario.id,
-    'intent': scenario.intent,
-    'modelId': modelId,
-    'totalLatencyMs': total.elapsedMilliseconds,
-    'userVisibleLatencyMs':
-        parse.elapsedMilliseconds + draft.elapsedMilliseconds,
-    'parseLatencyMs': parse.elapsedMilliseconds,
-    'draftLatencyMs': draft.elapsedMilliseconds,
-    'plannerDigestLatencyMs': digest.elapsedMilliseconds,
-    'parseJobStatus': parseJob?.status.name,
-    'parseJobAttempts': parseJob?.attempts,
-    'draftJobStatus': draftJob?.status.name,
-    'draftJobAttempts': draftJob?.attempts,
-    'parsedItemCount': parsedItems.length,
-    'parsedItems': [
-      for (final item in parsedItems)
-        {
-          'id': item.id,
-          'kind': item.kind.name,
-          'title': item.title,
-          'spokenPhrase': item.spokenPhrase,
-          'matchedTaskId': item.matchedTaskId,
-          'timeAnchor': item.timeAnchor,
-        },
-    ],
-    'expectedMentionedTaskIds': expectedIds,
-    'missingExpectedMatches': [
-      for (final id in expectedIds)
-        if (!matchedIds.contains(id)) id,
-    ],
-    'planBlockCount': plan.blocks.length,
-    'plannedTaskIds': plannedTaskIds.toList()..sort(),
-    'selectedMatchedTaskIdsNotPlaced': [
-      for (final id in matchedIds)
-        if (!plannedTaskIds.contains(id)) id,
-    ],
-    'statusEvents': [
-      for (final event in statusEvents)
-        {
-          'status': event.status.name,
-          'reasons': event.reasons.map((reason) => reason.name).toList(),
-          'note': event.note,
-        },
-    ],
-    'wakes': [
-      for (final wake in recorder.wakes)
-        {
-          'conversationId': wake.conversationId,
-          'messages': wake.userMessages.length,
-          'forcedRetry': wake.forcedRetry,
-          'roles': [
-            for (final message in wake.userMessages) _messageRole(message),
-          ],
-        },
-    ],
-    'providerInteractions': attribution.recordedInteractions.length,
-    'toolCalls': [
-      for (final call in toolCalls)
-        {
-          'name': call.name,
-          'accepted': call.accepted,
-          'rejectionMessage': call.rejectionMessage,
-        },
-    ],
-    'error': error?.toString(),
-  };
-  try {
-    await harness?.dispose();
-  } catch (disposeError) {
-    result['disposeError'] = disposeError.toString();
+        toolCalls = evalToolCallsFrom(harness.agentRepository.entities);
+      } catch (caught) {
+        metricsError = caught;
+      }
+    }
+    final expectedIds = scenario.decidedTaskIds;
+    final matchedIds = {
+      for (final item in parsedItems) ?item.matchedTaskId,
+    };
+    final plannedTaskIds = {
+      for (final block in plan.blocks) ?block.taskId,
+    };
+    result.addAll({
+      'scenarioId': scenario.id,
+      'intent': scenario.intent,
+      'modelId': modelId,
+      'totalLatencyMs': total.elapsedMilliseconds,
+      'userVisibleLatencyMs':
+          parse.elapsedMilliseconds + draft.elapsedMilliseconds,
+      'parseLatencyMs': parse.elapsedMilliseconds,
+      'draftLatencyMs': draft.elapsedMilliseconds,
+      'plannerDigestLatencyMs': digest.elapsedMilliseconds,
+      'parseJobStatus': parseJob?.status.name,
+      'parseJobAttempts': parseJob?.attempts,
+      'draftJobStatus': draftJob?.status.name,
+      'draftJobAttempts': draftJob?.attempts,
+      'parsedItemCount': parsedItems.length,
+      'parsedItems': [
+        for (final item in parsedItems)
+          {
+            'id': item.id,
+            'kind': item.kind.name,
+            'title': item.title,
+            'spokenPhrase': item.spokenPhrase,
+            'matchedTaskId': item.matchedTaskId,
+            'timeAnchor': item.timeAnchor,
+          },
+      ],
+      'expectedMentionedTaskIds': expectedIds,
+      'missingExpectedMatches': [
+        for (final id in expectedIds)
+          if (!matchedIds.contains(id)) id,
+      ],
+      'planBlockCount': plan.blocks.length,
+      'plannedTaskIds': plannedTaskIds.toList()..sort(),
+      'selectedMatchedTaskIdsNotPlaced': [
+        for (final id in matchedIds)
+          if (!plannedTaskIds.contains(id)) id,
+      ],
+      'statusEvents': [
+        for (final event in statusEvents)
+          {
+            'status': event.status.name,
+            'reasons': event.reasons.map((reason) => reason.name).toList(),
+            'note': event.note,
+          },
+      ],
+      'wakes': [
+        for (final wake in recorder.wakes)
+          {
+            'conversationId': wake.conversationId,
+            'messages': wake.userMessages.length,
+            'forcedRetry': wake.forcedRetry,
+            'roles': [
+              for (final message in wake.userMessages) _messageRole(message),
+            ],
+          },
+      ],
+      'providerInteractions': attribution.recordedInteractions.length,
+      'toolCalls': [
+        for (final call in toolCalls)
+          {
+            'name': call.name,
+            'accepted': call.accepted,
+            'rejectionMessage': call.rejectionMessage,
+          },
+      ],
+      'error': error?.toString(),
+      'metricsError': metricsError?.toString(),
+    });
+  } finally {
+    try {
+      await harness?.dispose();
+    } catch (disposeError) {
+      result['disposeError'] = disposeError.toString();
+    }
   }
   return result;
 }
@@ -434,9 +451,3 @@ String _messageRole(String message) {
   if (message.contains('<capture>')) return 'captureParse';
   return 'other';
 }
-
-List<String> _csv(String? raw, String fallback) => (raw ?? fallback)
-    .split(',')
-    .map((value) => value.trim())
-    .where((value) => value.isNotEmpty)
-    .toList();

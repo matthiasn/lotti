@@ -291,9 +291,16 @@ follow-up as a separate stage:
 ```sh
 LOTTI_DAY_PLANNING_FULL_JOURNEY_LIVE=1 \
 DAY_PLANNING_EVAL_MODELS=glm-5.2,qwen3.5-397b-a17b \
+DAY_PLANNING_EVAL_DATE=2030-01-15 \
   fvm flutter test \
   test/features/daily_os_next/eval/day_planning_full_journey_live_test.dart
 ```
+
+`DAY_PLANNING_EVAL_DATE` is optional and defaults to `2030-01-15`. The runner
+anchors every scenario and seeded task to that calendar date. Latency uses a
+monotonic elapsed timer, and wall-clock timestamps are reserved for report
+metadata. This keeps prompt context and results comparable across runs and
+across midnight boundaries.
 
 It uses two shared realistic fixtures rather than an empty smoke corpus:
 
@@ -303,6 +310,10 @@ It uses two shared realistic fixtures rather than an empty smoke corpus:
 - an eight-task overloaded afternoon whose five selected items total 255
   minutes against 180 available, requiring the day agent to name omissions and
   escalate them to the planner.
+
+The system prompt's worked examples deliberately use different tasks and
+constraint shapes from both fixtures, so the live matrix measures held-out
+instruction handling rather than recall of a demonstrated answer.
 
 The JSON report splits parse, draft and coordinator latency; records every wake,
 provider interaction, durable retry, tool rejection, parsed match, planned task
@@ -325,8 +336,9 @@ remainder is provider/model-route latency, not local outbox scheduling.
 
 **It always passes when it runs.** Violations are reported, never asserted. The
 report and its judge bundle are the deliverable. **Only setup errors fail hard:
-missing credentials or an unknown scenario id**, because neither is something
-the model did.
+missing credentials, an unknown scenario id, or an invalid evaluation date**,
+because none is something the model did. A blank model selection uses the
+default GLM 5.2 matrix rather than emitting an empty successful report.
 
 There are two live eval paths on purpose: the quality matrix isolates drafting
 behavior for comparable scoring, while the full journey measures latency and

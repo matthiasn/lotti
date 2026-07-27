@@ -43,7 +43,7 @@ Future<void> runPlannerDigest({
   }
 }
 
-/// Waits for one durable job to become terminal.
+/// Waits for one durable job to settle automatically or require intervention.
 ///
 /// The observation cap deterministically stops a pathological update loop
 /// without introducing a real timer into tests. The owning test timeout
@@ -66,14 +66,19 @@ Future<DayProcessingJob> waitForTerminalDayProcessingJob(
     while (true) {
       final changed = changes.moveNext();
       final job = await outbox.getById(jobId);
-      if (job != null && job.isTerminal) return job;
+      if (job != null &&
+          (job.isTerminal ||
+              job.status == DayProcessingJobStatus.failed ||
+              job.status == DayProcessingJobStatus.waitingForUser)) {
+        return job;
+      }
       if (!await changed) {
-        throw StateError('Outbox closed before $jobId became terminal.');
+        throw StateError('Outbox closed before $jobId settled.');
       }
       observedChanges += 1;
       if (observedChanges >= maxObservedChanges) {
         throw StateError(
-          '$jobId did not become terminal after $observedChanges '
+          '$jobId did not settle after $observedChanges '
           'outbox changes.',
         );
       }

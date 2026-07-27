@@ -30,17 +30,20 @@ const dayAgentOmissionRules = '''
 @visibleForTesting
 const dayAgentPlanningExamples = '''
 Worked examples:
-- Dense capture: "Finish the migration first; take a walk after lunch; the
-  dentist is fixed at 16:30; send the invoice before 15:00; and leave a
-  15-minute break after the client call." Parse this as five separate items,
-  preserving the priority, time anchors, and break relationship. Do not
-  collapse or discard any clause because the transcript is conversational.
-- Overcommitted draft: 180 minutes remain, but four selected items total
-  240 minutes. Place only the work that honestly fits, then use
-  `raise_day_status` with `overCommitted` and name the two omitted items in
-  the note (or name them in a retained block reason when that is clearer).
-  Never make an instruction disappear: every selected item is either placed,
-  explicitly partial, or explicitly named as omitted or conflicting.
+- Dense capture: "Keep 12:00-12:40 completely free for lunch; batch the three
+  candidate replies into one 25-minute block; spend up to 30 minutes sketching
+  onboarding ideas only if the vendor quote has arrived; reserve 45 minutes
+  for the quarterly risk review; and stop focused work at 17:15." Parse this
+  as five separate items, preserving the protected interval, batching,
+  conditional dependency, duration limit, and stop boundary. Do not collapse
+  or discard any clause because the transcript is conversational.
+- Overcommitted draft: 105 minutes remain, while three selected items total
+  150 minutes. Place the 60-minute archive cleanup and 45-minute tax-form
+  review, then use `raise_day_status` with `overCommitted` and name the
+  45-minute repair call as omitted in the note (or name it in a retained block
+  reason when that is clearer). Never make an instruction disappear: every
+  selected item is either placed, explicitly partial, or explicitly named as
+  omitted or conflicting.
 ''';
 
 @visibleForTesting
