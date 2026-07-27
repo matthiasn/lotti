@@ -395,6 +395,56 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('a camera that refuses to start leaves the page usable', (
+      tester,
+    ) async {
+      // The start now happens in a future this page owns, so its failure has
+      // to be handled here rather than escaping as an unhandled async error.
+      setUpMobileScanner();
+      final failing = _FailingStartScanner();
+      MobileScannerPlatform.instance = failing;
+      addTearDown(failing.disposeControllers);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // The way out of a dead camera stays on screen.
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.text(context.messages.syncPairEnterManually),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('scannerPreviewOverride replaces the live camera', (
+      tester,
+    ) async {
+      // The seam the manual captures rely on: a headless run has no camera
+      // plugin, so the real scanner must not be mounted at all.
+      setUpMobileScanner();
+      scannerPreviewOverride = (context, side) =>
+          const ColoredBox(key: Key('stand_in'), color: Color(0xFF00FF00));
+      addTearDown(() => scannerPreviewOverride = null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('stand_in')), findsOneWidget);
+      expect(find.byType(MobileScanner), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('declining a scanned code lands on the field and stays there', (
       tester,
     ) async {
@@ -659,6 +709,15 @@ void main() {
       expect(find.text('@alice:example.com'), findsNothing);
     });
   });
+}
+
+/// A camera that refuses to start, standing in for a device where the platform
+/// rejects the request outright.
+class _FailingStartScanner extends FakeMethodChannelMobileScanner {
+  @override
+  Future<MobileScannerViewAttributes> start(StartOptions startOptions) async {
+    throw const FormatException('camera refused');
+  }
 }
 
 /// A camera whose start hangs until released, so a test can tear the page down

@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.da
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_callout.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -465,8 +466,16 @@ class _ScannerViewState extends State<_ScannerView> {
   Future<void> _startCamera() async {
     try {
       await widget.controller.start();
-    } on Exception {
-      // Reported by errorBuilder, or moot because the page has gone.
+    } on Exception catch (error, stackTrace) {
+      // Logged rather than dropped: a camera the platform refuses already
+      // reaches the user through `errorBuilder`, but a start that fails for
+      // any other reason would otherwise leave no trace at all.
+      DevLogger.error(
+        name: 'BundleImport',
+        message: 'Camera start failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 
