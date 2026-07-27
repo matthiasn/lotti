@@ -85,6 +85,9 @@ class EvalModelStanding {
   final int failedRuns;
 
   /// Pass rate across every applicable constraint result the model produced.
+  ///
+  /// Heuristic signals are excluded. They remain visible in [byConstraint],
+  /// but string presence cannot rank one model's reasoning above another's.
   final EvalConstraintRate overall;
   final List<EvalConstraintRate> byConstraint;
 }
@@ -239,6 +242,7 @@ class EvalReport {
     var applicable = 0;
     for (final result in list) {
       for (final constraint in result.constraints) {
+        if (EvalConstraintSignals.isHeuristicResult(constraint)) continue;
         if (!constraint.isApplicable) continue;
         applicable++;
         if (constraint.passed ?? false) passed++;
@@ -332,6 +336,13 @@ class EvalReport {
     'kind': 'lotti.dayPlanningEvalReport',
     'generatedAt': generatedAt.toIso8601String(),
     'runs': results.length,
+    'constraintSignals': {
+      for (final id in EvalConstraintIds.all)
+        id: {
+          'kind': EvalConstraintSignals.kindFor(id),
+          'caveat': ?EvalConstraintSignals.caveatFor(id),
+        },
+    },
     'bundle': {
       'samplesPerCell': bundleSamplesPerCell,
       'cells': bundledCells,
@@ -577,6 +588,10 @@ class EvalReport {
           constraint.id: {
             'passed': constraint.passed,
             'detail': constraint.detail,
+            'kind': EvalConstraintSignals.kindForResult(constraint),
+            'caveat': ?EvalConstraintSignals.isHeuristicResult(constraint)
+                ? EvalConstraintSignals.caveatFor(constraint.id)
+                : null,
           },
       },
       'job': {
@@ -619,7 +634,7 @@ class EvalReport {
       ..writeln()
       ..writeln('## Model leaderboard')
       ..writeln()
-      ..writeln('| Model | Pass rate | Runs | Failed runs |')
+      ..writeln('| Model | Objective pass rate | Runs | Failed runs |')
       ..writeln('| --- | ---: | ---: | ---: |');
     for (final standing in standings) {
       buffer.writeln(
@@ -635,12 +650,25 @@ class EvalReport {
         'exercised a dimension cannot inflate a score.',
       )
       ..writeln()
+      ..writeln(
+        'Heuristic signals are weak priors, not evidence that the model '
+        'understood the trade. `surfacedConflict` and `directiveHonoured` are '
+        'heuristic throughout. `blockerBeforeBlocked` is mixed: an actual '
+        'ordering pass or unexcused failure is objective, while a pass through '
+        'its prose bypass is heuristic. Inspect the judge bundle before '
+        'treating a heuristic green as reasoning quality. Heuristic outcomes '
+        'remain visible below but are excluded from the objective leaderboard.',
+      )
+      ..writeln()
       ..writeln('## Constraints by model')
       ..writeln()
       ..writeln(
-        '| Constraint | ${standings.map((s) => '`${s.modelId}`').join(' | ')} |',
+        '| Constraint | Signal | '
+        '${standings.map((s) => '`${s.modelId}`').join(' | ')} |',
       )
-      ..writeln('| --- | ${standings.map((_) => '---:').join(' | ')} |');
+      ..writeln(
+        '| --- | --- | ${standings.map((_) => '---:').join(' | ')} |',
+      );
     for (final id in EvalConstraintIds.all) {
       final cells = [
         for (final standing in standings)
@@ -648,7 +676,12 @@ class EvalReport {
               .firstWhere((rate) => rate.constraintId == id)
               .label,
       ];
-      buffer.writeln('| $id | ${cells.join(' | ')} |');
+      final signal = switch (EvalConstraintSignals.kindFor(id)) {
+        'heuristic' => 'heuristic · inspect',
+        'mixed' => 'mixed · inspect',
+        _ => 'objective',
+      };
+      buffer.writeln('| $id | $signal | ${cells.join(' | ')} |');
     }
 
     buffer

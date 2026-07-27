@@ -82,6 +82,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **An over-full day no longer wastes a planning attempt on an impossible
+  placeholder.** When some work did not fit, the planner could represent the
+  omitted task as a zero-minute "unscheduled" block. The app correctly rejected
+  that block, but only after spending the first model response. The planner is
+  now told to name omitted work in its reasons or status note instead.
 - **A plan no longer treats work of unknown length as free.** When deciding
   what fits in a day, the planner is now shown how long each task you approved
   is expected to take — it previously had to find that elsewhere, and on many

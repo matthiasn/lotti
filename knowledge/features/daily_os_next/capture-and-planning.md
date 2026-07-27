@@ -5,13 +5,17 @@ description: The Capture/Reconcile/Draft/Refine tools, batch-first durable voice
 resource: ../../../lib/features/daily_os_next/agents/service
 tags: [daily-os, capture, planning, transcription, tools]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:30:00Z }
-stale_after: 2026-10-26
+generated: { by: codex/5, at: 2026-07-27T13:52:59+02:00 }
+stale_after: 2026-10-27
 sources:
   - id: services
     resource: ../../../lib/features/daily_os_next/agents/service
     title: Capture and plan services
     last_modified: 2026-07-26
+  - id: prompt-builder
+    resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
+    title: Day-agent prompt builder
+    last_modified: 2026-07-27
   - id: state
     resource: ../../../lib/features/daily_os_next/state
     title: Controllers and runtime wiring
@@ -228,6 +232,16 @@ The rules pair it with what to do when the work does not fit: decide visibly —
 leave work out and name it, or place a task for less than its estimate and say
 so — rather than running past the end of the day or quietly shrinking
 estimates so everything appears to fit.
+
+Omitted work is **never a block**. In particular, a zero-duration
+`UNSCHEDULED` placeholder is not a representation of a trade: `end > start`
+correctly rejects it, costs a model retry, and leaves no usable plan artifact.
+The drafting rules therefore say explicitly that every block has a later end
+and omitted work belongs in an existing block reason. When there is no retained
+block to carry that reason, the planner must raise `attentionNeeded`, use the
+typed reason matching the conflict (`overCommitted`, or
+`directiveUnsatisfiable` for a binding directive), and name the omitted work in
+the status note.
 
 **A block that names a task is filed under that task's category.** The block's
 own `categoryId` and its `taskId` were each validated against the agent's

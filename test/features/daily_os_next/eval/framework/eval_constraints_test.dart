@@ -520,6 +520,11 @@ void main() {
       );
 
       expect(result.passed, isTrue);
+      expect(
+        result.heuristic,
+        isFalse,
+        reason: 'actual dependency order is objective ranking evidence',
+      );
     });
 
     test('fails when the blocker is scheduled after the blocked work', () {
@@ -555,6 +560,11 @@ void main() {
       );
 
       expect(result.passed, isTrue);
+      expect(
+        result.heuristic,
+        isTrue,
+        reason: 'a blocker name in prose is a weak semantic bypass',
+      );
     });
 
     test('passes when the reason names the blocker by id', () {
@@ -574,6 +584,7 @@ void main() {
       );
 
       expect(result.passed, isTrue);
+      expect(result.heuristic, isTrue);
     });
 
     test('fails when the reason is generic hand-waving', () {

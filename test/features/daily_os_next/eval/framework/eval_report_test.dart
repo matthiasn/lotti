@@ -95,8 +95,13 @@ void main() {
     );
   }
 
-  EvalConstraintResult pass(String id) =>
-      EvalConstraintResult(id: id, passed: true, detail: 'fine');
+  EvalConstraintResult pass(String id, {bool heuristic = false}) =>
+      EvalConstraintResult(
+        id: id,
+        passed: true,
+        detail: 'fine',
+        heuristic: heuristic,
+      );
   EvalConstraintResult fail(String id, [String detail = 'broken']) =>
       EvalConstraintResult(id: id, passed: false, detail: detail);
   EvalConstraintResult na(String id) =>
@@ -160,6 +165,63 @@ void main() {
   });
 
   group('leaderboard', () {
+    test('excludes heuristic signals from the objective pass rate', () {
+      final report = EvalReport.fromResults([
+        result(
+          constraints: [
+            pass(EvalConstraintIds.withinCapacity),
+            fail(EvalConstraintIds.surfacedConflict),
+            pass(
+              EvalConstraintIds.blockerBeforeBlocked,
+              heuristic: true,
+            ),
+            fail(EvalConstraintIds.directiveHonoured),
+          ],
+        ),
+      ], generatedAt: generatedAt);
+
+      final standing = report.standings.single;
+      expect(standing.overall.passed, 1);
+      expect(standing.overall.applicable, 1);
+      expect(standing.overall.rate, 1);
+      expect(
+        standing.byConstraint
+            .firstWhere(
+              (rate) => rate.constraintId == EvalConstraintIds.surfacedConflict,
+            )
+            .rate,
+        0,
+        reason: 'heuristics remain visible even though they are not ranked',
+      );
+      expect(
+        standing.byConstraint
+            .firstWhere(
+              (rate) =>
+                  rate.constraintId == EvalConstraintIds.directiveHonoured,
+            )
+            .rate,
+        0,
+        reason:
+            'directive evidence stays visible even though its structural '
+            'escalation path is not ranked',
+      );
+    });
+
+    test('keeps structured blocker ordering in the objective pass rate', () {
+      final report = EvalReport.fromResults([
+        result(
+          constraints: [
+            pass(EvalConstraintIds.blockerBeforeBlocked),
+          ],
+        ),
+      ], generatedAt: generatedAt);
+
+      final standing = report.standings.single;
+      expect(standing.overall.passed, 1);
+      expect(standing.overall.applicable, 1);
+      expect(standing.overall.rate, 1);
+    });
+
     test('sorts by pass rate, best first', () {
       final report = EvalReport.fromResults([
         result(
@@ -337,6 +399,98 @@ void main() {
 
       expect(report.droppedSamples, 0);
       expect(report.toMarkdown(), isNot(contains('excluded by that cap')));
+    });
+
+    test('labels heuristic results beside the judge evidence', () {
+      final report = EvalReport.fromResults([
+        result(
+          constraints: [
+            pass(EvalConstraintIds.surfacedConflict),
+            pass(
+              EvalConstraintIds.blockerBeforeBlocked,
+              heuristic: true,
+            ),
+            pass(EvalConstraintIds.directiveHonoured),
+          ],
+        ),
+      ], generatedAt: generatedAt);
+
+      final json = report.toJson();
+      final signals = json['constraintSignals']! as Map<String, Object?>;
+      expect(
+        signals[EvalConstraintIds.surfacedConflict],
+        allOf(
+          containsPair('kind', 'heuristic'),
+          containsPair(
+            'caveat',
+            contains('does not prove that the model understood'),
+          ),
+        ),
+      );
+      expect(
+        signals[EvalConstraintIds.withinCapacity],
+        containsPair('kind', 'objective'),
+      );
+      expect(
+        signals[EvalConstraintIds.blockerBeforeBlocked],
+        containsPair('kind', 'mixed'),
+      );
+
+      final constraints =
+          report.judgeBundle().single['constraints']! as Map<String, Object?>;
+      expect(
+        constraints[EvalConstraintIds.surfacedConflict],
+        allOf(
+          containsPair('kind', 'heuristic'),
+          containsPair('caveat', isNotEmpty),
+        ),
+      );
+      expect(
+        constraints[EvalConstraintIds.blockerBeforeBlocked],
+        containsPair('kind', 'heuristic'),
+      );
+      expect(
+        constraints[EvalConstraintIds.directiveHonoured],
+        allOf(
+          containsPair('kind', 'heuristic'),
+          containsPair('caveat', contains('status note')),
+        ),
+      );
+    });
+
+    test('tells Markdown readers that heuristic greens need review', () {
+      final report = EvalReport.fromResults([
+        result(
+          constraints: [
+            pass(EvalConstraintIds.withinCapacity),
+            pass(EvalConstraintIds.surfacedConflict),
+            pass(EvalConstraintIds.directiveHonoured),
+          ],
+        ),
+      ], generatedAt: generatedAt);
+
+      final markdown = report.toMarkdown();
+      expect(markdown, contains('Objective pass rate'));
+      expect(
+        markdown,
+        contains(
+          'Heuristic signals are weak priors, not evidence that the model '
+          'understood the trade',
+        ),
+      );
+      expect(markdown, contains('Inspect the judge bundle'));
+      expect(
+        markdown,
+        contains('| surfacedConflict | heuristic · inspect |'),
+      );
+      expect(
+        markdown,
+        contains('| blockerBeforeBlocked | mixed · inspect |'),
+      );
+      expect(
+        markdown,
+        contains('| directiveHonoured | heuristic · inspect |'),
+      );
     });
 
     test('carries everything needed to judge without re-running', () {
