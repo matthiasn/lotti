@@ -1447,6 +1447,11 @@ void main() {
       final entityMsg = captured[0];
       expect(entityMsg, isA<SyncJournalEntity>());
       expect((entityMsg as SyncJournalEntity).id, entryId);
+      // The requester is missing the entry entirely, so it is missing any
+      // media the entry references. Without this opt-in the re-send carries
+      // JSON only and the peer is left with an unrenderable image or audio
+      // entry — the same defect that left re-synced devices blank.
+      expect(entityMsg.includeAttachments, isTrue);
 
       // Second: backfill response hint mapping counter 3 → entryId
       final hintMsg = captured[1];

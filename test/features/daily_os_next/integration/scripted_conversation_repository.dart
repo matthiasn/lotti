@@ -8,6 +8,9 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+typedef ScriptedToolCallBuilder =
+    List<ChatCompletionMessageToolCall> Function(String message);
+
 /// Fake, in-process [ConversationRepository]: replays scripted tool calls
 /// through the *real* strategy/tool dispatch, so production tool handlers,
 /// parsers and guards all run without a network call.
@@ -24,11 +27,17 @@ import 'package:openai_dart/openai_dart.dart';
 /// retry fires and, still empty-handed, the wake fails.
 class ScriptedConversationRepository extends ConversationRepository {
   final Map<String, ConversationManager> _managers = {};
-  final Queue<List<ChatCompletionMessageToolCall>> _turns = Queue();
+  final Queue<ScriptedToolCallBuilder> _turns = Queue();
   var _createdCount = 0;
 
   /// Every user message sent, in order.
   final List<String> userMessages = [];
+
+  /// Tool names offered on each send, in the same order as [userMessages].
+  final List<Set<String>> toolNamesBySend = [];
+
+  /// Number of inference requests represented by this fake.
+  int get sendCount => userMessages.length;
 
   /// System prompt of the most recently created conversation.
   String? lastSystemMessage;
@@ -42,7 +51,15 @@ class ScriptedConversationRepository extends ConversationRepository {
 
   /// Queues one model turn. Call once per expected `sendMessage`.
   void script(List<ChatCompletionMessageToolCall> toolCalls) =>
-      _turns.add(toolCalls);
+      _turns.add((_) => toolCalls);
+
+  /// Queues one model turn whose calls can be derived from the actual prompt.
+  ///
+  /// This is necessary for full-pipeline capture tests: production generates
+  /// the capture id before enqueueing the parse wake, so a faithful script
+  /// cannot know that id until it sees the rendered `<capture>` section.
+  void scriptFromMessage(ScriptedToolCallBuilder builder) =>
+      _turns.add(builder);
 
   @override
   String createConversation({String? systemMessage, int maxTurns = 20}) {
@@ -77,10 +94,14 @@ class ScriptedConversationRepository extends ConversationRepository {
     bool rethrowInferenceErrors = false,
   }) async {
     userMessages.add(message);
+    toolNamesBySend.add({
+      for (final tool in tools ?? const <ChatCompletionTool>[])
+        tool.function.name,
+    });
     final manager = _managers[conversationId]!..addUserMessage(message);
     final toolCalls = _turns.isEmpty
         ? const <ChatCompletionMessageToolCall>[]
-        : _turns.removeFirst();
+        : _turns.removeFirst()(message);
     if (toolCalls.isNotEmpty) {
       manager.addAssistantMessage(toolCalls: toolCalls);
       await strategy!.processToolCalls(toolCalls: toolCalls, manager: manager);

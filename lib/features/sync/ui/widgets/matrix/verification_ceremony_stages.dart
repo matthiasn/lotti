@@ -3,6 +3,7 @@ import 'package:flutter_material_design_icons/flutter_material_design_icons.dart
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_emojis_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
@@ -45,7 +46,11 @@ class VerificationCeremonyHeader extends StatelessWidget {
           Text(
             userId,
             textAlign: TextAlign.center,
-            style: tokens.typography.styles.others.caption.copyWith(
+            // Mono: an account id is a compare-me identifier, not prose.
+            style: monoMetaStyle(
+              tokens,
+              tokens.colors,
+              base: tokens.typography.styles.others.caption,
               color: tokens.colors.text.mediumEmphasis,
             ),
           ),

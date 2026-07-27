@@ -954,6 +954,7 @@ void main() {
     Future<ValueNotifier<int>> pumpConfigPage(
       WidgetTester tester, {
       required ProvisioningState state,
+      List<SyncDeviceInfo> devices = const [],
     }) async {
       final localNotifier = ValueNotifier<int>(0);
       addTearDown(localNotifier.dispose);
@@ -964,6 +965,9 @@ void main() {
             matrixServiceProvider.overrideWithValue(mockMatrixService),
             provisioningControllerProvider.overrideWith(
               () => _FakeProvisioningController(state),
+            ),
+            syncDevicesControllerProvider.overrideWith(
+              () => FakeSyncDevicesController(devices),
             ),
           ],
           child: MaterialApp(
@@ -1130,21 +1134,58 @@ void main() {
     );
 
     testWidgets(
-      'next button is enabled when state is done',
+      'done with an unverified peer keeps Go to Devices enabled but quiet',
+      (tester) async {
+        // The required action lives on the *other* device while the
+        // checklist is open; the accent must not shine away from it.
+        await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.done(),
+          devices: const [
+            SyncDeviceInfo(
+              deviceId: 'PEER',
+              isCurrentDevice: false,
+              verified: false,
+            ),
+          ],
+        );
+
+        final context = tester.element(find.byType(ProvisionedConfigWidget));
+        final nextBtn = tester.widget<DesignSystemButton>(
+          find.widgetWithText(
+            DesignSystemButton,
+            context.messages.syncPairGoToDevices,
+          ),
+        );
+        expect(nextBtn.onPressed, isNotNull);
+        expect(nextBtn.variant, DesignSystemButtonVariant.outlined);
+      },
+    );
+
+    testWidgets(
+      'done with a verified peer hands Go to Devices the accent',
       (tester) async {
         await pumpConfigPage(
           tester,
           state: const ProvisioningState.done(),
+          devices: const [
+            SyncDeviceInfo(
+              deviceId: 'PEER',
+              isCurrentDevice: false,
+              verified: true,
+            ),
+          ],
         );
 
+        final context = tester.element(find.byType(ProvisionedConfigWidget));
         final nextBtn = tester.widget<DesignSystemButton>(
-          find.byWidgetPredicate(
-            (w) =>
-                w is DesignSystemButton &&
-                w.variant == DesignSystemButtonVariant.primary,
+          find.widgetWithText(
+            DesignSystemButton,
+            context.messages.syncPairGoToDevices,
           ),
         );
         expect(nextBtn.onPressed, isNotNull);
+        expect(nextBtn.variant, DesignSystemButtonVariant.primary);
       },
     );
 

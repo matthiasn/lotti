@@ -55,6 +55,9 @@ class InMemoryAgentRepository extends MockAgentRepository {
   }
 
   @override
+  Future<AgentLink?> getLinkById(String id) async => _links[id];
+
+  @override
   Future<AgentDomainEntity?> getEntity(String id) async => _entities[id];
 
   @override

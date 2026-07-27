@@ -52,6 +52,29 @@ void main() {
       expect(entity.meta.id, fallbackJournalEntity.meta.id);
     });
 
+    test('loads from an explicit documents directory', () async {
+      final explicitDir = await Directory.systemTemp.createTemp(
+        'sync_loader_explicit',
+      );
+      addTearDown(() => explicitDir.delete(recursive: true));
+      final file = File(path.join(explicitDir.path, 'entity.json'));
+      await file.writeAsString(
+        jsonEncode(fallbackJournalEntity.toJson()),
+        flush: true,
+      );
+      final loader = FileSyncJournalEntityLoader(
+        documentsDirectory: explicitDir,
+      );
+
+      final entity = await loader.load(jsonPath: '/entity.json');
+
+      expect(entity.meta.id, fallbackJournalEntity.meta.id);
+      expect(
+        File(path.join(tempDir.path, 'entity.json')).existsSync(),
+        isFalse,
+      );
+    });
+
     test('rejects path traversal attempts', () async {
       // Create a file outside the documents directory to ensure it's not read.
       final externalDir = await Directory.systemTemp.createTemp(

@@ -20,6 +20,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 
 /// Call counters, held outside the notifiers on purpose: both providers are
@@ -112,6 +113,13 @@ void main() {
     displayName: 'Phone',
     isCurrentDevice: false,
     verified: false,
+  );
+
+  const verifiedPhone = SyncDeviceInfo(
+    deviceId: 'NEWPHONE',
+    displayName: 'Phone',
+    isCurrentDevice: false,
+    verified: true,
   );
 
   setUp(() {
@@ -394,7 +402,9 @@ void main() {
       expect(signal.value, AddDeviceJoinState.waiting);
     });
 
-    testWidgets('reports the join and latches it', (tester) async {
+    testWidgets('follows the joined device through emoji verification', (
+      tester,
+    ) async {
       final signal = newSignal(tester);
       final container = ProviderContainer(
         overrides: overrides(calls: _Calls()),
@@ -438,6 +448,15 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(signal.value, AddDeviceJoinState.joined);
+
+      // Joining is not sufficient: directlyVerifiedOnly key sharing withholds
+      // the keys until the emoji ceremony completes. Follow the same target
+      // identity until the roster reports it verified.
+      container.read(syncDevicesControllerProvider.notifier).state =
+          AsyncData<List<SyncDeviceInfo>>([...existing, verifiedPhone]);
+      await tester.pump();
+      await tester.pump();
+      expect(signal.value, AddDeviceJoinState.ready);
     });
 
     testWidgets('stops claiming to wait once the roster keeps failing', (
@@ -646,6 +665,7 @@ void main() {
     Future<void> pumpBar(
       WidgetTester tester, {
       required List<SyncDeviceInfo> devices,
+      Future<void> Function(BuildContext)? onSendMessages,
       Future<void> Function(BuildContext)? onSendSettings,
       AddDeviceJoinState state = AddDeviceJoinState.waiting,
     }) async {
@@ -655,6 +675,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           AddDeviceActionBar(
             signal: signal,
+            onSendMessages: onSendMessages ?? (_) async {},
             onSendSettings: onSendSettings ?? (_) async {},
           ),
           overrides: overrides(calls: _Calls(), devices: devices),
@@ -673,6 +694,14 @@ void main() {
         find.byKey(const Key('add_device_send_settings')),
       );
       expect(button.onPressed, isNull);
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('add_device_send_messages')),
+            )
+            .onPressed,
+        isNull,
+      );
       expect(
         find.byKey(const Key('add_device_send_settings_pending')),
         findsOneWidget,
@@ -720,11 +749,11 @@ void main() {
       expect(retries, 1);
     });
 
-    testWidgets('carries one tier and no second position line', (
+    testWidgets('carries one status tier and no second position line', (
       tester,
     ) async {
-      // The bar is a single status-plus-button tier now: the old lead-in was
-      // a third line about one control, and the stack's height was what
+      // The bar is a single status-plus-actions tier: the old lead-in was a
+      // third line about the same controls, and the stack's height was what
       // sliced the QR above it in half on short windows.
       await pumpBar(tester, devices: existing);
 
@@ -743,7 +772,7 @@ void main() {
     testWidgets('is quiet, and says so, while it cannot be pressed', (
       tester,
     ) async {
-      // The status line and the button have to agree. Outlined rather than
+      // The status line and the buttons have to agree. Outlined rather than
       // secondary: the component paints an enabled secondary with the same
       // fill it paints a disabled filled button, so a live action would have
       // read as inert.
@@ -767,7 +796,11 @@ void main() {
     testWidgets('takes the accent as soon as it can be pressed', (
       tester,
     ) async {
-      await pumpBar(tester, devices: [...existing, newPhone]);
+      await pumpBar(
+        tester,
+        devices: [...existing, verifiedPhone],
+        state: AddDeviceJoinState.ready,
+      );
 
       final context = tester.element(find.byType(AddDeviceActionBar));
       expect(
@@ -778,15 +811,17 @@ void main() {
             .variant,
         DesignSystemButtonVariant.primary,
       );
-      // And the ready status replaces the waiting one instead of a lead-in
-      // saying "after it joins" over a status line saying "send now".
+      // Verification is complete, so the ready status agrees with the live
+      // action.
+      expect(find.byKey(const Key('add_device_ready')), findsOneWidget);
+      // `context` keeps the localized lookup used by sibling assertions.
       expect(
         find.text(context.messages.syncAddDeviceSendSettingsReady),
         findsOneWidget,
       );
     });
 
-    testWidgets('takes the accent once the new device is here', (
+    testWidgets('stays quiet after join until emoji verification', (
       tester,
     ) async {
       await pumpBar(
@@ -800,36 +835,72 @@ void main() {
               find.byKey(const Key('add_device_send_settings')),
             )
             .variant,
-        DesignSystemButtonVariant.primary,
-      );
-      // Nothing left to explain: the device it was waiting for has arrived.
-      expect(
-        find.byKey(const Key('add_device_send_settings_pending')),
-        findsNothing,
+        DesignSystemButtonVariant.outlined,
       );
       expect(find.byKey(const Key('add_device_joined')), findsOneWidget);
     });
 
-    testWidgets('offers the hand-off whenever the account has a peer', (
+    testWidgets('withholds transfers until the joined device is verified', (
       tester,
     ) async {
-      // Deliberately not "a device appeared while this sheet was open": the
-      // joining device tells the user to come back here and press this, by
-      // which point the sheet has been closed and reopened, so a delta-only
-      // gate left the button dead forever.
+      await pumpBar(
+        tester,
+        devices: [...existing, newPhone],
+        state: AddDeviceJoinState.joined,
+      );
+
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('add_device_send_settings')),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('add_device_send_messages')),
+            )
+            .onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('does not let an older peer unlock a new target', (
+      tester,
+    ) async {
+      // Existing peers say nothing about whether the device joining through
+      // this sheet has completed emoji verification.
       await pumpBar(tester, devices: [...existing, newPhone]);
 
       final button = tester.widget<DesignSystemButton>(
         find.byKey(const Key('add_device_send_settings')),
       );
-      expect(button.onPressed, isNotNull);
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('offers message history once the target is verified', (
+      tester,
+    ) async {
+      await pumpBar(
+        tester,
+        devices: [...existing, verifiedPhone],
+        state: AddDeviceJoinState.ready,
+      );
+
+      final sendMessages = tester.widget<DesignSystemButton>(
+        find.byKey(const Key('add_device_send_messages')),
+      );
+      expect(sendMessages.onPressed, isNotNull);
     });
 
     testWidgets('runs the hand-off when pressed', (tester) async {
       var handOffs = 0;
       await pumpBar(
         tester,
-        devices: [...existing, newPhone],
+        devices: [...existing, verifiedPhone],
+        state: AddDeviceJoinState.ready,
         onSendSettings: (_) async => handOffs++,
       );
 
@@ -839,22 +910,35 @@ void main() {
       expect(handOffs, 1);
     });
 
-    test('hasPeer ignores this device and an unresolved roster', () {
-      expect(AddDeviceActionBar.hasPeer(null), isFalse);
-      expect(AddDeviceActionBar.hasPeer(const []), isFalse);
-      expect(AddDeviceActionBar.hasPeer(existing), isFalse);
-      expect(AddDeviceActionBar.hasPeer([...existing, newPhone]), isTrue);
+    testWidgets('opens message history when pressed', (tester) async {
+      var messageHandOffs = 0;
+      await pumpBar(
+        tester,
+        devices: [...existing, verifiedPhone],
+        state: AddDeviceJoinState.ready,
+        onSendMessages: (_) async => messageHandOffs++,
+      );
+
+      await tester.tap(find.byKey(const Key('add_device_send_messages')));
+      await tester.pump();
+
+      expect(messageHandOffs, 1);
     });
   });
 
   group('AddDeviceModal viewport fit', () {
+    // Real fonts, not Ahem: the guarantee is geometric, and the test font's
+    // fatter glyphs wrap prose onto extra lines that push the QR below where
+    // production actually renders it.
+    setUpAll(loadAppFonts);
+
     testWidgets('QR and check code clear the pinned bar at 1280x700', (
       tester,
     ) async {
       // The user-reported defect: at a short desktop window the sticky
-      // "Send settings" bar sliced the QR mid-symbol — unscannable, and
-      // with no cue that scrolling would reveal the rest. The QR is the one
-      // artifact this sheet exists to show; it must render whole at rest.
+      // hand-off bar sliced the QR mid-symbol — unscannable, and with no cue
+      // that scrolling would reveal the rest. The QR is the one artifact
+      // this sheet exists to show; it must render whole at rest.
       tester.view
         ..physicalSize = const Size(2560, 1400)
         ..devicePixelRatio = 2.0; // logical 1280×700
@@ -873,6 +957,12 @@ void main() {
             ),
           ),
           overrides: overrides(calls: calls),
+          // Production geometry, or the guarantee is about the wrong world:
+          // the default phone MediaQuery renders a bottom sheet instead of
+          // the desktop dialog, and the bare test theme's larger type wraps
+          // prose onto extra lines the shipped app never shows.
+          theme: screenshotTheme(),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 700)),
         ),
       );
       await tester.tap(find.text('open'));

@@ -6895,23 +6895,53 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
-  String get maintenanceReSync => 'Re-sync messages';
+  String get maintenanceReSync => 'Message history';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Agent entities';
 
   @override
-  String get maintenanceReSyncDescription => 'Re-sync messages from server';
+  String get maintenanceReSyncAgentLinks => 'Agent links';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Your other devices will receive them as sync catches up.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Messages queued';
+
+  @override
+  String get maintenanceReSyncCustom => 'Custom';
+
+  @override
+  String get maintenanceReSyncDescription =>
+      'Queue messages for your other devices';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Entity types';
 
   @override
+  String get maintenanceReSyncEverything => 'Everything';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Messages could not be queued. Try again.';
+
+  @override
+  String get maintenanceReSyncInvalidRange => 'Start must be before end';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Journal entities';
+
+  @override
+  String get maintenanceReSyncLast30Days => 'Last 30 days';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Select at least one entity type';
+
+  @override
+  String get maintenanceReSyncSending => 'Preparing messages';
 
   @override
   String get maintenanceReSyncStart => 'Start';
@@ -9733,11 +9763,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncAddDeviceAction => 'Add device';
 
   @override
-  String get syncAddDeviceCodeHint =>
-      'No camera on the new device? Copy the pairing code and paste it there instead.';
-
-  @override
-  String get syncAddDeviceConnected => 'A new device joined';
+  String get syncAddDeviceConnected =>
+      'New device joined — finish emoji verification to send.';
 
   @override
   String get syncAddDeviceCopyCode => 'Copy pairing code';
@@ -9762,22 +9789,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'This pairing code unlocks your sync account — let only your own new device scan it, and never screenshot or send it.';
+      'Treat this code like your password — only your own new device may scan it.';
+
+  @override
+  String get syncAddDeviceSendMessages => 'Send message history';
 
   @override
   String get syncAddDeviceSendSettings => 'Send settings';
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Once the new device is connected, send your categories, habits, dashboards and AI settings across.';
+      'After the new device is emoji-verified, send your measurables, categories, habits, dashboards and AI settings across.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Ready once the new device joins.';
+      'Available after the new device joins and is emoji-verified.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Send now, or wait until the new device joins.';
+      'New device verified — ready to send.';
 
   @override
   String get syncAddDeviceStepScan => 'Now · Show the code';
@@ -9854,9 +9884,6 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get syncDevicesSectionTitle => 'Devices';
 
   @override
   String get syncDevicesStaleHint => 'Probably no longer in use';
@@ -9946,10 +9973,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPairConnectButton => 'Connect this device';
 
   @override
-  String get syncPairCopyCodeHint =>
-      'No camera on this device? On the other device use Copy pairing code, move it here with a password manager, an encrypted note, or by typing it out — not through chat or email.';
-
-  @override
   String get syncPairDiscardCode => 'Enter a different pairing code';
 
   @override
@@ -9961,11 +9984,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'On your other device, in the Add device screen you still have open, choose Send settings. Your categories, habits, dashboards and AI settings arrive here.';
+      'Your categories, habits, dashboards and AI setup arrive from there.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Or reopen Settings → Sync Settings → Devices → Add device.';
+      'If you closed it, on the other device open Settings → Sync Settings → Maintenance, choose Sync measurables, dashboards, habits, categories, AI settings, then choose Message history.';
 
   @override
   String get syncPairedVerifyDone =>
@@ -9977,7 +10000,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'A row of emoji appears on both devices. Check they match, then confirm on each — until you do, this device cannot read your entries.';
+      'Until you confirm on both devices, this one can\'t read your entries.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10001,16 +10024,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPairGoToDevices => 'Go to Devices';
 
   @override
-  String get syncPairMismatchRemedy =>
-      'If it doesn\'t match, use the code your own device is showing instead.';
-
-  @override
   String get syncPairMismatchWarning =>
       'If this doesn\'t match, don\'t connect — the code belongs to a different account.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'Only use a code you made yourself, on a device you own. Scanning someone else’s code puts everything you write here into their account.';
+      'Only use a code from your own device — someone else\'s code sends everything you write to their account.';
 
   @override
   String get syncPairPasteTitle => 'Paste the pairing code';
@@ -10049,7 +10068,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPairWhereToFind =>
-      'On a device that already syncs, open Settings → Sync Settings → Devices and choose Add device.';
+      'The code is under Add device on a device that already syncs — copy it there, then paste it here.';
 
   @override
   String get syncPairWillJoin => 'This device will join:';
@@ -10113,6 +10132,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPayloadThemingSelection => 'Theming selection';
+
+  @override
+  String get syncSetupCta => 'Set up sync';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Keep your journal on every device you own — end-to-end encrypted, between your own devices only.';
+
+  @override
+  String get syncSetupEmptyTitle => 'Sync your devices';
 
   @override
   String get syncStepAgentEntities => 'Agent entities';
@@ -11063,14 +11092,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whatsNewSkipButton => 'Skip';
 
   @override
-  String get syncSetupEmptyTitle => 'Sync your devices';
+  String get syncPairedVerifyStepTitle => 'Match the emoji on both devices';
 
   @override
-  String get syncSetupEmptyHint =>
-      'Keep your journal on every device you own — end-to-end encrypted, between your own devices only.';
+  String get syncPairedSettingsStepTitle =>
+      'Send settings from your other device';
 
   @override
-  String get syncSetupCta => 'Set up sync';
+  String get syncPairFirstDeviceTitle => 'Setting up your first device?';
+
+  @override
+  String get syncPairFirstDeviceHint =>
+      'Your first pairing code comes from your sync server’s provisioning tool — see the manual. Every later device gets its code from the app.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -11409,12 +11442,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get maintenanceRecreateFts5Description =>
       'Recreate full-text search index';
-
-  @override
-  String get maintenanceReSync => 'Re-sync messages';
-
-  @override
-  String get maintenanceReSyncDescription => 'Re-sync messages from server';
 
   @override
   String get maintenanceSyncDefinitions =>

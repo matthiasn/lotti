@@ -87,13 +87,13 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
     final devicesAsync = ref.watch(syncDevicesControllerProvider);
     final devices = devicesAsync.value;
 
+    // No section title: every host of this list already says "Devices" one
+    // rung up (the settings header or the sheet title), and the double
+    // heading was the journey's most visible redundancy. The refresh action
+    // keeps the row.
     final header = Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Text(
-          messages.syncDevicesSectionTitle,
-          style: tokens.typography.styles.subtitle.subtitle1,
-        ),
         IconButton(
           key: const Key('sync_devices_refresh'),
           tooltip: messages.matrixStatsRefresh,

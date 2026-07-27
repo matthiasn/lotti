@@ -6951,24 +6951,54 @@ class AppLocalizationsNl extends AppLocalizations {
       'Weet u zeker dat u de volledige tekstindex wilt namaken? Dit kan enige tijd duren.';
 
   @override
-  String get maintenanceReSync => 'Berichten opnieuw synchroniseren';
+  String get maintenanceReSync => 'Berichtgeschiedenis';
 
   @override
   String get maintenanceReSyncAgentEntities => 'Agententiteiten';
 
   @override
+  String get maintenanceReSyncAgentLinks => 'Agentkoppelingen';
+
+  @override
+  String get maintenanceReSyncCompleteDescription =>
+      'Je andere apparaten ontvangen ze zodra de synchronisatie is bijgewerkt.';
+
+  @override
+  String get maintenanceReSyncCompleteTitle => 'Berichten in wachtrij';
+
+  @override
+  String get maintenanceReSyncCustom => 'Aangepast';
+
+  @override
   String get maintenanceReSyncDescription =>
-      'Berichten van de server opnieuw synchroniseren';
+      'Zet berichten klaar voor je andere apparaten';
 
   @override
   String get maintenanceReSyncEntityTypes => 'Soorten entiteiten';
 
   @override
+  String get maintenanceReSyncEverything => 'Alles';
+
+  @override
+  String get maintenanceReSyncFailed =>
+      'Berichten konden niet in de wachtrij worden gezet. Probeer het opnieuw.';
+
+  @override
+  String get maintenanceReSyncInvalidRange =>
+      'Het begin moet voor het einde liggen';
+
+  @override
   String get maintenanceReSyncJournalEntities => 'Journalentiteiten';
 
   @override
+  String get maintenanceReSyncLast30Days => 'Afgelopen 30 dagen';
+
+  @override
   String get maintenanceReSyncSelectAtLeastOne =>
-      'Selecteer ten minste één entiteittype';
+      'Selecteer ten minste één entiteitstype';
+
+  @override
+  String get maintenanceReSyncSending => 'Berichten voorbereiden';
 
   @override
   String get maintenanceReSyncStart => 'Begin';
@@ -9830,11 +9860,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncAddDeviceAction => 'Apparaat toevoegen';
 
   @override
-  String get syncAddDeviceCodeHint =>
-      'Heeft het nieuwe apparaat geen camera? Kopieer de koppelcode en plak hem daar.';
-
-  @override
-  String get syncAddDeviceConnected => 'Er is een nieuw apparaat toegevoegd';
+  String get syncAddDeviceConnected =>
+      'Het nieuwe apparaat is toegevoegd — rond de emoji-verificatie af voordat je verstuurt.';
 
   @override
   String get syncAddDeviceCopyCode => 'Koppelcode kopiëren';
@@ -9859,22 +9886,25 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncAddDeviceSecurityNote =>
-      'Deze koppelcode ontgrendelt je sync-account – laat alleen je eigen nieuwe apparaat hem scannen, en maak er nooit een schermafbeelding van of verstuur hem.';
+      'Behandel deze code als je wachtwoord — alleen je eigen nieuwe apparaat mag hem scannen.';
+
+  @override
+  String get syncAddDeviceSendMessages => 'Berichtgeschiedenis verzenden';
 
   @override
   String get syncAddDeviceSendSettings => 'Instellingen versturen';
 
   @override
   String get syncAddDeviceSendSettingsHint =>
-      'Zodra het nieuwe apparaat verbonden is, stuur je categorieën, gewoontes, dashboards en AI-instellingen ernaartoe.';
+      'Zodra het nieuwe apparaat met emoji’s is geverifieerd, stuur je meetbare gegevens, categorieën, gewoontes, dashboards en AI-instellingen ernaartoe.';
 
   @override
   String get syncAddDeviceSendSettingsPending =>
-      'Beschikbaar zodra het nieuwe apparaat is toegevoegd.';
+      'Beschikbaar nadat het nieuwe apparaat is toegevoegd en met emoji’s is geverifieerd.';
 
   @override
   String get syncAddDeviceSendSettingsReady =>
-      'Verstuur nu, of wacht tot het nieuwe apparaat is toegevoegd.';
+      'Nieuw apparaat geverifieerd — klaar om te versturen.';
 
   @override
   String get syncAddDeviceStepScan => 'Nu · Toon de code';
@@ -9956,9 +9986,6 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get syncDevicesSectionTitle => 'Apparaten';
 
   @override
   String get syncDevicesStaleHint => 'Waarschijnlijk niet meer in gebruik';
@@ -10050,10 +10077,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncPairConnectButton => 'Dit apparaat verbinden';
 
   @override
-  String get syncPairCopyCodeHint =>
-      'Heeft dit apparaat geen camera? Gebruik op het andere apparaat Koppelcode kopiëren en breng hem hierheen via een wachtwoordmanager, een versleutelde notitie of door hem over te typen – niet via chat of e-mail.';
-
-  @override
   String get syncPairDiscardCode => 'Een andere koppelcode invoeren';
 
   @override
@@ -10066,11 +10089,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPairedSettingsStep =>
-      'Kies op je andere apparaat in het scherm Apparaat toevoegen dat nog openstaat Instellingen versturen. Je categorieën, gewoontes, dashboards en AI-instellingen komen dan hierheen.';
+      'Je categorieën, gewoonten, dashboards en AI-instellingen komen daarvandaan.';
 
   @override
   String get syncPairedSettingsStepFallback =>
-      'Of open opnieuw Instellingen → Instellingen synchroniseren → Apparaten → Apparaat toevoegen.';
+      'Als je het hebt gesloten, open je op het andere apparaat Instellingen → Instellingen synchroniseren → Onderhoud, voer je de instellingensynchronisatie uit en kies je daarna Berichtgeschiedenis.';
 
   @override
   String get syncPairedVerifyDone =>
@@ -10082,7 +10105,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPairedVerifyStep =>
-      'Op beide apparaten verschijnt een rij emoji. Controleer of ze overeenkomen en bevestig op elk apparaat — tot dan kan dit apparaat je notities niet lezen.';
+      'Totdat je op beide apparaten bevestigt, kan dit apparaat je notities niet lezen.';
 
   @override
   String get syncPairedVerifyStepDone =>
@@ -10106,16 +10129,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncPairGoToDevices => 'Naar Apparaten';
 
   @override
-  String get syncPairMismatchRemedy =>
-      'Komt hij niet overeen? Gebruik dan de code die je eigen apparaat toont.';
-
-  @override
   String get syncPairMismatchWarning =>
       'Klopt dit niet? Verbind dan niet – de code hoort bij een ander account.';
 
   @override
   String get syncPairOnlyOwnCode =>
-      'Gebruik alleen een code die je zelf hebt gemaakt, op een apparaat dat van jou is. Scan je die van iemand anders, dan komt alles wat je hier schrijft in hun account terecht.';
+      'Gebruik alleen een code van je eigen apparaat — de code van iemand anders stuurt alles wat je schrijft naar diens account.';
 
   @override
   String get syncPairPasteTitle => 'Plak de koppelcode';
@@ -10155,7 +10174,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPairWhereToFind =>
-      'Open op een apparaat dat al synchroniseert Instellingen → Instellingen synchroniseren → Apparaten en kies Apparaat toevoegen.';
+      'De code staat onder ‘Apparaat toevoegen’ op een apparaat dat al synchroniseert — kopieer hem daar en plak hem hier.';
 
   @override
   String get syncPairWillJoin => 'Dit apparaat sluit zich aan bij:';
@@ -10222,6 +10241,16 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPayloadThemingSelection => 'Themaselectie';
+
+  @override
+  String get syncSetupCta => 'Synchronisatie instellen';
+
+  @override
+  String get syncSetupEmptyHint =>
+      'Je dagboek op al je apparaten — end-to-end versleuteld, alleen tussen je eigen apparaten.';
+
+  @override
+  String get syncSetupEmptyTitle => 'Synchroniseer je apparaten';
 
   @override
   String get syncStepAgentEntities => 'Agententiteiten';
@@ -11182,12 +11211,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get whatsNewSkipButton => 'Overslaan';
 
   @override
-  String get syncSetupEmptyTitle => 'Synchroniseer je apparaten';
+  String get syncPairedVerifyStepTitle =>
+      'Vergelijk de emoji\'s op beide apparaten';
 
   @override
-  String get syncSetupEmptyHint =>
-      'Je dagboek op al je apparaten — end-to-end versleuteld, alleen tussen je eigen apparaten.';
+  String get syncPairedSettingsStepTitle =>
+      'Stuur instellingen vanaf je andere apparaat';
 
   @override
-  String get syncSetupCta => 'Synchronisatie instellen';
+  String get syncPairFirstDeviceTitle => 'Je eerste apparaat instellen?';
+
+  @override
+  String get syncPairFirstDeviceHint =>
+      'Je eerste koppelcode komt uit het provisioning-hulpprogramma van je syncserver — zie de handleiding. Elk volgend apparaat krijgt zijn code uit de app.';
 }

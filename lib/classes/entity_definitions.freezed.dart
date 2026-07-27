@@ -1968,7 +1968,7 @@ class CategoryDefinition implements EntityDefinition {
 /// This is a starting value, not a live gate: the per-task switch on the
 /// AI summary card stays authoritative afterwards, so turning this on
 /// later does not reach back into tasks that already exist. Independent
-/// of [automaticInferenceEnabled] — switching wakes off leaves automatic
+/// of `automaticInferenceEnabled` — switching wakes off leaves automatic
 /// transcription and image analysis running.
 ///
 /// Nullable for JSON backward compatibility (absent key ⇒ `null` ⇒ off),

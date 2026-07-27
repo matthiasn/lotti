@@ -6,7 +6,6 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_ceremony_stages.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -150,96 +149,97 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
 
         return SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step2),
-            child: SyncFlowSection(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  VerificationCeremonyHeader(
-                    deviceName:
-                        widget.deviceKeys.deviceDisplayName ??
-                        widget.deviceKeys.deviceId ??
-                        '',
-                    userId: widget.deviceKeys.userId,
+            // The sheet itself is the card: nesting a second bordered,
+            // shadowed surface inside it was the one screen in the journey
+            // still drawn card-in-card.
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step2,
+              vertical: tokens.spacing.step4,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                VerificationCeremonyHeader(
+                  deviceName:
+                      widget.deviceKeys.deviceDisplayName ??
+                      widget.deviceKeys.deviceId ??
+                      '',
+                  userId: widget.deviceKeys.userId,
+                ),
+                SizedBox(height: tokens.spacing.step5),
+                if (runner == null)
+                  DesignSystemButton(
+                    key: const Key('matrix_start_verify'),
+                    onPressed: _verificationStartInFlight
+                        ? null
+                        : () => unawaited(startVerification()),
+                    label:
+                        context.messages.settingsMatrixStartVerificationLabel,
+                    size: DesignSystemButtonSize.large,
                   ),
-                  SizedBox(height: tokens.spacing.step5),
-                  if (runner == null)
-                    DesignSystemButton(
-                      key: const Key('matrix_start_verify'),
-                      onPressed: _verificationStartInFlight
-                          ? null
-                          : () => unawaited(startVerification()),
-                      label:
-                          context.messages.settingsMatrixStartVerificationLabel,
-                      size: DesignSystemButtonSize.large,
-                    ),
-                  if (lastStep?.isEmpty ?? false)
-                    Column(
-                      children: [
-                        Text(
-                          context
-                              .messages
-                              .settingsMatrixContinueVerificationLabel,
-                          style: tokens.typography.styles.body.bodyMedium,
+                if (lastStep?.isEmpty ?? false)
+                  Column(
+                    children: [
+                      Text(
+                        context
+                            .messages
+                            .settingsMatrixContinueVerificationLabel,
+                        style: tokens.typography.styles.body.bodyMedium,
+                      ),
+                      SizedBox(height: tokens.spacing.step3),
+                      DesignSystemButton(
+                        key: const Key('matrix_restart_verify'),
+                        onPressed: _verificationStartInFlight
+                            ? null
+                            : () => unawaited(startVerification(retry: true)),
+                        label: context
+                            .messages
+                            .settingsMatrixStartVerificationLabel,
+                        size: DesignSystemButtonSize.large,
+                      ),
+                    ],
+                  ),
+                if (isCancelled)
+                  VerificationCancelledStage(
+                    confirmKey: const Key('matrix_cancelled_confirm'),
+                    onConfirm: () {
+                      runner?.stopTimer();
+                      pop();
+                    },
+                  ),
+                if (isLastStepKey && emojis == null)
+                  DesignSystemButton(
+                    key: const Key('matrix_accept_verify'),
+                    onPressed: () => _acceptEmojiVerification(runner),
+                    label:
+                        context.messages.settingsMatrixAcceptVerificationLabel,
+                    size: DesignSystemButtonSize.large,
+                  ),
+                if (outcome == KeyVerificationOutcome.pending && emojis != null)
+                  VerificationEmojiStage(
+                    prompt: context.messages.settingsMatrixVerifyConfirm,
+                    emojis: emojis,
+                    awaitingOtherDevice: _awaitingOtherDevice,
+                    onAccept: () => unawaited(_acceptEmojiVerification(runner)),
+                    onCancel: () => unawaited(() async {
+                      await runner?.cancelVerification();
+                      pop();
+                    }()),
+                  ),
+                if (isSuccess)
+                  VerificationSuccessStage(
+                    message: context.messages
+                        .settingsMatrixVerificationSuccessLabel(
+                          widget.deviceKeys.deviceDisplayName ?? '',
+                          widget.deviceKeys.deviceId ?? '',
                         ),
-                        SizedBox(height: tokens.spacing.step3),
-                        DesignSystemButton(
-                          key: const Key('matrix_restart_verify'),
-                          onPressed: _verificationStartInFlight
-                              ? null
-                              : () => unawaited(startVerification(retry: true)),
-                          label: context
-                              .messages
-                              .settingsMatrixStartVerificationLabel,
-                          size: DesignSystemButtonSize.large,
-                        ),
-                      ],
-                    ),
-                  if (isCancelled)
-                    VerificationCancelledStage(
-                      confirmKey: const Key('matrix_cancelled_confirm'),
-                      onConfirm: () {
-                        runner?.stopTimer();
-                        pop();
-                      },
-                    ),
-                  if (isLastStepKey && emojis == null)
-                    DesignSystemButton(
-                      key: const Key('matrix_accept_verify'),
-                      onPressed: () => _acceptEmojiVerification(runner),
-                      label: context
-                          .messages
-                          .settingsMatrixAcceptVerificationLabel,
-                      size: DesignSystemButtonSize.large,
-                    ),
-                  if (outcome == KeyVerificationOutcome.pending &&
-                      emojis != null)
-                    VerificationEmojiStage(
-                      prompt: context.messages.settingsMatrixVerifyConfirm,
-                      emojis: emojis,
-                      awaitingOtherDevice: _awaitingOtherDevice,
-                      onAccept: () =>
-                          unawaited(_acceptEmojiVerification(runner)),
-                      onCancel: () => unawaited(() async {
-                        await runner?.cancelVerification();
-                        pop();
-                      }()),
-                    ),
-                  if (isSuccess)
-                    VerificationSuccessStage(
-                      message: context.messages
-                          .settingsMatrixVerificationSuccessLabel(
-                            widget.deviceKeys.deviceDisplayName ?? '',
-                            widget.deviceKeys.deviceId ?? '',
-                          ),
-                      onConfirm: () {
-                        unawaited(refreshUnverifiedDevices());
-                        runner?.stopTimer();
-                        pop();
-                      },
-                    ),
-                ],
-              ),
+                    onConfirm: () {
+                      unawaited(refreshUnverifiedDevices());
+                      runner?.stopTimer();
+                      pop();
+                    },
+                  ),
+              ],
             ),
           ),
         );

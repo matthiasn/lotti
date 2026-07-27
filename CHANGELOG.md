@@ -42,9 +42,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the new laptop just as well as the other way round. The sheet shows the
   pairing code, tells you when the new device has actually joined, and keeps
   "Send settings" — for your categories, habits, dashboards and AI settings —
-  within reach the whole time instead of below the code. It also says plainly
-  what the code is: letting your own new device scan it is fine, keeping a
-  screenshot or sending it through chat is not.
+  within reach the whole time instead of below the code. Transfers unlock only
+  after that exact new device completes emoji verification, when it can receive
+  the encryption keys needed to read them. The sheet also says plainly what the
+  code is: letting your own new device scan it is fine, keeping a screenshot or
+  sending it through chat is not.
+- **Send message history while adding a device.** "Send message history" now sits
+  beside "Send settings" on the existing device, where it can queue the local
+  history the new device does not have yet. It defaults to everything, also
+  offers the last 30 days or a custom range, and stays open with per-phase
+  progress until the messages are queued.
 - **A machine with no camera can be brought in too.** The typing screen now
   explains how to get the code across from the other device — copy it there,
   and move it the way you would a password — and says so instead of doing
@@ -81,6 +88,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entire pane, and the devices panel keeps a readable width on wide windows.
   The sidebar's sync descriptions were rewritten to fit without trailing off
   mid-word.
+- **Planning the rest of today is faster and listens to the whole check-in.**
+  Capture parsing and drafting now stay focused on the one artifact each step
+  must produce, stop as soon as that artifact is saved, and immediately pick
+  up a capture that arrived while background processing was already running.
+  This removes avoidable AI round trips that could make planning take about a
+  minute, while preserving separate time constraints, breaks and explicit
+  overcommit trade-offs from dense spoken plans.
 - **The app has one look now.** Every screen renders the design system's own
   theme — the same surfaces, type and accents the newer pages were built
   against — instead of a third-party color scheme with the design tokens
@@ -122,6 +136,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   card into Manage mode.
 
 ### Fixed
+- **Photos and audio now reach a device you sync your history to.** Sending
+  your existing entries to a newly set up device — from sync maintenance, or
+  automatically when a device noticed it was missing entries — transferred the
+  text of every entry but none of the images or recordings, leaving the new
+  device with photo and audio entries it could not open. Only entries created
+  *after* the device joined arrived complete. History transfers now carry the
+  media with the entry.
+- **The bottom navigation bar no longer collides with Android's system
+  buttons.** On phones that show the recents/home/back bar at the bottom —
+  Samsung devices among them — the app's own bar sat partly underneath it, so
+  its labels were crowded and taps near the bottom went to the system bar
+  instead of the app. The bar now keeps clear of the whole system area.
 - **A cancelled device verification no longer claims to have succeeded.** When
   the other device refused or cancelled the emoji check, this one showed the
   green shield and "You've successfully verified…" anyway — on the outgoing

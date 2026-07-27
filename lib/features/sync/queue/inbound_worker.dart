@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -64,15 +63,13 @@ const _logSub = 'queue.worker';
 ///
 /// 1. Optionally waits on [UserActivityGate] so inbound apply does not
 ///    fight the user's writes (M1).
-/// 2. Flushes the [PendingDecryptionPen] so any newly-decrypted events
-///    enter the queue before this batch is peeked.
-/// 3. Peeks up to [SyncTuning.inboundWorkerBatchSize] ready entries
+/// 2. Peeks up to [SyncTuning.inboundWorkerBatchSize] ready entries
 ///    and wraps the batch in
 ///    `sequenceLogService.runWithDeferredMissingEntries` so the N gap
 ///    detections inside the slice coalesce into at most one
 ///    `_emitMissingEntriesDetected` callback — the F1 concern from the
 ///    design review.
-/// 4. Applies each entry in order; commits the marker atomically via
+/// 3. Applies each entry in order; commits the marker atomically via
 ///    [InboundQueue.commitApplied]; retries failures with
 ///    exponential backoff.
 class InboundWorker {
@@ -84,7 +81,6 @@ class InboundWorker {
     required this._logging,
     this._prepareBatch,
     this._activityGate,
-    this._decryptionPen,
     this._idleTick = const Duration(seconds: 5),
     this._initialBackoff = const Duration(milliseconds: 500),
     this._maxBackoff = const Duration(seconds: 30),
@@ -98,7 +94,6 @@ class InboundWorker {
   final InboundPrepareBatchFn? _prepareBatch;
   final DomainLogger _logging;
   final UserActivityGate? _activityGate;
-  final PendingDecryptionPen? _decryptionPen;
   final Duration _idleTick;
   final Duration _initialBackoff;
   final Duration _maxBackoff;
@@ -156,13 +151,6 @@ class InboundWorker {
       while (_running) {
         await _waitUntilIdleOrStopped();
         if (!_running) break;
-        final pen = _decryptionPen;
-        if (pen != null) {
-          final room = await _resolveRoom();
-          if (room != null) {
-            await pen.flushInto(queue: _queue, room: room);
-          }
-        }
 
         // Subscribe to depthChanges BEFORE peeking so an enqueue that
         // lands during the peek cannot be missed: if the subscription

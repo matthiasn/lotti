@@ -616,9 +616,36 @@ void main() {
         );
         await tester.pump();
 
+        // One line, not two paragraphs: the where-to-find hint carries both
+        // where the code appears and how it moves here.
         final context = tester.element(find.byType(BundleImportWidget));
         expect(
-          find.text(context.messages.syncPairCopyCodeHint),
+          find.text(context.messages.syncPairWhereToFind),
+          findsOneWidget,
+        );
+      });
+    });
+
+    testWidgets('offers the honest first-device branch', (tester) async {
+      // A from-scratch user has no device that syncs: without this block the
+      // screen's instructions cannot be followed and the flow dead-ends in
+      // silence.
+      await onDesktop(() async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: defaultOverrides(),
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(BundleImportWidget));
+        expect(
+          find.byKey(const Key('bundle_import_first_device_hint')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(context.messages.syncPairFirstDeviceTitle),
           findsOneWidget,
         );
       });

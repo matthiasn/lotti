@@ -25,8 +25,12 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   SmartJournalEntityLoader({
     required this._attachmentIndex,
     required DomainLogger loggingService,
+    this.documentsDirectory,
     void Function()? onCachePurge,
-  }) : _logging = loggingService {
+  }) : _logging = loggingService,
+       _fileLoader = FileSyncJournalEntityLoader(
+         documentsDirectory: documentsDirectory,
+       ) {
     _vectorClockValidator = VectorClockValidator(
       loggingService: loggingService,
     );
@@ -39,6 +43,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
 
   final AttachmentIndex _attachmentIndex;
   final DomainLogger _logging;
+  @override
+  final Directory? documentsDirectory;
+  final FileSyncJournalEntityLoader _fileLoader;
   late final VectorClockValidator _vectorClockValidator;
   late final DescriptorDownloader _descriptorDownloader;
 
@@ -57,7 +64,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     required String jsonPath,
     VectorClock? incomingVectorClock,
   }) async {
-    final targetFile = resolveJsonCandidateFile(jsonPath);
+    final targetFile = _resolveCandidateFile(jsonPath);
     // Build a canonical index key once and reuse it to avoid inconsistencies
     // across platforms (Windows vs. POSIX). The key always uses forward slashes
     // and has a single leading '/'. Any leading '/' or '\\' characters are trimmed.
@@ -65,7 +72,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     // If we have an incoming vector clock, decide whether a fetch is needed.
     if (incomingVectorClock != null) {
       try {
-        final local = await const FileSyncJournalEntityLoader().load(
+        final local = await _fileLoader.load(
           jsonPath: jsonPath,
         );
         final localVc = local.meta.vectorClock;
@@ -190,7 +197,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     }
 
     // Read and return the entity from disk (either pre-existing or freshly written).
-    final entity = await const FileSyncJournalEntityLoader().load(
+    final entity = await _fileLoader.load(
       jsonPath: jsonPath,
     );
 
@@ -223,7 +230,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   }) async {
     final rp = relativePath;
     // Centralized resolution + sandbox enforcement (rejects path traversal).
-    final f = resolveJsonCandidateFile(rp);
+    final f = _resolveCandidateFile(rp);
     final fp = f.path;
     try {
       if (f.existsSync()) {
@@ -288,6 +295,16 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       );
       _onMissingDescriptorPath?.call(descriptorKey);
     }
+  }
+
+  File _resolveCandidateFile(String relativePath) {
+    final documentsDirectory = this.documentsDirectory;
+    return documentsDirectory == null
+        ? resolveJsonCandidateFile(relativePath)
+        : resolveJsonCandidateFileInDirectory(
+            relativePath,
+            documentsDirectory,
+          );
   }
 
   Future<bool> _maybePurgeCachedAttachment(Event event, String path) async {

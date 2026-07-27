@@ -18,6 +18,31 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
+/// One database family visited while historical sync messages are enqueued.
+enum ReSyncPhase {
+  journalEntities,
+  agentEntities,
+  agentLinks,
+}
+
+/// A snapshot emitted while [Maintenance.reSyncInterval] visits one phase.
+class ReSyncProgress {
+  const ReSyncProgress({
+    required this.phase,
+    required this.processed,
+    required this.isComplete,
+    this.total,
+  });
+
+  final ReSyncPhase phase;
+  final int processed;
+  final int? total;
+  final bool isComplete;
+}
+
+/// Receives progress snapshots from [Maintenance.reSyncInterval].
+typedef ReSyncProgressCallback = void Function(ReSyncProgress progress);
+
 class Maintenance {
   final JournalDb _db = getIt<JournalDb>();
 
@@ -26,19 +51,24 @@ class Maintenance {
   /// [includeJournalEntities] controls whether the journal+entry-link sweep
   /// runs. [includeAgentEntities] controls whether the agent entity+link sweep
   /// runs. Both default to `true` to preserve the original behavior; the
-  /// Resync Settings UI exposes these as checkboxes so the user can skip the
+  /// Re-sync Messages UI exposes these as checkboxes so the user can skip the
   /// agent sweep when it would otherwise enqueue tens of thousands of agent
   /// rows during a fresh device's catch-up.
   ///
   /// At least one flag must be `true`; if both are `false` the call is a
   /// no-op and emits a single MAINTENANCE log entry so the skip is visible
   /// in the sync log.
+  ///
+  /// [onProgress] reports the active phase after each database page. Journal
+  /// totals stay unknown until that phase completes because its existing
+  /// empty-page sentinel deliberately avoids an unbounded precount.
   Future<void> reSyncInterval({
     required DateTime start,
     required DateTime end,
     required AgentRepository agentRepository,
     bool includeJournalEntities = true,
     bool includeAgentEntities = true,
+    ReSyncProgressCallback? onProgress,
   }) async {
     if (!includeJournalEntities && !includeAgentEntities) {
       getIt<DomainLogger>().log(
@@ -55,6 +85,15 @@ class Maintenance {
     const pageSize = 100;
 
     if (includeJournalEntities) {
+      var processed = 0;
+      onProgress?.call(
+        const ReSyncProgress(
+          phase: ReSyncPhase.journalEntities,
+          processed: 0,
+          isComplete: false,
+        ),
+      );
+
       // 1. Re-sync journal entities and their links.
       //
       // The unbounded `countJournalEntries()` precount was misleading
@@ -69,6 +108,14 @@ class Maintenance {
             .orderedJournalInterval(start, end, pageSize, page * pageSize)
             .get();
         if (dbEntities.isEmpty) {
+          onProgress?.call(
+            ReSyncProgress(
+              phase: ReSyncPhase.journalEntities,
+              processed: processed,
+              total: processed,
+              isComplete: true,
+            ),
+          );
           break;
         }
 
@@ -83,26 +130,42 @@ class Maintenance {
         for (final entry in entries) {
           final jsonPath = relativeEntityPath(entry);
 
-          await outboxService.enqueueMessage(
+          await outboxService.enqueueMessageOrThrow(
             SyncMessage.journalEntity(
               id: entry.id,
               vectorClock: entry.meta.vectorClock,
               jsonPath: jsonPath,
               status: SyncEntryStatus.update,
               originatingHostId: hostId,
+              // A re-sync targets a peer that may hold none of this history —
+              // typically a freshly provisioned device. `update` status is
+              // correct (the entry is not new here), but JSON alone would
+              // leave that peer with image and audio entries it can never
+              // render, so the media rides along.
+              includeAttachments: true,
             ),
           );
+          processed++;
 
           final entryLinks = linksByFromId[entry.meta.id] ?? const [];
           for (final entryLink in entryLinks) {
-            await outboxService.enqueueMessage(
+            await outboxService.enqueueMessageOrThrow(
               SyncMessage.entryLink(
                 status: SyncEntryStatus.update,
                 entryLink: entryLink,
               ),
             );
+            processed++;
           }
         }
+
+        onProgress?.call(
+          ReSyncProgress(
+            phase: ReSyncPhase.journalEntities,
+            processed: processed,
+            isComplete: false,
+          ),
+        );
       }
     }
 
@@ -119,13 +182,28 @@ class Maintenance {
           limit: limit,
           offset: offset,
         ),
-        enqueueAction: (entity) => outboxService.enqueueMessage(
+        enqueueAction: (entity) => outboxService.enqueueMessageOrThrow(
           SyncMessage.agentEntity(
             agentEntity: entity,
             status: SyncEntryStatus.update,
           ),
         ),
         pageSize: pageSize,
+        onProgress:
+            ({
+              required int processed,
+              required int total,
+              required bool isComplete,
+            }) {
+              onProgress?.call(
+                ReSyncProgress(
+                  phase: ReSyncPhase.agentEntities,
+                  processed: processed,
+                  total: total,
+                  isComplete: isComplete,
+                ),
+              );
+            },
       );
 
       await _reSyncPaginated(
@@ -139,13 +217,28 @@ class Maintenance {
           limit: limit,
           offset: offset,
         ),
-        enqueueAction: (link) => outboxService.enqueueMessage(
+        enqueueAction: (link) => outboxService.enqueueMessageOrThrow(
           SyncMessage.agentLink(
             agentLink: link,
             status: SyncEntryStatus.update,
           ),
         ),
         pageSize: pageSize,
+        onProgress:
+            ({
+              required int processed,
+              required int total,
+              required bool isComplete,
+            }) {
+              onProgress?.call(
+                ReSyncProgress(
+                  phase: ReSyncPhase.agentLinks,
+                  processed: processed,
+                  total: total,
+                  isComplete: isComplete,
+                ),
+              );
+            },
       );
     }
   }
@@ -155,16 +248,33 @@ class Maintenance {
     required Future<List<T>> Function(int limit, int offset) itemsFetcher,
     required Future<void> Function(T item) enqueueAction,
     required int pageSize,
+    void Function({
+      required int processed,
+      required int total,
+      required bool isComplete,
+    })?
+    onProgress,
   }) async {
     final count = await countFetcher();
-    if (count == 0) return;
+    if (count == 0) {
+      onProgress?.call(processed: 0, total: 0, isComplete: true);
+      return;
+    }
 
     final pages = (count / pageSize).ceil();
+    var processed = 0;
+    onProgress?.call(processed: 0, total: count, isComplete: false);
     for (var page = 0; page < pages; page++) {
       final items = await itemsFetcher(pageSize, page * pageSize);
       for (final item in items) {
         await enqueueAction(item);
       }
+      processed += items.length;
+      onProgress?.call(
+        processed: processed,
+        total: count,
+        isComplete: page == pages - 1,
+      );
     }
   }
 

@@ -6,7 +6,6 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
-import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -150,7 +149,6 @@ void main() {
       loggingService: logging,
     );
     room = MockRoom();
-    stubPenDecryption(room);
     when(() => room.id).thenReturn(roomId);
   });
 
@@ -460,7 +458,6 @@ void main() {
         loggingService: localLogging,
       );
       final localRoom = MockRoom();
-      stubPenDecryption(localRoom);
       when(() => localRoom.id).thenReturn(roomId);
 
       var virtualNow = DateTime(2024);
@@ -602,49 +599,6 @@ void main() {
     );
 
     test(
-      'loop flushes the decryption pen before peeking the queue each '
-      'iteration',
-      () async {
-        final pen = PendingDecryptionPen(logging: logging);
-        final appliedDone = Completer<void>();
-        final worker = InboundWorker(
-          queue: queue,
-          sequenceLogService: sequenceLog,
-          resolveRoom: () async => room,
-          apply: (_, _) async {
-            appliedDone.complete();
-            return ApplyOutcome.applied;
-          },
-          logging: logging,
-          decryptionPen: pen,
-        );
-        final encrypted = MockEvent();
-        when(() => encrypted.eventId).thenReturn(r'$enc1');
-        when(() => encrypted.roomId).thenReturn(roomId);
-        when(() => encrypted.type).thenReturn(EventTypes.Encrypted);
-        when(() => encrypted.content).thenReturn(
-          <String, dynamic>{'algorithm': 'm.megolm.v1.aes-sha2'},
-        );
-        pen.hold(encrypted);
-        expect(pen.size, 1);
-
-        final decrypted = _buildSyncEvent(
-          eventId: r'$enc1',
-          roomId: roomId,
-          originTsMs: 42,
-        );
-        when(
-          () => room.getEventById(r'$enc1'),
-        ).thenAnswer((_) async => decrypted);
-
-        await worker.start();
-        await appliedDone.future;
-        await worker.stop();
-        expect(pen.size, 0);
-      },
-    );
-
-    test(
       'loop wakes up near the soonest retry nextDueAt instead of sleeping '
       'for the full idleTick (P1 — decryptionPending/missingBase/noRoom '
       'retries were previously rounded up to idleTick)',
@@ -723,23 +677,19 @@ void main() {
       '_running is cleared so start() can relaunch afterwards',
       () async {
         final loopErrorCaptured = Completer<void>();
-        // Resolve throws on the first call (pen.flushInto path); after
-        // that returns the real room so start() can succeed again.
-        var resolveCalls = 0;
-        final decryptionPen = PendingDecryptionPen(logging: logging);
+        final brokenQueue = MockInboundQueue();
+        when(
+          () => brokenQueue.depthChanges,
+        ).thenAnswer((_) => const Stream<QueueDepthSignal>.empty());
+        when(
+          () => brokenQueue.peekBatchReady(maxBatch: any(named: 'maxBatch')),
+        ).thenThrow(StateError('peek boom'));
         final worker = InboundWorker(
-          queue: queue,
+          queue: brokenQueue,
           sequenceLogService: sequenceLog,
-          resolveRoom: () async {
-            resolveCalls++;
-            if (resolveCalls == 1) {
-              throw StateError('resolve boom');
-            }
-            return room;
-          },
+          resolveRoom: () async => room,
           apply: (_, _) async => ApplyOutcome.applied,
           logging: logging,
-          decryptionPen: decryptionPen,
         );
         when(
           () => logging.error(
@@ -756,15 +706,6 @@ void main() {
             loopErrorCaptured.complete();
           }
         });
-        // Holding an encrypted event forces the pen.flushInto branch
-        // which calls _resolveRoom() and blows up on the first call.
-        final enc = MockEvent();
-        when(() => enc.eventId).thenReturn(r'$enc');
-        when(() => enc.roomId).thenReturn(roomId);
-        when(() => enc.type).thenReturn(EventTypes.Encrypted);
-        when(() => enc.content).thenReturn(<String, dynamic>{});
-        decryptionPen.hold(enc);
-
         await worker.start();
         await loopErrorCaptured.future;
         await worker.stop();

@@ -505,6 +505,10 @@ class BackfillResponseHandler {
               vectorClock: journalEntry.meta.vectorClock,
               status: SyncEntryStatus.update,
               originatingHostId: originatingHostId,
+              // The requester is missing this entry entirely, so it is also
+              // missing any media the entry references — send the blob with
+              // the JSON rather than leaving an unrenderable entry behind.
+              includeAttachments: true,
             ),
           );
         }

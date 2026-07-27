@@ -198,7 +198,7 @@ void main() {
       sentMessages = [];
       loggedEvents = [];
       loggedExceptions = [];
-      when(() => outboxService.enqueueMessage(any())).thenAnswer((
+      when(() => outboxService.enqueueMessageOrThrow(any())).thenAnswer((
         invocation,
       ) async {
         sentMessages.add(invocation.positionalArguments.first as SyncMessage);
@@ -292,6 +292,67 @@ void main() {
           journalMessages.map((m) => m.id),
           containsAll(entries.map((e) => e.meta.id)),
         );
+        verify(
+          () => outboxService.enqueueMessageOrThrow(any()),
+        ).called(entries.length);
+      });
+
+      // Regression: a re-sync is how a freshly provisioned device gets its
+      // history, and that device holds none of the referenced media. Sending
+      // the entries as plain updates left it with image and audio entries it
+      // could never render — the JSON synced, the blobs never did.
+      test('opts every re-sent entry into carrying its media', () async {
+        final timestamp = DateTime(2024, 3, 10);
+        await _insertEntries(journalDb, [
+          _buildJournalEntry(
+            id: 'media-entry',
+            timestamp: timestamp,
+            text: 'Has an image',
+          ),
+        ]);
+
+        await maintenance.reSyncInterval(
+          start: timestamp.subtract(const Duration(days: 1)),
+          end: timestamp.add(const Duration(days: 1)),
+          agentRepository: mockAgentRepo,
+          includeAgentEntities: false,
+        );
+
+        final journalMessages = sentMessages
+            .whereType<SyncJournalEntity>()
+            .toList();
+        expect(journalMessages, hasLength(1));
+        expect(journalMessages.single.includeAttachments, isTrue);
+      });
+
+      test('propagates a journal enqueue failure', () async {
+        final timestamp = DateTime(2024, 1, 15);
+        await _insertEntries(journalDb, [
+          _buildJournalEntry(
+            id: 'enqueue-failure',
+            timestamp: timestamp,
+            text: 'Failure',
+          ),
+        ]);
+        when(
+          () => outboxService.enqueueMessageOrThrow(any()),
+        ).thenThrow(Exception('outbox write failed'));
+
+        await expectLater(
+          maintenance.reSyncInterval(
+            start: timestamp.subtract(const Duration(days: 1)),
+            end: timestamp.add(const Duration(days: 1)),
+            agentRepository: mockAgentRepo,
+            includeAgentEntities: false,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (error) => error.toString(),
+              'message',
+              contains('outbox write failed'),
+            ),
+          ),
+        );
       });
 
       test('handles pagination beyond the default page size', () async {
@@ -354,6 +415,56 @@ void main() {
         expect(journalMessages, hasLength(2));
         expect(linkMessages, hasLength(1));
         expect(linkMessages.first.entryLink.id, equals(link.id));
+      });
+
+      test('reports paged journal progress through completion', () async {
+        final baseDate = DateTime(2024, 3);
+        final entryA = _buildJournalEntry(
+          id: 'progress-A',
+          timestamp: baseDate,
+          text: 'Progress A',
+        );
+        final entryB = _buildJournalEntry(
+          id: 'progress-B',
+          timestamp: baseDate.add(const Duration(minutes: 5)),
+          text: 'Progress B',
+        );
+        await _insertEntries(journalDb, [entryA, entryB]);
+        await journalDb.upsertEntryLink(
+          _buildEntryLink(
+            id: 'progress-link',
+            fromId: entryA.meta.id,
+            toId: entryB.meta.id,
+            timestamp: baseDate,
+          ),
+        );
+        final progress = <ReSyncProgress>[];
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(hours: 1)),
+          end: baseDate.add(const Duration(hours: 1)),
+          agentRepository: mockAgentRepo,
+          includeAgentEntities: false,
+          onProgress: progress.add,
+        );
+
+        expect(progress.first.phase, ReSyncPhase.journalEntities);
+        expect(progress.first.processed, 0);
+        expect(progress.first.total, isNull);
+        expect(progress.first.isComplete, isFalse);
+        expect(
+          progress.any(
+            (event) =>
+                event.phase == ReSyncPhase.journalEntities &&
+                event.processed == 3 &&
+                !event.isComplete,
+          ),
+          isTrue,
+        );
+        expect(progress.last.phase, ReSyncPhase.journalEntities);
+        expect(progress.last.processed, 3);
+        expect(progress.last.total, 3);
+        expect(progress.last.isComplete, isTrue);
       });
 
       test('filters journal entities by provided date range', () async {
@@ -626,6 +737,64 @@ void main() {
           containsAll(['combo-entity-1', 'combo-state-1']),
         );
         expect(linkMessages.first.agentLink?.id, equals('combo-link-1'));
+      });
+
+      test('reports agent entity and link phases with totals', () async {
+        final baseDate = DateTime(2025, 2);
+        final entity = AgentDomainEntity.agent(
+          id: 'progress-agent',
+          agentId: 'progress-agent',
+          kind: 'task_agent',
+          displayName: 'Progress Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'progress-state',
+          config: const AgentConfig(),
+          createdAt: baseDate,
+          updatedAt: baseDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+        final link = agent_model.AgentLink.basic(
+          id: 'progress-agent-link',
+          fromId: 'progress-agent',
+          toId: 'progress-state',
+          createdAt: baseDate,
+          updatedAt: baseDate,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+        await populateAgentDb(entities: [entity], links: [link]);
+        final progress = <ReSyncProgress>[];
+
+        await maintenance.reSyncInterval(
+          start: baseDate.subtract(const Duration(hours: 1)),
+          end: baseDate.add(const Duration(hours: 1)),
+          agentRepository: agentRepo,
+          includeJournalEntities: false,
+          onProgress: progress.add,
+        );
+
+        expect(
+          progress
+              .where(
+                (event) =>
+                    event.phase == ReSyncPhase.agentEntities &&
+                    event.isComplete,
+              )
+              .single
+              .processed,
+          1,
+        );
+        expect(
+          progress
+              .where(
+                (event) =>
+                    event.phase == ReSyncPhase.agentLinks && event.isComplete,
+              )
+              .single
+              .total,
+          1,
+        );
       });
 
       test(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -47,13 +48,17 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 import '../test/mocks/mocks.dart';
+import '../test/test_resources/test_audio_data.dart';
 import '../test/utils/utils.dart';
 
 const _uuid = Uuid();
@@ -113,6 +118,7 @@ class _DeviceOutbox {
     required this.sender,
     required this.journalDb,
     required this.syncDb,
+    required this.documentsDirectory,
     required this.deviceName,
   });
 
@@ -120,6 +126,7 @@ class _DeviceOutbox {
   final _ObservedOutboxMessageSender sender;
   final JournalDb journalDb;
   final SyncDatabase syncDb;
+  final Directory documentsDirectory;
   final String deviceName;
   int nextCounter = 1;
 
@@ -158,6 +165,7 @@ class _DeviceOutbox {
       sender: sender,
       journalDb: journalDb,
       syncDb: syncDb,
+      documentsDirectory: documentsDirectory,
       deviceName: deviceName,
     );
   }
@@ -224,6 +232,12 @@ Future<MatrixService> _createMatrixService({
       SavedTaskFiltersPersistence(settingsDb),
       updateNotifications,
     ),
+    journalEntityLoader: SmartJournalEntityLoader(
+      attachmentIndex: sharedAttachmentIndex,
+      loggingService: loggingService,
+      documentsDirectory: documentsDirectory,
+    ),
+    documentsDirectory: documentsDirectory,
     attachmentIndex: sharedAttachmentIndex,
     sequenceLogService: sequenceLogService,
     journalDb: journalDb,
@@ -385,13 +399,15 @@ Future<void> throwIfStalled({
 
   final coord = device.queueCoordinator;
   final stats = await coord.queue.stats();
-  // Held ciphertext counts as outstanding. A `PendingDecryptionPen` entry has
-  // no queue row by design, so depth reads zero while the device is legitimately
-  // waiting for a Megolm key — for up to the pen's full retry window. Treating
-  // depth plus bridge state as exhaustive would turn a recoverable
-  // degraded-network run into a false failure.
-  final held = coord.heldCiphertextCount;
-  final quiet = stats.total == 0 && held == 0 && !coord.isBridgeInFlight;
+  // Still-encrypted events have no queue row. Their durable resume floor is
+  // therefore part of "outstanding work": a later room key or cold-start
+  // bridge can still revisit them even while queue depth is zero.
+  final roomId = device.syncRoomId;
+  final resumeFloorTs = roomId == null
+      ? null
+      : await coord.queue.resumeFloorTs(roomId);
+  final quiet =
+      stats.total == 0 && resumeFloorTs == null && !coord.isBridgeInFlight;
 
   // Below the failing threshold, report rather than fail. Healthy degraded
   // runs have been measured going 62s without the journal count moving, so
@@ -403,7 +419,7 @@ Future<void> throwIfStalled({
       '[stall-probe] no progress for '
       '${sinceLastProgress.elapsed.inSeconds}s at $currentCount entries; '
       'quiet=$quiet queue[total=${stats.total} ready=${stats.readyNow}] '
-      'heldCiphertext=$held '
+      'resumeFloorTs=$resumeFloorTs '
       'bridgeInFlight=${coord.isBridgeInFlight}',
     );
     return;
@@ -418,7 +434,7 @@ Future<void> throwIfStalled({
     'remaining wait cannot help. '
     'queue[total=${stats.total} ready=${stats.readyNow} '
     'byProducer=${stats.byProducer}] '
-    'heldCiphertext=$held '
+    'resumeFloorTs=$resumeFloorTs '
     'bridgeInFlight=${coord.isBridgeInFlight} '
     'currentRoomId=${device.syncRoomId}',
   );
@@ -444,7 +460,9 @@ void main() {
     final mockUpdateNotifications = MockUpdateNotifications();
     late LoggingService sharedLoggingService;
     late UserActivityService sharedUserActivityService;
-    late Directory sharedDocumentsDirectory;
+    late Directory harnessDocumentsRoot;
+    late Directory aliceDocumentsDirectory;
+    late Directory bobDocumentsDirectory;
     late AiConfigRepository sharedAiConfigRepository;
 
     when(() => mockUpdateNotifications.updateStream).thenAnswer(
@@ -551,7 +569,13 @@ void main() {
         'lotti_matrix_${_uuid.v1()}_',
       );
       debugPrint('Created temporary docDir ${docDir.path}');
-      sharedDocumentsDirectory = docDir;
+      harnessDocumentsRoot = docDir;
+      aliceDocumentsDirectory = await Directory(
+        '${docDir.path}/alice',
+      ).create();
+      bobDocumentsDirectory = await Directory(
+        '${docDir.path}/bob',
+      ).create();
 
       aiConfigDb = AiConfigDb(inMemoryDatabase: true);
       sharedAiConfigRepository = AiConfigRepository(aiConfigDb);
@@ -561,7 +585,7 @@ void main() {
 
       // Register essential dependencies
       getIt
-        ..registerSingleton<Directory>(sharedDocumentsDirectory)
+        ..registerSingleton<Directory>(harnessDocumentsRoot)
         ..registerSingleton<LoggingService>(sharedLoggingService)
         ..registerSingleton<DomainLogger>(
           _EchoDomainLogger(loggingService: sharedLoggingService),
@@ -613,6 +637,11 @@ void main() {
       } catch (e) {
         debugPrint('Error during database cleanup: $e');
       }
+      try {
+        await harnessDocumentsRoot.delete(recursive: true);
+      } catch (e) {
+        debugPrint('Error deleting temporary documents: $e');
+      }
     });
 
     tearDown(() async {
@@ -635,7 +664,7 @@ void main() {
         ]);
 
         final aliceClient = await createMatrixClient(
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: aliceDocumentsDirectory,
           dbName: 'AliceV2',
         );
         final aliceRegistry = SentEventRegistry();
@@ -654,7 +683,7 @@ void main() {
           secureStorage: secureStorageMock,
           deviceName: 'AliceV2',
           activityService: sharedUserActivityService,
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: aliceDocumentsDirectory,
           updateNotifications: mockUpdateNotifications,
           aiConfigRepository: sharedAiConfigRepository,
           sentEventRegistry: aliceRegistry,
@@ -686,7 +715,7 @@ void main() {
 
         debugPrint('\n--- Bob goes live');
         bob = await _createBobService(
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: bobDocumentsDirectory,
           config: config2,
           loggingService: getIt<DomainLogger>(),
           journalDb: bobDb,
@@ -729,7 +758,7 @@ void main() {
           matrixService: alice,
           journalDb: aliceDb,
           syncDb: aliceSyncDb,
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: aliceDocumentsDirectory,
           userActivityService: sharedUserActivityService,
           loggingService: getIt<DomainLogger>(),
           vectorClockService: aliceVectorClockService,
@@ -740,7 +769,7 @@ void main() {
           matrixService: bob,
           journalDb: bobDb,
           syncDb: bobSyncDb,
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: bobDocumentsDirectory,
           userActivityService: sharedUserActivityService,
           loggingService: getIt<DomainLogger>(),
           vectorClockService: bobVectorClockService,
@@ -832,6 +861,269 @@ void main() {
     );
 
     test(
+      'Image sync transfers metadata and exact file bytes to Bob',
+      () async {
+        const mediaTimeout = Duration(minutes: 3);
+        final id = const Uuid().v1();
+        final timestamp = DateTime.utc(2025, 2, 1, 12);
+        final image = JournalImage(
+          meta: _nextMediaMetadata(
+            device: aliceOutbox,
+            id: id,
+            timestamp: timestamp,
+          ),
+          data: ImageData(
+            capturedAt: timestamp,
+            imageId: id,
+            imageFile: '$id.png',
+            imageDirectory: '/images/2025-02-01/',
+          ),
+          entryText: const EntryText(plainText: 'Matrix image fixture'),
+        );
+        final bytes = base64Decode(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC'
+          'AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        );
+
+        final received = await _sendMediaEntity(
+          entity: image,
+          bytes: bytes,
+          sender: aliceOutbox,
+          receiver: bobOutbox,
+          receiverService: bob,
+          timeout: mediaTimeout,
+        );
+
+        expect(received, isA<JournalImage>());
+        final receivedImage = received as JournalImage;
+        expect(receivedImage.meta, image.meta);
+        expect(receivedImage.data, image.data);
+        expect(receivedImage.entryText, image.entryText);
+      },
+      timeout: const Timeout(Duration(minutes: 5)),
+      skip: skipReason ?? false,
+    );
+
+    test(
+      'Audio sync transfers metadata and exact file bytes to Alice',
+      () async {
+        const mediaTimeout = Duration(minutes: 3);
+        final id = const Uuid().v1();
+        final timestamp = DateTime.utc(2025, 2, 1, 13);
+        final audio = JournalAudio(
+          meta: _nextMediaMetadata(
+            device: bobOutbox,
+            id: id,
+            timestamp: timestamp,
+          ),
+          data: AudioData(
+            dateFrom: timestamp,
+            dateTo: timestamp.add(const Duration(seconds: 1)),
+            audioFile: '$id.wav',
+            audioDirectory: '/audio/2025-02-01/',
+            duration: const Duration(seconds: 1),
+            language: 'en',
+          ),
+          entryText: const EntryText(plainText: 'Matrix audio fixture'),
+        );
+        final bytes = base64Decode(TestAudioData.shortSilenceWav);
+
+        final received = await _sendMediaEntity(
+          entity: audio,
+          bytes: bytes,
+          sender: bobOutbox,
+          receiver: aliceOutbox,
+          receiverService: alice,
+          timeout: mediaTimeout,
+        );
+
+        expect(received, isA<JournalAudio>());
+        final receivedAudio = received as JournalAudio;
+        expect(receivedAudio.meta, audio.meta);
+        expect(receivedAudio.data, audio.data);
+        expect(receivedAudio.entryText, audio.entryText);
+      },
+      timeout: const Timeout(Duration(minutes: 5)),
+      skip: skipReason ?? false,
+    );
+
+    test(
+      'Late Megolm key survives Bob restart and clears the durable floor',
+      () async {
+        const lateKeyTimeout = Duration(minutes: 3);
+        final bobCountBefore = await bobDb.getJournalCount();
+        final bobDeviceId = bob.client.deviceID;
+        expect(bobDeviceId, isNotNull);
+
+        final bobDevice =
+            alice.client.userDeviceKeys[bobUserName]?.deviceKeys[bobDeviceId];
+        expect(
+          bobDevice,
+          isNotNull,
+          reason: 'Alice must know Bob’s verified device after SAS setup',
+        );
+        expect(bobDevice!.directVerified, isTrue);
+
+        try {
+          // Exclude Bob from a freshly-created outbound Megolm session. Bob
+          // still receives the room event, but Alice does not send its session
+          // key until this test makes Bob eligible again.
+          await bobDevice.setVerified(false, false);
+          await alice.client.encryption!.keyManager
+              .clearOrUseOutboundGroupSession(roomId, wipe: true);
+
+          await _sendTestMessages(
+            1,
+            device: aliceOutbox,
+            timeout: lateKeyTimeout,
+          );
+
+          int? floorBeforeRestart;
+          await waitUntilAsync(
+            () async {
+              floorBeforeRestart = await bob.queueCoordinator.queue
+                  .resumeFloorTs(roomId);
+              return floorBeforeRestart != null;
+            },
+            timeout: lateKeyTimeout,
+          );
+          expect(await bobDb.getJournalCount(), bobCountBefore);
+
+          // Tear down the whole receiving app while the ciphertext has no
+          // queue row. The resume floor is the only Lotti-owned recovery
+          // state that survives this point.
+          await bobOutbox.service.dispose();
+          bobOutboxInitialized = false;
+          await bob.dispose();
+          bobInitialized = false;
+          final persistedMarker = await (bobSyncDb.select(
+            bobSyncDb.queueMarkers,
+          )..where((table) => table.roomId.equals(roomId))).getSingle();
+          expect(persistedMarker.resumeFloorTs, floorBeforeRestart);
+
+          bob = await _createBobService(
+            documentsDirectory: bobDocumentsDirectory,
+            config: config2,
+            loggingService: getIt<DomainLogger>(),
+            journalDb: bobDb,
+            settingsDb: bobSettingsDb,
+            secureStorage: secureStorageMock,
+            activityService: sharedUserActivityService,
+            updateNotifications: mockUpdateNotifications,
+            aiConfigRepository: sharedAiConfigRepository,
+            singleInstance: false,
+            syncDb: bobSyncDb,
+            vectorClockService: bobVectorClockService,
+          );
+          bobInitialized = true;
+          await bob.init();
+          expect(bob.debugPipeline, isNotNull);
+
+          // Prove that restart alone cannot silently discard the unresolved
+          // boundary: a real production bridge still sees ciphertext and must
+          // leave the persisted floor in place.
+          await bob.queueCoordinator.triggerBridge();
+          expect(await bobDb.getJournalCount(), bobCountBefore);
+          expect(
+            await bob.queueCoordinator.queue.resumeFloorTs(roomId),
+            floorBeforeRestart,
+          );
+
+          await bobDevice.setVerified(true, false);
+          final outboundSession = alice.client.encryption!.keyManager
+              .getOutboundGroupSession(roomId)
+              ?.outboundGroupSession;
+          expect(outboundSession, isNotNull);
+          final aliceInboundSession = await alice.client.encryption!.keyManager
+              .loadInboundGroupSession(roomId, outboundSession!.sessionId);
+          final originalSessionKey =
+              aliceInboundSession?.content['session_key'];
+          expect(originalSessionKey, isA<String>());
+          final roomKeyReceived = Completer<void>();
+          final roomKeySub = bob.client.onToDeviceEvent.stream.listen((event) {
+            if (!roomKeyReceived.isCompleted &&
+                event.type == EventTypes.RoomKey &&
+                event.content['session_id'] == outboundSession.sessionId) {
+              roomKeyReceived.complete();
+            }
+          });
+          // Send the exact current Megolm session through the SDK's real
+          // encrypted to-device transport. Its next sync must store the key
+          try {
+            await alice.client.sendToDeviceEncrypted(
+              [bobDevice],
+              EventTypes.RoomKey,
+              <String, Object?>{
+                'algorithm': AlgorithmTypes.megolmV1AesSha2,
+                'room_id': roomId,
+                'session_id': outboundSession.sessionId,
+                'session_key': originalSessionKey,
+              },
+            );
+            // Make the restarted test client poll deterministically instead of
+            // waiting for its background long-poll cadence.
+            bob.client.backgroundSync = false;
+            await bob.client.abortSync();
+            await bob.client.oneShotSync(timeout: Duration.zero);
+            await roomKeyReceived.future.timeout(lateKeyTimeout);
+          } finally {
+            await roomKeySub.cancel();
+            bob.client.backgroundSync = true;
+          }
+          expect(
+            await bob.client.encryption!.keyManager.loadInboundGroupSession(
+              roomId,
+              outboundSession.sessionId,
+            ),
+            isNotNull,
+            reason: 'the restarted SDK must persist the real room key',
+          );
+          await bob.queueCoordinator.triggerBridge();
+
+          await waitUntilAsync(
+            () async =>
+                await bobDb.getJournalCount() == bobCountBefore + 1 &&
+                await bob.queueCoordinator.queue.resumeFloorTs(roomId) == null,
+            timeout: lateKeyTimeout,
+          );
+          expect(
+            await bob.queueCoordinator.queue.resumeFloorTs(roomId),
+            isNull,
+            reason: 'a completed post-key walk must clear the covered floor',
+          );
+
+          // Rewalking the same server history must dedupe by event id/vector
+          // clock rather than apply the recovered bundle twice.
+          await bob.queueCoordinator.triggerBridge();
+          expect(await bobDb.getJournalCount(), bobCountBefore + 1);
+
+          bobOutbox = await _DeviceOutbox.create(
+            matrixService: bob,
+            journalDb: bobDb,
+            syncDb: bobSyncDb,
+            documentsDirectory: bobDocumentsDirectory,
+            userActivityService: sharedUserActivityService,
+            loggingService: getIt<DomainLogger>(),
+            vectorClockService: bobVectorClockService,
+            deviceName: 'bobDeviceV2',
+          );
+          bobOutboxInitialized = true;
+        } finally {
+          if (!bobDevice.directVerified) {
+            await bobDevice.setVerified(true, false);
+          }
+          await alice.client.encryption!.keyManager
+              .clearOrUseOutboundGroupSession(roomId, wipe: true);
+        }
+      },
+      // Four sequential operations use lateKeyTimeout. Keep the harness
+      // budget above their combined diagnostic budgets so waitUntilAsync (or
+      // the room-key timeout) reports the actual stalled phase.
+      timeout: const Timeout(Duration(minutes: 15)),
+      skip: skipReason ?? false,
+    );
+
+    test(
       'Bundled outbox convergence: Bob catches up after cold restart',
       () async {
         // Bob's app is closed while Alice accumulates local changes. Alice's
@@ -907,7 +1199,7 @@ void main() {
         // Use singleInstance: false to avoid sqflite connection-cache
         // contention with the disposed first client's cached handle.
         bob = await _createBobService(
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: bobDocumentsDirectory,
           config: config2,
           loggingService: getIt<DomainLogger>(),
           journalDb: bobDb,
@@ -1179,7 +1471,7 @@ void main() {
         debugPrint('\n--- Phase 4: Bob cold-starts mid-burst');
         final catchupStopwatch = Stopwatch()..start();
         bob = await _createBobService(
-          documentsDirectory: sharedDocumentsDirectory,
+          documentsDirectory: bobDocumentsDirectory,
           config: config2,
           loggingService: getIt<DomainLogger>(),
           journalDb: bobDb,
@@ -1392,6 +1684,146 @@ Future<void> _setMatrixSyncEnabled(JournalDb db, {required bool enabled}) {
   );
 }
 
+Metadata _nextMediaMetadata({
+  required _DeviceOutbox device,
+  required String id,
+  required DateTime timestamp,
+}) {
+  final counter = device.nextCounter++;
+  return Metadata(
+    id: id,
+    createdAt: timestamp,
+    dateFrom: timestamp,
+    dateTo: timestamp,
+    updatedAt: timestamp,
+    starred: true,
+    vectorClock: VectorClock({device.deviceName: counter}),
+  );
+}
+
+String _relativeMediaPath(JournalEntity entity) {
+  return switch (entity) {
+    JournalImage() => getRelativeImagePath(entity),
+    JournalAudio() => AudioUtils.getRelativeAudioPath(entity),
+    _ => throw ArgumentError.value(
+      entity,
+      'entity',
+      'Expected JournalImage or JournalAudio',
+    ),
+  };
+}
+
+File _mediaFileFor(_DeviceOutbox device, JournalEntity entity) {
+  return File('${device.documentsDirectory.path}${_relativeMediaPath(entity)}');
+}
+
+Future<JournalEntity> _sendMediaEntity({
+  required JournalEntity entity,
+  required List<int> bytes,
+  required _DeviceOutbox sender,
+  required _DeviceOutbox receiver,
+  required MatrixService receiverService,
+  required Duration timeout,
+}) async {
+  final sourceFile = _mediaFileFor(sender, entity);
+  final receiverFile = _mediaFileFor(receiver, entity);
+  expect(
+    sourceFile.absolute.path,
+    isNot(receiverFile.absolute.path),
+    reason: 'simulated devices must use independent app sandboxes',
+  );
+  expect(
+    receiverFile.existsSync(),
+    isFalse,
+    reason: 'the receiver must not start with the sender media file',
+  );
+
+  await _setMatrixSyncEnabled(sender.journalDb, enabled: false);
+  try {
+    final actionableBefore = await sender.syncDb.getOutboxItems(
+      limit: 2,
+      statuses: const [
+        OutboxStatus.pending,
+        OutboxStatus.sending,
+        OutboxStatus.error,
+      ],
+    );
+    expect(
+      actionableBefore,
+      isEmpty,
+      reason: '${sender.deviceName} outbox must start drained',
+    );
+
+    await sourceFile.parent.create(recursive: true);
+    await sourceFile.writeAsBytes(bytes, flush: true);
+    await saveJournalEntityJson(
+      entity,
+      documentsDirectory: sender.documentsDirectory,
+    );
+    await sender.journalDb.updateJournalEntity(entity);
+    await sender.service.enqueueMessage(
+      SyncMessage.journalEntity(
+        id: entity.meta.id,
+        status: SyncEntryStatus.initial,
+        vectorClock: entity.meta.vectorClock,
+        jsonPath: relativeEntityPath(entity),
+        originatingHostId: sender.deviceName,
+      ),
+    );
+
+    final pending = await sender.syncDb.getOutboxItems(
+      limit: 2,
+      statuses: const [OutboxStatus.pending],
+    );
+    expect(pending, hasLength(1));
+    expect(
+      pending.single.filePath,
+      isNotNull,
+      reason: 'production outbox must classify media as an attachment row',
+    );
+  } finally {
+    await _setMatrixSyncEnabled(sender.journalDb, enabled: true);
+  }
+
+  final sentEventsBefore = sender.sender.sentEvents;
+  final sentEntriesBefore = sender.sender.sentEntries;
+  final bundleCountBefore = sender.sender.bundleSizes.length;
+  await sender.service.enqueueNextSendRequest(delay: Duration.zero);
+  await _waitForOutboxDrain(sender, timeout: timeout);
+
+  expect(sender.sender.sentEvents - sentEventsBefore, 1);
+  expect(sender.sender.sentEntries - sentEntriesBefore, 1);
+  expect(
+    sender.sender.bundleSizes.sublist(bundleCountBefore),
+    [1],
+    reason: 'media rows must travel alone rather than in an outbox bundle',
+  );
+
+  JournalEntity? received;
+  await waitUntilAsync(
+    () async {
+      received = await receiver.journalDb.journalEntityById(entity.meta.id);
+      if (received != null &&
+          receiverFile.existsSync() &&
+          receiverFile.lengthSync() == bytes.length) {
+        return true;
+      }
+      await receiverService.forceRescan();
+      await receiverService.retryNow();
+      return false;
+    },
+    timeout: timeout,
+  );
+
+  expect(received, isNotNull);
+  expect(
+    await receiverFile.readAsBytes(),
+    orderedEquals(bytes),
+    reason: 'Matrix must transfer the exact media payload between sandboxes',
+  );
+  return received!;
+}
+
 Future<void> _stageTestMessages(int n, {required _DeviceOutbox device}) async {
   await _setMatrixSyncEnabled(device.journalDb, enabled: false);
 
@@ -1436,7 +1868,10 @@ Future<void> _stageTestMessages(int n, {required _DeviceOutbox device}) async {
 
     final jsonPath = relativeEntityPath(entity);
 
-    await saveJournalEntityJson(entity);
+    await saveJournalEntityJson(
+      entity,
+      documentsDirectory: device.documentsDirectory,
+    );
     await device.journalDb.updateJournalEntity(entity);
     await device.service.enqueueMessage(
       SyncMessage.journalEntity(

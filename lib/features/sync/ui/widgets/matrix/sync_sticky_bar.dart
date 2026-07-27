@@ -23,7 +23,9 @@ class SyncStickyBar extends StatelessWidget {
         // whatever scrolls beneath it.
         color: tokens.colors.background.level02,
         border: Border(
-          top: BorderSide(color: tokens.colors.text.lowEmphasis),
+          // A decorative stroke, not text ink: borders take the divider
+          // token so they cannot drift from every other hairline.
+          top: BorderSide(color: tokens.colors.decorative.level01),
         ),
       ),
       child: Padding(

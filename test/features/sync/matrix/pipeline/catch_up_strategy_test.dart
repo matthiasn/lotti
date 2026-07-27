@@ -1520,18 +1520,16 @@ void main() {
     );
 
     test(
-      'timestamp ties between pages are resolved by eventId so a later '
-      'page cannot re-emit an already-emitted event at the same ts',
+      'timestamp ties between pages emit newly loaded events once regardless '
+      'of lexical event-id order',
       () async {
         final room = MockRoom();
         final log = MockDomainLogger();
         final tl = MockTimeline();
 
-        // First page: two events at ts=100 with ids ordered 'b','a'
-        // (lex-descending). The anchor after page 0 should lock to the
-        // earliest (ts, eventId) = (100, 'a'). When page 1 adds
-        // another ts=100 event with id='c' (lex > 'a'), the strict
-        // (ts, id) older-than test must filter it out.
+        // The SDK preserves timeline order for tied timestamps. Event IDs are
+        // not pagination anchors, so the later-loaded lexical-greater `c`
+        // must still be emitted.
         final events = <Event>[
           buildEvent('a', 100),
           buildEvent('b', 100),
@@ -1559,11 +1557,118 @@ void main() {
           }),
           pageSize: 3,
         );
-        // 'c' has the same timestamp but sorts AFTER 'a', so it is not
-        // strictly older than the anchor and must not be re-emitted.
-        // Equally, 'a' and 'b' are emitted only once from the first
-        // iteration.
-        expect(collected, ['a', 'b']);
+        expect(collected, ['a', 'b', 'c']);
+        expect(collected.toSet(), hasLength(collected.length));
+      },
+    );
+
+    test(
+      'boundary completion exhausts the entire equal-timestamp bucket',
+      () async {
+        final room = MockRoom();
+        final log = MockDomainLogger();
+        final timeline = MockTimeline();
+        final events = <Event>[buildEvent(r'$boundary-a', 100)];
+        var historyCalls = 0;
+
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+        when(() => timeline.events).thenAnswer((_) => events);
+        when(
+          () => timeline.canRequestHistory,
+        ).thenAnswer((_) => historyCalls == 0);
+        when(
+          () => timeline.requestHistory(
+            historyCount: any(named: 'historyCount'),
+          ),
+        ).thenAnswer((_) async {
+          historyCalls++;
+          events
+            ..insert(0, buildEvent(r'$older', 99))
+            ..add(buildEvent(r'$boundary-z', 100));
+        });
+        when(timeline.cancelSubscriptions).thenReturn(null);
+
+        final collected = <String>[];
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((page) {
+            collected.addAll(page.map((event) => event.eventId));
+          }),
+          pageSize: 1,
+          untilTimestamp: 100,
+        );
+
+        expect(result.stopReason, BootstrapStopReason.boundaryReached);
+        expect(historyCalls, 1);
+        expect(
+          collected,
+          [r'$boundary-a', r'$older', r'$boundary-z'],
+          reason:
+              'reaching ts=100 must not stop before a later page reveals '
+              'another event in the same timestamp bucket',
+        );
+      },
+    );
+
+    test(
+      'equal-timestamp boundary continuation stops incomplete at its '
+      'request cap',
+      () async {
+        final room = MockRoom();
+        final log = MockDomainLogger();
+        final timeline = MockTimeline();
+        final events = <Event>[buildEvent(r'$boundary-0', 100)];
+        var historyCalls = 0;
+
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+        when(() => timeline.events).thenAnswer((_) => events);
+        // Keep advertising enough same-timestamp history to exceed the
+        // configured cap. The extra terminal call makes the regression
+        // deterministic when the cap check is removed: that version reaches
+        // serverExhausted after three requests instead of hanging.
+        when(
+          () => timeline.canRequestHistory,
+        ).thenAnswer((_) => historyCalls < 3);
+        when(
+          () => timeline.requestHistory(
+            historyCount: any(named: 'historyCount'),
+          ),
+        ).thenAnswer((_) async {
+          historyCalls++;
+          events.add(buildEvent('\$boundary-$historyCalls', 100));
+        });
+        when(timeline.cancelSubscriptions).thenReturn(null);
+
+        final collected = <String>[];
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((page) {
+            collected.addAll(page.map((event) => event.eventId));
+          }),
+          pageSize: 1,
+          untilTimestamp: 100,
+          boundaryContinuationCap: 2,
+        );
+
+        expect(
+          result.stopReason,
+          BootstrapStopReason.error,
+          reason:
+              'a capped collision bucket is incomplete and must retain the '
+              'resume floor for a later retry',
+        );
+        expect(historyCalls, 2);
+        expect(collected, [
+          r'$boundary-0',
+          r'$boundary-1',
+          r'$boundary-2',
+        ]);
       },
     );
 
@@ -1686,13 +1791,12 @@ void main() {
     );
 
     test(
-      'timestamp ties on the oldest boundary update the eventId anchor '
-      'when the new first id is lex-smaller',
+      'timestamp-bucket dedupe emits a newly loaded lex-smaller collision',
       () async {
         final room = MockRoom();
         final log = MockDomainLogger();
         final tl = MockTimeline();
-        // Page 0 emits two events at ts=100, oldest by (ts, id) is 'm'.
+        // Page 0 emits two events at ts=100.
         final events = <Event>[
           buildEvent('m', 100),
           buildEvent('z', 100),
@@ -1707,9 +1811,9 @@ void main() {
           () => tl.requestHistory(historyCount: any(named: 'historyCount')),
         ).thenAnswer((_) async {
           requests++;
-          // Add an event still at ts=100 but lex-smaller than the
-          // current anchor — it must be emitted exactly once because
-          // the strict (ts, id) comparison flags it as older.
+          // Event-id lexical order is irrelevant. The unseen collision must
+          // be emitted once because it was not in the timestamp bucket's
+          // bounded seen set.
           events.add(buildEvent('a', 100));
         });
         when(() => tl.cancelSubscriptions()).thenReturn(null);

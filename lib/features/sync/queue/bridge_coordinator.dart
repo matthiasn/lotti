@@ -31,8 +31,8 @@ class BridgeMarker {
   final String? lastAppliedEventId;
 
   /// `queue_markers.resume_floor_ts`: the oldest event this device received
-  /// but never resolved — ciphertext the pen was holding when the process
-  /// ended. Null when nothing is outstanding.
+  /// but never resolved because it was still encrypted. Null when nothing is
+  /// outstanding.
   ///
   /// A forward walk anchored on [lastAppliedEventId] emits "only events that
   /// sort strictly after the anchor", so when this sits behind the anchor the
@@ -97,7 +97,6 @@ class BridgeCoordinator {
     required this._logging,
     this._incompleteRetryDelay = const Duration(seconds: 10),
     this._maxIncompleteRetries = 3,
-    this._onWalkCovered,
   });
 
   final Client _client;
@@ -105,14 +104,6 @@ class BridgeCoordinator {
   final Future<Room?> Function() _resolveRoom;
   final Future<BridgeMarker> Function() _readMarker;
 
-  /// Invoked with the walked room id after a walk completes successfully, so
-  /// the durable resume floor can be reconciled with ciphertext still held.
-  ///
-  /// Only a completed walk may clear it. A walk that ran out of retries, hit
-  /// a wedged worker, or stopped at pen capacity has *not* re-covered the
-  /// missing ground, and clearing the floor there would hand the next start
-  /// an anchor that skips it — the exact failure the floor exists to stop.
-  final Future<void> Function(String roomId)? _onWalkCovered;
   final BootstrapRunner _bootstrapRunner;
   final DomainLogger _logging;
   final Duration _incompleteRetryDelay;
@@ -194,13 +185,38 @@ class BridgeCoordinator {
     final roomId = _currentRoomId();
     if (roomId == null) return;
     final joined = sync.rooms?.join?[roomId];
-    if (joined?.timeline?.limited != true) return;
-    // Carry the room id that triggered this limited-sync through the
-    // async bridge pass: if the user switches sync rooms (or a
-    // settings flip changes `_currentRoomId`) between the trigger and
-    // `_runBridgeOnce` resolving a Room, we must not end up running a
-    // catch-up against the wrong room.
-    unawaited(_bridge(roomId));
+    if (joined?.timeline?.limited == true) {
+      // Carry the room id that triggered this limited-sync through the
+      // async bridge pass: if the user switches sync rooms (or a
+      // settings flip changes `_currentRoomId`) between the trigger and
+      // `_runBridgeOnce` resolving a Room, we must not end up running a
+      // catch-up against the wrong room.
+      unawaited(_bridge(roomId));
+      return;
+    }
+    // The Matrix SDK processes to-device events before publishing onSync.
+    // When one contains a late Megolm key, SDK-owned timeline ciphertext may
+    // now decrypt. The raw sync event can itself be Olm-encrypted, so the
+    // outer type is not a reliable room-key discriminator; while a durable
+    // floor exists, any to-device traffic is a cheap and safe retry signal.
+    if (sync.toDevice?.isNotEmpty ?? false) {
+      unawaited(_bridgeIfResumeFloor(roomId));
+    }
+  }
+
+  Future<void> _bridgeIfResumeFloor(String roomId) async {
+    try {
+      final marker = await _readMarker();
+      if (_stopped || marker.resumeFloorTs == null) return;
+      await _bridge(roomId);
+    } catch (error, stackTrace) {
+      _logging.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: '$_logSub.keyTrigger',
+      );
+    }
   }
 
   Future<void> _bridge(String? expectedRoomId) async {
@@ -334,19 +350,6 @@ class BridgeCoordinator {
       'queue.bridge.done completed=$completed',
       subDomain: _logSub,
     );
-
-    if (completed) {
-      try {
-        await _onWalkCovered?.call(room.id);
-      } catch (error, stackTrace) {
-        _logging.error(
-          LogDomain.sync,
-          error,
-          stackTrace: stackTrace,
-          subDomain: '$_logSub.completeResumeWalk',
-        );
-      }
-    }
 
     _handleIncompleteFollowUp(
       incomplete: !completed,

@@ -165,6 +165,76 @@ void main() {
       );
 
       test(
+        'uses the injected documents directory for the bundle and its '
+        'materialized journal payloads',
+        () async {
+          final explicitDirectory = await Directory(
+            path.join(tempDir.path, 'device'),
+          ).create();
+          final explicitProcessor = SyncEventProcessor(
+            loggingService: loggingService,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: aiConfigRepository,
+            savedTaskFiltersRepository: savedTaskFiltersRepository,
+            settingsDb: settingsDb,
+            journalEntityLoader: journalEntityLoader,
+            documentsDirectory: explicitDirectory,
+          );
+          final entity = JournalEntry(
+            meta: Metadata(
+              id: 'isolated-entry',
+              createdAt: DateTime.utc(2026, 4, 25),
+              updatedAt: DateTime.utc(2026, 4, 25),
+              dateFrom: DateTime.utc(2026, 4, 25),
+              dateTo: DateTime.utc(2026, 4, 25),
+              vectorClock: const VectorClock({'isolated-host': 1}),
+            ),
+            entryText: const EntryText(plainText: 'isolated payload'),
+          );
+          const entityRelativePath =
+              '/journal/2026-04-25/isolated-entry.entry.json';
+          const bundleRelativePath = '/outbox_bundles/isolated-bundle.json';
+          final manifest = <String, dynamic>{
+            'version': 1,
+            'entries': [
+              <String, dynamic>{
+                'envelope': const SyncMessage.journalEntity(
+                  id: 'isolated-entry',
+                  jsonPath: entityRelativePath,
+                  vectorClock: VectorClock({'isolated-host': 1}),
+                  status: SyncEntryStatus.update,
+                ).toJson(),
+                'payload': entity.toJson(),
+              },
+            ],
+          };
+          final manifestFile = File(
+            path.join(
+              explicitDirectory.path,
+              stripLeadingSlashes(bundleRelativePath),
+            ),
+          )..parent.createSync(recursive: true);
+          manifestFile.writeAsStringSync(json.encode(manifest));
+
+          final resolved = await explicitProcessor
+              .resolveOutboxBundleManifestForTesting(bundleRelativePath);
+
+          expect(resolved?.children, hasLength(1));
+          final explicitPayload = File(
+            path.join(
+              explicitDirectory.path,
+              stripLeadingSlashes(entityRelativePath),
+            ),
+          );
+          final globalPayload = File(
+            path.join(tempDir.path, stripLeadingSlashes(entityRelativePath)),
+          );
+          expect(explicitPayload.existsSync(), isTrue);
+          expect(globalPayload.existsSync(), isFalse);
+        },
+      );
+
+      test(
         'returns null when the bundle jsonPath itself escapes the documents '
         'sandbox — resolveJsonCandidateFile throws FileSystemException for '
         'the bundle path and the resolver logs invalidPath then bails before '

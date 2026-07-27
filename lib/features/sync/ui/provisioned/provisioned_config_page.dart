@@ -44,6 +44,19 @@ class _ConfigActionBar extends ConsumerWidget {
 
   final ValueNotifier<int> pageIndexNotifier;
 
+  /// Whether the paired screen still lists an unfinished step. The `done`
+  /// ending is the only one with a checklist; `ready` (first device) has
+  /// nothing outstanding and keeps the accent on Go to Devices.
+  bool _checklistOpen(WidgetRef ref) {
+    final state = ref.watch(provisioningControllerProvider);
+    final isDone = state.maybeWhen(done: () => true, orElse: () => false);
+    if (!isDone) return false;
+    final devices = ref.watch(syncDevicesControllerProvider).value;
+    final verified =
+        devices?.any((d) => !d.isCurrentDevice && d.verified) ?? false;
+    return !verified;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(provisioningControllerProvider);
@@ -100,7 +113,10 @@ class _ConfigActionBar extends ConsumerWidget {
             // One accent slot, filled by whatever the user should press next.
             // In the error state that is Retry — as a grey pill inside the
             // card it was the quietest control on a screen whose only way
-            // forward it is, under a disabled accent going nowhere.
+            // forward it is, under a disabled accent going nowhere. While the
+            // paired checklist still has open items, the required action
+            // lives on the *other* device, so Go to Devices stays enabled
+            // but quiet rather than shining the accent away from it.
             child: isError
                 ? DesignSystemButton(
                     key: const Key('provisioned_config_retry'),
@@ -119,6 +135,9 @@ class _ConfigActionBar extends ConsumerWidget {
                     // the remaining work is described in terms of that
                     // destination.
                     label: context.messages.syncPairGoToDevices,
+                    variant: _checklistOpen(ref)
+                        ? DesignSystemButtonVariant.outlined
+                        : DesignSystemButtonVariant.primary,
                     size: DesignSystemButtonSize.large,
                   ),
           ),
@@ -337,6 +356,7 @@ class _PairedView extends ConsumerWidget {
                 _NextStep(
                   index: 2,
                   bulleted: true,
+                  title: messages.syncPairedSettingsStepTitle,
                   text: messages.syncPairedSettingsStep,
                   detail: messages.syncPairedSettingsStepFallback,
                 ),
@@ -347,6 +367,7 @@ class _PairedView extends ConsumerWidget {
                 SizedBox(height: tokens.spacing.step4),
                 _NextStep(
                   index: 2,
+                  title: messages.syncPairedSettingsStepTitle,
                   text: messages.syncPairedSettingsStep,
                   detail: messages.syncPairedSettingsStepFallback,
                 ),
@@ -504,7 +525,11 @@ class _VerifyStepState extends ConsumerState<_VerifyStep> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _NextStep(index: 1, text: messages.syncPairedVerifyStep),
+        _NextStep(
+          index: 1,
+          title: messages.syncPairedVerifyStepTitle,
+          text: messages.syncPairedVerifyStep,
+        ),
         SizedBox(height: tokens.spacing.step2),
         Padding(
           padding: EdgeInsets.only(left: tokens.spacing.step6),
@@ -520,12 +545,19 @@ class _NextStep extends StatelessWidget {
     required this.index,
     required this.text,
     super.key,
+    this.title,
     this.detail,
     this.done = false,
     this.bulleted = false,
   });
 
   final int index;
+
+  /// Bold anchor line above [text]. Steps used to be single 30-word
+  /// sentences at one grey tier; a scannable title with a one-line caption
+  /// is what stops the card reading as a wall of prose.
+  final String? title;
+
   final String text;
 
   /// A fallback route, kept off the main line: inlining it forced the item to
@@ -572,10 +604,21 @@ class _NextStep extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (title != null) ...[
+                Text(
+                  title!,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: done
+                        ? tokens.colors.text.mediumEmphasis
+                        : tokens.colors.text.highEmphasis,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step1),
+              ],
               Text(
                 text,
                 style: body.copyWith(
-                  color: done
+                  color: done || title != null
                       ? tokens.colors.text.mediumEmphasis
                       : tokens.colors.text.highEmphasis,
                 ),
@@ -628,6 +671,7 @@ class _ErrorView extends StatelessWidget {
           SizedBox(height: tokens.spacing.step6),
           Text(
             messages.provisionedSyncError,
+            textAlign: TextAlign.center,
             style: tokens.typography.styles.subtitle.subtitle1,
           ),
           SizedBox(height: tokens.spacing.step2),

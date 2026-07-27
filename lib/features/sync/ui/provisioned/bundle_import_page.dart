@@ -8,6 +8,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
@@ -22,6 +23,28 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
+/// Widest a commit action may grow. A phone sheet fills its own width and
+/// never notices; inside a desktop dialog the same `fullWidth` button used to
+/// span the entire modal — an accent slab louder than the content it commits.
+const double kSyncPairActionMaxWidth = 400;
+
+/// Caps a full-width action at [kSyncPairActionMaxWidth] and centers it.
+class _MeasuredAction extends StatelessWidget {
+  const _MeasuredAction({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: kSyncPairActionMaxWidth),
+        child: child,
+      ),
+    );
+  }
+}
+
 SliverWoltModalSheetPage bundleImportPage({
   required BuildContext context,
   required ValueNotifier<int> pageIndexNotifier,
@@ -30,11 +53,9 @@ SliverWoltModalSheetPage bundleImportPage({
     context: context,
     showCloseButton: true,
     title: context.messages.provisionedSyncImportTitle,
-    padding:
-        WoltModalConfig.pagePadding +
-        const EdgeInsets.only(
-          bottom: WoltModalConfig.stickyActionBarClearance,
-        ),
+    // No sticky bar on this page — reserving clearance for one left a dead
+    // band under the last element on every desktop capture.
+    padding: WoltModalConfig.pagePadding,
     child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
   );
 }
@@ -345,36 +366,56 @@ class _OnlyOwnCodeWarning extends StatelessWidget {
 }
 
 /// Names where the code comes from — wayfinding, not a caveat, so it stays
-/// plain prose and stops looking like the warning above it.
+/// plain prose and stops looking like the warning above it. One line: the
+/// old two-paragraph version was the wall this screen was accused of.
 class _WhereToFindHint extends StatelessWidget {
-  const _WhereToFindHint({this.extra});
-
-  /// A second prerequisite sentence, on the screen that needs one: how to
-  /// physically move the code to a machine with no camera.
-  final String? extra;
+  const _WhereToFindHint();
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final extra = this.extra;
-    final style = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
-    );
 
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+      child: Text(
+        context.messages.syncPairWhereToFind,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+      ),
+    );
+  }
+}
+
+/// The honest branch for the account's very first device: there is no other
+/// device to mint a code, and the screen used to leave that user staring at
+/// instructions that cannot be followed. A quiet title-plus-caption block,
+/// not a callout — it is a signpost, not a warning.
+class _FirstDeviceHint extends StatelessWidget {
+  const _FirstDeviceHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.spacing.step5),
       child: Column(
+        key: const Key('bundle_import_first_device_hint'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.messages.syncPairWhereToFind, style: style),
-          if (extra != null) ...[
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              extra,
-              key: const Key('bundle_import_copy_code_hint'),
-              style: style,
+          Text(
+            messages.syncPairFirstDeviceTitle,
+            style: tokens.typography.styles.subtitle.subtitle2,
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            messages.syncPairFirstDeviceHint,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -558,6 +599,7 @@ class _ScannerViewState extends State<_ScannerView> {
             onPressed: widget.onEnterManually,
           ),
         ),
+        const _FirstDeviceHint(),
       ],
     );
   }
@@ -657,11 +699,13 @@ class _ManualEntry extends StatelessWidget {
         // offered on every platform — the manual screen is exactly where a
         // user lands when the camera is unavailable.
         if (hasText) ...[
-          DesignSystemButton(
-            onPressed: onImport,
-            label: messages.provisionedSyncImportButton,
-            size: DesignSystemButtonSize.large,
-            fullWidth: true,
+          _MeasuredAction(
+            child: DesignSystemButton(
+              onPressed: onImport,
+              label: messages.provisionedSyncImportButton,
+              size: DesignSystemButtonSize.large,
+              fullWidth: true,
+            ),
           ),
           SizedBox(height: tokens.spacing.step3),
           // Still reachable with text in the field: the malformed-code error
@@ -679,12 +723,14 @@ class _ManualEntry extends StatelessWidget {
             ),
           ),
         ] else
-          DesignSystemButton(
-            onPressed: onPaste,
-            leadingIcon: Icons.content_paste,
-            label: messages.provisionedSyncPasteClipboard,
-            size: DesignSystemButtonSize.large,
-            fullWidth: true,
+          _MeasuredAction(
+            child: DesignSystemButton(
+              onPressed: onPaste,
+              leadingIcon: Icons.content_paste,
+              label: messages.provisionedSyncPasteClipboard,
+              size: DesignSystemButtonSize.large,
+              fullWidth: true,
+            ),
           ),
         SizedBox(height: tokens.spacing.step4),
         // The security caveat supports the action rather than gatekeeping
@@ -693,7 +739,7 @@ class _ManualEntry extends StatelessWidget {
         const _OnlyOwnCodeWarning(),
         // Contingency prose last: where to make a code appear and how to
         // move it here matter only to someone whose clipboard is empty.
-        _WhereToFindHint(extra: messages.syncPairCopyCodeHint),
+        const _WhereToFindHint(),
         if (useCamera != null)
           Center(
             child: DesignSystemButton(
@@ -704,6 +750,7 @@ class _ManualEntry extends StatelessWidget {
               variant: DesignSystemButtonVariant.outlined,
             ),
           ),
+        const _FirstDeviceHint(),
       ],
     );
   }
@@ -740,11 +787,13 @@ class _DecodedView extends StatelessWidget {
         SizedBox(height: tokens.spacing.step4),
         _BundleSummaryCard(bundle: bundle),
         SizedBox(height: tokens.spacing.step4),
-        DesignSystemButton(
-          onPressed: onConnect,
-          label: messages.syncPairConnectButton,
-          size: DesignSystemButtonSize.large,
-          fullWidth: true,
+        _MeasuredAction(
+          child: DesignSystemButton(
+            onPressed: onConnect,
+            label: messages.syncPairConnectButton,
+            size: DesignSystemButtonSize.large,
+            fullWidth: true,
+          ),
         ),
         SizedBox(height: tokens.spacing.step3),
         // Neutral, not accent: the accent means "commit" one button up, and
@@ -758,19 +807,6 @@ class _DecodedView extends StatelessWidget {
             onPressed: onDiscard,
             label: messages.syncPairDiscardCode,
             variant: DesignSystemButtonVariant.outlined,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step2),
-        // *After* the reject, because it explains the reject. Between the two
-        // buttons it read as the accent button's helper caption — an argument
-        // against connecting, directly under "Connect this device" — and it
-        // broke the accept/reject pair into two unrelated-looking controls.
-        Text(
-          messages.syncPairMismatchRemedy,
-          key: const Key('bundle_import_mismatch_remedy'),
-          textAlign: TextAlign.center,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
       ],
@@ -866,7 +902,13 @@ class _SummaryRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: styles.bodySmall.copyWith(
+            // Mono, so the account and server read as exact identifiers: a
+            // proportional face with hyphen line-breaks undermined the one
+            // screen whose typography must guarantee exact comparison.
+            style: monoMetaStyle(
+              tokens,
+              tokens.colors,
+              base: styles.bodySmall,
               color: tokens.colors.text.highEmphasis,
             ),
           ),

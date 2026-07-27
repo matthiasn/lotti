@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding
     last_modified: 2026-06-16
+  - id: attachment-policy
+    resource: ../../../lib/features/sync/model/sync_attachment_policy.dart
+    title: shouldSendJournalAttachments — the media-send decision
+    last_modified: 2026-07-27
   - id: tuning
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning
@@ -53,6 +57,40 @@ sequenceDiagram
 Sends are nudged by connectivity regain, Matrix login completion, outbox
 row-count changes, and a watchdog for pending-but-idle queues. The whole pass is
 gated by `UserActivityGate`, so the queue waits for idle time before running.
+
+# Media attachments: one decision, two places
+
+Whether a `SyncJournalEntity` send carries the entry's image or audio blob is
+decided by `shouldSendJournalAttachments`
+(`lib/features/sync/model/sync_attachment_policy.dart`). Media rides along when
+the entry is new to every peer (`SyncEntryStatus.initial`), when the payload
+opts in via `SyncJournalEntity.includeAttachments`, or when the
+`resend_attachments` config flag is on. An ordinary edit sends JSON only — the
+blob is immutable for the life of the entry and the peer already has it.
+
+Two collaborators consult that one function, and they must agree:
+
+| Where | What it does with the answer |
+| --- | --- |
+| `OutboxEnqueueWriter` | Resolves the media file and stamps the row's `filePath` |
+| `MatrixPayloadSender.sendJournalEntityPayload` | Uploads the blob as a second file event |
+
+The enqueue-time half is not redundant. `filePath` is what excludes a row from
+dequeue-time bundling (below), and a bundle ships a JSON manifest only. A row
+whose message asks for media but whose `filePath` is null would be packed into a
+bundle and its blob dropped with no error anywhere.
+
+`includeAttachments` exists for the flows that hand an entire history to a peer
+holding none of it — the sync-maintenance re-send (`Maintenance.reSyncInterval`)
+and backfill responses (`BackfillResponseHandler`). Both are necessarily
+`update` sends: the entry is not new on the sending device. Before the flag
+existed, both shipped JSON without blobs, so a freshly provisioned device
+received every entry's text and none of its media, while entries created after
+it joined arrived complete.
+
+`MatrixPayloadSender` also uploads blobs for any media-bearing bundle child that
+reaches it anyway — defence in depth against a row enqueued by an older build,
+where the attachment decision had not yet moved to enqueue time.
 
 # The CAS claim is load-bearing
 

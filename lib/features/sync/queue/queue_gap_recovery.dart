@@ -22,21 +22,48 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     if (room == null) {
       throw StateError('collectHistory: no current room');
     }
-    final sink = ProgressForwardingSink(
-      inner: QueueBootstrapSink(
-        queue: _queue,
-        logging: _logging,
+    return _serializeResumeFloorWalk(
+      room.id,
+      () => _collectHistoryInRoom(
+        room: room,
+        onProgress: onProgress,
         cancelSignal: cancelSignal,
-        pen: _pen,
+        overallTimeout: overallTimeout,
       ),
+    );
+  }
+
+  Future<BootstrapResult> _collectHistoryInRoom({
+    required Room room,
+    void Function(BootstrapPageInfo info)? onProgress,
+    Future<void>? cancelSignal,
+    Duration? overallTimeout,
+  }) async {
+    final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
+    final queueSink = QueueBootstrapSink(
+      queue: _queue,
+      logging: _logging,
+      cancelSignal: cancelSignal,
+      decryptEvent: _decryptBootstrapEvent,
+    );
+    final sink = ProgressForwardingSink(
+      inner: queueSink,
       onProgress: onProgress,
     );
-    return CatchUpStrategy.collectHistoryForBootstrap(
+    final result = await CatchUpStrategy.collectHistoryForBootstrap(
       room: room,
       sink: sink,
       logging: _logging,
       overallTimeout: overallTimeout,
     );
+    if (result.stopReason == BootstrapStopReason.serverExhausted) {
+      await _queue.completeResumeWalk(
+        roomId: room.id,
+        walkStartedAtFloorRevision: walkStartedAtFloorRevision,
+        unresolvedFloorTs: queueSink.oldestUnresolvedTs,
+      );
+    }
+    return result;
   }
 
   /// Streams the room's catch-up events through [QueueBootstrapSink]
@@ -67,6 +94,30 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
   /// `false` on a tripped budget / sink cancellation / pagination
   /// error so the bridge can schedule a bounded retry.
   Future<bool> _runBootstrap({
+    required Room room,
+    required BridgeMarker marker,
+  }) => _serializeResumeFloorWalk(room.id, () async {
+    // The bridge reads its marker before calling the runner. A manual or
+    // gap-recovery walk may already own this room's lane and change the floor
+    // while the bridge waits. Refresh inside the lane so dispatch cannot use
+    // a stale safe-anchor decision and clear that newer floor.
+    final refreshedMarker = await _readMarkerForRoom(room.id);
+    if (refreshedMarker.resumeFloorTs != marker.resumeFloorTs ||
+        refreshedMarker.lastAppliedTs != marker.lastAppliedTs ||
+        refreshedMarker.lastAppliedEventId != marker.lastAppliedEventId) {
+      _logging.log(
+        LogDomain.sync,
+        'queue.bootstrap.markerRefreshed '
+        'roomId=${room.id} '
+        'resumeFloorTs=${marker.resumeFloorTs}'
+        '->${refreshedMarker.resumeFloorTs}',
+        subDomain: _logSub,
+      );
+    }
+    return _runBootstrapWithMarker(room: room, marker: refreshedMarker);
+  });
+
+  Future<bool> _runBootstrapWithMarker({
     required Room room,
     required BridgeMarker marker,
   }) async {
@@ -103,14 +154,16 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     required Room room,
     required String anchorEventId,
   }) async {
+    final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
+    final queueSink = QueueBootstrapSink(
+      queue: _queue,
+      logging: _logging,
+      decryptEvent: _decryptBootstrapEvent,
+    );
     final innerSink = _attachmentIngestor == null
-        ? QueueBootstrapSink(queue: _queue, logging: _logging, pen: _pen)
+        ? queueSink
         : AttachmentAwareBootstrapSink(
-                inner: QueueBootstrapSink(
-                  queue: _queue,
-                  logging: _logging,
-                  pen: _pen,
-                ),
+                inner: queueSink,
                 processAttachment: _processAttachment,
               )
               as BootstrapSink;
@@ -129,7 +182,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
       'stopReason=${result.stopReason.name}',
       subDomain: '$_logSub.forward',
     );
-    return switch (result.stopReason) {
+    final outcome = switch (result.stopReason) {
       BootstrapStopReason.serverExhausted => BootstrapOutcome.completed,
       // The forward walk only reports `boundaryReached` when a budget tripped
       // while the server still had more to give — a caught-up device stops
@@ -146,12 +199,21 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
         BootstrapOutcome.errorNoProgress,
       BootstrapStopReason.error => BootstrapOutcome.incomplete,
     };
+    if (outcome == BootstrapOutcome.completed) {
+      await _queue.completeResumeWalk(
+        roomId: room.id,
+        walkStartedAtFloorRevision: walkStartedAtFloorRevision,
+        unresolvedFloorTs: queueSink.oldestUnresolvedTs,
+      );
+    }
+    return outcome;
   }
 
   Future<bool> _runBackwardBootstrap({
     required Room room,
     required int? untilTimestamp,
   }) async {
+    final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
     // Wrap the queue sink so attachment descriptor events in each
     // paginated page get fed to `AttachmentIngestor.process()` before
     // the queue's own enqueue drops them as non-payload. Without
@@ -159,14 +221,15 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     // enqueue the sync-payload events while their descriptor
     // JSONs never land on disk, producing the pendingAttachment
     // skip cascade we just fixed.
+    final queueSink = QueueBootstrapSink(
+      queue: _queue,
+      logging: _logging,
+      decryptEvent: _decryptBootstrapEvent,
+    );
     final innerSink = _attachmentIngestor == null
-        ? QueueBootstrapSink(queue: _queue, logging: _logging, pen: _pen)
+        ? queueSink
         : AttachmentAwareBootstrapSink(
-                inner: QueueBootstrapSink(
-                  queue: _queue,
-                  logging: _logging,
-                  pen: _pen,
-                ),
+                inner: queueSink,
                 processAttachment: _processAttachment,
               )
               as BootstrapSink;
@@ -179,17 +242,34 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
       sink: countingSink,
       logging: _logging,
       untilTimestamp: untilTimestamp,
+      overallTimeout: SyncTuning.backwardWalkTimeout,
     );
     _updateBarrenBridgeFlag(
       untilTimestamp: untilTimestamp,
       result: result,
       totalAccepted: countingSink.totalAccepted,
     );
-    return switch (result.stopReason) {
+    final completed = switch (result.stopReason) {
       BootstrapStopReason.serverExhausted ||
       BootstrapStopReason.boundaryReached => true,
       BootstrapStopReason.sinkCancelled || BootstrapStopReason.error => false,
     };
+    if (completed) {
+      await _queue.completeResumeWalk(
+        roomId: room.id,
+        walkStartedAtFloorRevision: walkStartedAtFloorRevision,
+        unresolvedFloorTs: queueSink.oldestUnresolvedTs,
+      );
+    }
+    return completed;
+  }
+
+  Future<Event> _decryptBootstrapEvent(Event event) async {
+    final encryption = _sessionManager.client.encryption;
+    if (encryption == null) {
+      return event;
+    }
+    return encryption.decryptRoomEvent(event);
   }
 
   void _updateBarrenBridgeFlag({
@@ -295,9 +375,12 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
       // through `_runBootstrap` — we do NOT want it to forward-walk
       // here because the forward walk already ran as the main
       // bridge pass.
-      final completed = await _runBackwardBootstrap(
-        room: room,
-        untilTimestamp: null,
+      final completed = await _serializeResumeFloorWalk(
+        room.id,
+        () => _runBackwardBootstrap(
+          room: room,
+          untilTimestamp: null,
+        ),
       );
       _logging.log(
         LogDomain.sync,
@@ -335,12 +418,15 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     int? untilTimestamp,
     String? anchorEventId,
     int? resumeFloorTs,
-  }) => _runBootstrap(
-    room: room,
-    marker: BridgeMarker(
-      lastAppliedTs: untilTimestamp,
-      lastAppliedEventId: anchorEventId,
-      resumeFloorTs: resumeFloorTs,
+  }) => _serializeResumeFloorWalk(
+    room.id,
+    () => _runBootstrapWithMarker(
+      room: room,
+      marker: BridgeMarker(
+        lastAppliedTs: untilTimestamp,
+        lastAppliedEventId: anchorEventId,
+        resumeFloorTs: resumeFloorTs,
+      ),
     ),
   );
 
@@ -352,6 +438,15 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
         lastAppliedEventId: null,
       );
     }
+    return _readMarkerForRoom(roomId);
+  }
+
+  Future<BridgeMarker> _readMarkerForRoom(String roomId) async {
+    // This accessor first retries any process-local floor retained after a
+    // transient database failure. In particular, the to-device key trigger
+    // must not gate on the raw table and skip the only signal that a bridge is
+    // required.
+    final retainedFloorTs = await _queue.resumeFloorTs(roomId);
     final marker = await (_syncDb.select(
       _syncDb.queueMarkers,
     )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
@@ -360,6 +455,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
       return BridgeMarker(
         lastAppliedTs: legacy,
         lastAppliedEventId: null,
+        resumeFloorTs: retainedFloorTs,
       );
     }
     final ts = marker.lastAppliedTs > 0
@@ -367,7 +463,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
         : await getLastReadMatrixEventTs(_settingsDb);
     return BridgeMarker(
       lastAppliedTs: ts,
-      resumeFloorTs: marker.resumeFloorTs,
+      resumeFloorTs: retainedFloorTs ?? marker.resumeFloorTs,
       // Only use the event id when it's a server-assigned `$`-
       // prefixed id — placeholder ids that the outbox minted before
       // the server echoed back would make `getEventContext` fail.
@@ -377,5 +473,23 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
           ? marker.lastAppliedEventId
           : null,
     );
+  }
+
+  Future<T> _serializeResumeFloorWalk<T>(
+    String roomId,
+    Future<T> Function() walk,
+  ) {
+    final previous = _resumeFloorWalkTails[roomId] ?? Future<void>.value();
+    final result = previous.then<T>((_) => walk());
+    final tail = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    _resumeFloorWalkTails[roomId] = tail;
+    return result.whenComplete(() {
+      if (identical(_resumeFloorWalkTails[roomId], tail)) {
+        _resumeFloorWalkTails.remove(roomId);
+      }
+    });
   }
 }

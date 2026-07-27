@@ -55,7 +55,7 @@ extension _OutboxBundleHandler on SyncEventProcessor {
 
     final File targetFile;
     try {
-      targetFile = resolveJsonCandidateFile(jp);
+      targetFile = _resolveJsonCandidateFile(jp);
     } on FileSystemException catch (e, st) {
       _loggingService.error(
         LogDomain.sync,
@@ -252,7 +252,7 @@ extension _OutboxBundleHandler on SyncEventProcessor {
 
         final File entityFile;
         try {
-          entityFile = resolveJsonCandidateFile(envelope.jsonPath);
+          entityFile = _resolveJsonCandidateFile(envelope.jsonPath);
         } on FileSystemException catch (e, st) {
           _loggingService.error(
             LogDomain.sync,

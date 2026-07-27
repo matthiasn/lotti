@@ -5,7 +5,7 @@ description: The Capture/Reconcile/Draft/Refine tools, batch-first durable voice
 resource: ../../../lib/features/daily_os_next/agents/service
 tags: [daily-os, capture, planning, transcription, tools]
 status: stable
-generated: { by: codex/5, at: 2026-07-27T13:52:59+02:00 }
+generated: { by: codex/5, at: 2026-07-27T15:38:00+02:00 }
 stale_after: 2026-10-27
 sources:
   - id: services
@@ -15,6 +15,14 @@ sources:
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Day-agent prompt builder
+    last_modified: 2026-07-27
+  - id: workflow
+    resource: ../../../lib/features/daily_os_next/agents/workflow
+    title: Day-agent workflow and terminal-tool strategy
+    last_modified: 2026-07-27
+  - id: processing-runtime
+    resource: ../../../lib/features/daily_os_next/services/day_processing_runtime.dart
+    title: Durable processing runtime
     last_modified: 2026-07-27
   - id: state
     resource: ../../../lib/features/daily_os_next/state
@@ -56,6 +64,59 @@ wrong workspace.
 `DayAgentPlanService` writes the drafted plan as a `DayPlanEntity` under
 `day_agent_plan:<dayId>`, plus `capture_to_plan` links, and persists refine
 diffs as change sets and decisions.
+
+# Why one plan is multiple wakes
+
+The user-facing Capture/Reconcile/Draft journey intentionally has **two model
+wakes**: one turns the transcript into reviewable capture items, and a second
+turns the user's selections into a plan. The coordinator is a third, separate
+agent: its digest consumes status events and recent-day context in the
+background, so it can revise the day's directive without making the day agent
+own cross-day policy.
+
+Each user-facing wake now has a narrow tool surface:
+
+| Wake | Tools exposed |
+|---|---|
+| Capture submitted | `parse_capture_to_items` only |
+| Drafting | `create_task_from_phrase`, `raise_day_status`, `draft_day_plan` |
+| Refine | Normal day-agent tools except `parse_capture_to_items` and `draft_day_plan`; the plan mutation is `propose_plan_diff` |
+
+The parser and drafter tools are **terminal artifacts only in their owning wake
+mode**. Once either one is accepted there, `DayAgentStrategy` completes that
+conversation immediately rather than asking the provider for a prose wrap-up.
+It also stops processing the current tool-call batch, so nothing can mutate
+state after the terminal artifact. Any later calls already batched by the
+provider are persisted as rejected/skipped without execution, so evaluation
+still sees the ordering violation. Rejected calls before the terminal artifact
+continue so the model can repair them. This matters twice: an unrestricted
+drafting wake can re-parse, triage, search and summarize before it plans, and
+continuing after the final write adds another provider call after the requested
+artifact already exists. Refine never exposes the full-draft writer, so it
+cannot overwrite its baseline instead of producing a reviewable diff.
+
+Durable scheduling has a matching no-lost-signal invariant. When an outbox
+change arrives while `DayProcessingRuntime` is already draining, the runtime
+must distinguish its own claim/status writes from genuinely new work. It pauses
+the outbox subscription during the mutation phase, resumes it before the
+due-work query, and lets that query schedule anything that arrived while
+paused. A later change sets `_followUpNudgeRequested`, ensuring one immediate
+follow-up after `_nudgeFuture` clears. This avoids both a lost capture and the
+redundant drain chain that would result from treating every processor status
+write as a new enqueue.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Draining: nudge sets _nudgeFuture
+    Draining --> Draining: owned outbox writes while listener paused
+    Draining --> Inspecting: drain returns, listener resumes
+    Inspecting --> FollowUpRequested: external change sets _followUpNudgeRequested
+    Inspecting --> Idle: query schedules due work or finds none
+    FollowUpRequested --> Draining: active future clears, immediate nudge
+    Idle --> Draining: due-work timer or external change
+    Idle --> [*]: dispose
+```
 
 # What the write path enforces
 

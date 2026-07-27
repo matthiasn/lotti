@@ -345,13 +345,30 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
     return fullPath;
   }
 
+  /// Enqueues [syncMessage], logging and swallowing routine preparation or
+  /// persistence failures so ordinary background sync callers remain
+  /// best-effort.
+  Future<void> enqueueMessage(SyncMessage syncMessage) =>
+      _enqueueMessage(syncMessage);
+
+  /// Enqueues [syncMessage] and propagates preparation or persistence failures
+  /// after logging them.
+  ///
+  /// Use this for user-initiated operations whose UI must distinguish a fully
+  /// queued batch from a partial or failed batch.
+  Future<void> enqueueMessageOrThrow(SyncMessage syncMessage) =>
+      _enqueueMessage(syncMessage, rethrowFailure: true);
+
   /// Central enqueue path: prepares [syncMessage] (stamps originating host,
   /// folds covered vector clocks, attaches links), serialises it, computes its
   /// send priority, and writes a `pending` outbox row via the type-specific
   /// enqueue writer — then nudges the send pipeline. Throws if handed a
   /// `SyncOutboxBundle`, which is assembled at dequeue time and must never be
   /// enqueued directly.
-  Future<void> enqueueMessage(SyncMessage syncMessage) async {
+  Future<void> _enqueueMessage(
+    SyncMessage syncMessage, {
+    bool rethrowFailure = false,
+  }) async {
     // Hoisted out of the outer try so the invariant breach surfaces to the
     // caller as a real exception instead of being swallowed and logged as a
     // routine enqueue failure.
@@ -500,6 +517,7 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
         stackTrace: stackTrace,
         subDomain: 'enqueueMessage',
       );
+      if (rethrowFailure) rethrow;
     }
   }
 

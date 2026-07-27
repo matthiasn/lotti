@@ -104,10 +104,9 @@ void main() {
     test(
       'the resume floor only ever moves down, and survives a reopen',
       () async {
-        // The floor records how far back a resume must reach. The pen
-        // forgetting an entry — evicted, or its attempts exhausted — does not
-        // make that ground safe to skip; if anything the event is more lost.
-        // So the floor never rises on its own: only a completed walk clears
+        // The floor records how far back a resume must reach. Observing a
+        // newer unresolved event does not make older ground safe to skip, so
+        // the floor never rises on its own: only a completed walk reconciles
         // it.
         await advancer.lowerResumeFloor(roomId: _roomA, originTs: 5000);
         expect(await advancer.resumeFloorTs(_roomA), 5000);
@@ -134,6 +133,7 @@ void main() {
 
         await advancer.completeResumeWalk(
           roomId: _roomA,
+          walkStartedAtFloorRevision: 3,
           unresolvedFloorTs: 4000,
         );
         expect(
@@ -146,6 +146,7 @@ void main() {
 
         await advancer.completeResumeWalk(
           roomId: _roomA,
+          walkStartedAtFloorRevision: 4,
           unresolvedFloorTs: null,
         );
         expect(await advancer.resumeFloorTs(_roomA), isNull);
@@ -171,79 +172,88 @@ void main() {
     );
 
     test(
-      'older unqueued work clamps the marker exactly like an active row',
+      'a completed walk preserves a same-timestamp floor observation made '
+      'after the walk began',
       () async {
-        // Ciphertext in the pen is received-but-not-applied, but it has no
-        // row — that is the whole point of the pen. Invisible to the clamp, a
-        // newer event applying would step the marker past it, and the next
-        // startup's strictly-forward bridge ("only events that sort strictly
-        // after the anchor") would never fetch it again: gone, with no row,
-        // no ledger entry and no counter to notice.
-        final penned = QueueMarkerAdvancer(
-          db,
-          unqueuedFloorTs: (roomId) => roomId == _roomA ? 6000 : null,
-        );
-        final committingId = await insertRow(eventId: r'$c', originTs: 8000);
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 5000);
+        final revisionAtWalkStart = advancer.resumeFloorRevision(_roomA);
 
-        final advanced = await penned.advanceIfNewer(
-          _entry(queueId: committingId, eventId: r'$c', originTs: 8000),
+        // A live encrypted event arrives after the walk's final page but
+        // before completion reconciles its stale, empty sink result. Its
+        // timestamp matches the old floor, so the revision is the only
+        // observable evidence of the concurrent event.
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 5000);
+        await advancer.completeResumeWalk(
+          roomId: _roomA,
+          walkStartedAtFloorRevision: revisionAtWalkStart,
+          unresolvedFloorTs: null,
         );
 
-        expect(advanced, isTrue);
-        final marker = await readMarker();
+        expect(revisionAtWalkStart, 1);
         expect(
-          marker?.lastAppliedTs,
-          5999,
-          reason: 'the marker stops just below the held event',
+          await advancer.resumeFloorTs(_roomA),
+          5000,
+          reason: 'completion must not clear ciphertext observed concurrently',
         );
-        expect(
-          marker?.lastAppliedEventId,
-          isNull,
-          reason: 'a clamped marker names no specific event',
-        );
+        expect(advancer.resumeFloorRevision(_roomA), 2);
       },
     );
 
     test(
-      'the floor only applies to its own room',
+      'walk-local observations do not invalidate their own completion CAS',
       () async {
-        final penned = QueueMarkerAdvancer(
-          db,
-          unqueuedFloorTs: (roomId) =>
-              roomId == '!other:example.org' ? 1000 : null,
-        );
-        final committingId = await insertRow(eventId: r'$c', originTs: 8000);
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 1000);
+        final revisionAtWalkStart = advancer.resumeFloorRevision(_roomA);
 
-        await penned.advanceIfNewer(
-          _entry(queueId: committingId, eventId: r'$c', originTs: 8000),
+        // The old floor decrypted, but the walk found newer ciphertext.
+        await advancer.lowerResumeFloorFromWalk(
+          roomId: _roomA,
+          originTs: 2000,
+        );
+        await advancer.completeResumeWalk(
+          roomId: _roomA,
+          walkStartedAtFloorRevision: revisionAtWalkStart,
+          unresolvedFloorTs: 2000,
         );
 
-        final marker = await readMarker();
-        expect(marker?.lastAppliedTs, 8000);
-        expect(marker?.lastAppliedEventId, r'$c');
+        expect(revisionAtWalkStart, 1);
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          2000,
+          reason:
+              'the completed walk must raise the old floor to its own oldest '
+              'remaining ciphertext',
+        );
+        expect(advancer.resumeFloorRevision(_roomA), 2);
       },
     );
 
     test(
-      'the older of a queue row and held ciphertext wins the clamp',
+      'a failed floor write is retained and retried before a later read',
       () async {
-        final penned = QueueMarkerAdvancer(
-          db,
-          unqueuedFloorTs: (_) => 7000,
-        );
-        await insertRow(eventId: r'$older-active', originTs: 6000);
-        final committingId = await insertRow(eventId: r'$c', originTs: 8000);
+        await db.customStatement('''
+          CREATE TRIGGER fail_resume_floor
+          BEFORE INSERT ON queue_markers
+          BEGIN
+            SELECT RAISE(ABORT, 'floor write failed');
+          END
+        ''');
 
-        await penned.advanceIfNewer(
-          _entry(queueId: committingId, eventId: r'$c', originTs: 8000),
+        await expectLater(
+          advancer.lowerResumeFloor(roomId: _roomA, originTs: 5000),
+          throwsA(anything),
         );
+        await db.customStatement('DROP TRIGGER fail_resume_floor');
 
-        final marker = await readMarker();
         expect(
-          marker?.lastAppliedTs,
-          5999,
-          reason: 'the row at 6000 is older than the held event at 7000',
+          await advancer.resumeFloorTs(_roomA),
+          5000,
+          reason: 'the read must first retry the retained durable observation',
         );
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 2000);
+
+        expect(await advancer.resumeFloorTs(_roomA), 2000);
+        expect(advancer.resumeFloorRevision(_roomA), 2);
       },
     );
 

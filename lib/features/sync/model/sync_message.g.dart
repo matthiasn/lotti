@@ -32,6 +32,7 @@ SyncJournalEntity _$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
       coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
           ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
           .toList(),
+      includeAttachments: json['includeAttachments'] as bool?,
       $type: json['runtimeType'] as String?,
     );
 
@@ -44,6 +45,7 @@ Map<String, dynamic> _$SyncJournalEntityToJson(SyncJournalEntity instance) =>
       'entryLinks': instance.entryLinks,
       'originatingHostId': instance.originatingHostId,
       'coveredVectorClocks': instance.coveredVectorClocks,
+      'includeAttachments': instance.includeAttachments,
       'runtimeType': instance.$type,
     };
 

@@ -9,7 +9,6 @@ import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
-import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_ceremony_stages.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -124,63 +123,66 @@ class _IncomingVerificationModalState
 
         return SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step2),
-            child: SyncFlowSection(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  VerificationCeremonyHeader(
-                    deviceName: displayName,
-                    userId: requestingDevice?.userId,
+            // The sheet itself is the card: nesting a second bordered,
+            // shadowed surface inside it was the one screen in the journey
+            // still drawn card-in-card.
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step2,
+              vertical: tokens.spacing.step4,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                VerificationCeremonyHeader(
+                  deviceName: displayName,
+                  userId: requestingDevice?.userId,
+                ),
+                SizedBox(height: tokens.spacing.step5),
+                if (isPending && emojis == null)
+                  DesignSystemButton(
+                    onPressed: runner?.acceptVerification,
+                    label: context.messages.settingsMatrixVerifyLabel,
+                    size: DesignSystemButtonSize.large,
                   ),
-                  SizedBox(height: tokens.spacing.step5),
-                  if (isPending && emojis == null)
-                    DesignSystemButton(
-                      onPressed: runner?.acceptVerification,
-                      label: context.messages.settingsMatrixVerifyLabel,
-                      size: DesignSystemButtonSize.large,
+                if (isPending && emojis != null)
+                  VerificationEmojiStage(
+                    prompt:
+                        context.messages.settingsMatrixVerifyIncomingConfirm,
+                    emojis: emojis,
+                    awaitingOtherDevice: _awaitingOtherDevice,
+                    onAccept: () => unawaited(_acceptEmojiVerification(runner)),
+                    onCancel: () => unawaited(() async {
+                      await runner?.cancelVerification();
+                      closeModal();
+                    }()),
+                  ),
+                // Without a confirm the cancelled state is a dead end:
+                // every other branch is gated off and nothing is left to
+                // dismiss the sheet with.
+                if (outcome == KeyVerificationOutcome.cancelled)
+                  VerificationCancelledStage(
+                    confirmKey: const Key(
+                      'matrix_incoming_cancelled_confirm',
                     ),
-                  if (isPending && emojis != null)
-                    VerificationEmojiStage(
-                      prompt:
-                          context.messages.settingsMatrixVerifyIncomingConfirm,
-                      emojis: emojis,
-                      awaitingOtherDevice: _awaitingOtherDevice,
-                      onAccept: () =>
-                          unawaited(_acceptEmojiVerification(runner)),
-                      onCancel: () => unawaited(() async {
-                        await runner?.cancelVerification();
-                        closeModal();
-                      }()),
-                    ),
-                  // Without a confirm the cancelled state is a dead end:
-                  // every other branch is gated off and nothing is left to
-                  // dismiss the sheet with.
-                  if (outcome == KeyVerificationOutcome.cancelled)
-                    VerificationCancelledStage(
-                      confirmKey: const Key(
-                        'matrix_incoming_cancelled_confirm',
-                      ),
-                      onConfirm: () {
-                        runner?.stopTimer();
-                        pop();
-                      },
-                    ),
-                  if (isSuccess)
-                    VerificationSuccessStage(
-                      message: context.messages
-                          .settingsMatrixVerificationSuccessLabel(
-                            '',
-                            runner?.keyVerification.deviceId ?? '',
-                          ),
-                      onConfirm: () {
-                        unawaited(refreshUnverifiedDevices());
-                        runner?.stopTimer();
-                        pop();
-                      },
-                    ),
-                ],
-              ),
+                    onConfirm: () {
+                      runner?.stopTimer();
+                      pop();
+                    },
+                  ),
+                if (isSuccess)
+                  VerificationSuccessStage(
+                    message: context.messages
+                        .settingsMatrixVerificationSuccessLabel(
+                          '',
+                          runner?.keyVerification.deviceId ?? '',
+                        ),
+                    onConfirm: () {
+                      unawaited(refreshUnverifiedDevices());
+                      runner?.stopTimer();
+                      pop();
+                    },
+                  ),
+              ],
             ),
           ),
         );
