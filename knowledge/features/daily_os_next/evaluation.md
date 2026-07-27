@@ -74,17 +74,19 @@ fabricated, every omission honoured" and hand a failed run a clean sweep.
   the cheapest way to make an impossible day fit is to claim each task is shorter
   than it is. The one exception is an auditable partial placement: the block
   duration may replace the full estimate only when its reason gives concrete
-  minute arithmetic (`60m of 120m`, or `partial` plus `60m remain`) that agrees
-  with both the summed duration of that task's blocks and the corpus estimate.
-  Every concrete split and remainder in the task's disclosure must agree; one
-  matching fragment cannot override a contradictory remainder elsewhere in the
-  same disclosure. Vague “partial” prose, silence, or contradictory numbers are
-  charged at the full estimate. An audited partial remainder also counts as
-  deferred work for `surfacedConflict`, so a plan that represents every task
-  only partially must still name the trade or escalate it. The constraint
-  detail records every credited partial and every shortening denied credit, so
-  the judge bundle preserves the accounting evidence rather than only the
-  final pass/fail.
+  minute arithmetic (`60m of 120m`, or an affirmative `partial` plus either
+  `60m remain` or `Remaining 60m`) that agrees with both the summed duration of
+  that task's work blocks and the corpus estimate. Every concrete split and
+  remainder in the task's disclosure must agree; one matching fragment cannot
+  override a contradictory remainder elsewhere in the same disclosure.
+  Negated or vague “partial” prose, silence, contradictory numbers, buffer or
+  calendar blocks carrying a task id, and allocations below 10% of the estimate
+  are charged at the full estimate or receive no placement score. An audited
+  partial remainder also counts as deferred work for `surfacedConflict`, so a
+  plan that represents every task only partially must still name the trade or
+  escalate it. The constraint detail records every credited partial and every
+  shortening denied credit, so the judge bundle preserves the accounting
+  evidence rather than only the final pass/fail.
 - **Weak semantic outcomes are not ranking evidence.** `surfacedConflict`
   passes either when an accepted `attentionNeeded`
   escalation uses an allowed typed conflict reason or when block prose names

@@ -640,6 +640,12 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
   final noPlan = _requirePlan(outcome, id);
   if (noPlan != null) return noPlan;
   final placements = _estimatedTaskPlacements(outcome);
+  if (placements.isEmpty) {
+    return const EvalConstraintResult.notApplicable(
+      id,
+      'no placed task carries an estimate',
+    );
+  }
   var chargedMinutes = 0;
   final partials = <String>[];
   final undisclosedShortenings = <String>[];
@@ -647,13 +653,7 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
     final taskId = entry.key;
     final allocated = entry.value.allocatedMinutes;
     final estimate = entry.value.estimateMinutes;
-    if (allocated > 0 &&
-        allocated < estimate &&
-        _hasAuditablePartialDisclosure(
-          reasons: entry.value.reasons,
-          allocatedMinutes: allocated,
-          estimateMinutes: estimate,
-        )) {
+    if (_isAuditedPartial(entry.value)) {
       chargedMinutes += allocated;
       partials.add(
         '$taskId ${allocated}min partial of ${estimate}min '
@@ -667,12 +667,6 @@ EvalConstraintResult scoreWithinCapacityByEstimate(EvalRunOutcome outcome) {
         );
       }
     }
-  }
-  if (placements.isEmpty) {
-    return const EvalConstraintResult.notApplicable(
-      id,
-      'no placed task carries an estimate',
-    );
   }
   final capacity = outcome.inputs.capacityMinutes;
   final evidence = [
@@ -703,6 +697,20 @@ final _partialRemainingPattern = RegExp(
   caseSensitive: false,
 );
 
+final _partialLeadingRemainingPattern = RegExp(
+  r'\b(?:remaining|remainder(?:\s+is)?)\s*:?\s*'
+  r'(\d+)\s*(?:m|mins?|minutes?)\b',
+  caseSensitive: false,
+);
+
+final _partialMentionPattern = RegExp(r'\bpartial\b', caseSensitive: false);
+
+final _negatedPartialPattern = RegExp(
+  r"\b(?:not|no|never|isn['’]?t|wasn['’]?t)\b"
+  r'(?:\s+\w+){0,3}\s+\bpartial\b',
+  caseSensitive: false,
+);
+
 typedef _EstimatedTaskPlacement = ({
   int allocatedMinutes,
   int estimateMinutes,
@@ -720,6 +728,10 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
   final allocatedByTask = <String, int>{};
   final reasonsByTask = <String, List<String>>{};
   for (final block in _scheduled(outcome)) {
+    if (block.type != PlannedBlockType.ai &&
+        block.type != PlannedBlockType.manual) {
+      continue;
+    }
     final taskId = block.taskId;
     if (taskId == null) continue;
     allocatedByTask.update(
@@ -745,6 +757,21 @@ Map<String, _EstimatedTaskPlacement> _estimatedTaskPlacements(
   };
 }
 
+/// Whether a placement is substantial and its partial arithmetic is auditable.
+///
+/// The 10% floor matches the token-placement boundary used by
+/// [scoreRespectsEstimates]. Keeping it here prevents capacity and conflict
+/// scoring from treating a one-minute task marker as genuine partial work.
+bool _isAuditedPartial(_EstimatedTaskPlacement placement) =>
+    placement.allocatedMinutes > 0 &&
+    placement.allocatedMinutes < placement.estimateMinutes &&
+    placement.allocatedMinutes * 10 >= placement.estimateMinutes &&
+    _hasAuditablePartialDisclosure(
+      reasons: placement.reasons,
+      allocatedMinutes: placement.allocatedMinutes,
+      estimateMinutes: placement.estimateMinutes,
+    );
+
 /// Whether prose makes a shortened placement safe to charge as partial.
 ///
 /// Block duration remains the authority. A reason earns partial accounting
@@ -759,9 +786,8 @@ bool _hasAuditablePartialDisclosure({
   required int estimateMinutes,
 }) {
   final remainingMinutes = estimateMinutes - allocatedMinutes;
-  final mentionsPartial = reasons.any(
-    (reason) => reason.toLowerCase().contains('partial'),
-  );
+  if (reasons.any(_negatedPartialPattern.hasMatch)) return false;
+  final mentionsPartial = reasons.any(_partialMentionPattern.hasMatch);
   var hasMatchingSplit = false;
   var hasMatchingRemainder = false;
   for (final reason in reasons) {
@@ -775,6 +801,11 @@ bool _hasAuditablePartialDisclosure({
       hasMatchingSplit = true;
     }
     for (final match in _partialRemainingPattern.allMatches(reason)) {
+      final declaredRemaining = int.tryParse(match.group(1) ?? '');
+      if (declaredRemaining != remainingMinutes) return false;
+      hasMatchingRemainder = true;
+    }
+    for (final match in _partialLeadingRemainingPattern.allMatches(reason)) {
       final declaredRemaining = int.tryParse(match.group(1) ?? '');
       if (declaredRemaining != remainingMinutes) return false;
       hasMatchingRemainder = true;
@@ -857,14 +888,7 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
   final placed = _placedTaskIds(outcome);
   final auditedPartials = {
     for (final entry in _estimatedTaskPlacements(outcome).entries)
-      if (entry.value.allocatedMinutes > 0 &&
-          entry.value.allocatedMinutes < entry.value.estimateMinutes &&
-          _hasAuditablePartialDisclosure(
-            reasons: entry.value.reasons,
-            allocatedMinutes: entry.value.allocatedMinutes,
-            estimateMinutes: entry.value.estimateMinutes,
-          ))
-        entry.key,
+      if (_isAuditedPartial(entry.value)) entry.key,
   };
   final deferred = [
     for (final taskId in outcome.inputs.decidedTaskIds)

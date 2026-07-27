@@ -19,6 +19,7 @@ void main() {
     String? taskId,
     String? reason,
     String? title,
+    PlannedBlockType type = PlannedBlockType.ai,
     PlannedBlockState state = PlannedBlockState.drafted,
   }) => PlannedBlock(
     id: id,
@@ -28,6 +29,7 @@ void main() {
     taskId: taskId,
     reason: reason,
     title: title ?? id,
+    type: type,
     state: state,
   );
 
@@ -1449,6 +1451,20 @@ void main() {
             'Partial: 60 minutes of the 120-minute task are scheduled; '
             '30 minutes remain.',
       ),
+      (
+        name: 'matching split with a contradictory prefix remainder',
+        reason:
+            'Partial: 60 of 120 estimated minutes are scheduled. '
+            'Remaining 30 min move to tomorrow.',
+      ),
+      (
+        name: 'a negated partial disclosure',
+        reason: 'This is not a partial placement; 60 minutes remain for later.',
+      ),
+      (
+        name: 'a contracted negated partial disclosure',
+        reason: "This isn't a partial placement; 60 minutes remain for later.",
+      ),
     ]) {
       test('charges ${badDisclosure.name} at the full estimate', () {
         final result = scoreWithinCapacityByEstimate(
@@ -1519,6 +1535,90 @@ void main() {
       expect(result.detail, contains('charged at 120min'));
       expect(result.detail, isNot(contains('audited partials')));
     });
+
+    test('a token placement never earns partial credit', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(id: 'a', startHour: 9, endHour: 13, taskId: 'task-a'),
+            block(id: 'b', startHour: 13, endHour: 16, taskId: 'task-b'),
+            block(
+              id: 'token',
+              startHour: 16,
+              endHour: 17,
+              taskId: 'task-c',
+              reason:
+                  'Partial: 1 minute of the 120-minute task is scheduled; '
+                  '119 minutes remain.',
+            ).copyWith(endTime: DateTime(2026, 7, 18, 16, 1)),
+            block(
+              id: 'substantive',
+              startHour: 16,
+              endHour: 17,
+              taskId: 'task-d',
+              reason:
+                  'Partial: 59 minutes of the 180-minute task are scheduled; '
+                  '121 minutes remain.',
+            ).copyWith(
+              startTime: DateTime(2026, 7, 18, 16, 1),
+            ),
+          ],
+          corpus: tasks,
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(result.detail, contains('task-c allocated 1min of 120min'));
+    });
+
+    test('the 10 percent boundary is a substantive partial placement', () {
+      final result = scoreWithinCapacityByEstimate(
+        outcome(
+          blocks: [
+            block(
+              id: 'boundary',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-c',
+              reason:
+                  'Partial: 12 minutes of the 120-minute task are scheduled; '
+                  '108 minutes remain.',
+            ).copyWith(endTime: DateTime(2026, 7, 18, 9, 12)),
+          ],
+          corpus: tasks,
+          capacityMinutes: 12,
+        ),
+      );
+
+      expect(result.passed, isTrue);
+      expect(result.detail, contains('task-c 12min partial of 120min'));
+    });
+
+    for (final type in [PlannedBlockType.buffer, PlannedBlockType.cal]) {
+      test('${type.name} blocks do not count as estimated task placements', () {
+        final result = scoreWithinCapacityByEstimate(
+          outcome(
+            blocks: [
+              block(
+                id: 'non-work',
+                startHour: 9,
+                endHour: 10,
+                taskId: 'task-c',
+                reason:
+                    'Partial: 60 minutes of the 120-minute task are scheduled; '
+                    '60 minutes remain.',
+                type: type,
+              ),
+            ],
+            corpus: tasks,
+            capacityMinutes: 60,
+          ),
+        );
+
+        expect(result.isApplicable, isFalse);
+        expect(result.detail, contains('no placed task carries an estimate'));
+      });
+    }
 
     glados.Glados<int>(
       glados.any.intInRange(15, 106),
