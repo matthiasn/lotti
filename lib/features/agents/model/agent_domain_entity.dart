@@ -191,8 +191,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// `captureDayId`, which falls back to the capture date for legacy rows.
   ///
   /// [parseCompletedAt] records a successful `parse_capture_to_items` call,
-  /// including the explicit-empty result. Older peers omit it, so existing
-  /// parsed-item links remain the compatibility signal for legacy captures.
+  /// including the explicit-empty result. Once non-null it is preserved
+  /// monotonically at the repository write boundary because older peers omit
+  /// it from whole-row rewrites. Existing parsed-item links remain the
+  /// compatibility signal for legacy captures that completed before the field
+  /// existed.
   const factory AgentDomainEntity.capture({
     required String id,
     required String agentId,

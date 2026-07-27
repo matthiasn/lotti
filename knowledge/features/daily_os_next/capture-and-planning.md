@@ -81,6 +81,17 @@ completion signal shared by the workflow, the outbox executor, and Activity's
 retry path. Without that marker a successful empty result is indistinguishable
 from an unparsed capture after restart and reopening Activity spends another
 inference run. Legacy captures with parsed-item links still count as complete.
+The marker is monotonic at the agent repository write boundary, so a whole-row
+rewrite from an older peer that does not know the field cannot erase successful
+completion. A recovered outbox job also treats a deleted capture as terminal
+instead of retrying removed user intent.
+
+Only an explicitly empty model `items` array means "nothing to act on." A
+non-empty response whose entries are all invalid or outside the planner's
+category scope is rejected, preserving the previous parse and giving the model
+a chance to correct its output. Before replacing parsed items, the service
+re-reads the capture inside the write transaction so concurrent edits survive
+and a concurrent tombstone is never revived.
 
 ## Three guards worth stating precisely
 

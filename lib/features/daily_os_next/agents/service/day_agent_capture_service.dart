@@ -267,11 +267,15 @@ class DayAgentCaptureService {
   /// Whether [captureId] has a successful persisted parse, including an
   /// explicit empty result.
   ///
+  /// A deleted capture is terminal too: a recovered parse job must not retry
+  /// user intent that was removed while the job was queued.
+  ///
   /// Existing parsed items remain a compatibility signal for captures written
   /// before `parseCompletedAt` existed.
   Future<bool> hasCompletedCaptureParse(String captureId) async {
     final capture = await getCapture(captureId);
-    if (capture == null || capture.deletedAt != null) return false;
+    if (capture == null) return false;
+    if (capture.deletedAt != null) return true;
     if (capture.parseCompletedAt != null) return true;
     return (await parsedItemsForCapture(captureId)).isNotEmpty;
   }
@@ -364,9 +368,25 @@ class DayAgentCaptureService {
       if (item.taskLink != null) taskLinks.add(item.taskLink!);
     }
 
+    if (rawItems.isNotEmpty && parsedItems.isEmpty) {
+      throw const DayAgentCaptureException(
+        'items contained no valid entries in the agent category scope',
+      );
+    }
+
     await syncService.runInTransaction(() async {
+      // Inference may take long enough for another device or the user to
+      // update/delete the capture. Re-read inside the write transaction so
+      // this whole-row update preserves the latest fields and never revives a
+      // tombstone from the stale pre-inference snapshot.
+      final currentCapture = await getCapture(captureId);
+      if (currentCapture == null || currentCapture.deletedAt != null) {
+        throw DayAgentCaptureException('capture $captureId not found');
+      }
       await _softDeleteExistingParsedItems(captureId, now);
-      await syncService.upsertEntity(capture.copyWith(parseCompletedAt: now));
+      await syncService.upsertEntity(
+        currentCapture.copyWith(parseCompletedAt: now),
+      );
       for (final parsedItem in parsedItems) {
         await syncService.upsertEntity(parsedItem);
         await syncService.upsertLink(

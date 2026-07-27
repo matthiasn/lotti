@@ -473,7 +473,7 @@ void main() {
       });
 
       test(
-        'returns false for a deleted capture without reading links',
+        'treats a deleted capture as terminal without reading links',
         () async {
           final capture = _capture(
             id: 'capture-deleted',
@@ -484,7 +484,7 @@ void main() {
 
           expect(
             await createService().hasCompletedCaptureParse(capture.id),
-            false,
+            true,
           );
           verifyNever(
             () => agentRepository.getLinksFrom(
@@ -1628,6 +1628,89 @@ void main() {
 
       expect(items.map((item) => item.title), ['Work item']);
     });
+
+    test(
+      'persistParsedItems rejects a non-empty response when every item is '
+      'filtered',
+      () async {
+        final capture = _capture(id: 'capture-1');
+        agentEntities[capture.id] = capture;
+
+        await expectLater(
+          createService().persistParsedItems(
+            agentId: _agentId,
+            captureId: capture.id,
+            rawItems: const [
+              {
+                'kind': 'newTask',
+                'title': 'Home item',
+                'categoryId': 'home',
+                'confidenceScore': 0.9,
+              },
+              'not-a-map',
+            ],
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+
+        expect(upsertedEntities, isEmpty);
+        expect(upsertedLinks, isEmpty);
+      },
+    );
+
+    test(
+      'persistParsedItems re-reads the capture before marking completion',
+      () async {
+        final initial = _capture(id: 'capture-1');
+        final concurrentlyUpdated = initial.copyWith(
+          transcript: 'Updated on another device',
+          audioRef: 'audio/new.m4a',
+        );
+        var captureReads = 0;
+        when(() => agentRepository.getEntity(initial.id)).thenAnswer((_) async {
+          captureReads++;
+          return captureReads == 1 ? initial : concurrentlyUpdated;
+        });
+
+        await createService().persistParsedItems(
+          agentId: _agentId,
+          captureId: initial.id,
+          rawItems: const [],
+        );
+
+        final persisted = upsertedEntities.whereType<CaptureEntity>().single;
+        expect(persisted.transcript, concurrentlyUpdated.transcript);
+        expect(persisted.audioRef, concurrentlyUpdated.audioRef);
+        expect(persisted.parseCompletedAt, isNotNull);
+        expect(captureReads, 2);
+      },
+    );
+
+    test(
+      'persistParsedItems does not revive a capture deleted during inference',
+      () async {
+        final initial = _capture(id: 'capture-1');
+        final tombstone = initial.copyWith(deletedAt: _now);
+        var captureReads = 0;
+        when(() => agentRepository.getEntity(initial.id)).thenAnswer((_) async {
+          captureReads++;
+          return captureReads == 1 ? initial : tombstone;
+        });
+
+        await expectLater(
+          createService().persistParsedItems(
+            agentId: _agentId,
+            captureId: initial.id,
+            rawItems: const [],
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+
+        expect(upsertedEntities, isEmpty);
+        expect(upsertedLinks, isEmpty);
+        expect(captureReads, 2);
+      },
+    );
 
     test('persistParsedItems rejects an unknown kind value', () async {
       final capture =
