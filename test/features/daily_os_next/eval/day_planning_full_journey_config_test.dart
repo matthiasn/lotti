@@ -42,26 +42,12 @@ void main() {
     }
   });
 
-  test(
-    'scenario clock stays on the configured date as elapsed time advances',
-    () {
-      final value = fullJourneyClockValue(
-        evaluationDate: DateTime(2040, 6, 3),
-        startHour: 12,
-        elapsed: const Duration(minutes: 17),
-      );
-
-      expect(value, DateTime(2040, 6, 3, 12, 17));
-    },
-  );
-
-  test('scenario clock wraps time without leaving the configured date', () {
-    final value = fullJourneyClockValue(
+  test('scenario time is fixed on the configured date and start hour', () {
+    final value = fullJourneyScenarioTime(
       evaluationDate: DateTime(2040, 6, 3),
       startHour: 23,
-      elapsed: const Duration(hours: 2),
     );
 
-    expect(value, DateTime(2040, 6, 3, 1));
+    expect(value, DateTime(2040, 6, 3, 23));
   });
 }

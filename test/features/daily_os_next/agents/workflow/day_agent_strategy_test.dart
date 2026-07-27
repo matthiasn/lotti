@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
@@ -391,6 +392,13 @@ void main() {
       'does not execute calls after a terminal artifact in one batch',
       () async {
         final handledTools = <String>[];
+        final recordedEntities = <AgentDomainEntity>[];
+        when(() => syncService.upsertEntity(any())).thenAnswer((invocation) {
+          recordedEntities.add(
+            invocation.positionalArguments.single as AgentDomainEntity,
+          );
+          return Future<void>.value();
+        });
         final sut = strategy(
           terminalToolNames: const {DayAgentToolNames.draftDayPlan},
           handler: (toolName, _, _) async {
@@ -420,11 +428,30 @@ void main() {
 
         expect(action, ConversationAction.complete);
         expect(handledTools, [DayAgentToolNames.draftDayPlan]);
-        verifyNever(
-          () => manager.addToolResponse(
-            toolCallId: 'status-call',
-            response: any(named: 'response'),
-          ),
+        final skippedResponse =
+            verify(
+                  () => manager.addToolResponse(
+                    toolCallId: 'status-call',
+                    response: captureAny(named: 'response'),
+                  ),
+                ).captured.single
+                as String;
+        expect(skippedResponse, contains('skipped because terminal tool'));
+
+        final skippedMessages = recordedEntities
+            .whereType<AgentMessageEntity>()
+            .where(
+              (entity) =>
+                  entity.metadata.toolName == DayAgentToolNames.raiseDayStatus,
+            )
+            .toList();
+        expect(
+          skippedMessages.map((entity) => entity.kind),
+          [AgentMessageKind.action, AgentMessageKind.toolResult],
+        );
+        expect(
+          skippedMessages.last.metadata.errorMessage,
+          contains('skipped because terminal tool'),
         );
       },
     );

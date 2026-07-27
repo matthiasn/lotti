@@ -47,4 +47,42 @@ void main() {
       verify(() => outbox.getById(settledJob.id)).called(1);
     });
   }
+
+  test('accepts a successfully settled job', () {
+    expect(
+      () => requireSuccessfulDayProcessingJob(
+        job(DayProcessingJobStatus.succeeded),
+        stage: 'Capture parse',
+      ),
+      returnsNormally,
+    );
+  });
+
+  for (final status in [
+    DayProcessingJobStatus.failed,
+    DayProcessingJobStatus.waitingForUser,
+    DayProcessingJobStatus.cancelled,
+  ]) {
+    test('rejects an unsuccessful parse job in ${status.name}', () {
+      expect(
+        () => requireSuccessfulDayProcessingJob(
+          job(status),
+          stage: 'Capture parse',
+        ),
+        throwsA(
+          isA<StateError>()
+              .having(
+                (error) => error.message,
+                'message',
+                contains('Capture parse job parse_capture-1'),
+              )
+              .having(
+                (error) => error.message,
+                'status',
+                contains(status.name),
+              ),
+        ),
+      );
+    });
+  }
 }

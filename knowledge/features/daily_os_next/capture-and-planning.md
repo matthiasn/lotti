@@ -86,12 +86,14 @@ The parser and drafter tools are **terminal artifacts only in their owning wake
 mode**. Once either one is accepted there, `DayAgentStrategy` completes that
 conversation immediately rather than asking the provider for a prose wrap-up.
 It also stops processing the current tool-call batch, so nothing can mutate
-state after the terminal artifact. Rejected calls still continue so the model
-can repair them. This matters twice: an unrestricted drafting wake can re-parse,
-triage, search and summarize before it plans, and continuing after the final
-write adds another provider call after the requested artifact already exists.
-Refine never exposes the full-draft writer, so it cannot overwrite its baseline
-instead of producing a reviewable diff.
+state after the terminal artifact. Any later calls already batched by the
+provider are persisted as rejected/skipped without execution, so evaluation
+still sees the ordering violation. Rejected calls before the terminal artifact
+continue so the model can repair them. This matters twice: an unrestricted
+drafting wake can re-parse, triage, search and summarize before it plans, and
+continuing after the final write adds another provider call after the requested
+artifact already exists. Refine never exposes the full-draft writer, so it
+cannot overwrite its baseline instead of producing a reviewable diff.
 
 Durable scheduling has a matching no-lost-signal invariant. When an outbox
 change arrives while `DayProcessingRuntime` is already draining, the runtime

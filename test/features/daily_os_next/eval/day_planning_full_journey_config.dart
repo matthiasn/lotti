@@ -29,23 +29,15 @@ DateTime fullJourneyEvaluationDate(String? raw) {
   return DateTime(parsed.year, parsed.month, parsed.day);
 }
 
-DateTime fullJourneyClockValue({
+DateTime fullJourneyScenarioTime({
   required DateTime evaluationDate,
   required int startHour,
-  required Duration elapsed,
-}) {
-  final timeOfDay = DateTime.utc(2000, 1, 1, startHour).add(elapsed);
-  return DateTime(
-    evaluationDate.year,
-    evaluationDate.month,
-    evaluationDate.day,
-    timeOfDay.hour,
-    timeOfDay.minute,
-    timeOfDay.second,
-    timeOfDay.millisecond,
-    timeOfDay.microsecond,
-  );
-}
+}) => DateTime(
+  evaluationDate.year,
+  evaluationDate.month,
+  evaluationDate.day,
+  startHour,
+);
 
 String _dateOnly(DateTime value) =>
     '${value.year.toString().padLeft(4, '0')}-'

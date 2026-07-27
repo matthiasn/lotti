@@ -297,10 +297,11 @@ DAY_PLANNING_EVAL_DATE=2030-01-15 \
 ```
 
 `DAY_PLANNING_EVAL_DATE` is optional and defaults to `2030-01-15`. The runner
-anchors every scenario and seeded task to that calendar date. Latency uses a
-monotonic elapsed timer, and wall-clock timestamps are reserved for report
-metadata. This keeps prompt context and results comparable across runs and
-across midnight boundaries.
+anchors every scenario and seeded task to that calendar date and freezes each
+cell's planning clock at the fixture's `startHour`. Latency uses stopwatches
+without advancing the model-facing clock, and wall-clock timestamps are reserved
+for report metadata. This keeps prompt context and results comparable across
+models, runs and midnight boundaries.
 
 It uses two shared realistic fixtures rather than an empty smoke corpus:
 

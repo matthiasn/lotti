@@ -171,13 +171,11 @@ void main() {
 
         for (final journey in validatedScenarios) {
           final scenario = journey.scenario;
-          final runningClock = Stopwatch()..start();
           final report = await withClock(
-            Clock(
-              () => fullJourneyClockValue(
+            Clock.fixed(
+              fullJourneyScenarioTime(
                 evaluationDate: evaluationDate,
                 startHour: journey.startHour,
-                elapsed: runningClock.elapsed,
               ),
             ),
             () => _runJourney(
@@ -304,6 +302,7 @@ Future<Map<String, Object?>> _runJourney({
       harness.outbox,
       DayProcessingOutboxRepository.parseJobId(captureId.value),
     );
+    requireSuccessfulDayProcessingJob(parseJob, stage: 'Capture parse');
     parsedItems = await harness.realDayAgent.parseCaptureToItems(captureId);
     parse.stop();
 

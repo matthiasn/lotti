@@ -112,7 +112,8 @@ class DayAgentStrategy extends ConversationStrategy {
   }) async {
     await _recordAssistantMessage();
 
-    for (final call in toolCalls) {
+    for (var index = 0; index < toolCalls.length; index += 1) {
+      final call = toolCalls[index];
       final toolName = call.function.name;
       late final Map<String, dynamic> args;
       try {
@@ -156,7 +157,14 @@ class DayAgentStrategy extends ConversationStrategy {
         if (persistedArtifact && terminalToolNames.contains(toolName)) {
           // A provider may batch multiple tool calls in one response. Once
           // this wake's terminal artifact is durable, later calls must not
-          // mutate state after the artifact that ends the conversation.
+          // mutate state after the artifact that ends the conversation. Keep
+          // them in the durable log as rejected so evaluation cannot mistake
+          // an unexecuted ordering violation for compliant output.
+          await _recordCallsSkippedAfterTerminalArtifact(
+            calls: toolCalls.skip(index + 1),
+            terminalToolName: toolName,
+            manager: manager,
+          );
           return ConversationAction.complete;
         }
         continue;
@@ -171,6 +179,34 @@ class DayAgentStrategy extends ConversationStrategy {
     }
 
     return ConversationAction.continueConversation;
+  }
+
+  Future<void> _recordCallsSkippedAfterTerminalArtifact({
+    required Iterable<ChatCompletionMessageToolCall> calls,
+    required String terminalToolName,
+    required ConversationManager manager,
+  }) async {
+    final errorMessage =
+        'Error: skipped because terminal tool "$terminalToolName" already '
+        'persisted this wake artifact.';
+    for (final call in calls) {
+      final toolName = call.function.name;
+      try {
+        final args = _parseToolArguments(call.function.arguments);
+        await _recordActionMessage(toolName: toolName, args: args);
+      } catch (_) {
+        // The skipped rejection remains the primary result. A malformed call
+        // has no structured arguments to attach to its action log.
+      }
+      manager.addToolResponse(
+        toolCallId: call.id,
+        response: errorMessage,
+      );
+      await _recordToolResultMessage(
+        toolName: toolName,
+        errorMessage: errorMessage,
+      );
+    }
   }
 
   bool _didPersistCaptureParseResult(DayAgentToolResult result) {

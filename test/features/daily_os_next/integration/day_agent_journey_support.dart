@@ -87,3 +87,16 @@ Future<DayProcessingJob> waitForTerminalDayProcessingJob(
     await changes.cancel();
   }
 }
+
+/// Throws when a settled durable job did not complete successfully.
+void requireSuccessfulDayProcessingJob(
+  DayProcessingJob job, {
+  required String stage,
+}) {
+  if (job.status == DayProcessingJobStatus.succeeded) return;
+  final detail = job.lastError;
+  throw StateError(
+    '$stage job ${job.id} settled as ${job.status.name}'
+    '${detail == null || detail.isEmpty ? '.' : ': $detail'}',
+  );
+}
