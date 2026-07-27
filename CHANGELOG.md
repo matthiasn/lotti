@@ -53,6 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no way to say so — the app rejected the answer, and it had to either invent a
   task or try again. It can now record that a note held nothing, which also
   clears anything it had wrongly picked out of that note earlier.
+- **Sync finishes catching up after a large or still-growing backlog.** A
+  reconnect could spend its recovery allowance following the newest messages,
+  report that partial walk as complete, and leave the remaining entries
+  missing with nothing queued to retry. Recovery now budgets the actual
+  network work and automatically resumes whenever that allowance is reached.
 - **The planner is told how much of the day is actually left.** It knew your
   capacity and your working hours, but had to work out for itself how much time
   a mid-afternoon plan really had — and got it wrong, running plans past the end
