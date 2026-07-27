@@ -71,20 +71,10 @@ ThemeData withOverrides(ThemeData themeData) {
         borderRadius: BorderRadius.circular(16),
       ),
     ),
-    textTheme: themeData.textTheme.copyWith(
-      titleMedium: themeData.textTheme.titleMedium?.copyWith(
-        fontSize: fontSizeMedium,
-        fontWeight: FontWeight.w500, // Slightly bolder
-      ),
-      bodyLarge: themeData.textTheme.bodyLarge?.copyWith(
-        fontSize: fontSizeMedium,
-        fontWeight: FontWeight.w400,
-      ),
-      bodyMedium: themeData.textTheme.bodyMedium?.copyWith(
-        fontSize: fontSizeMedium,
-        fontWeight: FontWeight.w400,
-      ),
-    ),
+    // Deliberately no textTheme overrides: the base theme is the design
+    // system's, and re-copying titleMedium/bodyLarge/bodyMedium with legacy
+    // size constants silently replaced the token typography the standalone
+    // theme (and its tests) validate.
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
         alignment: Alignment.center,

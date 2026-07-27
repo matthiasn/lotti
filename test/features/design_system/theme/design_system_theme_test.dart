@@ -27,8 +27,11 @@ void main() {
         final slots = <(String, Color, Color)>[
           ('primary', scheme.primary, colors.interactive.enabled),
           ('onPrimary', scheme.onPrimary, colors.text.onInteractiveAlert),
-          ('secondary', scheme.secondary, colors.surface.active),
-          ('onSecondary', scheme.onSecondary, colors.text.highEmphasis),
+          // Solid accents: Material consumers paint secondary/tertiary
+          // directly (slider thumbs, status indicators), so an overlay or a
+          // near-page background here renders them invisible.
+          ('secondary', scheme.secondary, colors.interactive.hover),
+          ('onSecondary', scheme.onSecondary, colors.text.onInteractiveAlert),
           ('error', scheme.error, colors.alert.error.defaultColor),
           ('onError', scheme.onError, colors.text.onInteractiveAlert),
           ('surface', scheme.surface, colors.background.level01),
@@ -43,11 +46,36 @@ void main() {
             scheme.secondaryContainer,
             colors.background.level03,
           ),
-          ('tertiary', scheme.tertiary, colors.background.alternative01),
+          ('tertiary', scheme.tertiary, colors.alert.info.defaultColor),
+          ('onTertiary', scheme.onTertiary, colors.text.onInteractiveAlert),
           (
             'errorContainer',
             scheme.errorContainer,
             colors.alert.error.hover,
+          ),
+          // The full container ramp: unset slots fall back to `surface`,
+          // collapsing every legacy surfaceContainer* consumer onto the page
+          // background. level03 is a divider gray, so the ramp deliberately
+          // tops out at level02.
+          (
+            'surfaceContainerLowest',
+            scheme.surfaceContainerLowest,
+            colors.background.level01,
+          ),
+          (
+            'surfaceContainerLow',
+            scheme.surfaceContainerLow,
+            colors.background.level02,
+          ),
+          (
+            'surfaceContainer',
+            scheme.surfaceContainer,
+            colors.background.level02,
+          ),
+          (
+            'surfaceContainerHigh',
+            scheme.surfaceContainerHigh,
+            colors.background.level02,
           ),
           (
             'surfaceContainerHighest',
@@ -88,6 +116,14 @@ void main() {
           colors.text.lowEmphasis,
           reason: '$name disabledColor',
         );
+        // The legacy accent slot: unset it resolves to `surface` in dark
+        // mode, painting `Theme.of(context).primaryColor` consumers
+        // page-on-page invisible.
+        expect(
+          theme.primaryColor,
+          colors.interactive.enabled,
+          reason: '$name primaryColor',
+        );
       });
 
       test('$name theme maps the full textTheme from typography tokens', () {
@@ -102,6 +138,9 @@ void main() {
           ('headlineSmall', textTheme.headlineSmall, styles.heading.heading3),
           ('titleLarge', textTheme.titleLarge, styles.subtitle.subtitle1),
           ('titleMedium', textTheme.titleMedium, styles.subtitle.subtitle2),
+          // Mapped so legacy titleSmall consumers stay on the token ramp
+          // instead of Flutter's fallback font and scale.
+          ('titleSmall', textTheme.titleSmall, styles.subtitle.subtitle2),
           ('bodyLarge', textTheme.bodyLarge, styles.body.bodyLarge),
           ('bodyMedium', textTheme.bodyMedium, styles.body.bodyMedium),
           ('bodySmall', textTheme.bodySmall, styles.body.bodySmall),

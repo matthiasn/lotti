@@ -16,13 +16,16 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 
-/// The scheme name this app reports in [SyncMessage.themingSelection].
+/// Scheme name sent in [SyncMessage.themingSelection] when none is stored.
 ///
-/// The message's name fields are kept for wire compatibility with app versions
-/// that still offered selectable FlexColorScheme themes. Those versions ignore
-/// an unknown name (falling back to their default scheme) while still applying
-/// the [ThemeMode] — which is the only theming preference that exists now.
-const String kSyncedThemeName = 'Lotti';
+/// The message's name fields exist for wire compatibility with app versions
+/// that still offered selectable FlexColorScheme themes. Older receivers
+/// *persist and apply* whatever names arrive, so a mode-only change from this
+/// version must round-trip the names they last chose — inventing a constant
+/// here reset a legacy device's custom schemes to its fallback. This default
+/// matches the legacy versions' own default scheme, so a device that never
+/// stored a name is told nothing new.
+const String kLegacyDefaultThemeName = 'Grey Law';
 
 /// Immutable snapshot of the current theming configuration.
 ///
@@ -175,10 +178,20 @@ class ThemingController extends Notifier<ThemingState> {
           return;
         }
         try {
+          // Round-trip whatever scheme names a legacy device last synced —
+          // this version never writes these keys, so the stored values are
+          // exactly what the wire owes older receivers back.
+          final settingsDb = getIt<SettingsDb>();
+          final storedNames = await settingsDb.itemsByKeys({
+            lightSchemeNameKey,
+            darkSchemeNameKey,
+          });
           await getIt<OutboxService>().enqueueMessage(
             SyncMessage.themingSelection(
-              lightThemeName: kSyncedThemeName,
-              darkThemeName: kSyncedThemeName,
+              lightThemeName:
+                  storedNames[lightSchemeNameKey] ?? kLegacyDefaultThemeName,
+              darkThemeName:
+                  storedNames[darkSchemeNameKey] ?? kLegacyDefaultThemeName,
               themeMode: state.themeMode.name,
               updatedAt: DateTime.now().millisecondsSinceEpoch,
               status: SyncEntryStatus.update,

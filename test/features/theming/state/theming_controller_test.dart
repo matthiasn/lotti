@@ -85,6 +85,11 @@ void main() {
       when(
         () => settingsDb.itemByKey(themeModeKey),
       ).thenAnswer((_) => themeModeLoader());
+      // The outbound sync message round-trips the scheme names a legacy
+      // device last stored; nothing stored by default.
+      when(
+        () => settingsDb.itemsByKeys(any()),
+      ).thenAnswer((_) async => <String, String?>{});
       when(
         () => journalDb.watchConfigFlag(enableTooltipFlag),
       ).thenAnswer((_) => tooltipController.stream);
@@ -186,11 +191,47 @@ void main() {
           final message = captured.first as SyncThemingSelection;
           expect(message.themeMode, 'dark');
           // The scheme-name fields survive for wire compatibility with app
-          // versions that still selected FlexColorScheme themes; this app
-          // always reports its one theme.
-          expect(message.lightThemeName, kSyncedThemeName);
-          expect(message.darkThemeName, kSyncedThemeName);
+          // versions that still selected FlexColorScheme themes; with
+          // nothing stored, the legacy default goes out so an old receiver
+          // is told nothing new.
+          expect(message.lightThemeName, kLegacyDefaultThemeName);
+          expect(message.darkThemeName, kLegacyDefaultThemeName);
           expect(message.status, SyncEntryStatus.update);
+        });
+      });
+
+      test('round-trips stored legacy scheme names in outbound sync', () {
+        fakeAsync((async) {
+          // A legacy device synced its custom schemes here earlier. A
+          // mode-only change from this version must echo those names back —
+          // sending a constant reset the older device's picks to its
+          // fallback scheme.
+          when(
+            () => settingsDb.itemsByKeys(any()),
+          ).thenAnswer(
+            (_) async => <String, String?>{
+              lightSchemeNameKey: 'Sakura',
+              darkSchemeNameKey: 'Shark',
+            },
+          );
+
+          final controller = container.read(themingControllerProvider.notifier);
+
+          waitForInit(async);
+          clearInteractions(outboxService);
+
+          controller.onThemeSelectionChanged({ThemeMode.light});
+
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+
+          final captured = verify(
+            () => outboxService.enqueueMessage(captureAny()),
+          ).captured;
+          final message = captured.first as SyncThemingSelection;
+          expect(message.lightThemeName, 'Sakura');
+          expect(message.darkThemeName, 'Shark');
+          expect(message.themeMode, 'light');
         });
       });
 
