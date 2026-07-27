@@ -416,7 +416,7 @@ void main() {
       return (uploaded: uploaded, result: result);
     }
 
-    test('uploads each media child\'s blob before the manifest', () async {
+    test("uploads each media child's blob before the manifest", () async {
       final sent = await sendBundle(includeAttachments: true);
 
       expect(sent.result, isNotNull);
