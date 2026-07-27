@@ -1144,7 +1144,7 @@
       "title": "Pair a sync device",
       "kind": "workflow",
       "source": "lib/features/sync/ui/provisioned/provisioned_sync_modal.dart",
-      "sourcePattern": "class ProvisionedSyncSettingsCard",
+      "sourcePattern": "class SyncSetupEmptyState",
       "locator": "Sync Settings → Devices → Add device",
       "page": "sync-and-data/add-device",
       "status": "verified"
