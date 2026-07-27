@@ -105,7 +105,15 @@ class _AutoVerificationLauncherState
 
     if (unverifiedDevices.isEmpty) {
       _lastOffered = null;
-      ref.read(matrixVerificationHandledProvider.notifier).clear();
+      // Deferred: this branch is reached by the *successful* verification of
+      // the last pending device, and Riverpod rejects a provider write during
+      // widget construction — so clearing inline turned the normal success
+      // transition into a provider-modification exception.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(matrixVerificationHandledProvider.notifier).clear();
+        }
+      });
       return const SizedBox.shrink();
     }
 

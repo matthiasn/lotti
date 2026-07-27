@@ -11,11 +11,23 @@ import 'package:lotti/features/sync/ui/widgets/matrix/auto_verification_launcher
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 import '../../provisioned/provisioned_status_page_test_helpers.dart';
+
+/// Reads its list on every build so a test can change what is unverified and
+/// invalidate, the way a completed ceremony does in production.
+class _MutableUnverifiedController extends MatrixUnverifiedController {
+  _MutableUnverifiedController(this.source);
+
+  final List<DeviceKeys> Function() source;
+
+  @override
+  Future<List<DeviceKeys>> build() async => source();
+}
 
 /// Stands in for a manual or incoming ceremony already owning the lock.
 class _HeldLock extends MatrixVerificationModalLock {
@@ -54,6 +66,7 @@ void main() {
     WidgetTester tester,
     List<MockDeviceKeys> unverified, {
     List<Override> extraOverrides = const [],
+    MatrixUnverifiedController Function()? unverifiedController,
   }) async {
     late ProviderContainer container;
     await tester.pumpWidget(
@@ -61,7 +74,8 @@ void main() {
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
           matrixUnverifiedControllerProvider.overrideWith(
-            () => FakeMatrixUnverifiedController(unverified),
+            unverifiedController ??
+                () => FakeMatrixUnverifiedController(unverified),
           ),
           syncDevicesControllerProvider.overrideWith(
             () => FakeSyncDevicesController(const []),
@@ -122,34 +136,73 @@ void main() {
       );
     });
 
-    testWidgets('show-again re-offers the last device, not the first', (
+    testWidgets('show-again reopens the device last shown, not the first', (
       tester,
     ) async {
-      // Clearing the whole set restarts selection at the head of the list, so
-      // a stale peer sorting first would be reopened instead of the ceremony
-      // the user just dismissed.
-      final container = await pumpLauncher(tester, [
-        deviceNamed('Stale', 'STALE'),
-        deviceNamed('New phone', 'NEWPHONE'),
-      ]);
-      // Simulate the traversal having reached the newly paired device.
-      container
-          .read(matrixVerificationHandledProvider.notifier)
-          .markShown('@alice:example.com/NEWPHONE');
-      expect(container.read(matrixVerificationHandledProvider), hasLength(2));
+      // Drives the real traversal rather than poking the shared set: the
+      // launcher's `_lastOffered` is private, so a test that marks a device
+      // handled by hand releases the *wrong* identity and still passes.
+      final stale = deviceNamed('Stale', 'STALE');
+      final fresh = deviceNamed('New phone', 'NEWPHONE');
+      final container = await pumpLauncher(tester, [stale, fresh]);
+
+      Future<void> dismiss() async {
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.pumpAndSettle();
+      }
+
+      DeviceKeys shownDevice() => tester
+          .widget<VerificationModal>(find.byType(VerificationModal))
+          .deviceKeys;
+
+      // First traversal takes the head of the list.
+      expect(shownDevice(), same(stale));
+      await dismiss();
+      // Dismissing invalidates the providers, so the next unshown device is
+      // offered on the rebuild.
+      await tester.pumpAndSettle();
+      expect(shownDevice(), same(fresh));
+      await dismiss();
+      expect(find.byType(VerificationModal), findsNothing);
 
       container.read(matrixVerificationRelaunchProvider.notifier).request();
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Only the last-shown identity became eligible again.
-      expect(
-        container.read(matrixVerificationHandledProvider),
-        contains('@alice:example.com/NEWPHONE'),
+      // The one the user was actually looking at — not the stale peer at the
+      // head of the list, which is what a full reset would have reopened.
+      expect(find.byType(VerificationModal), findsOneWidget);
+      expect(shownDevice(), same(fresh));
+    });
+  });
+
+  group('AutoVerificationLauncher handled-set lifecycle', () {
+    testWidgets('clears the handled set when the last device gets verified', (
+      tester,
+    ) async {
+      // The clear runs on the *success* path, so writing the provider inline
+      // in build() turned the normal end of verification into a provider
+      // modification exception — and the all-verified test could not catch it,
+      // because an already-empty set makes clear() a no-op.
+      var devices = <DeviceKeys>[deviceNamed('Old laptop', 'OLD')];
+      final container = await pumpLauncher(
+        tester,
+        const [],
+        unverifiedController: () => _MutableUnverifiedController(() => devices),
       );
-      expect(
-        container.read(matrixVerificationHandledProvider),
-        isNot(contains('@alice:example.com/STALE')),
-      );
+
+      expect(find.byType(VerificationModal), findsOneWidget);
+      expect(container.read(matrixVerificationHandledProvider), isNotEmpty);
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+
+      // The ceremony succeeded: nothing is unverified any more.
+      devices = [];
+      container.invalidate(matrixUnverifiedControllerProvider);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(container.read(matrixVerificationHandledProvider), isEmpty);
     });
   });
 

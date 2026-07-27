@@ -16,15 +16,19 @@ import 'package:lotti/providers/service_providers.dart';
 /// [provisioningControllerProvider] does not rescue it either — it stays
 /// `initial` for a session that was restored rather than freshly paired.
 ///
-/// [loginStateStreamProvider] is the missing signal: its transitions drive the
-/// rebuild, and the service is then read for the current truth.
+/// Login state alone is not enough either, and the gap is not theoretical:
+/// `SyncSessionManager.connect()` drops a persisted room the account can no
+/// longer join (`M_FORBIDDEN`/`M_NOT_FOUND`) *after* the login event has
+/// fired, so a login-only signal leaves the device roster on screen for a room
+/// that no longer exists. [syncRoomChangesProvider] closes that.
 final Provider<bool> syncConfiguredProvider = Provider.autoDispose<bool>(
   (ref) {
-    // Rebuild triggers. The values are deliberately not used directly: login
-    // state alone does not tell us about the room, and provisioning state
-    // tells us only about a pairing run in this session.
+    // Rebuild triggers. The values are deliberately not used directly: each
+    // signal covers a different transition, and the service is then read once
+    // for the current truth.
     ref
       ..watch(loginStateStreamProvider)
+      ..watch(syncRoomChangesProvider)
       ..watch(provisioningControllerProvider);
 
     final service = ref.watch(matrixServiceProvider);
@@ -32,3 +36,10 @@ final Provider<bool> syncConfiguredProvider = Provider.autoDispose<bool>(
   },
   name: 'syncConfiguredProvider',
 );
+
+/// Sync-room transitions, including clears.
+final StreamProvider<String?> syncRoomChangesProvider =
+    StreamProvider.autoDispose<String?>(
+      (ref) => ref.watch(matrixServiceProvider).syncRoomIdChanges,
+      name: 'syncRoomChangesProvider',
+    );

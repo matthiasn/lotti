@@ -157,6 +157,17 @@ void main() {
       expect(service.syncRoomId, '!room:s');
     });
 
+    test('syncRoomIdChanges forwards the room manager stream', () async {
+      // The UI gate for "is sync configured" hangs off this; a getter that
+      // returned a fresh empty stream would leave the roster stale forever.
+      final changes = Stream<String?>.fromIterable(['!room:s', null]);
+      when(() => roomManager.roomIdChanges).thenAnswer((_) => changes);
+
+      final service = createService();
+
+      expect(await service.syncRoomIdChanges.toList(), ['!room:s', null]);
+    });
+
     test('isLoggedIn delegates to session manager', () {
       when(() => sessionManager.isLoggedIn()).thenReturn(true);
 

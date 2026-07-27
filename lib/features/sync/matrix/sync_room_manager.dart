@@ -48,6 +48,17 @@ class SyncRoomManager {
   final StreamController<SyncRoomInvite> _inviteController =
       StreamController<SyncRoomInvite>.broadcast();
 
+  /// Emits whenever the sync room changes, including when it is cleared.
+  ///
+  /// `currentRoomId` is a plain field, so UI that gates on "is sync
+  /// configured" had nothing to rebuild on. That matters most for the clear
+  /// path: `SyncSessionManager.connect()` drops a persisted room the account
+  /// can no longer join *after* the login event has already fired, so a
+  /// login-only signal leaves the device roster on screen for a room that no
+  /// longer exists.
+  final StreamController<String?> _roomIdController =
+      StreamController<String?>.broadcast();
+
   StreamSubscription<RoomInviteEvent>? _inviteSubscription;
   Room? _currentRoom;
   String? _currentRoomId;
@@ -61,6 +72,17 @@ class SyncRoomManager {
   /// Emits invite requests that passed validation. The UI is expected to prompt
   /// the user and explicitly call [acceptInvite] when appropriate.
   Stream<SyncRoomInvite> get inviteRequests => _inviteController.stream;
+
+  /// The sync room id on every change, null when cleared.
+  Stream<String?> get roomIdChanges => _roomIdController.stream;
+
+  /// Single write point for [currentRoomId] so no mutation can skip the
+  /// notification. Silent when the value is unchanged.
+  void _setCurrentRoomId(String? roomId) {
+    if (_currentRoomId == roomId) return;
+    _currentRoomId = roomId;
+    if (!_roomIdController.isClosed) _roomIdController.add(roomId);
+  }
 
   /// Discovers existing Lotti sync rooms that this user is a member of.
   ///
@@ -161,7 +183,7 @@ class SyncRoomManager {
       await _gateway.leaveRoom(roomId);
       await _settingsDb.removeSettingsItem(matrixRoomKey);
       _currentRoom = null;
-      _currentRoomId = null;
+      _setCurrentRoomId(null);
 
       _loggingService.log(
         LogDomain.sync,
@@ -188,7 +210,7 @@ class SyncRoomManager {
         try {
           await _settingsDb.removeSettingsItem(matrixRoomKey);
           _currentRoom = null;
-          _currentRoomId = null;
+          _setCurrentRoomId(null);
           _loggingService.log(
             LogDomain.sync,
             'Cleared persisted state for $roomId (server says not in room).',
@@ -227,7 +249,7 @@ class SyncRoomManager {
     final previous = _currentRoomId;
     await _settingsDb.removeSettingsItem(matrixRoomKey);
     _currentRoom = null;
-    _currentRoomId = null;
+    _setCurrentRoomId(null);
     _loggingService.log(
       LogDomain.sync,
       'Cleared persisted sync room (was: ${previous ?? 'none'}).',
@@ -244,7 +266,7 @@ class SyncRoomManager {
 
     final savedRoomId = await _settingsDb.itemByKey(matrixRoomKey);
     if (savedRoomId != null) {
-      _currentRoomId = savedRoomId;
+      _setCurrentRoomId(savedRoomId);
     }
     return savedRoomId;
   }
@@ -332,10 +354,11 @@ class SyncRoomManager {
   Future<void> dispose() async {
     await _inviteSubscription?.cancel();
     await _inviteController.close();
+    await _roomIdController.close();
   }
 
   Room? _updateCurrentRoom(String roomId) {
-    _currentRoomId = roomId;
+    _setCurrentRoomId(roomId);
     _currentRoom = _gateway.getRoomById(roomId);
 
     if (_currentRoom == null) {
@@ -396,7 +419,7 @@ class SyncRoomManager {
     }
 
     _currentRoom = room;
-    _currentRoomId = roomId;
+    _setCurrentRoomId(roomId);
     return room;
   }
 }
